@@ -1189,7 +1189,8 @@ var NumberFilter = function(name, index, tool_id, tool_exp_name) {
     // Slide min/max. These values are used to set/update slider.
     this.min = Number.MAX_VALUE;
     this.max = -Number.MAX_VALUE;
-    // UI Slider element and label that is associated with filter.
+    // UI elements associated with filter.
+    this.container = null;
     this.slider = null;
     this.slider_label = null;
 };
@@ -1239,6 +1240,14 @@ extend(NumberFilter.prototype, {
      * Update filter's slider.
      */
     update_ui_elt: function () {
+        // Only show filter if min != max because filter is not useful otherwise.
+        if (this.min != this.max) {
+            this.container.show();
+        }
+        else {
+            this.container.hide();
+        }
+        
         var get_slider_step = function(min, max) {
             var range = max - min;
             return (range <= 2 ? 0.01 : 1);
@@ -1365,16 +1374,16 @@ var FiltersManager = function(track, filters_list) {
     });
     var manager = this;
     $.each(this.filters, function(index, filter) {
-        var filter_div = $("<div/>").addClass("slider-row").appendTo(manager.parent_div);
+        filter.container = $("<div/>").addClass("slider-row").appendTo(manager.parent_div);
         
         // Set up filter label (name, values).
-        var filter_label = $("<div/>").addClass("slider-label").appendTo(filter_div)
+        var filter_label = $("<div/>").addClass("slider-label").appendTo(filter.container)
         var name_span = $("<span/>").addClass("slider-name").text(filter.name + "  ").appendTo(filter_label);
         var values_span = $("<span/>");
         var values_span_container = $("<span/>").addClass("slider-value").appendTo(filter_label).append("[").append(values_span).append("]");
         
         // Set up slider for filter.
-        var slider_div = $("<div/>").addClass("slider").appendTo(filter_div);
+        var slider_div = $("<div/>").addClass("slider").appendTo(filter.container);
         filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
         var prev_values = [0,0];
         filter.control_element.slider({
@@ -1413,7 +1422,7 @@ var FiltersManager = function(track, filters_list) {
         edit_slider_values(values_span_container, values_span, filter.control_element);
         
         // Add to clear floating layout.
-        $("<div style='clear: both;'/>").appendTo(filter_div);
+        $("<div style='clear: both;'/>").appendTo(filter.container);
     });
     
     // Add button to filter complete dataset.
