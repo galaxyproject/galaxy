@@ -197,7 +197,7 @@ class Params:
     >>> par.get('price', 0)
     0
     >>> par.symbols            # replaces unknown symbols with X
-    ['alpha', '__lt____gt__', 'XrmXX!']
+    ['alpha', '__lt____gt__', 'XrmX__pd__!']
     >>> par.flatten()          # flattening to a list
     [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmX__pd__!')]
     """
