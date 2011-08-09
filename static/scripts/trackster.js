@@ -356,7 +356,7 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         var cur_data = this.get_data_from_cache(low, high, mode);
         if (!cur_data) {
-            console.log("ERROR: no current data for: ", this.track, low, high, resolution, extra_params);
+            console.log("ERROR: no current data for: ", this.track, low, high, mode, resolution, extra_params);
             return;
         }
         cur_data.stale = true;
@@ -924,10 +924,10 @@ extend( View.prototype, {
             
             // Update view, track states.
             if (view.overview_track) {
-                console.log("view has overview track");
                 view.overview_track.set_is_overview(false);
             }
             view.overview_track = track;
+            view.has_changes = true;
             track.set_is_overview(true);
         });
     },
@@ -943,7 +943,6 @@ extend( View.prototype, {
         
         // Update view, track states.
         if (view.overview_track) {
-            console.log("view has overview track");
             view.overview_track.set_is_overview(false);
         }
         view.overview_track = null;
@@ -2032,7 +2031,19 @@ extend(TiledTrack.prototype, Track.prototype, {
             var 
                 key = track._gen_tile_cache_key(view_width, w_scale, 0),
                 tile = track.tile_cache.get(key);
-            if (!tile) {
+            if (tile) {
+                // Clone tile/canvas because it may need to be used by viz.
+                var 
+                    src_canvas = $(tile.canvas.find("canvas")),
+                    new_canvas = src_canvas.clone(), 
+                    src_ctx = src_canvas.get(0).getContext("2d"),
+                    tgt_ctx = new_canvas.get(0).getContext("2d"),
+                    data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
+                // Need to undo offset when placing image data.
+                tgt_ctx.putImageData(data, -track.left_offset, (tile.data.dataset_type === "summary_tree" ? SUMMARY_TREE_TOP_PADDING : 0));
+                tile = new Tile(-1, resolution, new_canvas);
+            }
+            else {
                 tile = track.draw_tile(overview_data, resolution, null, w_scale, null, true);
                 track.tile_cache.set(key, tile);
             }
@@ -2218,7 +2229,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             more_down_icon.click(function() {
                 // Mark tile as stale, request more data, and redraw track.
                 tile.stale = true;
-                track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
                 track.draw();
             }).dblclick(function(e) {
                 // Do not propogate as this would normally zoom in.
@@ -2228,7 +2239,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             more_across_icon.click(function() {
                 // Mark tile as stale, request more data, and redraw track.
                 tile.stale = true;
-                track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
                 track.draw();
             }).dblclick(function(e) {
                 // Do not propogate as this would normally zoom in.
