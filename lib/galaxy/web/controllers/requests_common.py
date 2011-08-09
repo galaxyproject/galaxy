@@ -644,7 +644,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             # Make sure email addresses are valid
             err_msg = ''
             for email_address in email_addresses:
-                err_msg += validate_email( email_address )
+                err_msg += validate_email( trans, email_address, check_dup=False )
             if err_msg:
                 status = 'error'
                 message += err_msg

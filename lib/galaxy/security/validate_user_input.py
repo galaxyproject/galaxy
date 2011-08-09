@@ -2,7 +2,7 @@ import re
 
 VALID_USERNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 
-def validate_email( trans, email, user=None ):
+def validate_email( trans, email, user=None, check_dup=True ):
     message = ''
     if user and user.email == email:
         return message 
@@ -10,7 +10,7 @@ def validate_email( trans, email, user=None ):
         message = "Enter a real email address"
     elif len( email ) > 255:
         message = "Email address exceeds maximum allowable length"
-    elif trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first():
+    elif check_dup and trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first():
         message = "User with that email already exists"
     return message
 
