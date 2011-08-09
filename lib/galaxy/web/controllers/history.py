@@ -1204,3 +1204,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         hist = trans.sa_session.query( trans.app.model.History ).get( decoded_id )
         trans.set_history( hist )
         return trans.response.send_redirect( url_for( "/" ) )
+        
+    def get_item( self, trans, id ):
+        return self.get_history( trans, id )
+        

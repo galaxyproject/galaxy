@@ -451,4 +451,6 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako" )
 
+    def get_item( self, trans, id ):
+        return self.get_visualization( trans, id )
     

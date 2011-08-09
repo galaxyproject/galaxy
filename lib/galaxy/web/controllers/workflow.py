@@ -1436,7 +1436,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                     has_upgrade_messages=has_upgrade_messages,
                     errors=errors,
                     incoming=kwargs )
-    
+                    
+    def get_item( self, trans, id ):
+        return self.get_stored_workflow( trans, id ) 
+        
     @web.expose
     def tag_outputs( self, trans, id, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )

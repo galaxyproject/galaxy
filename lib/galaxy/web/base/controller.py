@@ -11,6 +11,7 @@ from galaxy.web.framework import simplejson
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
 from galaxy.visualization.tracks.data_providers import get_data_provider
 from galaxy.visualization.tracks.visual_analytics import get_tool_def
+from galaxy.security.validate_user_input import validate_username
 
 from Cheetah.Template import Template
 
@@ -1035,40 +1036,45 @@ class Sharable:
     @web.require_login( "share Galaxy items" )
     def set_public_username( self, trans, id, username, **kwargs ):
         """ Set user's public username and delegate to sharing() """
-        trans.get_user().username = username
+        user = trans.get_user()
+        message = validate_username( trans, username, user )
+        if message:
+            return trans.fill_template( '/sharing_base.mako', item=self.get_item( trans, id ), message=message, status='error' )
+        user.username = username
         trans.sa_session.flush
         return self.sharing( trans, id, **kwargs )
+        
     # Abstract methods.
     @web.expose
     @web.require_login( "modify Galaxy items" )
     def set_slug_async( self, trans, id, new_slug ):
         """ Set item slug asynchronously. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     @web.require_login( "share Galaxy items" )
     def sharing( self, trans, id, **kwargs ):
         """ Handle item sharing. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     @web.require_login( "share Galaxy items" )
     def share( self, trans, id=None, email="", **kwd ):
         """ Handle sharing an item with a particular user. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
         """ Display item by username and slug. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     @web.json
     @web.require_login( "get item name and link" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns item's name and link. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
-        pass
+        raise "Unimplemented Method"
     # Helper methods.
     def _make_item_accessible( self, sa_session, item ):
         """ Makes item accessible--viewable and importable--and sets item's slug. Does not flush/commit changes, however. Item must have name, user, importable, and slug attributes. """
@@ -1099,6 +1105,9 @@ class Sharable:
             item.slug = slug
             return True
         return False
+    def get_item( self, trans, id ):
+        """ Return item based on id. """
+        raise "Unimplemented Method"
 
 """
 Deprecated: `BaseController` used to be available under the name `Root`
