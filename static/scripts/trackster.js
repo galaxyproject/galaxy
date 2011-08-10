@@ -2032,23 +2032,24 @@ extend(TiledTrack.prototype, Track.prototype, {
             var 
                 key = track._gen_tile_cache_key(view_width, w_scale, 0),
                 tile = track.tile_cache.get(key);
-            if (tile) {
-                // Clone tile/canvas because it may need to be used by viz.
-                var 
-                    src_canvas = $(tile.canvas.find("canvas")),
-                    new_canvas = src_canvas.clone(), 
-                    src_ctx = src_canvas.get(0).getContext("2d"),
-                    tgt_ctx = new_canvas.get(0).getContext("2d"),
-                    data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
-                // Need to undo offset when placing image data.
-                tgt_ctx.putImageData(data, -track.left_offset, (tile.data.dataset_type === "summary_tree" ? SUMMARY_TREE_TOP_PADDING : 0));
-                tile = new Tile(-1, resolution, new_canvas);
+                
+            // Draw tile if necessary.
+            if (!tile) {
+                tile = track.draw_tile(overview_data, resolution, 0, w_scale);
+                track.tile_cache.set(key, tile);                
             }
-            else {
-                tile = track.draw_tile(overview_data, resolution, null, w_scale, null, true);
-                track.tile_cache.set(key, tile);
-            }
-            overview_tile.resolve(tile);
+            
+            // Always copy tile because it may need to be used in viz.
+            var 
+                src_canvas = $(tile.canvas.find("canvas")),
+                new_canvas = src_canvas.clone(), 
+                src_ctx = src_canvas.get(0).getContext("2d"),
+                tgt_ctx = new_canvas.get(0).getContext("2d"),
+                data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
+            // Need to undo offsets when placing image data.
+            tgt_ctx.putImageData(data, -track.left_offset, (tile.data.dataset_type === "summary_tree" ? SUMMARY_TREE_TOP_PADDING : 0));
+            new_tile = new Tile(-1, resolution, new_canvas);
+            overview_tile.resolve(new_tile);
         });
         
         return overview_tile;
@@ -2763,9 +2764,8 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
      * @param tile_index index of tile to be drawn
      * @param w_scale base pairs per pixel
      * @param ref_seq reference sequence data
-     * @param no_offsets set to true when offsets should not be used, such as for overview tile
      */
-    draw_tile: function(result, resolution, tile_index, w_scale, ref_seq, no_offsets) {
+    draw_tile: function(result, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
             tile_low = tile_index * DENSITY * resolution,
             tile_high = (tile_index + 1) * DENSITY * resolution,
@@ -2819,7 +2819,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             var canvas = this.view.canvas_manager.new_canvas();
             canvas.width = width + left_offset;
             // Extra padding at top of summary tree
-            canvas.height = required_height + (!no_offsets ? SUMMARY_TREE_TOP_PADDING : 0);
+            canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
             
             // Get summary tree data if necessary and set max if there is one.
             if (result.dataset_type != "summary_tree") {
@@ -2833,9 +2833,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             var painter = new painters.SummaryTreePainter(result, tile_low, tile_high, this.prefs);
             var ctx = canvas.getContext("2d");
             // Deal with left_offset by translating.
-            if (!no_offsets) {
-                ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
-            }
+            ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
             painter.draw(ctx, width, required_height);
             return new SummaryTreeTile(tile_index, resolution, canvas, result.data, result.max);
         }
@@ -2889,9 +2887,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         
         if (result.data) {
             // Draw features.
-            if (!no_offsets) {
-                ctx.translate(left_offset, 0);
-            }
+            ctx.translate(left_offset, 0);
             painter.draw(ctx, width, required_height, slots);
         }
         
