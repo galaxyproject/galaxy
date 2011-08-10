@@ -920,7 +920,7 @@ extend( View.prototype, {
             view.overview_close.show();
             view.overview_viewport.append(tile.canvas);
             view.overview_highlight.show().height(tile.canvas.height());
-            view.overview_viewport.height(tile.canvas.height() + view.overview_box.height());
+            view.overview_viewport.height(tile.canvas.height() + view.overview_box.outerHeight());
             view.resize_window();
             
             // Update view, track states.
