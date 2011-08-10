@@ -168,11 +168,12 @@ exports.sortable = sortable;
  * Init constants & functions used throughout trackster.
  */
 var 
-    // Drawing constants; track height is (constant) height of track, and feature height is the
-    // height of individual features within tracks. Feature height, then, should always be less
-    // than track height.
-    CHAR_HEIGHT_PX = 9, // FIXME: font size may not be static
-    ERROR_PADDING = 20, // Padding at the top of tracks for error messages
+    // Minimum height of a track's contents; this must correspond to the .track-content's minimum height.
+    MIN_TRACK_HEIGHT = 16,
+    // FIXME: font size may not be static
+    CHAR_HEIGHT_PX = 9,
+    // Padding at the top of tracks for error messages
+    ERROR_PADDING = 20,
     SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
     // Maximum number of rows un a slotted track
     MAX_FEATURE_DEPTH = 100,
@@ -2110,7 +2111,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             if (drawn_tiles.length === tile_count) {
                 // All tiles have been drawn.
                 clearInterval(intervalId);
-                track.postdraw_actions(drawn_tiles, clear_after);       
+                track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);       
             }
         }, 50);
              
@@ -2125,7 +2126,7 @@ extend(TiledTrack.prototype, Track.prototype, {
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
      */
-    postdraw_actions: function(tiles, clear_after) {
+    postdraw_actions: function(tiles, width, w_scale, clear_after) {
         var track = this;
                                 
         //
@@ -2558,7 +2559,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
      */
-    postdraw_actions: function(tiles, clear_after) {
+    postdraw_actions: function(tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, clear_after);
         
         var track = this;
@@ -2601,7 +2602,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
                     var tile = tiles[i];
                     tile.canvas.remove();
                     track.delayed_draw(true, track._gen_tile_cache_key(width, w_scale, tile.index), tile.index, 
-                                       tile.resolution, parent_element, w_scale, [], { max: global_max });
+                                       tile.resolution, tile.canvas.parent(), w_scale, [], { max: global_max });
                 }
             }
         }                
@@ -2873,7 +2874,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         // Create painter, and canvas of sufficient size to contain all features
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
         var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, ref_seq);
-        var required_height = painter.get_required_height(slots_required);
+        var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required));
         var canvas = this.view.canvas_manager.new_canvas();
         
         canvas.width = width + left_offset;
