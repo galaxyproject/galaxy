@@ -3393,15 +3393,15 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
 /**
  * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
  */
-var FeaturePainter = function( data, view_start, view_end, prefs, mode ) {
-    Painter.call( this, data, view_start, view_end, prefs, mode );
+var FeaturePainter = function(data, view_start, view_end, prefs, mode) {
+    Painter.call(this, data, view_start, view_end, prefs, mode);
 }
 
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
 
-extend( FeaturePainter.prototype, { 
+extend(FeaturePainter.prototype, { 
 
-    get_required_height: function( rows_required ) {
+    get_required_height: function(rows_required) {
         // y_scale is the height per row
         var required_height = y_scale = this.get_row_height(), mode = this.mode;
         // If using a packing mode, need to multiply by the number of slots used
@@ -3412,7 +3412,10 @@ extend( FeaturePainter.prototype, {
         return required_height + Math.max( Math.round( y_scale / 2 ), 5 );
     },
 
-    draw: function( ctx, width, height, slots ) {
+    /**
+     * Draw data on ctx using slots and within the rectangle defined by width and height.
+     */
+    draw: function(ctx, width, height, slots) {
         var data = this.data, view_start = this.view_start, view_end = this.view_end;
 
         ctx.save();
@@ -3434,9 +3437,8 @@ extend( FeaturePainter.prototype, {
                 slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
                 
             // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
-            if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode == "Dense" || slot !== null)) {
-                this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, 
-                                  width );
+            if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode == "Dense" || slot !== null) ) {
+                this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, width);
             }
         }
 
@@ -3444,9 +3446,11 @@ extend( FeaturePainter.prototype, {
     },
     
     /** 
-     * Abstract function for drawing an individual feature. NOTE: this method must be implemented by subclasses for drawing to work.
+     * Abstract function for drawing an individual feature.
      */
-    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {}
+    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {
+        console.log("WARNING: Unimplemented function.");
+    }
 });
 
 // Constants specific to feature tracks moved here (HACKING, these should
@@ -3462,11 +3466,11 @@ var DENSE_TRACK_HEIGHT = 10,
     LABEL_SPACING = 2,
     CONNECTOR_COLOR = "#ccc";
 
-var LinkedFeaturePainter = function( data, view_start, view_end, prefs, mode ) {
-    FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
+var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode);
 }
 
-extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
+extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
     /**
      * Height of a single row, depends on mode
@@ -3488,7 +3492,10 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         return y_scale;
     },
 
-    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {
+    /**
+     * Draw a feature.
+     */
+    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
         var 
             feature_uid = feature[0],
             feature_start = feature[1],
@@ -3621,8 +3628,7 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                                 block_thick_start += 2;
                                 block_thick_end -= 2;
                             }
-                            ctx.fillRect( block_thick_start, y_center + 1,
-                                          block_thick_end - block_thick_start, thick_height );
+                            ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
                         }   
                     }
                 }
@@ -3646,11 +3652,11 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 });
 
 
-var VariantPainter = function( data, view_start, view_end, prefs, mode ) {
-    FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
+var VariantPainter = function(data, view_start, view_end, prefs, mode) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode);
 }
 
-extend( VariantPainter.prototype, FeaturePainter.prototype, {
+extend(VariantPainter.prototype, FeaturePainter.prototype, {
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
         var feature = data[i],
             feature_uid = feature[0],
@@ -3701,14 +3707,14 @@ extend( VariantPainter.prototype, FeaturePainter.prototype, {
     }
 });
 
-var ReadPainter = function( data, view_start, view_end, prefs, mode, ref_seq ) {
-    FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
+var ReadPainter = function(data, view_start, view_end, prefs, mode, ref_seq) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode);
     this.ref_seq = ref_seq;
 };
 
-ReadPainter.prototype.default_prefs = extend( {}, FeaturePainter.prototype.default_prefs, { show_insertions: false } );
+ReadPainter.prototype.default_prefs = extend({}, FeaturePainter.prototype.default_prefs, { show_insertions: false });
 
-extend( ReadPainter.prototype, FeaturePainter.prototype, {
+extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
      * Returns y_scale based on mode.
      */
@@ -3728,6 +3734,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
         }
         return y_scale;
     },
+    
     /**
      * Draw a single read.
      */
@@ -3920,6 +3927,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             }
         }
     },
+    
     /**
      * Draw a complete read pair
      */
