@@ -11,6 +11,8 @@ from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
 from galaxy.jobs.actions.post import ActionBox
 
+from sqlalchemy.sql.expression import and_, or_
+
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
 
@@ -163,6 +165,10 @@ class JobQueue( object ):
                                 .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
                                 .filter( model.Job.state == model.Job.states.NEW ).all()
         else:
+            # Get job objects and append to watch queue for any which were
+            # previously waiting
+            for job_id in self.waiting_jobs:
+                jobs_to_check.append( self.sa_session.query( model.Job ).get( job_id ) )
             try:
                 while 1:
                     message = self.queue.get_nowait()
@@ -174,10 +180,6 @@ class JobQueue( object ):
                     jobs_to_check.append( self.sa_session.query( model.Job ).get( job_id ) )
             except Empty:
                 pass
-            # Get job objects and append to watch queue for any which were
-            # previously waiting
-            for job_id in self.waiting_jobs:
-                jobs_to_check.append( self.sa_session.query( model.Job ).get( job_id ) )
         # Iterate over new and waiting jobs and look for any that are 
         # ready to run
         new_waiting_jobs = []
@@ -256,6 +258,28 @@ class JobQueue( object ):
             elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
                 # need to requeue
                 return JOB_WAIT
+        return self.__check_user_jobs( job )
+
+    def __check_user_jobs( self, job ):
+        if not self.app.config.user_job_limit:
+            return JOB_READY
+        if job.user:
+            user_jobs = self.sa_session.query( model.Job ) \
+                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+                            .filter( and_( model.Job.user_id == job.user.id,
+                                           or_( model.Job.state == model.Job.states.RUNNING,
+                                                model.Job.state == model.Job.states.QUEUED ) ) ).all()
+        elif job.galaxy_session:
+            user_jobs = self.sa_session.query( model.Job ) \
+                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+                            .filter( and_( model.Job.session_id == job.galaxy_session.id,
+                                           or_( model.Job.state == model.Job.states.RUNNING,
+                                                model.Job.state == model.Job.states.QUEUED ) ) ).all()
+        else:
+            log.warning( 'Job %s is not associated with a user or session so job concurrency limit cannot be checked.' % job.id )
+            return JOB_READY
+        if len( user_jobs ) >= self.app.config.user_job_limit:
+            return JOB_WAIT
         return JOB_READY
             
     def put( self, job_id, tool ):

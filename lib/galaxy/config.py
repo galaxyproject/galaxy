@@ -86,9 +86,11 @@ class Configuration( object ):
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
+        self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
-        self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
+        # Per-user Job concurrency limitations
+        self.user_job_limit = int( kwargs.get( 'user_job_limit', 0 ) )
         self.default_cluster_job_runner = kwargs.get( 'default_cluster_job_runner', 'local:///' )
         self.pbs_application_server = kwargs.get('pbs_application_server', "" )
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )
