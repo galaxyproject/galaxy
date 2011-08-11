@@ -23,9 +23,7 @@
       #end if
   </command>
   <inputs>
-      <param format="interval,gff" name="input" type="data" label="Fetch sequences for intervals in">
-          <validator type="unspecified_build" />
-      </param>
+      <param format="interval,gff" name="input" type="data" label="Fetch sequences for intervals in"/>
       <param name="interpret_features" type="select" label="Interpret features when possible" help="Only meaningful for GFF, GTF datasets.">
           <option value="yes">Yes</option>
           <option value="no">No</option>
