@@ -23,6 +23,20 @@ exports.extend = extend;
 // end class_module encapsulation
 };
 
+/**
+ * Find browser's reeuestAnimationFrame method or fallback on a setTimeout 
+ */
+var requestAnimationFrame = (function(){
+    return  window.requestAnimationFrame       || 
+            window.webkitRequestAnimationFrame || 
+            window.mozRequestAnimationFrame    || 
+            window.oRequestAnimationFrame      || 
+            window.msRequestAnimationFrame     || 
+            function( callback, element ) {
+              window.setTimeout(callback, 1000 / 60);
+            };
+  })();
+
 
 /**
  * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
@@ -529,8 +543,8 @@ extend( View.prototype, {
         if (this.vis_id !== undefined) {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.nav_controls);
         }
-        this.zo_link = $("<a id='zoom-out' />").click(function() { view.zoom_out(); view.redraw(); }).appendTo(this.nav_controls);
-        this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.redraw(); }).appendTo(this.nav_controls);        
+        this.zo_link = $("<a id='zoom-out' />").click(function() { view.zoom_out(); view.request_redraw(); }).appendTo(this.nav_controls);
+        this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.request_redraw(); }).appendTo(this.nav_controls);        
         
         // Get initial set of chroms.
         this.load_chroms({low: 0}, callback);
@@ -634,7 +648,7 @@ extend( View.prototype, {
             view.low = Math.round(min / width * span) + old_low;
             view.high = Math.round(max / width * span) + old_low;
             $(d.proxy).remove();
-            view.redraw();
+            view.request_redraw();
         });
         
         this.add_label_track( new LabelTrack( this, this.top_labeltrack ) );
@@ -742,7 +756,7 @@ extend( View.prototype, {
                 view.chrom_select.val(view.chrom);
                 view.max_high = found.len-1; // -1 because we're using 0-based indexing.
                 view.reset();
-                view.redraw(true);
+                view.request_redraw(true);
 
                 for (var track_id = 0, len = view.tracks.length; track_id < len; track_id++) {
                     var track = view.tracks[track_id];
@@ -756,7 +770,7 @@ extend( View.prototype, {
                 view.high = Math.min(high, view.max_high);
             }
             view.reset_overview();
-            view.redraw();
+            view.request_redraw();
         }
     },
     go_to: function(str) {
@@ -797,7 +811,7 @@ extend( View.prototype, {
             view.high -= delta_chrom;
             view.low -= delta_chrom;
         }
-        view.redraw();
+        view.request_redraw();
     },
     /**
      * Add a track to the view.
@@ -834,10 +848,14 @@ extend( View.prototype, {
         this.low = this.max_low;
         this.high = this.max_high;
         this.viewport_container.find(".yaxislabel").remove();
-    },        
+    },
+    request_redraw: function( nodraw ) {
+        var view = this;
+        requestAnimationFrame( function() { view.redraw( nodraw ) } );
+    },
     redraw: function(nodraw) {
-        var span = this.high - this.low,
-            low = this.low,
+        
+        var low = this.low,
             high = this.high;
         
         if (low < this.max_low) {
@@ -846,6 +864,7 @@ extend( View.prototype, {
         if (high > this.max_high) {
             high = this.max_high;
         }
+        var span = this.high - this.low;
         if (this.high !== 0 && span < this.min_separation) {
             high = low + this.min_separation;
         }
@@ -893,7 +912,7 @@ extend( View.prototype, {
         }
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
-        this.redraw();
+        this.request_redraw();
     },
     zoom_out: function () {
         if (this.max_high === 0) {
@@ -904,12 +923,12 @@ extend( View.prototype, {
             new_half = (span * this.zoom_factor) / 2;
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
-        this.redraw();
+        this.request_redraw();
     },
     resize_window: function() {
         this.viewport_container.height( this.container.height() - this.top_container.height() - this.bottom_container.height() );
         this.nav_container.width( this.container.width() );
-        this.redraw();
+        this.request_redraw();
     },
     /** Show a track in the overview. */
     set_overview: function(track) {
@@ -2084,41 +2103,28 @@ extend(TiledTrack.prototype, Track.prototype, {
         this.max_height = 0;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
-        // A list of tiles drawn/retrieved.
+        // If any tile could not be drawn yet, this will be set to false
+        var all_tiles_drawn = true;
         var drawn_tiles = [];
         var tile_count = 0;
         // Draw or fetch and show tiles.
         while ( ( tile_index * DENSITY * resolution ) < high ) {
-            // Check in cache
-            var key = this._gen_tile_cache_key(width, w_scale, tile_index);
-            var cached = this.tile_cache.get(key);
-            var tile_low = tile_index * DENSITY * this.view.resolution;
-            var tile_high = tile_low + DENSITY * this.view.resolution;
-            if (!force && cached) {
-                drawn_tiles.push(cached);
-                this.show_tile(cached, parent_element, w_scale);
+            tile = this.draw_helper( force, width, tile_index, resolution, parent_element, w_scale )
+            if ( tile ) {
+                drawn_tiles.push( tile );
             } else {
-                this.delayed_draw(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles);
+                all_tiles_drawn = false;
             }
             tile_index += 1;
             tile_count++;
         }
                 
-        //
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
-        //
         var track = this;
-        var intervalId = setInterval(function() {
-            if (drawn_tiles.length === tile_count) {
-                // All tiles have been drawn.
-                clearInterval(intervalId);
-                track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);       
-            }
-        }, 50);
-             
-        //
+        if ( all_tiles_drawn ) {
+            track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);       
+        } 
         // Draw child tracks.
-        //
         for (var i = 0; i < this.child_tracks.length; i++) {
             this.child_tracks[i].draw(force, clear_after);
         }
@@ -2152,55 +2158,65 @@ extend(TiledTrack.prototype, Track.prototype, {
         }        
     },
     /**
-     * Do actual tile drawing.
+     * Handle a single tile, either from cache or by setting up a deferred
+     * operation and then requesting another redraw
      */ 
-    delayed_draw: function(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
+            
         var track = this,
+            key = this._gen_tile_cache_key(width, w_scale, tile_index),
             tile_low = tile_index * DENSITY * resolution,
             tile_high = tile_low + DENSITY * resolution;
+                       
+        // Check tile cache, if found show existing tile in correct position
+        var tile = (force ? undefined : track.tile_cache.get(key));
+        if (tile) { 
+            track.show_tile(tile, parent_element, w_scale);
+            return tile;
+        }
+                
+        // Helper to determine if object is jQuery deferred
+        var is_deferred = function ( d ) {
+            return ( 'isResolved' in d );
+        }
         
-        // Helper method.
-        var draw_and_show_tile = function(id, result, resolution, tile_index, parent_element, w_scale, seq_data) {
-            // DEBUG: this is still called too many times when moving slowly,
-            // console.log( "draw_and_show_tile", resolution, tile_index, w_scale );
-            var tile = track.draw_tile(result, resolution, tile_index, w_scale, seq_data);
+        // Flag to track whether we can draw everything now 
+        var can_draw_now = true
+        
+        // Get the track data, maybe a deferred
+        var tile_data = track.data_manager.get_data( tile_low, tile_high, track.mode, resolution, track.data_url_extra_params );
+        if ( is_deferred( tile_data ) ) {
+            can_draw_now = false;
+        }
+        
+        // Get seq data if needed, maybe a deferred
+        var seq_data;
+        if ( view.reference_track && w_scale > view.canvas_manager.char_width_px ) {
+            seq_data = view.reference_track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, view.reference_track.data_url_extra_params)
+            if ( is_deferred( seq_data ) ) {
+                can_draw_now = false;
+            }
+        }
+                
+        // If we can draw now, do so
+        if ( can_draw_now ) {
+            extend( tile_data, more_tile_data );
+            var tile = track.draw_tile(tile_data, resolution, tile_index, w_scale, seq_data);
             track.tile_cache.set(key, tile);
             // Don't show if no tile
-            if (tile === undefined) {
-                return;
+            if (tile !== undefined) {
+                track.show_tile(tile, parent_element, w_scale);
             }
-            track.show_tile(tile, parent_element, w_scale);
-            drawn_tiles.push(tile);
-        };
-        // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
-        var id = setTimeout(function() {
-            if (tile_low <= track.view.high && tile_high >= track.view.low) {
-                // Show/draw tile: check cache for tile; if tile not in cache, draw it.
-                var tile = (force ? undefined : track.tile_cache.get(key));
-                if (tile) { 
-                    track.show_tile(tile, parent_element, w_scale);
-                    drawn_tiles.push(tile);
-                }
-                else {
-                    //
-                    // Really draw tile: get data, seq data if available, and draw tile.
-                    //
-                    $.when(track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, track.data_url_extra_params)).then(function(tile_data) {
-                        extend(tile_data, more_tile_data);
-                        // If sequence data needed, get that and draw. Otherwise draw.
-                        if (view.reference_track && w_scale > view.canvas_manager.char_width_px) {
-                            $.when(view.reference_track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, 
-                                                                                view.reference_track.data_url_extra_params)).then(function(seq_data) {
-                                draw_and_show_tile(id, tile_data, resolution, tile_index, parent_element, w_scale, seq_data);
-                            });
-                        }
-                        else {
-                            draw_and_show_tile(id, tile_data, resolution, tile_index, parent_element, w_scale);
-                        }
-                    });              
-                }
-            }
-        }, 50);
+            return tile
+        }
+         
+        // Can't draw now, so trigger another redraw when the data is ready
+        $.when( tile_data, seq_data ).then( function() {
+            view.request_redraw();
+        });
+        
+        // Indicate to caller that this tile could not be drawn
+        return null;
     }, 
     /**
      * Show track tile and perform associated actions.
@@ -2585,9 +2601,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             }
         }
         
-        //
         // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
-        //
         if (track.mode == "Histogram") {
             // Get global max.
             var global_max = -1;
@@ -2599,11 +2613,10 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             }
             
             for (var i = 0; i < tiles.length; i++) {
-                if (tiles[i].max_val !== global_max) {
-                    var tile = tiles[i];
+                var tile = tiles[i];
+                if (tile.max_val !== global_max) {
                     tile.canvas.remove();
-                    track.delayed_draw(true, track._gen_tile_cache_key(width, w_scale, tile.index), tile.index, 
-                                       tile.resolution, tile.canvas.parent(), w_scale, [], { max: global_max });
+                    track.draw_helper(true, width, tile.index, tile.resolution, tile.canvas.parent(), w_scale, [], { max: global_max });
                 }
             }
         }                
