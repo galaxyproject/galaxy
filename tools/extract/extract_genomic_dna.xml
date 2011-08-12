@@ -1,4 +1,4 @@
-<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.1">
+<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.2">
   <description>using coordinates from assembled/unassembled genomes</description>
   <command interpreter="python">
       extract_genomic_dna.py $input $out_file1 -o $out_format -d $dbkey 
@@ -51,6 +51,9 @@
           </change_format>
       </data>
   </outputs>
+  <requirements>
+      <requirement type="binary">faToTwoBit</requirement>
+  </requirements>
   <tests>
     <test>
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
@@ -110,7 +113,7 @@
 
 .. class:: warningmark
 
-This tool requires tabular formatted data.  If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*.
+This tool requires interval or gff (special tabular formatted data).  If your data is not TAB delimited, first use *Text Manipulation-&gt;Convert*.
 
 .. class:: warningmark
 
