@@ -3,7 +3,7 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util import inflector
-from common import get_category, get_repository
+from common import get_category, get_repository, get_repository_metadata_by_id
 from repository import RepositoryListGrid, CategoryListGrid
 import logging
 log = logging.getLogger( __name__ )
@@ -308,6 +308,65 @@ class AdminRepositoryListGrid( RepositoryListGrid ):
                                             async_compatible=False ) )
     standard_filters = []
 
+class RepositoryMetadataListGrid( grids.Grid ):
+    class IdColumn( grids.IntegerColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.id
+    class RepositoryIdColumn( grids.IntegerColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.repository_id
+    class ChangesetRevisionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.changeset_revision
+    class MetadataColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            metadata_str = ''
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    if 'tools' in metadata:
+                        metadata_str += '<b>Tools:</b><br/>'
+                        for tool_metadata_dict in metadata[ 'tools' ]:
+                            metadata_str += '%s <b>%s</b><br/>' % \
+                                ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
+                    if 'workflows' in metadata:
+                        metadata_str += '<b>Workflows:</b><br/>'
+                        for workflow_metadata_dict in metadata[ 'workflows' ]:
+                            metadata_str += '%s <b>%s</b><br/>' % \
+                                ( workflow_metadata_dict[ 'name' ], workflow_metadata_dict[ 'format-version' ] )
+            return metadata_str
+    class MaliciousColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.malicious
+    # Grid definition
+    title = "Repository Metadata"
+    model_class = model.RepositoryMetadata
+    template='/webapps/community/repository/grid.mako'
+    default_sort_key = "repository_id"
+    columns = [
+        IdColumn( "Id",
+                  visible=False,
+                  attach_popup=False ),
+        RepositoryIdColumn( "Repository Id",
+                            key="repository_id",
+                            attach_popup=False ),
+        ChangesetRevisionColumn( "Revision",
+                                 attach_popup=False ),
+        MetadataColumn( "Metadata",
+                        attach_popup=False ),
+        MaliciousColumn( "Malicious",
+                         attach_popup=False )
+    ]
+    operations = [ grids.GridOperation( "Delete",
+                                        allow_multiple=True ) ]
+    standard_filters = []
+    default_filter = {}
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( self.model_class )
+
 class AdminController( BaseController, Admin ):
     
     user_list_grid = UserListGrid()
@@ -315,7 +374,42 @@ class AdminController( BaseController, Admin ):
     group_list_grid = GroupListGrid()
     manage_category_list_grid = ManageCategoryListGrid()
     repository_list_grid = AdminRepositoryListGrid()
+    repository_metadata_list_grid = RepositoryMetadataListGrid()
 
+    @web.expose
+    @web.require_admin
+    def browse_repository_metadata( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "delete":
+                return self.delete_repository_metadata( trans, **kwd )
+        # Render the list view
+        return self.repository_metadata_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def delete_repository_metadata( self, trans, **kwd ):
+        # TODO: Add a javascript confirm before this method executes....
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            for repository_metadata_id in ids:
+                repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+                trans.sa_session.delete( repository_metadata )
+                trans.sa_session.flush()
+                count += 1
+            if count:
+                message = "Deleted %d repository metadata %s" % ( count, inflector.cond_plural( len( ids ), "record" ) )
+        else:
+            message = "No repository metadata ids received for deleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repository_metadata',
+                                                   message=util.sanitize_text( message ),
+                                                   status=status ) )
     @web.expose
     @web.require_admin
     def browse_repositories( self, trans, **kwd ):

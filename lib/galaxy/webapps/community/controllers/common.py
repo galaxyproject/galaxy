@@ -78,52 +78,54 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
                            .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
                                           trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
                            .first()
+def get_repository_metadata_by_id( trans, id ):
+    """Get repository metadata from the database"""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
 def get_latest_repository_metadata( trans, id ):
     """Get last metadata defined for a specified repository from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
                            .order_by( trans.model.RepositoryMetadata.table.c.update_time.desc() ) \
                            .first()
-def set_workflowl_metadata( trans, id, change_set_revision, exported_workflow_dict, metadata_dict ):
-    # We'll store everything except the workflow steps in the database.
-    flush_needed = False
+def generate_workflow_metadata( trans, id, change_set_revision, exported_workflow_dict, metadata_dict ):
+    """
+    Update the received metadata_dict with changes that have been applied
+    to the received exported_workflow_dict.  Store everything except the
+    workflow steps in the database.
+    """
     workflow_dict = { 'a_galaxy_workflow' : exported_workflow_dict[ 'a_galaxy_workflow' ],
                       'name' :exported_workflow_dict[ 'name' ],
                       'annotation' : exported_workflow_dict[ 'annotation' ],
                       'format-version' : exported_workflow_dict[ 'format-version' ] }
-    repository_metadata = get_latest_repository_metadata( trans, id )
-    if repository_metadata:
-        metadata = repository_metadata.metadata
-        if metadata and 'workflows' in metadata:
-            metadata_workflows = metadata[ 'workflows' ]
-            found = False
-            for workflow_metadata_dict in metadata_workflows:
-                if 'a_galaxy_workflow' in workflow_metadata_dict and util.string_as_bool( workflow_metadata_dict[ 'a_galaxy_workflow' ] ) and \
-                    'name' in workflow_metadata_dict and workflow_metadata_dict[ 'name' ] == exported_workflow_dict[ 'name' ] and \
-                    'annotation' in workflow_metadata_dict and workflow_metadata_dict[ 'annotation' ] == exported_workflow_dict[ 'annotation' ] and \
-                    'format-version' in workflow_metadata_dict and workflow_metadata_dict[ 'format-version' ] == exported_workflow_dict[ 'format-version' ]:
-                    found = True
-                    break
-            if not found:
-                metadata_workflows.append( workflow_dict )
-        else:
-            if metadata is None:
-                repository_metadata.metadata = {}
-            repository_metadata.metadata[ 'workflows' ] = workflow_dict
-            repository_metadata.changeset_revision = change_set_revision
-            trans.sa_session.add( repository_metadata )
-            if not flush_needed:
-                flush_needed = True
+    if 'workflows' in metadata_dict:
+        metadata_dict[ 'workflows' ].append( workflow_dict )
     else:
-        if 'workflows' in metadata_dict:
-            metadata_dict[ 'workflows' ].append( workflow_dict )
+        metadata_dict[ 'workflows' ] = [ workflow_dict ]
+    return metadata_dict
+def new_workflow_metadata_required( trans, id, metadata_dict ):
+    """
+    TODO: Currently everything about an exported workflow except the name is hard-coded, so
+    there's no real way to differentiate versions of exported workflows.  If this changes at
+    some future time, this method should be enhanced accordingly...
+    """
+    if 'workflows' in metadata_dict:
+        repository_metadata = get_latest_repository_metadata( trans, id )
+        if repository_metadata:
+            if repository_metadata.metadata:
+                # The repository has metadata, so update the workflows value - no new record is needed.
+                return False
         else:
-            metadata_dict[ 'workflows' ] = [ workflow_dict ]
-    return flush_needed, metadata_dict
-
-def set_tool_metadata( trans, id, change_set_revision, root, name, tool, metadata_dict ):
+            # There is no saved repository metadata, so we need to create a new repository_metadata table record.
+            return True
+    # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
+    # record is not needed.
+    return False
+def generate_tool_metadata( trans, id, change_set_revision, root, name, tool, metadata_dict ):
+    """
+    Update the received metadata_dict with changes that have been
+    applied to the received tool.
+    """
     tool_requirements = []
-    flush_needed = False
     for tr in tool.requirements:
         requirement_dict = dict( name=tr.name,
                                  type=tr.type,
@@ -145,54 +147,42 @@ def set_tool_metadata( trans, id, change_set_revision, root, name, tool, metadat
                       tool_config=os.path.join( root, name ),
                       requirements=tool_requirements,
                       tests=tool_tests )
-    repository_metadata = get_latest_repository_metadata( trans, id )
-    if repository_metadata:
-        # We have the last RepositoryMetadata record generated for this repository.
-        metadata = repository_metadata.metadata
-        if metadata and 'tools' in metadata:
-            # The metadata for 1 or more tools was successfully generated in the past for this repository..
-            metadata_tools = metadata[ 'tools' ]
-            found = False
-            for tool_metadata_dict in metadata_tools:
-                if 'id' in tool_metadata_dict and tool_metadata_dict[ 'id' ] == tool.id and \
-                    'version' in tool_metadata_dict and tool_metadata_dict[ 'version' ] == tool.version:
-                    # We've found a record for the current tool id and version, so we'll 
-                    # update the metadata associated with the record.
-                    found = True
-                    tool_metadata_dict[ 'name' ] = tool.name
-                    tool_metadata_dict[ 'description' ] = tool.description
-                    tool_metadata_dict[ 'version_string_cmd' ] = tool.version_string_cmd
-                    tool_metadata_dict[ 'tool_config' ] = os.path.join( root, name )
-                    tool_metadata_dict[ 'requirements' ] = tool_requirements
-                    tool_metadata_dict[ 'tests' ] = tool_tests
-                    if not flush_needed:
-                        flush_needed = True
-            if found:
-                repository_metadata.changeset_revision = change_set_revision
-            else:
-                if 'tools' in metadata_dict:
-                    metadata_dict[ 'tools' ].append( tool_dict )
-                else:
-                    metadata_dict[ 'tools' ] = [ tool_dict ]
-                if not flush_needed:
-                    flush_needed = True
-            if not flush_needed:
-                flush_needed = True
-        else:
-            # Either the metadata is Null, or it does not include the key 'tools'.
-            if metadata is None:
-                repository_metadata.metadata = {}
-            repository_metadata.metadata[ 'tools' ] = [ tool_dict ]
-            repository_metadata.changeset_revision = change_set_revision
-            trans.sa_session.add( repository_metadata )
-            if not flush_needed:
-                flush_needed = True
+    if 'tools' in metadata_dict:
+        metadata_dict[ 'tools' ].append( tool_dict )
     else:
-        if 'tools' in metadata_dict:
-            metadata_dict[ 'tools' ].append( tool_dict )
+        metadata_dict[ 'tools' ] = [ tool_dict ]
+    return metadata_dict
+def new_tool_metadata_required( trans, id, metadata_dict ):
+    """
+    Compare the last saved metadata for each tool in the repository with the new metadata
+    in metadata_dict to determine if a new repository_metadata table record is required, or
+    if the last saved metadata record can updated instead.
+    """
+    if 'tools' in metadata_dict:
+        repository_metadata = get_latest_repository_metadata( trans, id )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata and 'tools' in metadata:
+                # The metadata for one or more tools was successfully generated in the past
+                # for this repository, so we compare the version string for each tool id
+                # in metadata_dict with what was previously saved to see if we need to create
+                # a new table record or if we can simply update the existing record.
+                for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
+                    for saved_tool_metadata_dict in metadata[ 'tools' ]:
+                        if new_tool_metadata_dict[ 'id' ] == saved_tool_metadata_dict[ 'id' ]:
+                            if new_tool_metadata_dict[ 'version' ] != saved_tool_metadata_dict[ 'version' ]:
+                                return True
+            else:
+                # We have repository metadata that does not include metadata for any tools in the
+                # repository, so we can update the existing repository metadata.
+                return False
         else:
-            metadata_dict[ 'tools' ] = [ tool_dict ]
-    return flush_needed, metadata_dict
+            # There is no saved repository metadata, so we need to create a new repository_metadata
+            # table record.
+            return True
+    # The received metadata_dict includes no metadata for tools, so a new repository_metadata table
+    # record is not needed.
+    return False
 def set_repository_metadata( trans, id, change_set_revision, **kwd ):
     """Set repository metadata"""
     message = ''
@@ -202,7 +192,6 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
     repo = hg.repository( get_configured_ui(), repo_dir )
     change_set = get_change_set( trans, repo, change_set_revision )
     invalid_files = []
-    flush_needed = False
     if change_set is not None:
         metadata_dict = {}
         for root, dirs, files in os.walk( repo_dir ):
@@ -221,7 +210,8 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
                             full_path = os.path.abspath( os.path.join( root, name ) )
                             tool = load_tool( trans, full_path )
                             if tool is not None:
-                                flush_needed, metadata_dict = set_tool_metadata( trans, id, change_set_revision, root, name, tool, metadata_dict  )
+                                # Update the list metadata dictionaries for tools in metadata_dict.
+                                metadata_dict = generate_tool_metadata( trans, id, change_set_revision, root, name, tool, metadata_dict )
                         except Exception, e:
                             invalid_files.append( ( name, str( e ) ) )
                     # Find all exported workflows
@@ -233,16 +223,22 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
                             workflow_text = fp.read()
                             fp.close()
                             exported_workflow_dict = from_json_string( workflow_text )
-                            flush_needed, metadata_dict = set_workflowl_metadata( trans, id, change_set_revision, exported_workflow_dict, metadata_dict )
+                            # Update the list of metadata dictionaries for workflows in metadata_dict.
+                            metadata_dict = generate_workflow_metadata( trans, id, change_set_revision, exported_workflow_dict, metadata_dict )
                         except Exception, e:
                             invalid_files.append( ( name, str( e ) ) )
         if metadata_dict:
-            # The metadata_dict dictionary will contain items only
-            # if the repository did not already have metadata set.  
-            repository_metadata = trans.model.RepositoryMetadata( repository.id, change_set_revision, metadata_dict )
-            trans.sa_session.add( repository_metadata )
-            if not flush_needed:
-                flush_needed = True
+            if new_tool_metadata_required( trans, id, metadata_dict ) or new_workflow_metadata_required( trans, id, metadata_dict ):
+                # Create a new repository_metadata table row.
+                repository_metadata = trans.model.RepositoryMetadata( repository.id, change_set_revision, metadata_dict )
+                trans.sa_session.add( repository_metadata )
+                trans.sa_session.flush()
+            else:
+               # Update the last saved repository_metadata table row.
+               repository_metadata = get_latest_repository_metadata( trans, id )
+               repository_metadata.metadata = metadata_dict
+               trans.sa_session.add( repository_metadata )
+               trans.sa_session.flush()
     else:
         # change_set is None
         message = "Repository does not include changeset revision '%s'." % str( change_set_revision )
@@ -284,10 +280,6 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
                correction_msg = exception_msg
             message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )
         status = 'error'
-    elif flush_needed:
-        # We only flush if there are no tool config errors, so change sets will only have metadata
-        # if everything in them is valid.
-        trans.sa_session.flush()
     return message, status
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
