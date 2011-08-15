@@ -210,8 +210,8 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Galaxy Wiki" link in the "Help" menu.
 #wiki_url = http://wiki.g2.bx.psu.edu/
 
-# The URL linked by the "Email comments..." link in the "Help" menu.
-#bugs_email = mailto:galaxy-bugs@bx.psu.edu
+# The URL linked by the "Support" link in the "Help" menu.
+#support_url = http://wiki.g2.bx.psu.edu/Support
 
 # The URL linked by the "How to Cite..." link in the "Help" menu.
 #citation_url = http://wiki.g2.bx.psu.edu/Citing%20Galaxy

@@ -109,10 +109,10 @@ class User( BaseController, UsesFormDefinitions ):
         action = 'login'
         if auto_associate:
             action = 'openid_manage'
-        if trans.app.config.bugs_email is not None:
-            contact = '<a href="mailto:%s">contact support</a>' % trans.app.config.bugs_email
+        if trans.app.config.support_url is not None:
+            contact = '<a href="%s">support</a>' % trans.app.config.support_url
         else:
-            contact = 'contact support'
+            contact = 'support'
         message = 'Verification failed for an unknown reason.  Please contact support for assistance.'
         status = 'error'
         consumer = trans.app.openid_manager.get_consumer( trans )
