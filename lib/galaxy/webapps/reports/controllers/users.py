@@ -120,7 +120,7 @@ class Users( BaseController ):
     @web.expose
     def user_disk_usage( self, trans, **kwd ):
         message = util.restore_text( kwd.get( 'message', '' ) )
-        user_cutoff = int( kwd.get( 'user_cutoff', 0 ) )
+        user_cutoff = int( kwd.get( 'user_cutoff', 60 ) )
         # disk_usage isn't indexed
         users = sorted( trans.sa_session.query( galaxy.model.User ).all(), key=operator.attrgetter( 'disk_usage' ), reverse=True )
         if user_cutoff:
