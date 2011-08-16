@@ -950,6 +950,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             hda.purged = True
             trans.sa_session.add( hda )
             trans.log_event( "HDA id %s has been purged" % hda.id )
+            trans.sa_session.flush()
             # Don't delete anything if there are active HDAs or any LDDAs, even if
             # the LDDAs are deleted.  Let the cleanup scripts get it in the latter
             # case.
