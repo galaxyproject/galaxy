@@ -58,7 +58,7 @@ class User( object, APIItem ):
         # Relationships
         self.histories = []
         self.credentials = []
-        
+
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash( text_type=cleartext )
@@ -93,7 +93,7 @@ class User( object, APIItem ):
                     dataset_ids.append( hda.dataset.id )
                     total += hda.dataset.get_total_size()
         return total
-    
+
 class Job( object ):
     """
     A job represents a request to run a tool given input datasets, tool 
@@ -126,7 +126,7 @@ class Job( object ):
         self.job_runner_external_id = None
         self.post_job_actions = []
         self.imported = False
-        
+
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
     def add_input_dataset( self, name, dataset ):
@@ -230,12 +230,12 @@ class JobParameter( object ):
     def __init__( self, name, value ):
         self.name = name
         self.value = value
-          
+
 class JobToInputDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
         self.dataset = dataset
-        
+
 class JobToOutputDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
@@ -257,7 +257,7 @@ class PostJobAction( object ):
         self.output_name = output_name
         self.action_arguments = action_arguments
         self.workflow_step = workflow_step
-        
+
 class PostJobActionAssociation( object ):
     def __init__(self, pja, job):
         self.job = job
@@ -277,7 +277,7 @@ class JobExternalOutputMetadata( object ):
         elif self.library_dataset_dataset_association:
             return self.library_dataset_dataset_association
         return None
-        
+
 class JobExportHistoryArchive( object ):
     def __init__( self, job=None, history=None, dataset=None, compressed=False, \
                   history_attrs_filename=None, datasets_attrs_filename=None, 
@@ -289,7 +289,7 @@ class JobExportHistoryArchive( object ):
         self.history_attrs_filename = history_attrs_filename
         self.datasets_attrs_filename = datasets_attrs_filename
         self.jobs_attrs_filename = jobs_attrs_filename
-        
+
 class JobImportHistoryArchive( object ):
     def __init__( self, job=None, history=None, archive_dir=None ):
         self.job = job
@@ -332,7 +332,7 @@ class DeferredJob( object ):
             return True
         else:
             return False
-        
+
 class Group( object ):
     def __init__( self, name = None ):
         self.name = name
@@ -344,6 +344,8 @@ class UserGroupAssociation( object ):
         self.group = group
 
 class History( object, UsesAnnotations ):
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'id', 'name' )
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
         self.name = name or "Unnamed history"
@@ -410,7 +412,7 @@ class History( object, UsesAnnotations ):
         db_session = object_session( self )
         db_session.add( new_history )
         db_session.flush()
-        
+
         # Copy annotation.
         self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
 
@@ -424,7 +426,7 @@ class History( object, UsesAnnotations ):
             new_hda = hda.copy( copy_children=True )
             new_history.add_dataset( new_hda, set_hid = False, quota=quota )
             db_session.add( new_hda )
-            db_session.flush()            
+            db_session.flush()
             # Copy annotation.
             self.copy_item_annotation( db_session, self.user, hda, target_user, new_hda )
         new_history.hid_counter = self.hid_counter
@@ -441,6 +443,23 @@ class History( object, UsesAnnotations ):
         if isinstance(history_name, str):
             history_name = unicode(history_name, 'utf-8')
         return history_name
+
+    def get_api_value( self, view='collection', value_mapper = None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[key] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[key] = value_mapper.get( key )( rval[key] )
+            except AttributeError:
+                rval[key] = None
+        return rval
     @property
     def get_disk_size_bytes( self ):
         return self.get_disk_size( nice_size=False )
@@ -633,7 +652,7 @@ class Dataset( object ):
     file_name = property( get_file_name, set_file_name )
     @property
     def extra_files_path( self ):
-        if self._extra_files_path: 
+        if self._extra_files_path:
             path = self._extra_files_path
         else:
             path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
@@ -734,7 +753,7 @@ class DatasetInstance( object ):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     permitted_actions = Dataset.permitted_actions
-    def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
+    def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None,
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
                   parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None ):
         self.name = name or "Unnamed dataset"
@@ -800,9 +819,9 @@ class DatasetInstance( object ):
         return dbkey[0]
     def set_dbkey( self, value ):
         if "dbkey" in self.datatype.metadata_spec:
-            if not isinstance(value, list): 
+            if not isinstance(value, list):
                 self.metadata.dbkey = [value]
-            else: 
+            else:
                 self.metadata.dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
     def change_datatype( self, new_ext ):
@@ -879,22 +898,18 @@ class DatasetInstance( object ):
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
             raise NoConverterException("Conversion from '%s' to '%s' not possible" % (self.extension, target_ext) )
-        
         deps = {}
         # List of string of dependencies
         try:
             depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
         except KeyError:
             depends_list = []
-        
         # See if converted dataset already exists
         converted_dataset = self.get_converted_files_by_type( target_ext )
         if converted_dataset:
             return converted_dataset
-        
         # Conversion is possible but hasn't been done yet, run converter.
         # Check if we have dependencies
-        
         try:
             for dependency in depends_list:
                 dep_dataset = self.get_converted_dataset(trans, dependency)
@@ -905,14 +920,12 @@ class DatasetInstance( object ):
                     raise ConverterDependencyException("A dependency (%s) was in an error state." % dependency)
                 elif dep_dataset.state != trans.app.model.Job.states.OK:
                     # Pending
-                    return None                    
-                
+                    return None
                 deps[dependency] = dep_dataset
         except NoConverterException:
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass # No deps
-            
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, metadata_safe=False )
         new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=False ).values()[0]
         new_dataset.name = self.name
@@ -1115,6 +1128,28 @@ class HistoryDatasetAssociation( DatasetInstance ):
         for child in self.children:
             rval += child.get_disk_usage( user )
         return rval
+    def get_api_value( self, view='collection' ):
+        # Since this class is a proxy to rather complex attributes we want to
+        # display in other objects, we can't use the simpler method used by
+        # other model classes.
+        hda = self
+        rval = dict( name = hda.name,
+                     deleted = hda.deleted,
+                     visible = hda.visible,
+                     state = hda.state,
+                     file_size = int( hda.get_size() ),
+                     data_type = hda.ext,
+                     genome_build = hda.dbkey,
+                     misc_info = hda.info,
+                     misc_blurb = hda.blurb )
+        for name, spec in hda.metadata.spec.items():
+            val = hda.metadata.get( name )
+            if isinstance( val, MetadataFile ):
+                val = val.file_name
+            elif isinstance( val, list ):
+                val = ', '.join( [str(v) for v in val] )
+            rval['metadata_' + name] = val
+        return rval
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):
     def __init__( self, hda=None, user=None, site=None ):
@@ -1264,7 +1299,7 @@ class LibraryFolder( object, APIItem ):
             name = unicode( name, 'utf-8' )
         return name
     def get_api_value( self, view='collection' ):
-        rval = super( LibraryFolder, self ).get_api_value( vew=view )
+        rval = super( LibraryFolder, self ).get_api_value( view=view )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -1332,7 +1367,7 @@ class LibraryDataset( object ):
             for field in template.fields:
                 tmp_dict[field['label']] = content[field['name']]
             template_data[template.name] = tmp_dict
-        
+
         rval = dict( name = ldda.name,
                      file_name = ldda.file_name,
                      uploaded_by = ldda.user.email,
@@ -1479,7 +1514,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return template_data
     def templates_json( self ):
         return simplejson.dumps( self.templates_dict() )
-        
+
     def get_display_name( self ):
         """
         LibraryDatasetDatasetAssociation name can be either a string or a unicode object.
@@ -1588,7 +1623,7 @@ class GalaxySession( object ):
     def set_disk_usage( self, bytes ):
         self.disk_usage = bytes
     total_disk_usage = property( get_disk_usage, set_disk_usage )
-    
+
 class GalaxySessionToHistoryAssociation( object ):
     def __init__( self, galaxy_session, history ):
         self.galaxy_session = galaxy_session
@@ -1599,7 +1634,7 @@ class CloudImage( object ):
         self.id = None
         self.instance_id = None
         self.state = None
-        
+
 class UCI( object ):
     def __init__( self ):
         self.id = None
@@ -1615,7 +1650,7 @@ class CloudInstance( object ):
         self.state = None
         self.public_dns = None
         self.availability_zone = None
-        
+
 class CloudStore( object ):
     def __init__( self ):
         self.id = None
@@ -1623,14 +1658,14 @@ class CloudStore( object ):
         self.user = None
         self.size = None
         self.availability_zone = None
-        
+
 class CloudSnapshot( object ):
     def __init__( self ):
         self.id = None
         self.user = None
         self.store_id = None
         self.snapshot_id = None
-        
+
 class CloudProvider( object ):
     def __init__( self ):
         self.id = None
@@ -1665,7 +1700,7 @@ class Workflow( object ):
         self.has_cycles = None
         self.has_errors = None
         self.steps = []
-        
+
 class WorkflowStep( object ):
     def __init__( self ):
         self.id = None
@@ -1676,7 +1711,7 @@ class WorkflowStep( object ):
         self.position = None
         self.input_connections = []
         self.config = None
-        
+
 class WorkflowStepConnection( object ):
     def __init__( self ):
         self.output_step_id = None
@@ -1688,7 +1723,7 @@ class WorkflowOutput(object):
     def __init__( self, workflow_step, output_name):
         self.workflow_step = workflow_step
         self.output_name = output_name
-        
+
 class StoredWorkflowUserShareAssociation( object ):
     def __init__( self ):
         self.stored_workflow = None
@@ -1849,12 +1884,12 @@ class FormDefinition( object, APIItem ):
 class FormDefinitionCurrent( object ):
     def __init__(self, form_definition=None):
         self.latest_form = form_definition
-        
+
 class FormValues( object ):
     def __init__(self, form_def=None, content=None):
         self.form_definition = form_def
         self.content = content
-        
+
 class Request( object, APIItem ):
     states = Bunch( NEW = 'New',
                     SUBMITTED = 'In Progress',
@@ -1938,7 +1973,7 @@ class Request( object, APIItem ):
         for sample in self.samples:
             if sample.bar_code:
                 samples.append( sample )
-        return samples    
+        return samples
     def send_email_notification( self, trans, common_state, final_state=False ):
         # Check if an email notification is configured to be sent when the samples 
         # are in this state
@@ -2001,13 +2036,13 @@ All samples in state:     %(sample_state)s
             trans.sa_session.add( event )
             trans.sa_session.flush()
         return comments
-    
+
 class RequestEvent( object ):
     def __init__(self, request=None, request_state=None, comment=''):
         self.request = request
         self.state = request_state
         self.comment = comment
-        
+
 class ExternalService( object ):
     data_transfer_protocol = Bunch( HTTP = 'http',
                                     HTTPS = 'https',
@@ -2045,7 +2080,7 @@ class ExternalService( object ):
                 self.data_transfer[ self.data_transfer_protocol.HTTP ] = http_configs
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
-                
+
 class RequestType( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'name', 'desc' )
     api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id' )
@@ -2120,18 +2155,18 @@ class RequestType( object, APIItem ):
                     return template.get_widgets( trans.user, contents=info.content )
             return template.get_widgets( trans.user )
         return []
-    
+
 class RequestTypeExternalServiceAssociation( object ):
     def __init__( self, request_type, external_service ):
         self.request_type = request_type
         self.external_service = external_service
-        
+
 class RequestTypePermissions( object ):
     def __init__( self, action, request_type, role ):
         self.action = action
         self.request_type = request_type
         self.role = role
-    
+
 class Sample( object, APIItem ):
     # The following form_builder classes are supported by the Sample class.
     supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
@@ -2212,14 +2247,14 @@ class Sample( object, APIItem ):
         def print_ticks( d ):
             pass
         error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
-        if not scp_configs[ 'host' ] or not scp_configs[ 'user_name' ] or not scp_configs[ 'password' ]:
+        if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
             return error_msg
         login_str = '%s@%s' % ( scp_configs['user_name'], scp_configs['host'] )
         cmd  = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
         try:
             output = pexpect.run( cmd,
-                                  events={ '.ssword:*' : scp_configs['password'] + '\r\n', 
-                                           pexpect.TIMEOUT : print_ticks }, 
+                                  events={ '.ssword:*': scp_configs['password']+'\r\n', 
+                                           pexpect.TIMEOUT:print_ticks}, 
                                   timeout=10 )
         except Exception, e:
             return error_msg
@@ -2277,7 +2312,7 @@ class SampleEvent( object ):
         self.sample = sample
         self.state = sample_state
         self.comment = comment
-        
+
 class SampleDataset( object ):
     transfer_status = Bunch( NOT_STARTED = 'Not started',
                              IN_QUEUE = 'In queue',
@@ -2366,7 +2401,7 @@ class PageRevision( object ):
         self.user = None
         self.title = None
         self.content = None
-        
+
 class PageUserShareAssociation( object ):
     def __init__( self ):
         self.page = None
@@ -2383,7 +2418,7 @@ class Visualization( object ):
         self.revisions = []
         if self.latest_revision:
             self.revisions.append( latest_revision )
-        
+
     def copy( self, user=None, title=None ):
         """
         Provide copy of visualization with only its latest revision.
@@ -2394,12 +2429,12 @@ class Visualization( object ):
         # user who owns the datasets may delete them, making them inaccessible
         # for the current user.
         # TODO: a deep copy option is needed.
-        
+
         if not user:
             user = self.user
         if not title:
             title = self.title
-        
+
         copy_viz = Visualization( user=user, type=self.type, title=title, dbkey=self.dbkey )
         copy_revision = self.latest_revision.copy( visualization=copy_viz )
         copy_viz.latest_revision = copy_revision
@@ -2412,26 +2447,26 @@ class VisualizationRevision( object ):
         self.title = title
         self.dbkey = dbkey
         self.config = config
-        
+
     def copy( self, visualization=None ):
         """
         Returns a copy of this object.
         """
         if not visualization:
             visualization = self.visualization
-            
+
         return VisualizationRevision( 
             visualization=visualization, 
             title=self.title,
             dbkey=self.dbkey,
             config=self.config
         )
-        
+
 class VisualizationUserShareAssociation( object ):
     def __init__( self ):
         self.visualization = None
         self.user = None
-        
+
 class TransferJob( object ):
     # These states are used both by the transfer manager's IPC and the object
     # state in the database.  Not all states are used by both.
@@ -2457,10 +2492,10 @@ class Tag ( object ):
         self.type = type
         self.parent_id = parent_id
         self.name = name
-        
+
     def __str__ ( self ):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
-    
+
 class ItemTagAssociation ( object ):
     def __init__( self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None ):
         self.id = id
@@ -2470,13 +2505,13 @@ class ItemTagAssociation ( object ):
         self.user_tname = user_tname
         self.value = None
         self.user_value = None
-        
+
 class HistoryTagAssociation ( ItemTagAssociation ):
     pass
-    
+
 class DatasetTagAssociation ( ItemTagAssociation ):
     pass
-    
+
 class HistoryDatasetAssociationTagAssociation ( ItemTagAssociation ):
     pass
 
@@ -2485,13 +2520,13 @@ class PageTagAssociation ( ItemTagAssociation ):
 
 class WorkflowStepTagAssociation ( ItemTagAssociation ):
     pass
-    
+
 class StoredWorkflowTagAssociation ( ItemTagAssociation ):
     pass
-    
+
 class VisualizationTagAssociation ( ItemTagAssociation ):
     pass
-    
+
 class ToolTagAssociation( ItemTagAssociation ):
     def __init__( self, id=None, user=None, tool_id=None, tag_id=None, user_tname=None, value=None ):
         self.id = id
@@ -2503,50 +2538,50 @@ class ToolTagAssociation( ItemTagAssociation ):
         self.user_value = None
 
 # Item annotation classes.
-    
+
 class HistoryAnnotationAssociation( object ):
     pass
-    
+
 class HistoryDatasetAssociationAnnotationAssociation( object ):
     pass
-    
+
 class StoredWorkflowAnnotationAssociation( object ):
     pass
-    
+
 class WorkflowStepAnnotationAssociation( object ):
     pass
-    
+
 class PageAnnotationAssociation( object ):
     pass
-    
+
 class VisualizationAnnotationAssociation( object ):
     pass
-    
+
 # Item rating classes.
-    
+
 class ItemRatingAssociation( object ):
     def __init__( self, id=None, user=None, item=None, rating=0 ):
         self.id = id
         self.user = user
         self.item = item
         self.rating = rating
-        
+
     def set_item( self, item ):
         """ Set association's item. """
         pass
-        
+
 class HistoryRatingAssociation( ItemRatingAssociation ):
     def set_item( self, history ):
         self.history = history
-    
+
 class HistoryDatasetAssociationRatingAssociation( ItemRatingAssociation ):
     def set_item( self, history_dataset_association ):
         self.history_dataset_association = history_dataset_association
-    
+
 class StoredWorkflowRatingAssociation( ItemRatingAssociation ):
     def set_item( self, stored_workflow ):
         self.stored_workflow = stored_workflow
-    
+
 class PageRatingAssociation( ItemRatingAssociation ):
     def set_item( self, page ):
         self.page = page
@@ -2554,12 +2589,12 @@ class PageRatingAssociation( ItemRatingAssociation ):
 class VisualizationRatingAssociation( ItemRatingAssociation ):
     def set_item( self, visualization ):
         self.visualization = visualization
-    
+
 class UserPreference ( object ):
     def __init__( self, name=None, value=None ):
         self.name = name
         self.value = value
-        
+
 class UserAction( object ):
     def __init__( self, id=None, create_time=None, user_id=None, session_id=None, action=None, params=None, context=None):
         self.id = id

@@ -11,7 +11,7 @@ from galaxy.model.orm import *
 log = logging.getLogger( __name__ )
 
 class ContentsController( BaseController ):
-    
+
     @web.expose_api
     def index( self, trans, library_id, **kwd ):
         """
@@ -55,14 +55,14 @@ class ContentsController( BaseController ):
         rval.append( dict( id = encoded_id,
                            type = 'folder',
                            name = '/',
-                           url = url_for( 'content', library_id=library_id, id=encoded_id ) ) )
+                           url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
         library.root_folder.api_path = ''
         for content in traverse( library.root_folder ):
             encoded_id = trans.security.encode_id( '%s.%s' % ( content.api_type, content.id ) )
             rval.append( dict( id = encoded_id,
                                type = content.api_type,
                                name = content.api_path,
-                               url = url_for( 'content', library_id=library_id, id=encoded_id, ) ) )
+                               url = url_for( 'library_content', library_id=library_id, id=encoded_id, ) ) )
         return rval
 
     @web.expose_api
@@ -150,5 +150,5 @@ class ContentsController( BaseController ):
                 encoded_id = trans.security.encode_id( create_type + '.' + str( v.id ) )
                 rval.append( dict( id = encoded_id,
                                    name = v.name,
-                                   url = url_for( 'content', library_id=library_id, id=encoded_id ) ) )
+                                   url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
             return rval
