@@ -193,7 +193,8 @@ assign_mapper( context, Repository, Repository.table,
     properties = dict(
         categories=relation( RepositoryCategoryAssociation ),
         ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
-        user=relation( User.mapper ) ) )
+        user=relation( User.mapper ),
+        downloadable_revisions=relation( RepositoryMetadata, order_by=desc( RepositoryMetadata.table.c.update_time ) ) ) )
 
 assign_mapper( context, RepositoryMetadata, RepositoryMetadata.table,
     properties=dict( repository=relation( Repository ) ) )

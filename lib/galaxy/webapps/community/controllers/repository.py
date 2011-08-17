@@ -74,9 +74,16 @@ class RepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.name
-    class RevisionColumn( grids.TextColumn ):
+    class RevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
-            return repository.revision
+            """
+            Display a SelectField whose options are the changeset_revision
+            strings of all downloadable_revisions of this repository.
+            """
+            select_field = build_changeset_revision_select_field( trans, repository )
+            return select_field.get_html()
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.description
@@ -121,13 +128,14 @@ class RepositoryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id, webapp="community" ) ),
-                    attach_popup=False ),
+                    link=( lambda item: dict( operation="view_or_manage_repository",
+                                              id=item.id,
+                                              webapp="community" ) ),
+                    attach_popup=True ),
         DescriptionColumn( "Synopsis",
                            key="description",
                            attach_popup=False ),
-        RevisionColumn( "Revision",
-                        attach_popup=False ),
+        RevisionColumn( "Revision" ),
         CategoryColumn( "Category",
                         model_class=model.Category,
                         key="Category.name",
@@ -159,7 +167,7 @@ class RepositoryListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [ grids.GridOperation( "Receive email alerts",
-                                        allow_multiple=True,
+                                        allow_multiple=False,
                                         condition=( lambda item: not item.deleted ),
                                         async_compatible=False ) ]
     standard_filters = []
@@ -257,12 +265,32 @@ class RepositoryController( BaseController, ItemRatings ):
                 category = get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
-                if kwd[ 'id' ]:
-                    return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                      action='set_email_alerts',
-                                                                      **kwd ) )
+                if trans.user:
+                    if kwd[ 'id' ]:
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='set_email_alerts',
+                                                                          **kwd ) )
                 else:
+                    kwd[ 'message' ] = 'You must be logged in to set email alerts.'
+                    kwd[ 'status' ] = 'error'
                     del kwd[ 'operation' ]
+        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
+        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # all of the received values to see which value is not the repository tip.  If we find it, we
+        # know the refresh_on_change occurred, and we have the necessary repository id and change set
+        # revision to pass on.
+        for k, v in kwd.items():
+            changset_revision_str = 'changeset_revision_'
+            if k.startswith( changset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+                repository = get_repository( trans, repository_id )
+                if repository.tip != v:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='browse_repositories',
+                                                                      operation='view_or_manage_repository',
+                                                                      id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=v ) )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
     @web.expose
@@ -524,6 +552,7 @@ class RepositoryController( BaseController, ItemRatings ):
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         alerts = params.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
@@ -549,7 +578,13 @@ class RepositoryController( BaseController, ItemRatings ):
                 trans.sa_session.flush()
         checked = alerts_checked or ( user and user.email in email_alerts )
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
+        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+        revision_label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
         else:
@@ -569,6 +604,9 @@ class RepositoryController( BaseController, ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
+                                    changeset_revision=changeset_revision,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    revision_label=revision_label,
                                     is_malicious=is_malicious,
                                     message=message,
                                     status=status )
@@ -582,6 +620,7 @@ class RepositoryController( BaseController, ItemRatings ):
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
         repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         description = util.restore_text( params.get( 'description', repository.description ) )
         long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
@@ -678,7 +717,13 @@ class RepositoryController( BaseController, ItemRatings ):
         allow_push_select_field = self.__build_allow_push_select_field( trans, current_allow_push_list )
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
+        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+        revision_label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
             is_malicious = repository_metadata.malicious
@@ -702,6 +747,9 @@ class RepositoryController( BaseController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
+                                    changeset_revision=changeset_revision,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    revision_label=revision_label,
                                     selected_categories=selected_categories,
                                     categories=categories,
                                     metadata=metadata,
@@ -750,7 +798,7 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
-        ctx = get_change_set( trans, repo, ctx_str )
+        ctx = get_changectx_for_changeset( trans, repo, ctx_str )
         if ctx is None:
             message = "Repository does not include changeset revision '%s'." % str( ctx_str )
             status = 'error'
@@ -878,6 +926,7 @@ class RepositoryController( BaseController, ItemRatings ):
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,
+                                                          changeset_revision=ctx_str,
                                                           malicious=malicious,
                                                           message=message,
                                                           status=status ) )
@@ -1034,7 +1083,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
-    def download( self, trans, repository_id, file_type, **kwd ):
+    def download( self, trans, repository_id, changeset_revision, file_type, **kwd ):
         # Download an archive of the repository files compressed as zip, gz or bz2.
         params = util.Params( kwd )
         repository = get_repository( trans, repository_id )
@@ -1043,11 +1092,11 @@ class RepositoryController( BaseController, ItemRatings ):
         # [web]
         # allow_archive = bz2, gz, zip
         if file_type == 'zip':
-            file_type_str = 'tip.zip'
+            file_type_str = '%s.zip' % changeset_revision
         elif file_type == 'bz2':
-            file_type_str = 'tip.tar.bz2'
+            file_type_str = '%s.tar.bz2' % changeset_revision
         elif file_type == 'gz':
-            file_type_str = 'tip.tar.gz'
+            file_type_str = '%s.tar.gz' % changeset_revision
         repository.times_downloaded += 1
         trans.sa_session.add( repository )
         trans.sa_session.flush()
@@ -1081,7 +1130,6 @@ class RepositoryController( BaseController, ItemRatings ):
         def print_ticks( d ):
             pass
         cmd  = "ls -p '%s'" % folder_path
-        # Handle the authentication message if keys are not set - the message is
         output = pexpect.run( cmd,
                               events={ pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )

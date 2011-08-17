@@ -3,9 +3,11 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util import inflector
-from common import get_category, get_repository, get_repository_metadata_by_id
+from common import *
 from repository import RepositoryListGrid, CategoryListGrid
+from mercurial import hg
 import logging
+
 log = logging.getLogger( __name__ )
 
 class UserListGrid( grids.Grid ):
@@ -299,11 +301,11 @@ class ManageCategoryListGrid( CategoryListGrid ):
 class AdminRepositoryListGrid( RepositoryListGrid ):
     operations = [ operation for operation in RepositoryListGrid.operations ]
     operations.append( grids.GridOperation( "Delete",
-                                            allow_multiple=True,
+                                            allow_multiple=False,
                                             condition=( lambda item: not item.deleted ),
                                             async_compatible=False ) )
     operations.append( grids.GridOperation( "Undelete",
-                                            allow_multiple=True,
+                                            allow_multiple=False,
                                             condition=( lambda item: item.deleted ),
                                             async_compatible=False ) )
     standard_filters = []
@@ -312,12 +314,15 @@ class RepositoryMetadataListGrid( grids.Grid ):
     class IdColumn( grids.IntegerColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.id
-    class RepositoryIdColumn( grids.IntegerColumn ):
+    class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
-            return repository_metadata.repository_id
-    class ChangesetRevisionColumn( grids.TextColumn ):
+            return repository_metadata.repository.name
+    class RevisionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
-            return repository_metadata.changeset_revision
+            repository = repository_metadata.repository
+            repo = hg.repository( get_configured_ui(), repository.repo_path )
+            ctx = get_changectx_for_changeset( trans, repo, repository_metadata.changeset_revision )
+            return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
     class MetadataColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             metadata_str = ''
@@ -347,25 +352,33 @@ class RepositoryMetadataListGrid( grids.Grid ):
         IdColumn( "Id",
                   visible=False,
                   attach_popup=False ),
-        RepositoryIdColumn( "Repository Id",
-                            key="repository_id",
-                            attach_popup=False ),
-        ChangesetRevisionColumn( "Revision",
-                                 attach_popup=False ),
+        NameColumn( "Name",
+                    key="name",
+                    model_class=model.Repository,
+                    link=( lambda item: dict( operation="view_or_manage_repository",
+                                              id=item.repository.id,
+                                              webapp="community" ) ),
+                    attach_popup=True ),
+        RevisionColumn( "Revision",
+                        attach_popup=False ),
         MetadataColumn( "Metadata",
                         attach_popup=False ),
         MaliciousColumn( "Malicious",
                          attach_popup=False )
     ]
     operations = [ grids.GridOperation( "Delete",
-                                        allow_multiple=True ) ]
+                                        allow_multiple=False,
+                                        allow_popup=True,
+                                        async_compatible=False,
+                                        confirm="Repository metadata records cannot be recovered after they are deleted. Click OK to delete the selected items." ) ]
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class )
+        return trans.sa_session.query( self.model_class ) \
+                               .join( model.Repository.table )
 
 class AdminController( BaseController, Admin ):
     
@@ -383,12 +396,15 @@ class AdminController( BaseController, Admin ):
             operation = kwd[ 'operation' ].lower()
             if operation == "delete":
                 return self.delete_repository_metadata( trans, **kwd )
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories',
+                                                                  **kwd ) )
         # Render the list view
         return self.repository_metadata_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def delete_repository_metadata( self, trans, **kwd ):
-        # TODO: Add a javascript confirm before this method executes....
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -460,6 +476,23 @@ class AdminController( BaseController, Admin ):
                 return self.mark_repository_deleted( trans, **kwd )
             elif operation == "undelete":
                 return self.undelete_repository( trans, **kwd )
+        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
+        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # all of the received values to see which value is not the repository tip.  If we find it, we
+        # know the refresh_on_change occurred, and we have the necessary repository id and change set
+        # revision to pass on.
+        for k, v in kwd.items():
+            changset_revision_str = 'changeset_revision_'
+            if k.startswith( changset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+                repository = get_repository( trans, repository_id )
+                if repository.tip != v:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='browse_repositories',
+                                                                      operation='view_or_manage_repository',
+                                                                      id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=v ) )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
     @web.expose

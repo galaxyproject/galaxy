@@ -190,9 +190,9 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
     repository = get_repository( trans, id )
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
-    change_set = get_change_set( trans, repo, change_set_revision )
     invalid_files = []
-    if change_set is not None:
+    ctx = get_changectx_for_changeset( trans, repo, change_set_revision )
+    if ctx is not None:
         metadata_dict = {}
         for root, dirs, files in os.walk( repo_dir ):
             if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
@@ -284,8 +284,8 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
     return trans.sa_session.query( app.model.Repository ).filter_by( name=name ).one()
-def get_change_set( trans, repo, change_set_revision, **kwd ):
-    """Retrieve a specified change set from a repository"""
+def get_changectx_for_changeset( trans, repo, change_set_revision, **kwd ):
+    """Retrieve a specified changectx from a repository"""
     for changeset in repo.changelog:
         ctx = repo.changectx( changeset )
         if str( ctx ) == change_set_revision:
@@ -430,3 +430,28 @@ def load_tool( trans, config_file ):
             ToolClass = Tool
         return ToolClass( config_file, root, trans.app )
     return None
+def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True ):
+    """
+    Build a SelectField whose options are the changeset_revision
+    strings of all downloadable_revisions of the received repository.
+    """
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    options = []
+    refresh_on_change_values = []
+    for repository_metadata in repository.downloadable_revisions:
+        changeset_revision = repository_metadata.changeset_revision
+        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+        revision_label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        options.append( ( revision_label, changeset_revision ) )
+        refresh_on_change_values.append( changeset_revision )
+    if add_id_to_name:
+        name = 'changeset_revision_%d' % repository.id
+    else:
+        name = 'changeset_revision'
+    select_field = SelectField( name=name,
+                                refresh_on_change=True,
+                                refresh_on_change_values=refresh_on_change_values )
+    for option_tup in options:
+        selected = selected_value and option_tup[1] == selected_value
+        select_field.add_option( option_tup[0], option_tup[1], selected=selected )
+    return select_field

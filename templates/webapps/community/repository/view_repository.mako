@@ -82,9 +82,9 @@
                 <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
             %endif
             %if can_download:
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
             %endif
         </div>
     %endif
@@ -94,6 +94,26 @@
     ${render_msg( message, status )}
 %endif
 
+<div class="toolForm">
+    <div class="toolFormTitle">Revision</div>
+    <div class="toolFormBody">
+        <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+            <div class="form-row">
+                <%
+                    if changeset_revision == repository.tip:
+                        tip_str = 'repository tip'
+                    else:
+                        tip_str = ''
+                %>
+                ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                <div class="toolParamHelp" style="clear: both;">
+                    Select a revision to preview download-able versions of tools from this repository.
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<p/>
 <div class="toolForm">
     <div class="toolFormTitle">${repository.name}</div>
     <div class="toolFormBody">
@@ -125,9 +145,9 @@
         <div class="form-row">
             <label>Revision:</label>
             %if can_view_change_log:
-                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${repository.revision}</a>
+                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
             %else:
-                ${repository.revision}
+                ${revision_label}
             %endif
         </div>
         <div class="form-row">
@@ -181,7 +201,7 @@
                                         </a>
                                     </div>
                                     <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                        <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip, tool_id=tool_dict[ 'id' ] )}">View all metadata for this tool</a>
+                                        <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ] )}">View all metadata for this tool</a>
                                     </div>
                                 </td>
                                 <td>${tool_dict[ 'description' ]}</td>
