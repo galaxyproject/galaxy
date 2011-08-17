@@ -9,7 +9,9 @@
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.
-# examples of many of these options are explained in more detail in the wiki:
+# Examples of many of these options are explained in more detail in the wiki:
+#
+# http://wiki.g2.bx.psu.edu/Admin/Config
 #
 # Config hackers are encouraged to check there before asking for help.
 
