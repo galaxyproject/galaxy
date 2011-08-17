@@ -217,7 +217,7 @@ Quota.table = Table( "quota", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", String( 255 ), index=True, unique=True ),
     Column( "description", TEXT ),
-    Column( "bytes", BigInteger ),
+    Column( "bytes", Integer ),
     Column( "operation", String( 8 ) ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
