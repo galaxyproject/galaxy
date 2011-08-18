@@ -7,6 +7,7 @@ from sqlalchemy.orm import *
 from migrate import *
 from migrate.changeset import *
 from galaxy.model.orm.ext.assignmapper import *
+from galaxy.model.custom_types import *
 
 import datetime
 now = datetime.datetime.utcnow
@@ -25,7 +26,7 @@ Quota_table = Table( "quota", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", String( 255 ), index=True, unique=True ),
     Column( "description", TEXT ),
-    Column( "bytes", Integer ),
+    Column( "bytes", BigInteger ),
     Column( "operation", String( 8 ) ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
