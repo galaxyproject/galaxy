@@ -681,7 +681,7 @@ class JobWrapper( object ):
 
         bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
-        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+        for dataset_assoc in job.output_datasets:
             dataset_assoc.dataset.dataset.set_total_size()
             bytes += dataset_assoc.dataset.dataset.get_total_size()
 
