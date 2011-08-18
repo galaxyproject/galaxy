@@ -38,9 +38,9 @@
         <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
         <div popupmenu="repository-${repository.id}-popup">
             %if can_manage:
-                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ) )}">Manage repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Manage repository</a>
             %else:
-                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ) )}">View repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">View repository</a>
             %endif
             %if can_upload:
                 <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
@@ -52,9 +52,9 @@
                 <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
             %endif
             %if can_download:
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
             %endif
         </div>
     %endif
@@ -64,6 +64,20 @@
     ${render_msg( message, status )}
 %endif
 
+<div class="toolForm">
+    <div class="toolFormTitle">Repository revision</div>
+    <div class="toolFormBody">
+        <div class="form-row">
+            <label>Revision:</label>
+            %if can_view_change_log:
+                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
+            %else:
+                ${revision_label}
+            %endif
+        </div>
+    </div>
+</div>
+<p/>
 %if can_download:
     <div class="toolForm">
         <div class="toolFormTitle">${repository.name}</div>
@@ -85,7 +99,7 @@
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Name:</label>
-                <a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=metadata[ 'tool_config' ] )}">${metadata[ 'name' ]}</a>
+                <a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=metadata[ 'tool_config' ], changeset_revision=changeset_revision )}">${metadata[ 'name' ]}</a>
                 <div style="clear: both"></div>
             </div>
             %if 'description' in metadata:
@@ -116,31 +130,33 @@
                     <div style="clear: both"></div>
                 </div>
             %endif
-            <div class="form-row">
-                <label>Command:</label>
-                <pre>${tool.command}</pre>
-                <div style="clear: both"></div>
-            </div>
-            <div class="form-row">
-                <label>Interpreter:</label>
-                ${tool.interpreter}
-                <div style="clear: both"></div>
-            </div>
-            <div class="form-row">
-                <label>Is multi-byte:</label>
-                ${tool.is_multi_byte}
-                <div style="clear: both"></div>
-            </div>
-            <div class="form-row">
-                <label>Forces a history refresh:</label>
-                ${tool.force_history_refresh}
-                <div style="clear: both"></div>
-            </div>
-            <div class="form-row">
-                <label>Parallelism:</label>
-                ${tool.parallelism}
-                <div style="clear: both"></div>
-            </div>
+            %if tool:
+                <div class="form-row">
+                    <label>Command:</label>
+                    <pre>${tool.command}</pre>
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Interpreter:</label>
+                    ${tool.interpreter}
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Is multi-byte:</label>
+                    ${tool.is_multi_byte}
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Forces a history refresh:</label>
+                    ${tool.force_history_refresh}
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Parallelism:</label>
+                    ${tool.parallelism}
+                    <div style="clear: both"></div>
+                </div>
+            %endif
             <%
                 if 'requirements' in metadata:
                     requirements = metadata[ 'requirements' ]

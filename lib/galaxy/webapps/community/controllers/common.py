@@ -81,13 +81,24 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
 def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
+def get_revision_label( trans, repository, changeset_revision ):
+    """
+    Return a string consisting of the human read-able 
+    changeset rev and the changeset revision string.
+    """
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+    if ctx:
+        return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+    else:
+        return "-1:%s" % changeset_revision
 def get_latest_repository_metadata( trans, id ):
     """Get last metadata defined for a specified repository from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
                            .order_by( trans.model.RepositoryMetadata.table.c.update_time.desc() ) \
                            .first()
-def generate_workflow_metadata( trans, id, change_set_revision, exported_workflow_dict, metadata_dict ):
+def generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict ):
     """
     Update the received metadata_dict with changes that have been applied
     to the received exported_workflow_dict.  Store everything except the
@@ -120,7 +131,7 @@ def new_workflow_metadata_required( trans, id, metadata_dict ):
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
     # record is not needed.
     return False
-def generate_tool_metadata( trans, id, change_set_revision, root, name, tool, metadata_dict ):
+def generate_tool_metadata( trans, id, changeset_revision, root, name, tool, metadata_dict ):
     """
     Update the received metadata_dict with changes that have been
     applied to the received tool.
@@ -163,15 +174,25 @@ def new_tool_metadata_required( trans, id, metadata_dict ):
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata and 'tools' in metadata:
+                saved_tool_ids = []
                 # The metadata for one or more tools was successfully generated in the past
-                # for this repository, so we compare the version string for each tool id
+                # for this repository, so we first compare the version string for each tool id
                 # in metadata_dict with what was previously saved to see if we need to create
                 # a new table record or if we can simply update the existing record.
                 for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
                     for saved_tool_metadata_dict in metadata[ 'tools' ]:
+                        if saved_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
+                            saved_tool_ids.append( saved_tool_metadata_dict[ 'id' ] )
                         if new_tool_metadata_dict[ 'id' ] == saved_tool_metadata_dict[ 'id' ]:
                             if new_tool_metadata_dict[ 'version' ] != saved_tool_metadata_dict[ 'version' ]:
                                 return True
+                # So far, a new metadata record is not required, but we still have to check to see if
+                # any new tool ids exist in metadata_dict that are not in the saved metadata.  We do
+                # this because if a new tarball was uploaded to a repository that included tools, it
+                # may have removed existing tool files if they were not included in the uploaded tarball.
+                for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
+                    if new_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
+                        return True
             else:
                 # We have repository metadata that does not include metadata for any tools in the
                 # repository, so we can update the existing repository metadata.
@@ -183,7 +204,7 @@ def new_tool_metadata_required( trans, id, metadata_dict ):
     # The received metadata_dict includes no metadata for tools, so a new repository_metadata table
     # record is not needed.
     return False
-def set_repository_metadata( trans, id, change_set_revision, **kwd ):
+def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     """Set repository metadata"""
     message = ''
     status = 'done'
@@ -191,7 +212,7 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
     invalid_files = []
-    ctx = get_changectx_for_changeset( trans, repo, change_set_revision )
+    ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
     if ctx is not None:
         metadata_dict = {}
         for root, dirs, files in os.walk( repo_dir ):
@@ -211,7 +232,7 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
                             tool = load_tool( trans, full_path )
                             if tool is not None:
                                 # Update the list metadata dictionaries for tools in metadata_dict.
-                                metadata_dict = generate_tool_metadata( trans, id, change_set_revision, root, name, tool, metadata_dict )
+                                metadata_dict = generate_tool_metadata( trans, id, changeset_revision, root, name, tool, metadata_dict )
                         except Exception, e:
                             invalid_files.append( ( name, str( e ) ) )
                     # Find all exported workflows
@@ -224,27 +245,28 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
                             fp.close()
                             exported_workflow_dict = from_json_string( workflow_text )
                             # Update the list of metadata dictionaries for workflows in metadata_dict.
-                            metadata_dict = generate_workflow_metadata( trans, id, change_set_revision, exported_workflow_dict, metadata_dict )
+                            metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
                         except Exception, e:
                             invalid_files.append( ( name, str( e ) ) )
         if metadata_dict:
             if new_tool_metadata_required( trans, id, metadata_dict ) or new_workflow_metadata_required( trans, id, metadata_dict ):
                 # Create a new repository_metadata table row.
-                repository_metadata = trans.model.RepositoryMetadata( repository.id, change_set_revision, metadata_dict )
+                repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
             else:
-               # Update the last saved repository_metadata table row.
-               repository_metadata = get_latest_repository_metadata( trans, id )
-               repository_metadata.metadata = metadata_dict
-               trans.sa_session.add( repository_metadata )
-               trans.sa_session.flush()
+                # Update the last saved repository_metadata table row.
+                repository_metadata = get_latest_repository_metadata( trans, id )
+                repository_metadata.changeset_revision = changeset_revision
+                repository_metadata.metadata = metadata_dict
+                trans.sa_session.add( repository_metadata )
+                trans.sa_session.flush()
     else:
         # change_set is None
-        message = "Repository does not include changeset revision '%s'." % str( change_set_revision )
+        message = "Repository does not include changeset revision '%s'." % str( changeset_revision )
         status = 'error'
     if invalid_files:
-        message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( change_set_revision )
+        message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( changeset_revision )
         for itc_tup in invalid_files:
             tool_file = itc_tup[0]
             exception_msg = itc_tup[1]
@@ -284,16 +306,16 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
     return trans.sa_session.query( app.model.Repository ).filter_by( name=name ).one()
-def get_changectx_for_changeset( trans, repo, change_set_revision, **kwd ):
+def get_changectx_for_changeset( trans, repo, changeset_revision, **kwd ):
     """Retrieve a specified changectx from a repository"""
     for changeset in repo.changelog:
         ctx = repo.changectx( changeset )
-        if str( ctx ) == change_set_revision:
+        if str( ctx ) == changeset_revision:
             return ctx
     return None
-def change_set_is_malicious( trans, id, change_set_revision, **kwd ):
+def change_set_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, change_set_revision )
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
         return repository_metadata.malicious
     return False
@@ -440,8 +462,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
     refresh_on_change_values = []
     for repository_metadata in repository.downloadable_revisions:
         changeset_revision = repository_metadata.changeset_revision
-        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
-        revision_label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        revision_label = get_revision_label( trans, repository, changeset_revision )
         options.append( ( revision_label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     if add_id_to_name:

@@ -347,7 +347,7 @@ class RepositoryMetadataListGrid( grids.Grid ):
     title = "Repository Metadata"
     model_class = model.RepositoryMetadata
     template='/webapps/community/repository/grid.mako'
-    default_sort_key = "repository_id"
+    default_sort_key = "name"
     columns = [
         IdColumn( "Id",
                   visible=False,
@@ -355,8 +355,8 @@ class RepositoryMetadataListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     model_class=model.Repository,
-                    link=( lambda item: dict( operation="view_or_manage_repository",
-                                              id=item.repository.id,
+                    link=( lambda item: dict( operation="view_or_manage_repository_revision",
+                                              id=item.id,
                                               webapp="community" ) ),
                     attach_popup=True ),
         RevisionColumn( "Revision",
@@ -396,7 +396,15 @@ class AdminController( BaseController, Admin ):
             operation = kwd[ 'operation' ].lower()
             if operation == "delete":
                 return self.delete_repository_metadata( trans, **kwd )
-            if operation == "view_or_manage_repository":
+            if operation == "view_or_manage_repository_revision":
+                # The received id is a RepositoryMetadata object id, so we need to get the
+                # associated Repository and redirect to view_or_manage_repository with the
+                # changeset_revision.
+                repository_metadata = get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository = repository_metadata.repository
+                kwd[ 'id' ] = trans.security.encode_id( repository.id )
+                kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
+                kwd[ 'operation' ] = 'view_or_manage_repository'
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_repositories',
                                                                   **kwd ) )

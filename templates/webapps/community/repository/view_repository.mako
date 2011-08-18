@@ -94,26 +94,28 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Revision</div>
-    <div class="toolFormBody">
-        <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
-            <div class="form-row">
-                <%
-                    if changeset_revision == repository.tip:
-                        tip_str = 'repository tip'
-                    else:
-                        tip_str = ''
-                %>
-                ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
-                <div class="toolParamHelp" style="clear: both;">
-                    Select a revision to preview download-able versions of tools from this repository.
+%if len( changeset_revision_select_field.options ) > 1:
+    <div class="toolForm">
+        <div class="toolFormTitle">Repository revision</div>
+        <div class="toolFormBody">
+            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+                <div class="form-row">
+                    <%
+                        if changeset_revision == repository.tip:
+                            tip_str = 'repository tip'
+                        else:
+                            tip_str = ''
+                    %>
+                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Select a revision to inspect and download versions of tools from this repository.
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
-<p/>
+    <p/>
+%endif
 <div class="toolForm">
     <div class="toolFormTitle">${repository.name}</div>
     <div class="toolFormBody">
@@ -173,7 +175,7 @@
 %if metadata:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Preview tools and inspect metadata</div>
+        <div class="toolFormTitle">Preview tools in repository tip and inspect metadata by tool version</div>
         <div class="toolFormBody">
             %if 'tools' in metadata:
                 <div class="form-row">
@@ -196,12 +198,12 @@
                             <tr>
                                 <td>
                                     <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                        <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">
+                                        <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision )}">
                                             ${tool_dict[ 'name' ]}
                                         </a>
                                     </div>
                                     <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                        <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ] )}">View all metadata for this tool</a>
+                                        <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ] )}">View tool metadata</a>
                                     </div>
                                 </td>
                                 <td>${tool_dict[ 'description' ]}</td>

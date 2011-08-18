@@ -83,7 +83,9 @@ class RepositoryListGrid( grids.Grid ):
             strings of all downloadable_revisions of this repository.
             """
             select_field = build_changeset_revision_select_field( trans, repository )
-            return select_field.get_html()
+            if len( select_field.options ) > 1:
+                return select_field.get_html()
+            return repository.revision
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.description
@@ -220,7 +222,7 @@ class RepositoryController( BaseController, ItemRatings ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
-                repository_id = kwd.get( 'id', None )
+                repository_id = kwd[ 'id' ]
                 repository = get_repository( trans, repository_id )
                 is_admin = trans.user_is_admin()
                 if is_admin or repository.user == trans.user:
@@ -582,8 +584,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False )
-        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
-        revision_label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -721,8 +722,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False )
-        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
-        revision_label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -989,8 +989,6 @@ class RepositoryController( BaseController, ItemRatings ):
                 # Reload the tool_data_table_conf entries
                 trans.app.tool_data_tables = galaxy.tools.data.ToolDataTableManager( trans.app.config.tool_data_table_config_path )
                 message = "The new entry has been added to the tool_data_table_conf.xml file, so click the <b>Reset metadata</b> button below."
-                # TODO: what if ~/tool-data/<loc_filename> doesn't exist?  We need to figure out how to 
-                # force the user to upload it's sample to the repository in order to generate metadata.
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='manage_repository',
                                                                   id=repository_id,
@@ -1025,29 +1023,56 @@ class RepositoryController( BaseController, ItemRatings ):
                 break
         return column_fields
     @web.expose
-    def display_tool( self, trans, repository_id, tool_config, **kwd ):
+    def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, repository_id )
+        old_version_msg = "Your selected version of this tool does not exist in the repository tip, so it " + \
+            "cannot be previewed, but you can inspect the tool version's metadata using it's pop-up menu and " + \
+            "you can download your selected version of this tool from the <b>Repository Actions</b> menu."            
         try:
             tool = load_tool( trans, os.path.abspath( tool_config ) )
-            tool_state = self.__new_state( trans )
-            is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
-            return trans.fill_template( "/webapps/community/repository/tool_form.mako",
-                                        repository=repository,
-                                        tool=tool,
-                                        tool_state=tool_state,
-                                        is_malicious=is_malicious,
-                                        message=message,
-                                        status=status )
+            can_preview = True
+            if changeset_revision != repository.tip:
+                # See if we are attempting to preview an old version of a tool.
+                # TODO: Previewing an old version of a tool is not currently supported because
+                # the received tool_config is a file on the file system.  We need to implement
+                # an enhancement here to look at the repository manifest files if previewing an
+                # old version of a tool.
+                repo_changeset_repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+                repo_changeset_metadata = repo_changeset_repository_metadata.metadata
+                if 'tools' in repo_changeset_metadata:
+                    for tool_metadata_dict in repo_changeset_metadata[ 'tools' ]:
+                        if tool_metadata_dict[ 'id' ] == tool.id:
+                            if tool_metadata_dict[ 'version' ] != tool.version:
+                                can_preview = False
+                                message = old_version_msg
+            if can_preview:
+                tool_state = self.__new_state( trans )
+                is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+                return trans.fill_template( "/webapps/community/repository/tool_form.mako",
+                                            repository=repository,
+                                            tool=tool,
+                                            tool_state=tool_state,
+                                            is_malicious=is_malicious,
+                                            message=message,
+                                            status=status )
         except Exception, e:
-            message = 'Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error.' % str( e )
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='manage_repository',
-                                                              id=repository_id,
-                                                              message=message,
-                                                              status='error' ) )
+            # TODO: enhance this to check the repository manifest for the files and
+            # display the tool using them.
+            exception_str = str( e )
+            if exception_str.find( 'No such file or directory' ) >= 0:
+                message = old_version_msg
+            else:
+                message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % exception_str
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='browse_repositories',
+                                                          operation='view_or_manage_repository',
+                                                          id=repository_id,
+                                                          changeset_revision=changeset_revision,
+                                                          message=message,
+                                                          status='error' ) )
     def __new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will not be initialized
@@ -1067,18 +1092,25 @@ class RepositoryController( BaseController, ItemRatings ):
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None
+        revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision ).metadata
         if 'tools' in repository_metadata:
             for tool_metadata_dict in repository_metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
                     metadata = tool_metadata_dict
-                    tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
+                    try:
+                        # We may be attempting to load a tool that no longer exists in the repository tip.
+                        tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
+                    except:
+                        tool = None
                     break
         is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
                                     metadata=metadata,
+                                    changeset_revision=changeset_revision,
+                                    revision_label=revision_label,
                                     is_malicious=is_malicious,
                                     message=message,
                                     status=status )
@@ -1147,6 +1179,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                                                   action='browse_repositories',
                                                                   operation="view_or_manage_repository",
                                                                   id=trans.security.encode_id( repository.id ),
+                                                                  changeset_revision=repository.tip,
                                                                   status=status,
                                                                   message=message ) )
         return output.split()
