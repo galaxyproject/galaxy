@@ -60,11 +60,13 @@ class QuotaAgent( NoQuotaAgent ):
         use_default = True
         max = 0
         adjustment = 0
+        rval = 0
         for quota in quotas:
             if quota.deleted:
                 continue
             if quota.operation == '=' and quota.bytes == -1:
-                return None
+                rval = None
+                break
             elif quota.operation == '=':
                 use_default = False
                 if quota.bytes > max:
@@ -76,16 +78,17 @@ class QuotaAgent( NoQuotaAgent ):
         if use_default:
             max = self.default_registered_quota
             if max is None:
-                return None
-        quota = max + adjustment
-        if quota <= 0:
-            quota = 0
+                rval = None
+        if rval is not None:
+            rval = max + adjustment
+            if rval <= 0:
+                rval = 0
         if nice_size:
-            if quota is not None:
-                quota = util.nice_size( quota )
+            if rval is not None:
+                rval = util.nice_size( rval )
             else:
-                quota = 'unlimited'
-        return quota
+                rval = 'unlimited'
+        return rval
     @property
     def default_unregistered_quota( self ):
         return self._default_quota( self.model.DefaultQuotaAssociation.types.UNREGISTERED )
