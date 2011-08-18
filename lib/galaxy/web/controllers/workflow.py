@@ -1258,7 +1258,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )       
         
     @web.expose
-    def run( self, trans, id, **kwargs ):
+    def run( self, trans, id, history_id=None, hide_fixed_params=False, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
         if stored.user != user:
@@ -1279,163 +1279,185 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         errors = {}
         has_upgrade_messages = False
         has_errors = False
-        if kwargs:
-            # If kwargs were provided, the states for each step should have
-            # been POSTed
-            # Get the kwarg keys for data inputs
-            input_keys = filter(lambda a: a.endswith('|input'), kwargs)
-            # Example: prefixed='2|input'
-            # Check if one of them is a list
-            multiple_input_key = None
-            multiple_inputs = [None]
-            for input_key in input_keys:
-                if isinstance(kwargs[input_key], list):
-                    multiple_input_key = input_key
-                    multiple_inputs = kwargs[input_key]
-            # List to gather values for the template
-            invocations=[]
-            for input_number, single_input in enumerate(multiple_inputs):
-                # Example: single_input='1', single_input='2', etc...
-                # 'Fix' the kwargs, to have only the input for this iteration
-                if multiple_input_key:
-                    kwargs[multiple_input_key] = single_input
+        saved_history = None
+        if history_id is not None:
+            saved_history = trans.get_history();
+            try:
+                decoded_history_id = trans.security.decode_id( history_id )
+                history = trans.sa_session.query(trans.app.model.History).get(decoded_history_id)
+                if history.user != trans.user and not trans.user_is_admin():
+                    if trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=trans.user, history=history).count() == 0:
+                        error("History is not owned by or shared with current user")
+                trans.set_history(history)
+            except TypeError:
+                error("Malformed history id ( %s ) specified, unable to decode." % str( history_id ))
+            except:
+                error("That history does not exist.")
+        try: # use a try/finally block to restore the user's current history
+            if kwargs:
+                # If kwargs were provided, the states for each step should have
+                # been POSTed
+                # Get the kwarg keys for data inputs
+                input_keys = filter(lambda a: a.endswith('|input'), kwargs)
+                # Example: prefixed='2|input'
+                # Check if one of them is a list
+                multiple_input_key = None
+                multiple_inputs = [None]
+                for input_key in input_keys:
+                    if isinstance(kwargs[input_key], list):
+                        multiple_input_key = input_key
+                        multiple_inputs = kwargs[input_key]
+                # List to gather values for the template
+                invocations=[]
+                for input_number, single_input in enumerate(multiple_inputs):
+                    # Example: single_input='1', single_input='2', etc...
+                    # 'Fix' the kwargs, to have only the input for this iteration
+                    if multiple_input_key:
+                        kwargs[multiple_input_key] = single_input
+                    for step in workflow.steps:
+                        step.upgrade_messages = {}
+                        # Connections by input name
+                        step.input_connections_by_name = \
+                            dict( ( conn.input_name, conn ) for conn in step.input_connections ) 
+                        # Extract just the arguments for this step by prefix
+                        p = "%s|" % step.id
+                        l = len(p)
+                        step_args = dict( ( k[l:], v ) for ( k, v ) in kwargs.iteritems() if k.startswith( p ) )
+                        step_errors = None
+                        if step.type == 'tool' or step.type is None:
+                            module = module_factory.from_workflow_step( trans, step )
+                            # Fix any missing parameters
+                            step.upgrade_messages = module.check_and_update_state()
+                            if step.upgrade_messages:
+                                has_upgrade_messages = True
+                            # Any connected input needs to have value DummyDataset (these
+                            # are not persisted so we need to do it every time)
+                            module.add_dummy_datasets( connections=step.input_connections )    
+                            # Get the tool
+                            tool = module.tool
+                            # Get the state
+                            step.state = state = module.state
+                            # Get old errors
+                            old_errors = state.inputs.pop( "__errors__", {} )
+                            # Update the state
+                            step_errors = tool.update_state( trans, tool.inputs, step.state.inputs, step_args,
+                                                             update_only=True, old_errors=old_errors )
+                        else:
+                            # Fix this for multiple inputs
+                            module = step.module = module_factory.from_workflow_step( trans, step )
+                            state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
+                            step_errors = module.update_runtime_state( trans, state, step_args )
+                        if step_errors:
+                            errors[step.id] = state.inputs["__errors__"] = step_errors   
+                    if 'run_workflow' in kwargs and not errors:
+                        new_history = None
+                        if 'new_history' in kwargs:
+                            if 'new_history_name' in kwargs and kwargs['new_history_name'] != '':
+                                nh_name = kwargs['new_history_name']
+                            else:
+                                nh_name = "History from %s workflow" % workflow.name
+                            if multiple_input_key:
+                                nh_name = '%s %d' % (nh_name, input_number + 1)
+                            new_history = trans.app.model.History( user=trans.user, name=nh_name )
+                            trans.sa_session.add( new_history )
+                        # Run each step, connecting outputs to inputs
+                        workflow_invocation = model.WorkflowInvocation()
+                        workflow_invocation.workflow = workflow
+                        outputs = odict()
+                        for i, step in enumerate( workflow.steps ):
+                            # Execute module
+                            job = None
+                            if step.type == 'tool' or step.type is None:
+                                tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
+                                input_values = step.state.inputs
+                                # Connect up
+                                def callback( input, value, prefixed_name, prefixed_label ):
+                                    if isinstance( input, DataToolParameter ):
+                                        if prefixed_name in step.input_connections_by_name:
+                                            conn = step.input_connections_by_name[ prefixed_name ]
+                                            return outputs[ conn.output_step.id ][ conn.output_name ]
+                                visit_input_values( tool.inputs, step.state.inputs, callback )
+                                # Execute it
+                                job, out_data = tool.execute( trans, step.state.inputs, history=new_history)
+                                outputs[ step.id ] = out_data
+                                # Create new PJA associations with the created job, to be run on completion.
+                                # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
+                                # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
+                                replacement_dict = {}
+                                for k, v in kwargs.iteritems():
+                                    if k.startswith('wf_parm|'):
+                                        replacement_dict[k[8:]] = v
+                                for pja in step.post_job_actions:
+                                    if pja.action_type in ActionBox.immediate_actions:
+                                        ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict)
+                                    else:
+                                        job.add_post_job_action(pja)
+                            else:
+                                job, out_data = step.module.execute( trans, step.state )
+                                outputs[ step.id ] = out_data
+                            # Record invocation
+                            workflow_invocation_step = model.WorkflowInvocationStep()
+                            workflow_invocation_step.workflow_invocation = workflow_invocation
+                            workflow_invocation_step.workflow_step = step
+                            workflow_invocation_step.job = job
+                        # All jobs ran sucessfully, so we can save now
+                        trans.sa_session.add( workflow_invocation )
+                        invocations.append({'outputs': outputs,
+                                            'new_history': new_history})
+                trans.sa_session.flush()
+                return trans.fill_template( "workflow/run_complete.mako",
+                                            workflow=stored,
+                                            invocations=invocations )
+            else:
+                # Prepare each step
+                missing_tools = []
                 for step in workflow.steps:
                     step.upgrade_messages = {}
-                    # Connections by input name
-                    step.input_connections_by_name = \
-                        dict( ( conn.input_name, conn ) for conn in step.input_connections ) 
-                    # Extract just the arguments for this step by prefix
-                    p = "%s|" % step.id
-                    l = len(p)
-                    step_args = dict( ( k[l:], v ) for ( k, v ) in kwargs.iteritems() if k.startswith( p ) )
-                    step_errors = None
+                    # Contruct modules
                     if step.type == 'tool' or step.type is None:
-                        module = module_factory.from_workflow_step( trans, step )
-                        # Fix any missing parameters
-                        step.upgrade_messages = module.check_and_update_state()
+                        # Restore the tool state for the step
+                        step.module = module_factory.from_workflow_step( trans, step )
+                        if not step.module:
+                            if step.tool_id not in missing_tools:
+                                missing_tools.append(step.tool_id)
+                            continue
+                        step.upgrade_messages = step.module.check_and_update_state()
                         if step.upgrade_messages:
                             has_upgrade_messages = True
                         # Any connected input needs to have value DummyDataset (these
                         # are not persisted so we need to do it every time)
-                        module.add_dummy_datasets( connections=step.input_connections )    
-                        # Get the tool
-                        tool = module.tool
-                        # Get the state
-                        step.state = state = module.state
-                        # Get old errors
-                        old_errors = state.inputs.pop( "__errors__", {} )
-                        # Update the state
-                        step_errors = tool.update_state( trans, tool.inputs, step.state.inputs, step_args,
-                                                         update_only=True, old_errors=old_errors )
+                        step.module.add_dummy_datasets( connections=step.input_connections )                  
+                        # Store state with the step
+                        step.state = step.module.state
+                        # Error dict
+                        if step.tool_errors:
+                            has_errors = True
+                            errors[step.id] = step.tool_errors
                     else:
-                        # Fix this for multiple inputs
-                        module = step.module = module_factory.from_workflow_step( trans, step )
-                        state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
-                        step_errors = module.update_runtime_state( trans, state, step_args )
-                    if step_errors:
-                        errors[step.id] = state.inputs["__errors__"] = step_errors   
-                if 'run_workflow' in kwargs and not errors:
-                    new_history = None
-                    if 'new_history' in kwargs:
-                        if 'new_history_name' in kwargs and kwargs['new_history_name'] != '':
-                            nh_name = kwargs['new_history_name']
-                        else:
-                            nh_name = "History from %s workflow" % workflow.name
-                        if multiple_input_key:
-                            nh_name = '%s %d' % (nh_name, input_number + 1)
-                        new_history = trans.app.model.History( user=trans.user, name=nh_name )
-                        trans.sa_session.add( new_history )
-                    # Run each step, connecting outputs to inputs
-                    workflow_invocation = model.WorkflowInvocation()
-                    workflow_invocation.workflow = workflow
-                    outputs = odict()
-                    for i, step in enumerate( workflow.steps ):
-                        # Execute module
-                        job = None
-                        if step.type == 'tool' or step.type is None:
-                            tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
-                            input_values = step.state.inputs
-                            # Connect up
-                            def callback( input, value, prefixed_name, prefixed_label ):
-                                if isinstance( input, DataToolParameter ):
-                                    if prefixed_name in step.input_connections_by_name:
-                                        conn = step.input_connections_by_name[ prefixed_name ]
-                                        return outputs[ conn.output_step.id ][ conn.output_name ]
-                            visit_input_values( tool.inputs, step.state.inputs, callback )
-                            # Execute it
-                            job, out_data = tool.execute( trans, step.state.inputs, history=new_history)
-                            outputs[ step.id ] = out_data
-                            # Create new PJA associations with the created job, to be run on completion.
-                            # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
-                            # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
-                            replacement_dict = {}
-                            for k, v in kwargs.iteritems():
-                                if k.startswith('wf_parm|'):
-                                    replacement_dict[k[8:]] = v
-                            for pja in step.post_job_actions:
-                                if pja.action_type in ActionBox.immediate_actions:
-                                    ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict)
-                                else:
-                                    job.add_post_job_action(pja)
-                        else:
-                            job, out_data = step.module.execute( trans, step.state )
-                            outputs[ step.id ] = out_data
-                        # Record invocation
-                        workflow_invocation_step = model.WorkflowInvocationStep()
-                        workflow_invocation_step.workflow_invocation = workflow_invocation
-                        workflow_invocation_step.workflow_step = step
-                        workflow_invocation_step.job = job
-                    # All jobs ran sucessfully, so we can save now
-                    trans.sa_session.add( workflow_invocation )
-                    invocations.append({'outputs': outputs,
-                                        'new_history': new_history})
-            trans.sa_session.flush()
-            return trans.fill_template( "workflow/run_complete.mako",
-                                        workflow=stored,
-                                        invocations=invocations )
-        else:
-            # Prepare each step
-            missing_tools = []
-            for step in workflow.steps:
-                step.upgrade_messages = {}
-                # Contruct modules
-                if step.type == 'tool' or step.type is None:
-                    # Restore the tool state for the step
-                    step.module = module_factory.from_workflow_step( trans, step )
-                    if not step.module:
-                        if step.tool_id not in missing_tools:
-                            missing_tools.append(step.tool_id)
-                        continue
-                    step.upgrade_messages = step.module.check_and_update_state()
-                    if step.upgrade_messages:
-                        has_upgrade_messages = True
-                    # Any connected input needs to have value DummyDataset (these
-                    # are not persisted so we need to do it every time)
-                    step.module.add_dummy_datasets( connections=step.input_connections )                  
-                    # Store state with the step
-                    step.state = step.module.state
-                    # Error dict
-                    if step.tool_errors:
-                        has_errors = True
-                        errors[step.id] = step.tool_errors
-                else:
-                    ## Non-tool specific stuff?
-                    step.module = module_factory.from_workflow_step( trans, step )
-                    step.state = step.module.get_runtime_state()
-                # Connections by input name
-                step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
-            if missing_tools:
-                stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
-                return trans.fill_template("workflow/run.mako", steps=[], workflow=stored, missing_tools = missing_tools)
-        # Render the form
-        stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
-        return trans.fill_template(
-                    "workflow/run.mako", 
-                    steps=workflow.steps,
-                    workflow=stored,
-                    has_upgrade_messages=has_upgrade_messages,
-                    errors=errors,
-                    incoming=kwargs )
+                        ## Non-tool specific stuff?
+                        step.module = module_factory.from_workflow_step( trans, step )
+                        step.state = step.module.get_runtime_state()
+                    # Connections by input name
+                    step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+                if missing_tools:
+                    stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+                    return trans.fill_template("workflow/run.mako", steps=[], workflow=stored, missing_tools = missing_tools)
+            # Render the form
+            stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+            return trans.fill_template(
+                        "workflow/run.mako", 
+                        steps=workflow.steps,
+                        workflow=stored,
+                        has_upgrade_messages=has_upgrade_messages,
+                        errors=errors,
+                        incoming=kwargs,
+                        history_id=history_id,
+                        hide_fixed_params=hide_fixed_params,
+                        enable_unique_defaults=trans.app.config.enable_unique_workflow_defaults)
+        finally:
+            # restore the active history
+            if saved_history is not None:
+                trans.set_history(saved_history) 
                     
     def get_item( self, trans, id ):
         return self.get_stored_workflow( trans, id ) 

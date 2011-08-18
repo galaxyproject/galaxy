@@ -444,6 +444,14 @@ use_interactive = True
 # large servers.
 #enable_tool_tags = False
 
+# Enable a feature when running workflows. When enabled, default datasets
+# are selected for "Set at Runtime" inputs from the history such that the
+# same input will not be selected twice, unless there are more inputs than
+# compatible datasets in the history.
+# When False, the most recently added compatible item in the history will
+# be used for each "Set at Runtime" input, independent of others in the Workflow
+#enable_unique_workflow_defaults = False
+
 # Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
 # configure an FTP server (we've used ProFTPd since it can use Galaxy's
 # database for authentication) and set the following two options.
@@ -458,6 +466,15 @@ use_interactive = True
 
 # Enable enforcement of quotas.  Quotas can be set from the Admin interface.
 #enable_quotas = False
+
+# Enable a feature when running workflows. When enabled, default datasets
+# are selected for "Set at Runtime" inputs from the history such that the
+# same input will not be selected twice, unless there are more inputs than
+# compatible datasets in the history.
+# When False, the most recently added compatible item in the history will
+# be used for each "Set at Runtime" input, independent of others in the Workflow
+#enable_unique_workflow_defaults = False
+
 
 # -- Job Execution
 
