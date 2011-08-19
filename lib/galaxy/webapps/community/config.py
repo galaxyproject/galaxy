@@ -60,7 +60,7 @@ class Configuration( object ):
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
-        self.email_alerts_from = kwargs.get( 'email_alerts_from', None )
+        self.email_from = kwargs.get( 'email_from', None )
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )

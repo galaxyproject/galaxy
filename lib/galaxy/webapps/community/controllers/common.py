@@ -30,6 +30,20 @@ This change alert was sent from the Galaxy tool shed hosted on the server
 "${host}"
 """
 
+contact_owner_template = """
+GALAXY TOOL SHED REPOSITORY MESSAGE
+------------------------
+
+The user '${username}' sent you the following message regarding your tool shed
+repository named '${repository_name}'.  You can respond by sending a reply to
+the user's email address: ${email}.
+-----------------------------------------------------------------------------
+${message}
+-----------------------------------------------------------------------------
+This message was sent from the Galaxy Tool Shed instance hosted on the server
+'${host}'
+"""
+
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
@@ -345,12 +359,12 @@ def handle_email_alerts( trans, repository ):
     smtp_server = trans.app.config.smtp_server
     if smtp_server and repository.email_alerts:
         # Send email alert to users that want them.
-        if trans.app.config.email_alerts_from is not None:
-            email_alerts_from = trans.app.config.email_alerts_from
+        if trans.app.config.email_from is not None:
+            email_from = trans.app.config.email_from
         elif trans.request.host.split( ':' )[0] == 'localhost':
-            email_alerts_from = 'galaxy-no-reply@' + socket.getfqdn()
+            email_from = 'galaxy-no-reply@' + socket.getfqdn()
         else:
-            email_alerts_from = 'galaxy-no-reply@' + trans.request.host.split( ':' )[0]
+            email_from = 'galaxy-no-reply@' + trans.request.host.split( ':' )[0]
         tip_changeset = repo.changelog.tip()
         ctx = repo.changectx( tip_changeset )
         t, tz = ctx.date()
@@ -368,7 +382,7 @@ def handle_email_alerts( trans, repository ):
                               display_date=display_date,
                               description=ctx.description(),
                               username=username )
-        frm = email_alerts_from
+        frm = email_from
         subject = "Galaxy tool shed repository update alert"
         email_alerts = from_json_string( repository.email_alerts )
         for email in email_alerts:

@@ -466,6 +466,58 @@ class RepositoryController( BaseController, ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
+    def contact_owner( self, trans, id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, id )
+        if trans.user and trans.user.email:
+            return trans.fill_template( "/webapps/community/repository/contact_owner.mako",
+                                        repository=repository,
+                                        message=message,
+                                        status=status )
+        else:
+            # Do all we can to eliminate spam.
+            return trans.show_error_message( "You must be logged in to contact the owner of a repository." )
+    @web.expose
+    def send_to_owner( self, trans, id, message='' ):
+        repository = get_repository( trans, id )
+        if not message:
+            message = 'Enter a message'
+            status = 'error'
+        elif trans.user and trans.user.email:
+            smtp_server = trans.app.config.smtp_server
+            from_address = trans.app.config.email_from
+            if smtp_server is None or from_address is None:
+                return trans.show_error_message( "Mail is not configured for this Galaxy tool shed instance" )
+            to_address = repository.user.email
+            # Get the name of the server hosting the tool shed instance.
+            host = trans.request.host
+            # Build the email message
+            body = string.Template( contact_owner_template ) \
+                .safe_substitute( username=trans.user.username,
+                                  repository_name=repository.name,
+                                  email=trans.user.email,
+                                  message=message,
+                                  host=host )
+            subject = "Regarding your tool shed repository named %s" % repository.name
+            # Send it
+            try:
+                util.send_mail( from_address, to_address, subject, body, trans.app.config )
+                message = "Your message has been sent"
+                status = "done"
+            except Exception, e:
+                message = "An error occurred sending your message by email: %s" % str( e )
+                status = "error"
+        else:
+            # Do all we can to eliminate spam.
+            return trans.show_error_message( "You must be logged in to contact the owner of a repository." )
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='contact_owner',
+                                                          id=id,
+                                                          message=message,
+                                                          status=status ) )
+    @web.expose
     def select_files_to_delete( self, trans, id, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
@@ -1028,9 +1080,9 @@ class RepositoryController( BaseController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, repository_id )
-        old_version_msg = "Your selected version of this tool does not exist in the repository tip, so it " + \
-            "cannot be previewed, but you can inspect the tool version's metadata using it's pop-up menu and " + \
-            "you can download your selected version of this tool from the <b>Repository Actions</b> menu."            
+        old_version_msg = "The path to your selected version of this tool does not exist in the repository tip, " + \
+            "so it cannot be previewed, but you can inspect the tool version's metadata using it's pop-up menu " + \
+            "and you can download your selected version of this tool from the <b>Repository Actions</b> menu."            
         try:
             tool = load_tool( trans, os.path.abspath( tool_config ) )
             can_preview = True

@@ -7,6 +7,7 @@
     from galaxy.web.framework.helpers import time_ago
     is_admin = trans.user_is_admin()
     is_new = repository.is_new
+    can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
     can_download = not is_new and ( not is_malicious or can_push )
@@ -83,6 +84,9 @@
             %endif
             %if can_browse_contents:
                 <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+            %endif
+            %if can_contact_owner:
+                <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
             %endif
             %if can_download:
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>

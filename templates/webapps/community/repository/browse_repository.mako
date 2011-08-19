@@ -7,6 +7,7 @@
     from galaxy.web.framework.helpers import time_ago
     is_admin = trans.user_is_admin()
     is_new = repository.is_new
+    can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
     can_download = not is_new and ( not is_malicious or can_push )
