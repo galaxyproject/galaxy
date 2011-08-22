@@ -1157,12 +1157,17 @@ class RepositoryController( BaseController, ItemRatings ):
                         tool = None
                     break
         is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
                                     metadata=metadata,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
+                                    changeset_revision_select_field=changeset_revision_select_field,
                                     is_malicious=is_malicious,
                                     message=message,
                                     status=status )

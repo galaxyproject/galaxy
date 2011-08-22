@@ -19,7 +19,7 @@
         browse_label = 'Browse or delete repository files'
     else:
         browse_label = 'Browse repository files'
-    can_set_malicious = metadata and can_set_metadata and is_admin
+    can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip
 %>
 
 <%!

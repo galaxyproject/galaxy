@@ -71,14 +71,31 @@
 <div class="toolForm">
     <div class="toolFormTitle">Repository revision</div>
     <div class="toolFormBody">
-        <div class="form-row">
-            <label>Revision:</label>
-            %if can_view_change_log:
-                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
-            %else:
-                ${revision_label}
-            %endif
-        </div>
+        %if len( changeset_revision_select_field.options ) > 1:
+            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), tool_id=metadata[ 'id' ] )}" method="post" >
+                <div class="form-row">
+                    <%
+                        if changeset_revision == repository.tip:
+                            tip_str = 'repository tip'
+                        else:
+                            tip_str = ''
+                    %>
+                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Select a revision to inspect and download versions of tools from this repository.
+                    </div>
+                </div>
+            </form>
+        %else:
+            <div class="form-row">
+                <label>Revision:</label>
+                %if can_view_change_log:
+                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
+                %else:
+                    ${revision_label}
+                %endif
+            </div>
+        %endif
     </div>
 </div>
 <p/>
