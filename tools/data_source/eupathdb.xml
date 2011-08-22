@@ -7,7 +7,7 @@
     </inputs>
     <uihints minwidth="800"/>
     <outputs>
-        <data name="output" format="txt" />
+        <data name="output" format="tabular" />
     </outputs>
     <options sanitize="False" refresh="True"/>
 </tool>
