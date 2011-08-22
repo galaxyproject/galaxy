@@ -19,7 +19,7 @@ def main():
         reader = fastqVerboseErrorReader
     else:
         reader = fastqReader
-    for read_count, fastq_read in enumerate( reader( open( input_filename ), format = input_type ) ):
+    for read_count, fastq_read in enumerate( reader( open( input_filename ), format = input_type, apply_galaxy_conventions = True ) ):
         if summarize_input:
             aggregator.consume_read( fastq_read )
         out.write( fastq_read )
