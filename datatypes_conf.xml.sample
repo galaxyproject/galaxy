@@ -90,7 +90,7 @@
         </datatype>
         <datatype extension="picard_interval_list" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
         <datatype extension="gatk_interval" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
-        <datatype extension="gatk_dbsnp" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
+        <datatype extension="gatk_dbsnp" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
         <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
         <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff"/>
         <datatype extension="bmp" type="galaxy.datatypes.images:Bmp" mimetype="image/bmp"/>
@@ -134,6 +134,7 @@
         <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
         <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
         <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" mimetype="application/xml" display_in_upload="true"/>
+        <datatype extension="cisml" type="galaxy.datatypes.xml:CisML" mimetype="application/xml" display_in_upload="true"/>
         <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" mimetype="application/xml" display_in_upload="true"/>
         <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
             <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>

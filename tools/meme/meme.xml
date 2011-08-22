@@ -316,7 +316,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="meme_input_1.fasta" ftype="fasta" dbkey="hg19"/>
+      <param name="input1" value="meme/meme/meme_input_1.fasta" ftype="fasta" dbkey="hg19"/>
       <param name="options_type_selector" value="basic"/>
       <param name="non_commercial_use" value="True"/>
       <output name="html_outfile" file="meme/meme/meme_output_html_1.html" lines_diff="12"/>
