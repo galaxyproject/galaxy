@@ -1419,25 +1419,14 @@ var FiltersManager = function(track, filters_list) {
             max: -Number.MIN_VALUE,
             values: [0, 0],
             slide: function(event, ui) {
-                //
-                // Always update UI values, but set timeout for doing more--especially drawing--
-                // so that viz is more responsive.
-                // TODO: remove this because it's no longer necessary as we have requestAnimationFrame().
-                //
-                prev_values = ui.values;
-                values_span.text(ui.values[0] + "-" + ui.values[1]);
-                setTimeout(function() {
-                    if (ui.values[0] == prev_values[0] && ui.values[1] == prev_values[1]) {
-                        var values = ui.values;
-                        // Set new values in UI.
-                        values_span.text(values[0] + "-" + values[1]);
-                        // Set new values in filter.
-                        filter.low = values[0];
-                        filter.high = values[1];                    
-                        // Redraw track.
-                        manager.track.draw(true, true);
-                    }
-                }, 50); 
+                var values = ui.values;
+                // Set new values in UI.
+                values_span.text(values[0] + "-" + values[1]);
+                // Set new values in filter.
+                filter.low = values[0];
+                filter.high = values[1];                    
+                // Redraw track.
+                manager.track.draw(true, true);
             },
             change: function(event, ui) {
                 filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
