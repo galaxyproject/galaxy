@@ -39,9 +39,12 @@
 .top-labeltrack{position:relative;border-bottom:solid #999 1px;}
 .nav-labeltrack{border-top:solid #999 1px;border-bottom:solid #333 1px;}
 input{font:10px verdana;}
-.dynamic-tool,.filters{width:410px;margin-left:0.25em;padding-bottom:0.5em;}
+.dynamic-tool,.filters{margin-left:0.25em;padding-bottom:0.5em;}
+.filters>.sliders,.display-controls{float:left;margin:1em;}
+.sliders{width:410px;}
+.display-controls{border-left:solid 2px #DDDDDD;padding-left:1em}
 .slider-row{margin-top:0.4em;margin-left:1em;}
-.slider-label{float:left;font-weight:bold;}
+.elt-label{float:left;font-weight:bold;margin-right:1em;}
 .slider{float:right;width:200px;position:relative;}
 .tool-name{font-size:110%;font-weight:bold;}
 .param-row{margin-top:0.2em;margin-left:1em;}

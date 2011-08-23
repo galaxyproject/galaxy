@@ -24,7 +24,7 @@ exports.extend = extend;
 };
 
 /**
- * Find browser's reeuestAnimationFrame method or fallback on a setTimeout 
+ * Find browser's requestAnimationFrame method or fallback on a setTimeout 
  */
 var requestAnimationFrame = (function(){
     return  window.requestAnimationFrame       || 
@@ -35,7 +35,7 @@ var requestAnimationFrame = (function(){
             function( callback, element ) {
               window.setTimeout(callback, 1000 / 60);
             };
-  })();
+})();
 
 
 /**
@@ -1197,6 +1197,7 @@ var Filter = function(name, index, tool_id, tool_exp_name) {
     // Name to use for filter when building expression for tool.
     this.tool_exp_name = tool_exp_name;
 };
+
 /**
  * Number filters have a min, max as well as a low, high; low and high are used 
  */
@@ -1379,7 +1380,9 @@ var FiltersManager = function(track, filters_list) {
         });
     };
     
-    // Create filtering div.
+    //
+    // Create parent div.
+    //
     this.parent_div = $("<div/>").addClass("filters").hide();
     // Disable dragging, double clicking, keys on div so that actions on slider do not impact viz.
     this.parent_div.bind("drag", function(e) {
@@ -1391,12 +1394,17 @@ var FiltersManager = function(track, filters_list) {
     }).bind("keydown", function(e) {
         e.stopPropagation();
     });
+    
+    //
+    // Create sliders div.
+    //
+    var sliders_div = $("<div/>").addClass("sliders").appendTo(this.parent_div);
     var manager = this;
     $.each(this.filters, function(index, filter) {
-        filter.container = $("<div/>").addClass("slider-row").appendTo(manager.parent_div);
+        filter.container = $("<div/>").addClass("slider-row").appendTo(sliders_div);
         
         // Set up filter label (name, values).
-        var filter_label = $("<div/>").addClass("slider-label").appendTo(filter.container)
+        var filter_label = $("<div/>").addClass("elt-label").appendTo(filter.container)
         var name_span = $("<span/>").addClass("slider-name").text(filter.name + "  ").appendTo(filter_label);
         var values_span = $("<span/>");
         var values_span_container = $("<span/>").addClass("slider-value").appendTo(filter_label).append("[").append(values_span).append("]");
@@ -1414,6 +1422,7 @@ var FiltersManager = function(track, filters_list) {
                 //
                 // Always update UI values, but set timeout for doing more--especially drawing--
                 // so that viz is more responsive.
+                // TODO: remove this because it's no longer necessary as we have requestAnimationFrame().
                 //
                 prev_values = ui.values;
                 values_span.text(ui.values[0] + "-" + ui.values[1]);
@@ -1445,25 +1454,52 @@ var FiltersManager = function(track, filters_list) {
     });
     
     // Add button to filter complete dataset.
-    if (this.filters.length != 0) {
-        var run_buttons_row = $("<div>").addClass("param-row").appendTo(this.parent_div);
-        var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_buttons_row);
+    if (this.filters.length !== 0) {
+        var run_buttons_row = $("<div/>").addClass("param-row").appendTo(sliders_div);
+        var run_on_dataset_button = $("<input type='submit'/>").attr("value", "Run on complete dataset").appendTo(run_buttons_row);
         var filter_manager = this;
         run_on_dataset_button.click( function() {
             filter_manager.run_on_dataset();
         });
     }
+    
+    //
+    // Create filtering display controls.
+    //
+    var 
+        display_controls_div = $("<div/>").addClass("display-controls").appendTo(this.parent_div),
+        header_text = $("<span/>").addClass("elt-label").text("Transparency:").appendTo(display_controls_div),
+        alpha_select = $("<select/>").attr("name", "alpha_dropdown").appendTo(display_controls_div);
+    
+    // Dropdown for selecting attribute to use for alpha channel manipulation.
+    this.alpha_filter = null;
+    $("<option/>").attr("value", -1).text("== None ==").appendTo(alpha_select);
+    for (var i = 0; i < this.filters.length; i++) {
+        $("<option/>").attr("value", i).text(this.filters[i].name).appendTo(alpha_select);
+    }
+    alpha_select.change(function() {
+        $(this).children("option:selected").each(function() {
+            var filterIndex = parseInt($(this).val());
+            manager.alpha_filter = (filterIndex >= 0 ? manager.filters[filterIndex] : null);
+            manager.track.draw(true, true);
+        })
+    });
+    
+    // Clear floating.
+    // Add to clear floating layout.
+    $("<div style='clear: both;'/>").appendTo(this.parent_div);
 };
 
 extend(FiltersManager.prototype, {
     /**
-     * Reset filters to min and max.
+     * Reset filters so that they do not impact track display.
      */
     reset_filters: function() {
         for (var i = 0; i < this.filters.length; i++) {
             filter = this.filters[i];
             filter.slider.slider("option", "values", [filter.min, filter.max]);
         }
+        this.alpha_filter = null;
     },
     run_on_dataset: function() {
         // Get or create dictionary item.
@@ -1551,6 +1587,24 @@ extend(FiltersManager.prototype, {
 });
 
 /**
+ * Generates alpha values based on filter and feature's value for filter.
+ */
+var FilterAlphaGenerator = function(filter, default_alpha) {
+    painters.AlphaGenerator.call(this, default_alpha);
+    this.filter = filter;
+};
+
+FilterAlphaGenerator.prototype.gen_alpha = function(feature_data) {
+    // If filter is not initalized yet, return default alpha.
+    if (this.filter.high === Number.MAX_VALUE || this.filter.low === -Number.MAX_VALUE || this.filter.low === this.filter.high) {
+        return this.default_alpha;
+    }
+    
+    // Alpha value is ratio of (filter's value compared to low) to (complete filter range).
+    return ( ( parseFloat(feature_data[this.filter.index]) - this.filter.low ) / ( this.filter.high - this.filter.low ) );
+};
+
+/**
  * Container for track configuration data.
  */
 var TrackConfig = function( options ) {
@@ -1562,7 +1616,7 @@ var TrackConfig = function( options ) {
     }
     this.onchange = options.onchange
 }
-extend( TrackConfig.prototype, {
+extend(TrackConfig.prototype, {
     restore_values: function( values ) {
         var track_config = this;
         $.each( this.params, function( index, param ) {
@@ -2860,7 +2914,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             slots = this.inc_slots[w_scale].slots;
         }
 
-        // Filter features
+        // Filter features.
         var filtered = [];
         if ( result.data ) {
             var filters = this.filters_manager.filters;
@@ -2877,14 +2931,15 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
                     }
                 }
                 if (!hide_feature) {
-                    filtered.push( feature );
+                    filtered.push(feature);
                 }
             }
-        }
+        }        
         
-        // Create painter, and canvas of sufficient size to contain all features
+        // Create painter, and canvas of sufficient size to contain all features.
+        var filter_alpha_generator = (this.filters_manager.alpha_filter ? new FilterAlphaGenerator(this.filters_manager.alpha_filter) : null);
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
-        var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, ref_seq);
+        var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_generator, ref_seq);
         var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required));
         var canvas = this.view.canvas_manager.new_canvas();
         
@@ -3213,11 +3268,25 @@ var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y
 };
 
 /**
+ * Base class for all alpha generators.
+ */
+var AlphaGenerator = function(default_alpha) {
+    this.default_alpha = (default_alpha ? default_alpha : 1);
+};
+
+/**
+ * Base method for generating an alpha channel value; returns default alpha  if not implemented.
+ */
+AlphaGenerator.prototype.gen_alpha = function(data) {
+    return this.default_alpha;  
+};
+
+/**
  * Base class for painters
  *
  * -- Mode and prefs are both optional
  */
-var Painter = function( data, view_start, view_end, prefs, mode ) {
+var Painter = function(data, view_start, view_end, prefs, mode) {
     // Data and data properties
     this.data = data;
     // View
@@ -3233,13 +3302,13 @@ Painter.prototype.default_prefs = {};
 /**
  * SummaryTreePainter, a histogram showing number of intervals in a region
  */
-var SummaryTreePainter = function( data, view_start, view_end, prefs, mode ) {
-    Painter.call( this, data, view_start, view_end, prefs, mode );
+var SummaryTreePainter = function(data, view_start, view_end, prefs, mode) {
+    Painter.call(this, data, view_start, view_end, prefs, mode);
 }
 
 SummaryTreePainter.prototype.default_prefs = { show_counts: false };
 
-SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
+SummaryTreePainter.prototype.draw = function(ctx, width, height) {
     
     var view_start = this.view_start,
         view_range = this.view_end - this.view_start,
@@ -3276,7 +3345,7 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
     ctx.restore();
 }
 
-var LinePainter = function( data, view_start, view_end, prefs, mode ) {
+var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
     if ( this.prefs.min_value === undefined ) {
         var min_value = Infinity;
@@ -3296,7 +3365,7 @@ var LinePainter = function( data, view_start, view_end, prefs, mode ) {
 
 LinePainter.prototype.default_prefs = { min_value: undefined, max_value: undefined, mode: "Histogram", color: "#000", overflow_color: "#F66" };
 
-LinePainter.prototype.draw = function( ctx, width, height ) {
+LinePainter.prototype.draw = function(ctx, width, height) {
     var 
         in_path = false,
         min_value = this.prefs.min_value,
@@ -3406,14 +3475,14 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
 /**
  * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
  */
-var FeaturePainter = function(data, view_start, view_end, prefs, mode) {
+var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_generator) {
     Painter.call(this, data, view_start, view_end, prefs, mode);
+    this.alpha_generator = (alpha_generator ? alpha_generator : new AlphaGenerator());
 }
 
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
 
-extend(FeaturePainter.prototype, { 
-
+extend(FeaturePainter.prototype, {
     get_required_height: function(rows_required) {
         // y_scale is the height per row
         var required_height = y_scale = this.get_row_height(), mode = this.mode;
@@ -3479,9 +3548,9 @@ var DENSE_TRACK_HEIGHT = 10,
     LABEL_SPACING = 2,
     CONNECTOR_COLOR = "#ccc";
 
-var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode) {
-    FeaturePainter.call(this, data, view_start, view_end, prefs, mode);
-}
+var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_generator) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_generator);
+};
 
 extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
@@ -3518,18 +3587,15 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             thickness, y_start, thick_start = null, thick_end = null,
+            // TODO: is there any reason why block, label color cannot be set at the Painter level?
             block_color = this.prefs.block_color,
             label_color = this.prefs.label_color;
-
-        // Dense mode displays the same for all data.
-        /*
-        if (mode === "Dense") {
-            ctx.fillStyle = block_color;
-            ctx.fillRect(f_start, y_center, f_end - f_start, DENSE_FEATURE_HEIGHT);
-        }
-        */
         
-        if ( mode == "Dense" ) {
+        // Set global alpha.
+        ctx.globalAlpha = this.alpha_generator.gen_alpha(feature);
+
+        // In dense mode, put all data in top slot.
+        if (mode == "Dense") {
             slot = 1;
         }
         
@@ -3626,8 +3692,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     if (thick_start !== undefined && feature_te > feature_ts && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
                             block_thick_end = Math.min(block_end, thick_end); 
-                        ctx.fillRect(block_thick_start, y_center + 1,
-                                     block_thick_end - block_thick_start, thick_height);
+                        ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
                         if ( feature_blocks.length == 1 && mode == "Pack") {
                             // Exactly one block  means we have no introns, but do have a distinct "thick" region,
                             // draw arrows over it if in pack mode
@@ -3658,15 +3723,18 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     ctx.textAlign = "right";
                     ctx.fillText(feature_name, f_start - LABEL_SPACING, y_center + 8);
                 }
-                ctx.fillStyle = block_color;
+                //ctx.fillStyle = block_color;
             }
         }
+        
+        // Reset global alpha.
+        ctx.globalAlpha = 1;
     }
 });
 
 
-var VariantPainter = function(data, view_start, view_end, prefs, mode) {
-    FeaturePainter.call(this, data, view_start, view_end, prefs, mode);
+var VariantPainter = function(data, view_start, view_end, prefs, mode, alpha_generator) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_generator);
 }
 
 extend(VariantPainter.prototype, FeaturePainter.prototype, {
@@ -3720,8 +3788,8 @@ extend(VariantPainter.prototype, FeaturePainter.prototype, {
     }
 });
 
-var ReadPainter = function(data, view_start, view_end, prefs, mode, ref_seq) {
-    FeaturePainter.call(this, data, view_start, view_end, prefs, mode);
+var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_generator, ref_seq) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_generator);
     this.ref_seq = ref_seq;
 };
 
@@ -4007,6 +4075,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
     }
 });
 
+exports.AlphaGenerator = AlphaGenerator;
 exports.SummaryTreePainter = SummaryTreePainter;
 exports.LinePainter = LinePainter;
 exports.LinkedFeaturePainter = LinkedFeaturePainter;
