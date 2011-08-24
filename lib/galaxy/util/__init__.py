@@ -572,8 +572,11 @@ def send_mail( frm, to, subject, body, config ):
     """
     Sends an email.
     """
+    header_to = to
+    if isinstance( to, list ):
+        header_to = ', '.join( to )
     msg = MIMEText( body )
-    msg[ 'To' ] = to
+    msg[ 'To' ] = header_to
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
     if config.smtp_server is None:
