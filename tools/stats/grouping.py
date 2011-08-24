@@ -6,9 +6,12 @@
 This tool provides the SQL "group by" functionality.
 """
 import sys, commands, tempfile, random
-import pkg_resources 
-pkg_resources.require( "numpy" )
-import numpy
+try:
+    import numpy
+except:
+    from galaxy import eggs
+    eggs.require( "numpy" )
+    import numpy
 
 from itertools import groupby
 
