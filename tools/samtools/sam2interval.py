@@ -68,7 +68,7 @@ options (listed below) default to 'None' if omitted
 
     cigar = re.compile( '\d+M|\d+N|\d+D|\d+P' )
 
-    print '#chrom\tstart\tend\tstrand' # provide a (partial) header so that strand is automatically set in metadata
+    print '#chrom\tstart\tend\tstrand\tread_name' # provide a (partial) header so that strand is automatically set in metadata
 
     for line in infile:
         line = line.rstrip( '\r\n' )
@@ -90,7 +90,7 @@ options (listed below) default to 'None' if omitted
                 if options.prt_all: 
                     print '%s\t%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand, line)
                 else:
-                    print '%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand)
+                    print '%s\t%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand, read_name)
 
 if __name__ == "__main__": main()
 
