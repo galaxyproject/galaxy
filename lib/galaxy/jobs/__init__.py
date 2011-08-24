@@ -534,7 +534,7 @@ class JobWrapper( object ):
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
             if os.path.exists(version_filename):
-                self.version_string = "Tool version: %s" % open(version_filename).read()
+                self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
             
         if self.app.config.outputs_to_working_directory:
@@ -587,7 +587,8 @@ class JobWrapper( object ):
             
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info  = context['stdout'] + context['stderr'] + self.version_string
+                dataset.info  = context['stdout'] + context['stderr']
+                dataset.tool_version = self.version_string
                 dataset.set_size()
                 if context['stderr']:
                     dataset.blurb = "error"

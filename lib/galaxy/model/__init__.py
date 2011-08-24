@@ -753,7 +753,7 @@ class DatasetInstance( object ):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     permitted_actions = Dataset.permitted_actions
-    def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None,
+    def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
                   parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None ):
         self.name = name or "Unnamed dataset"
@@ -761,6 +761,7 @@ class DatasetInstance( object ):
         self.info = info
         self.blurb = blurb
         self.peek = peek
+        self.tool_version = tool_version
         self.extension = extension
         self.designation = designation
         self.metadata = metadata or dict()
@@ -1020,6 +1021,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          info=self.info, 
                                          blurb=self.blurb, 
                                          peek=self.peek, 
+                                         tool_version=self.tool_version, 
                                          extension=self.extension, 
                                          dbkey=self.dbkey, 
                                          dataset = self.dataset, 
@@ -1057,6 +1059,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                                  info=self.info,
                                                  blurb=self.blurb, 
                                                  peek=self.peek, 
+                                                 tool_version=self.tool_version, 
                                                  extension=self.extension, 
                                                  dbkey=self.dbkey, 
                                                  dataset=self.dataset, 
@@ -1410,6 +1413,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                                          info=self.info,
                                          blurb=self.blurb, 
                                          peek=self.peek, 
+                                         tool_version=self.tool_version, 
                                          extension=self.extension, 
                                          dbkey=self.dbkey, 
                                          dataset=self.dataset, 
@@ -1434,6 +1438,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                                                  info=self.info, 
                                                  blurb=self.blurb, 
                                                  peek=self.peek, 
+                                                 tool_version=self.tool_version, 
                                                  extension=self.extension, 
                                                  dbkey=self.dbkey, 
                                                  dataset=self.dataset, 
