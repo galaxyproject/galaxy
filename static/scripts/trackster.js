@@ -472,6 +472,7 @@ var View = function( container, title, vis_id, dbkey, callback ) {
     this.title = title;
     this.tracks = [];
     this.label_tracks = [];
+    this.tracks_to_be_redrawn = [];
     this.max_low = 0;
     this.max_high = 0;
     this.num_tracks = 0;
@@ -479,7 +480,7 @@ var View = function( container, title, vis_id, dbkey, callback ) {
     this.zoom_factor = 3;
     this.min_separation = 30;
     this.has_changes = false;
-    this.init( callback );
+    this.init(callback);
     this.canvas_manager = new CanvasManager( container.get(0).ownerDocument );
     this.reset();
 };
@@ -849,11 +850,51 @@ extend( View.prototype, {
         this.high = this.max_high;
         this.viewport_container.find(".yaxislabel").remove();
     },
-    request_redraw: function( nodraw ) {
-        var view = this;
-        requestAnimationFrame( function() { view.redraw( nodraw ) } );
+    /**
+     * Request that view redraw some or all tracks. If a track is not specificied, redraw all tracks.
+     */
+    request_redraw: function(nodraw, force, clear_after, track) {
+        var 
+            view = this,
+            // Either redrawing a single track or all view's tracks.
+            track_list = (track ? [track] : view.tracks),
+            track_index;
+        
+        // Add/update tracks in track list to redraw list.
+        var track;
+        for (var i = 0; i < track_list.length; i++) {
+            track = track_list[i];
+            
+            // Because list elements are arrays, need to look for track index manually.
+            track_index = -1;
+            for (var j = 0; j < view.tracks_to_be_redrawn.length; j++) {
+                if (view.tracks_to_be_redrawn[j][0] === track) {
+                    track_index = j;
+                    break;
+                }
+            }
+            
+            // Add track to list or update draw parameters.
+            if (track_index < 0) {
+                // Track not in list yet.
+                view.tracks_to_be_redrawn.push([track, force, clear_after]);
+            }
+            else {
+                // Track already in list; update force and clear_after.
+                view.tracks_to_be_redrawn[i][1] = force;
+                view.tracks_to_be_redrawn[i][2] = clear_after;
+            }
+        }
+
+        // Set up redraw.
+        requestAnimationFrame(function() { view._redraw(nodraw) });
     },
-    redraw: function(nodraw) {
+    /**
+     * Redraws view and tracks.
+     * NOTE: this method should never be called directly; request_redraw() should be used so
+     * that requestAnimationFrame can manage redrawing.
+     */
+    _redraw: function(nodraw) {
         
         var low = this.low,
             high = this.high;
@@ -890,13 +931,18 @@ extend( View.prototype, {
         
         this.update_location(this.low, this.high);
         if (!nodraw) {
-            for (var i = 0, len = this.tracks.length; i < len; i++) {
-                if (this.tracks[i] && this.tracks[i].enabled) {
-                    this.tracks[i].draw();
+            var track, force, clear_after;
+            for (var i = 0, len = this.tracks_to_be_redrawn.length; i < len; i++) {
+                track = this.tracks_to_be_redrawn[i][0];
+                force = this.tracks_to_be_redrawn[i][1];
+                clear_after = this.tracks_to_be_redrawn[i][2];
+                if (track && track.enabled) {
+                    track._draw(force, clear_after);
                 }
             }
+            this.tracks_to_be_redrawn = [];
             for (i = 0, len = this.label_tracks.length; i < len; i++) {
-                this.label_tracks[i].draw();
+                this.label_tracks[i]._draw();
             }
         }
     },
@@ -1426,7 +1472,7 @@ var FiltersManager = function(track, filters_list) {
                 filter.low = values[0];
                 filter.high = values[1];                    
                 // Redraw track.
-                manager.track.draw(true, true);
+                manager.track.request_draw(true, true);
             },
             change: function(event, ui) {
                 filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
@@ -1470,7 +1516,7 @@ var FiltersManager = function(track, filters_list) {
         $(this).children("option:selected").each(function() {
             var filterIndex = parseInt($(this).val());
             manager.alpha_filter = (filterIndex >= 0 ? manager.filters[filterIndex] : null);
-            manager.track.draw(true, true);
+            manager.track.request_draw(true, true);
         })
     });
     
@@ -1840,7 +1886,7 @@ extend(Track.prototype, {
                     // predraw_init may be asynchronous, wait for it and then draw
                     $.when(track.predraw_init()).done(function() { 
                         track.container_div.removeClass("nodata error pending");
-                        track.draw()
+                        track.request_draw()
                     });
                 }
             }
@@ -1956,7 +2002,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         track.mode = name;
         track.track_config.values['mode'] = name;
         track.tile_cache.clear();
-        track.draw();
+        track.request_draw();
      },
     /**
      * Make popup menu for track name.
@@ -2124,10 +2170,18 @@ extend(TiledTrack.prototype, Track.prototype, {
         return width + '_' + w_scale + '_' + tile_index;
     },
     /**
+     * Request that track be drawn.
+     */
+    request_draw: function(force, clear_after) {
+        this.view.request_redraw(false, force, clear_after, this);
+    },
+    /**
      * Draw track. It is possible to force a redraw rather than use cached tiles and/or clear old 
      * tiles after drawing new tiles.
+     * NOTE: this function should never be called directly; use request_draw() so that requestAnimationFrame 
+     * can manage drawing.
      */
-    draw: function(force, clear_after) {
+    _draw: function(force, clear_after) {
         // Cannot draw without dataset_id; dataset_id may not be set if track dynamically created
         // and is waiting for dataset.
         if (!this.dataset_id) { return; }
@@ -2164,12 +2218,12 @@ extend(TiledTrack.prototype, Track.prototype, {
                 
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         var track = this;
-        if ( all_tiles_drawn ) {
+        if (all_tiles_drawn) {
             track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);       
         } 
         // Draw child tracks.
         for (var i = 0; i < this.child_tracks.length; i++) {
-            this.child_tracks[i].draw(force, clear_after);
+            this.child_tracks[i].request_draw(force, clear_after);
         }
     },
     /**
@@ -2291,7 +2345,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 // Mark tile as stale, request more data, and redraw track.
                 tile.stale = true;
                 track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
-                track.draw();
+                track.request_draw();
             }).dblclick(function(e) {
                 // Do not propogate as this would normally zoom in.
                 e.stopPropagation();
@@ -2301,7 +2355,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 // Mark tile as stale, request more data, and redraw track.
                 tile.stale = true;
                 track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
-                track.draw();
+                track.request_draw();
             }).dblclick(function(e) {
                 // Do not propogate as this would normally zoom in.
                 e.stopPropagation();
@@ -2364,8 +2418,8 @@ var LabelTrack = function (view, parent_element) {
     Track.call( this, null, view, parent_element );
     this.container_div.addClass( "label-track" );
 };
-extend( LabelTrack.prototype, Track.prototype, {
-    draw: function() {
+extend(LabelTrack.prototype, Track.prototype, {
+    _draw: function() {
         var view = this.view,
             range = view.high - view.low,
             tickDistance = Math.floor( Math.pow( 10, Math.floor( Math.log( range ) / Math.log( 10 ) ) ) ),
@@ -2465,7 +2519,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
             $('#linetrack_' + track.track_id + '_minval').text(track.prefs.min_value);
             $('#linetrack_' + track.track_id + '_maxval').text(track.prefs.max_value);
             track.tile_cache.clear();
-            track.draw();
+            track.request_draw();
         }
     });
 
@@ -2501,13 +2555,13 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
             var new_height = Math.min( Math.max( d.original_height + d.deltaY, track.min_height_px ), track.max_height_px );
             $(track.content_div).css( 'height', new_height );
             track.height_px = new_height;
-            track.draw( true );
+            track.request_draw(true);
         }).bind( "dragend", function( e, d ) {
             track.tile_cache.clear();    
             in_drag = false;
-            if ( ! in_handle ) { drag_control.hide(); }
+            if (!in_handle) { drag_control.hide(); }
             track.track_config.values.height = track.height_px;
-        }).appendTo( track.container_div );
+        }).appendTo(track.container_div);
     },
     predraw_init: function() {
         var track = this,
@@ -2587,7 +2641,7 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
         saved_values: prefs,
         onchange: function() {
             track.tile_cache.clear();
-            track.draw();
+            track.request_draw();
         }
     });
     this.prefs = this.track_config.values;
@@ -2976,7 +3030,7 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
         saved_values: prefs,
         onchange: function() {
             this.track.tile_cache.clear();
-            this.track.draw();
+            this.track.request_draw();
         }
     });
     this.prefs = this.track_config.values;
