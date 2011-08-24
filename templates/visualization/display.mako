@@ -58,7 +58,7 @@
 </%def>
 
 <%def name="render_item( visualization, config )">
-    <div id="${visualization.id}" class="unified-panel-body" style="overflow:none;top:0px;"></div>
+    <div id="${trans.security.encode_id( visualization.id )}" class="unified-panel-body" style="overflow:none;top:0px;"></div>
 
     <script type="text/javascript">
         // TODO: much of this code is copied from browser.mako -- create shared base and use in both places.
@@ -76,15 +76,14 @@
             converted_datasets_state_url = "${h.url_for( controller='/tracks', action='converted_datasets_state' )}",
             addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
             view,
-            container_element = $("#${visualization.id}");
+            container_element = $("#${trans.security.encode_id( visualization.id )}");
         
         $(function() {
             
             if (container_element.parents(".item-content").length > 0) { // Embedded viz
                 container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
             } else { // Viewing just one shared viz
-                // TODO: need live or just bind click?
-                $("#right-border").live("click", function() { view.resize_window(); });
+                $("#right-border").click(function() { view.resize_window(); });
             }
             
             // Create view and add tracks.
