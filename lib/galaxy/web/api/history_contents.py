@@ -21,42 +21,23 @@ class HistoryContentsController( BaseController ):
         """
         GET /api/histories/{encoded_history_id}/contents
         Displays a collection (list) of history contents
-        """
-        rval = []
-        current_user_roles = trans.get_current_user_roles()
-        def traverse( folder ):
-            admin = trans.user_is_admin()
-            rval = []
-            for subfolder in folder.active_folders:
-                if not admin:
-                    can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
-                if (admin or can_access) and not subfolder.deleted:
-                    subfolder.api_path = folder.api_path + '/' + subfolder.name
-                    subfolder.api_type = 'folder'
-                    rval.append( subfolder )
-                    rval.extend( traverse( subfolder ) )
-            for ld in folder.datasets:
-                if not admin:
-                    can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ld.library_dataset_dataset_association.dataset )
-                if (admin or can_access) and not ld.deleted:
-                    ld.api_path = folder.api_path + '/' + ld.name
-                    ld.api_type = 'file'
-                    rval.append( ld )
-            return rval
-        #log.debug("Entering Content API for history with %s" % str(history_id))
+        """        
         try:
             decoded_history_id = trans.security.decode_id( history_id )
         except TypeError:
             trans.response.status = 400
             return "Malformed history id ( %s ) specified, unable to decode." % str( history_id )
         try:
-            history = trans.sa_session.query( trans.app.model.History ).get( decoded_history_id )
+            history = trans.sa_session.query(trans.app.model.History).get(decoded_history_id)
+            if history.user != trans.user and not trans.user_is_admin():
+                if trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=trans.user, history=history).count() == 0:
+                    trans.response.status = 400
+                    return("History is not owned by or shared with current user")
         except:
-            history = None
-        if not history or not ( trans.user_is_admin() or trans.app.security_agent.can_access_history( current_user_roles, history ) ):
             trans.response.status = 400
-            return "Invalid history id ( %s ) specified." % str( history_id )
-        #log.debug("History item %s" % str(history))
+            return "That history does not exist."
+                       
+        rval = []
         try:
             for dataset in history.datasets:
                 api_type = "file"
@@ -93,10 +74,12 @@ class HistoryContentsController( BaseController ):
             try:
                 content = trans.sa_session.query( model_class ).get( decoded_content_id )
             except:
-                content = None
-            if not content or ( not trans.user_is_admin() and not trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), content, trans.user ) ):
                 trans.response.status = 400
                 return "Invalid %s id ( %s ) specified." % ( content_type, str( content_id ) )
+            if content.history.user != trans.user and not trans.user_is_admin():
+                if trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=trans.user, history=history).count() == 0:
+                    trans.response.status = 400
+                    return("History is not owned by or shared with current user")                      
             item = content.get_api_value( view='element' )
             if not item['deleted']:
                 # Problem: Method url_for cannot use the dataset controller
@@ -106,14 +89,21 @@ class HistoryContentsController( BaseController ):
                 # url_for is being phased out, so new applications should use url
                 item['download_url'] = url(controller='dataset', action='display', dataset_id=trans.security.encode_id(decoded_content_id), to_ext=content.ext)
         except Exception, e:
-            log.debug("Error in history API at listing dataset: %s" % str(e))
+            log.debug("Error in history API at listing dataset: %s" % str(e))               
         return item
 
     @web.expose_api
     def create( self, trans, history_id, payload, **kwd ):
         """
-        POST /api/libraries/{encoded_library_id}/contents
-        Creates a new history content item (file or folder).
-        """
-        trans.response.status = 403
-        return "Not implemented."
+        POST /api/libraries/{encoded_history_id}/contents
+        Creates a new history content item.        """          
+        params = util.Params( payload )
+        history_id = util.restore_text( params.get( 'history_id', None ) )
+        ldda_id = util.restore_text( params.get( 'ldda_id', None ) )
+        add_to_history = True               
+        decoded_history_id = trans.security.decode_id( history_id )
+        ld_t, ld_id = trans.security.decode_string_id(ldda_id).split('.')
+        history = trans.sa_session.query(trans.app.model.History).get(decoded_history_id)
+        ldda = trans.sa_session.query(self.app.model.LibraryDatasetDatasetAssociation).get(ld_id)
+        hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)        
+        history.add_dataset(hda)
