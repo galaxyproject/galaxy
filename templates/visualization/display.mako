@@ -8,7 +8,7 @@
       <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
     <![endif]-->
     
-    ${h.js( "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "jquery.autocomplete", "trackster", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
+    ${h.js( "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
 </%def>
 
 <%def name="stylesheets()">
@@ -86,64 +86,19 @@
                 $("#right-border").click(function() { view.resize_window(); });
             }
             
-            // Create view and add tracks.
+            // Create visualization.
             var callback;
             %if 'viewport' in config:
                 var callback = function() { view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} ); }
             %endif
-            view = new View(container_element, "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}", callback);
-            ## A little ugly and redundant, but it gets the job done moving the config from python to JS:
-            var tracks_config = JSON.parse('${ h.to_json_string( config.get('tracks') ) }');
-            var track_config, track, parent_track, parent_obj;
-            for (var i = 0; i < tracks_config.length; i++) {
-                track_config = tracks_config[i];
-                track = new addable_track_types[track_config["track_type"]](
-                                track_config['name'], 
-                                view,
-                                track_config['hda_ldda'],
-                                track_config['dataset_id'],
-                                track_config['prefs'], 
-                                track_config['filters'],
-                                track_config['tool'], 
-                                (track_config.is_child ? parent_track : undefined));
-                parent_obj = view;
-                if (track_config.is_child) {
-                    parent_obj = parent_track;
-                }
-                else {
-                    // New parent track is this track.
-                    parent_track = track;
-                }
-                parent_obj.add_track(track);
-            }
+            view = create_visualization( container_element, "${config.get('title') | h}", 
+                                         "${config.get('vis_id')}", "${config.get('dbkey')}", callback,
+                                         JSON.parse('${ h.to_json_string( config.get('tracks') ) }'),
+                                         JSON.parse('${ h.to_json_string( config.get('bookmarks') ) }')
+                                         );
             
-            //
-            // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
-            //
-            $(document).keydown(function(e) {
-                // Do not navigate if arrow keys used in input element.
-                if ($(e.srcElement).is(':input')) {
-                    return;
-                }
-                
-                // Key codes: left == 37, up == 38, right == 39, down == 40
-                switch(e.which) {
-                    case 37:
-                        view.move_fraction(0.25);
-                        break
-                    case 38:
-                        var change = Math.round(view.viewport_container.height()/15.0);
-                        view.viewport_container.scrollTo('-=' + change + 'px');
-                        break;
-                    case 39:
-                        view.move_fraction(-0.25);
-                        break;
-                    case 40:
-                        var change = Math.round(view.viewport_container.height()/15.0);
-                        view.viewport_container.scrollTo('+=' + change + 'px');
-                        break;
-                }
-            });
+            // Set up keyboard navigation.
+            init_keyboard_nav(view);
         });
 
     </script>

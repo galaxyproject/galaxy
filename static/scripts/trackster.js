@@ -464,7 +464,7 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
 /**
  * View object manages complete viz view, including tracks and user interactions.
  */
-var View = function( container, title, vis_id, dbkey, callback ) {
+var View = function(container, title, vis_id, dbkey, callback) {
     this.container = container;
     this.chrom = null;
     this.vis_id = vis_id;
@@ -826,6 +826,7 @@ extend( View.prototype, {
         sortable( track.container_div, '.draghandle' );
         this.track_id_counter += 1;
         this.num_tracks += 1;
+        this.has_changes = true;
         this.update_intro_div();
     },
     add_label_track: function (label_track) {
@@ -993,9 +994,9 @@ extend( View.prototype, {
                 view.overview_track.set_is_overview(false);
             }
             view.overview_track = track;
-            view.has_changes = true;
             track.set_is_overview(true);
         });
+        view.has_changes = true;
     },
     /** Close and reset overview. */
     reset_overview: function() {
