@@ -24,5 +24,13 @@
 **What it does**
 
 This tool takes a MAF file and a size range and extracts the MAF blocks which fall within the specified range.
+
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
+
   </help>
 </tool>

@@ -358,6 +358,12 @@ When converting between color space (csSanger) and base/sequence space (Sanger, 
 
 Diagram adapted from http://en.wikipedia.org/wiki/FASTQ_format
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor N, Taylor J, Nekrutenko A; Galaxy Team. Manipulation of FASTQ data with Galaxy. Bioinformatics. 2010 Jul 15;26(14):1783-5. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20562416&gt;`_
+
 
 .. _Cock PJ, Fields CJ, Goto N, Heuer ML, Rice PM. The Sanger FASTQ file format for sequences with quality scores, and the Solexa/Illumina FASTQ variants. Nucleic Acids Res. 2009 Dec 16.: http://www.ncbi.nlm.nih.gov/pubmed/20015970
 

@@ -103,5 +103,12 @@ Here three MAF blocks overlapping a single interval are stitched together. Space
 
 .. image:: ./static/images/maf_icons/stitchMaf.png
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
+
   </help>
 </tool>

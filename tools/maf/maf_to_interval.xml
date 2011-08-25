@@ -121,6 +121,12 @@ History item **2** (for mm8)::
    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line; 
    - An "e" line containing information about the size of the gap between the alignments that span the current block.
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
 
     </help>
 </tool>

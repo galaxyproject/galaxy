@@ -134,5 +134,12 @@ The user can provide a maximum count of bases that can be excluded from the aggr
 
 Trimming a color space read will cause any adapter base to be lost.
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor N, Taylor J, Nekrutenko A; Galaxy Team. Manipulation of FASTQ data with Galaxy. Bioinformatics. 2010 Jul 15;26(14):1783-5. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20562416&gt;`_
+
+
   </help>
 </tool>

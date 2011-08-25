@@ -123,6 +123,12 @@ Additional (optional) fields are::
     5. score - A score between 0 and 1000.
     6. strand - Defines the strand - either '+' or '-'.
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
 
     </help>
     <code file="maf_to_bed_code.py"/>

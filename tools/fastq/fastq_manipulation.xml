@@ -417,5 +417,13 @@ Steps:
 2. Click **Add new Manipulate Reads**, change **Manipulate Reads on** to "Sequence Content", set **Sequence Manipulation Type** to "Change Adapter Base" and set **New Adapter** to "" (an empty text field). 
 3. Click **Add new Manipulate Reads**, change **Manipulate Reads on** to "Sequence Content", set **Sequence Manipulation Type** to "String Translate" and set **From** to "0123." and **To** to "ACGTN".
 4. Click Execute. The new history item will contained double-encoded psuedo-nucleotide space reads.
+
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor N, Taylor J, Nekrutenko A; Galaxy Team. Manipulation of FASTQ data with Galaxy. Bioinformatics. 2010 Jul 15;26(14):1783-5. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20562416&gt;`_
+
+
 </help>
 </tool>
