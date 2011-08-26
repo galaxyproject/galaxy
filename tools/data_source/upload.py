@@ -297,7 +297,7 @@ def add_file( dataset, registry, json_file, output_path ):
     datatype = registry.get_datatype_by_extension( ext )
     if dataset.type in ( 'server_dir', 'path_paste' ) and link_data_only == 'link_to_files':
         # Never alter a file that will not be copied to Galaxy's local file store.
-        if datatype.dataset_content_needs_grooming( output_path ):
+        if datatype.dataset_content_needs_grooming( dataset.path ):
             err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
             file_err( err_msg, dataset, json_file )
@@ -324,7 +324,7 @@ def add_file( dataset, registry, json_file, output_path ):
                  name = dataset.name,
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )
-    if datatype.dataset_content_needs_grooming( output_path ):
+    if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
         # Groom the dataset content if necessary
         datatype.groom_dataset_content( output_path )
 def add_composite_file( dataset, registry, json_file, output_path, files_path ):
