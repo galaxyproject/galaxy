@@ -108,7 +108,7 @@ def app_factory( global_conf, **kwargs ):
         add_api_controllers( webapp, app )
         webapp.api_mapper.resource( 'content',
                                     'contents',
-                                    controller='contents',
+                                    controller='library_contents',
                                     name_prefix='library_',
                                     path_prefix='/api/libraries/:library_id', 
                                     parent_resources=dict( member_name='library', collection_name='libraries' ) )

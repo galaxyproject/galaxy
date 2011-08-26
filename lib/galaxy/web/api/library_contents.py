@@ -10,7 +10,7 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
-class ContentsController( BaseController ):
+class LibraryContentsController( BaseController ):
 
     @web.expose_api
     def index( self, trans, library_id, **kwd ):
@@ -73,25 +73,9 @@ class ContentsController( BaseController ):
         """
         content_id = id
         try:
-            decoded_type_and_id = trans.security.decode_string_id( content_id )
-            content_type, decoded_content_id = decoded_type_and_id.split( '.' )
-        except:
-            trans.response.status = 400
-            return "Malformed content id ( %s ) specified, unable to decode." % str( content_id )
-        if content_type == 'folder':
-            model_class = trans.app.model.LibraryFolder
-        elif content_type == 'file':
-            model_class = trans.app.model.LibraryDataset
-        else:
-            trans.response.status = 400
-            return "Invalid type ( %s ) specified." % str( content_type )
-        try:
-            content = trans.sa_session.query( model_class ).get( decoded_content_id )
-        except:
-            content = None
-        if not content or ( not trans.user_is_admin() and not trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), content, trans.user ) ):
-            trans.response.status = 400
-            return "Invalid %s id ( %s ) specified." % ( content_type, str( content_id ) )
+            content = get_library_content_for_access( trans, content_id )
+        except Exception, e:
+            return str( e )
         return content.get_api_value( view='element' )
 
     @web.expose_api
