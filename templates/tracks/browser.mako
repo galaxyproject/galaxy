@@ -197,6 +197,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             $("#viz-actions-button").css( "position", "relative" );
             make_popupmenu( $("#viz-actions-button"), {
                 "Add Tracks": add_tracks,
+                "Add Group": function() {
+                    var group = new DrawableCollection("New Group", view);
+                    view.add_track(group);
+                },
                 "Save": function() {
                     // Show saving dialog box
                     show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");

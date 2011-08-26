@@ -143,13 +143,66 @@ extend( CanvasManager.prototype, {
 // ---- Web UI specific utilities ----
 
 /** 
- * Make `element` sortable in parent by dragging `handle` (a selector)
+ * Make `element` moveable within parent and sibling elements by dragging `handle` (a selector).
  */
-var sortable = function( element, handle ) {
+var moveable = function( element, handle, container_selector ) {
+    // HACK: set default value for container selector.
+    container_selector = ".group";
+    var css_border_props = {};
     element.bind( "drag", { handle: handle, relative: true }, function ( e, d ) {
-        var parent = $(this).parent();
-        var children = parent.children();
-        var i;
+        var 
+            parent = $(this).parent(),
+            children = parent.children(),
+            child,
+            container,
+            top,
+            bottom,
+            i;
+            
+        //
+        // Enable three types of dragging: (a) out of container; (b) into container; 
+        // (c) sibling movement, aka sorting. Handle in this order for simplicity.
+        //
+        
+        // Handle dragging out of container.
+        container = $(this).parents(container_selector);
+        if (container.length !== 0) {
+            top = container.position().top;
+            bottom = top + container.outerHeight();
+            if (d.offsetY < top) {
+                // Moving above container.
+                $(this).insertBefore(container);
+                return;
+            }
+            else if (d.offsetY > bottom) {
+                // Moving below container.
+                $(this).insertAfter(container);
+                return;
+            }
+        }
+        
+        // Handle dragging into container.
+        container = null;
+        for ( i = 0; i < children.length; i++ ) {
+            child = $(children.get(i));
+            top = child.position().top;
+            bottom = top + child.outerHeight();
+            // Dragging into container if child is a container and offset is inside container.
+            if ( child.is(container_selector) && this !== child.get(0) && 
+                 d.offsetY >= top && d.offsetY <= bottom ) {
+                // Append/prepend based on where offsetY is closest to and return.
+                if (d.offsetY - top < bottom - d.offsetY) {
+                    child.find(".content-div").prepend(this);
+                }
+                else {
+                    child.find(".content-div").append(this);
+                }
+                return;
+            }
+        }
+
+        // Handle sibling movement, aka sorting.
+        
         // Determine new position
         for ( i = 0; i < children.length; i++ ) {
             if ( d.offsetY < $(children.get(i)).position().top ) {
@@ -168,15 +221,19 @@ var sortable = function( element, handle ) {
             $(this).insertBefore( children.get(i) );
         }
     }).bind("dragstart", function() {
+        css_border_props["border-top"] = element.css("border-top");
+        css_border_props["border-bottom"] = element.css("border-bottom");
         $(this).css({
             "border-top": "1px solid blue",
             "border-bottom": "1px solid blue"
         });
     }).bind("dragend", function() {
-        $(this).css("border", "0px");
+        $(this).css(css_border_props);
     });
 };
-exports.sortable = sortable;
+
+// TODO: do we need to export?
+exports.moveable = moveable;
 
 /**
  * Init constants & functions used throughout trackster.
@@ -823,7 +880,7 @@ extend( View.prototype, {
         this.tracks.push(track);
         if (track.init) { track.init(); }
         track.container_div.attr('id', 'track_' + track.track_id);
-        sortable( track.container_div, '.draghandle' );
+        moveable(track.container_div, track.drag_handle);
         this.track_id_counter += 1;
         this.num_tracks += 1;
         this.has_changes = true;
@@ -1756,6 +1813,44 @@ var FeatureTrackTile = function(index, resolution, canvas, data, message) {
 };
 
 /**
+ * Base interface for all drawable objects.
+ * TODO: Tracks should use this interface.
+ */
+var Drawable = function(name, view) {
+    this.name = name;
+    this.view = view;
+    this.parent_element = view.viewport_container;
+};
+
+Drawable.prototype.request_draw = function() {};
+Drawable.prototype.draw = function() {};
+
+/**
+ * A collection of drawable objects.
+ */
+var DrawableCollection = function(name, view) {
+    Drawable.call(this, name, view);
+    
+    // Attribute init.
+    this.members = [];
+    this.drag_handle_class = "group-handle";
+    
+    // HTML elements.
+    this.container_div = $("<div/>").addClass("group").appendTo(this.parent_element);
+    this.container_div.append($("<div/>").addClass(this.drag_handle_class));
+    this.name_div = $("<div/>").addClass("group-name").text(this.name).appendTo(this.container_div);
+    this.content_div = $("<div/>").addClass("content-div").appendTo(this.container_div);
+};
+extend(DrawableCollection.prototype, Drawable.prototype, {
+    request_draw: function(force, clear_after) {
+        
+    },
+    draw: function() {
+        
+    }
+});
+
+/**
  * Tracks are objects can be added to the View. 
  * 
  * Track object hierarchy:
@@ -1780,6 +1875,7 @@ var Track = function(name, view, parent_element, data_url, data_query_wait) {
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
+    this.drag_handle_class = "draghandle";
     
     //
     // Create HTML element structure for track.
@@ -1787,7 +1883,7 @@ var Track = function(name, view, parent_element, data_url, data_query_wait) {
     this.container_div = $("<div />").addClass('track').css("position", "relative");
     if (!this.hidden) {
         this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
-        if (this.view.editor) { this.drag_div = $("<div class='draghandle' />").appendTo(this.header_div); }
+        if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(this.header_div); }
         this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
         this.name_div.text(this.name);
         this.name_div.attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
@@ -2399,7 +2495,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         child_track.track_id = this.track_id + "_" + this.child_tracks.length;
         child_track.container_div.attr('id', 'track_' + child_track.track_id);
         this.child_tracks_container.append(child_track.container_div);
-        sortable( child_track.container_div, '.child-track-icon' );
+        moveable( child_track.container_div, '.child-track-icon' );
         if (!$(this.child_tracks_container).is(":visible")) {
             this.child_tracks_container.show();
         }
@@ -3082,6 +3178,7 @@ extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.protot
 // Exports
 
 exports.View = View;
+exports.DrawableCollection = DrawableCollection;
 exports.LineTrack = LineTrack;
 exports.FeatureTrack = FeatureTrack;
 exports.ReadTrack = ReadTrack;
