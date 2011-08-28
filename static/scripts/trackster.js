@@ -2598,6 +2598,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     this.original_dataset_id = dataset_id;
     this.data_manager = new DataManager(CACHED_DATA, this);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
+    this.left_offset = 0;
 
     // Define track configuration
     this.track_config = new TrackConfig( {
