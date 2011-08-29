@@ -105,40 +105,12 @@ class BigInteger( Integer ):
 class BIGINT( BigInteger ):
     """The SQL BIGINT type."""
 
-class DBBigInteger( BigInteger ):
+class SLBigInteger( BigInteger ):
     def get_col_spec( self ):
         return "BIGINT"
 
-sqlalchemy.databases.postgres.PGBigInteger = DBBigInteger
-sqlalchemy.databases.postgres.colspecs[BigInteger] = DBBigInteger
-sqlalchemy.databases.sqlite.SLBigInteger = DBBigInteger
-sqlalchemy.databases.sqlite.colspecs[BigInteger] = DBBigInteger
-
-class MSBigInteger( BigInteger, sqlalchemy.databases.mysql.MSInteger ):
-    """MySQL BIGINTEGER type."""
-
-    def __init__(self, display_width=None, **kw):
-        """Construct a BIGINTEGER.
-
-        :param display_width: Optional, maximum display width for this number.
-
-        :param unsigned: a boolean, optional.
-
-        :param zerofill: Optional. If true, values will be stored as strings
-          left-padded with zeros. Note that this does not effect the values
-          returned by the underlying database API, which continue to be
-          numeric.
-
-        """
-        self.display_width = display_width
-        sqlalchemy.databases.mysql._NumericType.__init__(self, kw)
-        BigInteger.__init__(self, **kw)
-
-    def get_col_spec(self):
-        if self.display_width is not None:
-            return self._extend("BIGINT(%(display_width)s)" % {'display_width': self.display_width})
-        else:
-            return self._extend("BIGINT")
-
-sqlalchemy.databases.mysql.MSBigInteger = MSBigInteger
-sqlalchemy.databases.mysql.colspecs[BigInteger] = MSBigInteger
+sqlalchemy.databases.sqlite.SLBigInteger = SLBigInteger
+sqlalchemy.databases.sqlite.colspecs[BigInteger] = SLBigInteger
+sqlalchemy.databases.sqlite.ischema_names['BIGINT'] = SLBigInteger
+sqlalchemy.databases.postgres.colspecs[BigInteger] = sqlalchemy.databases.postgres.PGBigInteger
+sqlalchemy.databases.mysql.colspecs[BigInteger] = sqlalchemy.databases.mysql.MSBigInteger
