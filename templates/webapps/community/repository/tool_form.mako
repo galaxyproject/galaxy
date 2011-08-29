@@ -4,7 +4,7 @@
 <%
     from galaxy.util.expressions import ExpressionContext
     from galaxy import util
-    from galaxy.tools.parameters.basic import DataToolParameter, ColumnListParameter, SelectToolParameter
+    from galaxy.tools.parameters.basic import DataToolParameter, ColumnListParameter, GenomeBuildParameter, SelectToolParameter
     from galaxy.web.form_builder import SelectField
 
     is_admin = trans.user_is_admin()
@@ -60,8 +60,8 @@
                     %endif
                 %elif input.type == "upload_dataset":
                     %if input.get_datatype( trans, other_values ).composite_type is None:
-                        # Have non-composite upload appear as before
-                        ${do_inputs( input.inputs, tool_state[input.name][0], prefix + input.name + "_" + str( 0 ) + "|", other_values )}
+                        ## Have non-composite upload appear as before
+                        ${do_inputs( input.inputs, 'files', prefix + input.name + "_" + str( 0 ) + "|", other_values )}
                     %else:
                         <div class="repeat-group">
                             <div class="form-title-row">
@@ -82,7 +82,7 @@
         <%def name="row_for_param( prefix, param, parent_state, other_values )">
             <%
                 label = param.get_label()
-                if isinstance( param, DataToolParameter ) or isinstance( param, ColumnListParameter ):
+                if isinstance( param, DataToolParameter ) or isinstance( param, ColumnListParameter ) or isinstance( param, GenomeBuildParameter ):
                     field = SelectField( param.name )
                     field.add_option( param.name, param.name )
                     field_html = field.get_html()

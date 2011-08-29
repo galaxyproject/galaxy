@@ -13,6 +13,8 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
+        # Set up datatypes registry
+        self.datatypes_registry = galaxy.datatypes.registry.Registry( self.config.root, self.config.datatypes_config )
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection

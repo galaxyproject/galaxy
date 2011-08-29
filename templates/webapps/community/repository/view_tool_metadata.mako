@@ -137,6 +137,13 @@
                     <div style="clear: both"></div>
                 </div>
             %endif
+            %if 'guid' in metadata:
+                <div class="form-row">
+                    <label>Guid:</label>
+                    ${metadata[ 'guid' ]}
+                    <div style="clear: both"></div>
+                </div>
+            %endif
             %if 'version' in metadata:
                 <div class="form-row">
                     <label>Version:</label>

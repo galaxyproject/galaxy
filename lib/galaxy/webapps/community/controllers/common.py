@@ -145,11 +145,22 @@ def new_workflow_metadata_required( trans, id, metadata_dict ):
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
     # record is not needed.
     return False
+def generate_tool_guid( trans, repository, tool ):
+    """
+    Generate a guid for the received tool.  The form of the guid is    
+    <tool shed host>/repos/<tool shed username>/<tool shed repo name>/<tool id>/<tool version>
+    """
+    return '%s/repos/%s/%s/%s/%s' % ( trans.request.host,
+                                      repository.user.username,
+                                      repository.name,
+                                      tool.id,
+                                      tool.version )
 def generate_tool_metadata( trans, id, changeset_revision, root, name, tool, metadata_dict ):
     """
     Update the received metadata_dict with changes that have been
     applied to the received tool.
     """
+    repository = get_repository( trans, id )
     tool_requirements = []
     for tr in tool.requirements:
         requirement_dict = dict( name=tr.name,
@@ -165,6 +176,7 @@ def generate_tool_metadata( trans, id, changeset_revision, root, name, tool, met
                               outputs=ttb.outputs )
             tool_tests.append( test_dict )
     tool_dict = dict( id=tool.id,
+                      guid = generate_tool_guid( trans, repository, tool ),
                       name=tool.name,
                       version=tool.version,
                       description=tool.description,

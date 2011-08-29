@@ -39,11 +39,21 @@ class Configuration( object ):
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
+        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
+        # Tool stuff
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
+        self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
+        # Location for dependencies
+        if 'tool_dependency_dir' in kwargs:
+            self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
+            self.use_tool_dependencies = True
+        else:
+            self.tool_dependency_dir = None
+            self.use_tool_dependencies = False
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
