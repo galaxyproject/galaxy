@@ -852,6 +852,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                         # created_outputs_dict can be a string only if cntrller == 'api'
                         if type( created_outputs_dict ) == str:
                             return 400, created_outputs_dict
+                        elif type( created_outputs_dict ) == tuple:
+                            return created_outputs_dict[0], created_outputs_dict[1]
                         return 200, created_outputs_dict
                     total_added = len( created_outputs_dict.keys() )
                     ldda_id_list = [ str( v.id ) for k, v in created_outputs_dict.items() ]
