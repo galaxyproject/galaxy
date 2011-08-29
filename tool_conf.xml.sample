@@ -146,15 +146,16 @@
     <label text="GFF" id="gff" />
       <tool file="stats/count_gff_features.xml" />
   </section>
-  <!--
-  Keep this section commented until all of the tools have functional tests
   <section name="Wavelet Analysis" id="dwt">
+    <tool file="discreteWavelet/execute_dwt_var_perFeature.xml" />
+    <!--
+    Keep this section/tools commented until all of the tools have functional tests
     <tool file="discreteWavelet/execute_dwt_IvC_all.xml" />
     <tool file="discreteWavelet/execute_dwt_cor_aVa_perClass.xml" />
     <tool file="discreteWavelet/execute_dwt_cor_aVb_all.xml" />
     <tool file="discreteWavelet/execute_dwt_var_perClass.xml" />
+    -->
  </section>
- -->
   <section name="Graph/Display Data" id="plots">
     <tool file="plotting/histogram2.xml" />
     <tool file="plotting/scatterplot.xml" />
