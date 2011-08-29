@@ -88,6 +88,8 @@ def display( api_key, url, return_formatted=True ):
         print '------------------'
         for k, v in r.items():
             print '%s: %s' % ( k, v )
+    elif type( r ) == str:
+        print r
     else:
         print 'response is unknown type: %s' % type( r )
 

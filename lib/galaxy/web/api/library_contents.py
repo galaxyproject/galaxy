@@ -7,6 +7,7 @@ from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
+from galaxy.web.api.util import *
 
 log = logging.getLogger( __name__ )
 
