@@ -41,10 +41,10 @@ print Rcmd "
 	#library(\"wavethresh\");
 	#library(\"waveslim\");
 	# turn off diagnostics for de-bugging only, turn back on for functional tests on test
-	require(\"Rwave\",quietly=TRUE,warn.conflicts = FALSE);
-	require(\"wavethresh\",quietly=TRUE,warn.conflicts = FALSE);
-	require(\"waveslim\",quietly=TRUE,warn.conflicts = FALSE);
-	require(\"bitops\",quietly=TRUE,warn.conflicts = FALSE);
+	suppressMessages(require(\"Rwave\",quietly=TRUE,warn.conflicts = FALSE));
+	suppressMessages(require(\"wavethresh\",quietly=TRUE,warn.conflicts = FALSE));
+	suppressMessages(require(\"waveslim\",quietly=TRUE,warn.conflicts = FALSE));
+	suppressMessages(require(\"bitops\",quietly=TRUE,warn.conflicts = FALSE));
 
 	# to determine if data is properly formatted 2^N observations
 	is.power2<- function(x){x && !(bitAnd(x,x - 1));}
