@@ -352,8 +352,9 @@
    <tool file="samtools/pileup_parser.xml" />
    <tool file="samtools/pileup_interval.xml" />
    <tool file="samtools/samtools_flagstat.xml" />
+   <tool file="samtools/samtools_rmdup.xml" />
   </section>
-  <section name="NGS: GATK Tools" id="gatk">
+  <section name="NGS: GATK Tools (beta)" id="gatk">
    <label text="Realignment" id="gatk_realignment" />
      <tool file="gatk/realigner_target_creator.xml" />
      <tool file="gatk/indel_realigner.xml" />

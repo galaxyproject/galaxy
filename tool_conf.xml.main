@@ -382,6 +382,7 @@
    <tool file="samtools/pileup_parser.xml" />
    <tool file="samtools/pileup_interval.xml" />
    <tool file="samtools/samtools_flagstat.xml" />
+   <tool file="samtools/samtools_rmdup.xml" />
   </section>
   <section name="NGS: Indel Analysis" id="indel_analysis">
     <tool file="indels/sam_indel_filter.xml" />
