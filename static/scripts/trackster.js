@@ -2240,7 +2240,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 
             // Draw tile if necessary.
             if (!tile) {
-                tile = track.draw_tile(overview_data, resolution, 0, w_scale);
+                tile = track.draw_tile(overview_data, "Auto", resolution, 0, w_scale);
                 track.tile_cache.set(key, tile);                
             }
             
@@ -2395,7 +2395,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         // If we can draw now, do so
         if ( can_draw_now ) {
             extend( tile_data, more_tile_data );
-            var tile = track.draw_tile(tile_data, resolution, tile_index, w_scale, seq_data);
+            var tile = track.draw_tile(tile_data, track.mode, resolution, tile_index, w_scale, seq_data);
             track.tile_cache.set(key, tile);
             // Don't show if no tile
             if (tile !== undefined) {
@@ -2558,7 +2558,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(seq, resolution, tile_index, w_scale) {
+    draw_tile: function(seq, mode, resolution, tile_index, w_scale) {
         var track = this,
             tile_length = DENSITY * resolution;
         
@@ -2696,7 +2696,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw LineTrack tile.
      */
-    draw_tile: function(result, resolution, tile_index, w_scale) {
+    draw_tile: function(result, mode, resolution, tile_index, w_scale) {
         if (this.vertical_range === undefined) {
             return;
         }
@@ -2713,7 +2713,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
         
         // Paint line onto full canvas
         var ctx = canvas.getContext("2d");
-        var painter = new painters.LinePainter(result.data, tile_low, tile_low + tile_length, this.prefs, this.mode);
+        var painter = new painters.LinePainter(result.data, tile_low, tile_low + tile_length, this.prefs, mode);
         painter.draw(ctx, width, height);
         
         return new Tile(tile_index, resolution, canvas, result.data);
@@ -2968,18 +2968,18 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw FeatureTrack tile.
      * @param result result from server
+     * @param mode mode to draw in
      * @param resolution view resolution
      * @param tile_index index of tile to be drawn
      * @param w_scale base pairs per pixel
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, resolution, tile_index, w_scale, ref_seq) {
+    draw_tile: function(result, mode, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
             tile_low = tile_index * DENSITY * resolution,
             tile_high = (tile_index + 1) * DENSITY * resolution,
             tile_span = tile_high - tile_low,
             width = Math.ceil(tile_span * w_scale),
-            mode = this.mode,
             min_height = 25,
             left_offset = this.left_offset,
             slots,
