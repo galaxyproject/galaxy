@@ -90,6 +90,8 @@ class RBACAgent:
         raise "Unimplemented Method"
     def get_permissions( self, library_dataset ):
         raise "Unimplemented Method"
+    def get_all_roles( self, trans, cntrller ):
+        raise "Unimplemented Method"
     def get_legitimate_roles( self, trans, item, cntrller ):
         raise "Unimplemented Method"
     def derive_roles_from_access( self, trans, item_id, cntrller, library=False, **kwd ):
@@ -120,6 +122,50 @@ class GalaxyRBACAgent( RBACAgent ):
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.model.context
+    def sort_by_attr( self, seq, attr ):
+        """
+        Sort the sequence of objects by object's attribute
+        Arguments:
+        seq  - the list or any sequence (including immutable one) of objects to sort.
+        attr - the name of attribute to sort by
+        """
+        # Use the "Schwartzian transform"
+        # Create the auxiliary list of tuples where every i-th tuple has form
+        # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
+        # only to provide stable sorting, but mainly to eliminate comparison of objects
+        # (which can be expensive or prohibited) in case of equal attribute values.
+        intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+        intermed.sort()
+        return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
+    def get_all_roles( self, trans, cntrller ):
+        admin_controller = cntrller in [ 'library_admin' ]
+        roles = set()
+        if not trans.user:
+            return trans.sa_session.query( trans.app.model.Role ) \
+                                   .filter( and_( self.model.Role.table.c.deleted==False,
+                                                  self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
+                                                  self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
+                                   .order_by( self.model.Role.table.c.name )
+        if admin_controller:
+            # The library is public and the user is an admin, so all roles are legitimate
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                        .filter( self.model.Role.table.c.deleted==False ) \
+                                        .order_by( self.model.Role.table.c.name ):
+                roles.add( role )
+        else:
+            # Add the current user's private role
+            roles.add( self.get_private_user_role( trans.user ) )
+            # Add the current user's sharing roles
+            for role in self.get_sharing_roles( trans.user ):
+                roles.add( role )
+            # Add all remaining non-private, non-sharing roles
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                        .filter( and_( self.model.Role.table.c.deleted==False,
+                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
+                                                       self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
+                                        .order_by( self.model.Role.table.c.name ):
+                roles.add( role )
+        return self.sort_by_attr( [ role for role in roles ], 'name' )
     def get_legitimate_roles( self, trans, item, cntrller ):
         """
         Return a sorted list of legitimate roles that can be associated with a permission on
@@ -140,51 +186,10 @@ class GalaxyRBACAgent( RBACAgent ):
             for the current user's private role, will be excluded.
         """
         admin_controller = cntrller in [ 'library_admin' ]
-        def sort_by_attr( seq, attr ):
-            """
-            Sort the sequence of objects by object's attribute
-            Arguments:
-            seq  - the list or any sequence (including immutable one) of objects to sort.
-            attr - the name of attribute to sort by
-            """
-            # Use the "Schwartzian transform"
-            # Create the auxiliary list of tuples where every i-th tuple has form
-            # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
-            # only to provide stable sorting, but mainly to eliminate comparison of objects
-            # (which can be expensive or prohibited) in case of equal attribute values.
-            intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
-            intermed.sort()
-            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
         roles = set()
         if ( isinstance( item, self.model.Library ) and self.library_is_public( item ) ) or \
             ( isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ) ):
-            if not trans.user:
-                return trans.sa_session.query( trans.app.model.Role ) \
-                                       .filter( and_( self.model.Role.table.c.deleted==False,
-                                                      self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
-                                                      self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
-                                       .order_by( self.model.Role.table.c.name )
-            if admin_controller:
-                # The library is public and the user is an admin, so all roles are legitimate
-                for role in trans.sa_session.query( trans.app.model.Role ) \
-                                            .filter( self.model.Role.table.c.deleted==False ) \
-                                            .order_by( self.model.Role.table.c.name ):
-                    roles.add( role )
-                return sort_by_attr( [ role for role in roles ], 'name' ) 
-            else:
-                # Add the current user's private role
-                roles.add( self.get_private_user_role( trans.user ) )
-                # Add the current user's sharing roles
-                for role in self.get_sharing_roles( trans.user ):
-                    roles.add( role )
-                # Add all remaining non-private, non-sharing roles
-                for role in trans.sa_session.query( trans.app.model.Role ) \
-                                            .filter( and_( self.model.Role.table.c.deleted==False,
-                                                           self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
-                                                           self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
-                                            .order_by( self.model.Role.table.c.name ):
-                    roles.add( role )
-                return sort_by_attr( [ role for role in roles ], 'name' )     
+            return self.get_all_roles( trans, cntrller )
         # If item has roles associated with the access permission, we need to start with them.
         access_roles = item.get_access_roles( trans )
         for role in access_roles:
@@ -205,7 +210,7 @@ class GalaxyRBACAgent( RBACAgent ):
                         for ura in user.roles:
                             if admin_controller or self.ok_to_display( trans.user, ura.role ):
                                 roles.add( ura.role )
-        return sort_by_attr( [ role for role in roles ], 'name' )
+        return self.sort_by_attr( [ role for role in roles ], 'name' )
     def ok_to_display( self, user, role ):
         """
         Method for checking if:

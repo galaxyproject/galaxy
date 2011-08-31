@@ -1,0 +1,57 @@
+<tool id="dwt_var1" name="Wavelet variance" version="1.0.0">
+  <description>using Discrete Wavelet Transfoms</description>
+  
+  <command interpreter="perl">
+  	execute_dwt_var_perFeature.pl $inputFile $feature $alpha $outputFile1 $outputFile2
+  </command>
+  
+  <inputs>
+  	<param format="tabular" name="inputFile" type="data" label="Select data"/>	
+	<param name="feature" label="Feature column" type="data_column" data_ref="inputFile" multiple="true" help="Please select at least one column"/>
+	<param name="alpha" size="10" type="float" value="0.05" label="alpha (significance level)" />
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/>
+    <data format="pdf" name="outputFile2"/>
+  </outputs>
+  <tests>
+    <test>
+	<param name="inputFile" value="discreteWavelet/dwt_var1/dwt_var_in.interval"/>
+	<param name="feature" value="4"/>
+	<param name="alpha" value="0.05"/>
+	<output name="outputFile1" file="discreteWavelet/dwt_var1/dwt_var_out1.tabular" compare="re_match"/>
+	<output name="outputFile2" file="discreteWavelet/dwt_var1/dwt_var_out2.pdf" compare="sim_size"/>
+    </test>
+  </tests>	    
+  	
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool computes the scale-specific variance in wavelet coeffients obtained from the discrete wavelet transform of a feature of interest.
+
+Input data consists of an ordered series of data, S, equispaced and of sample size N, where N is of the form N = 2^k, and k is a positive integer and represents the number of levels of wavelet decomposition. S could be a time series, or a set of DNA sequences. The user calculates a statistic of interest for each feature in each interval of S: say, expression level of a particular gene in a time course, or the number of LINE elements per window across a chromosome. This tool then performs a discrete wavelet transform of the feature of interest, and plots the resulting variance in wavelet coefficients per wavelet scale. In addition, statistical significance of variances are determined by 1,000 random permutations of the intervals in S, to generate null bands (representing the user provided alpha value) corresponding to the empirical distribution of wavelet variances under the null hypothesis of no inherent order to the series in S.
+
+This tool generates two output files:
+
+- The first output file is a TABULAR format file representing the variances, p-values, and test orientation for the features at each wavelet scale based on a random permutation test.
+- The second output file is a PDF image plotting the wavelet variances of each feature at each scale.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+In order to obtain empirical p-values, a random perumtation scheme is implemented by the tool, such that the output may generate slightly variations in results each time it is run on the same input file. 
+
+-----
+
+
+**Example**
+
+  </help>  
+  
+</tool>

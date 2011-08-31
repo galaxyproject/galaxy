@@ -55,9 +55,12 @@ class VariantCall40( VariantCall33 ):
     def __init__( self, vcf_line, metadata, sample_names ):
         VariantCall33.__init__( self, vcf_line, metadata, sample_names)
 
+class VariantCall41( VariantCall40 ):
+    version = 'VCFv4.1'
+
 #VCF Format version lookup dict
 VCF_FORMATS = {}
-for format in [ VariantCall33, VariantCall40 ]:
+for format in [ VariantCall33, VariantCall40, VariantCall41 ]:
     VCF_FORMATS[format.version] = format
 
 class Reader( object ):

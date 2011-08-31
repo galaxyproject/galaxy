@@ -126,7 +126,19 @@
     border-top: 1px solid #eee;
     border-bottom: 1px solid #eee;
 }
-    
+
+.group-handle {
+    cursor: move;
+    float: left;
+    background: #eee url('/static/images/tracks/block.png');
+    width: 12px;
+    height: 12px;
+}
+.group {
+    min-height: 20px;
+    border-top: 2px solid #888;
+    border-bottom: 2px solid #888;
+}    
 .track {
     /* border-top: solid #DDDDDD 1px; */
     /* border-bottom: solid #DDDDDD 1px; */
@@ -163,8 +175,6 @@
 .track-tile canvas {
     position: relative;
     z-index: 100;
-    border: solid white;
-    border-width: 2px 0px 0px 0px;
 }
 
 .tile-message {
@@ -233,17 +243,28 @@ input {
     font: 10px verdana;
 }
 .dynamic-tool, .filters {
-    width: 410px;
     margin-left: 0.25em;
     padding-bottom:0.5em;
+}
+.filters > .sliders, .display-controls {
+    float: left;
+    margin: 1em;
+}
+.sliders{
+    width: 410px;
+}
+.display-controls{
+    border-left: solid 2px #DDDDDD;
+    padding-left: 1em
 }
 .slider-row {
     margin-top: 0.4em;
     margin-left: 1em;
 }
-.slider-label {
+.elt-label {
     float: left;
     font-weight: bold;
+    margin-right: 1em;
 }
 .slider {
     float: right;

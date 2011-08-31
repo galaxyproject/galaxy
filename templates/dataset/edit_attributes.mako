@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/message.mako" name="message_ns" import="javascripts" />
 
 <%def name="title()">${_('Edit Dataset Attributes')}</%def>
 
@@ -9,6 +10,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ${message_ns.javascripts()}
     ${h.js( "galaxy.base", "jquery.autocomplete", "autocomplete_tagging" )}
 </%def>
 
@@ -31,8 +33,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">${_('Edit Attributes')}</div>
     <div class="toolFormBody">
-        <form name="edit_attributes" action="${h.url_for( controller='root', action='edit' )}" method="post">
-            <input type="hidden" name="id" value="${data.id}"/>
+        <form name="edit_attributes" action="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" method="post">
             <div class="form-row">
                 <label>
                     Name:
@@ -80,8 +81,7 @@
                 <input type="submit" name="save" value="${_('Save')}"/>
             </div>
         </form>
-        <form name="auto_detect" action="${h.url_for( controller='root', action='edit' )}" method="post">
-            <input type="hidden" name="id" value="${data.id}"/>
+        <form name="auto_detect" action="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" method="post">
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="submit" name="detect" value="${_('Auto-detect')}"/>
@@ -104,8 +104,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">${_('Convert to new format')}</div>
         <div class="toolFormBody">
-            <form name="convert_data" action="${h.url_for( controller='root', action='edit' )}" method="post">
-                <input type="hidden" name="id" value="${data.id}"/>
+            <form name="convert_data" action="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" method="post">
                 <div class="form-row">
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <select name="target_type">
@@ -132,8 +131,7 @@
     <div class="toolFormTitle">${_('Change data type')}</div>
     <div class="toolFormBody">
         %if data.datatype.allow_datatype_change:
-            <form name="change_datatype" action="${h.url_for( controller='root', action='edit' )}" method="post">
-                <input type="hidden" name="id" value="${data.id}"/>
+            <form name="change_datatype" action="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" method="post">
                 <div class="form-row">
                     <label>
                         ${_('New Type')}:
@@ -161,7 +159,7 @@
 
 %if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
     <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
-    ${render_permission_form( data.dataset, data.get_display_name(), h.url_for( controller='root', action='edit', id=data.id ), all_roles )}
+    ${render_permission_form( data.dataset, data.get_display_name(), h.url_for( controller='dataset', action='edit', dataset_id=dataset_id ), all_roles )}
 %elif trans.user:
     <div class="toolForm">
         <div class="toolFormTitle">View Permissions</div>

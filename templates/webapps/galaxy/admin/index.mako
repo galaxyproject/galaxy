@@ -55,6 +55,7 @@
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
+                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas', webapp=webapp )}" target="galaxy_main">Manage quotas</a></div>
                     <div class="toolTitle"><a href="${h.url_for( controller='library_admin', action='browse_libraries' )}" target="galaxy_main">Manage data libraries</a></div>
                   </div>
                 </div>

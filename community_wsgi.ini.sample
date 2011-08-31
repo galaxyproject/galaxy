@@ -55,6 +55,13 @@ require_login = False
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
 
+# For use by email messages sent from the tool shed
+#smtp_server = smtp.your_tool_shed_server
+#email_from = your_tool_shed_email@server
+
+# The URL linked by the "Support" link in the "Help" menu.
+#support_url = http://wiki.g2.bx.psu.edu/Support
+
 # Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
 ## use_heartbeat = True
 

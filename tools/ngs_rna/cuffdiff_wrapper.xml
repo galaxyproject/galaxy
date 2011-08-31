@@ -78,19 +78,13 @@
                 <repeat name="groups" title="Group">
                     <param name="group" title="Group name" type="text" label="Group name (no spaces or commas)"/>
                     <repeat name="files" title="Replicate">
-                        <param name="file" label="Add file" type="data" format="sam,bam">
-                            <validator type="unspecified_build" />
-                        </param>
+                        <param name="file" label="Add file" type="data" format="sam,bam"/>
                     </repeat>
                 </repeat>
             </when>
             <when value="No">
-                <param format="sam,bam" name="aligned_reads1" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help="">
-                    <validator type="unspecified_build" />
-                </param>
-                <param format="sam,bam" name="aligned_reads2" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help="">
-                    <validator type="unspecified_build" />
-                </param>
+                <param format="sam,bam" name="aligned_reads1" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
+                <param format="sam,bam" name="aligned_reads2" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
             </when>
         </conditional>
 

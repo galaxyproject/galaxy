@@ -7,11 +7,30 @@ import logging
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
+from galaxy.datatypes.util.image_util import *
 from urllib import urlencode, quote_plus
 import zipfile
-import os, subprocess, tempfile
+import os, subprocess, tempfile, imghdr
+
+try:
+    import Image as PIL
+except ImportError:
+    try:
+        from PIL import Image as PIL
+    except:
+        PIL = None
 
 log = logging.getLogger(__name__)
+
+# TODO: Uploading image files of various types is supported in Galaxy, but on
+# the main public instance, the display_in_upload is not set for these data
+# types in datatypes_conf.xml because we do not allow image files to be uploaded
+# there.  There is currently no API feature that allows uploading files outside 
+# of a data library ( where it requires either the upload_paths or upload_directory
+# option to be enabled, which is not the case on the main public instance ).  Because
+# of this, we're currently safe, but when the api is enhanced to allow other uploads,
+# we need to ensure that the implementation is such that image files cannot be uploaded
+# to our main public instance.
 
 class Image( data.Data ):
     """Class describing an image"""
@@ -22,11 +41,110 @@ class Image( data.Data ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+    def sniff( self, filename ):
+        # First check if we can  use PIL
+        if PIL is not None:
+            try:
+                im = PIL.open( filename )
+                im.close()
+                return True
+            except:
+                return False
+        else:
+            if imghdr.what( filename ) is not None:
+                return True
+            else:
+                return False
+    
+class Jpg( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in jpg format."""
+        return check_image_type( filename, ['JPEG'], image )
+
+class Png( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in png format."""
+        return check_image_type( filename, ['PNG'], image )
+    
+class Tiff( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in tiff format."""
+        return check_image_type( filename, ['TIFF'], image )
+    
+class Bmp( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in bmp format."""
+        return check_image_type( filename, ['BMP'], image )
+
+class Gif( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in gif format."""
+        return check_image_type( filename, ['GIF'], image )
+
+class Im( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in im format."""
+        return check_image_type( filename, ['IM'], image )
+
+class Pcd( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in pcd format."""
+        return check_image_type( filename, ['PCD'], image )        
+
+class Pcx( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in pcx format."""
+        return check_image_type( filename, ['PCX'], image )
+
+class Ppm( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in ppm format."""
+        return check_image_type( filename, ['PPM'], image )        
+
+class Psd( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in psd format."""
+        return check_image_type( filename, ['PSD'], image )        
+
+class Xbm( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in XBM format."""
+        return check_image_type( filename, ['XBM'], image )        
+
+class Xpm( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in XPM format."""
+        return check_image_type( filename, ['XPM'], image )        
+
+class Rgb( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in RGB format."""
+        return check_image_type( filename, ['RGB'], image )
+
+class Pbm( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in PBM format"""
+        return check_image_type( filename, ['PBM'], image )
+
+class Pgm( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in PGM format"""
+        return check_image_type( filename, ['PGM'], image )
+
+class Eps( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in eps format."""
+        return check_image_type( filename, ['EPS'], image )        
+
+
+class Rast( Image ):
+    def sniff(self, filename, image=None):
+        """Determine if the file is in rast format"""
+        return check_image_type( filename, ['RAST'], image )
 
 class Pdf( Image ):
     def sniff(self, filename):
-        """Determine if the file is in pdf format.
-        """
+        """Determine if the file is in pdf format."""
         headers = get_headers(filename, None, 1)
         try:
             if headers[0][0].startswith("%PDF"):
@@ -73,7 +191,7 @@ class Gmaj( data.Data ):
                 "nobutton": "false",
                 "urlpause" :"100",
                 "debug": "false",
-                "posturl": quote_plus( "history_add_to?%s" % "&".join( [ "%s=%s" % ( key, value ) for key, value in { 'history_id': dataset.history_id, 'ext': 'maf', 'name': 'GMAJ Output on data %s' % dataset.hid, 'info': 'Added by GMAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id }.items() ] ) )
+                "posturl": "history_add_to?%s" % "&".join( map( lambda x: "%s=%s" % ( x[0], quote_plus( str( x[1] ) ) ), [ ( 'copy_access_from', dataset.id), ( 'history_id', dataset.history_id ), ( 'ext', 'maf' ), ( 'name', 'GMAJ Output on data %s' % dataset.hid ), ( 'info', 'Added by GMAJ' ), ( 'dbkey', dataset.dbkey ) ] ) ) 
                 }
                 class_name = "edu.psu.bx.gmaj.MajApplet.class"
                 archive = "/static/gmaj/gmaj.jar"

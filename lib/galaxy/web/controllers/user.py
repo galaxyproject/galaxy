@@ -10,6 +10,7 @@ from random import choice
 from galaxy.web.form_builder import * 
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.framework.helpers import iff
+from galaxy.security.validate_user_input import validate_email, validate_username, validate_password
 
 log = logging.getLogger( __name__ )
 
@@ -23,8 +24,6 @@ require_login_template = """
 """
 require_login_nocreation_template = require_login_template % ""
 require_login_creation_template = require_login_template % "  If you don't already have an account, <a href='%s'>you may create one</a>."
-
-VALID_USERNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 
 OPENID_PROVIDERS = { 'Google' : 'https://www.google.com/accounts/o8/id',
                      'Yahoo!' : 'http://yahoo.com',
@@ -110,10 +109,10 @@ class User( BaseController, UsesFormDefinitions ):
         action = 'login'
         if auto_associate:
             action = 'openid_manage'
-        if trans.app.config.bugs_email is not None:
-            contact = '<a href="mailto:%s">contact support</a>' % trans.app.config.bugs_email
+        if trans.app.config.support_url is not None:
+            contact = '<a href="%s">support</a>' % trans.app.config.support_url
         else:
-            contact = 'contact support'
+            contact = 'support'
         message = 'Verification failed for an unknown reason.  Please contact support for assistance.'
         status = 'error'
         consumer = trans.app.openid_manager.get_consumer( trans )
@@ -586,57 +585,6 @@ class User( BaseController, UsesFormDefinitions ):
             message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
             success = True
         return ( message, status, user, success )
-    def __validate_email( self, trans, email, user=None ):
-        message = ''
-        if user and user.email == email:
-            return message 
-        if len( email ) == 0 or "@" not in email or "." not in email:
-            message = "Enter a real email address"
-        elif len( email ) > 255:
-            message = "Email address exceeds maximum allowable length"
-        elif trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first():
-            message = "User with that email already exists"
-        return message
-    def __validate_username( self, trans, username, user=None ):
-        # User names must be at least four characters in length and contain only lower-case
-        # letters, numbers, and the '-' character.
-        if username in [ 'None', None, '' ]:
-            return ''
-        if user and user.username == username:
-            return ''
-        if len( username ) < 4:
-            return "User name must be at least 4 characters in length"
-        if len( username ) > 255:
-            return "User name cannot be more than 255 characters in length"
-        if not( VALID_USERNAME_RE.match( username ) ):
-            return "User name must contain only lower-case letters, numbers and '-'"
-        if trans.sa_session.query( trans.app.model.User ).filter_by( username=username ).first():
-            return "This user name is not available"
-        return ''
-    def __validate_password( self, trans, password, confirm ):
-        if len( password ) < 6:
-            return "Use a password of at least 6 characters"
-        elif password != confirm:
-            return "Passwords do not match"
-        return ''
-    def __validate( self, trans, params, email, password, confirm, username, webapp ):
-        # If coming from the community webapp, we'll require a public user name
-        if webapp == 'community' and not username:
-            return "A public user name is required"
-        message = self.__validate_email( trans, email )
-        if not message:
-            message = self.__validate_password( trans, password, confirm )
-        if not message and username:
-            message = self.__validate_username( trans, username )
-        if not message:
-            if webapp == 'galaxy':
-                if self.get_all_forms( trans, 
-                                       filter=dict( deleted=False ),
-                                       form_type=trans.app.model.FormDefinition.types.USER_INFO ):
-                    user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-                    if user_type_fd_id in [ 'none' ]:
-                        return "Select the user's type and information"
-        return message
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
         params = util.Params( kwd )
         if user and user.values:
@@ -748,7 +696,7 @@ class User( BaseController, UsesFormDefinitions ):
         if user and params.get( 'change_username_button', False ):
             username = kwd.get( 'username', '' )
             if username:
-                message = self.__validate_username( trans, username, user )
+                message = validate_username( trans, username, user )
             if message:
                 status = 'error'
             else:
@@ -784,9 +732,9 @@ class User( BaseController, UsesFormDefinitions ):
             email = util.restore_text( params.get( 'email', '' ) )
             username = util.restore_text( params.get( 'username', '' ) ).lower()
             # Validate the new values for email and username
-            message = self.__validate_email( trans, email, user )
+            message = validate_email( trans, email, user )
             if not message and username:
-                message = self.__validate_username( trans, username, user )
+                message = validate_username( trans, username, user )
             if message:
                 status = 'error'
             else:
@@ -815,7 +763,7 @@ class User( BaseController, UsesFormDefinitions ):
                     ok = False
             if ok:
                 # Validate the new password
-                message = self.__validate_password( trans, password, confirm )
+                message = validate_password( trans, password, confirm )
                 if message:
                     status = 'error'
                 else:
@@ -859,6 +807,8 @@ class User( BaseController, UsesFormDefinitions ):
         kwd[ 'id' ] = user_id
         if message:
             kwd[ 'message' ] = util.sanitize_text( message )
+        if status:
+            kwd[ 'status' ] = status
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='manage_user_info',
                                                           cntrller=cntrller,
@@ -911,6 +861,24 @@ class User( BaseController, UsesFormDefinitions ):
                                     webapp=webapp,
                                     message=message,
                                     status=status )
+    def __validate( self, trans, params, email, password, confirm, username, webapp ):
+        # If coming from the community webapp, we'll require a public user name
+        if webapp == 'community' and not username:
+            return "A public user name is required"
+        message = validate_email( trans, email )
+        if not message:
+            message = validate_password( trans, password, confirm )
+        if not message and username:
+            message = validate_username( trans, username )
+        if not message:
+            if webapp == 'galaxy':
+                if self.get_all_forms( trans, 
+                                       filter=dict( deleted=False ),
+                                       form_type=trans.app.model.FormDefinition.types.USER_INFO ):
+                    user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
+                    if user_type_fd_id in [ 'none' ]:
+                        return "Select the user's type and information"
+        return message
     @web.expose
     def set_default_permissions( self, trans, cntrller, **kwd ):
         """Sets the user's default permissions for the new histories"""

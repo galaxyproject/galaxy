@@ -716,7 +716,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
         return trans.fill_template( "page/wymiframe.mako" )
         
     def get_page( self, trans, id, check_ownership=True, check_accessible=False ):
-        """Get a page from the database by id, verifying ownership."""
+        """Get a page from the database by id."""
         # Load history from database
         id = trans.security.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
@@ -724,6 +724,9 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
             err+msg( "Page not found" )
         else:
             return self.security_check( trans.get_user(), page, check_ownership, check_accessible )
+            
+    def get_item( self, trans, id ):
+        return self.get_page( trans, id )
         
     def _get_embed_html( self, trans, item_class, item_id ):
         """ Returns HTML for embedding an item in a page. """

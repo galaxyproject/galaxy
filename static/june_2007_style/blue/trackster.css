@@ -19,13 +19,15 @@
 .viewport-canvas{width:100%;height:100px;}
 .yaxislabel{color:#777;z-index:100;}
 .line-track .track-content{border-top:1px solid #eee;border-bottom:1px solid #eee;}
+.group-handle{cursor:move;float:left;background:#eee url('/static/images/tracks/block.png');width:12px;height:12px;}
+.group{min-height:20px;border-top:2px solid #888;border-bottom:2px solid #888;}
 .track{background:white;}
 .track-header{text-align:left;padding:4px 0px;color:#666;}
 .track-header .menubutton{margin-left:0px;}
 .track-content{overflow:hidden;text-align:center;border-top:1px solid #eee;border-bottom:2px solid #eee;background:#eee url('/static/images/tracks/diag_bg.gif');min-height:16px;}
 .label-track .track-content{background:white;}
 .track-tile{background:white;}
-.track-tile canvas{position:relative;z-index:100;border:solid white;border-width:2px 0px 0px 0px;}
+.track-tile canvas{position:relative;z-index:100;}
 .tile-message{border-bottom:solid 1px red;text-align:center;color:red;background-color:white;}
 .track.error .track-content{background-color:#ECB4AF;background-image:none;}
 .track.nodata .track-content{background-color:#eee;background-image:none;}
@@ -39,9 +41,12 @@
 .top-labeltrack{position:relative;border-bottom:solid #999 1px;}
 .nav-labeltrack{border-top:solid #999 1px;border-bottom:solid #333 1px;}
 input{font:10px verdana;}
-.dynamic-tool,.filters{width:410px;margin-left:0.25em;padding-bottom:0.5em;}
+.dynamic-tool,.filters{margin-left:0.25em;padding-bottom:0.5em;}
+.filters>.sliders,.display-controls{float:left;margin:1em;}
+.sliders{width:410px;}
+.display-controls{border-left:solid 2px #DDDDDD;padding-left:1em}
 .slider-row{margin-top:0.4em;margin-left:1em;}
-.slider-label{float:left;font-weight:bold;}
+.elt-label{float:left;font-weight:bold;margin-right:1em;}
 .slider{float:right;width:200px;position:relative;}
 .tool-name{font-size:110%;font-weight:bold;}
 .param-row{margin-top:0.2em;margin-left:1em;}
@@ -55,4 +60,4 @@ input{font:10px verdana;}
 .icon.more-down{background:url('../images/fugue/arrow-transition-270-bw.png') no-repeat 0px 0px;}
 .icon.more-across{background:url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;}
 .intro{padding:1em;}
-.intro>.action-button{background-color:#CCC;padding:1em;}
+.intro > .action-button{background-color:#CCC;padding:1em;}

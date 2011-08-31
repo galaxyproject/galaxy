@@ -271,9 +271,12 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                 n_deleted += 1
             if purge and trans.app.config.allow_user_dataset_purge:
                 for hda in history.datasets:
+                    if trans.user:
+                        trans.user.total_disk_usage -= hda.quota_amount( trans.user )
                     hda.purged = True
                     trans.sa_session.add( hda )
                     trans.log_event( "HDA id %s has been purged" % hda.id )
+                    trans.sa_session.flush()
                     if hda.dataset.user_can_purge:
                         try:
                             hda.dataset.full_delete()
@@ -1204,3 +1207,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         hist = trans.sa_session.query( trans.app.model.History ).get( decoded_id )
         trans.set_history( hist )
         return trans.response.send_redirect( url_for( "/" ) )
+        
+    def get_item( self, trans, id ):
+        return self.get_history( trans, id )
+        

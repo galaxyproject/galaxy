@@ -1,0 +1,101 @@
+"""
+API operations on the contents of a history.
+"""
+import logging, os, string, shutil, urllib, re, socket
+from cgi import escape, FieldStorage
+from galaxy import util, datatypes, jobs, web, util
+from galaxy.web.base.controller import *
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.model.orm import *
+from galaxy.web.api.util import *
+
+import pkg_resources
+pkg_resources.require( "Routes" )
+import routes
+
+log = logging.getLogger( __name__ )
+
+class HistoryContentsController( BaseController ):
+
+    @web.expose_api
+    def index( self, trans, history_id, **kwd ):
+        """
+        GET /api/histories/{encoded_history_id}/contents
+        Displays a collection (list) of history contents
+        """        
+        try:
+            history = get_history_for_access( trans, history_id )
+        except Exception, e:
+            return str( e )
+                       
+        rval = []
+        try:
+            for dataset in history.datasets:
+                api_type = "file"
+                encoded_id = trans.security.encode_id( '%s.%s' % (api_type, dataset.id) )
+                rval.append( dict( id = encoded_id,
+                                   type = api_type,
+                                   name = dataset.name,
+                                   url = url_for( 'history_content', history_id=history_id, id=encoded_id, ) ) )
+        except Exception, e:
+            rval = "Error in history API at listing contents"
+            log.error( rval + ": %s" % str(e) )
+            trans.response.status = 500
+        return rval
+
+    @web.expose_api
+    def show( self, trans, id, history_id, **kwd ):
+        """
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_type_and_id}
+        Displays information about a history content (dataset).
+        """
+        try:
+            content = get_history_content_for_access( trans, content_id )
+        except Exception, e:
+            return str( e )
+        try:
+            item = content.get_api_value( view='element' )
+            if not item['deleted']:
+                # Problem: Method url_for cannot use the dataset controller
+                # Get the environment from DefaultWebTransaction and use default webapp mapper instead of webapp API mapper
+                url = routes.URLGenerator(trans.webapp.mapper, trans.environ)
+                # http://routes.groovie.org/generating.html
+                # url_for is being phased out, so new applications should use url
+                item['download_url'] = url(controller='dataset', action='display', dataset_id=trans.security.encode_id(content.id), to_ext=content.ext)
+        except Exception, e:
+            item = "Error in history API at listing dataset"
+            log.error( item + ": %s" % str(e) )               
+            trans.response.status = 500
+        return item
+
+    @web.expose_api
+    def create( self, trans, history_id, payload, **kwd ):
+        """
+        POST /api/libraries/{encoded_history_id}/contents
+        Creates a new history content item (file, aka HistoryDatasetAssociation).
+        """
+        params = util.Params( payload )
+        from_ld_id = payload.get( 'from_ld_id', None )
+
+        try:
+            history = get_history_for_modification( trans, history_id )
+        except Exception, e:
+            return str( e )
+
+        if from_ld_id:
+            try:
+                ld = get_library_content_for_access( trans, from_ld_id )
+                assert type( ld ) is trans.app.model.LibraryDataset, "Library content id ( %s ) is not a dataset" % from_ld_id
+            except AssertionError, e:
+                trans.response.status = 400
+                return str( e )
+            except Exception, e:
+                return str( e )
+            hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
+            history.add_dataset( hda )
+            trans.sa_session.flush()
+            return hda.get_api_value()
+        else:
+            # TODO: implement other "upload" methods here.
+            trans.response.status = 403
+            return "Not implemented."

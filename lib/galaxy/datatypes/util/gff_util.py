@@ -87,6 +87,13 @@ class GFFFeature( GFFInterval ):
             intervals_copy.append( interval.copy() )
         return GFFFeature(self.reader, self.chrom_col, self.feature_col, self.start_col, self.end_col, self.strand_col,
                           self.score_col, self.strand, intervals=intervals_copy )
+                          
+    def lines( self ):
+        lines = []
+        for interval in self.intervals:
+            lines.append( '\t'.join( interval.fields ) )
+        return lines
+            
                         
 class GFFIntervalToBEDReaderWrapper( NiceReaderWrapper ):
     """ 
@@ -208,6 +215,10 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             # TODO: When no longer supporting python 2.4 use finally:
             #finally:
             #raw_size += len( self.current_line )
+            
+            # Ignore comments.
+            if isinstance( interval, Comment ):
+                continue
             
             # If interval not associated with feature, break.
             group = interval.attributes.get( 'group', None )

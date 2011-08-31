@@ -307,5 +307,12 @@ This tool allows you to build complex filters to be applied to each read in a FA
 
 Adapter bases in color space reads are excluded from filtering.
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor N, Taylor J, Nekrutenko A; Galaxy Team. Manipulation of FASTQ data with Galaxy. Bioinformatics. 2010 Jul 15;26(14):1783-5. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20562416&gt;`_
+
+
 </help>
 </tool>

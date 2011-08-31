@@ -74,8 +74,17 @@ class RepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.name
-    class RevisionColumn( grids.TextColumn ):
+    class RevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
+            """
+            Display a SelectField whose options are the changeset_revision
+            strings of all downloadable_revisions of this repository.
+            """
+            select_field = build_changeset_revision_select_field( trans, repository )
+            if len( select_field.options ) > 1:
+                return select_field.get_html()
             return repository.revision
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
@@ -121,13 +130,14 @@ class RepositoryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id, webapp="community" ) ),
-                    attach_popup=False ),
+                    link=( lambda item: dict( operation="view_or_manage_repository",
+                                              id=item.id,
+                                              webapp="community" ) ),
+                    attach_popup=True ),
         DescriptionColumn( "Synopsis",
                            key="description",
                            attach_popup=False ),
-        RevisionColumn( "Revision",
-                        attach_popup=False ),
+        RevisionColumn( "Revision" ),
         CategoryColumn( "Category",
                         model_class=model.Category,
                         key="Category.name",
@@ -159,7 +169,7 @@ class RepositoryListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [ grids.GridOperation( "Receive email alerts",
-                                        allow_multiple=True,
+                                        allow_multiple=False,
                                         condition=( lambda item: not item.deleted ),
                                         async_compatible=False ) ]
     standard_filters = []
@@ -212,7 +222,7 @@ class RepositoryController( BaseController, ItemRatings ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
-                repository_id = kwd.get( 'id', None )
+                repository_id = kwd[ 'id' ]
                 repository = get_repository( trans, repository_id )
                 is_admin = trans.user_is_admin()
                 if is_admin or repository.user == trans.user:
@@ -257,12 +267,32 @@ class RepositoryController( BaseController, ItemRatings ):
                 category = get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
-                if kwd[ 'id' ]:
-                    return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                      action='set_email_alerts',
-                                                                      **kwd ) )
+                if trans.user:
+                    if kwd[ 'id' ]:
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='set_email_alerts',
+                                                                          **kwd ) )
                 else:
+                    kwd[ 'message' ] = 'You must be logged in to set email alerts.'
+                    kwd[ 'status' ] = 'error'
                     del kwd[ 'operation' ]
+        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
+        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # all of the received values to see which value is not the repository tip.  If we find it, we
+        # know the refresh_on_change occurred, and we have the necessary repository id and change set
+        # revision to pass on.
+        for k, v in kwd.items():
+            changset_revision_str = 'changeset_revision_'
+            if k.startswith( changset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+                repository = get_repository( trans, repository_id )
+                if repository.tip != v:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='browse_repositories',
+                                                                      operation='view_or_manage_repository',
+                                                                      id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=v ) )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
     @web.expose
@@ -427,12 +457,66 @@ class RepositoryController( BaseController, ItemRatings ):
         current_working_dir = os.getcwd()
         # Update repository files for browsing.
         update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
+    @web.expose
+    def contact_owner( self, trans, id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, id )
+        if trans.user and trans.user.email:
+            return trans.fill_template( "/webapps/community/repository/contact_owner.mako",
+                                        repository=repository,
+                                        message=message,
+                                        status=status )
+        else:
+            # Do all we can to eliminate spam.
+            return trans.show_error_message( "You must be logged in to contact the owner of a repository." )
+    @web.expose
+    def send_to_owner( self, trans, id, message='' ):
+        repository = get_repository( trans, id )
+        if not message:
+            message = 'Enter a message'
+            status = 'error'
+        elif trans.user and trans.user.email:
+            smtp_server = trans.app.config.smtp_server
+            from_address = trans.app.config.email_from
+            if smtp_server is None or from_address is None:
+                return trans.show_error_message( "Mail is not configured for this Galaxy tool shed instance" )
+            to_address = repository.user.email
+            # Get the name of the server hosting the tool shed instance.
+            host = trans.request.host
+            # Build the email message
+            body = string.Template( contact_owner_template ) \
+                .safe_substitute( username=trans.user.username,
+                                  repository_name=repository.name,
+                                  email=trans.user.email,
+                                  message=message,
+                                  host=host )
+            subject = "Regarding your tool shed repository named %s" % repository.name
+            # Send it
+            try:
+                util.send_mail( from_address, to_address, subject, body, trans.app.config )
+                message = "Your message has been sent"
+                status = "done"
+            except Exception, e:
+                message = "An error occurred sending your message by email: %s" % str( e )
+                status = "error"
+        else:
+            # Do all we can to eliminate spam.
+            return trans.show_error_message( "You must be logged in to contact the owner of a repository." )
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='contact_owner',
+                                                          id=id,
+                                                          message=message,
+                                                          status=status ) )
     @web.expose
     def select_files_to_delete( self, trans, id, **kwd ):
         params = util.Params( kwd )
@@ -506,10 +590,12 @@ class RepositoryController( BaseController, ItemRatings ):
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -520,6 +606,7 @@ class RepositoryController( BaseController, ItemRatings ):
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         alerts = params.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
@@ -545,11 +632,23 @@ class RepositoryController( BaseController, ItemRatings ):
                 trans.sa_session.flush()
         checked = alerts_checked or ( user and user.email in email_alerts )
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
-        repository_metadata = get_repository_metadata( trans, id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
         else:
             metadata = None
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
+        if is_malicious:
+            if trans.app.security_agent.can_push( trans.user, repository ):
+                message += malicious_error_can_push
+            else:
+                message += malicious_error
+            status = 'error'
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -558,6 +657,10 @@ class RepositoryController( BaseController, ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
+                                    changeset_revision=changeset_revision,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    revision_label=revision_label,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -570,6 +673,7 @@ class RepositoryController( BaseController, ItemRatings ):
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
         repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         description = util.restore_text( params.get( 'description', repository.description ) )
         long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
@@ -666,11 +770,25 @@ class RepositoryController( BaseController, ItemRatings ):
         allow_push_select_field = self.__build_allow_push_select_field( trans, current_allow_push_list )
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
-        repository_metadata = get_repository_metadata( trans, id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
+            is_malicious = repository_metadata.malicious
         else:
             metadata = None
+            is_malicious = False
+        if is_malicious:
+            if trans.app.security_agent.can_push( trans.user, repository ):
+                message += malicious_error_can_push
+            else:
+                message += malicious_error
+            status = 'error'
+        malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
         categories = get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
@@ -681,6 +799,9 @@ class RepositoryController( BaseController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
+                                    changeset_revision=changeset_revision,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    revision_label=revision_label,
                                     selected_categories=selected_categories,
                                     categories=categories,
                                     metadata=metadata,
@@ -688,6 +809,8 @@ class RepositoryController( BaseController, ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
+                                    malicious_check_box=malicious_check_box,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -713,9 +836,11 @@ class RepositoryController( BaseController, ItemRatings ):
                             'parent' : ctx.parents()[0] }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/view_changelog.mako', 
                                     repository=repository,
                                     changesets=changesets,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -725,7 +850,7 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
-        ctx = get_change_set( trans, repo, ctx_str )
+        ctx = get_changectx_for_changeset( trans, repo, ctx_str )
         if ctx is None:
             message = "Repository does not include changeset revision '%s'." % str( ctx_str )
             status = 'error'
@@ -740,6 +865,7 @@ class RepositoryController( BaseController, ItemRatings ):
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( self.to_html_escaped( diff ) )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
                                     repository=repository,
                                     ctx=ctx,
@@ -752,6 +878,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     ignored=ignored,
                                     clean=clean,
                                     diffs=diffs,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -781,12 +908,14 @@ class RepositoryController( BaseController, ItemRatings ):
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
                                     repository=repository,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     rra=rra,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -829,12 +958,28 @@ class RepositoryController( BaseController, ItemRatings ):
     @web.expose
     @web.require_login( "set repository metadata" )
     def set_metadata( self, trans, id, ctx_str, **kwd ):
-        message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
-        if not message:
-            message = "Metadata for change set revision '%s' has been reset." % str( ctx_str )
+        malicious = kwd.get( 'malicious', '' )
+        if kwd.get( 'malicious_button', False ):
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, ctx_str )
+            malicious_checked = CheckboxField.is_checked( malicious )
+            repository_metadata.malicious = malicious_checked
+            trans.sa_session.add( repository_metadata )
+            trans.sa_session.flush()
+            if malicious_checked:
+                message = "The repository tip has been defined as malicious."
+            else:
+                message = "The repository tip has been defined as <b>not</b> malicious."
+            status = 'done'
+        else:
+            # The set_metadata_button was clicked
+            message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
+            if not message:
+                message = "Metadata for change set revision '%s' has been reset." % str( ctx_str )
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,
+                                                          changeset_revision=ctx_str,
+                                                          malicious=malicious,
                                                           message=message,
                                                           status=status ) )
     @web.expose
@@ -896,19 +1041,19 @@ class RepositoryController( BaseController, ItemRatings ):
                 # Reload the tool_data_table_conf entries
                 trans.app.tool_data_tables = galaxy.tools.data.ToolDataTableManager( trans.app.config.tool_data_table_config_path )
                 message = "The new entry has been added to the tool_data_table_conf.xml file, so click the <b>Reset metadata</b> button below."
-                # TODO: what if ~/tool-data/<loc_filename> doesn't exist?  We need to figure out how to 
-                # force the user to upload it's sample to the repository in order to generate metadata.
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='manage_repository',
                                                                   id=repository_id,
                                                                   message=message,
                                                                   status=status ) )
+        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/add_tool_data_table_entry.mako', 
                                     name_attr=name_attr,
                                     repository=repository,
                                     comment_char=comment_char,
                                     loc_filename=loc_filename,
                                     column_fields=column_fields,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     def __get_column_fields( self, **kwd ):
@@ -930,27 +1075,56 @@ class RepositoryController( BaseController, ItemRatings ):
                 break
         return column_fields
     @web.expose
-    def display_tool( self, trans, repository_id, tool_config, **kwd ):
+    def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, repository_id )
+        old_version_msg = "The path to your selected version of this tool does not exist in the repository tip, " + \
+            "so it cannot be previewed, but you can inspect the tool version's metadata using it's pop-up menu " + \
+            "and you can download your selected version of this tool from the <b>Repository Actions</b> menu."            
         try:
             tool = load_tool( trans, os.path.abspath( tool_config ) )
-            tool_state = self.__new_state( trans )
-            return trans.fill_template( "/webapps/community/repository/tool_form.mako",
-                                        repository=repository,
-                                        tool=tool,
-                                        tool_state=tool_state,
-                                        message=message,
-                                        status=status )
+            can_preview = True
+            if changeset_revision != repository.tip:
+                # See if we are attempting to preview an old version of a tool.
+                # TODO: Previewing an old version of a tool is not currently supported because
+                # the received tool_config is a file on the file system.  We need to implement
+                # an enhancement here to look at the repository manifest files if previewing an
+                # old version of a tool.
+                repo_changeset_repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+                repo_changeset_metadata = repo_changeset_repository_metadata.metadata
+                if 'tools' in repo_changeset_metadata:
+                    for tool_metadata_dict in repo_changeset_metadata[ 'tools' ]:
+                        if tool_metadata_dict[ 'id' ] == tool.id:
+                            if tool_metadata_dict[ 'version' ] != tool.version:
+                                can_preview = False
+                                message = old_version_msg
+            if can_preview:
+                tool_state = self.__new_state( trans )
+                is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+                return trans.fill_template( "/webapps/community/repository/tool_form.mako",
+                                            repository=repository,
+                                            tool=tool,
+                                            tool_state=tool_state,
+                                            is_malicious=is_malicious,
+                                            message=message,
+                                            status=status )
         except Exception, e:
-            message = 'Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error.' % str( e )
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='manage_repository',
-                                                              id=repository_id,
-                                                              message=message,
-                                                              status='error' ) )
+            # TODO: enhance this to check the repository manifest for the files and
+            # display the tool using them.
+            exception_str = str( e )
+            if exception_str.find( 'No such file or directory' ) >= 0:
+                message = old_version_msg
+            else:
+                message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % exception_str
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='browse_repositories',
+                                                          operation='view_or_manage_repository',
+                                                          id=repository_id,
+                                                          changeset_revision=changeset_revision,
+                                                          message=message,
+                                                          status='error' ) )
     def __new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will not be initialized
@@ -970,21 +1144,35 @@ class RepositoryController( BaseController, ItemRatings ):
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None
-        repository_metadata = get_repository_metadata( trans, repository_id, changeset_revision ).metadata
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision ).metadata
         if 'tools' in repository_metadata:
             for tool_metadata_dict in repository_metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
                     metadata = tool_metadata_dict
-                    tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
+                    try:
+                        # We may be attempting to load a tool that no longer exists in the repository tip.
+                        tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
+                    except:
+                        tool = None
                     break
+        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
                                     metadata=metadata,
+                                    changeset_revision=changeset_revision,
+                                    revision_label=revision_label,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
-    def download( self, trans, repository_id, file_type, **kwd ):
+    def download( self, trans, repository_id, changeset_revision, file_type, **kwd ):
         # Download an archive of the repository files compressed as zip, gz or bz2.
         params = util.Params( kwd )
         repository = get_repository( trans, repository_id )
@@ -993,11 +1181,11 @@ class RepositoryController( BaseController, ItemRatings ):
         # [web]
         # allow_archive = bz2, gz, zip
         if file_type == 'zip':
-            file_type_str = 'tip.zip'
+            file_type_str = '%s.zip' % changeset_revision
         elif file_type == 'bz2':
-            file_type_str = 'tip.tar.bz2'
+            file_type_str = '%s.tar.bz2' % changeset_revision
         elif file_type == 'gz':
-            file_type_str = 'tip.tar.gz'
+            file_type_str = '%s.tar.gz' % changeset_revision
         repository.times_downloaded += 1
         trans.sa_session.add( repository )
         trans.sa_session.flush()
@@ -1031,7 +1219,6 @@ class RepositoryController( BaseController, ItemRatings ):
         def print_ticks( d ):
             pass
         cmd  = "ls -p '%s'" % folder_path
-        # Handle the authentication message if keys are not set - the message is
         output = pexpect.run( cmd,
                               events={ pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )
@@ -1049,6 +1236,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                                                   action='browse_repositories',
                                                                   operation="view_or_manage_repository",
                                                                   id=trans.security.encode_id( repository.id ),
+                                                                  changeset_revision=repository.tip,
                                                                   status=status,
                                                                   message=message ) )
         return output.split()

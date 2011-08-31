@@ -390,6 +390,7 @@
   </section>
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />
+   <tool file="peak_calling/sicer_wrapper.xml" />
    <tool file="genetrack/genetrack_indexer.xml" />
    <tool file="genetrack/genetrack_peak_prediction.xml" />
   </section>

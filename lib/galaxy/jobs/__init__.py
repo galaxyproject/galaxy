@@ -11,6 +11,8 @@ from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
 from galaxy.jobs.actions.post import ActionBox
 
+from sqlalchemy.sql.expression import and_, or_
+
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
 
@@ -163,6 +165,10 @@ class JobQueue( object ):
                                 .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
                                 .filter( model.Job.state == model.Job.states.NEW ).all()
         else:
+            # Get job objects and append to watch queue for any which were
+            # previously waiting
+            for job_id in self.waiting_jobs:
+                jobs_to_check.append( self.sa_session.query( model.Job ).get( job_id ) )
             try:
                 while 1:
                     message = self.queue.get_nowait()
@@ -174,10 +180,6 @@ class JobQueue( object ):
                     jobs_to_check.append( self.sa_session.query( model.Job ).get( job_id ) )
             except Empty:
                 pass
-            # Get job objects and append to watch queue for any which were
-            # previously waiting
-            for job_id in self.waiting_jobs:
-                jobs_to_check.append( self.sa_session.query( model.Job ).get( job_id ) )
         # Iterate over new and waiting jobs and look for any that are 
         # ready to run
         new_waiting_jobs = []
@@ -203,7 +205,7 @@ class JobQueue( object ):
                 elif job_state == JOB_DELETED:
                     log.info( "job %d deleted by user while still queued" % job.id )
                 elif job_state == JOB_ADMIN_DELETED:
-                    job.info( "job %d deleted by admin while still queued" % job.id )
+                    log.info( "job %d deleted by admin while still queued" % job.id )
                 else:
                     log.error( "unknown job state '%s' for job %d" % ( job_state, job.id ) )
                     if not self.track_jobs_in_database:
@@ -229,6 +231,15 @@ class JobQueue( object ):
             return JOB_DELETED
         elif job.state == model.Job.states.ERROR:
             return JOB_ADMIN_DELETED
+        elif self.app.config.enable_quotas:
+            quota = self.app.quota_agent.get_quota( job.user )
+            if quota is not None:
+                try:
+                    usage = self.app.quota_agent.get_usage( user=job.user, history=job.history )
+                    if usage > quota:
+                        return JOB_WAIT
+                except AssertionError, e:
+                    pass # No history, should not happen with an anon user
         for dataset_assoc in job.input_datasets + job.input_library_datasets:
             idata = dataset_assoc.dataset
             if not idata:
@@ -247,6 +258,28 @@ class JobQueue( object ):
             elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
                 # need to requeue
                 return JOB_WAIT
+        return self.__check_user_jobs( job )
+
+    def __check_user_jobs( self, job ):
+        if not self.app.config.user_job_limit:
+            return JOB_READY
+        if job.user:
+            user_jobs = self.sa_session.query( model.Job ) \
+                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+                            .filter( and_( model.Job.user_id == job.user.id,
+                                           or_( model.Job.state == model.Job.states.RUNNING,
+                                                model.Job.state == model.Job.states.QUEUED ) ) ).all()
+        elif job.galaxy_session:
+            user_jobs = self.sa_session.query( model.Job ) \
+                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+                            .filter( and_( model.Job.session_id == job.galaxy_session.id,
+                                           or_( model.Job.state == model.Job.states.RUNNING,
+                                                model.Job.state == model.Job.states.QUEUED ) ) ).all()
+        else:
+            log.warning( 'Job %s is not associated with a user or session so job concurrency limit cannot be checked.' % job.id )
+            return JOB_READY
+        if len( user_jobs ) >= self.app.config.user_job_limit:
+            return JOB_WAIT
         return JOB_READY
             
     def put( self, job_id, tool ):
@@ -501,7 +534,7 @@ class JobWrapper( object ):
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
             if os.path.exists(version_filename):
-                self.version_string = "Tool version: %s" % open(version_filename).read()
+                self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
             
         if self.app.config.outputs_to_working_directory:
@@ -554,7 +587,8 @@ class JobWrapper( object ):
             
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info  = context['stdout'] + context['stderr'] + self.version_string
+                dataset.info  = context['stdout'] + context['stderr']
+                dataset.tool_version = self.version_string
                 dataset.set_size()
                 if context['stderr']:
                     dataset.blurb = "error"
@@ -646,9 +680,14 @@ class JobWrapper( object ):
                              tool=self.tool, stdout=stdout, stderr=stderr )
         job.command_line = self.command_line
 
+        bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
-        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+        for dataset_assoc in job.output_datasets:
             dataset_assoc.dataset.dataset.set_total_size()
+            bytes += dataset_assoc.dataset.dataset.get_total_size()
+
+        if job.user:
+            job.user.total_disk_usage += bytes
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_output_fnames() ]:

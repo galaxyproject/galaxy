@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify
 from galaxy.model.orm import *
+from mercurial import hg, ui
 
 log = logging.getLogger(__name__)
 
@@ -155,17 +156,8 @@ class CommunityRBACAgent( RBACAgent ):
             for group in groups:
                 self.associate_components( user=user, group=group )
     def can_push( self, user, repository ):
-        # TODO: handle this via the mercurial api.
-        if not user:
-            return False
-        # Read the repository's hgrc file
-        hgrc_file = os.path.abspath( os.path.join( repository.repo_path, ".hg", "hgrc" ) )
-        config = ConfigParser.ConfigParser()
-        config.read( hgrc_file )
-        for option in config.options( "web" ):
-            if option == 'allow_push':
-                allowed = config.get( "web", option )
-                return user.username in allowed
+        if user:
+            return user.username in listify( repository.allow_push )
         return False
 
 def get_permitted_actions( filter=None ):

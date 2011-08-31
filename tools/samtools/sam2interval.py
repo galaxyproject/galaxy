@@ -44,7 +44,7 @@ options (listed below) default to 'None' if omitted
         '-r','--ref_column',
         dest='ref_col',
         default = '3',
-        help='Column containing name of the refernce sequence coordinate. 1-based')
+        help='Column containing name of the reference sequence coordinate. 1-based')
         
     parser.add_option(
         '-e','--read_column',
@@ -53,30 +53,22 @@ options (listed below) default to 'None' if omitted
         help='Column containing read name. 1-based')
 
     parser.add_option(
-        '-d','--debug',
-        dest='debug',
-        action='store_true',
-        default = False,
-        help='Print debugging info')
-        
-    parser.add_option(
         '-p','--print_all',
         dest='prt_all',
         action='store_true',
         default = False,
         help='Print coordinates and original SAM?')
-
-
+    
     options, args = parser.parse_args()
 
     if options.input_sam:
-		infile = open ( options.input_sam, 'r')
+        infile = open ( options.input_sam, 'r')
     else:
-    	infile = sys.stdin
+        infile = sys.stdin
 
     cigar = re.compile( '\d+M|\d+N|\d+D|\d+P' )
 
-    print '#chrom\tstart\tend\tstrand' # provide a (partial) header so that strand is automatically set in metadata
+    print '#chrom\tstart\tend\tstrand\tread_name' # provide a (partial) header so that strand is automatically set in metadata
 
     for line in infile:
         line = line.rstrip( '\r\n' )
@@ -93,12 +85,12 @@ options (listed below) default to 'None' if omitted
             read_name = fields[ int( options.read_col ) - 1 ]
             ref_name  = fields[ int( options.ref_col ) - 1 ]
             
-	    if not ref_name == '*':
-	    # Do not print lines with unmapped reads that contain '*' instead of chromosome name	    
-		if options.prt_all:	
-		    print '%s\t%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand, line)
-		else:
-		    print '%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand)
+            if ref_name != '*':
+                # Do not print lines with unmapped reads that contain '*' instead of chromosome name        
+                if options.prt_all: 
+                    print '%s\t%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand, line)
+                else:
+                    print '%s\t%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand, read_name)
 
 if __name__ == "__main__": main()
 

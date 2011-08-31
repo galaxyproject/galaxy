@@ -72,9 +72,10 @@
             <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="True" /> -->
         </datatype>
         <datatype extension="gff3" type="galaxy.datatypes.interval:Gff3" display_in_upload="true"/>
-        <datatype extension="gif" type="galaxy.datatypes.images:Image" mimetype="image/gif"/>
+        <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
         <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
         <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true"/>
+        <datatype extension="h5" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream"/>
         <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
         <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
             <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
@@ -89,8 +90,22 @@
         </datatype>
         <datatype extension="picard_interval_list" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
         <datatype extension="gatk_interval" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
-        <datatype extension="gatk_dbsnp" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
-        <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
+        <datatype extension="gatk_dbsnp" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
+        <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
+        <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff"/>
+        <datatype extension="bmp" type="galaxy.datatypes.images:Bmp" mimetype="image/bmp"/>
+        <datatype extension="im" type="galaxy.datatypes.images:Im" mimetype="image/im"/>
+        <datatype extension="pcd" type="galaxy.datatypes.images:Pcd" mimetype="image/pcd"/>
+        <datatype extension="pcx" type="galaxy.datatypes.images:Pcx" mimetype="image/pcx"/>
+        <datatype extension="ppm" type="galaxy.datatypes.images:Ppm" mimetype="image/ppm"/>
+        <datatype extension="psd" type="galaxy.datatypes.images:Psd" mimetype="image/psd"/>
+        <datatype extension="xbm" type="galaxy.datatypes.images:Xbm" mimetype="image/xbm"/>
+        <datatype extension="xpm" type="galaxy.datatypes.images:Xpm" mimetype="image/xpm"/>
+        <datatype extension="rgb" type="galaxy.datatypes.images:Rgb" mimetype="image/rgb"/>
+        <datatype extension="pbm" type="galaxy.datatypes.images:Pbm" mimetype="image/pbm"/>
+        <datatype extension="pgm" type="galaxy.datatypes.images:Pgm" mimetype="image/pgm"/>
+        <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>
+        <datatype extension="rast" type="galaxy.datatypes.images:Rast" mimetype="image/rast"/>
         <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
         <datatype extension="lav" type="galaxy.datatypes.sequence:Lav" display_in_upload="true"/>
         <datatype extension="maf" type="galaxy.datatypes.sequence:Maf" display_in_upload="true">
@@ -102,7 +117,7 @@
         </datatype>
         <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf"/>
         <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true" />
-        <datatype extension="png" type="galaxy.datatypes.images:Image" mimetype="image/png"/>
+        <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png"/>
         <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" />
         <datatype extension="qualsolexa" type="galaxy.datatypes.qualityscore:QualityScoreSolexa" display_in_upload="true"/>
         <datatype extension="qualillumina" type="galaxy.datatypes.qualityscore:QualityScoreIllumina" display_in_upload="true"/>
@@ -116,9 +131,10 @@
         <datatype extension="svg" type="galaxy.datatypes.images:Image" mimetype="image/svg+xml"/>
         <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
         <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
-	<datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
+        <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
         <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
         <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" mimetype="application/xml" display_in_upload="true"/>
+        <datatype extension="cisml" type="galaxy.datatypes.xml:CisML" mimetype="application/xml" display_in_upload="true"/>
         <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" mimetype="application/xml" display_in_upload="true"/>
         <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
             <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -304,6 +320,24 @@
         <sniffer type="galaxy.datatypes.tabular:Pileup"/>
         <sniffer type="galaxy.datatypes.interval:Interval"/>
         <sniffer type="galaxy.datatypes.tabular:Sam"/>
+        <sniffer type="galaxy.datatypes.images:Jpg"/>
+        <sniffer type="galaxy.datatypes.images:Png"/>
+        <sniffer type="galaxy.datatypes.images:Tiff"/>
+        <sniffer type="galaxy.datatypes.images:Bmp"/>
+        <sniffer type="galaxy.datatypes.images:Gif"/>
+        <sniffer type="galaxy.datatypes.images:Im"/>
+        <sniffer type="galaxy.datatypes.images:Pcd"/>
+        <sniffer type="galaxy.datatypes.images:Pcx"/>
+        <sniffer type="galaxy.datatypes.images:Ppm"/>
+        <sniffer type="galaxy.datatypes.images:Psd"/>
+        <sniffer type="galaxy.datatypes.images:Xbm"/>
+        <sniffer type="galaxy.datatypes.images:Xpm"/>
+        <sniffer type="galaxy.datatypes.images:Rgb"/>
+        <sniffer type="galaxy.datatypes.images:Pbm"/>
+        <sniffer type="galaxy.datatypes.images:Pgm"/>
+        <sniffer type="galaxy.datatypes.images:Xpm"/>
+        <sniffer type="galaxy.datatypes.images:Eps"/>
+        <sniffer type="galaxy.datatypes.images:Rast"/>
         <!--
         Keep this commented until the sniff method in the assembly.py
         module is fixed to not read the entire file.

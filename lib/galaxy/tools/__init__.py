@@ -1,7 +1,7 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-import pkg_resources; 
+import pkg_resources
 
 pkg_resources.require( "simplejson" )
 
@@ -2052,21 +2052,16 @@ class LibraryDatasetValueWrapper( object ):
         self.input = input
         self.value = value
         self._other_values = other_values
+        self.counter = 0
     def __str__( self ):
-        return self.value.name
-    def templates( self ):
-        """ Returns JSON dict of templates => data """
-        if not self.value:
-            return None
-        template_data = {}
-        for temp_info in self.value.info_association:
-            template = temp_info.template
-            content = temp_info.info.content
-            tmp_dict = {}
-            for field in template.fields:
-                tmp_dict[field['label']] = content[field['name']]
-            template_data[template.name] = tmp_dict
-        return simplejson.dumps( template_data )
+        return self.value
+    def __iter__( self ):
+        return self
+    def next( self ):
+        if self.counter >= len(self.value):
+            raise StopIteration
+        self.counter += 1
+        return self.value[self.counter-1]
     def __getattr__( self, key ):
         return getattr( self.value, key )
         

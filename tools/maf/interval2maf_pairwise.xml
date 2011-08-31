@@ -39,5 +39,12 @@ Here a single interval is superimposed on three MAF blocks. Blocks 1 and 3 are t
 
 .. image:: ./static/images/maf_icons/interval2maf.png
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
+
   </help>
 </tool>

@@ -58,7 +58,8 @@ class LibrariesController( BaseController ):
             trans.response.status = 400
             return "Invalid library id ( %s ) specified." % str( library_id )
         item = library.get_api_value( view='element' )
-        item['contents_url'] = url_for( 'contents', library_id=library_id )
+        #item['contents_url'] = url_for( 'contents', library_id=library_id )
+        item['contents_url'] = url_for( 'library_contents', library_id=library_id )
         return item
 
     @web.expose_api

@@ -8,6 +8,11 @@ import binascii
 from galaxy.util.bunch import Bunch
 from galaxy.util.aliaspickler import AliasPickleModule
 
+# For monkeypatching BIGINT
+import sqlalchemy.databases.sqlite
+import sqlalchemy.databases.postgres
+import sqlalchemy.databases.mysql
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -87,3 +92,25 @@ class TrimmedString( TypeDecorator ):
             value = value[0:self.impl.length]
         return value
 
+
+class BigInteger( Integer ):
+    """
+    A type for bigger ``int`` integers.
+
+    Typically generates a ``BIGINT`` in DDL, and otherwise acts like
+    a normal :class:`Integer` on the Python side.
+
+    """
+
+class BIGINT( BigInteger ):
+    """The SQL BIGINT type."""
+
+class SLBigInteger( BigInteger ):
+    def get_col_spec( self ):
+        return "BIGINT"
+
+sqlalchemy.databases.sqlite.SLBigInteger = SLBigInteger
+sqlalchemy.databases.sqlite.colspecs[BigInteger] = SLBigInteger
+sqlalchemy.databases.sqlite.ischema_names['BIGINT'] = SLBigInteger
+sqlalchemy.databases.postgres.colspecs[BigInteger] = sqlalchemy.databases.postgres.PGBigInteger
+sqlalchemy.databases.mysql.colspecs[BigInteger] = sqlalchemy.databases.mysql.MSBigInteger

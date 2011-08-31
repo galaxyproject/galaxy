@@ -664,7 +664,7 @@ class TestHistory( TwillTestCase ):
                                .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
                                .first()
         self.home()
-        self.visit_url( "%s/root/delete?show_deleted_on_refresh=False&id=%s" % ( self.url, str( latest_hda.id ) ) )
+        self.delete_history_item( str( latest_hda.id ) )
         self.check_history_for_string( 'Your history is empty' )
         self.home()
         self.visit_url( "%s/history/?show_deleted=True" % self.url )

@@ -1,5 +1,27 @@
-import os, gzip, re, gzip, zipfile, binascii, bz2
+import os, gzip, re, gzip, zipfile, binascii, bz2, imghdr
 from galaxy import util
+
+try:
+    import Image as PIL
+except ImportError:
+    try:
+        from PIL import Image as PIL
+    except:
+        PIL = None
+
+def check_image( file_path ):
+    if PIL != None:
+        try:
+            im = PIL.open( file_path )
+        except:
+            return False
+        if im:
+            return im
+        return False
+    else:
+        if imghdr.what( file_path ) != None:
+            return True
+        return False
 
 def check_html( file_path, chunk=None ):
     if chunk is None:

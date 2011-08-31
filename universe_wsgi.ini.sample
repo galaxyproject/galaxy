@@ -9,7 +9,9 @@
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.
-# examples of many of these options are explained in more detail in the wiki:
+# Examples of many of these options are explained in more detail in the wiki:
+#
+# http://wiki.g2.bx.psu.edu/Admin/Config
 #
 # Config hackers are encouraged to check there before asking for help.
 
@@ -210,8 +212,8 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Galaxy Wiki" link in the "Help" menu.
 #wiki_url = http://wiki.g2.bx.psu.edu/
 
-# The URL linked by the "Email comments..." link in the "Help" menu.
-#bugs_email = mailto:galaxy-bugs@bx.psu.edu
+# The URL linked by the "Support" link in the "Help" menu.
+#support_url = http://wiki.g2.bx.psu.edu/Support
 
 # The URL linked by the "How to Cite..." link in the "Help" menu.
 #citation_url = http://wiki.g2.bx.psu.edu/Citing%20Galaxy
@@ -433,6 +435,10 @@ use_interactive = True
 # Enable the (experimental! beta!) Web API.  Documentation forthcoming.
 #enable_api = False
 
+# Optional list of email addresses of API users who can make calls on behalf of
+# other users
+#api_allow_run_as = None
+
 # Enable tool tags (associating tools with tags).  This has its own option
 # since its implementation has a few performance implications on startup for
 # large servers.
@@ -449,6 +455,9 @@ use_interactive = True
 # This should be the hostname of your FTP server, which will be provided to
 # users in the help text.
 #ftp_upload_site = None
+
+# Enable enforcement of quotas.  Quotas can be set from the Admin interface.
+#enable_quotas = False
 
 # -- Job Execution
 

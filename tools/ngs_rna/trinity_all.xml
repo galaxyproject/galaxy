@@ -1,0 +1,89 @@
+<tool id="trinity_all" name="Trinity" version="0.0.1">
+    <!-- Run all steps of Trinity-Inchworm, Chrysalis, and Butterfly-in a single step. Wrapper status is alpha. -->
+    <description>De novo assembly of RNA-Seq data</description>
+    <requirements>
+        <requirement type="package">trinity</requirement>
+    </requirements>
+    <command>
+        Trinity.pl 
+        
+        ## Additional parameters.
+        #if $additional_params.use_additional == "yes":
+            --min_contig_length $additional_params.min_contig_length
+        #end if
+        
+        ## Inputs.
+        #if $inputs.paired_or_single == "paired":
+            --left $inputs.left_input --right $inputs.right_input
+            #if  $inputs.left_input.ext == 'fa':
+                --seqType fa
+            #else:
+                --seqType fq
+            #end if
+            #if $inputs.library_type != 'None':
+                --SS_lib_type $inputs.library_type
+            #end if
+        #else:
+            --single $inputs.input
+            #if  $inputs.input.ext == 'fa':
+                --seqType fa
+            #else:
+                --seqType fq
+            #end if
+            #if $inputs.library_type != 'None':
+                --SS_lib_type $inputs.library_type
+            #end if
+        #end if
+        
+        ## CPU and butterfly options.
+        --CPU 4 --run_butterfly --bfly_opts "-V 10 --stderr" > $trinity_log 2>&amp;1 
+    </command>
+    <inputs>
+        <conditional name="inputs">
+            <param name="paired_or_single" type="select" label="Paired or Single-end data?">
+                <option value="paired">Paired</option>
+                <option value="single">Single</option>
+            </param>
+            <when value="paired">
+                <param format="fasta,fastq" name="left_input" type="data" label="Left/Forward strand reads" help=""/>
+                <param format="fasta,fastq" name="right_input" type="data" label="Right/Reverse strand reads" help=""/>
+                <param name="library_type" type="select" label="Strand-specific Library Type">
+                    <option value="None">None</option>
+                    <option value="FR">FR</option>
+                    <option value="RF">RF</option>
+                </param>
+                <param name="paired_fragment_length" type="integer" value="300" min="1" label="Paired Fragment Length" help="Maximum length expected between fragment pairs"/>
+            </when>
+            <when value="single">
+                <param format="fasta,fastq" name="input" type="data" label="Single-end reads" help=""/>
+                <param name="library_type" type="select" label="Strand-specific Library Type">
+                    <option value="None">None</option>
+                    <option value="F">F</option>
+                    <option value="R">R</option>
+                </param>
+            </when>
+        </conditional>
+        <conditional name="additional_params">
+            <param name="use_additional" type="select" label="Use Additional Params?">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+            </param>
+            <when value="no">
+            </when>
+            <when value="yes">            
+                <param name="min_contig_length" type="integer" value="200" min="1" label="Minimum Contig Length" help=""/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data format="txt" name="trinity_log" label="${tool.name} on ${on_string}: log" />
+        <data format="fasta" name="assembled_transcripts" label="${tool.name} on ${on_string}: Assembled Transcripts" from_work_dir="trinity_out_dir/Trinity.fasta"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        Trinity is a de novo transcript assembler that uses RNA-seq data as input. This tool runs all Trinity_ commands--Inchworm, Chrysalis, and Butterfly--in a single pass.
+        
+        .. _Trinity: http://trinityrnaseq.sourceforge.net
+    </help>
+</tool>

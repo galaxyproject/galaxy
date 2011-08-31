@@ -5,9 +5,12 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
+    is_admin = trans.user_is_admin()
     is_new = repository.is_new
+    can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
     can_set_metadata = not is_new
     can_rate = not is_new and trans.user and repository.user != trans.user
@@ -16,6 +19,7 @@
         browse_label = 'Browse or delete repository files'
     else:
         browse_label = 'Browse repository files'
+    can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip
 %>
 
 <%!
@@ -80,9 +84,14 @@
             %endif
             %if can_browse_contents:
                 <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+            %endif
+            %if can_contact_owner:
+                <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
+            %endif
+            %if can_download:
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
             %endif
         </div>
     %endif
@@ -92,14 +101,38 @@
     ${render_msg( message, status )}
 %endif
 
+%if len( changeset_revision_select_field.options ) > 1:
+    <div class="toolForm">
+        <div class="toolFormTitle">Repository revision</div>
+        <div class="toolFormBody">
+            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+                <div class="form-row">
+                    <%
+                        if changeset_revision == repository.tip:
+                            tip_str = 'repository tip'
+                        else:
+                            tip_str = ''
+                    %>
+                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Select a revision to inspect and download versions of tools from this repository.
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <p/>
+%endif
 <div class="toolForm">
     <div class="toolFormTitle">${repository.name}</div>
     <div class="toolFormBody">
         <form name="edit_repository" id="edit_repository" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
-            <div class="form-row">
-                <label>Clone this repository:</label>
-                ${render_clone_str( repository )}
-            </div>
+            %if can_download:
+                <div class="form-row">
+                    <label>Clone this repository:</label>
+                    ${render_clone_str( repository )}
+                </div>
+            %endif
             <div class="form-row">
                 <label>Name:</label>
                 <input name="repo_name" type="textfield" value="${repo_name}" size="40"/>
@@ -122,9 +155,9 @@
             <div class="form-row">
                 <label>Revision:</label>
                 %if can_view_change_log:
-                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${repository.revision}</a>
+                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
                 %else:
-                    ${repository.revision}
+                    ${revision_label}
                 %endif
             </div>
             <div class="form-row">
@@ -135,7 +168,7 @@
                 <label>Times downloaded:</label>
                 ${repository.times_downloaded}
             </div>
-            %if trans.user_is_admin():
+            %if is_admin:
                 <div class="form-row">
                     <label>Location:</label>
                     ${repository.repo_path}
@@ -154,14 +187,14 @@
 %if can_set_metadata:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Repository metadata</div>
+        <div class="toolFormTitle">Preview tools in repository tip and inspect metadata by tool version</div>
         <div class="toolFormBody">
             %if metadata:
                 %if 'tools' in metadata:
                     <div class="form-row">
                         <table width="100%">
                             <tr bgcolor="#D8D8D8" width="100%">
-                                <td><label>Tools:</label></td>
+                                <td><b>Tools</b><i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i></td>
                             </tr>
                         </table>
                     </div>
@@ -177,13 +210,13 @@
                             %for tool_dict in tool_dicts:
                                 <tr>
                                     <td>
-                                        <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ]}-popup">
-                                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">
+                                        <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
+                                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision )}">
                                                 ${tool_dict[ 'name' ]}
                                             </a>
                                         </div>
-                                        <div popupmenu="tool-${tool_dict[ 'id' ]}-popup">
-                                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip, tool_id=tool_dict[ 'id' ] )}">View all metadata for this tool</a>
+                                        <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
+                                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ] )}">View tool metadata</a>
                                         </div>
                                     </td>
                                     <td>${tool_dict[ 'description' ]}</td>
@@ -217,7 +250,7 @@
                     <div class="form-row">
                         <table width="100%">
                             <tr bgcolor="#D8D8D8" width="100%">
-                                <td><label>Workflows:</label></td>
+                                <td><b>Workflows</b></td>
                             </tr>
                         </table>
                     </div>
@@ -242,16 +275,20 @@
                     <div style="clear: both"></div>
                 %endif
             %endif
-            <form name="set_metadata" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=repository.tip )}" method="post">
-                <div class="form-row">
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="submit" name="set_metadata_button" value="Reset metadata"/>
+            %if repository.tip == changeset_revision:
+                ## TODO: when we support previewing older versions of tools, we
+                ## should allow resetting metadata on the older versions as well.
+                <form name="set_metadata" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
+                    <div class="form-row">
+                        <div style="float: left; width: 250px; margin-right: 10px;">
+                            <input type="submit" name="set_metadata_button" value="Reset metadata"/>
+                        </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                            Inspect the repository and reset the above attributes for the repository tip.
+                        </div>
                     </div>
-                    <div class="toolParamHelp" style="clear: both;">
-                        Inspect the repository and reset the above attributes for the repository tip.
-                    </div>
-                </div>
-            </form>
+                </form>
+            %endif
         </div>
     </div>
 %endif
@@ -304,7 +341,7 @@
 %endif
 <p/>
 <div class="toolForm">
-    <div class="toolFormTitle">User access</div>
+    <div class="toolFormTitle">Grant authority to make changes</div>
     <div class="toolFormBody">
         <table class="grid">
             <tr>
@@ -328,7 +365,7 @@
                 <label>Username:</label>
                 ${allow_push_select_field.get_html()}
                 <div class="toolParamHelp" style="clear: both;">
-                    Multi-select usernames to grant permission to push to this repository
+                    Multi-select usernames to grant permission to make changes to this repository
                 </div>
                 <div style="clear: both"></div>
             </div>
@@ -390,6 +427,27 @@
                     <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=True )}"><label>Display Reviews</label></a>
                 </div>
             %endif
+        </div>
+    </div>
+%endif
+<p/>
+%if can_set_malicious:
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Malicious repository tip</div>
+        <div class="toolFormBody">
+            <form name="malicious" id="malicious" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
+                <div class="form-row">
+                    <label>Define repository tip as malicious:</label>
+                    ${malicious_check_box.get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        Check the box and click <b>Save</b> to define this repository's tip as malicious, restricting it from being download-able.
+                    </div>
+                </div>
+                <div class="form-row">
+                    <input type="submit" name="malicious_button" value="Save"/>
+                </div>
+            </form>
         </div>
     </div>
 %endif

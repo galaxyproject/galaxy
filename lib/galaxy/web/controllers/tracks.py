@@ -584,7 +584,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             chrom = decoded_payload['viewport']['chrom']
             start = decoded_payload['viewport']['start']
             end = decoded_payload['viewport']['end']
-            vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end }
+            overview = decoded_payload['viewport']['overview']
+            vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
         
         vis.latest_revision = vis_rev
         session.add( vis_rev )

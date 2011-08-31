@@ -33,6 +33,7 @@ def __main__():
                                                                                 For, example, for paired end runs with fragments selected at 300bp, \
                                                                                 where each end is 50bp, you should set -r to be 200. The default is 45bp.')
     parser.add_option( '-G', '--GTF', dest='GTF', help='Tells Cufflinks to use the supplied reference annotation to estimate isoform expression. It will not assemble novel transcripts, and the program will ignore alignments not structurally compatible with any reference transcript.' )
+    parser.add_option( '-g', '--GTF-guide', dest='GTFguide', help='use reference transcript annotation to guide assembly' )
     
     # Normalization options.
     parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
@@ -104,6 +105,8 @@ def __main__():
         cmd += ( " -m %i" % int ( options.inner_mean_dist ) )
     if options.GTF:
         cmd += ( " -G %s" % options.GTF )
+    if options.GTFguide:
+	cmd += ( " -g %s" % options.GTFguide )
     if options.num_importance_samples:
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
