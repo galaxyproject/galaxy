@@ -664,8 +664,31 @@ class Tool:
                     name = attrib.pop( 'name', None )
                     if name is None:
                         raise Exception( "Test output does not have a 'name'" )
+
+                    assert_elem = output_elem.find("assert_contents")
+                    assert_list = None
+                    # Trying to keep testing patch as localized as                                              
+                    # possible, this function should be relocated                                               
+                    # somewhere more conventional.
+                    def convert_elem(elem):
+                        """ Converts and XML element to a dictionary format, used by assertion checking code. """
+                        tag = elem.tag
+                        attributes = dict( elem.attrib )
+                        child_elems = list( elem.getchildren() )
+                        converted_children = []
+                        for child_elem in child_elems:
+                            converted_children.append( convert_elem(child_elem) )
+                        return {"tag" : tag, "attributes" : attributes, "children" : converted_children}
+                    
+                    if assert_elem is not None:
+                        assert_list = []
+                        for assert_child in list(assert_elem):
+                            assert_list.append(convert_elem(assert_child))
+
+
                     file = attrib.pop( 'file', None )
-                    if file is None:
+                    # File no longer required if an list of assertions was present.                             
+                    if assert_list is None and file is None:
                         raise Exception( "Test output does not have a 'file'")
                     attributes = {}
                     # Method of comparison
@@ -676,6 +699,9 @@ class Tool:
                     attributes['delta'] = int( attrib.pop( 'delta', '10000' ) ) 
                     attributes['sort'] = util.string_as_bool( attrib.pop( 'sort', False ) )
                     attributes['extra_files'] = []
+                    attributes['assert_list'] = assert_list
+
+
                     if 'ftype' in attrib:
                         attributes['ftype'] = attrib['ftype']
                     for extra in output_elem.findall( 'extra_files' ):

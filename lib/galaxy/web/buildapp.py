@@ -118,6 +118,10 @@ def app_factory( global_conf, **kwargs ):
                                     name_prefix='history_',
                                     path_prefix='/api/histories/:history_id', 
                                     parent_resources=dict( member_name='history', collection_name='histories' ) )
+        webapp.api_mapper.resource( 'permission',
+                                    'permissions',
+                                    path_prefix='/api/libraries/:library_id',
+                                    parent_resources=dict( member_name='library', collection_name='libraries' ) )      
         webapp.api_mapper.resource( 'library', 'libraries', path_prefix='/api' )
         webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
         webapp.api_mapper.resource( 'request', 'requests', path_prefix='/api' )
