@@ -1,6 +1,7 @@
-<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.1">
+<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.2">
   <description>SNP and indel caller</description>
   <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
    --stdout "${output_log}"
    #for $i, $input_bam in enumerate( $reference_source.input_bams ):
        -d "-I" "${input_bam.input_bam}" "${input_bam.input_bam.ext}" "gatk_input_${i}"
@@ -19,9 +20,6 @@
     --standard_min_confidence_threshold_for_emitting "${standard_min_confidence_threshold_for_emitting}"
    '
     #set $rod_binding_names = dict()
-    #if str( $input_dbsnp_rod ) != "None":
-        -d "-D" "${input_dbsnp_rod}" "${input_dbsnp_rod.ext}" "dbsnp_rod"
-    #end if
     #for $rod_binding in $rod_bind:
         #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
             #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
@@ -138,14 +136,18 @@
       </when>
     </conditional>
     
-    <param name="input_dbsnp_rod" type="data" format="gatk_dbsnp" optional="True" label="dbSNP reference ordered data (ROD)" />
     <repeat name="rod_bind" title="Binding for reference-ordered data">
         <conditional name="rod_bind_type">
 	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
-	        <option value="snps" selected="True">SNPs</option>
+	        <option value="dbsnp" selected="True">dbSNP</option>
+	        <option value="snps">SNPs</option>
 	        <option value="indels">INDELs</option>
 	        <option value="custom">Custom</option>
 	      </param>
+          <when value="dbsnp">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
@@ -323,13 +325,13 @@
     <data format="vcf" name="output_vcf" label="${tool.name} on ${on_string} (VCF)" />
     <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
   </outputs>
+  <!-- FIXME! <trackster_conf/> -->
   <tests>
       <test>
           <param name="reference_source_selector" value="history" />
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
-          <param name="input_dbsnp_rod"  />
-          <param name="rod_bind_type_selector" value="snps" />
+          <param name="rod_bind_type_selector" value="dbsnp" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
           <param name="rodToIntervalTrackName" />
           <param name="standard_min_confidence_threshold_for_calling" value="4" />
@@ -354,61 +356,68 @@
           <param name="doContextDependentGapPenalties" />
           <!-- <param name="annotation" value="" />
           <param name="group" value="" /> -->
-          <output name="output_interval" file="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.vcf" lines_diff="2"/> 
+          <output name="output_vcf" file="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.vcf" lines_diff="2"/> 
           <output name="output_log" file="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.log.contains" compare="contains"/>
       </test>
   </tests>
   <help>
 **What it does**
 
-     A variant caller which unifies the approaches of several disparate callers.  Works for single-sample and 
-     multi-sample data.  The user can choose from several different incorporated calculation models.
+A variant caller which unifies the approaches of several disparate callers.  Works for single-sample and multi-sample data.  The user can choose from several different incorporated calculation models.
+
+For more information on the GATK Unified Genotyper, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Unified_genotyper&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
 
 ------
 
-Please cite the website "http://addlink.here" as well as:
-
-Add citation here 2011.
-
-------
-
-**Input formats**
+**Inputs**
 
 GenomeAnalysisTK: UnifiedGenotyper accepts an aligned BAM input file.
 
-------
 
 **Outputs**
 
-The output is in VCF format, see http://addlink.here for more details.
+The output is in VCF format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
 
 -------
 
 **Settings**::
 
- genotype_likelihoods_model                           Genotype likelihoods calculation model to employ -- BOTH is the default option, while INDEL is also available for calling indels and SNP is available for calling SNPs only (SNP|INDEL|BOTH)
- p_nonref_model                                                  Non-reference probability calculation model to employ -- EXACT is the default option, while GRID_SEARCH is also available. (EXACT|GRID_SEARCH)
- heterozygosity                                                  Heterozygosity value used to compute prior likelihoods for any locus
- pcr_error_rate                                             The PCR error rate to be used for computing fragment-based likelihoods
- genotyping_mode                                             Should we output confident genotypes (i.e. including ref calls) or just the variants? (DISCOVERY|GENOTYPE_GIVEN_ALLELES)
- output_mode                                                    Should we output confident genotypes (i.e. including ref calls) or just the variants? (EMIT_VARIANTS_ONLY|EMIT_ALL_CONFIDENT_SITES|EMIT_ALL_SITES)
- standard_min_confidence_threshold_for_calling                         The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be called
- standard_min_confidence_threshold_for_emitting                        The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be emitted (and filtered if less than the calling threshold)
- noSLOD                                                                            If provided, we will not calculate the SLOD
- min_base_quality_score                                   Minimum base quality required to consider a base for calling
- min_mapping_quality_score                             Minimum read mapping quality required to consider a read for calling
- max_deletion_fraction                               Maximum fraction of reads with deletions spanning this locus for it to be callable [to disable, set to &lt; 0 or &gt; 1; default:0.05]
- min_indel_count_for_genotyping           Minimum number of consensus indels required to trigger genotyping run
- indel_heterozygosity                       Heterozygosity for indel calling
- indelGapContinuationPenalty                    Indel gap continuation penalty
- indelGapOpenPenalty                                    Indel gap open penalty
- indelHaplotypeSize                                    Indel haplotype size
- doContextDependentGapPenalties                                                  Vary gap penalties by context
- indel_recal_file                                         Filename for the input covariates table recalibration .csv file - EXPERIMENTAL, DO NO USE
- indelDebug                                                                 Output indel debug info
- out                                                                           File to which variants should be written
- annotation                                                             One or more specific annotations to apply to variant calls
- group                                                                       One or more classes/groups of annotations to apply to variant calls
+ genotype_likelihoods_model                        Genotype likelihoods calculation model to employ -- BOTH is the default option, while INDEL is also available for calling indels and SNP is available for calling SNPs only (SNP|INDEL|BOTH)
+ p_nonref_model                                    Non-reference probability calculation model to employ -- EXACT is the default option, while GRID_SEARCH is also available. (EXACT|GRID_SEARCH)
+ heterozygosity                                    Heterozygosity value used to compute prior likelihoods for any locus
+ pcr_error_rate                                    The PCR error rate to be used for computing fragment-based likelihoods
+ genotyping_mode                                   Should we output confident genotypes (i.e. including ref calls) or just the variants? (DISCOVERY|GENOTYPE_GIVEN_ALLELES)
+ output_mode                                       Should we output confident genotypes (i.e. including ref calls) or just the variants? (EMIT_VARIANTS_ONLY|EMIT_ALL_CONFIDENT_SITES|EMIT_ALL_SITES)
+ standard_min_confidence_threshold_for_calling     The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be called
+ standard_min_confidence_threshold_for_emitting    The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be emitted (and filtered if less than the calling threshold)
+ noSLOD                                            If provided, we will not calculate the SLOD
+ min_base_quality_score                            Minimum base quality required to consider a base for calling
+ min_mapping_quality_score                         Minimum read mapping quality required to consider a read for calling
+ max_deletion_fraction                             Maximum fraction of reads with deletions spanning this locus for it to be callable [to disable, set to &lt; 0 or &gt; 1; default:0.05]
+ min_indel_count_for_genotyping                    Minimum number of consensus indels required to trigger genotyping run
+ indel_heterozygosity                              Heterozygosity for indel calling
+ indelGapContinuationPenalty                       Indel gap continuation penalty
+ indelGapOpenPenalty                               Indel gap open penalty
+ indelHaplotypeSize                                Indel haplotype size
+ doContextDependentGapPenalties                    Vary gap penalties by context
+ indel_recal_file                                  Filename for the input covariates table recalibration .csv file - EXPERIMENTAL, DO NO USE
+ indelDebug                                        Output indel debug info
+ out                                               File to which variants should be written
+ annotation                                        One or more specific annotations to apply to variant calls
+ group                                             One or more classes/groups of annotations to apply to variant calls
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
 
   </help>
 </tool>

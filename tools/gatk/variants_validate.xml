@@ -1,29 +1,22 @@
-<tool id="gatk_count_covariates" name="Count Covariates" version="0.0.2">
-  <description>on BAM files</description>
+<tool id="gatk_validate_variants" name="Validate Variants" version="0.0.1">
+  <description></description>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "2"
    --stdout "${output_log}"
-   -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
-   -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
+   -d "-B:variant,%(file_type)s" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
-    -T "CountCovariates"
-    --num_threads 4 ##hard coded, for now
+    -T "ValidateVariants"
+    
     -et "NO_ET" ##ET no phone home
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"
     #end if
-    --recal_file "${output_recal}"
-    ${standard_covs}
-    #if $covariates.value:
-        #for $cov in $covariates.value:
-            -cov "${cov}"
-        #end for
-    #end if
+    ${warn_on_errors}
+    ${do_not_validate_filtered_records}
    '
-    
-    #set $snp_dataset_provided = False
+   
     #set $rod_binding_names = dict()
     #for $rod_binding in $rod_bind:
         #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
@@ -31,16 +24,13 @@
         #else
             #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
         #end if
-        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'dbsnp':
-            #set $snp_dataset_provided = True
-        #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
         -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
             -p '--rodToIntervalTrackName "${rod_bind_name}"'
         #end if
     #end for
-    
+   
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
         #for $sample_metadata in $gatk_param_type.sample_metadata:
@@ -62,7 +52,6 @@
         #if str( $gatk_param_type.input_exclude_intervals ) != "None":
             -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
         #end if
-        
         -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
@@ -80,91 +69,46 @@
             -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
         #end if
     #end if
-    #if str( $reference_source.reference_source_selector ) == "history":
+    #if $reference_source.reference_source_selector == "history":
         -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
     #end if
     ##end standard gatk options
     
-    ##start analysis specific options
-    #if $analysis_param_type.analysis_param_type_selector == "advanced":
-        -p '
-        #if $analysis_param_type.default_read_group_type.default_read_group_type_selector == "set":
-            --default_read_group "${analysis_param_type.default_read_group_type.default_read_group}"
-        #end if
-        #if str( $analysis_param_type.default_platform ) != "default":
-            --default_platform "${analysis_param_type.default_platform}"
-        #end if
-        #if str( $analysis_param_type.force_read_group_type.force_read_group_type_selector ) == "set":
-            --force_read_group "${analysis_param_type.force_read_group_type.force_read_group}"
-        #end if
-        #if str( $analysis_param_type.force_platform ) != "default":
-            --force_platform "${analysis_param_type.force_platform}"
-        #end if
-        ${analysis_param_type.exception_if_no_tile}
-        #if str( $analysis_param_type.solid_options_type.solid_options_type_selector ) == "set":
-            #if str( $analysis_param_type.solid_options_type.solid_recal_mode ) != "default":
-                --solid_recal_mode "${analysis_param_type.solid_options_type.solid_recal_mode}" 
-            #end if
-            #if str( $analysis_param_type.solid_options_type.solid_nocall_strategy ) != "default":
-                --solid_nocall_strategy "${analysis_param_type.solid_options_type.solid_nocall_strategy}" 
-            #end if
-        #end if
-        --window_size_nqs "${analysis_param_type.window_size_nqs}"
-        --homopolymer_nback "${analysis_param_type.homopolymer_nback}"
-        '
-    #end if
-    #if not $snp_dataset_provided:
-        -p '--run_without_dbsnp_potentially_ruining_quality'
-    #end if
   </command>
   <inputs>
+    
     <conditional name="reference_source">
       <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
         <option value="cached">Locally cached</option>
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_bam" type="data" format="bam" label="BAM file">
-          <validator type="unspecified_build" />
-          <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
-        </param>
+        <param name="input_variant" type="data" format="vcf" label="Input variant file" />
         <param name="ref_file" type="select" label="Using reference genome">
           <options from_data_table="picard_indexes">
-            <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
+            <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_bam" type="data" format="bam" label="BAM file" />
+        <param name="input_variant" type="data" format="vcf" label="Input variant file" />
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
-    <param name="standard_covs" type="boolean" truevalue="--standard_covs" falsevalue="" label="Use the standard set of covariates in addition to the ones selected" />
-    <param name="covariates" type="select" multiple="True" display="checkboxes" label="Covariates to be used in the recalibration" >
-      <!-- might we want to load the available covariates from an external configuration file, since additional ones can be added to local installs? -->
-      <option value="ReadGroupCovariate" />
-      <option value="QualityScoreCovariate" />
-      <option value="CycleCovariate" />
-      <option value="DinucCovariate" />
-      <!-- covariates below were pulled from list option -->
-      <option value="HomopolymerCovariate" />
-      <option value="GCContentCovariate" />
-      <option value="MappingQualityCovariate" />
-      <option value="MinimumNQSCovariate" />
-      <option value="PositionCovariate" />
-      <option value="PrimerRoundCovariate" />
-      <option value="TileCovariate" />
-    </param>
     
     <repeat name="rod_bind" title="Binding for reference-ordered data">
         <conditional name="rod_bind_type">
 	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
+	        <!--  <option value="variant" selected="True">Variant</option> -->
 	        <option value="dbsnp" selected="True">dbSNP</option>
 	        <option value="snps">SNPs</option>
-	        <option value="indels">INDELs</option>
-	        <option value="mask">Mask</option>
-	        <option value="custom">Custom</option>
+	        <!-- <option value="indels">INDELs</option>
+	        <option value="custom">Custom</option> -->
 	      </param>
+          <when value="variant">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" /> <!-- this should be restricted to genome type, or genome type should be limited as a result of this selection -->
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
           <when value="dbsnp">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
@@ -177,10 +121,6 @@
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
-          <when value="mask">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
@@ -188,6 +128,8 @@
           </when>
         </conditional>
     </repeat>
+    <param name="warn_on_errors" type="boolean" checked="False" truevalue="-warnOnErrors" falsevalue="" label="instead of terminating the run at the first error, print warning messages for each error seen. "/>
+    <param name="do_not_validate_filtered_records" type="boolean" checked="False" truevalue="-doNotValidateFilteredRecords" falsevalue="" label="do not try to validate records that are FILTERed. "/>
     
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
@@ -280,112 +222,30 @@
       </when>
     </conditional>
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
-        <conditional name="default_read_group_type">
-          <param name="default_read_group_type_selector" type="select" label="Set default Read Group">
-            <option value="default" selected="True">Don't Set</option>
-            <option value="set">Set</option>
-          </param>
-          <when value="default">
-            <!-- do nothing here -->
-          </when>
-          <when value="set">
-            <param name="default_read_group" type="text" value="Unknown" label="If a read has no read group then default to the provided String"/>
-          </when>
-        </conditional>
-        <param name="default_platform" type="select" label="Set default Platform">
-          <option value="default" selected="True">Don't Set</option>
-          <option value="illumina">illumina</option>
-          <option value="454">454</option>
-          <option value="solid">solid</option>
-        </param>
-        <conditional name="force_read_group_type">
-          <param name="force_read_group_type_selector" type="select" label="Force Read Group">
-            <option value="default" selected="True">Don't Force</option>
-            <option value="set">Force</option>
-          </param>
-          <when value="default">
-            <!-- do nothing here -->
-          </when>
-          <when value="set">
-            <param name="force_read_group" type="text" value="Unknown" label="If provided, the read group ID of EVERY read will be forced to be the provided String."/>
-          </when>
-        </conditional>
-        <param name="force_platform" type="select" label="Force Platform">
-          <option value="default" selected="True">Don't Force</option>
-          <option value="illumina">illumina</option>
-          <option value="454">454</option>
-          <option value="solid">solid</option>
-        </param>
-        <param name="exception_if_no_tile" type="boolean" checked="False" truevalue="--exception_if_no_tile" falsevalue="" label="Throw an exception when no tile can be found"/>
-        <conditional name="solid_options_type">
-          <param name="solid_options_type_selector" type="select" label="Set SOLiD specific options">
-            <option value="default" selected="True">Don't Set</option>
-            <option value="set">Set</option>
-          </param>
-          <when value="default">
-            <!-- do nothing here -->
-          </when>
-          <when value="set">
-            <param name="solid_recal_mode" type="select" label="How should we recalibrate solid bases in which the reference was inserted">
-              <option value="default" selected="True">Don't set</option>
-              <option value="DO_NOTHING">DO_NOTHING</option>
-              <option value="SET_Q_ZERO">SET_Q_ZERO</option>
-              <option value="SET_Q_ZERO_BASE_N">SET_Q_ZERO_BASE_N</option>
-              <option value="REMOVE_REF_BIAS">REMOVE_REF_BIAS</option>
-            </param>
-            <param name="solid_nocall_strategy" type="select" label="Behavior of the recalibrator when it encounters no calls">
-              <option value="default" selected="True">Don't set</option>
-              <option value="THROW_EXCEPTION">THROW_EXCEPTION</option>
-              <option value="LEAVE_READ_UNRECALIBRATED">LEAVE_READ_UNRECALIBRATED</option>
-              <option value="PURGE_READ">PURGE_READ</option>
-            </param>
-          </when>
-        </conditional>
-        <param name="window_size_nqs" type="integer" value="5" label="Window size used by MinimumNQSCovariate"/>
-        <param name="homopolymer_nback" type="integer" value="7" label="number of previous bases to look at in HomopolymerCovariate" />
-      </when>
-    </conditional>
   </inputs>
   <outputs>
-    <data format="csv" name="output_recal" label="${tool.name} on ${on_string} (Covariate File)" />
     <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
   </outputs>
   <tests>
       <test>
           <param name="reference_source_selector" value="history" />
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
-          <param name="input_bam" value="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam" />
+          <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
           <param name="rod_bind_type_selector" value="dbsnp" />
           <param name="rodToIntervalTrackName" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
-          <param name="standard_covs" value="True" />
-          <param name="covariates" value="ReadGroupCovariate,HomopolymerCovariate,MinimumNQSCovariate,PositionCovariate" />
+          <param name="warn_on_errors" value="True"/>
+          <param name="do_not_validate_filtered_records" />
           <param name="gatk_param_type_selector" value="basic" />
-          <param name="analysis_param_type_selector" value="basic" />
-          <output name="output_recal" file="gatk/gatk_count_covariates/gatk_count_covariates_out_1.csv" /> 
-          <output name="output_log" file="gatk/gatk_count_covariates/gatk_count_covariates_out_1.log.contains" compare="contains" />
+          <output name="output_log" file="gatk/gatk_validate_variants/gatk_validate_variants_out_1.log.contains" compare="contains" />
       </test>
   </tests>
   <help>
-.. class:: warningmark
-
-"This calculation is critically dependent on being able to skip over known variant sites. Please provide a dbSNP ROD or a VCF file containing known sites of genetic variation."
-However, if you do not provide this file, the '--run_without_dbsnp_potentially_ruining_quality' flag will be automatically used, and the command will be allowed to run.
-  
 **What it does**
 
-This walker is designed to work as the first pass in a two-pass processing step. It does a by-locus traversal operating only at sites that are not in dbSNP. We assume that all reference mismatches we see are therefore errors and indicative of poor base quality. This walker generates tables based on various user-specified covariates (such as read group, reported quality score, cycle, and dinucleotide) Since there is a large amount of data one can then calculate an empirical probability of error given the particular covariates seen at this site, where p(error) = num mismatches / num observations The output file is a CSV list of (the several covariate values, num observations, num mismatches, empirical quality score) The first non-comment line of the output file gives the name of the covariates that were used for this calculation.  Note: ReadGroupCovariate and QualityScoreCovariate are required covariates and will be added for the user regardless of whether or not they were specified Note: This walker is designed to be used in conjunction with TableRecalibrationWalker.
+Validates a variants file.
 
-For more information on base quality score recalibration using the GATK, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Base_quality_score_recalibration&gt;`_.
+For more information on using the ValidateVariants module, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/VariantValidator&gt;`_.
 
 To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
 
@@ -395,12 +255,12 @@ If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute
 
 **Inputs**
 
-GenomeAnalysisTK: CountCovariates accepts an aligned BAM input file.
+GenomeAnalysisTK: ValidateVariants accepts variant files as input.
 
 
 **Outputs**
 
-The output is in CSV format.
+The output is a log of variant validation.
 
 
 Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
@@ -409,21 +269,8 @@ Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_th
 
 **Settings**::
 
-
- default_read_group                               If a read has no read group then default to the provided String.
- default_platform                                 If a read has no platform then default to the provided String. Valid options are illumina, 454, and solid.
- force_read_group                                 If provided, the read group ID of EVERY read will be forced to be the provided String. This is useful to collapse all data into a single read group.
- force_platform                                   If provided, the platform of EVERY read will be forced to be the provided String. Valid options are illumina, 454, and solid.
- window_size_nqs                                  The window size used by MinimumNQSCovariate for its calculation
- homopolymer_nback                                The number of previous bases to look at in HomopolymerCovariate
- exception_if_no_tile                             If provided, TileCovariate will throw an exception when no tile can be found. The default behavior is to use tile = -1
- solid_recal_mode                                 How should we recalibrate solid bases in whichthe reference was inserted? Options = DO_NOTHING, SET_Q_ZERO, SET_Q_ZERO_BASE_N, or REMOVE_REF_BIAS (DO_NOTHING|SET_Q_ZERO|SET_Q_ZERO_BASE_N|REMOVE_REF_BIAS)
- solid_nocall_strategy                            Defines the behavior of the recalibrator when it encounters no calls in the color space. Options = THROW_EXCEPTION, LEAVE_READ_UNRECALIBRATED, or PURGE_READ (THROW_EXCEPTION|LEAVE_READ_UNRECALIBRATED|PURGE_READ)
- recal_file                                       Filename for the input covariates table recalibration .csv file
- out                                              The output CSV file
- recal_file                                       Filename for the outputted covariates table recalibration file
- standard_covs                                    Use the standard set of covariates in addition to the ones listed using the -cov argument
- run_without_dbsnp_potentially_ruining_quality    If specified, allows the recalibrator to be used without a dbsnp rod. Very unsafe and for expert users only.
+ doNotValidateFilteredRecords    should we skip validation on filtered records?
+ warnOnErrors                    should we just emit warnings on errors instead of terminating the run?
 
 ------
 

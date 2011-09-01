@@ -1,0 +1,277 @@
+<tool id="gatk_variant_apply_recalibration" name="Apply Variant Recalibration" version="0.0.1">
+  <description></description>
+  <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
+   --stdout "${output_log}"
+   -d "-B:input,%(file_type)s" "${reference_source.input_variants}" "${reference_source.input_variants.ext}" "input_variants"
+   -p 'java 
+    -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
+    -T "ApplyRecalibration"
+    ##--num_threads 4 ##hard coded, for now
+    -et "NO_ET" ##ET no phone home
+    #if $reference_source.reference_source_selector != "history":
+        -R "${reference_source.ref_file.fields.path}"
+    #end if
+    --recal_file "${reference_source.input_recal}"
+    --tranches_file "${reference_source.input_tranches}"
+    --out "${output_variants}"
+   '
+    
+    ##start standard gatk options
+    #if $gatk_param_type.gatk_param_type_selector == "advanced":
+        #for $sample_metadata in $gatk_param_type.sample_metadata:
+            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #end for
+        #for $read_filter in $gatk_param_type.read_filter:
+            -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
+            ###raise Exception( str( dir( $read_filter ) ) )
+            #for $name, $param in $read_filter.read_filter_type.iteritems():
+                #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
+                    --${name} "${param}"
+                #end if
+            #end for
+            '
+        #end for
+        #if str( $gatk_param_type.input_intervals ) != "None":
+            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
+        #end if
+        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
+            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
+        #end if
+        
+        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
+        #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
+            -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
+        #end if
+        -p '
+        --baq "${gatk_param_type.baq}"
+        --baqGapOpenPenalty "${gatk_param_type.baq_gap_open_penalty}"
+        ${gatk_param_type.use_original_qualities}
+        --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
+        --validation_strictness "${gatk_param_type.validation_strictness}"
+        --interval_merging "${gatk_param_type.interval_merging}"
+        '
+        #if str( $gatk_param_type.read_group_black_list ) != "None":
+            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
+        #end if
+    #end if
+    #if str( $reference_source.reference_source_selector ) == "history":
+        -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
+    #end if
+    ##end standard gatk options
+    
+    ##start analysis specific options
+    
+    #if $analysis_param_type.analysis_param_type_selector == "advanced":
+        -p '
+        --mode "${analysis_param_type.mode}"
+        
+        #for $ignore_filter in $analysis_param_type.ignore_filters:
+            #set $ignore_filter_name = str( $ignore_filter.ignore_filter_type.ignore_filter_type_selector )
+            #if $ignore_filter_name == "custom":
+              #set $ignore_filter_name = str( $ignore_filter.ignore_filter_type.filter_name )
+            #end if
+            --ignore_filter "${ignore_filter_name}"
+        #end for
+        '
+    #end if
+    -p '--ts_filter_level "${ts_filter_level}"'
+  </command>
+  <inputs>
+    <conditional name="reference_source">
+      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <param name="input_variants" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" />
+        <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" />
+        <param name="ref_file" type="select" label="Using reference genome">
+          <options from_data_table="picard_indexes">
+            <filter type="data_meta" key="dbkey" ref="input_variants" column="dbkey"/>
+          </options>
+        </param>
+      </when>
+      <when value="history"> <!-- FIX ME!!!! -->
+        <param name="input_variants" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" />
+        <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+      </when>
+    </conditional>
+    
+    <conditional name="gatk_param_type">
+      <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <repeat name="sample_metadata" title="Sample Metadata">
+            <param name="sample_metadata_file" type="data" format="txt" label="Sample file(s) in JSON format" />
+        </repeat>
+        <repeat name="read_filter" title="Read Filter">
+            <conditional name="read_filter_type">
+              <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+                <option value="MaxReadLength" selected="True">MaxReadLength</option>
+                <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+              </param>
+              <when value="ZeroMappingQualityRead">
+                  <!-- no extra options -->
+              </when>
+              <when value="MaxReadLength">
+                  <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+              </when>
+            </conditional>
+        </repeat>
+        <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
+        <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
+        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+          <option value="UNION" selected="True">UNION</option>
+          <option value="INTERSECTION">INTERSECTION</option>
+        </param>
+        <conditional name="downsampling_type">
+          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+            <option value="NONE" selected="True">NONE</option>
+            <option value="ALL_READS">ALL_READS</option>
+            <option value="BY_SAMPLE">BY_SAMPLE</option>
+          </param>
+          <when value="NONE">
+              <!-- no more options here -->
+          </when>
+          <when value="ALL_READS">
+              <conditional name="downsample_to_type">
+                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+                      <option value="downsample_to_coverage">Downsample by Coverage</option>
+                  </param>
+                  <when value="downsample_to_fraction">
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+                  </when>
+                  <when value="downsample_to_coverage">
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+                  </when>
+              </conditional>
+          </when>
+          <when value="BY_SAMPLE">
+              <conditional name="downsample_to_type">
+                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+                      <option value="downsample_to_coverage">Downsample by Coverage</option>
+                  </param>
+                  <when value="downsample_to_fraction">
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+                  </when>
+                  <when value="downsample_to_coverage">
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+                  </when>
+              </conditional>
+          </when>
+        </conditional>
+        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
+          <option value="OFF" selected="True">OFF</option>
+          <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
+          <option value="RECALCULATE">RECALCULATE</option>
+        </param>
+        <param name="baq_gap_open_penalty" type="integer" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
+        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
+        <param name="validation_strictness" type="select" label="How strict should we be with validation">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="LENIENT">LENIENT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
+        <param name="interval_merging" type="select" label="Interval merging rule">
+          <option value="ALL" selected="True">ALL</option>
+          <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
+        </param>
+        <param name="read_group_black_list" type="data" format="txt" optional="True" label="Read group black list" />
+      </when>
+    </conditional>
+    
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <param name="mode" type="select" label="Recalibration mode">
+          <option value="SNP" selected="True">SNP</option>
+          <option value="INDEL">INDEL</option>
+          <option value="BOTH">BOTH</option>
+        </param>
+       <repeat name="ignore_filters" title="Ignore Filter">
+          <conditional name="ignore_filter_type">
+            <param name="ignore_filter_type_selector" type="select" label="Filter Type">
+              <option value="HARD_TO_VALIDATE">HARD_TO_VALIDATE</option>
+              <option value="LowQual" >LowQual</option>
+              <option value="custom" selected="True">Other</option>
+            </param>
+            <when value="custom">
+              <param name="filter_name" type="text" value="" label="Filter name"/>
+            </when>
+          </conditional>
+        </repeat>
+      </when>
+    </conditional>
+    <param name="ts_filter_level" type="float" label="truth sensitivity level at which to start filtering, used here to indicate filtered variants in plots" value="99.0"/>
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output_variants" label="${tool.name} on ${on_string} (Variants File)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <!-- ADD TESTS -->
+  </tests>
+  <help>
+**What it does**
+
+Applies cuts to the input vcf file (by adding filter lines) to achieve the desired novel FDR levels which were specified during VariantRecalibration
+
+For more information on using the ApplyRecalibration module, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Variant_quality_score_recalibration&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
+
+------
+
+**Inputs**
+
+GenomeAnalysisTK: ApplyRecalibration accepts a variant input file, a recalibration file and a tranches file.
+
+
+**Outputs**
+
+The output is in VCF format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
+
+-------
+
+**Settings**::
+
+
+ recal_file         The output recal file used by ApplyRecalibration
+ tranches_file      The input tranches file describing where to cut the data
+ out                The output filtered, recalibrated VCF file
+ ts_filter_level    The truth sensitivity level at which to start filtering
+ ignore_filter      If specified the optimizer will use variants even if the specified filter name is marked in the input VCF file
+ mode               Recalibration mode to employ: 1.) SNP for recalibrating only SNPs (emitting indels untouched in the output VCF); 2.) INDEL for indels; and 3.) BOTH for recalibrating both SNPs and indels simultaneously. (SNP|INDEL|BOTH)
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+  </help>
+</tool>

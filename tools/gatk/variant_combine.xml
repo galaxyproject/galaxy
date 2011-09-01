@@ -1,33 +1,29 @@
-<tool id="gatk_realigner_target_creator" name="Realigner Target Creator" version="0.0.2">
-  <description>for use in local realignment</description>
+<tool id="gatk_variant_combine" name="Combine Variants" version="0.0.1">
+  <description></description>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "2"
    --stdout "${output_log}"
-   -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
-   -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
+   
+   #set $priority_order = []
+   #for $input_variant in $reference_source.input_variants:
+       -d "-B:${input_variant.input_variant_name},%(file_type)s" "${input_variant.input_variant}" "${input_variant.input_variant.ext}" "input_variant_${input_variant.input_variant_name}"
+       #set $input_variant_name = str( $input_variant.input_variant_name )
+       #assert $input_variant_name not in $priority_order, "Variant Names must be unique" ##this should be handled by a validator
+       #silent $priority_order.append( $input_variant_name )
+   #end for
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
-    -T "RealignerTargetCreator"
-    -o "${output_interval}"
+    -T "CombineVariants"
+    --out "${output_variants}"
+    ##--num_threads 4 ##hard coded, for now
     -et "NO_ET" ##ET no phone home
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"
     #end if
+   --rod_priority_list "${ ','.join( $priority_order ) }"
    '
-    #set $rod_binding_names = dict()
-    #for $rod_binding in $rod_bind:
-        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
-            #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
-        #else
-            #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
-        #end if
-        #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
-        #end if
-    #end for
+   
    
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
@@ -50,9 +46,7 @@
         #if str( $gatk_param_type.input_exclude_intervals ) != "None":
             -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
         #end if
-
         -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
-        
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
             -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
@@ -73,67 +67,57 @@
         -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
     #end if
     ##end standard gatk options
+    
+    
     ##start analysis specific options
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         -p '
-        --minReadsAtLocus "${analysis_param_type.minReadsAtLocus}"
-        --windowSize "${analysis_param_type.windowSize}"
-        --mismatchFraction "${analysis_param_type.mismatchFraction}"
-        --maxIntervalSize "${analysis_param_type.maxIntervalSize}"
+        --genotypemergeoption "${analysis_param_type.genotype_merge_option}"
+        --filteredrecordsmergetype "${analysis_param_type.filtered_records_merge_type}"
+        ${analysis_param_type.print_complex_merges}
+        ${analysis_param_type.filtered_are_uncalled}
+        ${analysis_param_type.minimal_vcf}
+        ${analysis_param_type.assume_identical_samples}
+        
+        #if str( $analysis_param_type.set_key ):
+            --setKey "${analysis_param_type.set_key}"
+        #end if
+        
+        --minimumN "${analysis_param_type.minimum_n}"
         '
     #end if
   </command>
   <inputs>
+    
     <conditional name="reference_source">
       <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
         <option value="cached">Locally cached</option>
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_bam" type="data" format="bam" label="BAM file">
-          <validator type="unspecified_build" />
-          <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
-        </param>
+        <repeat min="1" name="input_variants" title="Variants to Merge">
+          <param name="input_variant" type="data" format="vcf" label="Input variant file" />
+          <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
+            <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
+          </param>
+        </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
           <options from_data_table="picard_indexes">
-            <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
+            <!-- <filter type="data_meta" key="dbkey" ref="input_variants.input_variant" column="dbkey"/> -->
           </options>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_bam" type="data" format="bam" label="BAM file" />
+        <repeat min="1" name="input_variants" title="Variants to Merge">
+          <param name="input_variant" type="data" format="vcf" label="Input variant file" />
+          <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
+            <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
+          </param>
+        </repeat>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
-    
-    <repeat name="rod_bind" title="Binding for reference-ordered data">
-        <conditional name="rod_bind_type">
-	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
-	        <option value="dbsnp" selected="True">dbSNP</option>
-	        <option value="snps">SNPs</option>
-	        <option value="indels">INDELs</option>
-	        <option value="custom">Custom</option>
-	      </param>
-          <when value="dbsnp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="snps">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="indels">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="custom">
-              <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-        </conditional>
-    </repeat>
-    
+        
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
         <option value="basic" selected="True">Basic</option>
@@ -162,12 +146,10 @@
         </repeat>
         <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
         <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
-        
         <param name="BTI_merge_rule" type="select" label="BTI merge rule">
           <option value="UNION" selected="True">UNION</option>
           <option value="INTERSECTION">INTERSECTION</option>
         </param>
-        
         <conditional name="downsampling_type">
           <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
             <option value="NONE" selected="True">NONE</option>
@@ -227,6 +209,7 @@
       </when>
     </conditional>
     
+    
     <conditional name="analysis_param_type">
       <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
         <option value="basic" selected="True">Basic</option>
@@ -236,37 +219,52 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="windowSize" type="integer" value="10" label="Window size for calculating entropy or SNP clusters (windowSize)" />
-        <param name="mismatchFraction" type="float" value="0.15" label="Fraction of base qualities needing to mismatch for a position to have high entropy (mismatchFraction)" help="to disable set to &lt;= 0 or &gt; 1"/>
-        <param name="minReadsAtLocus" type="integer" value="4" label="Minimum reads at a locus to enable using the entropy calculation (minReadsAtLocus)" />
-        <param name="maxIntervalSize" type="integer" value="500" label="Maximum interval size" />
+        <param name="genotype_merge_option" type="select" label="How should we merge genotype records across records for samples shared across the ROD files" >
+          <option value="UNIQUIFY" />
+          <option value="PRIORITIZE" selected="true"/>
+          <option value="UNSORTED" />
+          <option value="REQUIRE_UNIQUE" />
+        </param> 
+        <param name="filtered_records_merge_type" type="select" label="How should we deal with records seen at the same site in the VCF, but with different FILTER fields? " >
+          <option value="KEEP_IF_ANY_UNFILTERED" selected="true"/>
+          <option value="KEEP_IF_ALL_UNFILTERED" />
+        </param> 
+        
+        <param name="print_complex_merges" checked="false" type="boolean" truevalue="--printComplexMerges" falsevalue="" label="Print out interesting sites requiring complex compatibility merging" />
+        <param name="filtered_are_uncalled" checked="false" type="boolean" truevalue="--filteredAreUncalled" falsevalue="" label="If true, then filtered VCFs are treated as uncalled, so that filtered set annotation don't appear in the combined VCF" />
+        <param name="minimal_vcf" checked="false" type="boolean" truevalue="--minimalVCF" falsevalue="" label="If true, then the output VCF will contain no INFO or genotype INFO field" />
+        
+        <param name="set_key" type="text" value="" label="Key, by default set, in the INFO key=value tag emitted describing which set the combined VCF record came from."/>
+        <param name="assume_identical_samples" checked="false" type="boolean" truevalue="--assumeIdenticalSamples" falsevalue="" label="If true, assume input VCFs have identical sample sets and disjoint calls so that one can simply perform a merge sort to combine the VCFs into one, drastically reducing the runtime." />
+        <param name="minimum_n" type="integer" value="1" label="Combine variants and output site only if variant is present in at least N input files."/>
+        
       </when>
     </conditional>
+    
+    
   </inputs>
   <outputs>
-    <data format="gatk_interval" name="output_interval" label="${tool.name} on ${on_string} (GATK intervals)" />
+    <data format="vcf" name="output_variants" label="${tool.name} on ${on_string} (variants)" />
     <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
   </outputs>
   <tests>
       <test>
           <param name="reference_source_selector" value="history" />
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
-          <param name="input_bam" value="gatk/fake_phiX_reads_1.bam" ftype="bam" />
-          <param name="rod_bind_type_selector" value="dbsnp" />
-          <param name="rodToIntervalTrackName" />
-          <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
+          <param name="input_variant_name" value="from_variant_annotator" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="basic" />
-          <output name="output_interval" file="gatk/gatk_realigner_target_creator/gatk_realigner_target_creator_out_1.gatk_interval" /> 
-          <output name="output_log" file="gatk/gatk_realigner_target_creator/gatk_realigner_target_creator_out_1.log.contains" compare="contains"/>
+          <output name="output_variants" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.vcf" lines_diff="2" />
+          <output name="output_log" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.log.contains" compare="contains" />
       </test>
   </tests>
   <help>
 **What it does**
 
-Emits intervals for the Local Indel Realigner to target for cleaning.  Ignores 454 reads, MQ0 reads, and reads with consecutive indel operators in the CIGAR string.
+Combines VCF records from different sources; supports both full merges and set unions. Merge: combines multiple records into a single one; if sample names overlap then they are uniquified. Union: assumes each rod represents the same set of samples (although this is not enforced); using the priority list (if provided), emits a single record instance at every position represented in the rods.
 
-For more information on local realignment around indels using the GATK, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Local_realignment_around_indels&gt;`_.
+For more information on using the CombineVariants module, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/CombineVariants&gt;`_.
 
 To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
 
@@ -276,12 +274,13 @@ If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute
 
 **Inputs**
 
-GenomeAnalysisTK: RealignerTargetCreator accepts an aligned BAM input file.
+GenomeAnalysisTK: CombineVariants accepts variant files as input.
 
+------
 
 **Outputs**
 
-The output is in GATK Interval format.
+The output is a combined vcf file.
 
 
 Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
@@ -290,16 +289,23 @@ Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_th
 
 **Settings**::
 
- windowSize          window size for calculating entropy or SNP clusters
- mismatchFraction    fraction of base qualities needing to mismatch for a position to have high entropy; to disable set to &lt;= 0 or &gt; 1
- minReadsAtLocus     minimum reads at a locus to enable using the entropy calculation
- maxIntervalSize     maximum interval size
+ out                         File to which variants should be written
+ genotypemergeoption         How should we merge genotype records for samples shared across the ROD files? (UNIQUIFY|PRIORITIZE|UNSORTED|REQUIRE_UNIQUE)
+ filteredrecordsmergetype    How should we deal with records seen at the same site in the VCF, but with different FILTER fields? KEEP_IF_ANY_UNFILTERED PASSes the record if any record is unfiltered, KEEP_IF_ALL_UNFILTERED requires all records to be unfiltered (KEEP_IF_ANY_UNFILTERED|KEEP_IF_ALL_UNFILTERED)
+ rod_priority_list           When taking the union of variants containing genotypes: a comma-separated string describing the priority ordering for the genotypes as far as which record gets emitted; a complete priority list MUST be provided
+ printComplexMerges          Print out interesting sites requiring complex compatibility merging
+ filteredAreUncalled         If true, then filtered VCFs are treated as uncalled, so that filtered set annotation don't appear in the combined VCF
+ minimalVCF                  If true, then the output VCF will contain no INFO or genotype INFO field
+ setKey                      Key, by default set, in the INFO key=value tag emitted describing which set the combined VCF record came from.  Set to null if you don't want the set field emitted.
+ assumeIdenticalSamples      If true, assume input VCFs have identical sample sets and disjoint calls so that one can simply perform a merge sort to combine the VCFs into one, drastically reducing the runtime.
+ minimumN                    Combine variants and output site only if variant is present in at least N input files.
 
 ------
 
 **Citation**
 
 For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
 
   </help>
 </tool>

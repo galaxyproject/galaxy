@@ -1,6 +1,7 @@
-<tool id="gatk_table_recalibration" name="Table Recalibration" version="0.0.1">
+<tool id="gatk_table_recalibration" name="Table Recalibration" version="0.0.2">
   <description>on BAM files</description>
   <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
    --stdout "${output_log}"
    -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
    -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
@@ -340,61 +341,63 @@
           <param name="input_bam" value="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="basic" />
-          <output name="output_bam" file="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" lines_diff="2" />
+          <output name="output_bam" file="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" lines_diff="4" />
           <output name="output_log" file="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.log.contains" compare="contains" />
       </test>
   </tests>
   <help>
 **What it does**
 
-     This walker is designed to work as the second pass in a two-pass processing step, doing a by-read traversal.  For 
-     each base in each read this walker calculates various user-specified covariates (such as read group, reported 
-     quality score, cycle, and dinuc) Using these values as a key in a large hashmap the walker calculates an empirical 
-     base quality score and overwrites the quality score currently in the read. This walker then outputs a new bam file 
-     with these updated (recalibrated) reads.  Note: This walker expects as input the recalibration table file generated 
-     previously by CovariateCounterWalker. Note: This walker is designed to be used in conjunction with 
-     CovariateCounterWalker.
+This walker is designed to work as the second pass in a two-pass processing step, doing a by-read traversal.  For each base in each read this walker calculates various user-specified covariates (such as read group, reported quality score, cycle, and dinuc) Using these values as a key in a large hashmap the walker calculates an empirical base quality score and overwrites the quality score currently in the read. This walker then outputs a new bam file with these updated (recalibrated) reads.  Note: This walker expects as input the recalibration table file generated previously by CovariateCounterWalker. Note: This walker is designed to be used in conjunction with CovariateCounterWalker.
+
+For more information on base quality score recalibration using the GATK, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Base_quality_score_recalibration&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
 
 ------
 
-Please cite the website "http://addlink.here" as well as:
-
-Add citation here 2011.
-
-------
-
-**Input formats**
+**Inputs**
 
 GenomeAnalysisTK: TableRecalibration accepts an aligned BAM and a recalibration CSV input files.
 
-------
 
 **Outputs**
 
-The output is in BAM format, see http://addlink.here for more details.
+The output is in BAM format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
 
 -------
 
 **Settings**::
 
- default_read_group                           If a read has no read group then default to the provided String.
- default_platform                                If a read has no platform then default to the provided String. Valid options are illumina, 454, and solid.
- force_read_group                               If provided, the read group ID of EVERY read will be forced to be the provided String. This is useful to collapse all data into a single read group.
- force_platform                                    If provided, the platform of EVERY read will be forced to be the provided String. Valid options are illumina, 454, and solid.
- window_size_nqs                                 The window size used by MinimumNQSCovariate for its calculation
- homopolymer_nback                           The number of previous bases to look at in HomopolymerCovariate
- exception_if_no_tile                               If provided, TileCovariate will throw an exception when no tile can be found. The default behavior is to use tile = -1
- solid_recal_mode                             How should we recalibrate solid bases in whichthe reference was inserted? Options = DO_NOTHING, SET_Q_ZERO, SET_Q_ZERO_BASE_N, or REMOVE_REF_BIAS (DO_NOTHING|SET_Q_ZERO|SET_Q_ZERO_BASE_N|REMOVE_REF_BIAS)
- solid_nocall_strategy   Defines the behavior of the recalibrator when it encounters no calls in the color space. Options = THROW_EXCEPTION, LEAVE_READ_UNRECALIBRATED, or PURGE_READ (THROW_EXCEPTION|LEAVE_READ_UNRECALIBRATED|PURGE_READ)
- recal_file                                     Filename for the input covariates table recalibration .csv file
- out                                                           The output BAM file
- bam_compression                            Compression level to use for writing BAM files
- disable_bam_indexing                                                   Turn off on-the-fly creation of indices for output BAM files.
- simplifyBAM                                               If provided, output BAM files will be simplified to include just key reads for downstream variation discovery analyses (removing duplicates, PF-, non-primary reads), as well stripping all extended tags from the kept reads except the read group identifier
- preserve_qscores_less_than            Bases with quality scores less than this threshold won't be recalibrated, default=5. In general it's unsafe to change qualities scores below &lt; 5, since base callers use these values to indicate random or bad bases
- smoothing                                              Number of imaginary counts to add to each bin bin order to smooth out bins with few data points, default=1
- max_quality_score                            The integer value at which to cap the quality scores, default=50
- doNotWriteOriginalQuals                                         If true, we will not write the original quality (OQ) tag for each read
+ default_read_group             If a read has no read group then default to the provided String.
+ default_platform               If a read has no platform then default to the provided String. Valid options are illumina, 454, and solid.
+ force_read_group               If provided, the read group ID of EVERY read will be forced to be the provided String. This is useful to collapse all data into a single read group.
+ force_platform                 If provided, the platform of EVERY read will be forced to be the provided String. Valid options are illumina, 454, and solid.
+ window_size_nqs                The window size used by MinimumNQSCovariate for its calculation
+ homopolymer_nback              The number of previous bases to look at in HomopolymerCovariate
+ exception_if_no_tile           If provided, TileCovariate will throw an exception when no tile can be found. The default behavior is to use tile = -1
+ solid_recal_mode               How should we recalibrate solid bases in whichthe reference was inserted? Options = DO_NOTHING, SET_Q_ZERO, SET_Q_ZERO_BASE_N, or REMOVE_REF_BIAS (DO_NOTHING|SET_Q_ZERO|SET_Q_ZERO_BASE_N|REMOVE_REF_BIAS)
+ solid_nocall_strategy          Defines the behavior of the recalibrator when it encounters no calls in the color space. Options = THROW_EXCEPTION, LEAVE_READ_UNRECALIBRATED, or PURGE_READ (THROW_EXCEPTION|LEAVE_READ_UNRECALIBRATED|PURGE_READ)
+ recal_file                     Filename for the input covariates table recalibration .csv file
+ out                            The output BAM file
+ bam_compression                Compression level to use for writing BAM files
+ disable_bam_indexing           Turn off on-the-fly creation of indices for output BAM files.
+ simplifyBAM                    If provided, output BAM files will be simplified to include just key reads for downstream variation discovery analyses (removing duplicates, PF-, non-primary reads), as well stripping all extended tags from the kept reads except the read group identifier
+ preserve_qscores_less_than     Bases with quality scores less than this threshold won't be recalibrated, default=5. In general it's unsafe to change qualities scores below &lt; 5, since base callers use these values to indicate random or bad bases
+ smoothing                      Number of imaginary counts to add to each bin bin order to smooth out bins with few data points, default=1
+ max_quality_score              The integer value at which to cap the quality scores, default=50
+ doNotWriteOriginalQuals        If true, we will not write the original quality (OQ) tag for each read
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
 
   </help>
 </tool>

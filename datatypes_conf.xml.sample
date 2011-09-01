@@ -91,6 +91,8 @@
         <datatype extension="picard_interval_list" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
         <datatype extension="gatk_interval" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
         <datatype extension="gatk_dbsnp" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
+        <datatype extension="gatk_tranche" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
+        <datatype extension="gatk_recal" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
         <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
         <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff"/>
         <datatype extension="bmp" type="galaxy.datatypes.images:Bmp" mimetype="image/bmp"/>
