@@ -1709,7 +1709,8 @@ var TrackConfig = function( options ) {
         this.restore_values( options.saved_values );
     }
     this.onchange = options.onchange
-}
+};
+
 extend(TrackConfig.prototype, {
     restore_values: function( values ) {
         var track_config = this;
@@ -1727,12 +1728,14 @@ extend(TrackConfig.prototype, {
         $.each( this.params, function( index, param ) {
             if ( ! param.hidden ) {
                 var id = 'param_' + index;
+                var value = track_config.values[ param.key ];
                 var row = $("<div class='form-row' />").appendTo( container );
                 row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
                 if ( param.type === 'bool' ) {
-                    row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', track_config.values[ param.key ] ) );
+                    row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', value ) );
+                } else if ( param.type === 'text' ) {
+                    row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select() }));
                 } else if ( param.type === 'color' ) {
-                    var value = track_config.values[ param.key ];
                     var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
                     // Color picker in tool tip style float
                     var tip = $( "<div class='tipsy tipsy-north' style='position: absolute;' />" ).hide();
@@ -1754,8 +1757,9 @@ extend(TrackConfig.prototype, {
                         }); 
                         e.stopPropagation();
                     });
-                } else {
-                    row.append( $('<input />').attr("id", id ).attr("name", id ).val( track_config.values[ param.key ] ) ); 
+                } 
+                else {
+                    row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) ); 
                 }
             }
         });
@@ -1775,7 +1779,7 @@ extend(TrackConfig.prototype, {
                     value = parseInt( value );
                 } else if ( param.type === 'bool' ) {
                     value = container.find( '#' + id ).is( ':checked' );
-                } 
+                }
                 // Save value only if changed
                 if ( value !== track_config.values[ param.key ] ) {
                     track_config.values[ param.key ] = value;
@@ -1994,12 +1998,17 @@ extend(Track.prototype, {
      * Additional initialization required before drawing track for the first time.
      */
     predraw_init: function() {},
-    // Provide support for updating and reverting track name. Currently, it's only possible to revert once.
-    update_name: function(new_name) {
+    /**
+     * Set track name.
+     */ 
+    set_name: function(new_name) {
         this.old_name = this.name;
         this.name = new_name;
         this.name_div.text(this.name);
     },
+    /**
+     * Revert track name; currently name can be reverted only once.
+     */
     revert_name: function() {
         this.name = this.old_name;
         this.name_div.text(this.name);
@@ -2173,7 +2182,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             track_dropdown[text] = function() {
                 // Set track name, toggle tool div, and remake menu.
                 if (!track.dynamic_tool_div.is(":visible")) {
-                    track.update_name(track.name + track.tool_region_and_parameters_str());
+                    track.set_name(track.name + track.tool_region_and_parameters_str());
                 }
                 else {
                     menu_option_text = "Show dynamic tool";
@@ -2605,6 +2614,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     this.track_config = new TrackConfig( {
         track: this,
         params: [
+            { key: 'name', label: 'Name', type: 'text', default_value: name },
             { key: 'color', label: 'Color', type: 'color', default_value: 'black' },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
@@ -2613,6 +2623,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
         ], 
         saved_values: prefs,
         onchange: function() {
+            track.set_name(track.prefs.name);
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             // Update the y-axis
             $('#linetrack_' + track.track_id + '_minval').text(track.prefs.min_value);
@@ -2732,6 +2743,7 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     this.track_config = new TrackConfig( {
         track: this,
         params: [
+            { key: 'name', label: 'Name', type: 'text', default_value: name },
             { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
@@ -2739,6 +2751,7 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
         ], 
         saved_values: prefs,
         onchange: function() {
+            track.set_name(track.prefs.name);
             track.tile_cache.clear();
             track.request_draw();
         }
@@ -3119,6 +3132,7 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     this.track_config = new TrackConfig( {
         track: this,
         params: [
+            { key: 'name', label: 'Name', type: 'text', default_value: name },
             { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
@@ -3128,6 +3142,7 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
         ], 
         saved_values: prefs,
         onchange: function() {
+            this.track.set_name(this.track.prefs.name);
             this.track.tile_cache.clear();
             this.track.request_draw();
         }
