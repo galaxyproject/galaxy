@@ -32,21 +32,21 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="3unsorted.bam" ftype="bam" />
+      <param name="input1" value="1.bam" ftype="bam" />
       <param name="bam_paired_end_type_selector" value="SE" />
-      <output name="output1" file="3unsorted.bam" ftype="bam"/>
+      <output name="output1" file="1.bam" ftype="bam" sort="True"/>
     </test>
     <test>
-      <param name="input1" value="3unsorted.bam" ftype="bam" />
+      <param name="input1" value="1.bam" ftype="bam" />
       <param name="bam_paired_end_type_selector" value="PE" />
       <param name="force_se" value="True" />
-      <output name="output1" file="3unsorted.bam" ftype="bam"/>
+      <output name="output1" file="1.bam" ftype="bam" sort="True"/>
     </test>
     <test>
-      <param name="input1" value="3unsorted.bam" ftype="bam" />
+      <param name="input1" value="1.bam" ftype="bam" />
       <param name="bam_paired_end_type_selector" value="PE" />
       <param name="force_se" />
-      <output name="output1" file="3unsorted.bam" ftype="bam"/>
+      <output name="output1" file="1.bam" ftype="bam" sort="True" />
     </test>
   </tests>
   <help>
