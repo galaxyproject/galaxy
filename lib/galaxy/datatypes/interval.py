@@ -939,23 +939,11 @@ class Gtf( Gff ):
                         return False
 
                     # Check attributes for gene_id, transcript_id
-                    attributes = hdr[8].split(";")
+                    attributes = parse_gff_attributes( hdr[8] )
                     if len( attributes ) >= 2:
-                        try:
-                            # Imprecise: should check for a single space per the spec.
-                            # strip() needed b/c Ensembl GTF files include an (illegal)
-                            # space before attributes string.
-                            attr_name, attr_value = attributes[0].strip().split(" ")
-                            if attr_name != 'gene_id':
-                                return False
-                        except:
+                        if 'gene_id' not in attributes:
                             return False
-                        try:
-                            # Imprecise: should check for a single space per the spec.
-                            attr_name, attr_value = attributes[1][1:].split(" ")
-                            if attr_name != 'transcript_id':
-                                return False
-                        except:
+                        if 'transcript_id' not in attributes:
                             return False
                     else:
                         return False
