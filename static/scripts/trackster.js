@@ -145,11 +145,12 @@ extend( CanvasManager.prototype, {
 /** 
  * Make `element` moveable within parent and sibling elements by dragging `handle` (a selector).
  */
-var moveable = function( element, handle, container_selector ) {
+var moveable = function( element, handle_class, container_selector ) {
     // HACK: set default value for container selector.
     container_selector = ".group";
     var css_border_props = {};
-    element.bind( "drag", { handle: handle, relative: true }, function ( e, d ) {
+    // Need to provide selector for handle, not class.
+    element.bind( "drag", { handle: "." + handle_class, relative: true }, function ( e, d ) {
         var 
             parent = $(this).parent(),
             children = parent.children(),
@@ -880,7 +881,7 @@ extend( View.prototype, {
         this.tracks.push(track);
         if (track.init) { track.init(); }
         track.container_div.attr('id', 'track_' + track.track_id);
-        moveable(track.container_div, track.drag_handle);
+        moveable(track.container_div, track.drag_handle_class);
         this.track_id_counter += 1;
         this.num_tracks += 1;
         this.has_changes = true;
