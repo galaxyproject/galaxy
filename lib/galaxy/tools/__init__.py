@@ -28,6 +28,7 @@ from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
+from galaxy.util import listify
 
 log = logging.getLogger( __name__ )
 
@@ -39,23 +40,28 @@ class ToolBox( object ):
     Container for a collection of tools
     """
 
-    def __init__( self, config_filename, tool_root_dir, app ):
+    def __init__( self, config_filenames, tool_root_dir, app ):
         """
         Create a toolbox from the config file names by `config_filename`,
         using `tool_root_directory` as the base directory for finding 
         individual tool config files.
         """
+        # The shed_tool_confs dictionary contains shed_conf_filename : tool_path pairs.
+        self.shed_tool_confs = {}
         self.tools_by_id = {}
         self.workflows_by_id = {}
         self.tool_panel = odict()
+        # The following refers to the tool_path config setting for backward compatibility.
+        # Additional newer (e.g., shed_tool_conf.xml) files include the tool_path attribute
+        # within the <toolbox> tag.
         self.tool_root_dir = tool_root_dir
         self.app = app
         self.init_dependency_manager()
-        try:
-            self.init_tools( config_filename )
-        except:
-            log.exception( "ToolBox error reading %s", config_filename )
-
+        for config_filename in listify( config_filenames ):
+            try:
+                self.init_tools( config_filename )
+            except:
+                log.exception( "ToolBox error reading %s", config_filename )
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.
@@ -71,83 +77,99 @@ class ToolBox( object ):
             </section>
         </toolbox>
         """
-        def load_tool( elem, panel_dict ):
-            try:
-                path = elem.get( "file" )
-                tool = self.load_tool( os.path.join( self.tool_root_dir, path ) )
-                if self.app.config.get_bool( 'enable_tool_tags', False ):
-                    tag_names = elem.get( "tags", "" ).split( "," )
-                    for tag_name in tag_names:
-                        if tag_name == '':
-                            continue
-                        tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
-                        if not tag:
-                            tag = self.app.model.Tag( name=tag_name )
-                            self.sa_session.add( tag )
-                            self.sa_session.flush()
-                            tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
-                            self.sa_session.add( tta )
-                            self.sa_session.flush()
-                        else:
-                            for tagged_tool in tag.tagged_tools:
-                                if tagged_tool.tool_id == tool.id:
-                                    break
-                            else:
-                                tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
-                                self.sa_session.add( tta )
-                                self.sa_session.flush()
-                self.tools_by_id[ tool.id ] = tool
-                key = 'tool_' + tool.id
-                panel_dict[ key ] = tool
-                log.debug( "Loaded tool: %s %s" % ( tool.id, tool.version ) )
-            except:
-                log.exception( "error reading tool from path: %s" % path )
-        def load_workflow( elem, panel_dict ):
-            try:
-                # TODO: should id be encoded?
-                workflow_id = elem.get( 'id' )
-                workflow = self.load_workflow( workflow_id )
-                self.workflows_by_id[ workflow_id ] = workflow
-                key = 'workflow_' + workflow_id
-                panel_dict[ key ] = workflow
-                log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
-            except:
-                log.exception( "error loading workflow: %s" % workflow_id )
-        def load_label( elem, panel_dict ):
-            label = ToolSectionLabel( elem )
-            key = 'label_' + label.id
-            panel_dict[ key ] = label
-        def load_section( elem, panel_dict ):
-            section = ToolSection( elem )
-            log.debug( "Loading section: %s" % section.name )
-            for section_elem in elem:
-                if section_elem.tag == 'tool':
-                    load_tool( section_elem, section.elems )
-                elif section_elem.tag == 'workflow':
-                    load_workflow( section_elem, section.elems )
-                elif section_elem.tag == 'label':
-                    load_label( section_elem, section.elems )
-            key = 'section_' + section.id
-            panel_dict[ key ] = section
-                
         if self.app.config.get_bool( 'enable_tool_tags', False ):
             log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")")
             self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
             self.sa_session.flush()
-        log.info("parsing the tool configuration")
+        log.info( "parsing the tool configuration %s" % config_filename )
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
+        tool_path = root.get( 'tool_path' )
+        if tool_path:
+            # We're parsing a shed_tool_conf file since we have a tool_path attribute.
+            self.shed_tool_confs[ config_filename ] = tool_path
+        else:
+            # Default to backward compatible config setting.
+            tool_path = self.tool_root_dir
         for elem in root:
             if elem.tag == 'tool':
-                load_tool( elem, self.tool_panel )
+                self.load_tool_tag_set( elem, self.tool_panel, tool_path, guid=elem.get( 'guid' ) )
             elif elem.tag == 'workflow':
-                load_workflow( elem, self.tool_panel )
+                self.load_workflow_tag_set( elem, self.tool_panel )
             elif elem.tag == 'section' :
-                load_section( elem, self.tool_panel )
+                self.load_section_tag_set( elem, self.tool_panel, tool_path )
             elif elem.tag == 'label':
-                load_label( elem, self.tool_panel )
-        
-    def load_tool( self, config_file ):
+                self.load_label_tag_set( elem, self.tool_panel )
+    def load_tool_tag_set( self, elem, panel_dict, tool_path, guid=None ):
+        try:
+            path = elem.get( "file" )
+            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+            if self.app.config.get_bool( 'enable_tool_tags', False ):
+                tag_names = elem.get( "tags", "" ).split( "," )
+                for tag_name in tag_names:
+                    if tag_name == '':
+                        continue
+                    tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
+                    if not tag:
+                        tag = self.app.model.Tag( name=tag_name )
+                        self.sa_session.add( tag )
+                        self.sa_session.flush()
+                        tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
+                        self.sa_session.add( tta )
+                        self.sa_session.flush()
+                    else:
+                        for tagged_tool in tag.tagged_tools:
+                            if tagged_tool.tool_id == tool.id:
+                                break
+                        else:
+                            tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
+                            self.sa_session.add( tta )
+                            self.sa_session.flush()
+            if tool.id in self.tools_by_id:
+                raise Exception( "Tool with id %s already loaded." % tool.id )
+            else:
+                self.tools_by_id[ tool.id ] = tool
+            key = 'tool_' + tool.id
+            panel_dict[ key ] = tool
+            log.debug( "Loaded tool: %s %s" % ( tool.id, tool.version ) )
+        except:
+            log.exception( "error reading tool from path: %s" % path )
+    def load_workflow_tag_set( self, elem, panel_dict ):
+        try:
+            # TODO: should id be encoded?
+            workflow_id = elem.get( 'id' )
+            workflow = self.load_workflow( workflow_id )
+            self.workflows_by_id[ workflow_id ] = workflow
+            key = 'workflow_' + workflow_id
+            panel_dict[ key ] = workflow
+            log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
+        except:
+            log.exception( "error loading workflow: %s" % workflow_id )
+    def load_label_tag_set( self, elem, panel_dict ):
+        label = ToolSectionLabel( elem )
+        key = 'label_' + label.id
+        panel_dict[ key ] = label
+    def load_section_tag_set( self, elem, panel_dict, tool_path ):
+        key = 'section_' + elem.get( "id" )
+        if key in panel_dict:
+            # Appending a tool to an existing section in self.tool_panel
+            elems = panel_dict[ key ].elems
+            log.debug( "Appending to section: %s" % elem.get( "name" ) )
+        else:
+            # Appending a new section to self.tool_panel
+            section = ToolSection( elem )
+            elems = section.elems
+            log.debug( "Loading section: %s" % section.name )
+        for section_elem in elem:
+            if section_elem.tag == 'tool':
+                self.load_tool_tag_set( section_elem, elems, tool_path, guid=section_elem.get( 'guid' ) )
+            elif section_elem.tag == 'workflow':
+                self.load_workflow_tag_set( section_elem, elems )
+            elif section_elem.tag == 'label':
+                self.load_label_tag_set( section_elem, elems )
+        if key not in panel_dict:
+            panel_dict[ key ] = section
+    def load_tool( self, config_file, guid=None ):
         """
         Load a single tool from the file named by `config_file` and return 
         an instance of `Tool`.
@@ -160,38 +182,43 @@ class ToolBox( object ):
             type_elem = root.find( "type" )
             module = type_elem.get( 'module', 'galaxy.tools' )
             cls = type_elem.get( 'class' )
-            mod = __import__( module, globals(), locals(), [cls])
+            mod = __import__( module, globals(), locals(), [cls] )
             ToolClass = getattr( mod, cls )
         elif root.get( 'tool_type', None ) is not None:
             ToolClass = tool_types.get( root.get( 'tool_type' ) )
         else:
             ToolClass = Tool
-        return ToolClass( config_file, root, self.app )
-        
-    def reload( self, tool_id ):
+        return ToolClass( config_file, root, self.app, guid=guid )
+    def reload_tool_by_id( self, tool_id ):
         """
         Attempt to reload the tool identified by 'tool_id', if successful
         replace the old tool.
         """
         if tool_id not in self.tools_by_id:
-            raise ToolNotFoundException( "No tool with id %s" % tool_id )
-        old_tool = self.tools_by_id[ tool_id ]
-        new_tool = self.load_tool( old_tool.config_file )
-        # Replace old_tool with new_tool in self.tool_panel
-        tool_key = 'tool_' + tool_id
-        for key, val in self.tool_panel.items():
-            if key == tool_key:
-                self.tool_panel[ key ] = new_tool
-                break
-            elif key.startswith( 'section' ):
-                section = val
-                for section_key, section_val in section.elems.items():
-                    if section_key == tool_key:
-                        self.tool_panel[ key ].elems[ section_key ] = new_tool
-                        break
-        self.tools_by_id[ tool_id ] = new_tool
-        log.debug( "Reloaded tool %s %s" %( old_tool.id, old_tool.version ) )
-
+            message = "No tool with id %s" % tool_id
+            status = 'error'
+        else:
+            old_tool = self.tools_by_id[ tool_id ]
+            new_tool = self.load_tool( old_tool.config_file )
+            # Replace old_tool with new_tool in self.tool_panel
+            tool_key = 'tool_' + tool_id
+            for key, val in self.tool_panel.items():
+                if key == tool_key:
+                    self.tool_panel[ key ] = new_tool
+                    break
+                elif key.startswith( 'section' ):
+                    section = val
+                    for section_key, section_val in section.elems.items():
+                        if section_key == tool_key:
+                            self.tool_panel[ key ].elems[ section_key ] = new_tool
+                            break
+            self.tools_by_id[ tool_id ] = new_tool
+            message = "Reloaded the tool:<br/>"
+            message += "<b>name:</b> %s<br/>" % old_tool.name
+            message += "<b>id:</b> %s<br/>" % old_tool.id
+            message += "<b>version:</b> %s" % old_tool.version
+            status = 'done'
+        return message, status
     def load_workflow( self, workflow_id ):
         """
         Return an instance of 'Workflow' identified by `id`, 
@@ -328,7 +355,7 @@ class Tool:
     
     tool_type = 'default'
     
-    def __init__( self, config_file, root, app ):
+    def __init__( self, config_file, root, app, guid=None ):
         """
         Load a tool from the config named by `config_file`
         """
@@ -337,7 +364,7 @@ class Tool:
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
         # Parse XML element containing configuration
-        self.parse( root )
+        self.parse( root, guid=guid )
     
     @property
     def sa_session( self ):
@@ -346,7 +373,7 @@ class Tool:
         """
         return self.app.model.context
     
-    def parse( self, root ):
+    def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
@@ -356,7 +383,10 @@ class Tool:
             raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
         # TODO: can this be generated automatically?
-        self.id = root.get( "id" )
+        if guid is not None:
+            self.id = guid
+        else:
+            self.id = root.get( "id" )
         if not self.id: 
             raise Exception, "Missing tool 'id'" 
         self.version = root.get( "version" )

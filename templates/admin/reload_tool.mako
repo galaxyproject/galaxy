@@ -8,7 +8,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Reload Tool</div>
     <div class="toolFormBody">
-    <form name="tool_reload" action="${h.url_for( controller='admin', action='tool_reload' )}" method="post" >
+    <form name="reload_tool" id="reload_tool" action="${h.url_for( controller='admin', action='reload_tool' )}" method="post" >
         <div class="form-row">
             <label>
                 Tool to reload:
@@ -30,7 +30,7 @@
             </select>
         </div>
         <div class="form-row">
-            <input type="submit" name="action" value="Reload"/>
+            <input type="submit" name="reload_tool_button" value="Reload"/>
         </div>
     </form>
     </div>

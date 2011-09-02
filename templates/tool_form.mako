@@ -260,7 +260,7 @@
     %if tool.has_multiple_pages:
         <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
     %else:
-        <div class="toolFormTitle">${tool.name}</div>
+        <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
     %endif
     <div class="toolFormBody">
         <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}">

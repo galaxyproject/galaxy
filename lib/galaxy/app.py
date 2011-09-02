@@ -3,6 +3,7 @@ import sys, os, atexit
 from galaxy import config, jobs, util, tools, web
 import galaxy.tools.search
 import galaxy.tools.data
+import galaxy.tools.tool_shed_registry
 from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
@@ -23,6 +24,11 @@ class UniverseApplication( object ):
         # Set up datatypes registry
         self.datatypes_registry = galaxy.datatypes.registry.Registry( self.config.root, self.config.datatypes_config )
         galaxy.model.set_datatypes_registry( self.datatypes_registry )
+        # Set up the tool sheds registry
+        if os.path.isfile( self.config.tool_sheds_config ):
+            self.tool_shed_registry = galaxy.tools.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+        else:
+            self.tool_shed_registry = None
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection
@@ -44,7 +50,7 @@ class UniverseApplication( object ):
         # Tool data tables
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_table_config_path )
         # Initialize the tools
-        self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
+        self.toolbox = tools.ToolBox( self.config.tool_configs, self.config.tool_path, self )
         # Search support for tools
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
         # Load datatype converters

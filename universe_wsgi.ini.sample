@@ -123,10 +123,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Temporary files are stored in this directory.
 #new_file_path = database/tmp
 
-# Tool config file, defines what tools are available in Galaxy.
+# Tool config files, defines what tools are available in Galaxy.
+# Tools can be locally developed or installed from tool sheds.
 #tool_config_file = tool_conf.xml
 
-# Path to the directory containing the tools defined in the config.
+# Default path to the directory containing the tools defined in tool_conf.xml.
+# Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
 #tool_path = tools
 
 # Directory where data used by tools is located, see the samples in that
