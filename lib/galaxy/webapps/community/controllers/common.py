@@ -145,6 +145,14 @@ def new_workflow_metadata_required( trans, id, metadata_dict ):
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
     # record is not needed.
     return False
+def generate_clone_url( trans, repository_id ):
+    repository = get_repository( trans, repository_id )
+    protocol, base = trans.request.base.split( '://' )
+    if trans.user:
+        username = '%s@' % trans.user.username
+    else:
+        username = ''
+    return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
 def generate_tool_guid( trans, repository, tool ):
     """
     Generate a guid for the received tool.  The form of the guid is    
@@ -478,7 +486,7 @@ def load_tool( trans, config_file ):
             ToolClass = Tool
         return ToolClass( config_file, root, trans.app )
     return None
-def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True ):
+def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True, galaxy_url=None ):
     """
     Build a SelectField whose options are the changeset_revision
     strings of all downloadable_revisions of the received repository.
@@ -492,9 +500,15 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         options.append( ( revision_label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     if add_id_to_name:
-        name = 'changeset_revision_%d' % repository.id
+        if galaxy_url:
+            name = '%s_changeset_revision_%d' % ( galaxy_url, repository.id )
+        else:
+            name = 'changeset_revision_%d' % repository.id
     else:
-        name = 'changeset_revision'
+        if galaxy_url:
+            name = '%s_changeset_revision' % galaxy_url
+        else:
+            name = 'changeset_revision'
     select_field = SelectField( name=name,
                                 refresh_on_change=True,
                                 refresh_on_change_values=refresh_on_change_values )

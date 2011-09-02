@@ -123,6 +123,7 @@ class RepositoryListGrid( grids.Grid ):
                 return 'yes'
             return ''
     # Grid definition
+    galaxy_url = None
     title = "Repositories"
     model_class = model.Repository
     template='/webapps/community/repository/grid.mako'
@@ -183,8 +184,48 @@ class RepositoryListGrid( grids.Grid ):
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
 
+class DownloadableRepositoryListGrid( RepositoryListGrid ):
+    class RevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
+        def get_value( self, trans, grid, repository ):
+            """
+            Display a SelectField whose options are the changeset_revision
+            strings of all downloadable_revisions of this repository.
+            """
+            select_field = build_changeset_revision_select_field( trans,
+                                                                  repository,
+                                                                  galaxy_url=grid.galaxy_url )
+            if len( select_field.options ) > 1:
+                return select_field.get_html()
+            return repository.revision
+    columns = [
+        RepositoryListGrid.NameColumn( "Name",
+                                       key="name",
+                                       attach_popup=True ),
+        RepositoryListGrid.DescriptionColumn( "Synopsis",
+                                              key="description",
+                                              attach_popup=False ),
+        RevisionColumn( "Revision" ),
+        RepositoryListGrid.UserColumn( "Owner",
+                                       model_class=model.User,
+                                       attach_popup=False,
+                                       key="User.username" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( self.model_class ) \
+                               .join( model.RepositoryMetadata.table ) \
+                               .join( model.User.table )
+
 class RepositoryController( BaseController, ItemRatings ):
 
+    downloadable_repository_list_grid = DownloadableRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
     category_list_grid = CategoryListGrid()
 
@@ -214,6 +255,111 @@ class RepositoryController( BaseController, ItemRatings ):
                                                                   **kwd ) )
         # Render the list view
         return self.category_list_grid( trans, **kwd )
+    @web.expose
+    def browse_downloadable_repositories( self, trans, **kwd ):
+        tool_shed_name = kwd.get( 'tool_shed_name', None )
+        repository_id = kwd.get( 'id', None )
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "preview_tools_in_changeset":
+                repository = get_repository( trans, repository_id )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='preview_tools_in_changeset',
+                                                                  repository_id=repository_id,
+                                                                  changeset_revision=repository.tip,
+                                                                  galaxy_url=galaxy_url ) )
+
+        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
+        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # all of the received values to see which value is not the repository tip.  If we find it, we
+        # know the refresh_on_change occurred, and we have the necessary repository id and change set
+        # revision to pass on.
+        for k, v in kwd.items():
+            changset_revision_str = 'changeset_revision_'
+            if k.startswith( changset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+                repository = get_repository( trans, repository_id )
+                if repository.tip != v:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='preview_tools_in_changeset',
+                                                                      repository_id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=v,
+                                                                      galaxy_url=galaxy_url ) )
+            elif k.find( changset_revision_str ) > 0:
+                # Keys look like: 'localhost:8763_changeset_revision_3' and values: '4ef2cf631604'.
+                items = k.split( '_%s' % changset_revision_str )
+                galaxy_url = items[0]
+                repository_id = trans.security.encode_id( int( items[1] ) )
+                repository = get_repository( trans, repository_id )
+                if repository.tip != v:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='preview_tools_in_changeset',
+                                                                      repository_id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=v,
+                                                                      galaxy_url=galaxy_url ) )
+
+        if tool_shed_name:
+            title = "%s downloadable repositories" % tool_shed_name
+        else:
+            title = "Downloadable repositories"
+        self.downloadable_repository_list_grid.title = title
+        self.downloadable_repository_list_grid.galaxy_url = galaxy_url
+        url_args = dict( action='browse_downloadable_repositories',
+                         operation='preview_tools_in_changeset',
+                         repository_id=repository_id,
+                         galaxy_url=galaxy_url )
+        self.downloadable_repository_list_grid.operations = [ grids.GridOperation( "Preview and install tools",
+                                                                                   url_args=url_args,
+                                                                                   allow_multiple=False,
+                                                                                   async_compatible=False ) ]
+
+        # Render the list view
+        return self.downloadable_repository_list_grid( trans, **kwd )
+    @web.expose
+    def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        galaxy_url = util.restore_text( params.get( 'galaxy_url', '' ) )
+        repository = get_repository( trans, repository_id )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+        else:
+            metadata = None
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
+        return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
+                                    repository=repository,
+                                    changeset_revision=changeset_revision,
+                                    revision_label=revision_label,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    metadata=metadata,
+                                    galaxy_url=galaxy_url,
+                                    display_for_install=True,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    def install_repository_revision( self, trans, repository_id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        galaxy_url = util.restore_text( params.get( 'galaxy_url', '' ) )
+        repository = get_repository( trans, repository_id )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        # Redirect back to local Galaxy to perform install.
+        tool_shed_url = trans.request.host
+        repository_clone_url = generate_clone_url( trans, repository_id )
+        # TODO: support https in the following url.
+        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&repository_name=%s&repository_clone_url=%s&changeset_revision=%s' % \
+            ( galaxy_url, tool_shed_url, repository.name, repository_clone_url, changeset_revision )
+        return trans.response.send_redirect( url )
     @web.expose
     def browse_repositories( self, trans, **kwd ):
         # We add params to the keyword dict in this method in order to rename the param
@@ -1079,45 +1225,57 @@ class RepositoryController( BaseController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        galaxy_url = util.restore_text( params.get( 'galaxy_url', '' ) )
+        display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
         repository = get_repository( trans, repository_id )
-        old_version_msg = "The path to your selected version of this tool does not exist in the repository tip, " + \
-            "so it cannot be previewed, but you can inspect the tool version's metadata using it's pop-up menu " + \
-            "and you can download your selected version of this tool from the <b>Repository Actions</b> menu."            
+        repo = hg.repository( get_configured_ui(), repository.repo_path )          
         try:
-            tool = load_tool( trans, os.path.abspath( tool_config ) )
-            can_preview = True
-            if changeset_revision != repository.tip:
-                # See if we are attempting to preview an old version of a tool.
-                # TODO: Previewing an old version of a tool is not currently supported because
-                # the received tool_config is a file on the file system.  We need to implement
-                # an enhancement here to look at the repository manifest files if previewing an
-                # old version of a tool.
-                repo_changeset_repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-                repo_changeset_metadata = repo_changeset_repository_metadata.metadata
-                if 'tools' in repo_changeset_metadata:
-                    for tool_metadata_dict in repo_changeset_metadata[ 'tools' ]:
-                        if tool_metadata_dict[ 'id' ] == tool.id:
-                            if tool_metadata_dict[ 'version' ] != tool.version:
-                                can_preview = False
-                                message = old_version_msg
-            if can_preview:
-                tool_state = self.__new_state( trans )
-                is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
-                return trans.fill_template( "/webapps/community/repository/tool_form.mako",
-                                            repository=repository,
-                                            tool=tool,
-                                            tool_state=tool_state,
-                                            is_malicious=is_malicious,
-                                            message=message,
-                                            status=status )
-        except Exception, e:
-            # TODO: enhance this to check the repository manifest for the files and
-            # display the tool using them.
-            exception_str = str( e )
-            if exception_str.find( 'No such file or directory' ) >= 0:
-                message = old_version_msg
+            if changeset_revision == repository.tip:
+                # Get the tool config from the file system we use for browsing.
+                tool = load_tool( trans, os.path.abspath( tool_config ) )
             else:
-                message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % exception_str
+                # Get the tool config file name from the hgweb url, something like:
+                # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
+                old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
+                ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+                for filename in ctx:
+                    if filename == old_tool_config_file_name:
+                        fctx = ctx[ filename ]
+                        break
+                # Write the contents of the old tool config to a temporary file.
+                fh = tempfile.NamedTemporaryFile( 'w' )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'w' )
+                fh.write( fctx.data() )
+                fh.close()
+                tool = load_tool( trans, tmp_filename )
+                try:
+                    os.unlink( tmp_filename )
+                except:
+                    pass
+            tool_state = self.__new_state( trans )
+            is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+            return trans.fill_template( "/webapps/community/repository/tool_form.mako",
+                                        repository=repository,
+                                        changeset_revision=changeset_revision,
+                                        tool=tool,
+                                        tool_state=tool_state,
+                                        is_malicious=is_malicious,
+                                        display_for_install=display_for_install,
+                                        galaxy_url=galaxy_url,
+                                        message=message,
+                                        status=status )
+        except Exception, e:
+            message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % str( e )
+        if display_for_install:
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='preview_tools_in_changeset',
+                                                              repository_id=repository_id,
+                                                              changeset_revision=changeset_revision,
+                                                              galaxy_url=galaxy_url,
+                                                              message=message,
+                                                              status='error' ) )
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='browse_repositories',
                                                           operation='view_or_manage_repository',
