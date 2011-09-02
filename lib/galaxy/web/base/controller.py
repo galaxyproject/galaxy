@@ -2768,10 +2768,15 @@ class Admin( object ):
                                             try:
                                                 repository_tool = trans.app.toolbox.load_tool( full_path )
                                                 if repository_tool:
-                                                    repository_tools_tups.append( ( relative_path.lstrip( '%s/' % tool_path ), repository_tool ) )
+                                                    # At this point, we need to lstrip tool_path from relative_path,m but we 
+                                                    # have to be careful, so we do this the following way instead of using lstrip().
+                                                    items = relative_path.split( '/' )
+                                                    lstriped_items = items[ 2: ]
+                                                    tup_path = '/'.join( lstriped_items )
+                                                    repository_tools_tups.append( ( tup_path, repository_tool ) )
                                             except Exception, e:
                                                 # We have an inavlid .xml file, so not a tool config.
-                                                log.debug("Ignoring invalid tool config (%s)." % str( relative_path ))
+                                                log.debug( "Ignoring invalid tool config (%s). Error: %s" % ( str( relative_path ), str( e ) ) )
                             if repository_tools_tups:
                                 # Generate an in-memory tool conf section that includes the new tools.
                                 new_tool_section = self.__generate_tool_panel_section( repository_name,
@@ -2865,7 +2870,7 @@ class Admin( object ):
         if tool_shed_url.find( ':' ) > 0:
             # Eliminate the port, if any, since it will result in an invalid directory name.
             return tool_shed_url.split( ':' )[ 0 ]
-        return tool_shed_url
+        return tool_shed_url.rstrip( '/' )
     def __clean_repository_clone_url( self, repository_clone_url ):
         if repository_clone_url.find( '@' ) > 0:
             # We have an url that includes an authenticated user, something like:
