@@ -2313,7 +2313,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         var tile_count = 0;
         // Draw or fetch and show tiles.
         while ( ( tile_index * DENSITY * resolution ) < high ) {
-            tile = this.draw_helper( force, width, tile_index, resolution, parent_element, w_scale )
+            tile = this.draw_helper( force, width, tile_index, resolution, parent_element, w_scale );
             if ( tile ) {
                 drawn_tiles.push( tile );
             } else {
@@ -2486,7 +2486,18 @@ extend(TiledTrack.prototype, Track.prototype, {
         track.max_height = Math.max(track.max_height, tile_element.height());
         track.content_div.css("height", track.max_height + "px");
         parent_element.children().css("height", track.max_height + "px");        
-    }, 
+    },
+    /**
+     * Returns tile bounds--tile low and tile high--based on a tile index. Return value is an array 
+     * with values tile_low and tile_high.
+     */ 
+    _get_tile_bounds: function(tile_index, resolution) {
+        var tile_low = tile_index * DENSITY * resolution,
+            tile_length = DENSITY * resolution,
+            // Tile high cannot be larger than view.max_high, which the chromosome length.
+            tile_high = (tile_low + tile_length <= this.view.max ? tile_low + tile_length : this.view.max_high);
+        return [tile_low, tile_high];
+    },
     /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
      */
@@ -2713,9 +2724,11 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
             return;
         }
         
-        var tile_low = tile_index * DENSITY * resolution,
-            tile_length = DENSITY * resolution,
-            width = Math.ceil( tile_length * w_scale ),
+        var 
+            tile_bounds = this._get_tile_bounds(tile_index, resolution),
+            tile_low = tile_bounds[0],
+            tile_high = tile_bounds[1],
+            width = Math.ceil( (tile_high - tile_low) * w_scale ),
             height = this.height_px;
         
         // Create canvas
@@ -2725,7 +2738,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
         
         // Paint line onto full canvas
         var ctx = canvas.getContext("2d");
-        var painter = new painters.LinePainter(result.data, tile_low, tile_low + tile_length, this.prefs, mode);
+        var painter = new painters.LinePainter(result.data, tile_low, tile_high, this.prefs, mode);
         painter.draw(ctx, width, height);
         
         return new Tile(tile_index, resolution, canvas, result.data);
@@ -2990,8 +3003,9 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
      */
     draw_tile: function(result, mode, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
-            tile_low = tile_index * DENSITY * resolution,
-            tile_high = (tile_index + 1) * DENSITY * resolution,
+            tile_bounds = track._get_tile_bounds(tile_index, resolution),
+            tile_low = tile_bounds[0],
+            tile_high = tile_bounds[1],
             tile_span = tile_high - tile_low,
             width = Math.ceil(tile_span * w_scale),
             min_height = 25,
