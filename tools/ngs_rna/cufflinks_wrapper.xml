@@ -14,11 +14,11 @@
             -j $pre_mrna_fraction
             
             ## Include reference annotation?
-            #if $reference_annotation.use_ref == "use reference annotation":
+            #if $reference_annotation.use_ref == "Use reference annotation":
                 -G $reference_annotation.reference_annotation_file
             #end if
-            #if $reference_annotation.use_ref == "use reference annotation guide":
-		-g $reference_annotation_guide.reference_annotation_guide_file
+            #if $reference_annotation.use_ref == "Use reference annotation guide":
+		        -g $reference_annotation.reference_annotation_guide_file
             #end if
             
             ## Set paired-end parameters?
@@ -63,7 +63,7 @@
             <when value="Use reference annotation">
                 <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Aonnotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
             	</when>
-	    <when value="Use reference annotation guide">
+	        <when value="Use reference annotation guide">
                 <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Aonnotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
                 </when>
         </conditional>
