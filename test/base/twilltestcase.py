@@ -655,10 +655,9 @@ class TwillTestCase( unittest.TestCase ):
             self.home()
             self.visit_page( "display?hid=" + hid )
             data = self.last_page()
-            assert_list = attributes["assert_list"]
-            if assert_list is not None:
+            if attributes is not None and attributes.get( "assert_list", None ) is not None:
                 try:
-                    verify_assertions(data, assert_list)
+                    verify_assertions(data, attributes["assert_list"])
                 except AssertionError, err:
                     errmsg = 'History item %s different than expected\n' % (hid)
                     errmsg += str( err )
