@@ -896,7 +896,7 @@ extend( View.prototype, {
      */
     remove_track: function(track) {
         this.has_changes = true;
-        delete this.tracks[this.tracks.indexOf(track)];
+        this.tracks.splice(this.tracks.indexOf(track), 1);
         this.num_tracks -= 1;
         var view = this;
         track.container_div.fadeOut('slow', function() { 
