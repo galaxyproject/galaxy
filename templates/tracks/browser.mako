@@ -204,32 +204,25 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 "Save": function() {
                     // Show saving dialog box
                     show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
+                    
+                    // TODO: make save into its own function.
 
                     // Save tracks.
-                    var tracks = [];
-                    $(".viewport-container .track").each(function () {
-                        // ID has form track_<main_track_id>_<child_track_id>
-                        var 
-                            id_split = $(this).attr("id").split("_"),
-                            track_id = id_split[1],
-                            child_id = id_split[2];
-
-                        // Get track.    
-                        var track = view.tracks[track_id];
-                        if (child_id) {
-                            track = track.child_tracks[child_id];
-                        }
+                    var saved_tracks = [], tracks;
+                    for (var i = 0; i < view.tracks.length; i++) {
+                        track = view.tracks[i];
 
                         // Add track.
-                        tracks.push({
+                        saved_tracks.push({
                             "track_type": track.get_type(),
                             "name": track.name,
                             "hda_ldda": track.hda_ldda,
                             "dataset_id": track.dataset_id,
                             "prefs": track.prefs,
-                            "is_child": (child_id ? true : false )
+                            // TODO: remove parent-child relationships in favor of a group.
+                            "is_child": false
                         });
-                    });
+                    };
                     
                     // Save bookmarks.
                     var bookmarks = [];
@@ -242,7 +235,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 
                     var overview_track_name = (view.overview_track ? view.overview_track.name : null);
                     var payload = { 
-                        'tracks': tracks, 
+                        'tracks': saved_tracks, 
                         'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
                         'bookmarks': bookmarks
                     };
