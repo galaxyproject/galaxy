@@ -2768,11 +2768,8 @@ class Admin( object ):
                                             try:
                                                 repository_tool = trans.app.toolbox.load_tool( full_path )
                                                 if repository_tool:
-                                                    # At this point, we need to lstrip tool_path from relative_path,m but we 
-                                                    # have to be careful, so we do this the following way instead of using lstrip().
-                                                    items = relative_path.split( '/' )
-                                                    lstriped_items = items[ 2: ]
-                                                    tup_path = '/'.join( lstriped_items )
+                                                    # At this point, we need to lstrip tool_path from relative_path.
+                                                    tup_path = relative_path.replace( tool_path, '' ).lstrip( '/' )
                                                     repository_tools_tups.append( ( tup_path, repository_tool ) )
                                             except Exception, e:
                                                 # We have an inavlid .xml file, so not a tool config.
@@ -2894,7 +2891,7 @@ class Admin( object ):
         Generate a tool path that guarantees repositories with the same name will always be installed
         in different directories.  The tool path will be of the form:
         <tool shed url>/repos/<repository owner>/<repository name>/<changeset revision>
-        http://test@gvk.bx.psu.edu:9009/repos/test/filter
+        http://test@bx.psu.edu:9009/repos/test/filter
         """
         tmp_url = self.__clean_repository_clone_url( repository_clone_url )
         # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
