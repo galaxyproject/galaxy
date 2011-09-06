@@ -5,7 +5,7 @@ Universe configuration builder.
 import sys, os, tempfile
 import logging, logging.config
 import ConfigParser
-from galaxy.util import string_as_bool, listify
+from galaxy.util import string_as_bool, listify, parse_xml
 
 from galaxy import eggs
 import pkg_resources
@@ -172,10 +172,21 @@ class Configuration( object ):
         else:
             return default
     def check( self ):
+        paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
+        # Look for any tool shed configs and retrieve the tool_path attribute from the <toolbox> tag.
+        for config_filename in self.tool_configs:
+            tree = parse_xml( config_filename )
+            root = tree.getroot()
+            tool_path = root.get( 'tool_path' )
+            if tool_path not in [ None, False ]:
+                paths_to_check.append( resolve_path( tool_path, self.root ) )
         # Check that required directories exist
-        for path in self.root, self.tool_path, self.tool_data_path, self.template_path:
-            if not os.path.isdir( path ):
-                raise ConfigurationError("Directory does not exist: %s" % path )
+        for path in paths_to_check:
+            if path not in [ None, False ] and not os.path.isdir( path ):
+                try:
+                    os.makedirs( path )
+                except Exception, e:
+                    raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
         for path in self.file_path, \
                     self.new_file_path, \
