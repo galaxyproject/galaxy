@@ -2,7 +2,7 @@
 Contains functionality needed in every web interface
 """
 import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess
-from datetime import *
+from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import config, tools, web, util
 from galaxy.web import error, form, url_for

@@ -1,7 +1,6 @@
 import os, logging, urllib, ConfigParser, tempfile, shutil, pexpect
 from time import strftime
-from datetime import *
-
+from datetime import date, datetime
 from galaxy import util
 from galaxy.datatypes.checkers import *
 from galaxy.web.base.controller import *
