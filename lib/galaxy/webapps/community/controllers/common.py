@@ -295,6 +295,9 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                 repository_metadata.metadata = metadata_dict
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
+        else:
+            message = "Changeset revision '%s' includes no tools or exported workflows for which metadata can be set." % str( changeset_revision )
+            status = "done"
     else:
         # change_set is None
         message = "Repository does not include changeset revision '%s'." % str( changeset_revision )

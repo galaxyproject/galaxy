@@ -1396,7 +1396,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                                                   changeset_revision=repository.tip,
                                                                   status=status,
                                                                   message=message ) )
-        return output.split()
+        return output.split( '\r\n' )
     @web.json
     def get_file_contents( self, trans, file_path ):
         # Avoid caching
