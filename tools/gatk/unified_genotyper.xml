@@ -10,6 +10,7 @@
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "UnifiedGenotyper"
+    --num_threads 4 ##hard coded, for now
     -o "${output_vcf}"
     -et "NO_ET" ##ET no phone home
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
