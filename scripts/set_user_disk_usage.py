@@ -38,7 +38,7 @@ def init():
 def quotacheck( sa_session, users ):
     sa_session.refresh( user )
     current = user.get_disk_usage()
-    print user.username, '<' + user.email + '> current usage:', str( current ) + ',',
+    print user.username, '<' + user.email + '> old usage:', str( current ) + ',',
     new = user.calculate_disk_usage()
     sa_session.refresh( user )
     # usage changed while calculating, do it again
@@ -49,7 +49,7 @@ def quotacheck( sa_session, users ):
     if new == current:
         print 'no change'
     else:
-        print 'new:', new
+        print 'new usage:', new
         if not options.dryrun:
             user.set_disk_usage( new )
             sa_session.add( user )
