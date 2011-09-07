@@ -1,4 +1,4 @@
-import os, logging, urllib, ConfigParser, tempfile, shutil, pexpect
+import os, logging, urllib, ConfigParser, tempfile, shutil
 from time import strftime
 from datetime import date, datetime
 from galaxy import util
@@ -1357,7 +1357,12 @@ class RepositoryController( BaseController, ItemRatings ):
         trans.response.headers['Expires'] = '0'
         repository = trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( repository_id ) )
         folder_path = key
-        files_list = self.__get_files( trans, repository, folder_path )
+        try:
+            files_list = self.__get_files( trans, folder_path )
+        except OSError, e:
+            if str( e ).find( 'No such file or directory' ) >= 0:
+                # We have a repository with no contents.
+                return []
         folder_contents = []
         for filename in files_list:
             is_folder = False
@@ -1372,31 +1377,20 @@ class RepositoryController( BaseController, ItemRatings ):
                          "key": full_path }
                 folder_contents.append( node )
         return folder_contents
-    def __get_files( self, trans, repository, folder_path ):
-        def print_ticks( d ):
-            pass
-        cmd  = "ls -p '%s'" % folder_path
-        output = pexpect.run( cmd,
-                              events={ pexpect.TIMEOUT : print_ticks }, 
-                              timeout=10 )
-        if 'No such file or directory' in output:
-            if 'root' in output:
-                # The repository is empty
-                return []
-            else:
-                # Some strange error occurred, the selected file was displayed, but
-                # does not exist in the sub-directory from which it was displayed.
-                # This should not happen...
-                status = 'error'
-                message = "No folder named (%s) exists." % folder_path
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='browse_repositories',
-                                                                  operation="view_or_manage_repository",
-                                                                  id=trans.security.encode_id( repository.id ),
-                                                                  changeset_revision=repository.tip,
-                                                                  status=status,
-                                                                  message=message ) )
-        return output.split( '\r\n' )
+    def __get_files( self, trans, folder_path ):
+        contents = []
+        for item in os.listdir( folder_path ):
+            # Skip .hg directories
+            if str( item ).startswith( '.hg' ):
+                continue
+            if os.path.isdir( os.path.join( folder_path, item ) ):
+                # Append a '/' character so that our jquery dynatree will
+                # function properly.
+                item = '%s/' % item
+            contents.append( item )
+        if contents:
+            contents.sort()
+        return contents
     @web.json
     def get_file_contents( self, trans, file_path ):
         # Avoid caching
