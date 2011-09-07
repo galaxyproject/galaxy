@@ -106,9 +106,8 @@ class WorkflowsAPIController(BaseController):
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
                     hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif ds_map[k]['src'] == 'ld':
-                    ld_t, ld_id = trans.security.decode_string_id(ds_map[k]['id']).split('.')
                     ldda = trans.sa_session.query(self.app.model.LibraryDataset).get(
-                            ld_id).library_dataset_dataset_association
+                            trans.security.decode_id(ds_map[k]['id'])).library_dataset_dataset_association
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
                     hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif ds_map[k]['src'] == 'hda':

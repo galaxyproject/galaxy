@@ -87,7 +87,7 @@ class LibrariesController( BaseController ):
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( library.id )
         rval = {}
-        rval['url'] = url_for( 'libraries', id=encoded_id )
+        rval['url'] = url_for( 'library', id=encoded_id )
         rval['name'] = name
         rval['id'] = encoded_id
         return [ rval ]

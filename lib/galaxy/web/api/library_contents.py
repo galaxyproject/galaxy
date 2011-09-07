@@ -52,14 +52,16 @@ class LibraryContentsController( BaseController ):
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             trans.response.status = 400
             return "Invalid library id ( %s ) specified." % str( library_id )
-        encoded_id = trans.security.encode_id( 'folder.%s' % library.root_folder.id )
+        encoded_id = 'F' + trans.security.encode_id( library.root_folder.id )
         rval.append( dict( id = encoded_id,
                            type = 'folder',
                            name = '/',
                            url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
         library.root_folder.api_path = ''
         for content in traverse( library.root_folder ):
-            encoded_id = trans.security.encode_id( '%s.%s' % ( content.api_type, content.id ) )
+            encoded_id = trans.security.encode_id( content.id )
+            if content.api_type == 'folder':
+                encoded_id = 'F' + encoded_id
             rval.append( dict( id = encoded_id,
                                type = content.api_type,
                                name = content.api_path,
@@ -69,7 +71,7 @@ class LibraryContentsController( BaseController ):
     @web.expose_api
     def show( self, trans, id, library_id, **kwd ):
         """
-        GET /api/libraries/{encoded_library_id}/contents/{encoded_content_type_and_id}
+        GET /api/libraries/{encoded_library_id}/contents/{encoded_content_id}
         Displays information about a library content (file or folder).
         """
         content_id = id
@@ -77,7 +79,7 @@ class LibraryContentsController( BaseController ):
             content = get_library_content_for_access( trans, content_id )
         except Exception, e:
             return str( e )
-        return content.get_api_value( view='element' )
+        return encode_all_ids( trans, content.get_api_value( view='element' ) )
 
     @web.expose_api
     def create( self, trans, library_id, payload, **kwd ):
@@ -88,51 +90,40 @@ class LibraryContentsController( BaseController ):
         create_type = None
         if 'create_type' not in payload:
             trans.response.status = 400
-            return "Missing required 'create_type' parameter.  Please consult the API documentation for help."
+            return "Missing required 'create_type' parameter."
         else:
             create_type = payload.pop( 'create_type' )
         if create_type not in ( 'file', 'folder' ):
             trans.response.status = 400
-            return "Invalid value for 'create_type' parameter ( %s ) specified.  Please consult the API documentation for help." % create_type
+            return "Invalid value for 'create_type' parameter ( %s ) specified." % create_type
+        if 'folder_id' not in payload:
+            trans.response.status = 400
+            return "Missing requred 'folder_id' parameter."
+        else:
+            folder_id = payload.pop( 'folder_id' )
         try:
-            content_id = str( payload.pop( 'folder_id' ) )
-            decoded_type_and_id = trans.security.decode_string_id( content_id )
-            parent_type, decoded_parent_id = decoded_type_and_id.split( '.' )
-            assert parent_type in ( 'folder', 'file' )
-        except:
-            trans.response.status = 400
-            return "Malformed parent id ( %s ) specified, unable to decode." % content_id
-        # "content" can be either a folder or a file, but the parent of new contents can only be folders.
-        if parent_type == 'file':
-            trans.response.status = 400
-            try:
-                # With admins or people who can access the dataset provided as the parent, be descriptive.
-                dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( decoded_parent_id ).library_dataset_dataset_association.dataset
-                assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset )
-                return "The parent id ( %s ) points to a file, not a folder." % content_id
-            except:
-                # If you can't access the parent we don't want to reveal its existence.
-                return "Invalid parent folder id ( %s ) specified." % content_id
+            # _for_modification is not necessary, that security happens in the library_common controller.
+            parent = get_library_folder_for_access( trans, library_id, folder_id )
+        except Exception, e:
+            return str( e )
         # The rest of the security happens in the library_common controller.
-        folder_id = trans.security.encode_id( decoded_parent_id )
+        real_folder_id = trans.security.encode_id( parent.id )
         # Now create the desired content object, either file or folder.
         if create_type == 'file':
-            status, output = trans.webapp.controllers['library_common'].upload_library_dataset( trans, 'api', library_id, folder_id, **payload )
+            status, output = trans.webapp.controllers['library_common'].upload_library_dataset( trans, 'api', library_id, real_folder_id, **payload )
         elif create_type == 'folder':
-            status, output = trans.webapp.controllers['library_common'].create_folder( trans, 'api', folder_id, library_id, **payload )
+            status, output = trans.webapp.controllers['library_common'].create_folder( trans, 'api', real_folder_id, library_id, **payload )
         if status != 200:
             trans.response.status = status
-            # We don't want to reveal the encoded folder_id since it's invalid
-            # in the API context.  Instead, return the content_id originally
-            # supplied by the client.
-            output = output.replace( folder_id, content_id )
             return output
         else:
             rval = []
             for k, v in output.items():
                 if type( v ) == trans.app.model.LibraryDatasetDatasetAssociation:
                     v = v.library_dataset
-                encoded_id = trans.security.encode_id( create_type + '.' + str( v.id ) )
+                encoded_id = trans.security.encode_id( v.id )
+                if create_type == 'folder':
+                    encoded_id = 'F' + encoded_id
                 rval.append( dict( id = encoded_id,
                                    name = v.name,
                                    url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )

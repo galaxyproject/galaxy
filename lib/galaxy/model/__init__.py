@@ -1136,7 +1136,9 @@ class HistoryDatasetAssociation( DatasetInstance ):
         # display in other objects, we can't use the simpler method used by
         # other model classes.
         hda = self
-        rval = dict( name = hda.name,
+        rval = dict( id = hda.id,
+                     model_class = self.__class__.__name__,
+                     name = hda.name,
                      deleted = hda.deleted,
                      visible = hda.visible,
                      state = hda.state,
@@ -1230,7 +1232,7 @@ class Library( object, APIItem ):
         return name
 
 class LibraryFolder( object, APIItem ):
-    api_element_visible_keys = ( 'name', 'description', 'item_count', 'genome_build' )
+    api_element_visible_keys = ( 'id', 'name', 'description', 'item_count', 'genome_build' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
@@ -1371,7 +1373,10 @@ class LibraryDataset( object ):
                 tmp_dict[field['label']] = content[field['name']]
             template_data[template.name] = tmp_dict
 
-        rval = dict( name = ldda.name,
+        rval = dict( id = self.id,
+                     ldda_id = ldda.id,
+                     model_class = self.__class__.__name__,
+                     name = ldda.name,
                      file_name = ldda.file_name,
                      uploaded_by = ldda.user.email,
                      message = ldda.message,

@@ -32,7 +32,7 @@ class HistoryContentsController( BaseController ):
         try:
             for dataset in history.datasets:
                 api_type = "file"
-                encoded_id = trans.security.encode_id( '%s.%s' % (api_type, dataset.id) )
+                encoded_id = trans.security.encode_id( dataset.id )
                 rval.append( dict( id = encoded_id,
                                    type = api_type,
                                    name = dataset.name,
@@ -46,9 +46,10 @@ class HistoryContentsController( BaseController ):
     @web.expose_api
     def show( self, trans, id, history_id, **kwd ):
         """
-        GET /api/histories/{encoded_history_id}/contents/{encoded_content_type_and_id}
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
         Displays information about a history content (dataset).
         """
+        content_id = id
         try:
             content = get_history_content_for_access( trans, content_id )
         except Exception, e:
@@ -62,6 +63,7 @@ class HistoryContentsController( BaseController ):
                 # http://routes.groovie.org/generating.html
                 # url_for is being phased out, so new applications should use url
                 item['download_url'] = url(controller='dataset', action='display', dataset_id=trans.security.encode_id(content.id), to_ext=content.ext)
+                item = encode_all_ids( trans, item )
         except Exception, e:
             item = "Error in history API at listing dataset"
             log.error( item + ": %s" % str(e) )               
