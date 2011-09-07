@@ -4,8 +4,10 @@ import os, sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
+default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'universe_wsgi.ini') )
+
 parser = OptionParser()
-parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default='universe_wsgi.ini' )
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default=default_config )
 parser.add_option( '-u', '--username', dest='username', help='Username of user to update', default='all' )
 parser.add_option( '-e', '--email', dest='email', help='Email address of user to update', default='all' )
 parser.add_option( '--dry-run', dest='dryrun', help='Dry run (show changes but do not save to database)', action='store_true', default=False )
