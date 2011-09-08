@@ -125,9 +125,9 @@ class ToolBox( object ):
                             tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
                             self.sa_session.add( tta )
                             self.sa_session.flush()
-            if tool.id in self.tools_by_id:
-                raise Exception( "Tool with id %s already loaded." % tool.id )
-            else:
+            if tool.id not in self.tools_by_id:
+                # Allow for the same tool to be loaded into multiple places in the
+                # tool panel.
                 self.tools_by_id[ tool.id ] = tool
             key = 'tool_' + tool.id
             panel_dict[ key ] = tool
