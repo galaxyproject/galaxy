@@ -9,8 +9,10 @@ import os, sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
+default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'universe_wsgi.ini') )
+
 parser = OptionParser()
-parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default='universe_wsgi.ini' )
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default=default_config )
 parser.add_option( '-e', '--encode-id', dest='encode_id', help='Encode an ID' )
 parser.add_option( '-d', '--decode-id', dest='decode_id', help='Decode an ID' )
 parser.add_option( '--hda', dest='hda_id', help='Display HistoryDatasetAssociation info' )
