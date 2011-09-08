@@ -77,5 +77,12 @@ The following output::
 
 means that the sequence "ATAT" is the second sequence in the file, and it appeared 4 times in the input FASTA file.
 
+
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
+ 
 </help>
 </tool>

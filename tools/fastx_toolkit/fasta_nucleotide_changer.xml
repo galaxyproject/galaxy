@@ -62,5 +62,12 @@ Output DNA FASTA file (with RNA-to-DNA mode)::
     >cel-miR-1 MIMAT0000003 Caenorhabditis elegans miR-1
     TGGAATGTAAAGAAGTATGTA
 
+
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
+ 
 </help>
 </tool>

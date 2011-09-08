@@ -99,6 +99,12 @@ The first sequence counts as 2, the second as 10, the third as 3, to produce the
 
 Use the **FASTA Collapser** tool to create FASTA files with multiplicity counts.
 
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
+ 
 </help>
 </tool>
 <!-- FASTA-Clipping-Histogram is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

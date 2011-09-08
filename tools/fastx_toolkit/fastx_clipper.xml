@@ -104,6 +104,12 @@ This tool clips adapters from the 3'-end of the sequences in a FASTA/FASTQ file.
 
 
 
-    
+
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
+ 
 </help>
 </tool>
