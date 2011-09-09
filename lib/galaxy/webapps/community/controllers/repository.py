@@ -241,6 +241,14 @@ class RepositoryController( BaseController, ItemRatings ):
             # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
             # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
             # Since we are searching repositories and not categories, redirect to browse_repositories().
+            if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:
+                # The value of 'id' has been set to the search string, which is a repository name.
+                # We'll try to get the desired encoded repository id to pass on.
+                try:
+                    repository = get_repository_by_name( trans, kwd[ 'id' ] )
+                    kwd[ 'id' ] = trans.security.encode_id( repository.id )
+                except:
+                    pass
             return self.browse_repositories( trans, **kwd )
         if 'operation' in kwd:
             operation = kwd['operation'].lower()

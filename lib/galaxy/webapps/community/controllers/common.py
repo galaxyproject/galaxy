@@ -380,7 +380,7 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     return message, status
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
-    return trans.sa_session.query( app.model.Repository ).filter_by( name=name ).one()
+    return trans.sa_session.query( trans.model.Repository ).filter_by( name=name ).one()
 def get_changectx_for_changeset( trans, repo, changeset_revision, **kwd ):
     """Retrieve a specified changectx from a repository"""
     for changeset in repo.changelog:
