@@ -56,6 +56,7 @@
     <tool file="filters/tailWrapper.xml" />
     <tool file="filters/trimmer.xml" />
     <tool file="filters/wc_gnu.xml" />
+    <tool file="filters/secure_hash_message_digest.xml" />
     <tool file="stats/dna_filtering.xml" />
     <tool file="new_operations/tables_arithmetic_operations.xml" />
   </section>
