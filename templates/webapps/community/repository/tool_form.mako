@@ -152,26 +152,30 @@
             ${render_msg( message, status )}
         %endif
 
-        <div class="toolForm" id="${tool.id}">
-            <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
-            <div class="toolFormBody">
-                <form id="tool_form" name="tool_form" action="" method="get">
-                    <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
-                    ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}  
-                </form>
+        %if tool:
+            <div class="toolForm" id="${tool.id}">
+                <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
+                <div class="toolFormBody">
+                    <form id="tool_form" name="tool_form" action="" method="get">
+                        <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
+                        ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}  
+                    </form>
+                </div>
             </div>
-        </div>
-        %if tool.help:
-            <div class="toolHelp">
-                <div class="toolHelpBody">
-                    <%
-                        # Convert to unicode to display non-ascii characters.
-                        if type( tool.help ) is not unicode:
-                            tool.help = unicode( tool.help, 'utf-8')
-                    %>
-                    ${tool.help}
-                </div>        
-            </div>
+            %if tool.help:
+                <div class="toolHelp">
+                    <div class="toolHelpBody">
+                        <%
+                            # Convert to unicode to display non-ascii characters.
+                            if type( tool.help ) is not unicode:
+                                tool.help = unicode( tool.help, 'utf-8')
+                        %>
+                        ${tool.help}
+                    </div>        
+                </div>
+            %endif
+        %else:
+            Tool not properly loaded.
         %endif
     </body>
 </html>

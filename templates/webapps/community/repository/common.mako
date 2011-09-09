@@ -176,20 +176,16 @@
                     %endif
                 %endif
                 %if can_set_metadata:
-                    %if repository.tip == changeset_revision:
-                        ## TODO: when we support previewing older versions of tools, we
-                        ## should allow resetting metadata on the older versions as well.
-                        <form name="set_metadata" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
-                            <div class="form-row">
-                                <div style="float: left; width: 250px; margin-right: 10px;">
-                                    <input type="submit" name="set_metadata_button" value="Reset metadata"/>
-                                </div>
-                                <div class="toolParamHelp" style="clear: both;">
-                                    Inspect the repository and reset the above attributes for the repository tip.
-                                </div>
+                    <form name="set_metadata" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
+                        <div class="form-row">
+                            <div style="float: left; width: 250px; margin-right: 10px;">
+                                <input type="submit" name="set_metadata_button" value="Reset metadata"/>
                             </div>
-                        </form>
-                    %endif
+                            <div class="toolParamHelp" style="clear: both;">
+                                Inspect the repository and reset the above attributes for the repository tip.
+                            </div>
+                        </div>
+                    </form>
                 %endif
             </div>
         </div>

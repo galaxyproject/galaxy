@@ -110,7 +110,7 @@ def get_latest_repository_metadata( trans, id ):
     """Get last metadata defined for a specified repository from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
-                           .order_by( trans.model.RepositoryMetadata.table.c.update_time.desc() ) \
+                           .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
                            .first()
 def generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict ):
     """
@@ -163,7 +163,7 @@ def generate_tool_guid( trans, repository, tool ):
                                       repository.name,
                                       tool.id,
                                       tool.version )
-def generate_tool_metadata( trans, id, changeset_revision, root, name, tool, metadata_dict ):
+def generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict ):
     """
     Update the received metadata_dict with changes that have been
     applied to the received tool.
@@ -189,7 +189,7 @@ def generate_tool_metadata( trans, id, changeset_revision, root, name, tool, met
                       version=tool.version,
                       description=tool.description,
                       version_string_cmd = tool.version_string_cmd,
-                      tool_config=os.path.join( root, name ),
+                      tool_config=tool_config,
                       requirements=tool_requirements,
                       tests=tool_tests )
     if 'tools' in metadata_dict:
@@ -249,49 +249,87 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
     if ctx is not None:
         metadata_dict = {}
-        for root, dirs, files in os.walk( repo_dir ):
-            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                if '.hg' in dirs:
-                    # Don't visit .hg directories - should be impossible since we don't
-                    # allow uploaded archives that contain .hg dirs, but just in case...
-                    dirs.remove( '.hg' )
-                if 'hgrc' in files:
-                     # Don't include hgrc files in commit.
-                    files.remove( 'hgrc' )
-                for name in files:
-                    # Find all tool configs.
-                    if name.endswith( '.xml' ):
-                        try:
-                            full_path = os.path.abspath( os.path.join( root, name ) )
-                            tool = load_tool( trans, full_path )
-                            if tool is not None:
-                                # Update the list metadata dictionaries for tools in metadata_dict.
-                                metadata_dict = generate_tool_metadata( trans, id, changeset_revision, root, name, tool, metadata_dict )
-                        except Exception, e:
-                            invalid_files.append( ( name, str( e ) ) )
-                    # Find all exported workflows
-                    elif name.endswith( '.ga' ):
-                        try:
-                            full_path = os.path.abspath( os.path.join( root, name ) )
-                            # Convert workflow data from json
-                            fp = open( full_path, 'rb' )
-                            workflow_text = fp.read()
-                            fp.close()
-                            exported_workflow_dict = from_json_string( workflow_text )
-                            # Update the list of metadata dictionaries for workflows in metadata_dict.
-                            metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
-                        except Exception, e:
-                            invalid_files.append( ( name, str( e ) ) )
+        if changeset_revision == repository.tip:
+            for root, dirs, files in os.walk( repo_dir ):
+                if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                    if '.hg' in dirs:
+                        # Don't visit .hg directories - should be impossible since we don't
+                        # allow uploaded archives that contain .hg dirs, but just in case...
+                        dirs.remove( '.hg' )
+                    if 'hgrc' in files:
+                         # Don't include hgrc files in commit.
+                        files.remove( 'hgrc' )
+                    for name in files:
+                        # Find all tool configs.
+                        if name.endswith( '.xml' ):
+                            try:
+                                full_path = os.path.abspath( os.path.join( root, name ) )
+                                tool = load_tool( trans, full_path )
+                                if tool is not None:
+                                    # Update the list metadata dictionaries for tools in metadata_dict.
+                                    tool_config = os.path.join( root, name )
+                                    metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
+                            except Exception, e:
+                                invalid_files.append( ( name, str( e ) ) )
+                        # Find all exported workflows
+                        elif name.endswith( '.ga' ):
+                            try:
+                                full_path = os.path.abspath( os.path.join( root, name ) )
+                                # Convert workflow data from json
+                                fp = open( full_path, 'rb' )
+                                workflow_text = fp.read()
+                                fp.close()
+                                exported_workflow_dict = from_json_string( workflow_text )
+                                # Update the list of metadata dictionaries for workflows in metadata_dict.
+                                metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
+                            except Exception, e:
+                                invalid_files.append( ( name, str( e ) ) )
+        else:
+            # Get all tool config file names from the hgweb url, something like:
+            # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
+            for filename in ctx:
+                # Find all tool configs - should not have to update metadata for workflows.
+                if filename.endswith( '.xml' ):
+                    fctx = ctx[ filename ]
+                    # Write the contents of the old tool config to a temporary file.
+                    fh = tempfile.NamedTemporaryFile( 'w' )
+                    tmp_filename = fh.name
+                    fh.close()
+                    fh = open( tmp_filename, 'w' )
+                    fh.write( fctx.data() )
+                    fh.close()
+                    try:
+                        tool = load_tool( trans, tmp_filename )
+                        if tool is not None:
+                            # Update the list metadata dictionaries for tools in metadata_dict.  Note that filename
+                            # here is the relative path to the config file within the change set context, something
+                            # like filtering.xml, but when the change set was the repository tip, the value was
+                            # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
+                            # anything, but may result in a bit of confusion when maintaining the code / data over time.
+                            metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
+                    except Exception, e:
+                        invalid_files.append( ( name, str( e ) ) )
+                    try:
+                        os.unlink( tmp_filename )
+                    except:
+                        pass
         if metadata_dict:
-            if new_tool_metadata_required( trans, id, metadata_dict ) or new_workflow_metadata_required( trans, id, metadata_dict ):
-                # Create a new repository_metadata table row.
-                repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
-                trans.sa_session.add( repository_metadata )
-                trans.sa_session.flush()
+            if changeset_revision == repository.tip:
+                if new_tool_metadata_required( trans, id, metadata_dict ) or new_workflow_metadata_required( trans, id, metadata_dict ):
+                    # Create a new repository_metadata table row.
+                    repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
+                    trans.sa_session.add( repository_metadata )
+                    trans.sa_session.flush()
+                else:
+                    # Update the last saved repository_metadata table row.
+                    repository_metadata = get_latest_repository_metadata( trans, id )
+                    repository_metadata.changeset_revision = changeset_revision
+                    repository_metadata.metadata = metadata_dict
+                    trans.sa_session.add( repository_metadata )
+                    trans.sa_session.flush()
             else:
-                # Update the last saved repository_metadata table row.
-                repository_metadata = get_latest_repository_metadata( trans, id )
-                repository_metadata.changeset_revision = changeset_revision
+                # We're re-generating metadata for an old repository revision.
+                repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
                 repository_metadata.metadata = metadata_dict
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()

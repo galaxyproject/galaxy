@@ -1237,22 +1237,26 @@ class RepositoryController( BaseController, ItemRatings ):
                 # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
                 old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
                 ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+                fctx = None
                 for filename in ctx:
                     if filename == old_tool_config_file_name:
                         fctx = ctx[ filename ]
                         break
-                # Write the contents of the old tool config to a temporary file.
-                fh = tempfile.NamedTemporaryFile( 'w' )
-                tmp_filename = fh.name
-                fh.close()
-                fh = open( tmp_filename, 'w' )
-                fh.write( fctx.data() )
-                fh.close()
-                tool = load_tool( trans, tmp_filename )
-                try:
-                    os.unlink( tmp_filename )
-                except:
-                    pass
+                if fctx:
+                    # Write the contents of the old tool config to a temporary file.
+                    fh = tempfile.NamedTemporaryFile( 'w' )
+                    tmp_filename = fh.name
+                    fh.close()
+                    fh = open( tmp_filename, 'w' )
+                    fh.write( fctx.data() )
+                    fh.close()
+                    tool = load_tool( trans, tmp_filename )
+                    try:
+                        os.unlink( tmp_filename )
+                    except:
+                        pass
+                else:
+                    tool = None
             tool_state = self.__new_state( trans )
             is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
