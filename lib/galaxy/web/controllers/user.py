@@ -363,7 +363,7 @@ class User( BaseController, UsesFormDefinitions ):
                 else:
                     refresh_frames = [ 'masthead', 'history' ]
             message, status, user, success = self.__validate_login( trans, webapp, **kwd )
-            if success and referer and referer != trans.request.base + url_for( controller='user', action='logout' ):
+            if success and referer and not referer.startswith( trans.request.base + url_for( controller='user', action='logout' ) ):
                 redirect_url = referer
             elif success:
                 redirect_url = url_for( '/' )
@@ -414,7 +414,7 @@ class User( BaseController, UsesFormDefinitions ):
             success = True
         return ( message, status, user, success )
     @web.expose
-    def logout( self, trans, webapp='galaxy' ):
+    def logout( self, trans, webapp='galaxy', logout_all=False ):
         if webapp == 'galaxy':
             if trans.app.config.require_login:
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
@@ -424,7 +424,7 @@ class User( BaseController, UsesFormDefinitions ):
             refresh_frames = [ 'masthead' ]
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
-        trans.handle_user_logout()
+        trans.handle_user_logout( logout_all=logout_all )
         message = 'You have been logged out.<br>You can log in again, <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
             ( trans.request.referer, url_for( '/' ) )
         return trans.fill_template( '/user/logout.mako',

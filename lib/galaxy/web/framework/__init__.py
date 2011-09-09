@@ -543,7 +543,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name=cookie_name )
-    def handle_user_logout( self ):
+    def handle_user_logout( self, logout_all=False ):
         """
         Logout the current user:
            - invalidate the current session
@@ -553,6 +553,14 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         prev_galaxy_session.is_valid = False
         self.galaxy_session = self.__create_new_session( prev_galaxy_session )
         self.sa_session.add_all( ( prev_galaxy_session, self.galaxy_session ) )
+        galaxy_user_id = prev_galaxy_session.user_id
+        if logout_all and galaxy_user_id is not None:
+            for other_galaxy_session in self.sa_session.query( self.app.model.GalaxySession ) \
+                                            .filter( and_( self.app.model.GalaxySession.table.c.user_id==galaxy_user_id,
+                                                                self.app.model.GalaxySession.table.c.is_valid==True,
+                                                                self.app.model.GalaxySession.table.c.id!=prev_galaxy_session.id ) ):
+                other_galaxy_session.is_valid = False
+                self.sa_session.add( other_galaxy_session )
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name='galaxysession' )
