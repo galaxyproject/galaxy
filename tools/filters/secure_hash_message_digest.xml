@@ -2,10 +2,10 @@
     <description>on a dataset</description>
     <command interpreter="python">secure_hash_message_digest.py --input "${input1}" --output "${out_file1}"
         #if $algorithms.value:
-	        #for $algorithm in str( $algorithms ).split( "," ):
-	            --algorithm "${algorithm}"
-	        #end for
-	    #end if
+            #for $algorithm in str( $algorithms ).split( "," ):
+                --algorithm "${algorithm}"
+            #end for
+        #end if
     </command>
     <inputs>
         <param format="data" name="input1" type="data" label="Text file"/>
