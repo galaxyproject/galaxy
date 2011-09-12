@@ -2495,7 +2495,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         var tile_low = tile_index * DENSITY * resolution,
             tile_length = DENSITY * resolution,
             // Tile high cannot be larger than view.max_high, which the chromosome length.
-            tile_high = (tile_low + tile_length <= this.view.max ? tile_low + tile_length : this.view.max_high);
+            tile_high = (tile_low + tile_length <= this.view.max_high ? tile_low + tile_length : this.view.max_high);
         return [tile_low, tile_high];
     },
     /**
@@ -2998,7 +2998,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
      * @param mode mode to draw in
      * @param resolution view resolution
      * @param tile_index index of tile to be drawn
-     * @param w_scale base pairs per pixel
+     * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
     draw_tile: function(result, mode, resolution, tile_index, w_scale, ref_seq) {
