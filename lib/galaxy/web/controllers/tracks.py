@@ -530,15 +530,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
-        data = data_provider.get_data( chrom, low, high, int(start_val), int(max_vals), **kwargs )
-        message = None
-        if isinstance(data, dict) and 'message' in data:
-            message = data['message']
-            tracks_dataset_type = data.get( 'data_type', tracks_dataset_type )
-            track_data = data['data']
-        else:
-            track_data = data
-        return { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info, 'data': track_data, 'message': message }
+        result = data_provider.get_data( chrom, low, high, int(start_val), int(max_vals), **kwargs )
+        result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
+        return result
         
     @web.json
     def save( self, trans, **kwargs ):

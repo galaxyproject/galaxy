@@ -3,7 +3,7 @@ Data providers for tracks visualizations.
 """
 
 import sys
-from math import floor, ceil, log, pow
+from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
 if sys.version_info[:2] == (2, 4):
@@ -13,14 +13,12 @@ pkg_resources.require( "numpy" )
 from galaxy.datatypes.util.gff_util import *
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
-from bx.arrays.array_tree import FileArrayTreeDict
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Vcf
 from galaxy.datatypes.interval import Bed, Gff, Gtf
-from galaxy.datatypes.util.gff_util import parse_gff_attributes
 
 from pysam import csamtools, ctabix
 
@@ -32,7 +30,20 @@ def float_nan(n):
         return None
     else:
         return float(n)
-
+        
+def get_bounds( reads, start_pos_index, end_pos_index ):
+    """
+    Returns the minimum and maximum position for a set of reads.
+    """
+    max_low = sys.maxint
+    max_high = -sys.maxint
+    for read in reads:
+        if read[ start_pos_index ] < max_low:
+            max_low = read[ start_pos_index ]
+        if read[ end_pos_index ] > max_high:
+            max_high = read[ end_pos_index ]
+    return max_low, max_high
+        
 class TracksDataProvider( object ):
     """ Base class for tracks data providers. """
     
@@ -75,8 +86,11 @@ class TracksDataProvider( object ):
     def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
         """ 
         Returns data in region defined by chrom, start, and end. start_val and
-        max_vals are used to denote the data to return: start_val is the first value to 
+        max_vals are used to denote the data to return: start_val is the first element to 
         return and max_vals indicates the number of values to return.
+        
+        Return value must be a dictionary with the following attributes:
+            dataset_type, data
         """
         # Override.
         pass
@@ -218,18 +232,23 @@ class BamDataProvider( TracksDataProvider ):
     
     def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
         """
-        Fetch reads in the region.
+        Fetch reads in the region and additional metadata.
         
-        Each read is a list with the format 
-            [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
-        where <read_1> has the format
-            [<start>, <end>, <cigar>, ?<read_seq>?]
-        and <read_2> has the format
-            [<start>, <end>, <cigar>, ?<read_seq>?]
-        For single-end reads, read has format:
-            [<guid>, <start>, <end>, <name>, cigar, seq] 
-        NOTE: read end and sequence data are not valid for reads outside of
-        requested region and should not be used.
+        Returns a dict with the following attributes:
+            data - a list of reads with the format 
+                    [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
+                where <read_1> has the format
+                    [<start>, <end>, <cigar>, ?<read_seq>?]
+                and <read_2> has the format
+                    [<start>, <end>, <cigar>, ?<read_seq>?]
+                For single-end reads, read has format:
+                    [<guid>, <start>, <end>, <name>, cigar, seq] 
+                NOTE: read end and sequence data are not valid for reads outside of
+                requested region and should not be used.
+            
+            max_low - lowest coordinate for the returned reads
+            max_high - highest coordinate for the returned reads
+            message - error/informative message
         """
         start, end = int(start), int(end)
         orig_data_filename = self.original_dataset.file_name
@@ -304,9 +323,13 @@ class BamDataProvider( TracksDataProvider ):
                 r2 = [ read['mate_start'], read['mate_start'] ]
 
             results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2 ] )
-
+            
+        # Clean up.
         bamfile.close()
-        return { 'data': results, 'message': message }
+        
+        max_low, max_high = get_bounds( results, 1, 2 )
+                
+        return { 'data': results, 'message': message, 'max_low': max_low, 'max_high': max_high }
 
 class BBIDataProvider( TracksDataProvider ):
     """
@@ -334,9 +357,10 @@ class BBIDataProvider( TracksDataProvider ):
                 return None
             
             all_dat = all_dat[0] # only 1 summary
-            return { 'max': float( all_dat['max'] ), \
-                     'min': float( all_dat['min'] ), \
-                     'total_frequency': float( all_dat['coverage'] ) }
+            return { 'data' : { 'max': float( all_dat['max'] ), \
+                                'min': float( all_dat['min'] ), \
+                                'total_frequency': float( all_dat['coverage'] ) } \
+                    }
                      
         start = int(start)
         end = int(end)
@@ -361,7 +385,7 @@ class BBIDataProvider( TracksDataProvider ):
                 result.append( (pos, float_nan(dat_dict['mean']) ) )
                 pos += step_size
             
-        return result
+        return { 'data': result }
 
 class BigBedDataProvider( BBIDataProvider ):
     def _get_dataset( self ):
@@ -654,7 +678,7 @@ class VcfDataProvider( TabixDataProvider ):
                         float( feature[5] )]
             rval.append(payload)
 
-        return { 'data_type' : 'vcf', 'data': rval, 'message': message }
+        return { 'data': rval, 'message': message }
 
 class GFFDataProvider( TracksDataProvider ):
     """

@@ -443,9 +443,9 @@ extend(DataManager.prototype, Cache.prototype, {
             $.extend(extra_params, {start_val: cur_data.data.length + 1});
         }
         else if (req_type === this.BROAD_DATA_REQ) {
-            // Set query low to be past the last feature returned so that an area of extreme feature depth
-            // is bypassed.
-            query_low = cur_data.data[cur_data.data.length - 1][2] + 1;
+            // To get past an area of extreme feature depth, set query low to be after either
+            // (a) the maximum high or HACK/FIXME (b) the end of the last feature returned.
+            query_low = (cur_data.max_high ? cur_data.max_high : cur_data.data[cur_data.data.length - 1][2]) + 1;
         }
         
         //
@@ -463,6 +463,9 @@ extend(DataManager.prototype, Cache.prototype, {
             // Update data and message.
             if (result.data) {
                 result.data = cur_data.data.concat(result.data);
+                if (result.max_low) {
+                    result.max_low = cur_data.max_low;
+                }
                 if (result.message) {
                     // HACK: replace number in message with current data length. Works but is ugly.
                     result.message = result.message.replace(/[0-9]+/, result.data.length);
