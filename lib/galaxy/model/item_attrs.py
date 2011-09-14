@@ -1,4 +1,5 @@
 from sqlalchemy.sql.expression import func
+from sqlalchemy.orm.collections import InstrumentedList
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
 import logging
@@ -156,6 +157,13 @@ class APIItem:
     #api_collection_visible_keys = ( 'id' )
     #api_element_visible_keys = ( 'id' )
     def get_api_value( self, view='collection', value_mapper = None ):
+        def get_value( key, item ):
+            try:
+                return item.get_api_value( view=view, value_mapper=value_mapper )
+            except:
+                if key in value_mapper:
+                    return value_mapper.get( key )( item )
+                return item
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -165,9 +173,13 @@ class APIItem:
             raise Exception( 'Unknown API view: %s' % view )
         for key in visible_keys:
             try:
-                rval[key] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[key] = value_mapper.get( key )( rval[key] ) 
+                item = self.__getattribute__( key )
+                if type( item ) == InstrumentedList:
+                    rval[key] = []
+                    for i in item:
+                        rval[key].append( get_value( key, i ) )
+                else:
+                    rval[key] = get_value( key, item )
             except AttributeError:
                 rval[key] = None
         return rval

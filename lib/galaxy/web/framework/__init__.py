@@ -117,7 +117,7 @@ def expose_api( func ):
                 return error
         trans.response.set_content_type( "application/json" )
         trans.set_user( provided_key.user )
-# Perform api_run_as processing, possibly changing identity
+        # Perform api_run_as processing, possibly changing identity
         if 'run_as' in kwargs:
             if not trans.user_can_do_run_as():
                 error_message = 'User does not have permissions to run jobs as another user'
@@ -147,13 +147,18 @@ def expose_api( func ):
 def require_admin( func ):
     def decorator( self, trans, *args, **kwargs ):
         if not trans.user_is_admin():
+            msg = "You must be an administrator to access this feature."
             admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
-            if not admin_users:
-                return trans.show_error_message( "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration." )
             user = trans.get_user()
-            if not user:
-                return trans.show_error_message( "You must be logged in as an administrator to access this feature." )
-            return trans.show_error_message( "You must be an administrator to access this feature." )
+            if not admin_users:
+                msg = "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration."
+            elif not user:
+                msg = "You must be logged in as an administrator to access this feature."
+            trans.response.status = 403
+            if trans.response.get_content_type() == 'application/json':
+                return msg
+            else:
+                return trans.show_error_message( msg )
         return func( self, trans, *args, **kwargs )
     return decorator
 

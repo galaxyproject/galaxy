@@ -29,6 +29,21 @@ import cgi
 
 log = logging.getLogger( __name__ )
 
+def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
+    """
+    Method to monkeypatch on to routes.mapper.Mapper which does the same thing
+    as resource() with the addition of standardized routes for handling
+    elements in Galaxy's "deleted but not really deleted" fashion.
+    """
+    collection_path = kwargs.get( 'path_prefix', '' ) + '/' + collection_name + '/deleted'
+    member_path = collection_path + '/:id'
+    self.connect( 'deleted_' + collection_name, collection_path, controller=collection_name, action='index', deleted=True )
+    self.connect( 'deleted_' + member_name, member_path, controller=collection_name, action='show', deleted=True )
+    self.connect( 'undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
+                  conditions=dict( method=['POST'] ) )
+    self.resource( member_name, collection_name, **kwargs )
+routes.Mapper.resource_with_deleted = __resource_with_deleted
+
 class WebApplication( object ):
     """
     A simple web application which maps requests to objects using routes,
@@ -320,6 +335,8 @@ class Response( object ):
         Sets the Content-Type header
         """
         self.headers[ "content-type" ] = type
+    def get_content_type( self ):
+        return self.headers[ "content-type" ]
     def send_redirect( self, url ):
         """
         Send an HTTP redirect response to (target `url`)
