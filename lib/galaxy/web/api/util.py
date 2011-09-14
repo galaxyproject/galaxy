@@ -79,6 +79,28 @@ def get_library_content_for_access( trans, content_id ):
         raise BadRequestException( "Invalid library content id ( %s ) specified." % str( content_id ) )
     return content
 
+def get_quota_for_access( trans, quota_id, deleted=False ):
+    """
+    No security - the only methods that use this do so with admin users.  If
+    quota modification becomes a role, this will need to be updated.
+    """
+    try:
+        decoded_quota_id = trans.security.decode_id( quota_id )
+    except TypeError:
+        trans.response.status = 400
+        raise BadRequestException( "Malformed quota id ( %s ) specified, unable to decode." % str( quota_id ) )
+    try:
+        quota = trans.sa_session.query( trans.app.model.Quota ).get( decoded_quota_id )
+        assert quota is not None
+        if deleted:
+            assert quota.deleted
+        else:
+            assert not quota.deleted
+    except:
+        trans.response.status = 400
+        raise BadRequestException( "Invalid quota id ( %s ) specified." % str( quota_id ) )
+    return quota
+
 def encode_all_ids( trans, rval ):
     """
     encodes all integer values in the dict rval whose keys are 'id' or end with '_id'

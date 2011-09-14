@@ -502,17 +502,21 @@ class Role( object, APIItem ):
         self.type = type
         self.deleted = deleted
 
-class UserQuotaAssociation( object ):
+class UserQuotaAssociation( object, APIItem ):
+    api_element_visible_keys = ( 'user', )
     def __init__( self, user, quota ):
         self.user = user
         self.quota = quota
 
-class GroupQuotaAssociation( object ):
+class GroupQuotaAssociation( object, APIItem ):
+    api_element_visible_keys = ( 'group', )
     def __init__( self, group, quota ):
         self.group = group
         self.quota = quota
 
-class Quota( object ):
+class Quota( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups' )
     valid_operations = ( '+', '-', '=' )
     def __init__( self, name="", description="", amount=0, operation="=" ):
         self.name = name
@@ -539,7 +543,8 @@ class Quota( object ):
         else:
             return util.nice_size( self.bytes )
 
-class DefaultQuotaAssociation( Quota ):
+class DefaultQuotaAssociation( Quota, APIItem ):
+    api_element_visible_keys = ( 'type', )
     types = Bunch(
         UNREGISTERED = 'unregistered',
         REGISTERED = 'registered'

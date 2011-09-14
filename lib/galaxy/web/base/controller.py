@@ -1554,7 +1554,7 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def create_quota( self, trans, **kwd ):
+    def create_quota( self, trans, cntrller='admin', **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1575,7 +1575,7 @@ class Admin( object ):
         out_users = util.listify( params.get( 'out_users', [] ) )
         in_groups = util.listify( params.get( 'in_groups', [] ) )
         out_groups = util.listify( params.get( 'out_groups', [] ) )
-        if params.get( 'create_quota_button', False ):
+        if params.get( 'create_quota_button', False ) or cntrller == 'api':
             if not name or not description:
                 message = "Enter a valid name and a description."
                 status = 'error'
@@ -1616,6 +1616,8 @@ class Admin( object ):
                         trans.sa_session.add( gqa )
                 trans.sa_session.flush()
                 message = "Quota '%s' has been created with %d associated users and %d associated groups." % ( quota.name, len( in_users ), len( in_groups ) )
+                if cntrller == 'api':
+                    return 200, quota
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='quotas',
                                                            webapp=webapp,
@@ -1639,6 +1641,10 @@ class Admin( object ):
                 new_in_groups.append( ( group.id, group.name ) )
             else:
                 out_groups.append( ( group.id, group.name ) )
+        if cntrller == 'api':
+            if status == 'error':
+                return 400, message
+            return 500, message # should never get here...
         return trans.fill_template( '/admin/quota/quota_create.mako',
                                     webapp=webapp,
                                     name=name,
@@ -1652,9 +1658,10 @@ class Admin( object ):
                                     out_groups=out_groups,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
-    def rename_quota( self, trans, **kwd ):
+    def rename_quota( self, trans, cntrller='admin', **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1665,45 +1672,53 @@ class Admin( object ):
             assert id, 'No quota ids received for renaming'
             quota = get_quota( trans, id )
             assert quota, 'Quota id (%s) is invalid' % id
-            assert quota.id != 1, 'The default quota cannot be renamed'
             error = False
         except AssertionError, e:
             message = str( e )
         if error:
+            if cntrller == 'api':
+                return 400, message
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='quotas',
                                                               webapp=webapp,
                                                               message=message,
                                                               status='error' ) )
-        if params.get( 'rename_quota_button', False ):
-            old_name = quota.name
-            new_name = util.restore_text( params.name )
-            new_description = util.restore_text( params.description )
+        if params.get( 'rename_quota_button', False ) or cntrller == 'api':
+            new_name = util.restore_text( params.get( 'name', quota.name ) )
+            new_description = util.restore_text( params.get( 'description', quota.description ) )
             if not new_name:
                 message = 'Enter a valid name'
                 status='error'
-            elif trans.sa_session.query( trans.app.model.Quota ).filter( trans.app.model.Quota.table.c.name==new_name ).first():
+            elif new_name != quota.name and trans.sa_session.query( trans.app.model.Quota ).filter( trans.app.model.Quota.table.c.name==new_name ).first():
                 message = 'A quota with that name already exists'
                 status = 'error'
             else:
+                old_name = quota.name
                 quota.name = new_name
                 quota.description = new_description
                 trans.sa_session.add( quota )
                 trans.sa_session.flush()
                 message = "Quota '%s' has been renamed to '%s'" % ( old_name, new_name )
+                if cntrller == 'api':
+                    return 200, message
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='quotas',
                                                                   webapp=webapp,
                                                                   message=util.sanitize_text( message ),
                                                                   status='done' ) )
+        if cntrller == 'api':
+            if status == 'error':
+                return 400, message
+            return 500, message # should never get here...
         return trans.fill_template( '/admin/quota/quota_rename.mako',
                                     quota=quota,
                                     webapp=webapp,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
-    def manage_users_and_groups_for_quota( self, trans, **kwd ):
+    def manage_users_and_groups_for_quota( self, trans, cntrller='admin', **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1719,22 +1734,27 @@ class Admin( object ):
         except AssertionError, e:
             message = str( e )
         if error:
+            if cntrller == 'api':
+                return 400, message
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='quotas',
                                                               webapp=webapp,
                                                               message=message,
                                                               status='error' ) )
-        if params.get( 'quota_members_edit_button', False ):
+        if params.get( 'quota_members_edit_button', False ) or cntrller == 'api':
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
             in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
             trans.app.quota_agent.set_entity_quota_associations( quotas=[ quota ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( quota )
             message = "Quota '%s' has been updated with %d associated users and %d associated groups" % ( quota.name, len( in_users ), len( in_groups ) )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='quotas',
-                                                       webapp=webapp,
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )
+            if cntrller == 'api':
+                return 200, message
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='quotas',
+                                                              webapp=webapp,
+                                                              message=util.sanitize_text( message ),
+                                                              status=status ) )
+        # api cannot get to here
         in_users = []
         out_users = []
         in_groups = []
@@ -1762,9 +1782,10 @@ class Admin( object ):
                                     webapp=webapp,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
-    def edit_quota( self, trans, **kwd ):
+    def edit_quota( self, trans, cntrller='admin', **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1772,13 +1793,15 @@ class Admin( object ):
         id = params.get( 'id', None )
         if not id:
             message = "No quota ids received for editing"
+            if cntrller == 'api':
+                return 400, message
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='quotas',
                                                               webapp=webapp,
                                                               message=message,
                                                               status='error' ) )
         quota = get_quota( trans, id )
-        if params.get( 'edit_quota_button', False ):
+        if params.get( 'edit_quota_button', False ) or cntrller == 'api':
             amount = util.restore_text( params.get( 'amount', '' ).strip() )
             if amount.lower() in ( 'unlimited', 'none', 'no limit' ):
                 new_amount = None
@@ -1803,20 +1826,26 @@ class Admin( object ):
                 trans.sa_session.add( quota )
                 trans.sa_session.flush()
                 message = "Quota '%s' is now '%s'" % ( quota.name, quota.operation + quota.display_amount )
+                if cntrller == 'api':
+                    return 200, message
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='quotas',
                                                                   webapp=webapp,
                                                                   message=util.sanitize_text( message ),
                                                                   status='done' ) )
-        
+        if cntrller == 'api':
+            if status == 'error':
+                return 400, message
+            return 500, message # should never get here...
         return trans.fill_template( '/admin/quota/quota_edit.mako',
                                     quota=quota,
                                     webapp=webapp,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
-    def set_quota_default( self, trans, **kwd ):
+    def set_quota_default( self, trans, cntrller='admin', **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1825,13 +1854,15 @@ class Admin( object ):
         id = params.get( 'id', None )
         if not id:
             message = "No quota ids received for managing defaults"
+            if cntrller == 'api':
+                return 400, message
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='quotas',
                                                               webapp=webapp,
                                                               message=message,
                                                               status='error' ) )
         quota = get_quota( trans, id )
-        if params.get( 'set_default_quota_button', False ):
+        if params.get( 'set_default_quota_button', False ) or cntrller == 'api':
             if default != 'no' and default not in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
                 message = "Enter a valid default type."
                 status = 'error'
@@ -1839,6 +1870,8 @@ class Admin( object ):
                 if default != 'no':
                     trans.app.quota_agent.set_default_quota( default, quota )
                     message = "Quota '%s' is now the default for %s users" % ( quota.name, default )
+                if cntrller == 'api':
+                    return 200, message
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                      action='quotas',
                                                      webapp=webapp,
@@ -1846,6 +1879,10 @@ class Admin( object ):
                                                      status='done' ) )
         if not default:
             default = 'no'
+        if cntrller == 'api':
+            if status == 'error':
+                return 400, message
+            return 500, message # should never get here...
         return trans.fill_template( '/admin/quota/quota_set_default.mako',
                                     quota=quota,
                                     webapp=webapp,
@@ -1854,7 +1891,7 @@ class Admin( object ):
                                     status=status )
     @web.expose
     @web.require_admin
-    def unset_quota_default( self, trans, **kwd ):
+    def unset_quota_default( self, trans, cntrller='admin', **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1863,6 +1900,8 @@ class Admin( object ):
         id = params.get( 'id', None )
         if not id:
             message = "No quota ids received for managing defaults"
+            if cntrller == 'api':
+                return 400, message
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='quotas',
                                                               webapp=webapp,
@@ -1875,9 +1914,15 @@ class Admin( object ):
         else:
             message = "Quota '%s' is no longer the default for %s users." % ( quota.name, quota.default[0].type )
             status = 'done'
-        for dqa in quota.default:
-            trans.sa_session.delete( dqa )
-        trans.sa_session.flush()
+            for dqa in quota.default:
+                trans.sa_session.delete( dqa )
+            trans.sa_session.flush()
+        if cntrller == 'api':
+            if status == 'done':
+                return 200, message
+            elif status == 'error':
+                return 400, message
+            return 500, message # should never get here...
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='quotas',
                                                           webapp=webapp,
@@ -1886,7 +1931,7 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def mark_quota_deleted( self, trans, **kwd ):
+    def mark_quota_deleted( self, trans, cntrller='admin', **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         id = kwd.get( 'id', None )
@@ -1904,6 +1949,8 @@ class Admin( object ):
         except AssertionError, e:
             message = str( e )
         if error:
+            if cntrller == 'api':
+                return 400, message
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='quotas',
                                                               webapp=webapp,
@@ -1915,6 +1962,8 @@ class Admin( object ):
             trans.sa_session.add( quota )
             message += " %s " % quota.name
         trans.sa_session.flush()
+        if cntrller == 'api':
+            return 200, message
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='quotas',
                                                    webapp=webapp,
@@ -1922,7 +1971,7 @@ class Admin( object ):
                                                    status='done' ) )
     @web.expose
     @web.require_admin
-    def undelete_quota( self, trans, **kwd ):
+    def undelete_quota( self, trans, cntrller='admin', **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         id = kwd.get( 'id', None )
@@ -1940,6 +1989,8 @@ class Admin( object ):
         except AssertionError, e:
             message = str( e )
         if error:
+            if cntrller == 'api':
+                return 400, message
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='quotas',
                                                               webapp=webapp,
@@ -1951,6 +2002,8 @@ class Admin( object ):
             trans.sa_session.add( quota )
             trans.sa_session.flush()
             message += " %s " % quota.name
+        if cntrller == 'api':
+            return 200, message
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='quotas',
                                                    webapp=webapp,
@@ -1958,7 +2011,7 @@ class Admin( object ):
                                                    status='done' ) )
     @web.expose
     @web.require_admin
-    def purge_quota( self, trans, **kwd ):
+    def purge_quota( self, trans, cntrller='admin', **kwd ):
         # This method should only be called for a Quota that has previously been deleted.
         # Purging a deleted Quota deletes all of the following from the database:
         # - UserQuotaAssociations where quota_id == Quota.id
@@ -1980,6 +2033,8 @@ class Admin( object ):
         except AssertionError, e:
             message = str( e )
         if error:
+            if cntrller == 'api':
+                return 400, message
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='quotas',
                                                               webapp=webapp,
@@ -1995,6 +2050,8 @@ class Admin( object ):
                 trans.sa_session.delete( gqa )
             trans.sa_session.flush()
             message += " %s " % quota.name
+        if cntrller == 'api':
+            return 200, message
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='quotas',
                                                    webapp=webapp,
