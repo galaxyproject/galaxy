@@ -39,8 +39,7 @@ var addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack
 var track_from_dict = function(track_dict) {
     return new addable_track_types[track_dict.track_type]( 
                         track_dict.name, view, track_dict.hda_ldda, track_dict.dataset_id,
-                        track_dict.prefs, track_dict.filters, track_dict.tool
-                        /* TODO: ( track_dict.is_child ? parent_track : undefined */ );
+                        track_dict.prefs, track_dict.filters, track_dict.tool);
 };
 
 /**
@@ -57,7 +56,6 @@ var create_visualization = function(parent_elt, title, id, dbkey, callback, trac
         var track_config, track, parent_track, parent_obj;
         for (var i = 0; i < tracks_config.length; i++) {
             track_config = tracks_config[i];
-            // TODO: set parent for child track:
             track = track_from_dict(track_config);
             parent_obj = view;
             if (track_config.is_child) {

@@ -205,24 +205,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     // Show saving dialog box
                     show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
                     
-                    // TODO: make save into its own function.
-
                     // Save tracks.
-                    var saved_tracks = [], tracks;
-                    for (var i = 0; i < view.tracks.length; i++) {
-                        track = view.tracks[i];
-
-                        // Add track.
-                        saved_tracks.push({
-                            "track_type": track.get_type(),
-                            "name": track.name,
-                            "hda_ldda": track.hda_ldda,
-                            "dataset_id": track.dataset_id,
-                            "prefs": track.prefs,
-                            // TODO: remove parent-child relationships in favor of a group.
-                            "is_child": false
-                        });
-                    };
+                    var saved_tracks = view.to_json();
                     
                     // Save bookmarks.
                     var bookmarks = [];

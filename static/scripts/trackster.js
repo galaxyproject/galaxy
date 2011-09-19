@@ -723,6 +723,22 @@ extend( View.prototype, {
         $(window).trigger("resize");
         this.update_intro_div();
     },
+    /** JSONify view. */
+    to_json: function() {
+        var 
+            view = this,
+            jsonified_drawables = [];
+        this.viewport_container.children(".track,.group").each(function() {
+            // Get object ID.
+            var id = $(this).attr("id");
+            id = parseInt( id.slice(id.lastIndexOf("_") + 1) );
+            
+            // JSONify drawable.
+            jsonified_drawables.push(view.tracks[id].to_json());
+        });
+        
+        return jsonified_drawables;
+    },
     /** Show or hide intro div depending on view state. */
     update_intro_div: function() {
         if (this.num_tracks === 0) {
@@ -2030,35 +2046,8 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(this, tool_dict) : undefined);
     this.is_overview = false;
     
-    //
-    // TODO: Right now there is only the notion of a parent track and multiple child tracks. However, 
-    // a more general notion of a 'track group' is probably needed and can be easily created using
-    // the code already in place for parent/child tracks. The view would then manage track groups, and
-    // each track group could be managed on its own.
-    //
-    this.parent_track = parent_track;
-    this.child_tracks = [];
-    
     if (track.hidden) { return; }
-    
-    //
-    // If track has parent:
-    //   -replace drag handle with child-track icon button; (TODO: eventually, we'll want to be able 
-    //    to make a set of child tracks dragable.)
-    //   -remove tool b/c child tracks cannot have tools.
-    //
-    if (this.parent_track) {
-        this.header_div.find(".draghandle").removeClass('draghandle').addClass('child-track-icon').addClass('icon-button');
-        this.parent_element.addClass("child-track");
-        this.tool = undefined;
-    }
-    
-    //
-    // Child tracks container setup.
-    //
-    track.child_tracks_container = $("<div/>").addClass("child-tracks-container").hide();
-    track.container_div.append(track.child_tracks_container);
-    
+        
     //
     // Create filters div.
     //
@@ -2102,6 +2091,18 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     this.make_name_popup_menu();
 };
 extend(TiledTrack.prototype, Track.prototype, {
+    /**
+     * Convert track to JSON object.
+     */
+    to_json: function() {
+        return {
+            "track_type": this.get_type(),
+            "name": this.name,
+            "hda_ldda": this.hda_ldda,
+            "dataset_id": this.dataset_id,
+            "prefs": this.prefs
+        };
+    },
     /**
      * Change track's mode.
      */
@@ -2208,19 +2209,10 @@ extend(TiledTrack.prototype, Track.prototype, {
         //
         // Remove option.
         //
-
-        // Need to either remove track from view or from parent.
-        var parent_obj = view;
-        var no_tracks_fn = function() { $("#no-tracks").show(); };
-        if (this.parent_track) {
-            // Track is child track.
-            parent_obj = this.parent_track;
-            no_tracks_fn = function() {};
-        }
         track_dropdown.Remove = function() {
-            parent_obj.remove_track(track);
+            view.remove_track(track);
             if (parent_obj.num_tracks === 0) {
-                no_tracks_fn();
+                $("#no-tracks").show();
             }
         };
         
@@ -2331,10 +2323,6 @@ extend(TiledTrack.prototype, Track.prototype, {
         if (all_tiles_drawn) {
             track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);       
         } 
-        // Draw child tracks.
-        for (var i = 0; i < this.child_tracks.length; i++) {
-            this.child_tracks[i].request_draw(force, clear_after);
-        }
     },
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
@@ -2511,26 +2499,6 @@ extend(TiledTrack.prototype, Track.prototype, {
             region = (chrom !== undefined && low !== undefined && high !== undefined ?
                       chrom + ":" + low + "-" + high : "all");
         return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
-    },
-    /**
-     * Add a child track to this track.
-     */
-    add_track: function(child_track) {
-        child_track.track_id = this.track_id + "_" + this.child_tracks.length;
-        child_track.container_div.attr('id', 'track_' + child_track.track_id);
-        this.child_tracks_container.append(child_track.container_div);
-        moveable( child_track.container_div, '.child-track-icon' );
-        if (!$(this.child_tracks_container).is(":visible")) {
-            this.child_tracks_container.show();
-        }
-        this.child_tracks.push(child_track);
-        this.view.has_changes = true;
-    },
-    /**
-     * Remove a child track from this track.
-     */
-    remove_track: function(child_track) {
-        child_track.container_div.fadeOut('slow', function() { $(this).remove(); });
     }
 });
 

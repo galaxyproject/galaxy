@@ -573,8 +573,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                                 "hda_ldda": track.get('hda_ldda', "hda"),
                                 "name": track['name'],
                                 "track_type": track['track_type'],
-                                "prefs": track['prefs'],
-                                "is_child": track.get('is_child', False)
+                                "prefs": track['prefs']
             } )
         bookmarks = decoded_payload[ 'bookmarks' ]
         vis_rev.config = { "tracks": tracks, "bookmarks": bookmarks }

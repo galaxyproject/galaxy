@@ -195,8 +195,7 @@ class UsesVisualization( SharableItemSecurity ):
                         "dataset_id": trans.security.encode_id( dataset.id ),
                         "prefs": prefs,
                         "filters": track_data_provider.get_filters(),
-                        "tool": get_tool_def( trans, dataset ),
-                        "is_child": t.get('is_child', False)
+                        "tool": get_tool_def( trans, dataset )
                     } )
 
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ),
