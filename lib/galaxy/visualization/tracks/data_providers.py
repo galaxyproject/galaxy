@@ -135,6 +135,88 @@ class TracksDataProvider( object ):
                     { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index], \
                     'index' : attrs[ 'index' ] } )
         return filters
+
+class BedDataProvider( TracksDataProvider ):
+    """
+    Abstract class that processes BED data from text format to payload format.
+    
+    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
+    """
+    
+    def get_iterator( self, chrom, start, end ):
+        raise "Unimplemented Method"
+        
+    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
+        iterator = self.get_iterator( chrom, start, end )
+        return self.process_data( iterator, start_val, max_vals, **kwargs )
+    
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
+        Provides
+        """
+        # Build data to return. Payload format is:
+        # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
+        #   <thick_end>, <blocks> ]
+        # 
+        # First three entries are mandatory, others are optional.
+        #
+        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        no_detail = ( "no_detail" in kwargs )
+        rval = []
+        message = None
+        for count, line in enumerate( iterator ):
+            if count < start_val:
+                continue
+            if max_vals and count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                break
+            # TODO: can we use column metadata to fill out payload?
+            # TODO: use function to set payload data
+
+            feature = line.split()
+            length = len(feature)
+            # Unique id is just a hash of the line
+            payload = [ hash(line), int(feature[1]), int(feature[2]) ]
+
+            if no_detail:
+                rval.append( payload )
+                continue
+
+            # Simpler way to add stuff, but type casting is not done.
+            # Name, score, strand, thick start, thick end.
+            #end = min( len( feature ), 8 )
+            #payload.extend( feature[ 3:end ] )
+
+            # Name, strand, thick start, thick end.
+            if length >= 4:
+                payload.append(feature[3])
+            if length >= 6:
+                payload.append(feature[5])
+            if length >= 8:
+                payload.append(int(feature[6]))
+                payload.append(int(feature[7]))
+
+            # Blocks.
+            if length >= 12:
+                block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
+                block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
+                blocks = zip( block_sizes, block_starts )
+                payload.append( [ ( int(feature[1]) + block[1], int(feature[1]) + block[1] + block[0] ) for block in blocks ] )
+
+            # Score (filter data)    
+            if length >= 5 and filter_cols and filter_cols[0] == "Score":
+                payload.append( float(feature[4]) )
+
+            rval.append( payload )
+
+        return { 'data': rval, 'message': message }
+
+    def write_data_to_file( self, chrom, start, end, filename ):
+        iterator = self.get_iterator( chrom, start, end )
+        out = open( filename, "w" )
+        for line in iterator:
+            out.write( "%s\n" % line )
+        out.close()
             
 class SummaryTreeDataProvider( TracksDataProvider ):
     """
@@ -573,78 +655,7 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
             results.append( payload )
 
         return { 'data': results, 'message': message }
-        
-class BedDataProvider( TabixDataProvider ):
-    """
-    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
-    """
-        
-    def process_data( self, iterator, start_val=0, max_vals=sys.maxint, **kwargs ):
-        #
-        # Build data to return. Payload format is:
-        # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
-        #   <thick_end>, <blocks> ]
-        # 
-        # First three entries are mandatory, others are optional.
-        #
-        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
-        no_detail = ( "no_detail" in kwargs )
-        rval = []
-        message = None
-        for count, line in enumerate( iterator ):
-            if count < start_val:
-                continue
-            if count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "features" )
-                break
-            # TODO: can we use column metadata to fill out payload?
-            # TODO: use function to set payload data
-            
-            feature = line.split()
-            length = len(feature)
-            # Unique id is just a hash of the line
-            payload = [ hash(line), int(feature[1]), int(feature[2]) ]
-            
-            if no_detail:
-                rval.append( payload )
-                continue
-            
-            # Simpler way to add stuff, but type casting is not done.
-            # Name, score, strand, thick start, thick end.
-            #end = min( len( feature ), 8 )
-            #payload.extend( feature[ 3:end ] )
-            
-            # Name, strand, thick start, thick end.
-            if length >= 4:
-                payload.append(feature[3])
-            if length >= 6:
-                payload.append(feature[5])
-            if length >= 8:
-                payload.append(int(feature[6]))
-                payload.append(int(feature[7]))
-
-            # Blocks.
-            if length >= 12:
-                block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
-                block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
-                blocks = zip( block_sizes, block_starts )
-                payload.append( [ ( int(feature[1]) + block[1], int(feature[1]) + block[1] + block[0] ) for block in blocks ] )
-            
-            # Score (filter data)    
-            if length >= 5 and filter_cols and filter_cols[0] == "Score":
-                payload.append( float(feature[4]) )
                 
-            rval.append( payload )
-            
-        return { 'data': rval, 'message': message }
-        
-    def write_data_to_file( self, chrom, start, end, filename ):
-        iterator = self.get_iterator( chrom, start, end )
-        out = open( filename, "w" )
-        for line in iterator:
-            out.write( "%s\n" % line )
-        out.close()
-        
 class VcfDataProvider( TabixDataProvider ):
     """
     VCF data provider for the Galaxy track browser.
@@ -685,7 +696,7 @@ class GFFDataProvider( TracksDataProvider ):
     Provide data from GFF file.
     
     NOTE: this data provider does not use indices, and hence will be very slow
-    for large datasets. 
+    for large datasets.
     """
     def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
         start, end = int( start ), int( end )
@@ -710,6 +721,30 @@ class GFFDataProvider( TracksDataProvider ):
             offset += feature.raw_size
             
         return { 'data': results, 'message': message }
+        
+class BedTabixDataProvider( TabixDataProvider, BedDataProvider ):
+    """
+    Provides data from a BED file indexed via tabix.
+    """
+    pass
+    
+class RawBedDataProvider( BedDataProvider ):
+    """
+    Provide data from BED file.
+
+    NOTE: this data provider does not use indices, and hence will be very slow
+    for large datasets.
+    """
+    
+    def get_iterator( self, chrom, start, end ):
+        def line_filter_iter():
+            for line in open( self.original_dataset.file_name ):
+                feature = line.split()
+                feature_chrom, feature_start, feature_end = feature[ 0:3 ]
+                if feature_chrom != chrom or feature_start > end or feature_end < start:
+                    continue
+                yield line
+        return line_filter_iter()
        
 #        
 # Helper methods.
@@ -719,7 +754,7 @@ class GFFDataProvider( TracksDataProvider ):
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
-    "tabix": { Vcf: VcfDataProvider, Bed: BedDataProvider, "default" : TabixDataProvider },
+    "tabix": { Vcf: VcfDataProvider, Bed: BedTabixDataProvider, "default" : TabixDataProvider },
     "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider,

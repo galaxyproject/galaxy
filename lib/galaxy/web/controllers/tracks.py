@@ -397,7 +397,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     def raw_data( self, trans, dataset_id, chrom, low, high, **kwargs ):
         """
         Uses original (raw) dataset to return data. This method is useful 
-        when the dataset is not yet indexed and hence using /data would
+        when the dataset is not yet indexed and hence using data would
         be slow because indexes need to be created.
         """
         
@@ -409,8 +409,13 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             
         # Return data.
         data = None
+        # TODO: for raw data requests, map dataset type to provider using dict in data_providers.py
         if isinstance( dataset.datatype, Gff ):
             data = GFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
+            data[ 'dataset_type' ] = 'interval_index'
+            data[ 'extra_info' ] = None
+        if isinstance( dataset.datatype, Bed ):
+            data = RawBedDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
             data[ 'extra_info' ] = None
         return data

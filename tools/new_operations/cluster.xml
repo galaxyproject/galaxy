@@ -1,5 +1,6 @@
 <tool id="gops_cluster_1" name="Cluster">
   <description>the intervals of a dataset</description>
+  <trackster_conf/>
   <command interpreter="python">gops_cluster.py $input1 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -d $distance -m $minregions -o $returntype</command>
   <inputs>
     <param format="interval" name="input1" type="data">
