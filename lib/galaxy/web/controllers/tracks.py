@@ -148,17 +148,17 @@ class TracksterSelectionGrid( grids.Grid ):
     template = "/tracks/add_to_viz.mako"
     async_template = "/page/select_items_grid_async.mako"
     model_class = model.Visualization
-    default_filter = { "deleted" : "False" , "shared" : "All" }
-    default_sort_key = "title"
+    default_sort_key = "-update_time"
     use_async = True
     use_paging = False
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="standard" ),
-        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization )
+        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
 
     def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class )
+        return trans.sa_session.query( self.model_class ).filter( self.model_class.deleted == False )
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.user_id == trans.user.id )                    
         
