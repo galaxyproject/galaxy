@@ -42,6 +42,7 @@
 .nav-labeltrack{border-top:solid #999 1px;border-bottom:solid #333 1px;}
 input{font:10px verdana;}
 .dynamic-tool,.filters{margin-left:0.25em;padding-bottom:0.5em;}
+.dynamic-tool{width:410px;}
 .filters>.sliders,.display-controls{float:left;margin:1em;}
 .sliders{width:410px;}
 .display-controls{border-left:solid 2px #DDDDDD;padding-left:1em}
