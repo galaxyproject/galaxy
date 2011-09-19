@@ -1228,7 +1228,7 @@ extend(Tool.prototype, {
             new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);  
             new_track.change_mode(current_track.mode);
         }
-        this.track.add_track(new_track);
+        this.track.view.add_track(new_track);
         new_track.content_div.text("Starting job.");
         
         // Run tool.
