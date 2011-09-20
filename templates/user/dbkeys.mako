@@ -104,7 +104,7 @@
                     % if 'count' in dct:
                         ${dct['count']}
                     % else:
-                        working
+                        ?
                     % endif
                 </td>
                 <td><form action="dbkeys" method="post"><input type="hidden" name="key" value="${key}" /><input type="submit" name="delete" value="Delete" /></form></td>
