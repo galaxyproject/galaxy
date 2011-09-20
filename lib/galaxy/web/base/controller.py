@@ -2751,9 +2751,7 @@ class Admin( object ):
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = trans.request.host
-        # Set the galayurl cookie so we can get back here from the remote tool shed.
-        trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
-        url = '%s/repository/browse_downloadable_repositories?webapp=community' % ( tool_shed_url )
+        url = '%s/repository/browse_downloadable_repositories?galaxy_url=%s&webapp=community' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin

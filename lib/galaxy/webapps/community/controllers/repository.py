@@ -262,6 +262,11 @@ class RepositoryController( BaseController, ItemRatings ):
         return self.category_list_grid( trans, **kwd )
     @web.expose
     def browse_downloadable_repositories( self, trans, **kwd ):
+        # Set the toolshedgalaxyurl cookie so we can get back
+        # to the calling local Galaxy instance.
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if galaxy_url:
+            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
         repository_id = kwd.get( 'id', None )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
