@@ -111,7 +111,7 @@
         <br/><br/>
         <ul class="manage-table-actions">
             %if display_for_install:
-                <a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp='community', changeset_revision=changeset_revision, galaxy_url=galaxy_url )}">Install to local Galaxy</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp='community', changeset_revision=changeset_revision )}">Install to local Galaxy</a>
             %else:
                 %if is_new:
                     <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>

@@ -70,7 +70,7 @@
                     <div class="toolSectionBody">
                         <div class="toolSectionBg">                        
                             %for name, url in trans.app.tool_shed_registry.tool_sheds.items():
-                                <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_tool_shed', tool_shed_name=name, tool_shed_url=url )}" target="galaxy_main">${name}</a></div>
+                                <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_tool_shed', tool_shed_url=url )}" target="galaxy_main">${name}</a></div>
                             %endfor
                             </div>
                         </div>

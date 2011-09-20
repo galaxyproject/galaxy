@@ -122,7 +122,6 @@ class RepositoryListGrid( grids.Grid ):
                 return 'yes'
             return ''
     # Grid definition
-    galaxy_url = None
     title = "Repositories"
     model_class = model.Repository
     template='/webapps/community/repository/grid.mako'
@@ -192,12 +191,11 @@ class DownloadableRepositoryListGrid( RepositoryListGrid ):
             Display a SelectField whose options are the changeset_revision
             strings of all downloadable_revisions of this repository.
             """
-            select_field = build_changeset_revision_select_field( trans,
-                                                                  repository,
-                                                                  galaxy_url=grid.galaxy_url )
+            select_field = build_changeset_revision_select_field( trans, repository )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
             return repository.revision
+    title = "Downloadable repositories"
     columns = [
         RepositoryListGrid.NameColumn( "Name",
                                        key="name",
@@ -264,9 +262,7 @@ class RepositoryController( BaseController, ItemRatings ):
         return self.category_list_grid( trans, **kwd )
     @web.expose
     def browse_downloadable_repositories( self, trans, **kwd ):
-        tool_shed_name = kwd.get( 'tool_shed_name', None )
         repository_id = kwd.get( 'id', None )
-        galaxy_url = kwd.get( 'galaxy_url', None )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
@@ -274,8 +270,7 @@ class RepositoryController( BaseController, ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
                                                                   repository_id=repository_id,
-                                                                  changeset_revision=repository.tip,
-                                                                  galaxy_url=galaxy_url ) )
+                                                                  changeset_revision=repository.tip ) )
 
         # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
         # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
@@ -292,31 +287,10 @@ class RepositoryController( BaseController, ItemRatings ):
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='preview_tools_in_changeset',
                                                                       repository_id=trans.security.encode_id( repository.id ),
-                                                                      changeset_revision=v,
-                                                                      galaxy_url=galaxy_url ) )
-            elif k.find( changset_revision_str ) > 0:
-                # Keys look like: 'localhost:8763_changeset_revision_3' and values: '4ef2cf631604'.
-                items = k.split( '_%s' % changset_revision_str )
-                galaxy_url = items[0]
-                repository_id = trans.security.encode_id( int( items[1] ) )
-                repository = get_repository( trans, repository_id )
-                if repository.tip != v:
-                    return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                      action='preview_tools_in_changeset',
-                                                                      repository_id=trans.security.encode_id( repository.id ),
-                                                                      changeset_revision=v,
-                                                                      galaxy_url=galaxy_url ) )
-
-        if tool_shed_name:
-            title = "%s downloadable repositories" % tool_shed_name
-        else:
-            title = "Downloadable repositories"
-        self.downloadable_repository_list_grid.title = title
-        self.downloadable_repository_list_grid.galaxy_url = galaxy_url
+                                                                      changeset_revision=v ) )
         url_args = dict( action='browse_downloadable_repositories',
                          operation='preview_tools_in_changeset',
-                         repository_id=repository_id,
-                         galaxy_url=galaxy_url )
+                         repository_id=repository_id )
         self.downloadable_repository_list_grid.operations = [ grids.GridOperation( "Preview and install tools",
                                                                                    url_args=url_args,
                                                                                    allow_multiple=False,
@@ -329,7 +303,6 @@ class RepositoryController( BaseController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = util.restore_text( params.get( 'galaxy_url', '' ) )
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -348,7 +321,6 @@ class RepositoryController( BaseController, ItemRatings ):
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     metadata=metadata,
-                                    galaxy_url=galaxy_url,
                                     display_for_install=True,
                                     message=message,
                                     status=status )
@@ -357,7 +329,7 @@ class RepositoryController( BaseController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = util.restore_text( params.get( 'galaxy_url', '' ) )
+        galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         # Redirect back to local Galaxy to perform install.
@@ -1232,7 +1204,6 @@ class RepositoryController( BaseController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = util.restore_text( params.get( 'galaxy_url', '' ) )
         display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
         repository = get_repository( trans, repository_id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )          
@@ -1274,7 +1245,6 @@ class RepositoryController( BaseController, ItemRatings ):
                                         tool_state=tool_state,
                                         is_malicious=is_malicious,
                                         display_for_install=display_for_install,
-                                        galaxy_url=galaxy_url,
                                         message=message,
                                         status=status )
         except Exception, e:

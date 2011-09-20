@@ -64,7 +64,7 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp='community', changeset_revision=changeset_revision, galaxy_url=galaxy_url )}">Install to local Galaxy</a>
+    <a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp='community', changeset_revision=changeset_revision )}">Install to local Galaxy</a>
 </ul>
 
 %if message:
@@ -75,7 +75,7 @@
     <div class="toolFormTitle">Repository ${repository.name}</div>
     <div class="toolFormBody">
         %if len( changeset_revision_select_field.options ) > 1:
-            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ), galaxy_url=galaxy_url )}" method="post" >
+            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     <%
                         if changeset_revision == repository.tip:
@@ -98,4 +98,4 @@
     </div>
 </div>
 <p/>
-${render_repository_tools_and_workflows( metadata, display_for_install=display_for_install, galaxy_url=galaxy_url )}
+${render_repository_tools_and_workflows( metadata, display_for_install=display_for_install )}

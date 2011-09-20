@@ -171,9 +171,21 @@ def generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, me
     repository = get_repository( trans, id )
     tool_requirements = []
     for tr in tool.requirements:
-        requirement_dict = dict( name=tr.name,
-                                 type=tr.type,
-                                 version=tr.version )
+        name=tr.name
+        type=tr.type
+        if type == 'fabfile':
+            version = None
+            fabfile = tr.fabfile
+            method = tr.method
+        else:
+            version = tr.version
+            fabfile = None
+            method = None
+        requirement_dict = dict( name=name,
+                                 type=type,
+                                 version=version,
+                                 fabfile=fabfile,
+                                 method=method )
         tool_requirements.append( requirement_dict )
     tool_tests = []
     if tool.tests:
@@ -335,13 +347,17 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                 trans.sa_session.flush()
         else:
             message = "Changeset revision '%s' includes no tools or exported workflows for which metadata can be set." % str( changeset_revision )
-            status = "done"
+            status = "error"
     else:
         # change_set is None
         message = "Repository does not include changeset revision '%s'." % str( changeset_revision )
         status = 'error'
     if invalid_files:
-        message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( changeset_revision )
+        if metadata_dict:
+            message = "Metadata was defined for some items in change set revision '%s'.  " % str( changeset_revision )
+            message += "If the following files are Galaxy tool configs or exported Galaxy workflows, correct the problems and reset metadata.<br/>"
+        else:
+            message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( changeset_revision )
         for itc_tup in invalid_files:
             tool_file = itc_tup[0]
             exception_msg = itc_tup[1]
@@ -527,7 +543,7 @@ def load_tool( trans, config_file ):
             ToolClass = Tool
         return ToolClass( config_file, root, trans.app )
     return None
-def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True, galaxy_url=None ):
+def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True ):
     """
     Build a SelectField whose options are the changeset_revision
     strings of all downloadable_revisions of the received repository.
@@ -541,15 +557,9 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         options.append( ( revision_label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     if add_id_to_name:
-        if galaxy_url:
-            name = '%s_changeset_revision_%d' % ( galaxy_url, repository.id )
-        else:
-            name = 'changeset_revision_%d' % repository.id
+        name = 'changeset_revision_%d' % repository.id
     else:
-        if galaxy_url:
-            name = '%s_changeset_revision' % galaxy_url
-        else:
-            name = 'changeset_revision'
+        name = 'changeset_revision'
     select_field = SelectField( name=name,
                                 refresh_on_change=True,
                                 refresh_on_change_values=refresh_on_change_values )

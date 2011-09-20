@@ -16,7 +16,7 @@
     or concerns.
 </div>
 <br/>
-<div class="errormessage">
+<div class="warningmessage">
     Installation may take a while, depending upon the size of the repository contents.  Wait until a message is displayed in your 
     browser after clicking the <b>Install</b> button below.
 </div>

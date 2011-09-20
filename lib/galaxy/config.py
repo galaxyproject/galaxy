@@ -119,9 +119,12 @@ class Configuration( object ):
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
-        # Location for dependencies
+        # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
+            # Setting the following flag to true will ultimately cause tool dependencies
+            # to be located in the shell environment and used by the job that is executing
+            # the tool.
             self.use_tool_dependencies = True
         else:
             self.tool_dependency_dir = None

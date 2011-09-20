@@ -227,12 +227,11 @@ class ToolBox( object ):
         id = self.app.security.decode_id( workflow_id )
         stored = self.app.model.context.query( self.app.model.StoredWorkflow ).get( id )
         return stored.latest_workflow
-
     def init_dependency_manager( self ):
-        self.dependency_manager = None
         if self.app.config.use_tool_dependencies:
             self.dependency_manager = DependencyManager( [ self.app.config.tool_dependency_dir ] )
-
+        else:
+            self.dependency_manager = None
     @property
     def sa_session( self ):
         """
@@ -341,12 +340,17 @@ class ToolRequirement( object ):
     """
     Represents an external requirement that must be available for the tool to
     run (for example, a program, package, or library). Requirements can 
-    optionally assert a specific version
+    optionally assert a specific version, or reference a command to execute a
+    fabric script.  If fabric is used, the type is 'fabfile' and the version
+    attribute is not used since the fabric script includes all necessary
+    information for automatic dependency installation.
     """
-    def __init__( self ):
-        self.name = None
-        self.type = None
-        self.version = None
+    def __init__( self, name=None, type=None, version=None, fabfile=None, method=None ):
+        self.name = name
+        self.type = type
+        self.version = version
+        self.fabfile = fabfile
+        self.method = method
 
 class Tool:
     """
@@ -882,10 +886,21 @@ class Tool:
         self.requirements
         """
         for requirement_elem in requirements_elem.findall( 'requirement' ):
-            requirement = ToolRequirement()
-            requirement.name = util.xml_text( requirement_elem )
-            requirement.type = requirement_elem.get( "type", "package" )
-            requirement.version = requirement_elem.get( "version" )
+            name = util.xml_text( requirement_elem )
+            type = requirement_elem.get( "type", "package" )
+            if type == 'fabfile':
+                # The fabric script will include all necessary information for
+                # automatically installing the tool dependencies.
+                fabfile = requirement_elem.get( "fabfile" )
+                method = requirement_elem.get( "method" )
+                version = None
+            else:
+                # For backward compatibility, requirements tag sets should not require the
+                # use of a fabric script.
+                version = requirement_elem.get( "version" )
+                fabfile = None
+                method = None
+            requirement = ToolRequirement( name=name, type=type, version=version, fabfile=fabfile, method=method )
             self.requirements.append( requirement )
     
     def check_workflow_compatible( self ):

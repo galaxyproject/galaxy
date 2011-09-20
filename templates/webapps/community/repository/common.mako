@@ -83,7 +83,7 @@
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
 
-<%def name="render_repository_tools_and_workflows( metadata, can_set_metadata=False, display_for_install=False, galaxy_url=None )">
+<%def name="render_repository_tools_and_workflows( metadata, can_set_metadata=False, display_for_install=False )">
     %if metadata or can_set_metadata:
         <p/>
         <div class="toolForm">
@@ -111,12 +111,12 @@
                                     <tr>
                                         <td>
                                             <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, display_for_install=display_for_install, galaxy_url=galaxy_url )}">
+                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, display_for_install=display_for_install )}">
                                                     ${tool_dict[ 'name' ]}
                                                 </a>
                                             </div>
                                             <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                                <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ], display_for_install=display_for_install, galaxy_url=galaxy_url )}">View tool metadata</a>
+                                                <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ], display_for_install=display_for_install )}">View tool metadata</a>
                                             </div>
                                         </td>
                                         <td>${tool_dict[ 'description' ]}</td>

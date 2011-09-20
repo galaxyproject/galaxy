@@ -2749,10 +2749,11 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
-        tool_shed_name = kwd[ 'tool_shed_name' ]
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = trans.request.host
-        url = '%s/repository/browse_downloadable_repositories?tool_shed_name=%s&galaxy_url=%s&webapp=community' % ( tool_shed_url, tool_shed_name, galaxy_url )
+        # Set the galayurl cookie so we can get back here from the remote tool shed.
+        trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        url = '%s/repository/browse_downloadable_repositories?webapp=community' % ( tool_shed_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
@@ -2784,8 +2785,8 @@ class Admin( object ):
                     status = 'error'
                 else:
                     os.makedirs( clone_dir )
+                    log.debug( 'Cloning %s...' % repository_clone_url )
                     cmd = 'hg clone %s' % repository_clone_url
-                    log.debug( 'Cloning: %s' % repository_clone_url )
                     tmp_name = tempfile.NamedTemporaryFile().name
                     tmp_stderr = open( tmp_name, 'wb' )
                     os.chdir( clone_dir )
@@ -2795,7 +2796,7 @@ class Admin( object ):
                     tmp_stderr.close()
                     if returncode == 0:
                         repo_files_dir = os.path.join( clone_dir, repository_name )
-                        log.debug( 'Updating cloned repository to revision: %s' % changeset_revision )
+                        log.debug( 'Updating cloned repository to revision "%s"...' % changeset_revision )
                         cmd = 'hg update -r %s' % changeset_revision
                         tmp_name = tempfile.NamedTemporaryFile().name
                         tmp_stderr = open( tmp_name, 'wb' )
@@ -2831,6 +2832,39 @@ class Admin( object ):
                                                 # We have an inavlid .xml file, so not a tool config.
                                                 log.debug( "Ignoring invalid tool config (%s). Error: %s" % ( str( relative_path ), str( e ) ) )
                             if repository_tools_tups:
+                                # Look at each tool to see if it includes a "requirement" that refers to
+                                # a fabric script.  For those that do, execute the fabric script to install
+                                # tool dependencies.
+                                for repository_tools_tup in repository_tools_tups:
+                                    tup_path, repository_tool = repository_tools_tup
+                                    for requirement in repository_tool.requirements:
+                                        if requirement.type == 'fabfile':
+                                            log.debug( 'Executing fabric script to install dependencies for tool "%s"...' % repository_tool.name )
+                                            fabfile = requirement.fabfile
+                                            method = requirement.method
+                                            # Find the relative path to the fabfile.
+                                            relative_fabfile_path = None
+                                            for root, dirs, files in os.walk( repo_files_dir ):
+                                                for name in files:
+                                                    if name == fabfile:
+                                                        relative_fabfile_path = os.path.join( root, name )
+                                                        break
+                                            if relative_fabfile_path:
+                                                # cmd will look something like: fab -f fabfile.py install_bowtie
+                                                cmd = 'fab -f %s %s' % ( relative_fabfile_path, method )
+                                                tmp_name = tempfile.NamedTemporaryFile().name
+                                                tmp_stderr = open( tmp_name, 'wb' )
+                                                os.chdir( repo_files_dir )
+                                                proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
+                                                returncode = proc.wait()
+                                                os.chdir( current_working_dir )
+                                                tmp_stderr.close()
+                                                if returncode != 0:
+                                                    # TODO: do something more here than logging the problem.
+                                                    tmp_stderr = open( tmp_name, 'rb' )
+                                                    error = tmp_stderr.read()
+                                                    tmp_stderr.close()
+                                                    log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
                                 # Generate an in-memory tool conf section that includes the new tools.
                                 new_tool_section = self.__generate_tool_panel_section( repository_name,
                                                                                        repository_clone_url,
