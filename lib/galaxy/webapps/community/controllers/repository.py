@@ -1254,7 +1254,6 @@ class RepositoryController( BaseController, ItemRatings ):
                                                               action='preview_tools_in_changeset',
                                                               repository_id=repository_id,
                                                               changeset_revision=changeset_revision,
-                                                              galaxy_url=galaxy_url,
                                                               message=message,
                                                               status='error' ) )
         return trans.response.send_redirect( web.url_for( controller='repository',
