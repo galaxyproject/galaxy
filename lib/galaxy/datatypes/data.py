@@ -446,6 +446,13 @@ class Text( Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+class LineCount( Text ):
+    """ 
+    Dataset contains a single line with a single integer that denotes the 
+    line count for a related dataset. Used for custom builds.
+    """
+    pass
+
 class Newick( Text ):
     pass
 

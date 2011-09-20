@@ -1,0 +1,13 @@
+<tool id="CONVERTER_fasta_to_len" name="Convert FASTA to len file" version="1.0.0">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <command interpreter="python">fasta_to_len.py $input $output 0</command>
+    <inputs>
+        <param name="input" type="data" format="fasta" label="Fasta file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="len"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

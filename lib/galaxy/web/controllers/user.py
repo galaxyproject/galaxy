@@ -1165,6 +1165,9 @@ class User( BaseController, UsesFormDefinitions ):
     @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
+        #
+        # Process arguments and add/delete build.
+        #
         user = trans.user
         message = None
         lines_skipped = 0
@@ -1178,57 +1181,79 @@ class User( BaseController, UsesFormDefinitions ):
         else:
             dbkeys = from_json_string(user.preferences['dbkeys'])
         if 'delete' in kwds:
+            # Delete a build.
             key = kwds.get('key', '')
             if key and key in dbkeys:
                 del dbkeys[key]
         elif 'add' in kwds:
-            name     = kwds.get('name', '')
-            key      = kwds.get('key', '')
-            len_file = kwds.get('len_file', None)
-            if getattr(len_file, "file", None): # Check if it's a FieldStorage object
-                len_text = len_file.file.read()
-            else:
-                len_text = kwds.get('len_text', '')
-            if not name or not key or not len_text:
+            # Add new custom build.
+            name = kwds.get('name', '')
+            key = kwds.get('key', '')
+            dataset_id = kwds.get('dataset_id', '')
+            if not name or not key or not dataset_id:
                 message = "You must specify values for all the fields."
             elif key in dbkeys:
                 message = "There is already a custom build with that key. Delete it first if you want to replace it."
             else:
-                # Create new len file
-                new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
-                trans.sa_session.add( new_len )
-                new_len.name = name
-                new_len.visible = False
-                new_len.state = trans.app.model.Job.states.OK
-                new_len.info = "custom build .len file"
-                trans.sa_session.flush()
-                counter = 0
-                f = open(new_len.file_name, "w")
-                # LEN files have format:
-                #   <chrom_name><tab><chrom_length>
-                for line in len_text.split("\n"):
-                    lst = line.strip().rsplit(None, 1) # Splits at the last whitespace in the line
-                    if not lst or len(lst) < 2:
-                        lines_skipped += 1
-                        continue
-                    chrom, length = lst[0], lst[1]
-                    try:
-                        length = int(length)
-                    except ValueError:
-                        lines_skipped += 1
-                        continue
-                    counter += 1
-                    f.write("%s\t%s\n" % (chrom, length))
-                f.close()
-                dbkeys[key] = { "name": name, "len": new_len.id, "count": counter }
+                dataset_id = trans.security.decode_id( dataset_id )
+                dbkeys[key] = { "name": name, "fasta": dataset_id }
+        # Save builds.
+        # TODO: use database table to save builds.
         user.preferences['dbkeys'] = to_json_string(dbkeys)
         trans.sa_session.flush()
+        
+        #
+        # Display custom builds page.
+        #
+        
+        # Add chrom/contig count to dbkeys dict.
+        updated = False
+        for key, attributes in dbkeys.items():
+            if 'count' in attributes:
+                # Already have count, so do nothing.
+                continue
+                
+            # Get len file.
+            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( attributes[ 'fasta' ] )
+            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+            # HACK: need to request dataset again b/c get_converted_dataset()
+            # doesn't return dataset (as it probably should).
+            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+            if len_dataset.state == trans.app.model.Job.states.ERROR:
+                # Can't use len dataset.
+                continue
+                
+            # Get chrom count file.
+            # NOTE: this conversion doesn't work well with set_metadata_externally=False 
+            # because the conversion occurs before metadata can be set; the 
+            # dataset is marked as deleted and a subsequent conversion is run.
+            chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+            if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
+                # No valid linecount dataset.
+                continue
+            else:
+                # Set chrom count.
+                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                attributes[ 'count' ] = chrom_count
+                updated = True
+        
+        if updated:
+            user.preferences['dbkeys'] = to_json_string(dbkeys)
+            trans.sa_session.flush()
+            
+        
+        # Potential genome data for custom builds is limited to fasta datasets in current history for now.
+        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+                        .filter_by( history=trans.history, extension="fasta", deleted=False ) \
+                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
+        
         return trans.fill_template( 'user/dbkeys.mako',
                                     user=user,
                                     dbkeys=dbkeys,
                                     message=message,
                                     installed_len_files=self.installed_len_files,
                                     lines_skipped=lines_skipped,
+                                    fasta_hdas=fasta_hdas,
                                     use_panels=kwds.get( 'use_panels', None ) )          
     @web.expose
     @web.require_login()

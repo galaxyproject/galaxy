@@ -1,0 +1,13 @@
+<tool id="CONVERTER_fasta_to_2bit" name="Convert FASTA to 2bit" version="1.0.0">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <command>faToTwoBit $input $output</command>
+    <inputs>
+        <param name="input" type="data" format="fasta" label="Fasta file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="twobit"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

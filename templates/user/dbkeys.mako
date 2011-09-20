@@ -103,6 +103,8 @@
     ##                </pre>
                     % if 'count' in dct:
                         ${dct['count']}
+                    % else:
+                        working
                     % endif
                 </td>
                 <td><form action="dbkeys" method="post"><input type="hidden" name="key" value="${key}" /><input type="submit" name="delete" value="Delete" /></form></td>
@@ -133,10 +135,12 @@
                     <input type="text" id="key" name="key" />
                 </div>
                 <div class="form-row">
-                    <label for="len_file">Upload .len file:</label>
-                    <input type="file" id="len_file" name="len_file" /><br />
-                    <label for="len_text">Or enter/paste length info below:</label>
-                    <textarea id="len_text" name="len_text" cols="30" rows="8"></textarea>
+                    <label for="len_file">Build Genome:</label>
+                    <select name="dataset_id">
+                    %for dataset in fasta_hdas:
+                        <option value="${trans.security.encode_id( dataset.id )}">${dataset.hid}: ${dataset.name}</option>
+                    %endfor
+                    </select>
                 </div>
             
                 <div class="form-row"><input type="submit" name="add" value="Submit"/></div>
