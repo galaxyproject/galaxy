@@ -2,7 +2,7 @@
   <description>amino-acid changes caused by a set of SNPs</description>
 
   <command interpreter="perl">
-    codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 > $out_file1
+    codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep > $out_file1
   </command>
 
   <inputs>
@@ -12,6 +12,10 @@
     <param name="col1" type="data_column" data_ref="input1" label="Column with SNPs" />
     <param format="interval" name="input2" type="data" label="Gene dataset">
       <validator type="dataset_metadata_in_file" filename="codingSnps.loc" metadata_name="dbkey" metadata_column="0" message="Sequences are not currently available for the specified build." split="\t" />
+    </param>
+    <param name="keep" type="select" label="Keep columns from SNP dataset">
+      <option value="0" selected="true">No</option>
+      <option value="1">Yes</option>
     </param>
   </inputs>
 
