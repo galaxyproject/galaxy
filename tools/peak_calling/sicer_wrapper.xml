@@ -172,5 +172,7 @@ View the original SICER documentation: http://home.gwu.edu/~wpeng/Software.htm.
 
 For the underlying tool, please cite `Zang C, Schones DE, Zeng C, Cui K, Zhao K, Peng W. A clustering approach for identification of enriched domains from histone modification ChIP-Seq data. Bioinformatics. 2009 Aug 1;25(15):1952-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/19505939&gt;`_
 
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
   </help>
 </tool>

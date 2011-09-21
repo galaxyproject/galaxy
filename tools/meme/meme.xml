@@ -340,6 +340,12 @@ Timothy L. Bailey and Charles Elkan, "Fitting a mixture model by expectation max
 
 For detailed information on MEME, click here_. To view the license_.
 
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
 .. _here: http://meme.nbcr.net/meme/meme-intro.html
 .. _license: http://meme.nbcr.net/meme/COPYRIGHT.html
 

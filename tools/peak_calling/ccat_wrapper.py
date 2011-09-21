@@ -25,6 +25,7 @@ def main():
     
     tmp_dir = tempfile.mkdtemp()
     try:
+        assert os.path.exists( chrom_info_file ), "The required chromosome length file does not exist."
         proc = subprocess.Popen( args="%s %s > %s" % ( CCAT_BINARY, " ".join( map( lambda x: "'%s'" % x, [ input_tag_file, input_control_file, chrom_info_file, input_config_file, project_name ] ) ), output_log_file ), shell=True, cwd=tmp_dir )
         proc.wait()
         if proc.returncode:

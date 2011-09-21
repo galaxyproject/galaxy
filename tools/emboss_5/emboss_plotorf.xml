@@ -36,5 +36,11 @@ The input dataset needs to be sequences.
     You can view the original documentation here_.
     
     .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/plotorf.html
+
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite `Blankenberg D, Taylor J, Schenck I, He J, Zhang Y, Ghent M, Veeraraghavan N, Albert I, Miller W, Makova KD, Hardison RC, Nekrutenko A. A framework for collaborative analysis of ENCODE data: making large-scale analyses biologist-friendly. Genome Res. 2007 Jun;17(6):960-4. &lt;http://www.ncbi.nlm.nih.gov/pubmed/17568012&gt;`_
   </help>
 </tool>
