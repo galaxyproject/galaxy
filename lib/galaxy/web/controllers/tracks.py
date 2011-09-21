@@ -176,7 +176,10 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     available_tracks = None
     available_genomes = None
     
-    def _init_references(self, trans):
+    def _init_references( self, trans ):
+        """
+        Create a list of builds that have reference data specified in twobit.loc file.
+        """
         avail_genomes = {}
         for line in open( os.path.join( trans.app.config.tool_data_path, "twobit.loc" ) ):
             if line.startswith("#"): continue
@@ -185,6 +188,29 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 key, path = val
                 avail_genomes[key] = path
         self.available_genomes = avail_genomes
+        
+    def _has_reference_data( self, trans, dbkey ):
+        # Initialize built-in builds if necessary.
+        if not self.available_genomes:
+            self._init_references( trans )
+        
+        # Look for key in built-in builds.
+        if dbkey in self.available_genomes:
+            # There is built-in reference data.
+            return True
+            
+        # Look for key in user's custom builds.
+        # TODO: how to make this work for shared visualizations?
+        user = trans.user
+        if user and 'dbkeys' in trans.user.preferences:
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+            if dbkey in user_keys:
+                dbkey_attributes = user_keys[ dbkey ]
+                if 'fasta' in dbkey_attributes:
+                    # Fasta + converted datasets can provide reference data.
+                    return True
+                    
+        return False
     
     @web.expose
     @web.require_login()
@@ -291,11 +317,17 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         #
         len_file = None
         len_ds = None
-        # If there is any dataset in the history of extension `len`, this will use it
+        user_keys = {}
         if 'dbkeys' in vis_user.preferences:
             user_keys = from_json_string( vis_user.preferences['dbkeys'] )
-            if vis_dbkey in user_keys:  
-                len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ vis_dbkey ][ 'len' ] ).file_name
+            if vis_dbkey in user_keys:
+                dbkey_attributes = user_keys[ vis_dbkey ]
+                if 'fasta' in dbkey_attributes:
+                    build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
+                    len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
+                # Backwards compatibility: look for len file directly.
+                elif 'len' in dbkey_attributes:
+                    len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ vis_dbkey ][ 'len' ] ).file_name
 
         if not len_file:
             len_ds = trans.db_dataset_for( dbkey )
@@ -303,7 +335,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % vis_dbkey )
             else:
                 len_file = len_ds.file_name
-        
+
         #
         # Get chroms data:
         #   (a) chrom name, len;
@@ -367,31 +399,50 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         except:
             # No more chroms to read.
             pass
-        
-        # Check for reference chrom
-        if self.available_genomes is None: self._init_references(trans)        
-        
+                
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
-        return { 'reference': vis_dbkey in self.available_genomes, 'chrom_info': to_sort, 
+        return { 'reference': self._has_reference_data( trans, vis_dbkey ), 'chrom_info': to_sort, 
                  'prev_chroms' : prev_chroms, 'next_chroms' : next_chroms, 'start_index' : start_index }
         
     @web.json
     def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
-        if self.available_genomes is None: self._init_references(trans)
-
-        if dbkey not in self.available_genomes:
+        """
+        Return reference data for a build.
+        """
+        
+        if not self._has_reference_data( trans, dbkey ):
             return None
         
+        #    
+        # Get twobit file with reference data.
+        #
+        twobit_file_name = None
+        if dbkey in self.available_genomes:
+            # Built-in twobit.
+            twobit_file_name = TwoBitFile( open( self.available_genomes[dbkey] ) )
+        else:
+            # From custom build.
+            # TODO: how to make this work for shared visualizations?
+            user = trans.user
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+            dbkey_attributes = user_keys[ dbkey ]
+            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( dbkey_attributes[ 'fasta' ] )
+            error = self._convert_dataset( trans, fasta_dataset, 'twobit' )
+            if error:
+                return error
+            else:
+                twobit_dataset = fasta_dataset.get_converted_dataset( trans, 'twobit' )
+                twobit_file_name = twobit_dataset.file_name
+            
+        # Read and return reference data.
         try:
-            twobit = TwoBitFile( open(self.available_genomes[dbkey]) )
+            twobit = TwoBitFile( open( twobit_file_name ) )
+            if chrom in twobit:
+                seq_data = twobit[chrom].get( int(low), int(high) )
+                return { 'dataset_type': 'refseq', 'data': seq_data }
         except IOError:
             return None
-            
-        if chrom in twobit:
-            return twobit[chrom].get(int(low), int(high))        
-        
-        return None
         
     @web.json
     def raw_data( self, trans, dataset_id, chrom, low, high, **kwargs ):

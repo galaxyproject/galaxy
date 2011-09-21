@@ -2284,9 +2284,8 @@ extend(TiledTrack.prototype, Track.prototype, {
      * can manage drawing.
      */
     _draw: function(force, clear_after) {
-        // Cannot draw without dataset_id; dataset_id may not be set if track dynamically created
-        // and is waiting for dataset.
-        if (!this.dataset_id) { return; }
+        // HACK: ReferenceTrack can draw without dataset ID, but other tracks cannot.
+        if ( !(this instanceof ReferenceTrack) && (!this.dataset_id) ) { return; }
         
         var low = this.view.low,
             high = this.view.high,
@@ -2357,7 +2356,6 @@ extend(TiledTrack.prototype, Track.prototype, {
      * operation and then requesting another redraw
      */ 
     draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
-            
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
             tile_low = tile_index * DENSITY * resolution,
@@ -2565,6 +2563,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
             canvas.height = track.height_px;
             ctx.font = ctx.canvas.manager.default_font;
             ctx.textAlign = "center";
+            seq = seq.data;
             for (var c = 0, str_len = seq.length; c < str_len; c++) {
                 var c_start = Math.round(c * w_scale);
                 ctx.fillText(seq[c], c_start + track.left_offset, 10);

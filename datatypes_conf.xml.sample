@@ -27,7 +27,7 @@
         </datatype>
         <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" />
         <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
-            <!-- no converters yet -->
+			<converter file="len_to_linecount.xml" target_datatype="linecount" />
         </datatype>
         <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
             <display file="ucsc/bigbed.xml" />
@@ -53,6 +53,8 @@
             <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
             <converter file="fasta_to_bowtie_base_index_converter.xml" target_datatype="bowtie_base_index"/>
             <converter file="fasta_to_bowtie_color_index_converter.xml" target_datatype="bowtie_color_index"/>
+			<converter file="fasta_to_2bit.xml" target_datatype="twobit"/>
+			<converter file="fasta_to_len.xml" target_datatype="len"/>
         </datatype>
         <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true"/>
         <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true"/>
