@@ -175,7 +175,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         # A public history is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
-class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRatings, UsesHistory ):
+class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRatings, UsesHistory ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -701,7 +701,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         if not import_history:
             return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
         # History is importable if user is admin or it's accessible. TODO: probably want to have app setting to enable admin access to histories.
-        if not trans.user_is_admin() and not self.security_check( user, import_history, check_ownership=False, check_accessible=True ):
+        if not trans.user_is_admin() and not self.security_check( trans, import_history, check_ownership=False, check_accessible=True ):
             return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
         if user:
             #dan: I can import my own history.
@@ -780,7 +780,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         if history is None:
            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access history.
-        self.security_check( trans.get_user(), history, False, True)
+        self.security_check( trans, history, False, True)
 
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )

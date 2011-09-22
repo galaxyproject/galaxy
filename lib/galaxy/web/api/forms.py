@@ -2,14 +2,14 @@
 API operations on FormDefinition objects.
 """
 import logging
-from galaxy.web.base.controller import BaseController, url_for
+from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
 from galaxy.forms.forms import form_factory
 from elementtree.ElementTree import XML
 
 log = logging.getLogger( __name__ )
 
-class FormDefinitionAPIController( BaseController ):
+class FormDefinitionAPIController( BaseAPIController ):
     
     @web.expose_api
     def index( self, trans, **kwd ):

@@ -162,7 +162,7 @@ class TracksterSelectionGrid( grids.Grid ):
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.user_id == trans.user.id )                    
         
-class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAssociation ):
+class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetAssociation ):
     """
     Controller for track browser interface. Handles building a new browser from
     datasets in the current history, and display of the resulting browser.

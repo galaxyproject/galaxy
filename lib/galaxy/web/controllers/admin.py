@@ -5,6 +5,10 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 import logging
 log = logging.getLogger( __name__ )
 
+from galaxy.actions.admin import AdminActions
+from galaxy.web.params import QuotaParamParser
+from galaxy.exceptions import *
+
 class UserListGrid( grids.Grid ):
     class EmailColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
@@ -344,7 +348,7 @@ class QuotaListGrid( grids.Grid ):
                                         allow_multiple=False,
                                         url_args=dict( webapp="galaxy", action="edit_quota" ) ),
                    grids.GridOperation( "Manage users and groups",
-                                        condition=( lambda item: not item.default ),
+                                        condition=( lambda item: not item.default and not item.deleted ),
                                         allow_multiple=False,
                                         url_args=dict( webapp="galaxy", action="manage_users_and_groups_for_quota" ) ),
                    grids.GridOperation( "Set as different type of default",
@@ -352,11 +356,11 @@ class QuotaListGrid( grids.Grid ):
                                         allow_multiple=False,
                                         url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
                    grids.GridOperation( "Set as default",
-                                        condition=( lambda item: not item.default ),
+                                        condition=( lambda item: not item.default and not item.deleted ),
                                         allow_multiple=False,
                                         url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
                    grids.GridOperation( "Unset as default",
-                                        condition=( lambda item: item.default ),
+                                        condition=( lambda item: item.default and not item.deleted ),
                                         allow_multiple=False,
                                         url_args=dict( webapp="galaxy", action="unset_quota_default" ) ),
                    grids.GridOperation( "Delete",
@@ -380,9 +384,252 @@ class QuotaListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class AdminGalaxy( BaseController, Admin ):
+class AdminGalaxy( BaseUIController, Admin, AdminActions, QuotaParamParser ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
+
+    # Galaxy Quota Stuff
+    @web.expose
+    @web.require_admin
+    def quotas( self, trans, **kwargs ):
+        if 'operation' in kwargs:
+            operation = kwargs.pop('operation').lower()
+            if operation == "quotas":
+                return self.quota( trans, **kwargs )
+            if operation == "create":
+                return self.create_quota( trans, **kwargs )
+            if operation == "delete":
+                return self.mark_quota_deleted( trans, **kwargs )
+            if operation == "undelete":
+                return self.undelete_quota( trans, **kwargs )
+            if operation == "purge":
+                return self.purge_quota( trans, **kwargs )
+            if operation == "change amount":
+                return self.edit_quota( trans, **kwargs )
+            if operation == "manage users and groups":
+                return self.manage_users_and_groups_for_quota( trans, **kwargs )
+            if operation == "rename":
+                return self.rename_quota( trans, **kwargs )
+            if operation == "edit":
+                return self.edit_quota( trans, **kwargs )
+        # Render the list view
+        return self.quota_list_grid( trans, **kwargs )
+
+    @web.expose
+    @web.require_admin
+    def create_quota( self, trans, **kwd ):
+        params = self.get_quota_params( kwd )
+        if params.get( 'create_quota_button', False ):
+            try:
+                quota, message = self._create_quota( trans, params )
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='quotas',
+                                                                  webapp=params.webapp,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='done' ) )
+            except MessageException, e:
+                params.message = str( e )
+                params.status = 'error'
+        in_users = map( int, params.in_users )
+        in_groups = map( int, params.in_groups )
+        new_in_users = []
+        new_in_groups = []
+        for user in trans.sa_session.query( trans.app.model.User ) \
+                                    .filter( trans.app.model.User.table.c.deleted==False ) \
+                                    .order_by( trans.app.model.User.table.c.email ):
+            if user.id in in_users:
+                new_in_users.append( ( user.id, user.email ) )
+            else:
+                params.out_users.append( ( user.id, user.email ) )
+        for group in trans.sa_session.query( trans.app.model.Group ) \
+                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
+                                     .order_by( trans.app.model.Group.table.c.name ):
+            if group.id in in_groups:
+                new_in_groups.append( ( group.id, group.name ) )
+            else:
+                params.out_groups.append( ( group.id, group.name ) )
+        return trans.fill_template( '/admin/quota/quota_create.mako',
+                                    webapp=params.webapp,
+                                    name=params.name,
+                                    description=params.description,
+                                    amount=params.amount,
+                                    operation=params.operation,
+                                    default=params.default,
+                                    in_users=new_in_users,
+                                    out_users=params.out_users,
+                                    in_groups=new_in_groups,
+                                    out_groups=params.out_groups,
+                                    message=params.message,
+                                    status=params.status )
+
+    @web.expose
+    @web.require_admin
+    def rename_quota( self, trans, **kwd ):
+        quota, params = self._quota_op( trans, 'rename_quota_button', self._rename_quota, kwd )
+        if not quota:
+            return
+        return trans.fill_template( '/admin/quota/quota_rename.mako',
+                                    id=params.id,
+                                    name=params.name or quota.name,
+                                    description=params.description or quota.description,
+                                    webapp=params.webapp,
+                                    message=params.message,
+                                    status=params.status )
+
+    @web.expose
+    @web.require_admin
+    def manage_users_and_groups_for_quota( self, trans, **kwd ):
+        quota, params = self._quota_op( trans, 'quota_members_edit_button', self._manage_users_and_groups_for_quota, kwd )
+        if not quota:
+            return
+        in_users = []
+        out_users = []
+        in_groups = []
+        out_groups = []
+        for user in trans.sa_session.query( trans.app.model.User ) \
+                                    .filter( trans.app.model.User.table.c.deleted==False ) \
+                                    .order_by( trans.app.model.User.table.c.email ):
+            if user in [ x.user for x in quota.users ]:
+                in_users.append( ( user.id, user.email ) )
+            else:
+                out_users.append( ( user.id, user.email ) )
+        for group in trans.sa_session.query( trans.app.model.Group ) \
+                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
+                                     .order_by( trans.app.model.Group.table.c.name ):
+            if group in [ x.group for x in quota.groups ]:
+                in_groups.append( ( group.id, group.name ) )
+            else:
+                out_groups.append( ( group.id, group.name ) )
+        return trans.fill_template( '/admin/quota/quota.mako',
+                                    id=params.id,
+                                    name=quota.name,
+                                    in_users=in_users,
+                                    out_users=out_users,
+                                    in_groups=in_groups,
+                                    out_groups=out_groups,
+                                    webapp=params.webapp,
+                                    message=params.message,
+                                    status=params.status )
+
+    @web.expose
+    @web.require_admin
+    def edit_quota( self, trans, **kwd ):
+        quota, params = self._quota_op( trans, 'edit_quota_button', self._edit_quota, kwd )
+        if not quota:
+            return
+        return trans.fill_template( '/admin/quota/quota_edit.mako',
+                                    id=params.id,
+                                    operation=params.operation or quota.operation,
+                                    display_amount=params.amount or quota.display_amount,
+                                    webapp=params.webapp,
+                                    message=params.message,
+                                    status=params.status )
+
+    @web.expose
+    @web.require_admin
+    def set_quota_default( self, trans, **kwd ):
+        quota, params = self._quota_op( trans, 'set_default_quota_button', self._set_quota_default, kwd )
+        if not quota:
+            return
+        if params.default:
+            default = params.default
+        elif quota.default:
+            default = quota.default[0].type
+        else:
+            default = "no"
+        return trans.fill_template( '/admin/quota/quota_set_default.mako',
+                                    id=params.id,
+                                    default=default,
+                                    webapp=params.webapp,
+                                    message=params.message,
+                                    status=params.status )
+
+    @web.expose
+    @web.require_admin
+    def unset_quota_default( self, trans, **kwd ):
+        quota, params = self._quota_op( trans, True, self._unset_quota_default, kwd )
+        if not quota:
+            return
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='quotas',
+                                                          webapp=params.webapp,
+                                                          message=util.sanitize_text( params.message ),
+                                                          status='error' ) )
+                
+
+    @web.expose
+    @web.require_admin
+    def mark_quota_deleted( self, trans, **kwd ):
+        quota, params = self._quota_op( trans, True, self._mark_quota_deleted, kwd, listify=True )
+        if not quota:
+            return
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='quotas',
+                                                          webapp=params.webapp,
+                                                          message=util.sanitize_text( params.message ),
+                                                          status='error' ) )
+
+    @web.expose
+    @web.require_admin
+    def undelete_quota( self, trans, **kwd ):
+        quota, params = self._quota_op( trans, True, self._undelete_quota, kwd, listify=True )
+        if not quota:
+            return
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='quotas',
+                                                          webapp=params.webapp,
+                                                          message=util.sanitize_text( params.message ),
+                                                          status='error' ) )
+
+    @web.expose
+    @web.require_admin
+    def purge_quota( self, trans, **kwd ):
+        quota, params = self._quota_op( trans, True, self._purge_quota, kwd, listify=True )
+        if not quota:
+            return
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='quotas',
+                                                          webapp=params.webapp,
+                                                          message=util.sanitize_text( params.message ),
+                                                          status='error' ) )
+
+    def _quota_op( self, trans, do_op, op_method, kwd, listify=False ):
+        params = self.get_quota_params( kwd )
+        if listify:
+            quota = []
+            messages = []
+            for id in util.listify( params.id ):
+                try:
+                    quota.append( self.get_quota( trans, id ) )
+                except MessageException, e:
+                    messages.append( str( e ) )
+            if messages:
+                return None, trans.response.send_redirect( web.url_for( controller='admin',
+                                                                        action='quotas',
+                                                                        webapp=params.webapp,
+                                                                        message=util.sanitize_text( ', '.join( messages ) ),
+                                                                        status='error' ) )
+        else:
+            try:
+                quota = self.get_quota( trans, params.id, deleted=False )
+            except MessageException, e:
+                return None, trans.response.send_redirect( web.url_for( controller='admin',
+                                                                        action='quotas',
+                                                                        webapp=params.webapp,
+                                                                        message=util.sanitize_text( str( e ) ),
+                                                                        status='error' ) )
+        if do_op == True or ( do_op != False and params.get( do_op, False ) ):
+            try:
+                message = op_method( quota, params ) 
+                return None, trans.response.send_redirect( web.url_for( controller='admin',
+                                                                        action='quotas',
+                                                                        webapp=params.webapp,
+                                                                        message=util.sanitize_text( message ),
+                                                                        status='done' ) )
+            except MessageException, e:
+                params.message = e.err_msg
+                params.status = e.type
+        return quota, params

@@ -14,7 +14,7 @@
     from galaxy.web.form_builder import SelectField
     operation_selectfield = SelectField( 'operation' )
     for op in ( '=', '+', '-' ):
-        selected = op == quota.operation
+        selected = op == operation
         operation_selectfield.add_option( op, op, selected )
 %>
 
@@ -27,10 +27,10 @@
     <div class="toolFormBody">
         <form name="library" action="${h.url_for( controller='admin', action='edit_quota' )}" method="post" >
             <input name="webapp" type="hidden" value="${webapp}"/>
-            <input name="id" type="hidden" value="${trans.security.encode_id( quota.id )}"/>
+            <input name="id" type="hidden" value="${id}"/>
             <div class="form-row">
                 <label>Amount</label>
-                <input  name="amount" type="textfield" value="${quota.display_amount}" size=40"/>
+                <input  name="amount" type="textfield" value="${display_amount}" size=40"/>
                 <div class="toolParamHelp" style="clear: both;">
                     Examples: "10000MB", "99 gb", "0.2T", "unlimited"
                 </div>

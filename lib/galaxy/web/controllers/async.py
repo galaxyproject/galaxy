@@ -11,7 +11,7 @@ from galaxy.util.hash_util import *
 
 log = logging.getLogger( __name__ )
 
-class ASync( BaseController ):
+class ASync( BaseUIController ):
 
     @web.expose
     def default(self, trans, tool_id=None, data_id=None, data_secret=None, **kwd):

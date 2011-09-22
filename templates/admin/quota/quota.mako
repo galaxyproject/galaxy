@@ -32,7 +32,7 @@ $().ready(function() {
     $('#groups_remove_button').click(function() {
         return !$('#in_groups option:selected').remove().appendTo('#out_groups');
     });
-    $('form#associate_role_user_group').submit(function() {
+    $('form#associate_quota_user_group').submit(function() {
         $('#in_users option').each(function(i) {
             $(this).attr("selected", "selected");
         });
@@ -48,30 +48,30 @@ $().ready(function() {
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Quota '${quota.name}'</div>
+    <div class="toolFormTitle">Quota '${name}'</div>
     <div class="toolFormBody">
-        <form name="associate_quota_user_group" id="associate_quota_user_group" action="${h.url_for( action='manage_users_and_groups_for_quota', id=trans.security.encode_id( quota.id ) )}" method="post" >
+        <form name="associate_quota_user_group" id="associate_quota_user_group" action="${h.url_for( action='manage_users_and_groups_for_quota', id=id )}" method="post" >
             <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    <label>Users associated with '${quota.name}'</label>
+                    <label>Users associated with '${name}'</label>
                     ${render_select( "in_users", in_users )}<br/>
                     <input type="submit" id="users_remove_button" value=">>"/>
                 </div>
                 <div>
-                    <label>Users not associated with '${quota.name}'</label>
+                    <label>Users not associated with '${name}'</label>
                     ${render_select( "out_users", out_users )}<br/>
                     <input type="submit" id="users_add_button" value="<<"/>
                 </div>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    <label>Groups associated with '${quota.name}'</label>
+                    <label>Groups associated with '${name}'</label>
                     ${render_select( "in_groups", in_groups )}<br/>
                     <input type="submit" id="groups_remove_button" value=">>"/>
                 </div>
                 <div>
-                    <label>Groups not associated with '${quota.name}'</label>
+                    <label>Groups not associated with '${name}'</label>
                     ${render_select( "out_groups", out_groups )}<br/>
                     <input type="submit" id="groups_add_button" value="<<"/>
                 </div>

@@ -272,7 +272,7 @@ class _PageContentProcessor( _BaseHTMLProcessor ):
         # Default behavior: 
         _BaseHTMLProcessor.unknown_endtag( self, tag )
                 
-class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, 
+class PageController( BaseUIController, Sharable, UsesAnnotations, UsesHistory, 
                       UsesStoredWorkflow, UsesHistoryDatasetAssociation, UsesVisualization, UsesItemRatings ):
     
     _page_list = PageListGrid()
@@ -533,7 +533,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
         annotations = from_json_string( annotations )
         for annotation_dict in annotations:
             item_id = trans.security.decode_id( annotation_dict[ 'item_id' ] )
-            item_class = self.get_class( trans, annotation_dict[ 'item_class' ] )
+            item_class = self.get_class( annotation_dict[ 'item_class' ] )
             item = trans.sa_session.query( item_class ).filter_by( id=item_id ).first()
             if not item:
                 raise RuntimeError( "cannot find annotated item" )
@@ -582,7 +582,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
         if page is None:
             raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access page.
-        self.security_check( trans.get_user(), page, False, True)
+        self.security_check( trans, page, False, True)
             
         # Process page content.
         processor = _PageContentProcessor( trans, 'utf-8', 'text/html', self._get_embed_html )
@@ -723,14 +723,14 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
         if not page:
             err+msg( "Page not found" )
         else:
-            return self.security_check( trans.get_user(), page, check_ownership, check_accessible )
+            return self.security_check( trans, page, check_ownership, check_accessible )
             
     def get_item( self, trans, id ):
         return self.get_page( trans, id )
         
     def _get_embed_html( self, trans, item_class, item_id ):
         """ Returns HTML for embedding an item in a page. """
-        item_class = self.get_class( trans, item_class )
+        item_class = self.get_class( item_class )
         if item_class == model.History:
             history = self.get_history( trans, item_id, False, True )
             history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )

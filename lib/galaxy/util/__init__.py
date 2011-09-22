@@ -179,7 +179,7 @@ def sanitize_for_filename( text, default=None ):
         return default
     return out
 
-class Params:
+class Params( object ):
     """
     Stores and 'sanitizes' parameters. Alphanumeric characters and the  
     non-alphanumeric ones that are deemed safe are let to pass through (see L{valid_chars}).

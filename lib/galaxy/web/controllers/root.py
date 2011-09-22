@@ -11,7 +11,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 
 log = logging.getLogger( __name__ )
 
-class RootController( BaseController, UsesHistory, UsesAnnotations ):
+class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):

@@ -11,7 +11,7 @@ from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
 
-class RequestsAPIController( BaseController ):
+class RequestsAPIController( BaseAPIController ):
     update_types = Bunch( REQUEST = 'request_state' )
     update_type_values = [v[1] for v in update_types.items()]
     @web.expose_api

@@ -25,11 +25,11 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Create quota</div>
+    <div class="toolFormTitle">Set quota default</div>
     <div class="toolFormBody">
         <form name="set_quota_default" id="set_quota_default" action="${h.url_for( action='set_quota_default' )}" method="post" >
             <input name="webapp" type="hidden" value="${webapp}" size=40"/>
-            <input name="id" type="hidden" value="${trans.security.encode_id( quota.id )}"/>
+            <input name="id" type="hidden" value="${id}"/>
             <div class="form-row">
                 <label>Is this quota a default for a class of users (if yes, what type)?</label>
                 ${default_selectfield.get_html()}

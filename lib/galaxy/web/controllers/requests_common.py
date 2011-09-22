@@ -93,7 +93,7 @@ class RequestsGrid( grids.Grid ):
                              confirm="Samples cannot be added to this request after it is submitted. Click OK to submit."  )
         ]
 
-class RequestsCommon( BaseController, UsesFormDefinitions ):
+class RequestsCommon( BaseUIController, UsesFormDefinitions ):
     @web.json
     def sample_state_updates( self, trans, ids=None, states=None ):
         # Avoid caching

@@ -68,7 +68,7 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-class LibraryCommon( BaseController, UsesFormDefinitions ):
+class LibraryCommon( BaseUIController, UsesFormDefinitions ):
     @web.json
     def library_item_updates( self, trans, ids=None, states=None ):
         # Avoid caching

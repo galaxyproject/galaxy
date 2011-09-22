@@ -9,22 +9,23 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
-from galaxy.web.api.util import *
 
 log = logging.getLogger( __name__ )
 
-class HistoriesController( BaseController ):
+class HistoriesController( BaseAPIController, UsesHistory ):
 
     @web.expose_api
-    def index( self, trans, **kwd ):
+    def index( self, trans, deleted='False', **kwd ):
         """
         GET /api/histories
+        GET /api/histories/deleted
         Displays a collection (list) of histories.
         """               
         rval = []
+        deleted = util.string_as_bool( deleted )
 
-        try:            
-            query = trans.sa_session.query( trans.app.model.History ).filter_by( user=trans.user, deleted=False ).order_by(
+        try:
+            query = trans.sa_session.query( trans.app.model.History ).filter_by( user=trans.user, deleted=deleted ).order_by(
                 desc(trans.app.model.History.table.c.update_time)).all()           
         except Exception, e:
             rval = "Error in history API"
@@ -44,13 +45,15 @@ class HistoriesController( BaseController ):
         return rval
 
     @web.expose_api
-    def show( self, trans, id, **kwd ):
+    def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/histories/{encoded_history_id}
+        GET /api/histories/deleted/{encoded_history_id}
         Displays information about a history.
         """
         history_id = id
         params = util.Params( kwd )
+        deleted = util.string_as_bool( deleted )
         
         def traverse( datasets ):
             rval = {}
@@ -64,7 +67,7 @@ class HistoriesController( BaseController ):
             return rval
             
         try:
-            history = get_history_for_access( trans, history_id )
+            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True, deleted=deleted )
         except Exception, e:
             return str( e )
             
@@ -124,7 +127,7 @@ class HistoriesController( BaseController ):
             purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )        
         
         try:
-            history = get_history_for_modification( trans, history_id )
+            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
         except Exception, e:
             return str( e )
 
@@ -144,5 +147,17 @@ class HistoriesController( BaseController ):
                         pass
                     trans.sa_session.flush()
 
+        trans.sa_session.flush()
+        return 'OK'
+
+    @web.expose_api
+    def undelete( self, trans, id, **kwd ):
+        """
+        POST /api/histories/deleted/{encoded_quota_id}/undelete
+        Undeletes a quota
+        """
+        history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
+        history.deleted = False
+        trans.sa_session.add( history )
         trans.sa_session.flush()
         return 'OK'

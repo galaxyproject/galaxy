@@ -68,7 +68,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
 
 
-class VisualizationController( BaseController, Sharable, UsesAnnotations, 
+class VisualizationController( BaseUIController, Sharable, UsesAnnotations, 
                                 UsesHistoryDatasetAssociation, UsesVisualization, 
                                 UsesItemRatings ):
     _user_list_grid = VisualizationListGrid()
@@ -299,7 +299,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
             raise web.httpexceptions.HTTPNotFound()
         
         # Security check raises error if user cannot access visualization.
-        self.security_check( trans.get_user(), visualization, False, True)
+        self.security_check( trans, visualization, False, True)
         
         # Get rating data.
         user_item_rating = 0

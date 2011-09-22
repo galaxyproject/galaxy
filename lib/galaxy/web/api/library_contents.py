@@ -7,11 +7,10 @@ from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
-from galaxy.web.api.util import *
 
 log = logging.getLogger( __name__ )
 
-class LibraryContentsController( BaseController ):
+class LibraryContentsController( BaseAPIController, UsesLibrary, UsesLibraryItems ):
 
     @web.expose_api
     def index( self, trans, library_id, **kwd ):
@@ -74,12 +73,12 @@ class LibraryContentsController( BaseController ):
         GET /api/libraries/{encoded_library_id}/contents/{encoded_content_id}
         Displays information about a library content (file or folder).
         """
-        content_id = id
-        try:
-            content = get_library_content_for_access( trans, content_id )
-        except Exception, e:
-            return str( e )
-        return encode_all_ids( trans, content.get_api_value( view='element' ) )
+        class_name, content_id = self.__decode_library_content_id( trans, id )
+        if class_name == 'LibraryFolder':
+            content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessibility=True )
+        else:
+            content = self.get_library_dataset( trans, content_id, check_ownership=False, check_accessibility=True )
+        return self.encode_all_ids( trans, content.get_api_value( view='element' ) )
 
     @web.expose_api
     def create( self, trans, library_id, payload, **kwd ):
@@ -102,8 +101,8 @@ class LibraryContentsController( BaseController ):
         else:
             folder_id = payload.pop( 'folder_id' )
         try:
-            # _for_modification is not necessary, that security happens in the library_common controller.
-            parent = get_library_folder_for_access( trans, library_id, folder_id )
+            # security is checked in the downstream controller
+            parent = self.get_library_folder( trans, folder_id, check_ownership=False, check_accessibility=False )
         except Exception, e:
             return str( e )
         # The rest of the security happens in the library_common controller.
@@ -128,3 +127,11 @@ class LibraryContentsController( BaseController ):
                                    name = v.name,
                                    url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
             return rval
+
+    def __decode_library_content_id( self, trans, content_id ):
+        if ( len( content_id ) % 16 == 0 ):
+            return 'LibraryDataset', content_id
+        elif ( content_id.startswith( 'F' ) ):
+            return 'LibraryFolder', content_id[1:]
+        else:
+            raise HTTPBadRequest( 'Malformed library content id ( %s ) specified, unable to decode.' % str( content_id ) )

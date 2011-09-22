@@ -7,13 +7,13 @@ from sqlalchemy import desc
 from galaxy import util
 from galaxy import web
 from galaxy.tools.parameters import visit_input_values, DataToolParameter
-from galaxy.web.base.controller import BaseController, url_for
+from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.workflow.modules import module_factory
 from galaxy.jobs.actions.post import ActionBox
 
 log = logging.getLogger(__name__)
 
-class WorkflowsAPIController(BaseController):
+class WorkflowsAPIController(BaseAPIController):
     @web.expose_api
     def index(self, trans, **kwd):
         """

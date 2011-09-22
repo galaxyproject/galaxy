@@ -10,6 +10,7 @@ from Cheetah.Template import Template
 import base
 import pickle
 from galaxy import util
+from galaxy.exceptions import MessageException
 from galaxy.util.json import to_json_string, from_json_string
 
 pkg_resources.require( "simplejson" )
@@ -19,6 +20,7 @@ import helpers
 
 pkg_resources.require( "PasteDeploy" )
 from paste.deploy.converters import asbool
+import paste.httpexceptions
 
 pkg_resources.require( "Mako" )
 import mako.template
@@ -103,6 +105,9 @@ def expose_api( func ):
         except NoResultFound:
             error_message = 'Provided API key is not valid.'
             return error
+        if provided_key.user.deleted:
+            error_message = 'User account is deactivated, please contact an administrator.'
+            return error
         newest_key = provided_key.user.api_keys[0]
         if newest_key.key != provided_key.key:
             error_message = 'Provided API key has expired.'
@@ -135,10 +140,16 @@ def expose_api( func ):
                 trans.response.status = 400
                 return "That user does not exist."
 
-        if trans.debug:
-            return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
-        else:
-            return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+        try:
+            if trans.debug:
+                return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
+            else:
+                return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+        except paste.httpexceptions.HTTPException:
+            raise # handled
+        except:
+            log.exception( 'Uncaught exception in exposed API method:' )
+            raise paste.httpexceptions.HTTPServerError()
     if not hasattr(func, '_orig'):
         decorator._orig = func
     decorator.exposed = True
@@ -164,14 +175,6 @@ def require_admin( func ):
 
 NOT_SET = object()
 
-class MessageException( Exception ):
-    """
-    Exception to make throwing errors from deep in controllers easier
-    """
-    def __init__( self, err_msg, type="info" ):
-        self.err_msg = err_msg
-        self.type = type
-        
 def error( message ):
     raise MessageException( message, type='error' )
 

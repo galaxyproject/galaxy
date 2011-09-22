@@ -203,7 +203,7 @@ class TestHistory( TwillTestCase ):
         self.login( email=regular_user2.email )
         self.import_history_via_url( self.security.encode_id( history3.id ),
                                      admin_user.email,
-                                     strings_displayed_after_submit=[ 'History is not accessible to current user' ] )
+                                     strings_displayed_after_submit=[ 'History is not accessible to the current user' ] )
         self.logout()
         self.login( email=admin_user.email )
         # Test sharing history3 with an invalid user

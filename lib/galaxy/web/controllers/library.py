@@ -65,7 +65,7 @@ class LibraryListGrid( grids.Grid ):
             # public libraries and restricted libraries accessible by the current user.
             return query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
                                       trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
-class Library( BaseController ):
+class Library( BaseUIController ):
     
     library_list_grid = LibraryListGrid()
 

@@ -13,6 +13,8 @@ from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, Te
 from galaxy.visualization.tracks.data_providers import get_data_provider
 from galaxy.visualization.tracks.visual_analytics import get_tool_def
 from galaxy.security.validate_user_input import validate_username
+from paste.httpexceptions import *
+from galaxy.exceptions import *
 
 from Cheetah.Template import Template
 
@@ -35,10 +37,11 @@ class BaseController( object ):
     def __init__( self, app ):
         """Initialize an interface for application 'app'"""
         self.app = app
+        self.sa_session = app.model.context
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
-    def get_class( self, trans, class_name ):
+    def get_class( self, class_name ):
         """ Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>). """
         if class_name == 'History':
             item_class = trans.model.History
@@ -53,27 +56,144 @@ class BaseController( object ):
         elif class_name == 'Tool':
             item_class = trans.model.Tool
         elif class_name == 'Job':
-            item_class == trans.model.Job
+            item_class = trans.model.Job
+        elif class_name == 'User':
+            item_class = trans.model.User
+        elif class_name == 'Group':
+            item_class = trans.model.Group
+        elif class_name == 'Role':
+            item_class = trans.model.Role
+        elif class_name == 'Quota':
+            item_class = trans.model.Quota
+        elif class_name == 'Library':
+            item_class = trans.model.Library
+        elif class_name == 'LibraryFolder':
+            item_class = trans.model.LibraryFolder
+        elif class_name == 'LibraryDatasetDatasetAssociation':
+            item_class = trans.model.LibraryDatasetDatasetAssociation
+        elif class_name == 'LibraryDataset':
+            item_class = trans.model.LibraryDataset
         else:
             item_class = None
         return item_class
+    def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
+        """
+        Convenience method to get a model object with the specified checks.
+        """
+        try:
+            decoded_id = trans.security.decode_id( id )
+        except:
+            raise MessageException( "Malformed %s id ( %s ) specified, unable to decode" % ( class_name, str( id ) ), type='error' )
+        try:
+            item_class = self.get_class( class_name )
+            assert item_class is not None
+            item = trans.sa_session.query( item_class ).get( decoded_id )
+            assert item is not None
+        except:
+            raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, display_id ), type="error" )
+        if check_ownership or check_accessible:
+            self.security_check( trans, item, check_ownership, check_accessible, encoded_id )
+        if deleted == True and not item.deleted:
+            raise ItemDeletionException( '%s "%s" is not deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
+        elif deleted == False and item.deleted:
+            raise ItemDeletionException( '%s "%s" is deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
+        return item
+    def get_user( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
+        return self.get_object( trans, id, 'User', check_ownership=False, check_accessible=False, deleted=deleted )
+    def get_group( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
+        return self.get_object( trans, id, 'Group', check_ownership=False, check_accessible=False, deleted=deleted )
+    def get_role( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
+        return self.get_object( trans, id, 'Role', check_ownership=False, check_accessible=False, deleted=deleted )
+    def encode_all_ids( self, trans, rval ):
+        """
+        Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
+
+        It might be useful to turn this in to a decorator
+        """
+        if type( rval ) != dict:
+            return rval
+        for k, v in rval.items():
+            if k == 'id' or k.endswith( '_id' ):
+                try:
+                    rval[k] = trans.security.encode_id( v )
+                except:
+                    pass # probably already encoded
+        return rval
 
 Root = BaseController
 
+class BaseUIController( BaseController ):
+    def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
+        try:
+            return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
+        except MessageException, e:
+            raise       # handled in the caller
+        except:
+            log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            raise Exception( 'Server error retrieving %s id ( %s ).' % ( class_name, str( id ) ) )
+
+class BaseAPIController( BaseController ):
+    def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
+        try:
+            return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
+        except ItemDeletionException, e:
+            raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified" % ( class_name, str( id ) ) )
+        except MessageException, e:
+            raise HTTPBadRequest( detail=e.err_msg )
+        except Exception, e:
+            log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            raise HTTPInternalServerError( comment=str( e ) )
+    def validate_in_users_and_groups( self, trans, payload ):
+        """
+        For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
+        """
+        def get_id( item, model_class, column ):
+            try:
+                return trans.security.decode_id( item )
+            except:
+                pass # maybe an email/group name
+            # this will raise if the item is invalid
+            return trans.sa_session.query( model_class ).filter( column == item ).first().id
+        new_in_users = []
+        new_in_groups = []
+        invalid = []
+        for item in util.listify( payload.get( 'in_users', [] ) ):
+            try:
+                new_in_users.append( get_id( item, trans.app.model.User, trans.app.model.User.table.c.email ) )
+            except:
+                invalid.append( item )
+        for item in util.listify( payload.get( 'in_groups', [] ) ):
+            try:
+                new_in_groups.append( get_id( item, trans.app.model.Group, trans.app.model.Group.table.c.name ) )
+            except:
+                invalid.append( item )
+        if invalid:
+            msg = "The following value(s) for associated users and/or groups could not be parsed: %s." % ', '.join( invalid )
+            msg += "  Valid values are email addresses of users, names of groups, or IDs of both."
+            raise Exception( msg )
+        payload['in_users'] = map( str, new_in_users )
+        payload['in_groups'] = map( str, new_in_groups )
+    def not_implemented( self, trans, **kwd ):
+        raise HTTPNotImplemented()
+
 class SharableItemSecurity:
     """ Mixin for handling security for sharable items. """
-    def security_check( self, user, item, check_ownership=False, check_accessible=False ):
+    def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
         if check_ownership:
             # Verify ownership.
-            if not user:
-                error( "Must be logged in to manage Galaxy items" )
-            if item.user != user:
-                error( "%s is not owned by current user" % item.__class__.__name__ )
+            if not trans.user:
+                raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
+            if item.user != trans.user:
+                raise ItemOwnershipException( "%s is not owned by the current user" % item.__class__.__name__, type='error' )
         if check_accessible:
-            # Verify accessible.
-            if ( item.user != user ) and ( not item.importable ) and ( user not in item.users_shared_with_dot_users ):
-                error( "%s is not accessible to current user" % item.__class__.__name__ )
+            if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
+                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_i9tem( trans.get_current_user_roles(), item, trans.user ) ):
+                    raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
+            else:
+                # Verify accessible.
+                if ( item.user != trans.user ) and ( not item.importable ) and ( trans.user not in item.users_shared_with_dot_users ):
+                    raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
         return item
 
 #
@@ -95,7 +215,7 @@ class UsesHistoryDatasetAssociation:
             except:
                 data = None
         if not data:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
+            raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
         if check_ownership:
             # Verify ownership.
             user = trans.get_user()
@@ -111,6 +231,16 @@ class UsesHistoryDatasetAssociation:
             else:
                 error( "You are not allowed to access this dataset" )
         return data
+    def get_history_dataset_association( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
+        """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
+        hda = self.get_object( trans, id, 'HistoryDatasetAssociation', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=False ) # check accessibility here
+        if check_accessible:
+            if trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+                if hda.state == trans.model.Dataset.states.UPLOAD:
+                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
+            else:
+                error( "You are not allowed to access this dataset" )
     def get_data( self, dataset, preview=True ):
         """ Gets a dataset's data. """
         # Get data from file, truncating if necessary.
@@ -125,6 +255,21 @@ class UsesHistoryDatasetAssociation:
                 dataset_data = open( dataset.file_name ).read(max_peek_size)
                 truncated = False
         return truncated, dataset_data
+
+class UsesLibrary:
+    def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
+        l = self.get_object( trans, id, 'Library' )
+        if check_accessible and not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), l ) ):
+            error( "LibraryFolder is not accessible to the current user" )
+        return l
+
+class UsesLibraryItems( SharableItemSecurity ):
+    def get_library_folder( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible )
+    def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation', check_ownership=False, check_accessible=check_accessible )
+    def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
 
 class UsesVisualization( SharableItemSecurity ):
     """ Mixin for controllers that use Visualization objects. """
@@ -157,7 +302,7 @@ class UsesVisualization( SharableItemSecurity ):
         if not visualization:
             error( "Visualization not found" )
         else:
-            return self.security_check( trans.get_user(), visualization, check_ownership, check_accessible )
+            return self.security_check( trans, visualization, check_ownership, check_accessible )
 
     def get_visualization_config( self, trans, visualization ):
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
@@ -218,7 +363,7 @@ class UsesStoredWorkflow( SharableItemSecurity ):
         if not workflow:
             error( "Workflow not found" )
         else:
-            return self.security_check( trans.get_user(), workflow, check_ownership, check_accessible )
+            return self.security_check( trans, workflow, check_ownership, check_accessible )
     def get_stored_workflow_steps( self, trans, stored_workflow ):
         """ Restores states for a stored workflow's steps. """
         for step in stored_workflow.latest_workflow.steps:
@@ -246,17 +391,10 @@ class UsesStoredWorkflow( SharableItemSecurity ):
 
 class UsesHistory( SharableItemSecurity ):
     """ Mixin for controllers that use History objects. """
-    def get_history( self, trans, id, check_ownership=True, check_accessible=False ):
+    def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
         """Get a History from the database by id, verifying ownership."""
-        # Load history from database
-        try:
-            history = trans.sa_session.query( trans.model.History ).get( trans.security.decode_id( id ) )
-        except TypeError:
-            history = None
-        if not history:
-            error( "History not found" )
-        else:
-            return self.security_check( trans.get_user(), history, check_ownership, check_accessible )
+        history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+        return self.security_check( trans, history, check_ownership, check_accessible )
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
         query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
@@ -1113,6 +1251,10 @@ class Sharable:
         """ Return item based on id. """
         raise "Unimplemented Method"
 
+class UsesQuota( object ):
+    def get_quota( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
+        return self.get_object( trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted )
+
 """
 Deprecated: `BaseController` used to be available under the name `Root`
 """
@@ -1524,538 +1666,6 @@ class Admin( object ):
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
 
-    # Galaxy Quota Stuff
-    @web.expose
-    @web.require_admin
-    def quotas( self, trans, **kwargs ):
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
-            if operation == "quotas":
-                return self.quota( trans, **kwargs )
-            if operation == "create":
-                return self.create_quota( trans, **kwargs )
-            if operation == "delete":
-                return self.mark_quota_deleted( trans, **kwargs )
-            if operation == "undelete":
-                return self.undelete_quota( trans, **kwargs )
-            if operation == "purge":
-                return self.purge_quota( trans, **kwargs )
-            if operation == "change amount":
-                return self.edit_quota( trans, **kwargs )
-            if operation == "manage users and groups":
-                return self.manage_users_and_groups_for_quota( trans, **kwargs )
-            if operation == "rename":
-                return self.rename_quota( trans, **kwargs )
-            if operation == "edit":
-                return self.edit_quota( trans, **kwargs )
-        # Render the list view
-        return self.quota_list_grid( trans, **kwargs )
-
-    @web.expose
-    @web.require_admin
-    def create_quota( self, trans, cntrller='admin', **kwd ):
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        name = util.restore_text( params.get( 'name', '' ) )
-        description = util.restore_text( params.get( 'description', '' ) )
-        amount = util.restore_text( params.get( 'amount', '' ).strip() )
-        if amount.lower() in ( 'unlimited', 'none', 'no limit' ):
-            create_amount = None
-        else:
-            try:
-                create_amount = util.size_to_bytes( amount )
-            except AssertionError:
-                create_amount = False
-        operation = params.get( 'operation', '' )
-        default = params.get( 'default', 'no' )
-        in_users = util.listify( params.get( 'in_users', [] ) )
-        out_users = util.listify( params.get( 'out_users', [] ) )
-        in_groups = util.listify( params.get( 'in_groups', [] ) )
-        out_groups = util.listify( params.get( 'out_groups', [] ) )
-        if params.get( 'create_quota_button', False ) or cntrller == 'api':
-            if not name or not description:
-                message = "Enter a valid name and a description."
-                status = 'error'
-            elif trans.sa_session.query( trans.app.model.Quota ).filter( trans.app.model.Quota.table.c.name==name ).first():
-                message = "Quota names must be unique and a quota with that name already exists, so choose another name."
-                status = 'error'
-            elif not params.get( 'amount', None ):
-                message = "Enter a valid quota amount."
-                status = 'error'
-            elif create_amount is False:
-                message = "Unable to parse the provided amount."
-                status = 'error'
-            elif operation not in trans.app.model.Quota.valid_operations:
-                message = "Enter a valid operation."
-                status = 'error'
-            elif default != 'no' and default not in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
-                message = "Enter a valid default type."
-                status = 'error'
-            elif default != 'no' and operation != '=':
-                message = "Operation for a default quota must be '='."
-                status = 'error'
-                operation = '='
-            else:
-                # Create the quota
-                quota = trans.app.model.Quota( name=name, description=description, amount=create_amount, operation=operation )
-                trans.sa_session.add( quota )
-                # If this is a default quota, create the DefaultQuotaAssociation
-                if default != 'no':
-                    trans.app.quota_agent.set_default_quota( default, quota )
-                else:
-                    # Create the UserQuotaAssociations
-                    for user in [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in in_users ]:
-                        uqa = trans.app.model.UserQuotaAssociation( user, quota )
-                        trans.sa_session.add( uqa )
-                    # Create the GroupQuotaAssociations
-                    for group in [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in in_groups ]:
-                        gqa = trans.app.model.GroupQuotaAssociation( group, quota )
-                        trans.sa_session.add( gqa )
-                trans.sa_session.flush()
-                message = "Quota '%s' has been created with %d associated users and %d associated groups." % ( quota.name, len( in_users ), len( in_groups ) )
-                if cntrller == 'api':
-                    return 200, quota
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='quotas',
-                                                           webapp=webapp,
-                                                           message=util.sanitize_text( message ),
-                                                           status='done' ) )
-        in_users = map( int, in_users )
-        in_groups = map( int, in_groups )
-        new_in_users = []
-        new_in_groups = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user.id in in_users:
-                new_in_users.append( ( user.id, user.email ) )
-            else:
-                out_users.append( ( user.id, user.email ) )
-        for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
-            if group.id in in_groups:
-                new_in_groups.append( ( group.id, group.name ) )
-            else:
-                out_groups.append( ( group.id, group.name ) )
-        if cntrller == 'api':
-            if status == 'error':
-                return 400, message
-            return 500, message # should never get here...
-        return trans.fill_template( '/admin/quota/quota_create.mako',
-                                    webapp=webapp,
-                                    name=name,
-                                    description=description,
-                                    amount=amount,
-                                    operation=operation,
-                                    default=default,
-                                    in_users=new_in_users,
-                                    out_users=out_users,
-                                    in_groups=new_in_groups,
-                                    out_groups=out_groups,
-                                    message=message,
-                                    status=status )
-
-    @web.expose
-    @web.require_admin
-    def rename_quota( self, trans, cntrller='admin', **kwd ):
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        error = True
-        try:
-            assert id, 'No quota ids received for renaming'
-            quota = get_quota( trans, id )
-            assert quota, 'Quota id (%s) is invalid' % id
-            error = False
-        except AssertionError, e:
-            message = str( e )
-        if error:
-            if cntrller == 'api':
-                return 400, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=message,
-                                                              status='error' ) )
-        if params.get( 'rename_quota_button', False ) or cntrller == 'api':
-            new_name = util.restore_text( params.get( 'name', quota.name ) )
-            new_description = util.restore_text( params.get( 'description', quota.description ) )
-            if not new_name:
-                message = 'Enter a valid name'
-                status='error'
-            elif new_name != quota.name and trans.sa_session.query( trans.app.model.Quota ).filter( trans.app.model.Quota.table.c.name==new_name ).first():
-                message = 'A quota with that name already exists'
-                status = 'error'
-            else:
-                old_name = quota.name
-                quota.name = new_name
-                quota.description = new_description
-                trans.sa_session.add( quota )
-                trans.sa_session.flush()
-                message = "Quota '%s' has been renamed to '%s'" % ( old_name, new_name )
-                if cntrller == 'api':
-                    return 200, message
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='quotas',
-                                                                  webapp=webapp,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='done' ) )
-        if cntrller == 'api':
-            if status == 'error':
-                return 400, message
-            return 500, message # should never get here...
-        return trans.fill_template( '/admin/quota/quota_rename.mako',
-                                    quota=quota,
-                                    webapp=webapp,
-                                    message=message,
-                                    status=status )
-
-    @web.expose
-    @web.require_admin
-    def manage_users_and_groups_for_quota( self, trans, cntrller='admin', **kwd ):
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        error = True
-        try:
-            assert id, 'No quota ids received for managing users and groups'
-            quota = get_quota( trans, id )
-            assert quota, 'Quota id (%s) is invalid' % id
-            assert not quota.default, 'Default quotas cannot be associated with specific users and groups'
-            error = False
-        except AssertionError, e:
-            message = str( e )
-        if error:
-            if cntrller == 'api':
-                return 400, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=message,
-                                                              status='error' ) )
-        if params.get( 'quota_members_edit_button', False ) or cntrller == 'api':
-            in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
-            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
-            trans.app.quota_agent.set_entity_quota_associations( quotas=[ quota ], users=in_users, groups=in_groups )
-            trans.sa_session.refresh( quota )
-            message = "Quota '%s' has been updated with %d associated users and %d associated groups" % ( quota.name, len( in_users ), len( in_groups ) )
-            if cntrller == 'api':
-                return 200, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=util.sanitize_text( message ),
-                                                              status=status ) )
-        # api cannot get to here
-        in_users = []
-        out_users = []
-        in_groups = []
-        out_groups = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user in [ x.user for x in quota.users ]:
-                in_users.append( ( user.id, user.email ) )
-            else:
-                out_users.append( ( user.id, user.email ) )
-        for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
-            if group in [ x.group for x in quota.groups ]:
-                in_groups.append( ( group.id, group.name ) )
-            else:
-                out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/quota/quota.mako',
-                                    quota=quota,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    webapp=webapp,
-                                    message=message,
-                                    status=status )
-
-    @web.expose
-    @web.require_admin
-    def edit_quota( self, trans, cntrller='admin', **kwd ):
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            message = "No quota ids received for editing"
-            if cntrller == 'api':
-                return 400, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=message,
-                                                              status='error' ) )
-        quota = get_quota( trans, id )
-        if params.get( 'edit_quota_button', False ) or cntrller == 'api':
-            amount = util.restore_text( params.get( 'amount', '' ).strip() )
-            if amount.lower() in ( 'unlimited', 'none', 'no limit' ):
-                new_amount = None
-            else:
-                try:
-                    new_amount = util.size_to_bytes( amount )
-                except AssertionError:
-                    new_amount = False
-            operation = params.get( 'operation', None )
-            if not params.get( 'amount', None ):
-                message = 'Enter a valid amount'
-                status='error'
-            elif new_amount is False:
-                message = 'Unable to parse the provided amount'
-                status = 'error'
-            elif operation not in trans.app.model.Quota.valid_operations:
-                message = 'Enter a valid operation'
-                status = 'error'
-            else:
-                quota.amount = new_amount
-                quota.operation = operation
-                trans.sa_session.add( quota )
-                trans.sa_session.flush()
-                message = "Quota '%s' is now '%s'" % ( quota.name, quota.operation + quota.display_amount )
-                if cntrller == 'api':
-                    return 200, message
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='quotas',
-                                                                  webapp=webapp,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='done' ) )
-        if cntrller == 'api':
-            if status == 'error':
-                return 400, message
-            return 500, message # should never get here...
-        return trans.fill_template( '/admin/quota/quota_edit.mako',
-                                    quota=quota,
-                                    webapp=webapp,
-                                    message=message,
-                                    status=status )
-
-    @web.expose
-    @web.require_admin
-    def set_quota_default( self, trans, cntrller='admin', **kwd ):
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        default = params.get( 'default', '' )
-        id = params.get( 'id', None )
-        if not id:
-            message = "No quota ids received for managing defaults"
-            if cntrller == 'api':
-                return 400, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=message,
-                                                              status='error' ) )
-        quota = get_quota( trans, id )
-        if params.get( 'set_default_quota_button', False ) or cntrller == 'api':
-            if default != 'no' and default not in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
-                message = "Enter a valid default type."
-                status = 'error'
-            else:
-                if default != 'no':
-                    trans.app.quota_agent.set_default_quota( default, quota )
-                    message = "Quota '%s' is now the default for %s users" % ( quota.name, default )
-                if cntrller == 'api':
-                    return 200, message
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                     action='quotas',
-                                                     webapp=webapp,
-                                                     message=util.sanitize_text( message ),
-                                                     status='done' ) )
-        if not default:
-            default = 'no'
-        if cntrller == 'api':
-            if status == 'error':
-                return 400, message
-            return 500, message # should never get here...
-        return trans.fill_template( '/admin/quota/quota_set_default.mako',
-                                    quota=quota,
-                                    webapp=webapp,
-                                    default=default,
-                                    message=message,
-                                    status=status )
-    @web.expose
-    @web.require_admin
-    def unset_quota_default( self, trans, cntrller='admin', **kwd ):
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        default = params.get( 'default', '' )
-        id = params.get( 'id', None )
-        if not id:
-            message = "No quota ids received for managing defaults"
-            if cntrller == 'api':
-                return 400, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=message,
-                                                              status='error' ) )
-        quota = get_quota( trans, id )
-        if not quota.default:
-            message = "Quota '%s' is not a default." % quota.name
-            status = 'error'
-        else:
-            message = "Quota '%s' is no longer the default for %s users." % ( quota.name, quota.default[0].type )
-            status = 'done'
-            for dqa in quota.default:
-                trans.sa_session.delete( dqa )
-            trans.sa_session.flush()
-        if cntrller == 'api':
-            if status == 'done':
-                return 200, message
-            elif status == 'error':
-                return 400, message
-            return 500, message # should never get here...
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=webapp,
-                                                          message=message,
-                                                          status=status ) )
-
-    @web.expose
-    @web.require_admin
-    def mark_quota_deleted( self, trans, cntrller='admin', **kwd ):
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        id = kwd.get( 'id', None )
-        ids = util.listify( id )
-        error = True
-        quotas = []
-        try:
-            assert id, 'No quota ids received for deleting'
-            for quota_id in ids:
-                quota = get_quota( trans, quota_id )
-                assert quota, 'Quota id (%s) is invalid' % id
-                assert not quota.default, "Quota '%s' is a default, please unset it as a default before deleting it" % ( quota.name )
-                quotas.append( quota )
-            error = False
-        except AssertionError, e:
-            message = str( e )
-        if error:
-            if cntrller == 'api':
-                return 400, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=message,
-                                                              status='error' ) )
-        message = "Deleted %d quotas: " % len( ids )
-        for quota in quotas:
-            quota.deleted = True
-            trans.sa_session.add( quota )
-            message += " %s " % quota.name
-        trans.sa_session.flush()
-        if cntrller == 'api':
-            return 200, message
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='quotas',
-                                                   webapp=webapp,
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
-    @web.expose
-    @web.require_admin
-    def undelete_quota( self, trans, cntrller='admin', **kwd ):
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        id = kwd.get( 'id', None )
-        ids = util.listify( id )
-        error = True
-        quotas = []
-        try:
-            assert id, 'No quota ids received for undeleting'
-            for quota_id in ids:
-                quota = get_quota( trans, quota_id )
-                assert quota, 'Quota id (%s) is invalid' % id
-                assert quota.deleted, "Quota '%s' has not been deleted, so it cannot be undeleted." % quota.name
-                quotas.append( quota )
-            error = False
-        except AssertionError, e:
-            message = str( e )
-        if error:
-            if cntrller == 'api':
-                return 400, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=message,
-                                                              status='error' ) )
-        message = "Undeleted %d quotas: " % len( ids )
-        for quota in quotas:
-            quota.deleted = False
-            trans.sa_session.add( quota )
-            trans.sa_session.flush()
-            message += " %s " % quota.name
-        if cntrller == 'api':
-            return 200, message
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='quotas',
-                                                   webapp=webapp,
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
-    @web.expose
-    @web.require_admin
-    def purge_quota( self, trans, cntrller='admin', **kwd ):
-        # This method should only be called for a Quota that has previously been deleted.
-        # Purging a deleted Quota deletes all of the following from the database:
-        # - UserQuotaAssociations where quota_id == Quota.id
-        # - GroupQuotaAssociations where quota_id == Quota.id
-        params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
-        id = kwd.get( 'id', None )
-        ids = util.listify( id )
-        error = True
-        quotas = []
-        try:
-            assert id, 'No quota ids received for undeleting'
-            for quota_id in ids:
-                quota = get_quota( trans, quota_id )
-                assert quota, 'Quota id (%s) is invalid' % id
-                assert quota.deleted, "Quota '%s' has not been deleted, so it cannot be purged." % quota.name
-                quotas.append( quota )
-            error = False
-        except AssertionError, e:
-            message = str( e )
-        if error:
-            if cntrller == 'api':
-                return 400, message
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='quotas',
-                                                              webapp=webapp,
-                                                              message=message,
-                                                              status='error' ) )
-        message = "Purged %d quotas: " % len( ids )
-        for quota in quotas:
-            # Delete UserQuotaAssociations
-            for uqa in quota.users:
-                trans.sa_session.delete( uqa )
-            # Delete GroupQuotaAssociations
-            for gqa in quota.groups:
-                trans.sa_session.delete( gqa )
-            trans.sa_session.flush()
-            message += " %s " % quota.name
-        if cntrller == 'api':
-            return 200, message
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='quotas',
-                                                   webapp=webapp,
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
     # Galaxy Group Stuff
     @web.expose
     @web.require_admin

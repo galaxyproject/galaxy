@@ -15,7 +15,7 @@ class UserRequestsGrid( RequestsGrid ):
     def apply_query_filter( self, trans, query, **kwd ):
         return query.filter_by( user=trans.user )
 
-class Requests( BaseController ):
+class Requests( BaseUIController ):
     request_grid = UserRequestsGrid()
 
     @web.expose

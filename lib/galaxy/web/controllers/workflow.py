@@ -103,7 +103,7 @@ class SingleTagContentsParser( sgmllib.SGMLParser ):
         if self.cur_tag == self.target_tag:
             self.tag_content += text
 
-class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
+class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
     
@@ -199,7 +199,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         if stored_workflow is None:
            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access workflow.
-        self.security_check( trans.get_user(), stored_workflow, False, True)
+        self.security_check( trans, stored_workflow, False, True)
         
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored_workflow )
@@ -1016,7 +1016,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
         stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
-        self.security_check( trans.get_user(), stored, False, True )
+        self.security_check( trans, stored, False, True )
         
         # Convert workflow to dict.
         workflow_dict = self._workflow_to_dict( trans, stored )

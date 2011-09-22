@@ -47,7 +47,7 @@ def set_datatypes_registry( d_registry ):
 
 class User( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'email' )
-    api_element_visible_keys = ( 'id', 'email', 'username' )
+    api_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
     def __init__( self, email=None, password=None ):
         self.email = email
         self.password = password
@@ -82,6 +82,9 @@ class User( object, APIItem ):
     def set_disk_usage( self, bytes ):
         self.disk_usage = bytes
     total_disk_usage = property( get_disk_usage, set_disk_usage )
+    @property
+    def nice_total_disk_usage( self ):
+        return self.get_disk_usage( nice_size=True )
     def calculate_disk_usage( self ):
         dataset_ids = []
         total = 0

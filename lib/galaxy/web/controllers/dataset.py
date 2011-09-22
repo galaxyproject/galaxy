@@ -145,7 +145,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
                 .filter( model.History.deleted==False ) \
                 .filter( self.model_class.visible==True )
         
-class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistoryDatasetAssociation, UsesItemRatings ):
+class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHistoryDatasetAssociation, UsesItemRatings ):
         
     stored_list_grid = HistoryDatasetAssociationListGrid()
 

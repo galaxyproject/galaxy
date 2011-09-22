@@ -55,4 +55,3 @@ class SecurityHelper( object ):
     def get_new_guid( self ):
         # Generate a unique, high entropy 128 bit random number
         return get_random_bytes( 16 )
-        

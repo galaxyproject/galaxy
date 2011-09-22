@@ -10,7 +10,7 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
-class PermissionsController( BaseController ):
+class PermissionsController( BaseAPIController ):
     
     # Method not ideally named
     @web.expose_api

@@ -7,7 +7,6 @@ from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
-from galaxy.web.api.util import *
 
 import pkg_resources
 pkg_resources.require( "Routes" )
@@ -15,7 +14,7 @@ import routes
 
 log = logging.getLogger( __name__ )
 
-class HistoryContentsController( BaseController ):
+class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociation, UsesHistory ):
 
     @web.expose_api
     def index( self, trans, history_id, **kwd ):
@@ -24,7 +23,7 @@ class HistoryContentsController( BaseController ):
         Displays a collection (list) of history contents
         """        
         try:
-            history = get_history_for_access( trans, history_id )
+            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
         except Exception, e:
             return str( e )
                        
@@ -51,7 +50,7 @@ class HistoryContentsController( BaseController ):
         """
         content_id = id
         try:
-            content = get_history_content_for_access( trans, content_id )
+            content = self.get_history_dataset_association( trans, content_id, check_ownership=True, check_accessible=True )
         except Exception, e:
             return str( e )
         try:
@@ -63,7 +62,7 @@ class HistoryContentsController( BaseController ):
                 # http://routes.groovie.org/generating.html
                 # url_for is being phased out, so new applications should use url
                 item['download_url'] = url(controller='dataset', action='display', dataset_id=trans.security.encode_id(content.id), to_ext=content.ext)
-                item = encode_all_ids( trans, item )
+                item = self.encode_all_ids( trans, item )
         except Exception, e:
             item = "Error in history API at listing dataset"
             log.error( item + ": %s" % str(e) )               
@@ -80,7 +79,7 @@ class HistoryContentsController( BaseController ):
         from_ld_id = payload.get( 'from_ld_id', None )
 
         try:
-            history = get_history_for_modification( trans, history_id )
+            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
         except Exception, e:
             return str( e )
 

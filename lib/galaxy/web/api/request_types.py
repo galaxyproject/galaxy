@@ -2,7 +2,7 @@
 API operations on RequestType objects.
 """
 import logging
-from galaxy.web.base.controller import BaseController, url_for
+from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
 from galaxy.sample_tracking.request_types import request_type_factory
 from elementtree.ElementTree import XML
@@ -10,7 +10,7 @@ from elementtree.ElementTree import XML
 log = logging.getLogger( __name__ )
 
 
-class RequestTypeAPIController( BaseController ):
+class RequestTypeAPIController( BaseAPIController ):
     @web.expose_api
     def index( self, trans, **kwd ):
         """

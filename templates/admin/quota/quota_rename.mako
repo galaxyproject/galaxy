@@ -22,14 +22,14 @@
                 <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="name" value="${quota.name}" size="40"/>
+                    <input type="text" name="name" value="${name}" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Description:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input  name="description" type="textfield" value="${quota.description}" size=40"/>
+                    <input  name="description" type="textfield" value="${description}" size=40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>
@@ -41,7 +41,7 @@
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="id" value="${trans.security.encode_id( quota.id )}"/>
+                    <input type="hidden" name="id" value="${id}"/>
                 </div>
                 <div style="clear: both"></div>
             </div>

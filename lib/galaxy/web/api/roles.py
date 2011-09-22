@@ -2,13 +2,13 @@
 API operations on Role objects.
 """
 import logging
-from galaxy.web.base.controller import BaseController, url_for
+from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
 from elementtree.ElementTree import XML
 
 log = logging.getLogger( __name__ )
 
-class RoleAPIController( BaseController ):
+class RoleAPIController( BaseAPIController ):
     @web.expose_api
     def index( self, trans, **kwd ):
         """

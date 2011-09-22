@@ -33,6 +33,8 @@ class NoQuotaAgent( object ):
         return usage
     def get_percent( self, trans=None, user=False, history=False, usage=False, quota=False ):
         return None
+    def get_user_quotas( self, user ):
+        return []
 
 class QuotaAgent( NoQuotaAgent ):
     """Class that handles galaxy quotas"""
@@ -150,3 +152,20 @@ class QuotaAgent( NoQuotaAgent ):
                 gqa = self.model.GroupQuotaAssociation( group, quota )
                 self.sa_session.add( gqa )
             self.sa_session.flush()
+    def get_user_quotas( self, user ):
+        rval = []
+        if not user:
+            dqa = self.sa_session.query( self.model.DefaultQuotaAssociation ) \
+                                 .filter( self.model.DefaultQuotaAssociation.table.c.type==self.model.DefaultQuotaAssociation.types.UNREGISTERED ).first()
+            if dqa:
+                rval.append( dqa.quota )
+        else:
+            dqa = self.sa_session.query( self.model.DefaultQuotaAssociation ) \
+                                 .filter( self.model.DefaultQuotaAssociation.table.c.type==self.model.DefaultQuotaAssociation.types.REGISTERED ).first()
+            if dqa:
+                rval.append( dqa.quota )
+            for uqa in user.quotas:
+                rval.append( uqa.quota )
+            for gqa in [ uga.group for uga in user.groups ]:
+                rval.append( gqa.quota )
+        return rval
