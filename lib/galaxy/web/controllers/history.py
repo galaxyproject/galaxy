@@ -11,7 +11,8 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.tools.actions import upload_common
 from galaxy.tags.tag_handler import GalaxyTagHandler
-from sqlalchemy.sql.expression import ClauseElement
+from sqlalchemy.sql.expression import ClauseElement, func
+from sqlalchemy.sql import select
 import webhelpers, logging, operator, os, tempfile, subprocess, shutil, tarfile
 from datetime import datetime
 from cgi import escape
@@ -26,11 +27,29 @@ class HistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
+            # Build query to get (state, count) pairs.
+            cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ] 
+            from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
+            where_clause = and_( trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id,
+                                 trans.app.model.HistoryDatasetAssociation.table.c.deleted == False,
+                                 trans.app.model.HistoryDatasetAssociation.table.c.visible == True,
+                                  )
+            group_by = trans.app.model.Dataset.table.c.state
+            query = select( columns=cols_to_select,
+                            from_obj=from_obj,
+                            whereclause=where_clause,
+                            group_by=group_by )
+                            
+            # Process results.
+            state_count_dict = {}
+            for row in trans.sa_session.execute( query ):
+                state, count = row
+                state_count_dict[ state ] = count
             rval = []
             for state in ( 'ok', 'running', 'queued', 'error' ):
-                total = sum( 1 for d in history.active_datasets if d.state == state )
-                if total:
-                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
+                count = state_count_dict.get( state, 0 )
+                if count:
+                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, count ) )
                 else:
                     rval.append( '' )
             return rval
