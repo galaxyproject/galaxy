@@ -175,39 +175,40 @@ def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
             # If the tool refers to .loc files or requires an entry in the
             # tool_data_table_conf.xml, make sure all requirements exist.
             options = input_param.dynamic_options or input_param.options
-            if options.missing_tool_data_table_name:
-                # See if the repository contains a tool_data_table_conf.xml.sample file.
-                sample_found = False
-                for sample_file in sample_files:
-                    head, tail = os.path.split( sample_file )
-                    if tail == 'tool_data_table_conf.xml.sample':
-                        sample_found = True
-                        error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
-                        if error:
-                            can_set_metadata = False
-                            invalid_files.append( ( tail, correction_msg ) ) 
-                        break
-                if not sample_found:
-                    can_set_metadata = False
-                    correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
-                    correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
-                    correction_msg += "that includes the required entry to resolve this issue.<br/>"
-                    invalid_files.append( ( name, correction_msg ) )
-            elif options.missing_index_file:
-                missing_head, missing_tail = os.path.split( options.missing_index_file )
-                # See if the repository contains the required xxx.loc.sample file.
-                sample_found = False
-                for sample_file in sample_files:
-                    sample_head, sample_tail = os.path.split( sample_file )
-                    if sample_tail == '%s.sample' % missing_tail:
-                        copy_sample_loc_file( trans, sample_file )
-                        sample_found = True
-                        break
-                if not sample_found:
-                    can_set_metadata = False
-                    correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( options.missing_index_file )
-                    correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( missing_tail )
-                    invalid_files.append( ( name, correction_msg ) )
+            if options:
+                if options.missing_tool_data_table_name:
+                    # See if the repository contains a tool_data_table_conf.xml.sample file.
+                    sample_found = False
+                    for sample_file in sample_files:
+                        head, tail = os.path.split( sample_file )
+                        if tail == 'tool_data_table_conf.xml.sample':
+                            sample_found = True
+                            error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
+                            if error:
+                                can_set_metadata = False
+                                invalid_files.append( ( tail, correction_msg ) ) 
+                            break
+                    if not sample_found:
+                        can_set_metadata = False
+                        correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
+                        correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
+                        correction_msg += "that includes the required entry to resolve this issue.<br/>"
+                        invalid_files.append( ( name, correction_msg ) )
+                elif options.missing_index_file:
+                    missing_head, missing_tail = os.path.split( options.missing_index_file )
+                    # See if the repository contains the required xxx.loc.sample file.
+                    sample_found = False
+                    for sample_file in sample_files:
+                        sample_head, sample_tail = os.path.split( sample_file )
+                        if sample_tail == '%s.sample' % missing_tail:
+                            copy_sample_loc_file( trans, sample_file )
+                            sample_found = True
+                            break
+                    if not sample_found:
+                        can_set_metadata = False
+                        correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( options.missing_index_file )
+                        correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( missing_tail )
+                        invalid_files.append( ( name, correction_msg ) )
     return can_set_metadata, invalid_files
 def generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict ):
     """

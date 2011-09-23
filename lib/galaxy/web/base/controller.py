@@ -2447,23 +2447,24 @@ class Admin( object ):
                                                             # If the tool refers to .loc files or requires an entry in the
                                                             # tool_data_table_conf.xml, make sure all requirements exist.
                                                             options = input_param.dynamic_options or input_param.options
-                                                            if options.missing_tool_data_table_name:
-                                                                # The repository must contain a tool_data_table_conf.xml.sample file.
-                                                                for sample_file in sample_files:
-                                                                    head, tail = os.path.split( sample_file )
-                                                                    if tail == 'tool_data_table_conf.xml.sample':
-                                                                        error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
-                                                                        if error:
-                                                                            log.debug( exception_msg )
-                                                                        break
-                                                            if options.missing_index_file:
-                                                                missing_head, missing_tail = os.path.split( options.missing_index_file )
-                                                                # The repository must contain the required xxx.loc.sample file.
-                                                                for sample_file in sample_files:
-                                                                    sample_head, sample_tail = os.path.split( sample_file )
-                                                                    if sample_tail == '%s.sample' % missing_tail:
-                                                                        copy_sample_loc_file( trans, sample_file )
-                                                                        break
+                                                            if options:
+                                                                if options.missing_tool_data_table_name:
+                                                                    # The repository must contain a tool_data_table_conf.xml.sample file.
+                                                                    for sample_file in sample_files:
+                                                                        head, tail = os.path.split( sample_file )
+                                                                        if tail == 'tool_data_table_conf.xml.sample':
+                                                                            error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
+                                                                            if error:
+                                                                                log.debug( exception_msg )
+                                                                            break
+                                                                if options.missing_index_file:
+                                                                    missing_head, missing_tail = os.path.split( options.missing_index_file )
+                                                                    # The repository must contain the required xxx.loc.sample file.
+                                                                    for sample_file in sample_files:
+                                                                        sample_head, sample_tail = os.path.split( sample_file )
+                                                                        if sample_tail == '%s.sample' % missing_tail:
+                                                                            copy_sample_loc_file( trans, sample_file )
+                                                                            break
                                                     # At this point, we need to lstrip tool_path from relative_path.
                                                     tup_path = relative_path.replace( tool_path, '' ).lstrip( '/' )
                                                     repository_tools_tups.append( ( tup_path, repository_tool ) )

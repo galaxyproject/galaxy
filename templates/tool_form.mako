@@ -257,12 +257,13 @@
             # If the tool refers to .loc files or requires an entry in the
             # tool_data_table_conf.xml, make sure all requirements exist.
             options = input_param.dynamic_options or input_param.options
-            if options.missing_tool_data_table_name:
-                message = "Data table named '%s' is required by tool but not configured" % options.missing_tool_data_table_name
-                break
-            if options.missing_index_file:
-                message = "Index file named '%s' is required by tool but not availble" % options.missing_index_file
-                break
+            if options:
+                if options.missing_tool_data_table_name:
+                    message = "Data table named '%s' is required by tool but not configured" % options.missing_tool_data_table_name
+                    break
+                if options.missing_index_file:
+                    message = "Index file named '%s' is required by tool but not availble" % options.missing_index_file
+                    break
 
     # Handle calculating the redirect url for the special case where we have nginx proxy
     # upload and need to do url_for on the redirect portion of the tool action.
