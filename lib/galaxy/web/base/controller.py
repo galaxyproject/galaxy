@@ -44,35 +44,35 @@ class BaseController( object ):
     def get_class( self, class_name ):
         """ Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>). """
         if class_name == 'History':
-            item_class = trans.model.History
+            item_class = self.app.model.History
         elif class_name == 'HistoryDatasetAssociation':
-            item_class = trans.model.HistoryDatasetAssociation
+            item_class = self.app.model.HistoryDatasetAssociation
         elif class_name == 'Page':
-            item_class = trans.model.Page
+            item_class = self.app.model.Page
         elif class_name == 'StoredWorkflow':
-            item_class = trans.model.StoredWorkflow
+            item_class = self.app.model.StoredWorkflow
         elif class_name == 'Visualization':
-            item_class = trans.model.Visualization
+            item_class = self.app.model.Visualization
         elif class_name == 'Tool':
-            item_class = trans.model.Tool
+            item_class = self.app.model.Tool
         elif class_name == 'Job':
-            item_class = trans.model.Job
+            item_class = self.app.model.Job
         elif class_name == 'User':
-            item_class = trans.model.User
+            item_class = self.app.model.User
         elif class_name == 'Group':
-            item_class = trans.model.Group
+            item_class = self.app.model.Group
         elif class_name == 'Role':
-            item_class = trans.model.Role
+            item_class = self.app.model.Role
         elif class_name == 'Quota':
-            item_class = trans.model.Quota
+            item_class = self.app.model.Quota
         elif class_name == 'Library':
-            item_class = trans.model.Library
+            item_class = self.app.model.Library
         elif class_name == 'LibraryFolder':
-            item_class = trans.model.LibraryFolder
+            item_class = self.app.model.LibraryFolder
         elif class_name == 'LibraryDatasetDatasetAssociation':
-            item_class = trans.model.LibraryDatasetDatasetAssociation
+            item_class = self.app.model.LibraryDatasetDatasetAssociation
         elif class_name == 'LibraryDataset':
-            item_class = trans.model.LibraryDataset
+            item_class = self.app.model.LibraryDataset
         else:
             item_class = None
         return item_class
@@ -90,7 +90,8 @@ class BaseController( object ):
             item = trans.sa_session.query( item_class ).get( decoded_id )
             assert item is not None
         except:
-            raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, display_id ), type="error" )
+            log.exception( "Invalid %s id ( %s ) specified" % ( class_name, id ) )
+            raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
         if check_ownership or check_accessible:
             self.security_check( trans, item, check_ownership, check_accessible, encoded_id )
         if deleted == True and not item.deleted:
