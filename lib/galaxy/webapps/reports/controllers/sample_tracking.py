@@ -94,7 +94,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .join( model.User ) \
                                .enable_eagerloads( False )
 
-class SampleTracking( BaseController ):
+class SampleTracking( BaseUIController ):
 
     specified_date_list_grid = SpecifiedDateListGrid()
 

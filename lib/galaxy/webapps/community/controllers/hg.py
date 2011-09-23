@@ -5,7 +5,7 @@ from mercurial.hgweb.request import wsgiapplication
 
 log = logging.getLogger(__name__)
 
-class HgController( BaseController ):
+class HgController( BaseUIController ):
     @web.expose
     def handle_request( self, trans, **kwd ):
         # The os command that results in this method being called will look something like

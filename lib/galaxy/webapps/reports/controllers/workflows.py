@@ -94,7 +94,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .join( model.User ) \
                                .enable_eagerloads( False )
 
-class Workflows( BaseController ):
+class Workflows( BaseUIController ):
 
     specified_date_list_grid = SpecifiedDateListGrid()
 

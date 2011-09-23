@@ -380,7 +380,7 @@ class RepositoryMetadataListGrid( grids.Grid ):
         return trans.sa_session.query( self.model_class ) \
                                .join( model.Repository.table )
 
-class AdminController( BaseController, Admin ):
+class AdminController( BaseUIController, Admin ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()

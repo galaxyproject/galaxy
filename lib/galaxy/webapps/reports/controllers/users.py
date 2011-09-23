@@ -10,7 +10,7 @@ import sqlalchemy as sa
 import logging
 log = logging.getLogger( __name__ )
 
-class Users( BaseController ):
+class Users( BaseUIController ):
     @web.expose
     def registered_users( self, trans, **kwd ):
         message = util.restore_text( kwd.get( 'message', '' ) )

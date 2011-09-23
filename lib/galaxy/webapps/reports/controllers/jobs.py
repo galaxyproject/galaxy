@@ -117,7 +117,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .join( model.User ) \
                                .enable_eagerloads( False )
 
-class Jobs( BaseController ):
+class Jobs( BaseUIController ):
 
     specified_date_list_grid = SpecifiedDateListGrid()
 

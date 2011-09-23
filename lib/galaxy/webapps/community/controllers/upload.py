@@ -14,7 +14,7 @@ CHUNK_SIZE = 2**20 # 1Mb
 class UploadError( Exception ):
     pass
 
-class UploadController( BaseController ):
+class UploadController( BaseUIController ):
     @web.expose
     @web.require_login( 'upload', use_panels=True, webapp='community' )
     def upload( self, trans, **kwd ):

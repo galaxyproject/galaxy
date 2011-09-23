@@ -220,7 +220,7 @@ class DownloadableRepositoryListGrid( RepositoryListGrid ):
                                .join( model.RepositoryMetadata.table ) \
                                .join( model.User.table )
 
-class RepositoryController( BaseController, ItemRatings ):
+class RepositoryController( BaseUIController, ItemRatings ):
 
     downloadable_repository_list_grid = DownloadableRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
