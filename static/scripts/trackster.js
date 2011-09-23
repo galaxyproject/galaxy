@@ -142,18 +142,43 @@ extend( CanvasManager.prototype, {
 
 // ---- Web UI specific utilities ----
 
+/**
+ * Dictionary of HTML element-JavaScript object relationships.
+ */
+// TODO: probably should separate moveable objects from containers.
+var html_elt_js_obj_dict = {};
+
+/**
+ * Designates an HTML as a container.
+ */
+var is_container = function(element, obj) {
+    html_elt_js_obj_dict[element.attr("id")] = obj;
+};
+
 /** 
  * Make `element` moveable within parent and sibling elements by dragging `handle` (a selector).
+ * Function manages JS objects, containers as well.
+ *
+ * @param element HTML element to make moveable
+ * @param handle_class classname that denotes HTML element to be used as handle
+ * @param container_selector selector used to identify possible containers for this element
+ * @param element_js_obj JavaScript object associated with element; used 
  */
-var moveable = function( element, handle_class, container_selector ) {
+var moveable = function(element, handle_class, container_selector, element_js_obj) {
     // HACK: set default value for container selector.
     container_selector = ".group";
     var css_border_props = {};
+
+    // Register element with its object.
+    html_elt_js_obj_dict[element.attr("id")] = element_js_obj;
+    
     // Need to provide selector for handle, not class.
     element.bind( "drag", { handle: "." + handle_class, relative: true }, function ( e, d ) {
+        var element = $(this);
         var 
             parent = $(this).parent(),
             children = parent.children(),
+            this_obj = html_elt_js_obj_dict[$(this).attr("id")],
             child,
             container,
             top,
@@ -173,13 +198,19 @@ var moveable = function( element, handle_class, container_selector ) {
             if (d.offsetY < top) {
                 // Moving above container.
                 $(this).insertBefore(container);
+                var cur_container = html_elt_js_obj_dict[container.attr("id")];
+                cur_container.remove_drawable(this_obj);
+                cur_container.container.add_drawable_before(this_obj, cur_container);
                 return;
             }
             else if (d.offsetY > bottom) {
                 // Moving below container.
                 $(this).insertAfter(container);
+                var cur_container = html_elt_js_obj_dict[container.attr("id")];
+                cur_container.remove_drawable(this_obj);
+                cur_container.container.add_drawable(this_obj);
                 return;
-            }
+            }            
         }
         
         // Handle dragging into container.
@@ -198,6 +229,9 @@ var moveable = function( element, handle_class, container_selector ) {
                 else {
                     child.find(".content-div").append(this);
                 }
+                // Update containers.
+                this_obj.container.remove_drawable(this_obj);
+                html_elt_js_obj_dict[child.attr("id")].add_drawable(this_obj);
                 return;
             }
         }
@@ -216,10 +250,15 @@ var moveable = function( element, handle_class, container_selector ) {
         if ( i === children.length ) {
             if ( this !== children.get(i - 1) ) {
                 parent.append(this);
+                // Update container.
+                html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, i);
             }
         }
         else if ( this !== children.get(i) ) {
             $(this).insertBefore( children.get(i) );
+            // Need to adjust insert position if moving down because move is changing 
+            // indices of all list items.
+            html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, (d.deltaY > 0 ? i-1 : i) );
         }
     }).bind("dragstart", function() {
         css_border_props["border-top"] = element.css("border-top");
@@ -523,15 +562,122 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
 });
 
 /**
+ * Drawables hierarchy:
+ *
+ * Drawable
+ *    --> DrawableCollection
+ *        --> DrawableGroup
+ *        --> View
+ *    --> Track
+ */
+
+/**
+ * Base interface for all drawable objects.
+ */
+var Drawable = function(name, view, parent_element, container) {
+    this.name = name;
+    this.view = view;
+    this.parent_element = parent_element;
+    this.container = container;
+};
+
+Drawable.prototype.request_draw = function() {};
+Drawable.prototype.draw = function() {};
+
+/**
+ * A collection of drawable objects.
+ */
+var DrawableCollection = function(name, view, parent_element, container) {
+    Drawable.call(this, name, view, parent_element, container);
+    
+    // Attribute init.
+    this.drawables = [];
+};
+extend(DrawableCollection.prototype, Drawable.prototype, {
+    to_json: function() {
+        // For now, just return list of drawables in collection.
+        var json_obj = [];
+        for (var i = 0; i < this.drawables.length; i++) {
+            
+        }
+    },
+    /**
+     * Add a drawable to the end of the collection.
+     */
+    add_drawable: function(drawable) {
+        this.drawables.push(drawable);
+        drawable.container = this;
+    },
+    /**
+     * Add a drawable before another drawable.
+     */
+    add_drawable_before: function(drawable, other) {
+        var index = this.drawables.indexOf(other);
+        if (index != -1) {
+            this.drawables.splice(index, 0, drawable);
+            return true;
+        }
+        return false;
+    },
+    /**
+     * Tries to remove drawable from the collection. Returns true if drawable removed from
+     * collection, false otherwise.
+     */
+    remove_drawable: function(drawable) {
+        var index = this.drawables.indexOf(drawable);
+        if (index != -1) {
+            this.drawables.splice(index, 1);
+            drawable.container = null;
+            return true;
+        }
+        return false;
+    },
+    /**
+     * Move drawable to another location in collection.
+     */
+    move_drawable: function(drawable, new_position) {
+        var index = this.drawables.indexOf(drawable);
+        if (index != -1) {
+            // Remove from current position:
+            this.drawables.splice(index, 1);
+            // insert into new position:
+            this.drawables.splice(new_position, 0, drawable);
+            return true;
+        }
+        return false;
+    }
+});
+
+/**
+ * A group of drawables that are moveable, visible.
+ */
+var DrawableGroup = function(name, view, parent_element, container) {
+    DrawableCollection.call(this, name, view, parent_element, container);
+    
+    this.drag_handle_class = "group-handle";
+    
+    // HTML elements.
+    this.container_div = $("<div/>").addClass("group").appendTo(this.parent_element);
+    this.container_div.append($("<div/>").addClass(this.drag_handle_class));
+    this.name_div = $("<div/>").addClass("group-name").text(this.name).appendTo(this.container_div);
+    this.content_div = $("<div/>").addClass("content-div").appendTo(this.container_div);
+    is_container(this.container_div, this);
+};
+
+extend(DrawableGroup.prototype, DrawableCollection.prototype, Drawable.prototype);
+
+/**
  * View object manages complete viz view, including tracks and user interactions.
  */
 var View = function(container, title, vis_id, dbkey, callback) {
+    DrawableCollection.call(this);
     this.container = container;
     this.chrom = null;
     this.vis_id = vis_id;
     this.dbkey = dbkey;
     this.title = title;
-    this.tracks = [];
+    // Alias tracks to point at drawables. TODO: changes tracks to 'drawables' or something similar.
+    this.tracks = this.drawables;
     this.label_tracks = [];
     this.tracks_to_be_redrawn = [];
     this.max_low = 0;
@@ -545,7 +691,7 @@ var View = function(container, title, vis_id, dbkey, callback) {
     this.canvas_manager = new CanvasManager( container.get(0).ownerDocument );
     this.reset();
 };
-extend( View.prototype, {
+extend( View.prototype, DrawableCollection.prototype, {
     init: function( callback ) {
         // Create DOM elements
         var parent_element = this.container,
@@ -559,9 +705,10 @@ extend( View.prototype, {
         // Label track fixed at top 
         this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.top_container);        
         // Viewport for dragging tracks in center    
-        this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
+        this.viewport_container = $("<div/>").addClass("viewport-container").attr("id", "viewport-container").appendTo(this.content_div);
+        is_container(this.viewport_container, view);
         // Introduction div shown when there are no tracks.
-        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
+        this.intro_div = $("<div/>").addClass("intro");
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
             add_tracks();
         });
@@ -739,13 +886,13 @@ extend( View.prototype, {
         
         return jsonified_drawables;
     },
-    /** Show or hide intro div depending on view state. */
+    /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
         if (this.num_tracks === 0) {
-            this.intro_div.show();
+            this.intro_div.appendTo(this.viewport_container);
         }
         else {
-            this.intro_div.hide();
+            this.intro_div.remove();
         }
     },
     update_location: function(low, high) {
@@ -900,7 +1047,7 @@ extend( View.prototype, {
         this.tracks.push(track);
         if (track.init) { track.init(); }
         track.container_div.attr('id', 'track_' + track.track_id);
-        moveable(track.container_div, track.drag_handle_class);
+        moveable(track.container_div, track.drag_handle_class, ".group", track);
         this.track_id_counter += 1;
         this.num_tracks += 1;
         this.has_changes = true;
@@ -1155,12 +1302,20 @@ var Tool = function(track, tool_dict) {
     // Highlight value for inputs for easy replacement.
     this.parent_div.find("input").click(function() { $(this).select() });
     
-    // Add 'Go' button.
+    // Add buttons for running on dataset, region.
     var run_tool_row = $("<div>").addClass("param-row").appendTo(this.parent_div);
     var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_tool_row);
     var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").css("margin-left", "3em").appendTo(run_tool_row);
     var tool = this;
     run_on_region_button.click( function() {
+        // Create group for track + new tracks and put track in group.
+        var 
+            parent_elt = this.track.parent_element,
+            new_group = new DrawableCollection("New Group", parent_elt);
+            //this.track.view.add_track(new_group);
+        
+        
+        // Run tool to create new track.
         tool.run_on_region();
     });
     run_on_dataset_button.click( function() {
@@ -1837,44 +1992,6 @@ var FeatureTrackTile = function(index, resolution, canvas, data, message) {
 };
 
 /**
- * Base interface for all drawable objects.
- * TODO: Tracks should use this interface.
- */
-var Drawable = function(name, view) {
-    this.name = name;
-    this.view = view;
-    this.parent_element = view.viewport_container;
-};
-
-Drawable.prototype.request_draw = function() {};
-Drawable.prototype.draw = function() {};
-
-/**
- * A collection of drawable objects.
- */
-var DrawableCollection = function(name, view) {
-    Drawable.call(this, name, view);
-    
-    // Attribute init.
-    this.members = [];
-    this.drag_handle_class = "group-handle";
-    
-    // HTML elements.
-    this.container_div = $("<div/>").addClass("group").appendTo(this.parent_element);
-    this.container_div.append($("<div/>").addClass(this.drag_handle_class));
-    this.name_div = $("<div/>").addClass("group-name").text(this.name).appendTo(this.container_div);
-    this.content_div = $("<div/>").addClass("content-div").appendTo(this.container_div);
-};
-extend(DrawableCollection.prototype, Drawable.prototype, {
-    request_draw: function(force, clear_after) {
-        
-    },
-    draw: function() {
-        
-    }
-});
-
-/**
  * Tracks are objects can be added to the View. 
  * 
  * Track object hierarchy:
@@ -1889,12 +2006,12 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
  * -------> VcfTrack
  */
 var Track = function(name, view, parent_element, data_url, data_query_wait) {
+    // For now, track's container is always view.
+    Drawable.call(this, name, view, parent_element, view);
+    
     //
     // Attribute init.
     //
-    this.name = name;
-    this.view = view;    
-    this.parent_element = parent_element;
     this.data_url = (data_url ? data_url : default_data_url);
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
@@ -3179,7 +3296,7 @@ extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.protot
 // Exports
 
 exports.View = View;
-exports.DrawableCollection = DrawableCollection;
+exports.DrawableGroup = DrawableGroup;
 exports.LineTrack = LineTrack;
 exports.FeatureTrack = FeatureTrack;
 exports.ReadTrack = ReadTrack;

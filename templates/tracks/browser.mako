@@ -198,7 +198,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             make_popupmenu( $("#viz-actions-button"), {
                 "Add Tracks": add_tracks,
                 "Add Group": function() {
-                    var group = new DrawableCollection("New Group", view);
+                    var group = new DrawableGroup("New Group", view, view.viewport_container, view);
                     view.add_track(group);
                 },
                 "Save": function() {
