@@ -1049,6 +1049,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
+    @web.require_login( "set email alerts" )
     def set_email_alerts( self, trans, **kwd ):
         # Set email alerts for selected repositories
         params = util.Params( kwd )
@@ -1112,98 +1113,6 @@ class RepositoryController( BaseController, ItemRatings ):
                                                           malicious=malicious,
                                                           message=message,
                                                           status=status ) )
-    @web.expose
-    def add_tool_data_table_entry( self, trans, name_attr, repository_id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', '' ) )
-        status = params.get( 'status', 'done' )
-        comment_char = util.restore_text( params.get( 'comment_char', '#' ) )
-        loc_filename = util.restore_text( params.get( 'loc_filename', '' ) )
-        repository = get_repository( trans, repository_id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
-        column_fields = self.__get_column_fields( **kwd )
-        if params.get( 'add_field_button', False ):
-            # Add a field
-            field_index = len( column_fields ) + 1
-            field_tup = ( '%i_field_name' % field_index, '' )
-            column_fields.append( field_tup )
-        elif params.get( 'remove_button', False ):
-            # Delete a field - find the index of the field to be removed from the remove button label
-            index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
-            tup_to_remove = column_fields[ index ]
-            column_fields.remove( tup_to_remove )
-            # Re-number field tups
-            new_column_fields = []
-            for field_index, old_field_tup in enumerate( column_fields ):
-                name = '%i_field_name' % ( field_index + 1 )
-                value = old_field_tup[1]
-                new_column_fields.append( ( name, value ) )
-            column_fields = new_column_fields
-        elif params.get( 'add_tool_data_table_entry_button', False ):
-            # Add an entry to the end of the tool_data_table_conf.xml file
-            tdt_config = "%s/tool_data_table_conf.xml" %  trans.app.config.root
-            if os.path.exists( tdt_config ):
-                # Make a backup of the file since we're going to be changing it.
-                today = date.today()
-                backup_date = today.strftime( "%Y_%m_%d" )
-                tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( trans.app.config.root, backup_date )
-                shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
-                # Generate the string of column names
-                column_names = ', '.join( [ column_tup[1] for column_tup in column_fields ] )
-                # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
-                fh = tempfile.NamedTemporaryFile( 'wb' )
-                tmp_filename = fh.name
-                fh.close()
-                new_tdt_config = open( tmp_filename, 'wb' )
-                for i, line in enumerate( open( tdt_config, 'rb' ) ):
-                    if line.startswith( '</tables>' ):
-                        break
-                    new_tdt_config.write( line )
-                new_tdt_config.write( '    <!-- Location of %s files -->\n' % name_attr )
-                new_tdt_config.write( '    <table name="%s" comment_char="%s">\n' % ( name_attr, comment_char ) )
-                new_tdt_config.write( '        <columns>%s</columns>\n' % column_names )
-                new_tdt_config.write( '        <file path="tool-data/%s" />\n' % loc_filename )
-                new_tdt_config.write( '    </table>\n' )
-                # Now write the last line of the file
-                new_tdt_config.write( '</tables>\n' )
-                new_tdt_config.close()
-                shutil.move( tmp_filename, os.path.abspath( tdt_config ) )
-                # Reload the tool_data_table_conf entries
-                trans.app.tool_data_tables = galaxy.tools.data.ToolDataTableManager( trans.app.config.tool_data_table_config_path )
-                message = "The new entry has been added to the tool_data_table_conf.xml file, so click the <b>Reset metadata</b> button below."
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='manage_repository',
-                                                                  id=repository_id,
-                                                                  message=message,
-                                                                  status=status ) )
-        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
-        return trans.fill_template( '/webapps/community/repository/add_tool_data_table_entry.mako', 
-                                    name_attr=name_attr,
-                                    repository=repository,
-                                    comment_char=comment_char,
-                                    loc_filename=loc_filename,
-                                    column_fields=column_fields,
-                                    is_malicious=is_malicious,
-                                    message=message,
-                                    status=status )
-    def __get_column_fields( self, **kwd ):
-        '''
-        Return a dictionary of the user-entered form fields representing columns
-        in the location file.
-        '''
-        params = util.Params( kwd )
-        column_fields = []
-        index = 0
-        while True:
-            name = '%i_field_name' % ( index + 1 )
-            if kwd.has_key( name ):
-                value = util.restore_text( params.get( name, '' ) )
-                field_tup = ( name, value )
-                index += 1
-                column_fields.append( field_tup )
-            else:
-                break
-        return column_fields
     @web.expose
     def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         params = util.Params( kwd )
@@ -1284,6 +1193,7 @@ class RepositoryController( BaseController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None
@@ -1312,6 +1222,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     is_malicious=is_malicious,
+                                    display_for_install=display_for_install,
                                     message=message,
                                     status=status )
     @web.expose

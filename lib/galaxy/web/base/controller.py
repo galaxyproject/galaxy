@@ -2417,6 +2417,8 @@ class Admin( object ):
                         if returncode == 0:
                             # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
                             repository_tools_tups = []
+                            # The sample_files list contains all files whose name ends in .sample
+                            sample_files = []
                             for root, dirs, files in os.walk( repo_files_dir ):
                                 if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
                                     if '.hg' in dirs:
@@ -2426,6 +2428,10 @@ class Admin( object ):
                                     if 'hgrc' in files:
                                          # Don't include hgrc files in commit.
                                         files.remove( 'hgrc' )
+                                    # Find all special .sample files first.
+                                    for name in files:
+                                        if name.endswith( '.sample' ):
+                                            sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
                                     for name in files:
                                         # Find all tool configs.
                                         if name.endswith( '.xml' ):
@@ -2434,6 +2440,30 @@ class Admin( object ):
                                             try:
                                                 repository_tool = trans.app.toolbox.load_tool( full_path )
                                                 if repository_tool:
+                                                    # Check all of the tool's input parameters, looking for any that are dynamically
+                                                    # generated using external data files to make sure the files exist.
+                                                    for input_param in repository_tool.input_params:
+                                                        if isinstance( input_param, tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
+                                                            # If the tool refers to .loc files or requires an entry in the
+                                                            # tool_data_table_conf.xml, make sure all requirements exist.
+                                                            options = input_param.dynamic_options or input_param.options
+                                                            if options.missing_tool_data_table_name:
+                                                                # The repository must contain a tool_data_table_conf.xml.sample file.
+                                                                for sample_file in sample_files:
+                                                                    head, tail = os.path.split( sample_file )
+                                                                    if tail == 'tool_data_table_conf.xml.sample':
+                                                                        error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
+                                                                        if error:
+                                                                            log.debug( exception_msg )
+                                                                        break
+                                                            elif options.missing_index_file:
+                                                                missing_head, missing_tail = os.path.split( options.missing_index_file )
+                                                                # The repository must contain the required xxx.loc.sample file.
+                                                                for sample_file in sample_files:
+                                                                    sample_head, sample_tail = os.path.split( sample_file )
+                                                                    if sample_tail == '%s.sample' % missing_tail:
+                                                                        copy_sample_loc_file( trans, sample_file )
+                                                                        break
                                                     # At this point, we need to lstrip tool_path from relative_path.
                                                     tup_path = relative_path.replace( tool_path, '' ).lstrip( '/' )
                                                     repository_tools_tups.append( ( tup_path, repository_tool ) )
@@ -2611,6 +2641,7 @@ class Admin( object ):
         """
         Write an in-memory tool panel section so we can load it into the tool panel and then
         append it to the appropriate shed tool config.
+        TODO: re-write using ElementTree.
         """
         tmp_url = self.__clean_repository_clone_url( repository_clone_url )
         section_str = ''
@@ -2632,9 +2663,7 @@ class Admin( object ):
 ## ---- Utility methods -------------------------------------------------------
 
 def build_shed_tool_conf_select_field( trans ):
-    """
-    Build a SelectField whose options are the keys in trans.app.toolbox.shed_tool_confs.
-    """
+    """Build a SelectField whose options are the keys in trans.app.toolbox.shed_tool_confs."""
     options = []
     for shed_tool_conf_filename, tool_path in trans.app.toolbox.shed_tool_confs.items():
         options.append( ( shed_tool_conf_filename.lstrip( './' ), shed_tool_conf_filename ) )
@@ -2643,9 +2672,7 @@ def build_shed_tool_conf_select_field( trans ):
         select_field.add_option( option_tup[0], option_tup[1] )
     return select_field
 def build_tool_panel_section_select_field( trans ):
-    """
-    Build a SelectField whose options are the sections of the current in-memory toolbox.
-    """
+    """Build a SelectField whose options are the sections of the current in-memory toolbox."""
     options = []
     for k, tool_section in trans.app.toolbox.tool_panel.items():
         options.append( ( tool_section.name, tool_section.id ) )
@@ -2653,6 +2680,14 @@ def build_tool_panel_section_select_field( trans ):
     for option_tup in options:
         select_field.add_option( option_tup[0], option_tup[1] )
     return select_field
+def copy_sample_loc_file( trans, filename ):
+    """Copy xxx.loc.sample to ~/tool-data/xxx.loc"""
+    head, sample_loc_file = os.path.split( filename )
+    loc_file = sample_loc_file.rstrip( '.sample' )
+    tool_data_path = os.path.abspath( trans.app.config.tool_data_path )
+    if not ( os.path.exists( os.path.join( tool_data_path, loc_file ) ) or os.path.exists( os.path.join( tool_data_path, sample_loc_file ) ) ):
+        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
+        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
 def get_user( trans, id ):
     """Get a User from the database by id."""
     # Load user from database
@@ -2683,3 +2718,45 @@ def get_quota( trans, id ):
     id = trans.security.decode_id( id )
     quota = trans.sa_session.query( trans.model.Quota ).get( id )
     return quota
+def handle_sample_tool_data_table_conf_file( trans, filename ):
+    """
+    Parse the incoming filename and add new entries to the in-memory
+    trans.app.tool_data_tables dictionary as well as appending them 
+    to the shed's tool_data_table_conf.xml file on disk.
+    """
+    # Parse the incoming file and add new entries to the in-memory 
+    # trans.app.tool_data_tables dictionary.
+    error = False
+    message = ''
+    try:
+        new_table_elems = trans.app.tool_data_tables.add_new_entries_from_config_file( filename )
+    except Exception, e:
+        message = str( e )
+        error = True
+    if not error:
+        # Add an entry to the end of the tool_data_table_conf.xml file.
+        tdt_config = "%s/tool_data_table_conf.xml" %  trans.app.config.root
+        if os.path.exists( tdt_config ):
+            # Make a backup of the file since we're going to be changing it.
+            today = date.today()
+            backup_date = today.strftime( "%Y_%m_%d" )
+            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( trans.app.config.root, backup_date )
+            shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
+            # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
+            fh = tempfile.NamedTemporaryFile( 'wb' )
+            tmp_filename = fh.name
+            fh.close()
+            new_tdt_config = open( tmp_filename, 'wb' )
+            for i, line in enumerate( open( tdt_config, 'rb' ) ):
+                if line.find( '</tables>' ) >= 0:
+                    for new_table_elem in new_table_elems:
+                        new_tdt_config.write( '    %s\n' % util.xml_to_string( new_table_elem ).rstrip( '\n' ) )
+                    new_tdt_config.write( '</tables>' )
+                else:
+                    new_tdt_config.write( line )
+            new_tdt_config.close()
+            shutil.move( tmp_filename, os.path.abspath( tdt_config ) )
+        else:
+            message = "The required file named tool_data_table_conf.xml does not exist in the Galaxy install directory."
+            error = True
+    return error, message

@@ -163,12 +163,59 @@ def generate_tool_guid( trans, repository, tool ):
                                       repository.name,
                                       tool.id,
                                       tool.version )
+def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
+    """
+    Check all of the tool's input parameters, looking for any that are dynamically generated
+    using external data files to make sure the files exist.
+    """
+    can_set_metadata = True
+    correction_msg = ''
+    for input_param in tool.input_params:
+        if isinstance( input_param, galaxy.tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
+            # If the tool refers to .loc files or requires an entry in the
+            # tool_data_table_conf.xml, make sure all requirements exist.
+            options = input_param.dynamic_options or input_param.options
+            if options.missing_tool_data_table_name:
+                # See if the repository contains a tool_data_table_conf.xml.sample file.
+                sample_found = False
+                for sample_file in sample_files:
+                    head, tail = os.path.split( sample_file )
+                    if tail == 'tool_data_table_conf.xml.sample':
+                        sample_found = True
+                        error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
+                        if error:
+                            can_set_metadata = False
+                            invalid_files.append( ( tail, correction_msg ) ) 
+                        break
+                if not sample_found:
+                    can_set_metadata = False
+                    correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
+                    correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
+                    correction_msg += "that includes the required entry to resolve this issue.<br/>"
+                    invalid_files.append( ( name, correction_msg ) )
+            elif options.missing_index_file:
+                missing_head, missing_tail = os.path.split( options.missing_index_file )
+                # See if the repository contains the required xxx.loc.sample file.
+                sample_found = False
+                for sample_file in sample_files:
+                    sample_head, sample_tail = os.path.split( sample_file )
+                    if sample_tail == '%s.sample' % missing_tail:
+                        copy_sample_loc_file( trans, sample_file )
+                        sample_found = True
+                        break
+                if not sample_found:
+                    can_set_metadata = False
+                    correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( options.missing_index_file )
+                    correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( missing_tail )
+                    invalid_files.append( ( name, correction_msg ) )
+    return can_set_metadata, invalid_files
 def generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict ):
     """
     Update the received metadata_dict with changes that have been
     applied to the received tool.
     """
     repository = get_repository( trans, id )
+    # Handle tool.requirements.
     tool_requirements = []
     for tr in tool.requirements:
         name=tr.name
@@ -187,6 +234,7 @@ def generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, me
                                  fabfile=fabfile,
                                  method=method )
         tool_requirements.append( requirement_dict )
+    # Handle tool.tests.
     tool_tests = []
     if tool.tests:
         for ttb in tool.tests:
@@ -258,6 +306,7 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
     invalid_files = []
+    sample_files = []
     ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
     if ctx is not None:
         metadata_dict = {}
@@ -271,6 +320,10 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                     if 'hgrc' in files:
                          # Don't include hgrc files in commit.
                         files.remove( 'hgrc' )
+                    # Find all special .sample files first.
+                    for name in files:
+                        if name.endswith( '.sample' ):
+                            sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
                     for name in files:
                         # Find all tool configs.
                         if name.endswith( '.xml' ):
@@ -278,9 +331,11 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                                 full_path = os.path.abspath( os.path.join( root, name ) )
                                 tool = load_tool( trans, full_path )
                                 if tool is not None:
-                                    # Update the list metadata dictionaries for tools in metadata_dict.
-                                    tool_config = os.path.join( root, name )
-                                    metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
+                                    can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
+                                    if can_set_metadata:
+                                        # Update the list of metadata dictionaries for tools in metadata_dict.
+                                        tool_config = os.path.join( root, name )
+                                        metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
                             except Exception, e:
                                 invalid_files.append( ( name, str( e ) ) )
                         # Find all exported workflows
@@ -297,10 +352,14 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                             except Exception, e:
                                 invalid_files.append( ( name, str( e ) ) )
         else:
+            # Find all special .sample files first.
+            for filename in ctx:
+                if filename.endswith( '.sample' ):
+                    sample_files.append( os.path.abspath( os.path.join( root, filename ) ) )
             # Get all tool config file names from the hgweb url, something like:
             # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
             for filename in ctx:
-                # Find all tool configs - should not have to update metadata for workflows.
+                # Find all tool configs - should not have to update metadata for workflows for now.
                 if filename.endswith( '.xml' ):
                     fctx = ctx[ filename ]
                     # Write the contents of the old tool config to a temporary file.
@@ -313,12 +372,14 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                     try:
                         tool = load_tool( trans, tmp_filename )
                         if tool is not None:
-                            # Update the list metadata dictionaries for tools in metadata_dict.  Note that filename
-                            # here is the relative path to the config file within the change set context, something
-                            # like filtering.xml, but when the change set was the repository tip, the value was
-                            # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
-                            # anything, but may result in a bit of confusion when maintaining the code / data over time.
-                            metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
+                            can_set_metadata, invalid_files = check_tool_input_params( trans, filename, tool, sample_files, invalid_files )
+                            if can_set_metadata:
+                                # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
+                                # here is the relative path to the config file within the change set context, something
+                                # like filtering.xml, but when the change set was the repository tip, the value was
+                                # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
+                                # anything, but may result in a bit of confusion when maintaining the code / data over time.
+                                metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
                     except Exception, e:
                         invalid_files.append( ( name, str( e ) ) )
                     try:
@@ -346,49 +407,26 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
         else:
-            message = "Changeset revision '%s' includes no tools or exported workflows for which metadata can be set." % str( changeset_revision )
+            message = "Change set revision '%s' includes no tools or exported workflows for which metadata can be set." % str( changeset_revision )
             status = "error"
     else:
         # change_set is None
-        message = "Repository does not include changeset revision '%s'." % str( changeset_revision )
+        message = "Repository does not include change set revision '%s'." % str( changeset_revision )
         status = 'error'
     if invalid_files:
         if metadata_dict:
             message = "Metadata was defined for some items in change set revision '%s'.  " % str( changeset_revision )
-            message += "If the following files are Galaxy tool configs or exported Galaxy workflows, correct the problems and reset metadata.<br/>"
+            message += "Correct the following problems if necessary and reset metadata.<br/>"
         else:
             message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( changeset_revision )
         for itc_tup in invalid_files:
-            tool_file = itc_tup[0]
-            exception_msg = itc_tup[1]
+            tool_file, exception_msg = itc_tup
             if exception_msg.find( 'No such file or directory' ) >= 0:
                 exception_items = exception_msg.split()
                 missing_file_items = exception_items[7].split( '/' )
                 missing_file = missing_file_items[-1].rstrip( '\'' )
                 correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( missing_file )
-                if exception_msg.find( '.loc' ) >= 0:
-                    # Handle the special case where a tool depends on a missing xxx.loc file by telliing
-                    # the user to upload xxx.loc.sample to the repository so that it can be copied to
-                    # ~/tool-data/xxx.loc.  In this case, exception_msg will look something like:
-                    # [Errno 2] No such file or directory: '/Users/gvk/central/tool-data/blast2go.loc'
-                    sample_loc_file = '%s.sample' % str( missing_file )
-                    correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % sample_loc_file
-                else:
-                    correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % missing_file
-            elif exception_msg.find( 'Data table named' ) >= 0:
-                # Handle the special case where the tool requires an entry in the tool_data_table.conf file.
-                # In this case, exception_msg will look something like:
-                # Data table named 'tmap_indexes' is required by tool but not configured
-                exception_items = exception_msg.split()
-                name_attr = exception_items[3].lstrip( '\'' ).rstrip( '\'' )
-                message += "<b>%s</b> - This tool requires an entry in the tool_data_table_conf.xml file.  " % tool_file
-                message += "Complete and <b>Save</b> the form below to resolve this issue.<br/>"
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='add_tool_data_table_entry',
-                                                                  name_attr=name_attr,
-                                                                  repository_id=id,
-                                                                  message=message,
-                                                                  status='error' ) )
+                correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % missing_file
             else:
                correction_msg = exception_msg
             message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )
@@ -410,14 +448,6 @@ def change_set_is_malicious( trans, id, changeset_revision, **kwd ):
     if repository_metadata:
         return repository_metadata.malicious
     return False
-def copy_sample_loc_file( trans, filename ):
-    """Copy xxx.loc.sample to ~/tool-data/xxx.loc"""
-    sample_loc_file = os.path.split( filename )[1]
-    loc_file = os.path.split( filename )[1].rstrip( '.sample' )
-    tool_data_path = os.path.abspath( trans.app.config.tool_data_path )
-    if not ( os.path.exists( os.path.join( tool_data_path, loc_file ) ) or os.path.exists( os.path.join( tool_data_path, sample_loc_file ) ) ):
-        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
-        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
 def get_configured_ui():
     # Configure any desired ui settings.
     _ui = ui.ui()
