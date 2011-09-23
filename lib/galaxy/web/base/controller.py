@@ -2456,7 +2456,7 @@ class Admin( object ):
                                                                         if error:
                                                                             log.debug( exception_msg )
                                                                         break
-                                                            elif options.missing_index_file:
+                                                            if options.missing_index_file:
                                                                 missing_head, missing_tail = os.path.split( options.missing_index_file )
                                                                 # The repository must contain the required xxx.loc.sample file.
                                                                 for sample_file in sample_files:
