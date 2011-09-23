@@ -12,34 +12,64 @@ from galaxy import util
 log = logging.getLogger( __name__ )
 
 class ToolDataTableManager( object ):
-    """
-    Manages a collection of tool data tables
-    """
-    
+    """Manages a collection of tool data tables"""
     def __init__( self, config_filename=None ):
         self.data_tables = {}
         if config_filename:
-            self.add_from_config_file( config_filename )
-        
+            self.load_from_config_file( config_filename )
     def __getitem__( self, key ):
         return self.data_tables.__getitem__( key )
-        
     def __contains__( self, key ):
         return self.data_tables.__contains__( key )
-        
-    def add_from_config_file( self, config_filename ):
+    def load_from_config_file( self, config_filename ):
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
+        table_elems = []
         for table_elem in root.findall( 'table' ):
             type = table_elem.get( 'type', 'tabular' )
             assert type in tool_data_table_types, "Unknown data table type '%s'" % type
+            table_elems.append( table_elem )
             table = tool_data_table_types[ type ]( table_elem )
-            self.data_tables[ table.name ] = table
-            log.debug( "Loaded tool data table '%s", table.name )
+            if table.name not in self.data_tables:
+                self.data_tables[ table.name ] = table
+                log.debug( "Loaded tool data table '%s", table.name )
+        return table_elems
+    def add_new_entries_from_config_file( self, config_filename ):
+        """
+        We have 2 cases to handle, files whose root tag is <tables>, for example:
+        <tables>
+            <!-- Location of Tmap files -->
+            <table name="tmap_indexes" comment_char="#">
+                <columns>value, dbkey, name, path</columns>
+                <file path="tool-data/tmap_index.loc" />
+            </table>
+        </tables>
+        and files whose root tag is <table>, for example:
+        <!-- Location of Tmap files -->
+        <table name="tmap_indexes" comment_char="#">
+            <columns>value, dbkey, name, path</columns>
+            <file path="tool-data/tmap_index.loc" />
+        </table>
+        """
+        tree = util.parse_xml( config_filename )
+        root = tree.getroot()
+        if root.tag == 'tables':
+            table_elems = self.load_from_config_file( config_filename )
+        else:
+            table_elems = []
+            type = root.get( 'type', 'tabular' )
+            assert type in tool_data_table_types, "Unknown data table type '%s'" % type
+            table_elems.append( root )
+            table = tool_data_table_types[ type ]( root )
+            if table.name not in self.data_tables:
+                self.data_tables[ table.name ] = table
+                log.debug( "Loaded tool data table '%s", table.name )
+        return table_elems
     
 class ToolDataTable( object ):
     def __init__( self, config_element ):
         self.name = config_element.get( 'name' )
+        self.missing_index_file = None
     
 class TabularToolDataTable( ToolDataTable ):
     """
@@ -58,7 +88,6 @@ class TabularToolDataTable( ToolDataTable ):
     def __init__( self, config_element ):
         super( TabularToolDataTable, self ).__init__( config_element )
         self.configure_and_load( config_element )
-    
     def configure_and_load( self, config_element ):
         """
         Configure and load table from an XML element.
@@ -71,15 +100,14 @@ class TabularToolDataTable( ToolDataTable ):
         all_rows = []
         for file_element in config_element.findall( 'file' ):
             filename = file_element.get( 'path' )
-            if not os.path.exists( filename ): 
-                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
-            else:
+            if os.path.exists( filename ):
                 all_rows.extend( self.parse_file_fields( open( filename ) ) )
+            else:
+                self.missing_index_file = filename
+                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
         self.data = all_rows
-        
     def get_fields( self ):
         return self.data
-            
     def parse_column_spec( self, config_element ):
         """
         Parse column definitions, which can either be a set of 'column' elements
@@ -109,7 +137,6 @@ class TabularToolDataTable( ToolDataTable ):
         assert 'value' in self.columns, "Required 'value' column missing from column def"
         if 'name' not in self.columns:
             self.columns['name'] = self.columns['value']
-        
     def parse_file_fields( self, reader ):
         """
         Parse separated lines from file and return a list of tuples.

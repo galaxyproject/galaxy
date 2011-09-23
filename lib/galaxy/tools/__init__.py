@@ -360,13 +360,18 @@ class Tool:
     tool_type = 'default'
     
     def __init__( self, config_file, root, app, guid=None ):
-        """
-        Load a tool from the config named by `config_file`
-        """
+        """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
+        # Define a place to keep track of all input parameters.  These
+        # differ from the inputs dictionary in that inputs can be page
+        # elements like conditionals, but input_params are basic form
+        # parameters like SelectField objects.  This enables us to more
+        # easily ensure that parameter dependencies like index files or
+        # tool_data_table_conf.xml entries exist.
+        self.input_params = []
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
     
@@ -698,7 +703,6 @@ class Tool:
                     name = attrib.pop( 'name', None )
                     if name is None:
                         raise Exception( "Test output does not have a 'name'" )
-
                     assert_elem = output_elem.find("assert_contents")
                     assert_list = None
                     # Trying to keep testing patch as localized as                                              
@@ -713,13 +717,10 @@ class Tool:
                         for child_elem in child_elems:
                             converted_children.append( convert_elem(child_elem) )
                         return {"tag" : tag, "attributes" : attributes, "children" : converted_children}
-                    
                     if assert_elem is not None:
                         assert_list = []
                         for assert_child in list(assert_elem):
                             assert_list.append(convert_elem(assert_child))
-
-
                     file = attrib.pop( 'file', None )
                     # File no longer required if an list of assertions was present.                             
                     if assert_list is None and file is None:
@@ -734,8 +735,6 @@ class Tool:
                     attributes['sort'] = util.string_as_bool( attrib.pop( 'sort', False ) )
                     attributes['extra_files'] = []
                     attributes['assert_list'] = assert_list
-
-
                     if 'ftype' in attrib:
                         attributes['ftype'] = attrib['ftype']
                     for extra in output_elem.findall( 'extra_files' ):
@@ -862,6 +861,7 @@ class Tool:
                 rval[param.name] = param
                 if hasattr( param, 'data_ref' ):
                     param.ref_input = context[ param.data_ref ]
+                self.input_params.append( param )
         return rval
 
     def parse_param_elem( self, input_elem, enctypes, context ):
