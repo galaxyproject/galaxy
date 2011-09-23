@@ -426,8 +426,12 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                 exception_items = exception_msg.split()
                 missing_file_items = exception_items[7].split( '/' )
                 missing_file = missing_file_items[-1].rstrip( '\'' )
+                if missing_file.endswith( '.loc' ):
+                    sample_ext = '%s.sample' % missing_file
+                else:
+                    sample_ext = missing_file
                 correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( missing_file )
-                correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % missing_file
+                correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % sample_ext
             else:
                correction_msg = exception_msg
             message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )
