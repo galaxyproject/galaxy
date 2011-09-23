@@ -247,15 +247,35 @@
     <br/>
 %endif
 
-## handle calculating the redict url for the special case where we have nginx proxy
-## upload and need to do url_for on the redirect portion of the tool action
 <%
+    # Render an error message if a dynamically generated select list is missing a required
+    # index file or entry in the tool_data_table_conf.xml file.
+    from galaxy.tools.parameters.basic import SelectToolParameter
+    message = ""
+    for input_param in tool.input_params:
+        if isinstance( input_param, SelectToolParameter ) and input_param.is_dynamic:
+            # If the tool refers to .loc files or requires an entry in the
+            # tool_data_table_conf.xml, make sure all requirements exist.
+            options = input_param.dynamic_options or input_param.options
+            if options.missing_tool_data_table_name:
+                message = "Data table named '%s' is required by tool but not configured" % options.missing_tool_data_table_name
+                break
+            if options.missing_index_file:
+                message = "Index file named '%s' is required by tool but not availble" % options.missing_index_file
+                break
+
+    # Handle calculating the redirect url for the special case where we have nginx proxy
+    # upload and need to do url_for on the redirect portion of the tool action.
     try:
         tool_url = h.url_for(tool.action)
     except AttributeError:
         assert len(tool.action) == 2
         tool_url = tool.action[0] + h.url_for(tool.action[1])
 %>
+%if message:
+    <div class="errormessage">${message}</div>
+    <br/>
+%endif
 <div class="toolForm" id="${tool.id}">
     %if tool.has_multiple_pages:
         <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
