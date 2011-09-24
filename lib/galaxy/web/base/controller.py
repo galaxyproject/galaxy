@@ -310,40 +310,62 @@ class UsesVisualization( SharableItemSecurity ):
 
         config = None
         if visualization.type == 'trackster':
-            # Trackster config; taken from tracks/browser
+            # Unpack Trackster config.
             latest_revision = visualization.latest_revision
             bookmarks = latest_revision.config.get( 'bookmarks', [] )
-            tracks = []
+            
+            def pack_track( track_dict ):
+                dataset_id = track_dict['dataset_id']
+                hda_ldda = track_dict.get('hda_ldda', 'hda')
+                if hda_ldda == "hda":
+                    dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+                else:
+                    dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(dataset_id) )
+
+                try:
+                    prefs = track_dict['prefs']
+                except KeyError:
+                    prefs = {}
+
+                track_type, _ = dataset.datatype.get_track_type()
+                track_data_provider_class = get_data_provider( original_dataset=dataset )
+                track_data_provider = track_data_provider_class( original_dataset=dataset )
+                
+                return {
+                    "track_type": track_type,
+                    "name": track_dict['name'],
+                    "hda_ldda": track_dict.get("hda_ldda", "hda"),
+                    "dataset_id": trans.security.encode_id( dataset.id ),
+                    "prefs": prefs,
+                    "filters": track_data_provider.get_filters(),
+                    "tool": get_tool_def( trans, dataset )
+                }
+            
+            def pack_collection( collection_dict ):
+                drawables = []
+                for drawable_dict in collection_dict[ 'drawables' ]:
+                    if 'track_type' in drawable_dict:
+                        drawables.append( pack_track( drawable_dict ) )
+                    else:
+                        drawables.append( pack_collection( drawable_dict ) )
+                return {
+                    'obj_type': collection_dict[ 'obj_type' ],
+                    'drawables': drawables
+                }
 
             # Set tracks.
+            tracks = []
             if 'tracks' in latest_revision.config:
-                for t in visualization.latest_revision.config['tracks']:
-                    dataset_id = t['dataset_id']
-                    hda_ldda = t.get('hda_ldda', 'hda')
-                    if hda_ldda == "hda":
-                        dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+                # Legacy code.
+                for track_dict in visualization.latest_revision.config[ 'tracks' ]:
+                    tracks.append( pack_track( track_dict ) )
+            elif 'view' in latest_revision.config:
+                for drawable_dict in visualization.latest_revision.config[ 'view' ][ 'drawables' ]:
+                    if 'track_type' in drawable_dict:
+                        tracks.append( pack_track( drawable_dict ) )
                     else:
-                        dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(dataset_id) )
-
-                    try:
-                        prefs = t['prefs']
-                    except KeyError:
-                        prefs = {}
-
-                    track_type, _ = dataset.datatype.get_track_type()
-                    track_data_provider_class = get_data_provider( original_dataset=dataset )
-                    track_data_provider = track_data_provider_class( original_dataset=dataset )
-
-                    tracks.append( {
-                        "track_type": track_type,
-                        "name": t['name'],
-                        "hda_ldda": t.get("hda_ldda", "hda"),
-                        "dataset_id": trans.security.encode_id( dataset.id ),
-                        "prefs": prefs,
-                        "filters": track_data_provider.get_filters(),
-                        "tool": get_tool_def( trans, dataset )
-                    } )
-
+                        tracks.append( pack_collection( drawable_dict ) )
+                
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ),
                         "tracks": tracks, "bookmarks": bookmarks, "chrom": "", "dbkey": visualization.dbkey }
 

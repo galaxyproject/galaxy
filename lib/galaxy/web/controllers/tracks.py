@@ -615,19 +615,40 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         vis_rev.visualization = vis
         vis_rev.title = vis.title
         vis_rev.dbkey = dbkey
-        # Tracks from payload
-        tracks = []
-        # TODO: why go through the trouble of unpacking config only to repack and
-        # put in database? How about sticking JSON directly into database?
-        for track in decoded_payload['tracks']:
-            tracks.append( {    "dataset_id": track['dataset_id'],
-                                "hda_ldda": track.get('hda_ldda', "hda"),
-                                "name": track['name'],
-                                "track_type": track['track_type'],
-                                "prefs": track['prefs']
-            } )
-        bookmarks = decoded_payload[ 'bookmarks' ]
-        vis_rev.config = { "tracks": tracks, "bookmarks": bookmarks }
+        
+        def unpack_track( track_json ):
+            """ Unpack a track from its json. """
+            return {
+                "dataset_id": track_json['dataset_id'],
+                "hda_ldda": track_json.get('hda_ldda', "hda"),
+                "name": track_json['name'],
+                "track_type": track_json['track_type'],
+                "prefs": track_json['prefs']
+            }
+        
+        def unpack_collection( collection_json ):
+            """ Unpack a collection from its json. """
+            unpacked_drawables = []
+            drawables = collection_json[ 'drawables' ]
+            for drawable_json in drawables:
+                if 'track_type' in drawable_json:
+                    drawable = unpack_track( drawable_json )
+                else:
+                    drawable = unpack_collection( drawable_json )
+                unpacked_drawables.append( drawable )
+            return {
+                "obj_type": collection_json[ 'obj_type' ],
+                "drawables": unpacked_drawables
+            }
+
+        # TODO: unpack and validate bookmarks:
+        def unpack_bookmarks( bookmarks_json ):
+            return 
+        
+        # Unpack and validate view content.
+        view_content = unpack_collection( decoded_payload[ 'view' ] )
+        bookmarks = unpack_bookmarks( decoded_payload[ 'bookmarks' ] )
+        vis_rev.config = { "view": view_content, "bookmarks": bookmarks }
         # Viewport from payload
         if 'viewport' in decoded_payload:
             chrom = decoded_payload['viewport']['chrom']

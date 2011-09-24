@@ -29,17 +29,51 @@ var add_bookmark = function(position, annotation) {
 };
 
 /**
- * Types of tracks that can be added to a view.
+ * Objects that can be added to a view.
  */
-var addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack };
+var addable_objects = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack, "DrawableGroup": DrawableGroup };
 
 /**
  * Decode a track from a dictionary.
  */
 var track_from_dict = function(track_dict) {
-    return new addable_track_types[track_dict.track_type]( 
+    return new addable_objects[track_dict.track_type]( 
                         track_dict.name, view, track_dict.hda_ldda, track_dict.dataset_id,
                         track_dict.prefs, track_dict.filters, track_dict.tool);
+};
+
+/**
+ * Decode a drawable collection from a dictionary.
+ */
+var drawable_collection_from_dict = function(collection_dict) {
+    var collection = new addable_objects[collection_dict.obj_type]("New Group", view, view.viewport_container, view);
+    for (var i = 0; i < collection_dict.drawables.length; i++) {
+        var 
+            drawable_dict = collection_dict.drawables[i],
+            drawable;
+        if (drawable_dict['track_type']) {
+            drawable = track_from_dict(drawable_dict);
+        }
+        else {
+            drawable = drawable_collection_from_dict(drawable_dict);
+        }
+        collection.add_drawable(drawable);
+        // HACK: move track from view to collection's content_div. 
+        // FIX: Tracks should be able to be be added to arbitrary containers; 
+        // every moveable should have a container_div, and every container should have 
+        // a content_div (though perhaps name changes are needed).
+        collection.content_div.append(drawable.container_div);
+    }
+    return collection;
+};
+
+/**
+ * Decode a drawable from a dict.
+ */
+var drawable_from_dict = function(drawable_dict) {
+    return (drawable_dict['track_type'] ? 
+            track_from_dict(drawable_dict) :
+            drawable_collection_from_dict(drawable_dict));
 };
 
 /**
@@ -51,21 +85,12 @@ var create_visualization = function(parent_elt, title, id, dbkey, callback, trac
     view = new View(parent_elt, title, id, dbkey, callback);
     view.editor = true;
     
-    // Add tracks to view.
+    // Add drawables to view.
     if (tracks_config) {
-        var track_config, track, parent_track, parent_obj;
+        var track_config;
         for (var i = 0; i < tracks_config.length; i++) {
             track_config = tracks_config[i];
-            track = track_from_dict(track_config);
-            parent_obj = view;
-            if (track_config.is_child) {
-                parent_obj = parent_track;
-            }
-            else {
-                // New parent track is this track.
-                parent_track = track;
-            }
-            parent_obj.add_track(track);
+            view.add_drawable( drawable_from_dict(track_config) );
         }
     }
                     

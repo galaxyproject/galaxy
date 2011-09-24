@@ -101,7 +101,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                                    [ arguments[0] ]
                                                    );
                                  for (var i= 0; i < track_defs.length; i++) {
-                                     view.add_track( track_from_dict(track_defs[i]) ); 
+                                     view.add_drawable( track_from_dict(track_defs[i]) ); 
                                  }
                             });
                             hide_modal();
@@ -186,7 +186,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     url: "${h.url_for( action='add_track_async' )}",
                     data: { hda_id: "${add_dataset}" },
                     dataType: "json",
-                    success: function(track_data) { view.add_track( track_from_dict(track_data) ) }
+                    success: function(track_data) { view.add_drawable( track_from_dict(track_data) ) }
                 });
                 
             %endif
@@ -199,15 +199,12 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 "Add Tracks": add_tracks,
                 "Add Group": function() {
                     var group = new DrawableGroup("New Group", view, view.viewport_container, view);
-                    view.add_track(group);
+                    view.add_drawable(group);
                 },
                 "Save": function() {
                     // Show saving dialog box
                     show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
-                    
-                    // Save tracks.
-                    var saved_tracks = view.to_json();
-                    
+                                        
                     // Save bookmarks.
                     var bookmarks = [];
                     $(".bookmark").each(function() { 
@@ -219,7 +216,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 
                     var overview_track_name = (view.overview_track ? view.overview_track.name : null);
                     var payload = { 
-                        'tracks': saved_tracks, 
+                        'view': view.to_json(), 
                         'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
                         'bookmarks': bookmarks
                     };
