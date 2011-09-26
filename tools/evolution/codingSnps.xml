@@ -20,7 +20,7 @@
   </inputs>
 
   <outputs>
-    <data format="tabular" name="out_file1" />
+    <data format="interval" name="out_file1" />
   </outputs>
 
   <code file="codingSnps_filter.py"></code>
