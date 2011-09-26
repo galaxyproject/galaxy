@@ -166,6 +166,7 @@ class QuotaAgent( NoQuotaAgent ):
                 rval.append( dqa.quota )
             for uqa in user.quotas:
                 rval.append( uqa.quota )
-            for gqa in [ uga.group for uga in user.groups ]:
-                rval.append( gqa.quota )
+            for group in [ uga.group for uga in user.groups ]:
+                for gqa in group.quotas:
+                    rval.append( gqa.quota )
         return rval

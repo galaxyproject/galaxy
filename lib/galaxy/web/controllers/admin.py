@@ -384,7 +384,7 @@ class QuotaListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class AdminGalaxy( BaseUIController, Admin, AdminActions, QuotaParamParser ):
+class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamParser ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
