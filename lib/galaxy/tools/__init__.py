@@ -1320,7 +1320,32 @@ class Tool:
                         errors[ input.name ] = error
                     state[ input.name ] = value
         return errors
-            
+    @property
+    def params_with_missing_data_table_entry( self ):
+        """
+        Return all parameters that are dynamically generated select lists whose
+        options require an entry not currently in the tool_data_table_conf.xml file.
+        """
+        params = []
+        for input_param in self.input_params:
+            if isinstance( input_param, basic.SelectToolParameter ) and input_param.is_dynamic:
+                options = input_param.options
+                if options and options.missing_tool_data_table_name and input_param not in params:
+                    params.append( input_param )
+        return params
+    @property
+    def params_with_missing_index_file( self ):
+        """
+        Return all parameters that are dynamically generated 
+        select lists whose options refer to a  missing .loc file.
+        """
+        params = []
+        for input_param in self.input_params:
+            if isinstance( input_param, basic.SelectToolParameter ) and input_param.is_dynamic:
+                options = input_param.options
+                if options and options.missing_index_file and input_param not in params:
+                    params.append( input_param )
+        return params
     def get_static_param_values( self, trans ):
         """
         Returns a map of parameter names and values if the tool does not 

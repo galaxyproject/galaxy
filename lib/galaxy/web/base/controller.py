@@ -2437,96 +2437,14 @@ class Admin( object ):
                         os.chdir( current_working_dir )
                         tmp_stderr.close()
                         if returncode == 0:
-                            # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
-                            repository_tools_tups = []
-                            # The sample_files list contains all files whose name ends in .sample
-                            sample_files = []
-                            for root, dirs, files in os.walk( repo_files_dir ):
-                                if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                                    if '.hg' in dirs:
-                                        # Don't visit .hg directories - should be impossible since we don't
-                                        # allow uploaded archives that contain .hg dirs, but just in case...
-                                        dirs.remove( '.hg' )
-                                    if 'hgrc' in files:
-                                         # Don't include hgrc files in commit.
-                                        files.remove( 'hgrc' )
-                                    # Find all special .sample files first.
-                                    for name in files:
-                                        if name.endswith( '.sample' ):
-                                            sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
-                                    for name in files:
-                                        # Find all tool configs.
-                                        if name.endswith( '.xml' ):
-                                            relative_path = os.path.join( root, name )
-                                            full_path = os.path.abspath( os.path.join( root, name ) )
-                                            try:
-                                                repository_tool = trans.app.toolbox.load_tool( full_path )
-                                                if repository_tool:
-                                                    # Check all of the tool's input parameters, looking for any that are dynamically
-                                                    # generated using external data files to make sure the files exist.
-                                                    for input_param in repository_tool.input_params:
-                                                        if isinstance( input_param, tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
-                                                            # If the tool refers to .loc files or requires an entry in the
-                                                            # tool_data_table_conf.xml, make sure all requirements exist.
-                                                            options = input_param.dynamic_options or input_param.options
-                                                            if options:
-                                                                if options.missing_tool_data_table_name:
-                                                                    # The repository must contain a tool_data_table_conf.xml.sample file.
-                                                                    for sample_file in sample_files:
-                                                                        head, tail = os.path.split( sample_file )
-                                                                        if tail == 'tool_data_table_conf.xml.sample':
-                                                                            error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
-                                                                            if error:
-                                                                                log.debug( exception_msg )
-                                                                            break
-                                                                if options.missing_index_file:
-                                                                    missing_head, missing_tail = os.path.split( options.missing_index_file )
-                                                                    # The repository must contain the required xxx.loc.sample file.
-                                                                    for sample_file in sample_files:
-                                                                        sample_head, sample_tail = os.path.split( sample_file )
-                                                                        if sample_tail == '%s.sample' % missing_tail:
-                                                                            copy_sample_loc_file( trans, sample_file )
-                                                                            break
-                                                    # At this point, we need to lstrip tool_path from relative_path.
-                                                    tup_path = relative_path.replace( tool_path, '' ).lstrip( '/' )
-                                                    repository_tools_tups.append( ( tup_path, repository_tool ) )
-                                            except Exception, e:
-                                                # We have an inavlid .xml file, so not a tool config.
-                                                log.debug( "Ignoring invalid tool config (%s). Error: %s" % ( str( relative_path ), str( e ) ) )
+                            sample_files, repository_tools_tups = self.__get_repository_tools_and_sample_files( trans, tool_path, repo_files_dir )
                             if repository_tools_tups:
-                                # Look at each tool to see if it includes a "requirement" that refers to
-                                # a fabric script.  For those that do, execute the fabric script to install
-                                # tool dependencies.
-                                for repository_tools_tup in repository_tools_tups:
-                                    tup_path, repository_tool = repository_tools_tup
-                                    for requirement in repository_tool.requirements:
-                                        if requirement.type == 'fabfile':
-                                            log.debug( 'Executing fabric script to install dependencies for tool "%s"...' % repository_tool.name )
-                                            fabfile = requirement.fabfile
-                                            method = requirement.method
-                                            # Find the relative path to the fabfile.
-                                            relative_fabfile_path = None
-                                            for root, dirs, files in os.walk( repo_files_dir ):
-                                                for name in files:
-                                                    if name == fabfile:
-                                                        relative_fabfile_path = os.path.join( root, name )
-                                                        break
-                                            if relative_fabfile_path:
-                                                # cmd will look something like: fab -f fabfile.py install_bowtie
-                                                cmd = 'fab -f %s %s' % ( relative_fabfile_path, method )
-                                                tmp_name = tempfile.NamedTemporaryFile().name
-                                                tmp_stderr = open( tmp_name, 'wb' )
-                                                os.chdir( repo_files_dir )
-                                                proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
-                                                returncode = proc.wait()
-                                                os.chdir( current_working_dir )
-                                                tmp_stderr.close()
-                                                if returncode != 0:
-                                                    # TODO: do something more here than logging the problem.
-                                                    tmp_stderr = open( tmp_name, 'rb' )
-                                                    error = tmp_stderr.read()
-                                                    tmp_stderr.close()
-                                                    log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
+                                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
+                                repository_tools_tups = self.__handle_missing_data_table_entry( trans, tool_path, sample_files, repository_tools_tups )
+                                # Handle missing index files for tool parameters that are dynamically generated select lists.
+                                repository_tools_tups = self.__handle_missing_index_file( trans, tool_path, sample_files, repository_tools_tups )
+                                # Handle tools that use fabric scripts to install dependencies.
+                                self.__handle_tool_dependencies( current_working_dir, repo_files_dir, repository_tools_tups )
                                 # Generate an in-memory tool conf section that includes the new tools.
                                 new_tool_section = self.__generate_tool_panel_section( repository_name,
                                                                                        repository_clone_url,
@@ -2585,6 +2503,120 @@ class Admin( object ):
                                     tool_panel_section_select_field=tool_panel_section_select_field,
                                     message=message,
                                     status=status )
+    def __handle_missing_data_table_entry( self, trans, tool_path, sample_files, repository_tools_tups ):
+        # Inspect each tool to see if any have input parameters that are dynamically
+        # generated select lists that require entries in the tool_data_table_conf.xml file.
+        missing_data_table_entry = False
+        for index, repository_tools_tup in enumerate( repository_tools_tups ):
+            tup_path, repository_tool = repository_tools_tup
+            if repository_tool.params_with_missing_data_table_entry:
+                missing_data_table_entry = True
+                break
+        if missing_data_table_entry:
+            # The repository must contain a tool_data_table_conf.xml.sample file that includes
+            # all required entries for all tools in the repository.
+            for sample_file in sample_files:
+                head, tail = os.path.split( sample_file )
+                if tail == 'tool_data_table_conf.xml.sample':
+                    break
+            error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
+            if error:
+                # TODO: Do more here than logging an exception.
+                log.debug( exception_msg )
+            # Reload the tool into the local list of repository_tools_tups.
+            repository_tool = trans.app.toolbox.load_tool( os.path.join( tool_path, tup_path ) )
+            repository_tools_tups[ index ] = ( tup_path, repository_tool )
+        return repository_tools_tups
+    def __handle_missing_index_file( self, trans, tool_path, sample_files, repository_tools_tups ):
+        # Inspect each tool to see if it has any input parameters that
+        # are dynamically generated select lists that depend on a .loc file.
+        missing_files_handled = []
+        for index, repository_tools_tup in enumerate( repository_tools_tups ):
+            tup_path, repository_tool = repository_tools_tup
+            params_with_missing_index_file = repository_tool.params_with_missing_index_file
+            for param in params_with_missing_index_file:
+                options = param.options
+                missing_head, missing_tail = os.path.split( options.missing_index_file )
+                if missing_tail not in missing_files_handled:
+                    # The repository must contain the required xxx.loc.sample file.
+                    for sample_file in sample_files:
+                        sample_head, sample_tail = os.path.split( sample_file )
+                        if sample_tail == '%s.sample' % missing_tail:
+                            copy_sample_loc_file( trans, sample_file )
+                            if options.tool_data_table and options.tool_data_table.missing_index_file:
+                                options.tool_data_table.handle_found_index_file( options.missing_index_file )
+                            missing_files_handled.append( missing_tail )
+                            break
+            # Reload the tool into the local list of repository_tools_tups.
+            repository_tool = trans.app.toolbox.load_tool( os.path.join( tool_path, tup_path ) )
+            repository_tools_tups[ index ] = ( tup_path, repository_tool )
+        return repository_tools_tups
+    def __handle_tool_dependencies( self, current_working_dir, repo_files_dir, repository_tools_tups ):
+        # Inspect each tool to see if it includes a "requirement" that refers to a fabric
+        # script.  For those that do, execute the fabric script to install tool dependencies.
+        for index, repository_tools_tup in enumerate( repository_tools_tups ):
+            tup_path, repository_tool = repository_tools_tup
+            for requirement in repository_tool.requirements:
+                if requirement.type == 'fabfile':
+                    log.debug( 'Executing fabric script to install dependencies for tool "%s"...' % repository_tool.name )
+                    fabfile = requirement.fabfile
+                    method = requirement.method
+                    # Find the relative path to the fabfile.
+                    relative_fabfile_path = None
+                    for root, dirs, files in os.walk( repo_files_dir ):
+                        for name in files:
+                            if name == fabfile:
+                                relative_fabfile_path = os.path.join( root, name )
+                                break
+                    if relative_fabfile_path:
+                        # cmd will look something like: fab -f fabfile.py install_bowtie
+                        cmd = 'fab -f %s %s' % ( relative_fabfile_path, method )
+                        tmp_name = tempfile.NamedTemporaryFile().name
+                        tmp_stderr = open( tmp_name, 'wb' )
+                        os.chdir( repo_files_dir )
+                        proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
+                        returncode = proc.wait()
+                        os.chdir( current_working_dir )
+                        tmp_stderr.close()
+                        if returncode != 0:
+                            # TODO: do something more here than logging the problem.
+                            tmp_stderr = open( tmp_name, 'rb' )
+                            error = tmp_stderr.read()
+                            tmp_stderr.close()
+                            log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
+    def __get_repository_tools_and_sample_files( self, trans, tool_path, repo_files_dir ):
+        # The sample_files list contains all files whose name ends in .sample
+        sample_files = []
+        # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
+        repository_tools_tups = []
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                if '.hg' in dirs:
+                    # Don't visit .hg directories - should be impossible since we don't
+                    # allow uploaded archives that contain .hg dirs, but just in case...
+                    dirs.remove( '.hg' )
+                if 'hgrc' in files:
+                     # Don't include hgrc files in commit.
+                    files.remove( 'hgrc' )
+                # Find all special .sample files first.
+                for name in files:
+                    if name.endswith( '.sample' ):
+                        sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
+                for name in files:
+                    # Find all tool configs.
+                    if name.endswith( '.xml' ):
+                        relative_path = os.path.join( root, name )
+                        full_path = os.path.abspath( os.path.join( root, name ) )
+                        try:
+                            repository_tool = trans.app.toolbox.load_tool( full_path )
+                            if repository_tool:
+                                # At this point, we need to lstrip tool_path from relative_path.
+                                tup_path = relative_path.replace( tool_path, '' ).lstrip( '/' )
+                                repository_tools_tups.append( ( tup_path, repository_tool ) )
+                        except Exception, e:
+                            # We have an invalid .xml file, so not a tool config.
+                            log.debug( "Ignoring invalid tool config (%s). Error: %s" % ( str( relative_path ), str( e ) ) )
+        return sample_files, repository_tools_tups
     def __add_shed_tool_conf_entry( self, trans, shed_tool_conf, new_tool_section ):
         # Add an entry in the shed_tool_conf file. An entry looks something like:
         # <section name="Filter and Sort" id="filter">
@@ -2704,12 +2736,15 @@ def build_tool_panel_section_select_field( trans ):
         select_field.add_option( option_tup[0], option_tup[1] )
     return select_field
 def copy_sample_loc_file( trans, filename ):
-    """Copy xxx.loc.sample to ~/tool-data/xxx.loc"""
+    """Copy xxx.loc.sample to ~/tool-data/xxx.loc.sample and ~/tool-data/xxx.loc"""
     head, sample_loc_file = os.path.split( filename )
-    loc_file = sample_loc_file.rstrip( '.sample' )
+    loc_file = sample_loc_file.replace( '.sample', '' )
     tool_data_path = os.path.abspath( trans.app.config.tool_data_path )
-    if not ( os.path.exists( os.path.join( tool_data_path, loc_file ) ) or os.path.exists( os.path.join( tool_data_path, sample_loc_file ) ) ):
-        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
+    # It's ok to overwrite the .sample version of the file.
+    shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
+    # Only create the .loc file if it does not yet exist.  We don't  
+    # overwrite it in case it contains stuff proprietary to the local instance.
+    if not os.path.exists( os.path.join( tool_data_path, loc_file ) ):
         shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
 def get_user( trans, id ):
     """Get a User from the database by id."""
@@ -2774,7 +2809,7 @@ def handle_sample_tool_data_table_conf_file( trans, filename ):
                 if line.find( '</tables>' ) >= 0:
                     for new_table_elem in new_table_elems:
                         new_tdt_config.write( '    %s\n' % util.xml_to_string( new_table_elem ).rstrip( '\n' ) )
-                    new_tdt_config.write( '</tables>' )
+                    new_tdt_config.write( '</tables>\n' )
                 else:
                     new_tdt_config.write( line )
             new_tdt_config.close()

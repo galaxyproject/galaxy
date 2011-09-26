@@ -106,6 +106,9 @@ class TabularToolDataTable( ToolDataTable ):
                 self.missing_index_file = filename
                 log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
         self.data = all_rows
+    def handle_found_index_file( self, filename ):
+        self.missing_index_file = None
+        self.data.extend( self.parse_file_fields( open( filename ) ) )
     def get_fields( self ):
         return self.data
     def parse_column_spec( self, config_element ):

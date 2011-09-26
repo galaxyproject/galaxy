@@ -250,20 +250,15 @@
 <%
     # Render an error message if a dynamically generated select list is missing a required
     # index file or entry in the tool_data_table_conf.xml file.
-    from galaxy.tools.parameters.basic import SelectToolParameter
     message = ""
-    for input_param in tool.input_params:
-        if isinstance( input_param, SelectToolParameter ) and input_param.is_dynamic:
-            # If the tool refers to .loc files or requires an entry in the
-            # tool_data_table_conf.xml, make sure all requirements exist.
-            options = input_param.dynamic_options or input_param.options
-            if options:
-                if options.missing_tool_data_table_name:
-                    message = "Data table named '%s' is required by tool but not configured" % options.missing_tool_data_table_name
-                    break
-                if options.missing_index_file:
-                    message = "Index file named '%s' is required by tool but not availble" % options.missing_index_file
-                    break
+    params_with_missing_data_table_entry = tool.params_with_missing_data_table_entry
+    params_with_missing_index_file = tool.params_with_missing_index_file
+    if params_with_missing_data_table_entry:
+        param = params_with_missing_data_table_entry[0]
+        message += "Data table named '%s' is required by tool but not configured.  " % param.options.missing_tool_data_table_name
+    if tool.params_with_missing_index_file:
+        param = params_with_missing_index_file[0]
+        message += "Index file named '%s' is required by tool but not available.  " % param.options.missing_index_file
 
     # Handle calculating the redirect url for the special case where we have nginx proxy
     # upload and need to do url_for on the redirect portion of the tool action.

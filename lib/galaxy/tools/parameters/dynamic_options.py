@@ -399,6 +399,7 @@ class DynamicOptions( object ):
         self.separator = elem.get( 'separator', '\t' )
         self.line_startswith = elem.get( 'startswith', None )
         data_file = elem.get( 'from_file', None )
+        self.index_file = None
         self.missing_index_file = None
         dataset_file = elem.get( 'from_dataset', None )
         from_parameter = elem.get( 'from_parameter', None )
@@ -414,15 +415,16 @@ class DynamicOptions( object ):
                 # which the tool_data_table refers does not exist.
                 if self.tool_data_table.missing_index_file:
                     self.missing_index_file = self.tool_data_table.missing_index_file
-                # Column definitions are optional, but if provided override those from the table
-                if elem.find( "column" ) is not None:
-                    self.parse_column_definitions( elem )
                 else:
-                    self.columns = self.tool_data_table.columns
+                    # Column definitions are optional, but if provided override those from the table
+                    if elem.find( "column" ) is not None:
+                        self.parse_column_definitions( elem )
+                    else:
+                        self.columns = self.tool_data_table.columns
             else:
                 self.missing_tool_data_table_name = tool_data_table_name
                 log.warn( "Data table named '%s' is required by tool but not configured" % tool_data_table_name )
-        # Options are defined by parsing tabular text data from an data file
+        # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
         elif data_file is not None or dataset_file is not None or from_parameter is not None:
             self.parse_column_definitions( elem )
@@ -431,6 +433,7 @@ class DynamicOptions( object ):
                 if not os.path.isabs( data_file ):
                     full_path = os.path.join( self.tool_param.tool.app.config.tool_data_path, data_file )
                     if os.path.exists( full_path ):
+                        self.index_file = data_file
                         self.file_fields = self.parse_file_fields( open( full_path ) )
                     else:
                         self.missing_index_file = data_file
