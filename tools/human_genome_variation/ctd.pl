@@ -1,8 +1,5 @@
-#!/usr/bin/env perl
-
+#!/usr/bin/perl -w
 use strict;
-use warnings;
-
 use LWP::UserAgent;
 require HTTP::Cookies;
 
@@ -53,6 +50,9 @@ my @form = ('inputType', $type, 'inputTerms', $d, 'report', $resType,
   'queryFile', '', 'format', 'tsv', 'action', 'Submit');
 if ($resType eq 'cgixns') { #only add if this type
    push(@form, 'actionTypes', $actType);
+}
+if ($resType eq 'go' or $resType eq 'go_enriched') {
+   push(@form, 'ontology', 'go_bp', 'ontology', 'go_mf', 'ontology', 'go_cc');
 }
 my $ua = LWP::UserAgent->new;
 $ua->cookie_jar(HTTP::Cookies->new( () ));

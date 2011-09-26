@@ -1,7 +1,7 @@
 <tool id="ctdBatch_1" name="CTD" version="1.0.0">
   <description>analysis of chemicals, diseases, or genes</description>
   <command interpreter="perl">#if $inType.inputType=="disease" #ctd.pl $input $numerical_column $inType.inputType $inType.report ANY $out_file1
-#else if $inType.reportType.report=="cgixns" #ctd.pl $input $numerical_column $inType.inputType $inType.reportType.report $inType.reportType.actType $out_file1
+#else if $inType.reportType.report=="cgixns" #ctd.pl $input $numerical_column $inType.inputType $inType.reportType.report "$inType.reportType.actType" $out_file1
 #else #ctd.pl $input $numerical_column $inType.inputType $inType.reportType.report ANY $out_file1
 #end if</command>
   <inputs>
@@ -18,19 +18,24 @@
        <param name="report" label="Data to extract" type="select">
           <option value="cgixns">Curated chemical-gene interactions</option>
           <option value="genes">Curated gene associations</option>
-          <option value="pathways">Pathway associations</option>
+          <option value="pathways_inferred">Inferred pathway associations</option>
+	  <option value="pathways_enriched">Enriched pathway associations</option>
           <option value="diseases" selected="true">All disease relationships</option>
           <option value="diseases_curated">  Curated disease relationships only</option>
           <option value="diseases_inferred">  Inferred disease relationships only</option>
           <option value="go">All GO associations</option>
-          <option value="go_p">  GO biological Processes only</option>
-          <option value="go_f">  GO molecular Functions only</option>
-          <option value="go_c">  GO cellular Components only</option>
+          <option value="go_enriched">Enriched GO associations only</option>
        </param>
        <when value="genes">
           <!-- do nothing -->
        </when>
        <when value="pathways">
+          <!-- do nothing -->
+       </when>
+       <when value="pathways_curated">
+          <!-- do nothing -->
+       </when>
+       <when value="pathways_inferred">
           <!-- do nothing -->
        </when>
        <when value="diseases">
@@ -45,13 +50,7 @@
        <when value="go">
           <!-- do nothing -->
        </when>
-       <when value="go_p">
-          <!-- do nothing -->
-       </when>
-       <when value="go_f">
-          <!-- do nothing -->
-       </when>
-       <when value="go_c">
+       <when value="go_enriched">
           <!-- do nothing -->
        </when>
        <when value="cgixns">
@@ -117,30 +116,29 @@
      <when value="disease">
        <param name="report" label="Data to extract" type="select">
           <option value="chems">Chemical associations</option>
-          <option value="chems_direct">Chemical associations direct relationships only</option>
-          <option value="chems_inferred">Chemical associations inferred relationships only</option>
-          <option value="genes">Curated gene associations</option>
-          <option value="pathways">Pathway associations</option>
+          <option value="chems_curated">Curated chemical associations only</option>
+          <option value="chems_inferred">Inferred chemical associations only</option>
+          <option value="genes">Gene associations</option>
+          <option value="genes_curated">Curated gene associations</option>
+          <option value="genes_inferred">Inferred gene associations</option>
+          <option value="pathways_inferred">Inferred pathway associations</option>
        </param>
      </when>
      <when value="gene">
        <conditional name='reportType'>
        <param name="report" label="Data to extract" type="select">
           <option value="cgixns">Curated chemical-gene interactions</option>
-          <option value="chems">Curated chemical associations</option>
-          <option value="pathways">Pathway associations</option>
+          <option value="chems_curated">Curated chemical associations</option>
+          <option value="pathways_curated">Curated pathway associations</option>
           <option value="diseases" selected="true">All disease relationships</option>
           <option value="diseases_curated">  Curated disease relationships only</option>
           <option value="diseases_inferred">  Inferred disease relationships only</option>
           <option value="go">All GO associations</option>
-          <option value="go_p">  GO biological Processes only</option>
-          <option value="go_f">  GO molecular Functions only</option>
-          <option value="go_c">  GO cellular Components only</option>
        </param>
-       <when value="chems">
+       <when value="chems_curated">
           <!-- do nothing -->
        </when>
-       <when value="pathways">
+       <when value="pathways_curated">
           <!-- do nothing -->
        </when>
        <when value="diseases">
@@ -153,15 +151,6 @@
           <!-- do nothing -->
        </when>
        <when value="go">
-          <!-- do nothing -->
-       </when>
-       <when value="go_p">
-          <!-- do nothing -->
-       </when>
-       <when value="go_f">
-          <!-- do nothing -->
-       </when>
-       <when value="go_c">
           <!-- do nothing -->
        </when>
        <when value="cgixns">
