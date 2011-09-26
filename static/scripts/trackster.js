@@ -581,6 +581,9 @@ var Drawable = function(name, view, parent_element, drag_handle_class, container
     this.parent_element = parent_element;
     this.drag_handle_class = drag_handle_class;
     this.container = container;
+    this.config = new DrawableConfig({
+        track: this
+        });
 };
 
 Drawable.prototype.init = function() {};
@@ -1882,9 +1885,9 @@ FilterAlphaGenerator.prototype.gen_alpha = function(feature_data) {
 };
 
 /**
- * Container for track configuration data.
+ * Container for Drawable configuration data.
  */
-var TrackConfig = function( options ) {
+var DrawableConfig = function( options ) {
     this.track = options.track;
     this.params = options.params;
     this.values = {}
@@ -1894,7 +1897,7 @@ var TrackConfig = function( options ) {
     this.onchange = options.onchange
 };
 
-extend(TrackConfig.prototype, {
+extend(DrawableConfig.prototype, {
     restore_values: function( values ) {
         var track_config = this;
         $.each( this.params, function( index, param ) {
@@ -2199,8 +2202,8 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     if (track.display_modes !== undefined) {
         if (track.mode_div === undefined) {
             track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
-            var init_mode = (track.track_config && track.track_config.values['mode'] ? 
-                             track.track_config.values['mode'] : track.display_modes[0]);
+            var init_mode = (track.config && track.config.values['mode'] ? 
+                             track.config.values['mode'] : track.display_modes[0]);
             track.mode = init_mode;
             track.mode_div.text(init_mode);
         
@@ -2240,7 +2243,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         track.mode_div.text(name);
         // TODO: is it necessary to store the mode in two places (.mode and track_config)?
         track.mode = name;
-        track.track_config.values['mode'] = name;
+        track.config.values['mode'] = name;
         track.tile_cache.clear();
         track.request_draw();
      },
@@ -2270,7 +2273,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         track_dropdown["Edit configuration"] = function() {
             var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
                 ok_fn = function() { 
-                    track.track_config.update_from_form( $(".dialog-box") );
+                    track.config.update_from_form( $(".dialog-box") );
                     hide_modal(); 
                     $(window).unbind("keypress.check_enter_esc"); 
                 },
@@ -2283,7 +2286,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 };
 
             $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-            show_modal("Configure Track", track.track_config.build_form(), {
+            show_modal("Configure Track", track.config.build_form(), {
                 "Cancel": cancel_fn,
                 "OK": ok_fn
             });
@@ -2329,11 +2332,13 @@ extend(TiledTrack.prototype, Track.prototype, {
         //
         // List chrom/contigs with data option.
         //
+        /*
         if (track.valid_chroms) {
             track_dropdown["List chrom/contigs with data"] = function() {
                 show_modal("Chrom/contigs with data", "<p>" + track.valid_chroms.join("<br/>") + "</p>", { "Close": function() { hide_modal(); } });
             };
         }
+        */
         
         //
         // Remove option.
@@ -2723,7 +2728,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     this.left_offset = 0;
 
     // Define track configuration
-    this.track_config = new TrackConfig( {
+    this.config = new DrawableConfig( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
@@ -2745,9 +2750,9 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
         }
     });
 
-    this.prefs = this.track_config.values;
-    this.height_px = this.track_config.values.height;
-    this.vertical_range = this.track_config.values.max_value - this.track_config.values.min_value;
+    this.prefs = this.config.values;
+    this.height_px = this.config.values.height;
+    this.vertical_range = this.config.values.max_value - this.config.values.min_value;
 
     this.add_resize_handle();
 };
@@ -2782,7 +2787,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
             track.tile_cache.clear();    
             in_drag = false;
             if (!in_handle) { drag_control.hide(); }
-            track.track_config.values.height = track.height_px;
+            track.config.values.height = track.height_px;
         }).appendTo(track.container_div);
     },
     predraw_init: function() {
@@ -2854,7 +2859,7 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     var track = this;
     this.display_modes = ["Auto", "Histogram", "Dense", "Squish", "Pack"];
     // Define and restore track configuration.
-    this.track_config = new TrackConfig( {
+    this.config = new DrawableConfig( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
@@ -2870,7 +2875,7 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
             track.request_draw();
         }
     });
-    this.prefs = this.track_config.values;
+    this.prefs = this.config.values;
     
     //
     // Initialization.
@@ -3244,7 +3249,7 @@ extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
     
-    this.track_config = new TrackConfig( {
+    this.config = new DrawableConfig( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
@@ -3262,7 +3267,7 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
             this.track.request_draw();
         }
     });
-    this.prefs = this.track_config.values;
+    this.prefs = this.config.values;
     
     this.painter = painters.ReadPainter;
     this.make_name_popup_menu();
