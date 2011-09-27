@@ -92,13 +92,14 @@ class VisualizationController( BaseUIController, Sharable, UsesAnnotations,
     @web.expose
     @web.require_login()
     def clone(self, trans, id, *args, **kwargs):
-        visualization = self.get_visualization( trans, id, check_ownership=False )
+        visualization = self.get_visualization( trans, id, check_ownership=False )            
         user = trans.get_user()
-        if trans.sa_session.query( model.VisualizationUserShareAssociation ) \
-                    .filter_by( user=user, visualization=visualization ).count() == 0:
-            error( "Visualization is not owned by or shared with current user" )
+        owner = ( visualization.user == user )
+        new_title = "Copy of '%s'" % visualization.title
+        if not owner:
+            new_title += " shared by %s" % visualization.user.email
             
-        cloned_visualization = visualization.copy( user=trans.user, title="Copy of '%s'" % visualization.title )
+        cloned_visualization = visualization.copy( user=trans.user, title=new_title )
         
         # Persist
         session = trans.sa_session
