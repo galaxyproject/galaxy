@@ -1132,7 +1132,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
                 fctx = None
                 for filename in ctx:
-                    if filename == old_tool_config_file_name:
+                    filename_head, filename_tail = os.path.split( filename )
+                    if filename_tail == old_tool_config_file_name:
                         fctx = ctx[ filename ]
                         break
                 if fctx:
