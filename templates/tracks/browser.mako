@@ -120,31 +120,11 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         $("#right-border").click(function() { view.resize_window(); });
         
         %if config:
-            var callback;
-            %if 'viewport' in config:
-                // TODO: find better way to handle this code.
-                var callback = function() { 
-                    view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} );
-                    // Set overview.
-                    %if 'viewport' in config and 'overview' in config['viewport'] and config['viewport']['overview']:
-
-                    var 
-                        overview_track_name = "${config['viewport']['overview']}",
-                        overview_track;
-                    for (var i = 0; i < view.tracks.length; i++) {
-                        if (view.tracks[i].name == overview_track_name) {
-                            view.set_overview(view.tracks[i]);
-                            break;
-                        }
-                    }
-                    %endif
-                    view.has_changes = false;
-                };
-            %endif
             view = create_visualization( $("#browser-container"), "${config.get('title') | h}", 
-                                         "${config.get('vis_id')}", "${config.get('dbkey')}", callback,
-                                         JSON.parse('${ h.to_json_string( config.get('tracks') ) }'),
-                                         JSON.parse('${ h.to_json_string( config.get('bookmarks') ) }')
+                                         "${config.get('vis_id')}", "${config.get('dbkey')}", 
+                                         JSON.parse('${ h.to_json_string( config.get( 'viewport', dict() ) ) }'),
+                                         JSON.parse('${ h.to_json_string( config['tracks'] ) }'),
+                                         JSON.parse('${ h.to_json_string( config['bookmarks'] ) }')
                                          );
             init_editor();
         %else:

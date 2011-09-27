@@ -79,32 +79,53 @@ var drawable_from_dict = function(drawable_dict) {
 /**
  * Create a complete Trackster visualization. Returns view.
  */
-var create_visualization = function(parent_elt, title, id, dbkey, callback, tracks_config, bookmarks_config) {
+var create_visualization = function(parent_elt, title, id, dbkey, viewport_config, tracks_config, bookmarks_config) {
     
     // Create view.
-    view = new View(parent_elt, title, id, dbkey, callback);
+    view = new View(parent_elt, title, id, dbkey);
     view.editor = true;
-    
-    // Add drawables to view.
-    if (tracks_config) {
-        var track_config;
-        for (var i = 0; i < tracks_config.length; i++) {
-            track_config = tracks_config[i];
-            view.add_drawable( drawable_from_dict(track_config) );
+    $.when( view.load_chroms_deferred ).then(function() {
+        // Viewport config.        
+        var 
+            chrom = viewport_config.chrom,
+            start = viewport_config.start,
+            end = viewport_config.end,
+            overview_track_name = viewport_config.overview;
+        
+        if (chrom && start && end) {
+            view.change_chrom(chrom, start, end);
         }
-    }
-                    
-    // Load bookmarks.
-    if (bookmarks_config) {
-        var bookmark;
-        for (var i = 0; i < bookmarks_config.length; i++) {
-            bookmark = bookmarks_config[i];
-            add_bookmark(bookmark['position'], bookmark['annotation']);
+        
+        // Add drawables to view.
+        if (tracks_config) {
+            var track_config;
+            for (var i = 0; i < tracks_config.length; i++) {
+                track_config = tracks_config[i];
+                view.add_drawable( drawable_from_dict(track_config) );
+            }
         }
-    }
-    
-    // View has no changes as of yet.
-    view.has_changes = false;
+        
+        // Set overview.
+        var overview_track;
+        for (var i = 0; i < view.tracks.length; i++) {
+            if (view.tracks[i].name == overview_track_name) {
+                view.set_overview(view.tracks[i]);
+                break;
+            }
+        }
+        
+        // Load bookmarks.
+        if (bookmarks_config) {
+            var bookmark;
+            for (var i = 0; i < bookmarks_config.length; i++) {
+                bookmark = bookmarks_config[i];
+                add_bookmark(bookmark['position'], bookmark['annotation']);
+            }
+        }
+
+        // View has no changes as of yet.
+        view.has_changes = false;
+    });
     
     return view;
 };

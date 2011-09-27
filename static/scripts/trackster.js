@@ -704,7 +704,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
 /**
  * View object manages complete viz view, including tracks and user interactions.
  */
-var View = function(container, title, vis_id, dbkey, callback) {
+var View = function(container, title, vis_id, dbkey) {
     DrawableCollection.call(this, "View");
     this.container = container;
     this.chrom = null;
@@ -720,12 +720,14 @@ var View = function(container, title, vis_id, dbkey, callback) {
     this.zoom_factor = 3;
     this.min_separation = 30;
     this.has_changes = false;
-    this.init(callback);
+    // Deferred object that indicates when view's chrom data has been loaded.
+    this.load_chroms_deferred = null;
+    this.init();
     this.canvas_manager = new CanvasManager( container.get(0).ownerDocument );
     this.reset();
 };
 extend( View.prototype, DrawableCollection.prototype, {
-    init: function( callback ) {
+    init: function() {
         // Create DOM elements
         var parent_element = this.container,
             view = this;
@@ -789,7 +791,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.request_redraw(); }).appendTo(this.nav_controls);        
         
         // Get initial set of chroms.
-        this.load_chroms({low: 0}, callback);
+        this.load_chroms_deferred = this.load_chroms({low: 0});
         this.chrom_select.bind("change", function() {
             view.change_chrom(view.chrom_select.val());
         });
@@ -916,10 +918,15 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
         this.nav_input.val( this.chrom + ':' + commatize(low) + '-' + commatize(high) );
     },
-    load_chroms: function(url_parms, callback) {
+    /**
+     * Load chrom data for the view. Returns a jQuery Deferred.
+     */
+    load_chroms: function(url_parms) {
         url_parms['num'] = MAX_CHROMS_SELECTABLE;
         $.extend( url_parms, (this.vis_id !== undefined ? { vis_id: this.vis_id } : { dbkey: this.dbkey } ) );
-        var view = this;
+        var 
+            view = this,
+            chrom_data = $.Deferred();
         $.ajax({
             url: chrom_url, 
             data: url_parms,
@@ -948,16 +955,16 @@ extend( View.prototype, DrawableCollection.prototype, {
                     chrom_options += '<option value="next">Next ' + MAX_CHROMS_SELECTABLE + '</option>';
                 }
                 view.chrom_select.html(chrom_options);
-                if ( callback ) {
-                    callback();
-                }
                 view.chrom_start_index = result.start_index;
+                
+                chrom_data.resolve(result);
             },
             error: function() {
                 alert("Could not load chroms for this dbkey:", view.dbkey);
             }
         });
         
+        return chrom_data;
     },
     change_chrom: function(chrom, low, high) {
         // Don't do anything if chrom is "None" (hackish but some browsers already have this set), or null/blank
