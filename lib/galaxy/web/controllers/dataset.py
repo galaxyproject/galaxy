@@ -358,8 +358,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
             else:
                 return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         
-        mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-        trans.response.set_content_type(mime)
+        trans.response.set_content_type(data.get_mime())
         trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
         
         if to_ext or isinstance(data.datatype, datatypes.binary.Binary): # Saving the file, or binary file
@@ -691,8 +690,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
             if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image)  or isinstance(dataset.datatype, datatypes.images.Html):
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( dataset.extension.lower() )
-                trans.response.set_content_type( mime )
+                trans.response.set_content_type( data.get_mime() )
                 return open( dataset.file_name )
             else:
                 # Get rating data.

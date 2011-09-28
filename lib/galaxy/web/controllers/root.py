@@ -241,8 +241,7 @@ class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
         if data:
             current_user_roles = trans.get_current_user_roles()
             if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-                trans.response.set_content_type(mime)
+                trans.response.set_content_type(data.get_mime())
                 if tofile:
                     fStat = os.stat(data.file_name)
                     trans.response.headers['Content-Length'] = int(fStat.st_size)

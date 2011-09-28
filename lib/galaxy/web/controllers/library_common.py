@@ -1404,8 +1404,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
             kwd['do_action'] = 'zip'
             return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=[id,], **kwd )
         else:
-            mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
-            trans.response.set_content_type( mime )
+            trans.response.set_content_type( ldda.get_mime() )
             fStat = os.stat( ldda.file_name )
             trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
             valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'

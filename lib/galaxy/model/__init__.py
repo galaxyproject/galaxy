@@ -862,7 +862,11 @@ class DatasetInstance( object ):
         self.datatype.set_raw_data(self, data)
     def get_mime( self ):
         """Returns the mime type of the data"""
-        return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
+        try:
+            return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
+        except AttributeError:
+            # extension is None
+            return 'data'
     def is_multi_byte( self ):
         """Data consists of multi-byte characters"""
         return self.dataset.is_multi_byte()
