@@ -349,8 +349,10 @@ class UsesVisualization( SharableItemSecurity ):
                     else:
                         drawables.append( pack_collection( drawable_dict ) )
                 return {
+                    'name': collection_dict.get( 'name', 'dummy' ),
                     'obj_type': collection_dict[ 'obj_type' ],
-                    'drawables': drawables
+                    'drawables': drawables,
+                    'prefs': collection_dict.get( 'prefs', [] )
                 }
 
             # Set tracks.

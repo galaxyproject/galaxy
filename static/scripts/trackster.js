@@ -575,27 +575,66 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
 /**
  * Base interface for all drawable objects.
  */
-var Drawable = function(name, view, parent_element, drag_handle_class, container) {
+var Drawable = function(name, view, prefs, parent_element, drag_handle_class, container) {
     this.name = name;
     this.view = view;
     this.parent_element = parent_element;
     this.drag_handle_class = drag_handle_class;
     this.container = container;
     this.config = new DrawableConfig({
-        track: this
-        });
+        track: this,
+        params: [ 
+            { key: 'name', label: 'Name', type: 'text', default_value: name }
+        ],
+        saved_values: prefs,
+        onchange: function() {
+            this.track.set_name(this.track.config.values.name);
+        }
+    });
+    this.prefs = this.config.values;
 };
 
-Drawable.prototype.init = function() {};
-Drawable.prototype.request_draw = function() {};
-Drawable.prototype._draw = function() {};
-Drawable.prototype.to_json = function() {};
+extend(Drawable.prototype, {
+    init: function() {},
+    request_draw: function() {},
+    _draw: function() {},
+    to_json: function() {},
+    make_name_popup_menu: function() {},
+    /**
+     * Set drawable name.
+     */ 
+    set_name: function(new_name) {
+        this.old_name = this.name;
+        this.name = new_name;
+        this.name_div.text(this.name);
+    },
+    /**
+     * Revert track name; currently name can be reverted only once.
+     */
+    revert_name: function() {
+        this.name = this.old_name;
+        this.name_div.text(this.name);
+    },
+    /**
+     * Remove drawable (a) from its container and (b) from the HTML.
+     */
+    remove: function() {
+        this.container.remove_drawable(this);
+        
+        this.container_div.fadeOut('slow', function() { 
+            $(this).remove();
+            // HACK: is there a better way to update the view?
+            view.update_intro_div();
+            view.has_changes = true;
+        });
+    }
+});
 
 /**
  * A collection of drawable objects.
  */
-var DrawableCollection = function(obj_type, name, view, parent_element, container) {
-    Drawable.call(this, name, view, parent_element, container);
+var DrawableCollection = function(obj_type, name, view, prefs, parent_element, drag_handle_class, container) {
+    Drawable.call(this, name, view, prefs, parent_element, drag_handle_class, container);
     
     // Attribute init.
     this.obj_type = obj_type;
@@ -626,7 +665,9 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         for (var i = 0; i < this.drawables.length; i++) {
             jsonified_drawables.push(this.drawables[i].to_json());
         }
-        return { 
+        return {
+            name: this.name,
+            prefs: this.prefs,
             obj_type: this.obj_type,
             drawables: jsonified_drawables
             };
@@ -650,15 +691,15 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         return false;
     },
     /**
-     * Tries to remove drawable from the collection. Returns true if drawable removed from
-     * collection, false otherwise.
+     * Remove drawable from this collection.
      */
     remove_drawable: function(drawable) {
         var index = this.drawables.indexOf(drawable);
         if (index != -1) {
+            // Found drawable to remove.
             this.drawables.splice(index, 1);
             drawable.container = null;
-            return true;
+            return true;        
         }
         return false;
     },
@@ -681,15 +722,16 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
 /**
  * A group of drawables that are moveable, visible.
  */
-var DrawableGroup = function(name, view, parent_element, container) {
-    DrawableCollection.call(this, "DrawableGroup", name, view, parent_element, "group-handle", container);
-    
+var DrawableGroup = function(name, view, prefs, parent_element, container) {
+    DrawableCollection.call(this, "DrawableGroup", name, view, prefs, parent_element, "group-handle", container);
+        
     // HTML elements.
     if (!DrawableGroup.id_counter) { DrawableGroup.id_counter = 0; }
     var group_id = DrawableGroup.id_counter++
     this.container_div = $("<div/>").addClass("group").attr("id", "group_" + group_id).appendTo(this.parent_element);
-    this.container_div.append($("<div/>").addClass(this.drag_handle_class));
-    this.name_div = $("<div/>").addClass("group-name").text(this.name).appendTo(this.container_div);
+    this.header_div = $("<div/>").addClass("track-header").appendTo(this.container_div);
+    this.header_div.append($("<div/>").addClass(this.drag_handle_class));
+    this.name_div = $("<div/>").addClass("group-name menubutton popup").text(this.name).appendTo(this.header_div);    
     this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + group_id + "_content_div").appendTo(this.container_div);
     
     // Set up containers/moving for group: register both container and content div as container
@@ -697,9 +739,54 @@ var DrawableGroup = function(name, view, parent_element, container) {
     is_container(this.container_div, this);
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
+    
+    this.make_name_popup_menu();
 };
 
-extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype);
+extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
+    /**
+     * Make popup menu for group.
+     */
+    make_name_popup_menu: function() {
+        var group = this;
+        
+        var group_dropdown = {};
+                
+        //
+        // Edit config option.
+        //
+        group_dropdown["Edit configuration"] = function() {
+            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+                ok_fn = function() { 
+                    group.config.update_from_form( $(".dialog-box") );
+                    hide_modal(); 
+                    $(window).unbind("keypress.check_enter_esc"); 
+                },
+                check_enter_esc = function(e) {
+                    if ((e.keyCode || e.which) === 27) { // Escape key
+                        cancel_fn();
+                    } else if ((e.keyCode || e.which) === 13) { // Enter key
+                        ok_fn();
+                    }
+                };
+
+            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
+            show_modal("Configure Group", group.config.build_form(), {
+                "Cancel": cancel_fn,
+                "OK": ok_fn
+            });
+        };
+        
+        //
+        // Remove option.
+        //
+        group_dropdown.Remove = function() {
+            group.remove();
+        };
+        
+        make_popupmenu(group.name_div, group_dropdown);
+    }
+});
 
 /**
  * View object manages complete viz view, including tracks and user interactions.
@@ -2024,9 +2111,9 @@ var FeatureTrackTile = function(index, resolution, canvas, data, message) {
  * -------> ToolDataFeatureTrack
  * -------> VcfTrack
  */
-var Track = function(name, view, parent_element, data_url, data_query_wait) {
+var Track = function(name, view, prefs, parent_element, data_url, data_query_wait) {
     // For now, track's container is always view.
-    Drawable.call(this, name, view, parent_element, "draghandle", view);
+    Drawable.call(this, name, view, {}, parent_element, "draghandle", view);
     
     //
     // Attribute init.
@@ -2055,7 +2142,7 @@ var Track = function(name, view, parent_element, data_url, data_query_wait) {
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
     this.parent_element.append(this.container_div);
 };
-extend(Track.prototype, {
+extend(Track.prototype, Drawable.prototype, {
     /** Returns track type. */
     get_type: function() {
         // Order is important: start with most-specific classes and go up the track hierarchy.
@@ -2153,21 +2240,6 @@ extend(Track.prototype, {
      * Additional initialization required before drawing track for the first time.
      */
     predraw_init: function() {},
-    /**
-     * Set track name.
-     */ 
-    set_name: function(new_name) {
-        this.old_name = this.name;
-        this.name = new_name;
-        this.name_div.text(this.name);
-    },
-    /**
-     * Revert track name; currently name can be reverted only once.
-     */
-    revert_name: function() {
-        this.name = this.old_name;
-        this.name_div.text(this.name);
-    }
 });
 
 var TiledTrack = function(filters_list, tool_dict, parent_track) {
@@ -2229,7 +2301,7 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     
     this.make_name_popup_menu();
 };
-extend(TiledTrack.prototype, Track.prototype, {
+extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Convert track to JSON object.
      */
@@ -2351,10 +2423,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         // Remove option.
         //
         track_dropdown.Remove = function() {
-            view.remove_drawable(track, true);
-            if (view.num_tracks === 0) {
-                $("#no-tracks").show();
-            }
+            track.remove();
         };
         
         make_popupmenu(track.name_div, track_dropdown);
@@ -2645,7 +2714,7 @@ extend(TiledTrack.prototype, Track.prototype, {
 
 var LabelTrack = function (view, parent_element) {
     this.hidden = true;
-    Track.call( this, null, view, parent_element );
+    Track.call(this, "label", view, {}, parent_element );
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
@@ -2672,7 +2741,7 @@ extend(LabelTrack.prototype, Track.prototype, {
 
 var ReferenceTrack = function (view) {
     this.hidden = true;
-    Track.call(this, null, view, view.top_labeltrack);
+    Track.call(this, null, view, {}, view.top_labeltrack);
     TiledTrack.call(this);
     
     view.reference_track = this;
@@ -2687,7 +2756,7 @@ var ReferenceTrack = function (view) {
     this.data_manager = new ReferenceTrackDataManager(CACHED_DATA, this, false);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
-extend(ReferenceTrack.prototype, TiledTrack.prototype, {
+extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw ReferenceTrack tile.
      */
@@ -2721,7 +2790,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
-    Track.call( this, name, view, view.viewport_container );
+    Track.call( this, name, view, prefs, view.viewport_container );
     TiledTrack.call( this );
    
     this.min_height_px = 16; 
@@ -2763,7 +2832,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
 
     this.add_resize_handle();
 };
-extend(LineTrack.prototype, TiledTrack.prototype, {
+extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     add_resize_handle: function () {
         // Add control for resizing
         // Trickery here to deal with the hovering drag handle, can probably be
@@ -2865,6 +2934,13 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     //
     var track = this;
     this.display_modes = ["Auto", "Histogram", "Dense", "Squish", "Pack"];
+    
+    //
+    // Initialization.
+    //
+    Track.call(this, name, view, prefs, view.viewport_container);
+    TiledTrack.call(this, filters, tool, parent_track);
+
     // Define and restore track configuration.
     this.config = new DrawableConfig( {
         track: this,
@@ -2884,12 +2960,6 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     });
     this.prefs = this.config.values;
     
-    //
-    // Initialization.
-    //
-    Track.call(this, name, view, view.viewport_container);
-    TiledTrack.call(this, filters, tool, parent_track);
-    
     this.height_px = 0;
     this.container_div.addClass( "feature-track" );
     this.hda_ldda = hda_ldda;
@@ -2906,7 +2976,7 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
 
     this.painter = painters.LinkedFeaturePainter;
 };
-extend(FeatureTrack.prototype, TiledTrack.prototype, {
+extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
@@ -3250,7 +3320,7 @@ var VcfTrack = function(name, view, hda_ldda, dataset_id, prefs, filters) {
     this.painter = painters.VariantPainter;
 };
 
-extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
+extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
 
 var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
@@ -3279,7 +3349,7 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     this.painter = painters.ReadPainter;
     this.make_name_popup_menu();
 };
-extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
+extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
 /**
  * Feature track that displays data generated from tool.
@@ -3294,7 +3364,7 @@ var ToolDataFeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, fil
     this.dataset_check_url = dataset_state_url;
 };
 
-extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+extend(ToolDataFeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     /**
      * For this track type, the predraw init sets up postdraw init. 
      */

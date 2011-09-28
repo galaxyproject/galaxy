@@ -46,7 +46,7 @@ var track_from_dict = function(track_dict) {
  * Decode a drawable collection from a dictionary.
  */
 var drawable_collection_from_dict = function(collection_dict) {
-    var collection = new addable_objects[collection_dict.obj_type]("New Group", view, view.viewport_container, view);
+    var collection = new addable_objects[collection_dict.obj_type](collection_dict.name, view, collection_dict.prefs, view.viewport_container, view);
     for (var i = 0; i < collection_dict.drawables.length; i++) {
         var 
             drawable_dict = collection_dict.drawables[i],
@@ -92,7 +92,7 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
             end = viewport_config.end,
             overview_track_name = viewport_config.overview;
         
-        if (chrom && start && end) {
+        if (chrom && (start !== undefined) && end) {
             view.change_chrom(chrom, start, end);
         }
         

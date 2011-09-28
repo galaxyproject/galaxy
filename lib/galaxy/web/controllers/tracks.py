@@ -637,8 +637,10 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                     drawable = unpack_collection( drawable_json )
                 unpacked_drawables.append( drawable )
             return {
+                "name": collection_json.get( 'name', '' ),
                 "obj_type": collection_json[ 'obj_type' ],
-                "drawables": unpacked_drawables
+                "drawables": unpacked_drawables,
+                "prefs": collection_json.get( 'prefs' , [] )
             }
 
         # TODO: unpack and validate bookmarks:
