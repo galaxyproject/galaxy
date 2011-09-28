@@ -28,7 +28,6 @@ require_login_creation_template = require_login_template % "  If you don't alrea
 OPENID_PROVIDERS = { 'Google' : 'https://www.google.com/accounts/o8/id',
                      'Yahoo!' : 'http://yahoo.com',
                      'AOL/AIM' : 'http://openid.aol.com',
-                     'Flickr' : 'http://flickr.com',
                      'Launchpad' : 'http://login.launchpad.net',
                    }
 
@@ -195,7 +194,7 @@ class User( BaseUIController, UsesFormDefinitions ):
                                                       message=message,
                                                       status=status ) )
     @web.expose
-    def openid_associate( self, trans, cntrller, webapp='galaxy', **kwd ):
+    def openid_associate( self, trans, cntrller='user', webapp='galaxy', **kwd ):
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -266,7 +265,7 @@ class User( BaseUIController, UsesFormDefinitions ):
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
                 user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
             user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( self, trans, user_type_form_definition, user=user, **kwd )
+            widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
         else:
             user_type_fd_id_select_field = None
             user_type_form_definition = None
