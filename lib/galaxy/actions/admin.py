@@ -41,7 +41,7 @@ class AdminActions( object ):
             self.sa_session.add( quota )
             # If this is a default quota, create the DefaultQuotaAssociation
             if params.default != 'no':
-                self.app.quota_agent.set_default_quota( params.default, params.quota )
+                self.app.quota_agent.set_default_quota( params.default, quota )
             else:
                 # Create the UserQuotaAssociations
                 for user in [ self.sa_session.query( self.app.model.User ).get( x ) for x in params.in_users ]:

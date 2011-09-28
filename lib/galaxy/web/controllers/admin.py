@@ -424,7 +424,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         params = self.get_quota_params( kwd )
         if params.get( 'create_quota_button', False ):
             try:
-                quota, message = self._create_quota( trans, params )
+                quota, message = self._create_quota( params )
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='quotas',
                                                                   webapp=params.webapp,
