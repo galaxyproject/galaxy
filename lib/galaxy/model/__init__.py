@@ -90,7 +90,7 @@ class User( object, APIItem ):
         total = 0
         # this can be a huge number and can run out of memory, so we avoid the mappers
         db_session = object_session( self )
-        for history in db_session.query( History ).enable_eagerloads( False ).filter_by( user_id=self.id ).yield_per( 1000 ):
+        for history in db_session.query( History ).enable_eagerloads( False ).filter_by( user_id=self.id, purged=False ).yield_per( 1000 ):
             for hda in db_session.query( HistoryDatasetAssociation ).enable_eagerloads( False ).filter_by( history_id=history.id, purged=False ).yield_per( 1000 ):
                 if not hda.dataset.id in dataset_ids and not hda.dataset.purged and not hda.dataset.library_associations:
                     dataset_ids.append( hda.dataset.id )
