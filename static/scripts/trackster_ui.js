@@ -89,15 +89,17 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
     view = new View(parent_elt, title, id, dbkey);
     view.editor = true;
     $.when( view.load_chroms_deferred ).then(function() {
-        // Viewport config.        
-        var 
-            chrom = viewport_config.chrom,
-            start = viewport_config.start,
-            end = viewport_config.end,
-            overview_track_name = viewport_config.overview;
+        // Viewport config.
+        if (viewport_config) {
+            var 
+                chrom = viewport_config.chrom,
+                start = viewport_config.start,
+                end = viewport_config.end,
+                overview_track_name = viewport_config.overview;
         
-        if (chrom && (start !== undefined) && end) {
-            view.change_chrom(chrom, start, end);
+            if (chrom && (start !== undefined) && end) {
+                view.change_chrom(chrom, start, end);
+            }
         }
         
         // Add drawables to view.

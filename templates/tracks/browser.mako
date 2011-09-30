@@ -166,7 +166,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     url: "${h.url_for( action='add_track_async' )}",
                     data: { hda_id: "${add_dataset}" },
                     dataType: "json",
-                    success: function(track_data) { view.add_drawable( track_from_dict(track_data) ) }
+                    success: function(track_data) { view.add_drawable( track_from_dict(track_data, view) ) }
                 });
                 
             %endif
