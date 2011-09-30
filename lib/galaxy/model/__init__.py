@@ -2630,6 +2630,17 @@ class UserAction( object ):
 class APIKeys( object ):
     pass
 
+class ToolShedRepository( object ):
+    def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, changeset_revision=None, deleted=False ):
+        self.id = id
+        self.create_time = create_time
+        self.tool_shed = tool_shed
+        self.name = name
+        self.description = description
+        self.owner = owner
+        self.changeset_revision = changeset_revision
+        self.deleted = deleted
+
 ## ---- Utility methods -------------------------------------------------------
 
 def directory_hash_id( id ):

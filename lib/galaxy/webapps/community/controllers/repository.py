@@ -341,8 +341,100 @@ class RepositoryController( BaseUIController, ItemRatings ):
         tool_shed_url = trans.request.host
         repository_clone_url = generate_clone_url( trans, repository_id )
         # TODO: support https in the following url.
-        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&repository_name=%s&repository_clone_url=%s&changeset_revision=%s' % \
-            ( galaxy_url, tool_shed_url, repository.name, repository_clone_url, changeset_revision )
+        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&name=%s&description=%s&repository_clone_url=%s&changeset_revision=%s' % \
+            ( galaxy_url, tool_shed_url, repository.name, repository.description, repository_clone_url, changeset_revision )
+        return trans.response.send_redirect( url )
+    @web.expose
+    def check_for_updates( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        # The sender didn't store galaxy_url in a cookie since
+        # this method immediately redirects back to the caller.
+        galaxy_url = kwd[ 'galaxy_url' ]
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        webapp = params.get( 'webapp', None )
+        tool_shed_url = trans.request.host
+        # Start building up the url to redirect back to the calling Galaxy instance.
+        # TODO: support https in the following url.
+        url = 'http://%s/admin/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, tool_shed_url )
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        #if error:
+        #    url += '&message=%s&status=error' % message
+        #else:
+        url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
+            ( repository.name, repository.user.username, changeset_revision )
+        if changeset_revision == repository.tip:
+            # If changeset_revision is the repository tip, then
+            # we know there are no additional updates for the tools.
+            url += repository.tip
+        else:
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
+                                                                                 trans.security.encode_id( repository.id ),
+                                                                                 changeset_revision )
+            if repository_metadata:
+                # If changeset_revision is in the repository_metadata table for this
+                # repository, then we know there are no additional updates for the tools.
+                url += changeset_revision
+            else:
+                # The changeset_revision column in the repository_metadata table has been
+                # updated with a new changeset_revision value since the repository was cloned.
+                repo_dir = repository.repo_path
+                repo = hg.repository( get_configured_ui(), repo_dir )
+                # Load each tool in the repository's changeset_revision to generate a list of
+                # tool guids, since guids differentiate tools by id and version.
+                ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+                if ctx is not None:        
+                    tool_guids = []
+                    for filename in ctx:
+                        # Find all tool configs in this repository changeset_revision.
+                        if filename.endswith( '.xml' ):
+                            fctx = ctx[ filename ]
+                            # Write the contents of the old tool config to a temporary file.
+                            fh = tempfile.NamedTemporaryFile( 'w' )
+                            tmp_filename = fh.name
+                            fh.close()
+                            fh = open( tmp_filename, 'w' )
+                            fh.write( fctx.data() )
+                            fh.close()
+                            try:
+                                tool = load_tool( trans, tmp_filename )
+                                if tool is not None:
+                                    tool_guids.append( generate_tool_guid( trans, repository, tool ) )
+                            except:
+                                # File must not be a valid tool config even though it has a .xml extension.
+                                pass
+                            try:
+                                os.unlink( tmp_filename )
+                            except:
+                                pass
+                    tool_guids.sort()
+                    if tool_guids:
+                        # Compare our list of tool guids against those in each repository_metadata record
+                        # for the repository to find the repository_metadata record with the changeset_revision
+                        # value we want to pass back to the caller.
+                        found = False
+                        for repository_metadata in get_repository_metadata_by_repository_id( trans, trans.security.encode_id( repository.id ) ):
+                            metadata = repository_metadata.metadata
+                            metadata_tool_guids = []
+                            for tool_dict in metadata[ 'tools' ]:
+                                metadata_tool_guids.append( tool_dict[ 'guid' ] )
+                            metadata_tool_guids.sort()
+                            if tool_guids == metadata_tool_guids:
+                                # We've found the repository_metadata record whose changeset_revision
+                                # value has been updated.
+                                url += repository_metadata.changeset_revision
+                                found = True
+                                break
+                        if not found:
+                            # There must be a problem in the data, so we'll just send back the received changeset_revision.
+                            log.debug( "Possible data corruption - updated repository_metadata cannot be found for repository id %d." % repository.id )
+                            url += changeset_revision
+                    else:
+                        # There are not tools in the changeset_revision, so no tool updates are possible.
+                        url += changeset_revision
         return trans.response.send_redirect( url )
     @web.expose
     def browse_repositories( self, trans, **kwd ):

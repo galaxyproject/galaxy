@@ -363,6 +363,17 @@ LibraryDatasetDatasetInfoAssociation.table = Table( 'library_dataset_dataset_inf
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
+ToolShedRepository.table = Table( "tool_shed_repository", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_shed", TrimmedString( 255 ), index=True ),
+    Column( "name", TrimmedString( 255 ), index=True ),
+    Column( "description" , TEXT ),
+    Column( "owner", TrimmedString( 255 ), index=True ),
+    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1583,7 +1594,9 @@ assign_mapper( context, Page, Page.table,
                      annotations=relation( PageAnnotationAssociation, order_by=PageAnnotationAssociation.table.c.id, backref="pages" ),
                      ratings=relation( PageRatingAssociation, order_by=PageRatingAssociation.table.c.id, backref="pages" )  
                    ) )
-                   
+
+assign_mapper( context, ToolShedRepository, ToolShedRepository.table )
+
 # Set up proxy so that 
 #   Page.users_shared_with
 # returns a list of users that page is shared with.

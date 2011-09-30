@@ -86,6 +86,13 @@ def get_category( trans, id ):
 def get_repository( trans, id ):
     """Get a repository from the database via id"""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
+def get_repository_by_name_and_owner( trans, name, owner ):
+    """Get a repository from the database via name and owner"""
+    user = get_user_by_username( trans, owner )
+    return trans.sa_session.query( trans.model.Repository ) \
+                             .filter( and_( trans.model.Repository.table.c.name == name,
+                                            trans.model.Repository.table.c.user_id == user.id ) ) \
+                             .first()
 def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
@@ -95,6 +102,10 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
 def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
+def get_repository_metadata_by_repository_id( trans, id ):
+    """Get all metadata records for a specified repository."""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                           .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) )
 def get_revision_label( trans, repository, changeset_revision ):
     """
     Return a string consisting of the human read-able 
@@ -469,7 +480,7 @@ def get_configured_ui():
     _ui.setconfig( 'ui', 'quiet', True )
     return _ui
 def get_user( trans, id ):
-    """Get a user from the database"""
+    """Get a user from the database by id"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
 def handle_email_alerts( trans, repository ):
     repo_dir = repository.repo_path

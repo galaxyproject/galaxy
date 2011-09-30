@@ -1293,6 +1293,7 @@ class Admin( object ):
     role_list_grid = None
     group_list_grid = None
     quota_list_grid = None
+    repository_list_grid = None
 
     @web.expose
     @web.require_admin
@@ -1302,8 +1303,11 @@ class Admin( object ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         if webapp == 'galaxy':
+            cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                                  .filter( trans.model.ToolShedRepository.deleted == False )
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         webapp=webapp,
+                                        cloned_repositories=cloned_repositories,
                                         message=message,
                                         status=status )
         else:
@@ -2382,362 +2386,9 @@ class Admin( object ):
                                     msg = msg,
                                     status = status,
                                     job_lock = trans.app.job_manager.job_queue.job_lock )
-    @web.expose
-    @web.require_admin
-    def browse_tool_shed( self, trans, **kwd ):
-        tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = trans.request.host
-        url = '%s/repository/browse_downloadable_repositories?galaxy_url=%s&webapp=community' % ( tool_shed_url, galaxy_url )
-        return trans.response.send_redirect( url )
-    @web.expose
-    @web.require_admin
-    def install_tool_shed_repository( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        tool_shed_url = kwd[ 'tool_shed_url' ]
-        repository_name = kwd[ 'repository_name' ]
-        changeset_revision = kwd[ 'changeset_revision' ]
-        repository_clone_url = kwd[ 'repository_clone_url' ]
-        if kwd.get( 'select_tool_panel_section_button', False ):
-            shed_tool_conf = kwd[ 'shed_tool_conf' ]
-            # Get the tool path.
-            for k, tool_path in trans.app.toolbox.shed_tool_confs.items():
-                if k == shed_tool_conf:
-                    break
-            if 'tool_panel_section' in kwd:
-                section_key = 'section_%s' % kwd[ 'tool_panel_section' ]
-                tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                # Clone the repository to the configured location.
-                current_working_dir = os.getcwd()
-                clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, changeset_revision ) )
-                if os.path.exists( clone_dir ):
-                    # Repository and revision has already been cloned.
-                    # TODO: implement the ability to re-install or revert an existing repository.
-                    message = 'Revision <b>%s</b> of repository <b>%s</b> has already been installed.  Updating an existing repository is not yet supported.' % \
-                    ( changeset_revision, repository_name )
-                    status = 'error'
-                else:
-                    os.makedirs( clone_dir )
-                    log.debug( 'Cloning %s...' % repository_clone_url )
-                    cmd = 'hg clone %s' % repository_clone_url
-                    tmp_name = tempfile.NamedTemporaryFile().name
-                    tmp_stderr = open( tmp_name, 'wb' )
-                    os.chdir( clone_dir )
-                    proc = subprocess.Popen( args=cmd, shell=True, stderr=tmp_stderr.fileno() )
-                    returncode = proc.wait()
-                    os.chdir( current_working_dir )
-                    tmp_stderr.close()
-                    if returncode == 0:
-                        repo_files_dir = os.path.join( clone_dir, repository_name )
-                        log.debug( 'Updating cloned repository to revision "%s"...' % changeset_revision )
-                        cmd = 'hg update -r %s' % changeset_revision
-                        tmp_name = tempfile.NamedTemporaryFile().name
-                        tmp_stderr = open( tmp_name, 'wb' )
-                        os.chdir( repo_files_dir )
-                        proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
-                        returncode = proc.wait()
-                        os.chdir( current_working_dir )
-                        tmp_stderr.close()
-                        if returncode == 0:
-                            sample_files, repository_tools_tups = self.__get_repository_tools_and_sample_files( trans, tool_path, repo_files_dir )
-                            if repository_tools_tups:
-                                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                                repository_tools_tups = self.__handle_missing_data_table_entry( trans, tool_path, sample_files, repository_tools_tups )
-                                # Handle missing index files for tool parameters that are dynamically generated select lists.
-                                repository_tools_tups = self.__handle_missing_index_file( trans, tool_path, sample_files, repository_tools_tups )
-                                # Handle tools that use fabric scripts to install dependencies.
-                                self.__handle_tool_dependencies( current_working_dir, repo_files_dir, repository_tools_tups )
-                                # Generate an in-memory tool conf section that includes the new tools.
-                                new_tool_section = self.__generate_tool_panel_section( repository_name,
-                                                                                       repository_clone_url,
-                                                                                       changeset_revision,
-                                                                                       tool_section,
-                                                                                       repository_tools_tups )
-                                # Create a temporary file to persist the in-memory tool section
-                                # TODO: Figure out how to do this in-memory using xml.etree.
-                                tmp_name = tempfile.NamedTemporaryFile().name
-                                persisted_new_tool_section = open( tmp_name, 'wb' )
-                                persisted_new_tool_section.write( new_tool_section )
-                                persisted_new_tool_section.close()
-                                # Parse the persisted tool panel section
-                                tree = ElementTree.parse( tmp_name )
-                                root = tree.getroot()
-                                ElementInclude.include( root )
-                                # Load the tools in the section into the tool panel.
-                                trans.app.toolbox.load_section_tag_set( root, trans.app.toolbox.tool_panel, tool_path )
-                                # Remove the temporary file
-                                try:
-                                    os.unlink( tmp_name )
-                                except:
-                                    pass
-                                # Append the new section to the shed_tool_config file.
-                                self.__add_shed_tool_conf_entry( trans, shed_tool_conf, new_tool_section )
-                            message = 'Revision <b>%s</b> of repository <b>%s</b> has been installed in tool panel section <b>%s</b>.' % \
-                                ( changeset_revision, repository_name, tool_section.name )
-                            return trans.show_ok_message( message )
-                        else:
-                            tmp_stderr = open( tmp_name, 'rb' )
-                            message = tmp_stderr.read()
-                            tmp_stderr.close()
-                            status = 'error'
-                    else:
-                        tmp_stderr = open( tmp_name, 'rb' )
-                        message = tmp_stderr.read()
-                        tmp_stderr.close()
-                        status = 'error'
-            else:
-                message = 'Choose the section in your tool panel to contain the installed tools.'
-                status = 'error'
-        if len( trans.app.toolbox.shed_tool_confs.keys() ) > 1:
-            shed_tool_conf_select_field = build_shed_tool_conf_select_field( trans )
-            shed_tool_conf = None
-        else:
-            shed_tool_conf = trans.app.toolbox.shed_tool_confs.keys()[0].lstrip( './' )
-            shed_tool_conf_select_field = None
-        tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
-        return trans.fill_template( '/admin/select_tool_panel_section.mako',
-                                    tool_shed_url=tool_shed_url,
-                                    repository_name=repository_name,
-                                    changeset_revision=changeset_revision,
-                                    repository_clone_url=repository_clone_url,
-                                    shed_tool_conf=shed_tool_conf,
-                                    shed_tool_conf_select_field=shed_tool_conf_select_field,
-                                    tool_panel_section_select_field=tool_panel_section_select_field,
-                                    message=message,
-                                    status=status )
-    def __handle_missing_data_table_entry( self, trans, tool_path, sample_files, repository_tools_tups ):
-        # Inspect each tool to see if any have input parameters that are dynamically
-        # generated select lists that require entries in the tool_data_table_conf.xml file.
-        missing_data_table_entry = False
-        for index, repository_tools_tup in enumerate( repository_tools_tups ):
-            tup_path, repository_tool = repository_tools_tup
-            if repository_tool.params_with_missing_data_table_entry:
-                missing_data_table_entry = True
-                break
-        if missing_data_table_entry:
-            # The repository must contain a tool_data_table_conf.xml.sample file that includes
-            # all required entries for all tools in the repository.
-            for sample_file in sample_files:
-                head, tail = os.path.split( sample_file )
-                if tail == 'tool_data_table_conf.xml.sample':
-                    break
-            error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
-            if error:
-                # TODO: Do more here than logging an exception.
-                log.debug( exception_msg )
-            # Reload the tool into the local list of repository_tools_tups.
-            repository_tool = trans.app.toolbox.load_tool( os.path.join( tool_path, tup_path ) )
-            repository_tools_tups[ index ] = ( tup_path, repository_tool )
-        return repository_tools_tups
-    def __handle_missing_index_file( self, trans, tool_path, sample_files, repository_tools_tups ):
-        # Inspect each tool to see if it has any input parameters that
-        # are dynamically generated select lists that depend on a .loc file.
-        missing_files_handled = []
-        for index, repository_tools_tup in enumerate( repository_tools_tups ):
-            tup_path, repository_tool = repository_tools_tup
-            params_with_missing_index_file = repository_tool.params_with_missing_index_file
-            for param in params_with_missing_index_file:
-                options = param.options
-                missing_head, missing_tail = os.path.split( options.missing_index_file )
-                if missing_tail not in missing_files_handled:
-                    # The repository must contain the required xxx.loc.sample file.
-                    for sample_file in sample_files:
-                        sample_head, sample_tail = os.path.split( sample_file )
-                        if sample_tail == '%s.sample' % missing_tail:
-                            copy_sample_loc_file( trans, sample_file )
-                            if options.tool_data_table and options.tool_data_table.missing_index_file:
-                                options.tool_data_table.handle_found_index_file( options.missing_index_file )
-                            missing_files_handled.append( missing_tail )
-                            break
-            # Reload the tool into the local list of repository_tools_tups.
-            repository_tool = trans.app.toolbox.load_tool( os.path.join( tool_path, tup_path ) )
-            repository_tools_tups[ index ] = ( tup_path, repository_tool )
-        return repository_tools_tups
-    def __handle_tool_dependencies( self, current_working_dir, repo_files_dir, repository_tools_tups ):
-        # Inspect each tool to see if it includes a "requirement" that refers to a fabric
-        # script.  For those that do, execute the fabric script to install tool dependencies.
-        for index, repository_tools_tup in enumerate( repository_tools_tups ):
-            tup_path, repository_tool = repository_tools_tup
-            for requirement in repository_tool.requirements:
-                if requirement.type == 'fabfile':
-                    log.debug( 'Executing fabric script to install dependencies for tool "%s"...' % repository_tool.name )
-                    fabfile = requirement.fabfile
-                    method = requirement.method
-                    # Find the relative path to the fabfile.
-                    relative_fabfile_path = None
-                    for root, dirs, files in os.walk( repo_files_dir ):
-                        for name in files:
-                            if name == fabfile:
-                                relative_fabfile_path = os.path.join( root, name )
-                                break
-                    if relative_fabfile_path:
-                        # cmd will look something like: fab -f fabfile.py install_bowtie
-                        cmd = 'fab -f %s %s' % ( relative_fabfile_path, method )
-                        tmp_name = tempfile.NamedTemporaryFile().name
-                        tmp_stderr = open( tmp_name, 'wb' )
-                        os.chdir( repo_files_dir )
-                        proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
-                        returncode = proc.wait()
-                        os.chdir( current_working_dir )
-                        tmp_stderr.close()
-                        if returncode != 0:
-                            # TODO: do something more here than logging the problem.
-                            tmp_stderr = open( tmp_name, 'rb' )
-                            error = tmp_stderr.read()
-                            tmp_stderr.close()
-                            log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
-    def __get_repository_tools_and_sample_files( self, trans, tool_path, repo_files_dir ):
-        # The sample_files list contains all files whose name ends in .sample
-        sample_files = []
-        # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
-        repository_tools_tups = []
-        for root, dirs, files in os.walk( repo_files_dir ):
-            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                if '.hg' in dirs:
-                    # Don't visit .hg directories - should be impossible since we don't
-                    # allow uploaded archives that contain .hg dirs, but just in case...
-                    dirs.remove( '.hg' )
-                if 'hgrc' in files:
-                     # Don't include hgrc files in commit.
-                    files.remove( 'hgrc' )
-                # Find all special .sample files first.
-                for name in files:
-                    if name.endswith( '.sample' ):
-                        sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
-                for name in files:
-                    # Find all tool configs.
-                    if name.endswith( '.xml' ):
-                        relative_path = os.path.join( root, name )
-                        full_path = os.path.abspath( os.path.join( root, name ) )
-                        try:
-                            repository_tool = trans.app.toolbox.load_tool( full_path )
-                            if repository_tool:
-                                # At this point, we need to lstrip tool_path from relative_path.
-                                tup_path = relative_path.replace( tool_path, '' ).lstrip( '/' )
-                                repository_tools_tups.append( ( tup_path, repository_tool ) )
-                        except Exception, e:
-                            # We have an invalid .xml file, so not a tool config.
-                            log.debug( "Ignoring invalid tool config (%s). Error: %s" % ( str( relative_path ), str( e ) ) )
-        return sample_files, repository_tools_tups
-    def __add_shed_tool_conf_entry( self, trans, shed_tool_conf, new_tool_section ):
-        # Add an entry in the shed_tool_conf file. An entry looks something like:
-        # <section name="Filter and Sort" id="filter">
-        #    <tool file="filter/filtering.xml" guid="toolshed.g2.bx.psu.edu/repos/test/filter/1.0.2"/>
-        # </section>
-        # Make a backup of the hgweb.config file since we're going to be changing it.
-        if not os.path.exists( shed_tool_conf ):
-            output = open( shed_tool_conf, 'w' )
-            output.write( '<?xml version="1.0"?>\n' )
-            output.write( '<toolbox tool_path="%s">\n' % tool_path )
-            output.write( '</toolbox>\n' )
-            output.close()
-        self.__make_shed_tool_conf_copy( trans, shed_tool_conf )
-        tmp_fd, tmp_fname = tempfile.mkstemp()
-        new_shed_tool_conf = open( tmp_fname, 'wb' )
-        for i, line in enumerate( open( shed_tool_conf ) ):
-            if line.startswith( '</toolbox>' ):
-                # We're at the end of the original config file, so add our entry.
-                new_shed_tool_conf.write( new_tool_section )
-                new_shed_tool_conf.write( line )
-            else:
-                new_shed_tool_conf.write( line )
-        new_shed_tool_conf.close()
-        shutil.move( tmp_fname, os.path.abspath( shed_tool_conf ) )
-    def __make_shed_tool_conf_copy( self, trans, shed_tool_conf ):
-        # Make a backup of the shed_tool_conf file.
-        today = date.today()
-        backup_date = today.strftime( "%Y_%m_%d" )
-        shed_tool_conf_copy = '%s/%s_%s_backup' % ( trans.app.config.root, shed_tool_conf, backup_date )
-        shutil.copy( os.path.abspath( shed_tool_conf ), os.path.abspath( shed_tool_conf_copy ) )
-    def __clean_tool_shed_url( self, tool_shed_url ):
-        if tool_shed_url.find( ':' ) > 0:
-            # Eliminate the port, if any, since it will result in an invalid directory name.
-            return tool_shed_url.split( ':' )[ 0 ]
-        return tool_shed_url.rstrip( '/' )
-    def __clean_repository_clone_url( self, repository_clone_url ):
-        if repository_clone_url.find( '@' ) > 0:
-            # We have an url that includes an authenticated user, something like:
-            # http://test@bx.psu.edu:9009/repos/some_username/column
-            items = repository_clone_url.split( '@' )
-            tmp_url = items[ 1 ]
-        elif repository_clone_url.find( '\/\/' ) > 0:
-            # We have an url that includes only a protocol, something like:
-            # http://bx.psu.edu:9009/repos/some_username/column
-            items = repository_clone_url.split( '\/\/' )
-            tmp_url = items[ 1 ]
-        else:
-            tmp_url = repository_clone_url
-        return tmp_url
-    def __get_repository_owner( self, cleaned_repository_url ):
-        items = cleaned_repository_url.split( 'repos' )
-        repo_path = items[ 1 ]
-        return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
-    def __generate_tool_path( self, repository_clone_url, changeset_revision ):
-        """
-        Generate a tool path that guarantees repositories with the same name will always be installed
-        in different directories.  The tool path will be of the form:
-        <tool shed url>/repos/<repository owner>/<repository name>/<changeset revision>
-        http://test@bx.psu.edu:9009/repos/test/filter
-        """
-        tmp_url = self.__clean_repository_clone_url( repository_clone_url )
-        # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
-        items = tmp_url.split( 'repos' )
-        tool_shed_url = items[ 0 ]
-        repo_path = items[ 1 ]
-        tool_shed_url = self.__clean_tool_shed_url( tool_shed_url )
-        return '%s/repos%s/%s' % ( tool_shed_url, repo_path, changeset_revision )
-    def __generate_tool_guid( self, repository_clone_url, tool ):
-        """
-        Generate a guid for the installed tool.  It is critical that this guid matches the guid for
-        the tool in the Galaxy tool shed from which it is being installed.  The form of the guid is    
-        <tool shed host>/repos/<repository owner>/<repository name>/<tool id>/<tool version>
-        """
-        tmp_url = self.__clean_repository_clone_url( repository_clone_url )
-        return '%s/%s/%s' % ( tmp_url, tool.id, tool.version )
-    def __generate_tool_panel_section( self, repository_name, repository_clone_url, changeset_revision, tool_section, repository_tools_tups ):
-        """
-        Write an in-memory tool panel section so we can load it into the tool panel and then
-        append it to the appropriate shed tool config.
-        TODO: re-write using ElementTree.
-        """
-        tmp_url = self.__clean_repository_clone_url( repository_clone_url )
-        section_str = ''
-        section_str += '    <section name="%s" id="%s">\n' % ( tool_section.name, tool_section.id )
-        for repository_tool_tup in repository_tools_tups:
-            tool_file_path, tool = repository_tool_tup
-            guid = self.__generate_tool_guid( repository_clone_url, tool )
-            section_str += '        <tool file="%s" guid="%s">\n' % ( tool_file_path, guid )
-            section_str += '            <tool_shed>%s</tool_shed>\n' % tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
-            section_str += '            <repository_name>%s</repository_name>\n' % repository_name
-            section_str += '            <repository_owner>%s</repository_owner>\n' % self.__get_repository_owner( tmp_url )
-            section_str += '            <changeset_revision>%s</changeset_revision>\n' % changeset_revision
-            section_str += '            <id>%s</id>\n' % tool.id
-            section_str += '            <version>%s</version>\n' % tool.version
-            section_str += '        </tool>\n'
-        section_str += '    </section>\n'
-        return section_str
 
 ## ---- Utility methods -------------------------------------------------------
 
-def build_shed_tool_conf_select_field( trans ):
-    """Build a SelectField whose options are the keys in trans.app.toolbox.shed_tool_confs."""
-    options = []
-    for shed_tool_conf_filename, tool_path in trans.app.toolbox.shed_tool_confs.items():
-        options.append( ( shed_tool_conf_filename.lstrip( './' ), shed_tool_conf_filename ) )
-    select_field = SelectField( name='shed_tool_conf' )
-    for option_tup in options:
-        select_field.add_option( option_tup[0], option_tup[1] )
-    return select_field
-def build_tool_panel_section_select_field( trans ):
-    """Build a SelectField whose options are the sections of the current in-memory toolbox."""
-    options = []
-    for k, tool_section in trans.app.toolbox.tool_panel.items():
-        options.append( ( tool_section.name, tool_section.id ) )
-    select_field = SelectField( name='tool_panel_section', display='radio' )
-    for option_tup in options:
-        select_field.add_option( option_tup[0], option_tup[1] )
-    return select_field
 def copy_sample_loc_file( trans, filename ):
     """Copy xxx.loc.sample to ~/tool-data/xxx.loc.sample and ~/tool-data/xxx.loc"""
     head, sample_loc_file = os.path.split( filename )
@@ -2757,6 +2408,12 @@ def get_user( trans, id ):
     if not user:
         return trans.show_error_message( "User not found for id (%s)" % str( id ) )
     return user
+def get_user_by_username( trans, username ):
+    """Get a user from the database by username"""
+    # TODO: Add exception handling here.
+    return trans.sa_session.query( trans.model.User ) \
+                           .filter( trans.model.User.table.c.username == username ) \
+                           .one()
 def get_role( trans, id ):
     """Get a Role from the database by id."""
     # Load user from database
