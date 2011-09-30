@@ -101,7 +101,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                                    [ arguments[0] ]
                                                    );
                                  for (var i= 0; i < track_defs.length; i++) {
-                                     view.add_drawable( track_from_dict(track_defs[i]) ); 
+                                     view.add_drawable( track_from_dict(track_defs[i], view) ); 
                                  }
                             });
                             hide_modal();
@@ -178,7 +178,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             make_popupmenu( $("#viz-actions-button"), {
                 "Add Tracks": add_tracks,
                 "Add Group": function() {
-                    var group = new DrawableGroup("New Group", view, {}, view.viewport_container, view);
+                    var group = new DrawableGroup("New Group", view, view);
                     view.add_drawable(group);
                 },
                 "Save": function() {

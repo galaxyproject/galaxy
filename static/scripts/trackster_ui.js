@@ -36,23 +36,27 @@ var addable_objects = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "R
 /**
  * Decode a track from a dictionary.
  */
-var track_from_dict = function(track_dict) {
-    return new addable_objects[track_dict.track_type]( 
-                        track_dict.name, view, track_dict.hda_ldda, track_dict.dataset_id,
+var track_from_dict = function(track_dict, container) {
+    var track = new addable_objects[track_dict.track_type]( 
+                        track_dict.name, view, container, track_dict.hda_ldda, track_dict.dataset_id,
                         track_dict.prefs, track_dict.filters, track_dict.tool);
+    if (track_dict.mode) {
+        track.change_mode(track_dict.mode);
+    }
+    return track;
 };
 
 /**
  * Decode a drawable collection from a dictionary.
  */
-var drawable_collection_from_dict = function(collection_dict) {
-    var collection = new addable_objects[collection_dict.obj_type](collection_dict.name, view, collection_dict.prefs, view.viewport_container, view);
+var drawable_collection_from_dict = function(collection_dict, container) {
+    var collection = new addable_objects[collection_dict.obj_type](collection_dict.name, view, container, collection_dict.prefs, view.viewport_container, view);
     for (var i = 0; i < collection_dict.drawables.length; i++) {
         var 
             drawable_dict = collection_dict.drawables[i],
             drawable;
         if (drawable_dict['track_type']) {
-            drawable = track_from_dict(drawable_dict);
+            drawable = track_from_dict(drawable_dict, collection);
         }
         else {
             drawable = drawable_collection_from_dict(drawable_dict);
@@ -70,10 +74,10 @@ var drawable_collection_from_dict = function(collection_dict) {
 /**
  * Decode a drawable from a dict.
  */
-var drawable_from_dict = function(drawable_dict) {
+var drawable_from_dict = function(drawable_dict, container) {
     return (drawable_dict['track_type'] ? 
-            track_from_dict(drawable_dict) :
-            drawable_collection_from_dict(drawable_dict));
+            track_from_dict(drawable_dict, container) :
+            drawable_collection_from_dict(drawable_dict, container));
 };
 
 /**
@@ -101,7 +105,7 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
             var track_config;
             for (var i = 0; i < tracks_config.length; i++) {
                 track_config = tracks_config[i];
-                view.add_drawable( drawable_from_dict(track_config) );
+                view.add_drawable( drawable_from_dict(track_config, view) );
             }
         }
         

@@ -573,14 +573,14 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
  */
 
 /**
- * Base interface for all drawable objects.
+ * Base interface for all drawable objects. Drawable objects have a name and are
+ * associated with a view and container. They optionally have a drag handle class. 
  */
-var Drawable = function(name, view, prefs, parent_element, drag_handle_class, container) {
+var Drawable = function(name, view, container, prefs, drag_handle_class) {
     this.name = name;
     this.view = view;
-    this.parent_element = parent_element;
-    this.drag_handle_class = drag_handle_class;
     this.container = container;
+    this.drag_handle_class = drag_handle_class;
     this.config = new DrawableConfig({
         track: this,
         params: [ 
@@ -633,8 +633,8 @@ extend(Drawable.prototype, {
 /**
  * A collection of drawable objects.
  */
-var DrawableCollection = function(obj_type, name, view, prefs, parent_element, drag_handle_class, container) {
-    Drawable.call(this, name, view, prefs, parent_element, drag_handle_class, container);
+var DrawableCollection = function(obj_type, name, view, container, prefs, drag_handle_class) {
+    Drawable.call(this, name, view, container, prefs, drag_handle_class);
     
     // Attribute init.
     this.obj_type = obj_type;
@@ -722,20 +722,21 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
 /**
  * A group of drawables that are moveable, visible.
  */
-var DrawableGroup = function(name, view, prefs, parent_element, container) {
-    DrawableCollection.call(this, "DrawableGroup", name, view, prefs, parent_element, "group-handle", container);
+var DrawableGroup = function(name, view, container, prefs) {
+    DrawableCollection.call(this, "DrawableGroup", name, view, container, prefs, "group-handle");
         
     // HTML elements.
     if (!DrawableGroup.id_counter) { DrawableGroup.id_counter = 0; }
     var group_id = DrawableGroup.id_counter++
-    this.container_div = $("<div/>").addClass("group").attr("id", "group_" + group_id).appendTo(this.parent_element);
+    this.container_div = $("<div/>").addClass("group").attr("id", "group_" + group_id).appendTo(this.container.content_div);
     this.header_div = $("<div/>").addClass("track-header").appendTo(this.container_div);
     this.header_div.append($("<div/>").addClass(this.drag_handle_class));
     this.name_div = $("<div/>").addClass("group-name menubutton popup").text(this.name).appendTo(this.header_div);    
     this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + group_id + "_content_div").appendTo(this.container_div);
     
-    // Set up containers/moving for group: register both container and content div as container
-    // because both are used as containers. Group can be moved.
+    // Set up containers/moving for group: register both container_div and content div as container
+    // because both are used as containers (container div to recognize container, content_div to 
+    // store elements). Group can be moved.
     is_container(this.container_div, this);
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
@@ -820,14 +821,16 @@ extend( View.prototype, DrawableCollection.prototype, {
             view = this;
         // Top container for things that are fixed at the top
         this.top_container = $("<div/>").addClass("top-container").appendTo(parent_element);
-        // Content container, primary tracks are contained in here
-        this.content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
+        // Browser content, primary tracks are contained in here
+        this.browser_content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
         // Bottom container for things that are fixed at the bottom
         this.bottom_container = $("<div/>").addClass("bottom-container").appendTo(parent_element);
         // Label track fixed at top 
         this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.top_container);        
         // Viewport for dragging tracks in center    
-        this.viewport_container = $("<div/>").addClass("viewport-container").attr("id", "viewport-container").appendTo(this.content_div);
+        this.viewport_container = $("<div/>").addClass("viewport-container").attr("id", "viewport-container").appendTo(this.browser_content_div);
+        // Alias viewport_container as content_div so that it matches function of DrawableCollection/Group content_div.
+        this.content_div = this.viewport_container;
         is_container(this.viewport_container, view);
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro");
@@ -884,7 +887,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         });
                 
         /*
-        this.content_div.bind("mousewheel", function( e, delta ) {
+        this.browser_content_div.bind("mousewheel", function( e, delta ) {
             if (Math.abs(delta) < 0.5) {
                 return;
             }
@@ -898,12 +901,12 @@ extend( View.prototype, DrawableCollection.prototype, {
         */
         
         // Blur tool/filter inputs when user clicks on content div.
-        this.content_div.click(function( e ) {
+        this.browser_content_div.click(function( e ) {
             $(this).find("input").trigger("blur"); 
         });
 
         // Double clicking zooms in
-        this.content_div.bind("dblclick", function( e ) {
+        this.browser_content_div.bind("dblclick", function( e ) {
             view.zoom_in(e.pageX, this.viewport_container);
         });
 
@@ -954,7 +957,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         // to zoom in 
         this.top_labeltrack.bind( "dragstart", function( e, d ) {
             return $("<div />").css( { 
-                "height": view.content_div.height() + view.top_labeltrack.height() 
+                "height": view.browser_content_div.height() + view.top_labeltrack.height() 
                             + view.nav_labeltrack.height() + 1, 
                 "top": "0px", 
                 "position": "absolute", 
@@ -982,8 +985,8 @@ extend( View.prototype, DrawableCollection.prototype, {
             view.request_redraw();
         });
         
-        this.add_label_track( new LabelTrack( this, this.top_labeltrack ) );
-        this.add_label_track( new LabelTrack( this, this.nav_labeltrack ) );
+        this.add_label_track( new LabelTrack( this, { content_div: this.top_labeltrack } ) );
+        this.add_label_track( new LabelTrack( this, { content_div: this.nav_labeltrack } ) );
         
         $(window).bind("resize", function() { view.resize_window(); });
         $(document).bind("redraw", function() { view.redraw(); });
@@ -1414,13 +1417,6 @@ var Tool = function(track, tool_dict) {
     var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").css("margin-left", "3em").appendTo(run_tool_row);
     var tool = this;
     run_on_region_button.click( function() {
-        // Create group for track + new tracks and put track in group.
-        var 
-            parent_elt = this.track.parent_element;
-            //new_group = new DrawableCollection("New Group", parent_elt);
-            //this.track.view.add_drawable(new_group);
-        
-        
         // Run tool to create new track.
         tool.run_on_region();
     });
@@ -1497,15 +1493,29 @@ extend(Tool.prototype, {
             // Set name of track to include tool name, parameters, and region used.
             track_name = url_params.tool_id +
                          current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
+            container,
             new_track;
             
-        // Create and add track.
-        // TODO: add support for other kinds of tool data tracks.
-        if (current_track instanceof FeatureTrack) {
-            new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);  
-            new_track.change_mode(current_track.mode);
+        // If track not in a group, create a group for it and add new track to group. If track 
+        // already in group, add track to group.
+        if (current_track.container === view) {
+            var group = new DrawableGroup(this.name, this.track.view, this.track.container);
+            current_track.container.add_drawable(group);
+            // TODO: this is ugly way to move track from one container to another -- make this easier via
+            // a Drawable or DrawableCollection function.
+            current_track.container.remove_drawable(current_track);
+            group.add_drawable(current_track);
+            current_track.container_div.appendTo(group.content_div);
+            container = group;
         }
-        this.track.view.add_drawable(new_track);
+        else {
+            container = current_track.container;
+        }
+        if (current_track instanceof FeatureTrack) {
+            new_track = new ToolDataFeatureTrack(track_name, view, container, "hda");
+            new_track.change_mode(current_track.mode);
+            container.add_drawable(new_track);
+        }
         new_track.content_div.text("Starting job.");
         
         // Run tool.
@@ -1985,9 +1995,7 @@ var DrawableConfig = function( options ) {
     this.track = options.track;
     this.params = options.params;
     this.values = {}
-    if ( options.saved_values ) {
-        this.restore_values( options.saved_values );
-    }
+    this.restore_values( (options.saved_values ? options.saved_values : {}) );
     this.onchange = options.onchange
 };
 
@@ -2111,9 +2119,9 @@ var FeatureTrackTile = function(index, resolution, canvas, data, message) {
  * -------> ToolDataFeatureTrack
  * -------> VcfTrack
  */
-var Track = function(name, view, prefs, parent_element, data_url, data_query_wait) {
+var Track = function(name, view, container, prefs, data_url, data_query_wait) {
     // For now, track's container is always view.
-    Drawable.call(this, name, view, {}, parent_element, "draghandle", view);
+    Drawable.call(this, name, view, container, {}, "draghandle");
     
     //
     // Attribute init.
@@ -2140,7 +2148,7 @@ var Track = function(name, view, prefs, parent_element, data_url, data_query_wai
     // Create content div, which is where track is displayed.
     //
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
-    this.parent_element.append(this.container_div);
+    this.container.content_div.append(this.container_div);
 };
 extend(Track.prototype, Drawable.prototype, {
     /** Returns track type. */
@@ -2230,7 +2238,7 @@ extend(Track.prototype, Drawable.prototype, {
                     // predraw_init may be asynchronous, wait for it and then draw
                     $.when(track.predraw_init()).done(function() { 
                         track.container_div.removeClass("nodata error pending");
-                        track.request_draw()
+                        track.request_draw();
                     });
                 }
             }
@@ -2242,7 +2250,7 @@ extend(Track.prototype, Drawable.prototype, {
     predraw_init: function() {},
 });
 
-var TiledTrack = function(filters_list, tool_dict, parent_track) {
+var TiledTrack = function(filters_list, tool_dict) {
     var track = this,
         view = track.view;
         
@@ -2250,7 +2258,7 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     moveable(track.container_div, track.drag_handle_class, ".group", track);
     
     // Attribute init.
-    this.filters_manager = (filters_list !== undefined ? new FiltersManager(this, filters_list) : undefined);
+    this.filters_manager = new FiltersManager( this, (filters_list !== undefined ? filters_list : {}) );
     // filters_available is determined by data, filters_visible is set by user.
     this.filters_available = false;
     this.filters_visible = false;
@@ -2311,7 +2319,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             "name": this.name,
             "hda_ldda": this.hda_ldda,
             "dataset_id": this.dataset_id,
-            "prefs": this.prefs
+            "prefs": this.prefs,
+            "mode": this.mode,
         };
     },
     /**
@@ -2325,6 +2334,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         track.config.values['mode'] = name;
         track.tile_cache.clear();
         track.request_draw();
+        return track;
      },
     /**
      * Make popup menu for track name.
@@ -2712,9 +2722,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     }
 });
 
-var LabelTrack = function (view, parent_element) {
+var LabelTrack = function (view, container) {
     this.hidden = true;
-    Track.call(this, "label", view, {}, parent_element );
+    Track.call(this, "label", view, container, {} );
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
@@ -2741,7 +2751,7 @@ extend(LabelTrack.prototype, Track.prototype, {
 
 var ReferenceTrack = function (view) {
     this.hidden = true;
-    Track.call(this, null, view, {}, view.top_labeltrack);
+    Track.call(this, "reference", view, { content_div: view.top_labeltrack }, {});
     TiledTrack.call(this);
     
     view.reference_track = this;
@@ -2786,11 +2796,11 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
+var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
-    Track.call( this, name, view, prefs, view.viewport_container );
+    Track.call( this, name, view, container, prefs );
     TiledTrack.call( this );
    
     this.min_height_px = 16; 
@@ -2927,7 +2937,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     } 
 });
 
-var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, tool, parent_track) {
+var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool) {
     //
     // Preinitialization: do things that need to be done before calling Track and TiledTrack
     // initialization code.
@@ -2938,8 +2948,10 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     //
     // Initialization.
     //
-    Track.call(this, name, view, prefs, view.viewport_container);
-    TiledTrack.call(this, filters, tool, parent_track);
+    
+    // FIXME: cleaner init needed; should just be able to call TiledTrack()
+    Track.call(this, name, view, container, prefs);
+    TiledTrack.call(this, filters, tool);
 
     // Define and restore track configuration.
     this.config = new DrawableConfig( {
@@ -3315,16 +3327,16 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var VcfTrack = function(name, view, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
+var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
     this.painter = painters.VariantPainter;
 };
 
 extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
 
-var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
+var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
     
     this.config = new DrawableConfig( {
         track: this,
@@ -3354,8 +3366,8 @@ extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTra
 /**
  * Feature track that displays data generated from tool.
  */
-var ToolDataFeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, parent_track) {
-    FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters, {}, parent_track);
+var ToolDataFeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, {});
     
     // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
     // is ready.

@@ -337,6 +337,7 @@ class UsesVisualization( SharableItemSecurity ):
                     "hda_ldda": track_dict.get("hda_ldda", "hda"),
                     "dataset_id": trans.security.encode_id( dataset.id ),
                     "prefs": prefs,
+                    "mode": track_dict.get( 'mode', 'Auto' ),
                     "filters": track_data_provider.get_filters(),
                     "tool": get_tool_def( trans, dataset )
                 }
