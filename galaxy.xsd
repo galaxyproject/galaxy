@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+        targetNamespace="http://msi.umn.edu/tropix/galaxy"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns="http://msi.umn.edu/tropix/galaxy"
+        elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+  <xs:element name="tool">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="description" type="xs:string" minOccurs="0" />
+        <xs:element name="command" type="Command" />
+        <xs:element name="configfiles" type="ConfigFiles" minOccurs="0" />
+        <xs:element name="outputs" type="Outputs" minOccurs="0" />
+        <xs:element name="inputs" type="Inputs" minOccurs="0" />
+	<xs:element name="tests" type="Tests" minOccurs="0" />
+        <xs:element name="help" type="xs:string" minOccurs="0" />
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="name" type="xs:string" use="required" />
+      <xs:attribute name="version" type="xs:string" default="1.0.0" />
+      <xs:attribute name="hidden" type="xs:boolean" default="false" />
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="Tests">
+    <xs:sequence>
+      <xs:element name="test" type="Test" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Test">
+    <xs:sequence>
+      <xs:element name="param" type="TestParam" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TestParam">
+    <xs:sequence>
+      <xs:element name="embeddedValue" type="xs:string" minOccurs="0" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="value" type="xs:string" />
+  </xs:complexType>
+
+  <xs:complexType name="TestOutput">
+    <xs:sequence>
+      <xs:element name="embeddedValue" type="xs:string" minOccurs="0" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" />
+  </xs:complexType>
+
+  <xs:complexType name="Inputs">
+    <xs:sequence>
+      <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:group name="InputElement">
+    <xs:choice>
+      <xs:element name="param" type="Param" />
+      <xs:element name="repeat" type="Repeat" />
+      <xs:element name="conditional" type="Conditional" />
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="InputType" abstract="true">
+    <xs:sequence />
+    <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="Conditional">
+    <xs:complexContent>
+      <xs:extension base="InputType">
+        <xs:sequence>
+          <xs:group ref="InputElement" />
+          <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ConditionalWhen">
+    <xs:sequence>
+      <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="value" type="xs:string" use="required" />
+  </xs:complexType>
+  
+  <xs:complexType name="Repeat">
+    <xs:complexContent>
+      <xs:extension base="InputType">
+        <xs:sequence>
+          <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+        <xs:attribute name="title" type="xs:string" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="Param">
+    <xs:complexContent>
+      <xs:extension base="InputType">
+	<xs:sequence>
+	  <xs:element name="label" type="xs:string" />
+	  <xs:element name="help" type="xs:string" />
+	  <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded" />
+	</xs:sequence>
+	<xs:attribute name="type" type="ParamType" use="required" />
+	<xs:attribute name="value" type="xs:string" />
+	<xs:attribute name="optional" type="xs:string" default="false" />
+	<xs:attribute name="format" type="xs:string" />
+	<xs:attribute name="accept_default" type="xs:boolean" />
+	<xs:attribute name="force_select" type="xs:boolean" />
+	<xs:attribute name="multiple" type="xs:boolean" />
+	<xs:attribute name="truevalue" type="xs:string" default="true" />
+	<xs:attribute name="falsevalue" type="xs:string" default="false" />
+	<xs:attribute name="size" type="xs:int" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:simpleType name="ParamType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="text" />
+      <xs:enumeration value="integer" />
+      <xs:enumeration value="float" />
+      <xs:enumeration value="boolean" />
+      <xs:enumeration value="genomebuild" />
+      <xs:enumeration value="select" />
+      <xs:enumeration value="data_column" />
+      <xs:enumeration value="hidden" />
+      <xs:enumeration value="base_url" />
+      <xs:enumeration value="file" />
+      <xs:enumeration value="data" />
+      <xs:enumeration value="drill_down" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="Command">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="interpreter" type="xs:string" />
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ParamOption">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="value" type="xs:string" />
+        <xs:attribute name="selected" type="xs:boolean" default="false" />
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="Outputs">
+    <xs:sequence>
+      <xs:element name="data" type="Data" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Data">
+    <xs:sequence>
+      <xs:element name="change_format" type="ChangeFormat" minOccurs="0" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="metadata_source" type="xs:string" />
+    <xs:attribute name="format" type="xs:string" use="required" />
+    <xs:attribute name="label" type="xs:string" />
+  </xs:complexType>
+
+  <xs:complexType name="ConfigFiles">
+    <xs:sequence>
+      <xs:element name="configfile" minOccurs="0" maxOccurs="unbounded" type="ConfigFile" />
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="ConfigFile">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:string" />
+        <!-- This attribute doesn't appear in Galaxy version of XML, but it would
+             be nice to specify certain files as literal script files where the 
+             templating is not applied. Galaxy is certralized so simple scripts are
+             just placed in the data directory, the TINT version is decentralized so
+             such scripts must be attached to the job. 
+        -->
+        <xs:attribute name="type" type="ConfigFileType" default="template" />
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:simpleType name="ConfigFileType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="template" />
+      <xs:enumeration value="literal" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="ChangeFormat">
+    <xs:sequence>
+      <xs:element name="when" type="WhenData" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="WhenData">
+    <xs:sequence /> 
+    <xs:attribute name="input" type="xs:string" use="required" />
+    <xs:attribute name="value" type="xs:string" use="required" />
+    <xs:attribute name="format" type="xs:string" use="required" />
+  </xs:complexType>
+
+</xs:schema>
