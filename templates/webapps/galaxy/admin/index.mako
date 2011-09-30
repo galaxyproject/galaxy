@@ -63,7 +63,7 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='memdump' )}" target="galaxy_main">Profile memory usage</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='jobs' )}" target="galaxy_main">Manage jobs</a></div>
                         %if cloned_repositories:
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_repositories' )}" target="galaxy_main">Manage cloned tool shed repositories</a></div>
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_repositories' )}" target="galaxy_main">Manage installed tool shed repositories</a></div>
                         %endif
                     </div>
                 </div>

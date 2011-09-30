@@ -1305,7 +1305,7 @@ class Admin( object ):
         if webapp == 'galaxy':
             cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ) \
                                                   .filter( trans.model.ToolShedRepository.deleted == False ) \
-                                                  .all()
+                                                  .first()
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         webapp=webapp,
                                         cloned_repositories=cloned_repositories,
