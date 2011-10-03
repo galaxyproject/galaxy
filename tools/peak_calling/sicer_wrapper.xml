@@ -31,7 +31,7 @@
   </requirements>
   <inputs>
     <param name="input_bed_file" type="data" format="bed" label="ChIP-Seq Tag File" >
-      <validator type="expression" message="SICER is not available for the genome.">value.dbkey in [ 'mm8', 'mm9', 'hg18', 'hg19', 'dm2', 'dm3', 'sacCer1', 'pombe', 'rn4', 'tair8' ]</validator>
+      <validator type="expression" message="SICER is not available for the genome.">value is not None and value.dbkey in [ 'mm8', 'mm9', 'hg18', 'hg19', 'dm2', 'dm3', 'sacCer1', 'pombe', 'rn4', 'tair8' ]</validator>
     </param>
     <param name="input_control_file" type="data" format="bed" label="ChIP-Seq Control File" optional="True"> <!-- fix me, add filter to match dbkeys -->
       <options>
