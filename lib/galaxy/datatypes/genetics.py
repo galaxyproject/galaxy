@@ -53,9 +53,9 @@ class GenomeGraphs( Tabular ):
         header = file(dataset.file_name,'r').readlines()[0].strip().split('\t')
         dataset.metadata.columns = len(header)
         t = ['numeric' for x in header]
-	t[0] = 'string'
+        t[0] = 'string'
         dataset.metadata.column_types = t
-	return True
+        return True
 
     def as_ucsc_display_file( self, dataset, **kwd ):
         """
@@ -113,8 +113,8 @@ class GenomeGraphs( Tabular ):
         f = open(dataset.file_name,'r')
         d = f.readlines()[:5]
         if len(d) == 0:
-	    out = "Cannot find anything to parse in %s" % dataset.name
-	    return out
+            out = "Cannot find anything to parse in %s" % dataset.name
+            return out
         hasheader = 0
         try:
             test = ['%f' % x for x in d[0][1:]] # first is name - see if starts all numerics
@@ -123,7 +123,7 @@ class GenomeGraphs( Tabular ):
         try:
             # Generate column header
             out.append( '<tr>' )
-	    if hasheader:
+            if hasheader:
                for i, name in enumerate(d[0].split() ):
                   out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
                d.pop(0)
@@ -285,10 +285,10 @@ class Rgenetics(Html):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-	        rval.append( '<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>' % ( fn, fn, composite_file.get('description'), opt_text ) )
+                rval.append( '<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>' % ( fn, fn, composite_file.get('description'), opt_text ) )
             else:
-		rval.append( '<li><a href="%s" type="application/binary">%s</a>%s</li>' % ( fn, fn, opt_text ) )
-        rval.append( '</ul></div></html>' )
+                rval.append( '<li><a href="%s" type="application/binary">%s</a>%s</li>' % ( fn, fn, opt_text ) )
+                rval.append( '</ul></div></html>' )
         return "\n".join( rval )
 
     def regenerate_primary_file(self,dataset):
@@ -641,9 +641,9 @@ class RexpBase( Html ):
         if not dataset.dataset.purged:
             pp = os.path.join(dataset.extra_files_path,'%s.pheno' % dataset.metadata.base_name)
             try:
-            	p = file(pp,'r').readlines()
+                p = file(pp,'r').readlines()
             except:
-            	p = ['##failed to find %s' % pp,]
+                p = ['##failed to find %s' % pp,]
             dataset.peek = ''.join(p[:5])
             dataset.blurb = 'Galaxy Rexpression composite file'
         else:
