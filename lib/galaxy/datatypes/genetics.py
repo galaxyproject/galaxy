@@ -288,7 +288,7 @@ class Rgenetics(Html):
                 rval.append( '<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>' % ( fn, fn, composite_file.get('description'), opt_text ) )
             else:
                 rval.append( '<li><a href="%s" type="application/binary">%s</a>%s</li>' % ( fn, fn, opt_text ) )
-                rval.append( '</ul></div></html>' )
+        rval.append( '</ul></div></html>' )
         return "\n".join( rval )
 
     def regenerate_primary_file(self,dataset):
