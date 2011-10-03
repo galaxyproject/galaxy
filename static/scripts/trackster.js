@@ -1157,12 +1157,13 @@ extend( View.prototype, DrawableCollection.prototype, {
      */
     add_drawable: function(drawable) {
         DrawableCollection.prototype.add_drawable.call(this, drawable);
-        if (drawable.init) { drawable.init(); }
+        drawable.init();
         this.has_changes = true;
         this.update_intro_div();
     },
     add_label_track: function (label_track) {
         label_track.view = this;
+        label_track.init();
         this.label_tracks.push(label_track);
     },
     /**
@@ -2196,6 +2197,7 @@ extend(Track.prototype, Drawable.prototype, {
         
         //
         // Tracks with no dataset id are handled differently.
+        // FIXME: is this really necessary?
         //
         if (!track.dataset_id) {
             return;
@@ -2728,6 +2730,10 @@ var LabelTrack = function (view, container) {
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
+    init: function() {
+        // Enable by default because there should always be data when drawing track.
+        this.enabled = true;  
+    },
     _draw: function() {
         var view = this.view,
             range = view.high - view.low,
@@ -2767,6 +2773,10 @@ var ReferenceTrack = function (view) {
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    init: function() {
+        // Enable by default because there should always be data when drawing track.
+        this.enabled = true;  
+    },
     /**
      * Draw ReferenceTrack tile.
      */
