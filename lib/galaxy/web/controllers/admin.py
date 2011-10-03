@@ -311,7 +311,7 @@ class QuotaListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and groups", id=item.id, webapp="galaxy" ) if not item.default else dict( operation="Change amount", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( operation="Change amount", id=item.id, webapp="galaxy" ) ),
                     model_class=model.Quota,
                     attach_popup=True,
                     filterable="advanced" ),
