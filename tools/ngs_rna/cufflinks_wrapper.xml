@@ -61,10 +61,10 @@
             </param>
             <when value="No"></when>
             <when value="Use reference annotation">
-                <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Aonnotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
+                <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
             	</when>
 	        <when value="Use reference annotation guide">
-                <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Aonnotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
+                <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
                 </when>
         </conditional>
         <conditional name="bias_correction">
