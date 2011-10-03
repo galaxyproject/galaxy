@@ -420,7 +420,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         twobit_file_name = None
         if dbkey in self.available_genomes:
             # Built-in twobit.
-            twobit_file_name = TwoBitFile( open( self.available_genomes[dbkey] ) )
+            twobit_file_name = self.available_genomes[dbkey]
         else:
             # From custom build.
             # TODO: how to make this work for shared visualizations?
