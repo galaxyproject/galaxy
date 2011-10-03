@@ -376,6 +376,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
         
         max_peek_size = 1000000 # 1 MB
+        if isinstance(data.datatype, datatypes.images.Html):
+            max_peek_size = 10000000 # 10 MB for html
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             return open( data.file_name )
         else:
