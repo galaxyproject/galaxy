@@ -92,7 +92,8 @@
                 var callback = function() { view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} ); }
             %endif
             view = create_visualization( container_element, "${config.get('title') | h}", 
-                                         "${config.get('vis_id')}", "${config.get('dbkey')}", callback,
+                                         "${config.get('vis_id')}", "${config.get('dbkey')}",
+                                         JSON.parse('${ h.to_json_string( config.get( 'viewport', dict() ) ) }'),
                                          JSON.parse('${ h.to_json_string( config.get('tracks') ) }'),
                                          JSON.parse('${ h.to_json_string( config.get('bookmarks') ) }')
                                          );
