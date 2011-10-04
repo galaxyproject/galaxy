@@ -2101,9 +2101,21 @@ var SummaryTreeTile = function(index, resolution, canvas, data, max_val) {
     this.max_val = max_val;
 };
 
-var FeatureTrackTile = function(index, resolution, canvas, data, message) {
+var FeatureTrackTile = function(index, resolution, canvas, data, message, feature_mapper) {
     Tile.call(this, index, resolution, canvas, data);
     this.message = message;
+    this.feature_mapper = feature_mapper;
+    
+    //
+    // Set up display of feature data on mouseover.
+    //
+    var tile = this;
+    $(this.canvas).mousemove(function (e) {
+        var feature_data = tile.feature_mapper.get_feature_data(e.offsetX, e.offsetY);
+        
+        // TODO: show popup with feature's information.
+    });
+
 };
 
 /**
@@ -3316,6 +3328,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_generator, ref_seq);
         var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required));
         var canvas = this.view.canvas_manager.new_canvas();
+        var feature_mapper = null;
         
         canvas.width = width + left_offset;
         canvas.height = required_height;
@@ -3330,10 +3343,11 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         if (result.data) {
             // Draw features.
             ctx.translate(left_offset, 0);
-            painter.draw(ctx, width, required_height, slots);
+            feature_mapper = painter.draw(ctx, width, required_height, slots);
+            feature_mapper.translation = -left_offset;
         }
         
-        return new FeatureTrackTile(tile_index, resolution, canvas, result.data, result.message);        
+        return new FeatureTrackTile(tile_index, resolution, canvas, result.data, result.message, feature_mapper);        
     }
 });
 
@@ -3847,7 +3861,53 @@ LinePainter.prototype.draw = function(ctx, width, height) {
     }
     
     ctx.restore();
-}
+};
+
+/**
+ * Mapper that contains information about feature locations and data.
+ */
+var FeaturePositionMapper = function(slot_height) {
+    this.feature_positions = {};
+    this.slot_height = slot_height;
+    this.translation = 0;
+};
+
+/**
+ * Map feature data to a position defined by <slot, x_start, x_end>.
+ */
+FeaturePositionMapper.prototype.map_feature_data = function(feature_data, slot, x_start, x_end) {
+    if (!this.feature_positions[slot]) {
+        this.feature_positions[slot] = [];
+    }
+    this.feature_positions[slot].push({
+        data: feature_data,
+        x_start: x_start,
+        x_end: x_end
+    });
+};
+
+/**
+ * Get feature data for position <x, y>
+ */
+FeaturePositionMapper.prototype.get_feature_data = function(x, y) {
+    // Find slot using Y.
+    var slot = Math.floor(y/this.slot_height),
+        feature_dict;
+
+    // May not be over a slot due to padding, margin, etc.
+    if (!this.feature_positions[slot]) {
+        return null;
+    }
+    
+    // Find feature using X.
+    x += this.translation;
+    for (var i = 0; i < this.feature_positions[slot].length; i++) {
+        feature_dict = this.feature_positions[slot][i];
+        if (x >= feature_dict.x_start && x <= feature_dict.x_end) {
+            return feature_dict.data;
+        }
+    }
+};
 
 /**
  * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
@@ -3855,7 +3915,7 @@ LinePainter.prototype.draw = function(ctx, width, height) {
 var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_generator) {
     Painter.call(this, data, view_start, view_end, prefs, mode);
     this.alpha_generator = (alpha_generator ? alpha_generator : new AlphaGenerator());
-}
+};
 
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
 
@@ -3870,9 +3930,9 @@ extend(FeaturePainter.prototype, {
         // Pad bottom by half a row, at least 5 px
         return required_height + Math.max( Math.round( y_scale / 2 ), 5 );
     },
-
     /**
-     * Draw data on ctx using slots and within the rectangle defined by width and height.
+     * Draw data on ctx using slots and within the rectangle defined by width and height. Returns
+     * a FeaturePositionMapper object with information about where features were drawn.
      */
     draw: function(ctx, width, height, slots) {
         var data = this.data, view_start = this.view_start, view_end = this.view_end;
@@ -3884,7 +3944,9 @@ extend(FeaturePainter.prototype, {
 
         var view_range = this.view_end - this.view_start,
             w_scale = width / view_range,
-            y_scale = this.get_row_height();
+            y_scale = this.get_row_height(),
+            feature_mapper = new FeaturePositionMapper(y_scale),
+            x_draw_coords;
 
         for (var i = 0, len = data.length; i < len; i++) {
             var feature = data[i],
@@ -3897,18 +3959,20 @@ extend(FeaturePainter.prototype, {
                 
             // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
             if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode == "Dense" || slot !== null) ) {
-                this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, width);
+                x_draw_coords = this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, width);
+                feature_mapper.map_feature_data(feature, slot, x_draw_coords[0], x_draw_coords[1]);
             }
         }
 
         ctx.restore();
+        return feature_mapper;
     },
-    
     /** 
      * Abstract function for drawing an individual feature.
      */
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {
         console.log("WARNING: Unimplemented function.");
+        return [0, 0];
     }
 });
 
@@ -3952,7 +4016,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
     },
 
     /**
-     * Draw a feature.
+     * Draw a feature. Returns an array with feature's start and end X coordinates.
      */
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
         var 
@@ -3962,6 +4026,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             feature_name = feature[3],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
+            draw_start = f_start,
+            draw_end = f_end,
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
@@ -4096,9 +4162,11 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                     ctx.textAlign = "left";
                     ctx.fillText(feature_name, f_end + LABEL_SPACING, y_center + 8);
+                    draw_end += ctx.measureText(feature_name).width + LABEL_SPACING;
                 } else {
                     ctx.textAlign = "right";
                     ctx.fillText(feature_name, f_start - LABEL_SPACING, y_center + 8);
+                    draw_start -= ctx.measureText(feature_name).width + LABEL_SPACING;
                 }
                 //ctx.fillStyle = block_color;
             }
@@ -4106,6 +4174,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         
         // Reset global alpha.
         ctx.globalAlpha = 1;
+        
+        return [draw_start, draw_end];
     }
 });
 
