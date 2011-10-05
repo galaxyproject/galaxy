@@ -3,9 +3,11 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util import inflector
-from common import get_category, get_repository
+from common import *
 from repository import RepositoryListGrid, CategoryListGrid
+from mercurial import hg
 import logging
+
 log = logging.getLogger( __name__ )
 
 class UserListGrid( grids.Grid ):
@@ -299,23 +301,139 @@ class ManageCategoryListGrid( CategoryListGrid ):
 class AdminRepositoryListGrid( RepositoryListGrid ):
     operations = [ operation for operation in RepositoryListGrid.operations ]
     operations.append( grids.GridOperation( "Delete",
-                                            allow_multiple=True,
+                                            allow_multiple=False,
                                             condition=( lambda item: not item.deleted ),
                                             async_compatible=False ) )
     operations.append( grids.GridOperation( "Undelete",
-                                            allow_multiple=True,
+                                            allow_multiple=False,
                                             condition=( lambda item: item.deleted ),
                                             async_compatible=False ) )
     standard_filters = []
 
-class AdminController( BaseController, Admin ):
+class RepositoryMetadataListGrid( grids.Grid ):
+    class IdColumn( grids.IntegerColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.id
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.repository.name
+    class RevisionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            repository = repository_metadata.repository
+            repo = hg.repository( get_configured_ui(), repository.repo_path )
+            ctx = get_changectx_for_changeset( trans, repo, repository_metadata.changeset_revision )
+            return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
+    class MetadataColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            metadata_str = ''
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    if 'tools' in metadata:
+                        metadata_str += '<b>Tools:</b><br/>'
+                        for tool_metadata_dict in metadata[ 'tools' ]:
+                            metadata_str += '%s <b>%s</b><br/>' % \
+                                ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
+                    if 'workflows' in metadata:
+                        metadata_str += '<b>Workflows:</b><br/>'
+                        for workflow_metadata_dict in metadata[ 'workflows' ]:
+                            metadata_str += '%s <b>%s</b><br/>' % \
+                                ( workflow_metadata_dict[ 'name' ], workflow_metadata_dict[ 'format-version' ] )
+            return metadata_str
+    class MaliciousColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.malicious
+    # Grid definition
+    title = "Repository Metadata"
+    model_class = model.RepositoryMetadata
+    template='/webapps/community/repository/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        IdColumn( "Id",
+                  visible=False,
+                  attach_popup=False ),
+        NameColumn( "Name",
+                    key="name",
+                    model_class=model.Repository,
+                    link=( lambda item: dict( operation="view_or_manage_repository_revision",
+                                              id=item.id,
+                                              webapp="community" ) ),
+                    attach_popup=True ),
+        RevisionColumn( "Revision",
+                        attach_popup=False ),
+        MetadataColumn( "Metadata",
+                        attach_popup=False ),
+        MaliciousColumn( "Malicious",
+                         attach_popup=False )
+    ]
+    operations = [ grids.GridOperation( "Delete",
+                                        allow_multiple=False,
+                                        allow_popup=True,
+                                        async_compatible=False,
+                                        confirm="Repository metadata records cannot be recovered after they are deleted. Click OK to delete the selected items." ) ]
+    standard_filters = []
+    default_filter = {}
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( self.model_class ) \
+                               .join( model.Repository.table )
+
+class AdminController( BaseUIController, Admin ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     manage_category_list_grid = ManageCategoryListGrid()
     repository_list_grid = AdminRepositoryListGrid()
+    repository_metadata_list_grid = RepositoryMetadataListGrid()
 
+    @web.expose
+    @web.require_admin
+    def browse_repository_metadata( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "delete":
+                return self.delete_repository_metadata( trans, **kwd )
+            if operation == "view_or_manage_repository_revision":
+                # The received id is a RepositoryMetadata object id, so we need to get the
+                # associated Repository and redirect to view_or_manage_repository with the
+                # changeset_revision.
+                repository_metadata = get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository = repository_metadata.repository
+                kwd[ 'id' ] = trans.security.encode_id( repository.id )
+                kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
+                kwd[ 'operation' ] = 'view_or_manage_repository'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories',
+                                                                  **kwd ) )
+        # Render the list view
+        return self.repository_metadata_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def delete_repository_metadata( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            for repository_metadata_id in ids:
+                repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+                trans.sa_session.delete( repository_metadata )
+                trans.sa_session.flush()
+                count += 1
+            if count:
+                message = "Deleted %d repository metadata %s" % ( count, inflector.cond_plural( len( ids ), "record" ) )
+        else:
+            message = "No repository metadata ids received for deleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repository_metadata',
+                                                   message=util.sanitize_text( message ),
+                                                   status=status ) )
     @web.expose
     @web.require_admin
     def browse_repositories( self, trans, **kwd ):
@@ -366,6 +484,23 @@ class AdminController( BaseController, Admin ):
                 return self.mark_repository_deleted( trans, **kwd )
             elif operation == "undelete":
                 return self.undelete_repository( trans, **kwd )
+        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
+        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # all of the received values to see which value is not the repository tip.  If we find it, we
+        # know the refresh_on_change occurred, and we have the necessary repository id and change set
+        # revision to pass on.
+        for k, v in kwd.items():
+            changset_revision_str = 'changeset_revision_'
+            if k.startswith( changset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+                repository = get_repository( trans, repository_id )
+                if repository.tip != v:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='browse_repositories',
+                                                                      operation='view_or_manage_repository',
+                                                                      id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=v ) )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
     @web.expose

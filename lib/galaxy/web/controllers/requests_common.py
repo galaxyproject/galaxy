@@ -4,6 +4,7 @@ from galaxy.model.orm import *
 from galaxy import model, util
 from galaxy.util.odict import odict
 from galaxy.web.form_builder import *
+from galaxy.security.validate_user_input import validate_email
 import logging, os, csv
 
 log = logging.getLogger( __name__ )
@@ -92,7 +93,7 @@ class RequestsGrid( grids.Grid ):
                              confirm="Samples cannot be added to this request after it is submitted. Click OK to submit."  )
         ]
 
-class RequestsCommon( BaseController, UsesFormDefinitions ):
+class RequestsCommon( BaseUIController, UsesFormDefinitions ):
     @web.json
     def sample_state_updates( self, trans, ids=None, states=None ):
         # Avoid caching
@@ -643,7 +644,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             # Make sure email addresses are valid
             err_msg = ''
             for email_address in email_addresses:
-                err_msg += self.__validate_email( email_address )
+                err_msg += validate_email( trans, email_address, check_dup=False )
             if err_msg:
                 status = 'error'
                 message += err_msg
@@ -1899,13 +1900,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             if not unique:
                 break
         return message
-    def __validate_email( self, email ):
-        error = ''
-        if len( email ) == 0 or "@" not in email or "." not in email:
-            error = "(%s) is not a valid email address.  " % str( email )
-        elif len( email ) > 255:
-            error = "(%s) exceeds maximum allowable length.  " % str( email )
-        return error
     # ===== Other miscellaneous utility methods =====
     def __get_encoded_selected_sample_ids( self, trans, request, **kwd ):
         encoded_selected_sample_ids = []

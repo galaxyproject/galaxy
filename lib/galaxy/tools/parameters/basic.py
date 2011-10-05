@@ -454,7 +454,11 @@ class FTPFileToolParameter( ToolParameter ):
             user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
         return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value = value )
     def from_html( self, value, trans=None, other_values={} ):
-        return util.listify( value )
+        try:
+            assert type( value ) is list
+        except:
+            value = [ value ]
+        return value
     def to_string( self, value, app ):
         if value in [ None, '' ]:
             return None

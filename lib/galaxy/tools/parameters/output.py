@@ -206,13 +206,16 @@ class FromDataTableOutputActionOption( ToolOutputActionOption ):
         super( FromDataTableOutputActionOption, self ).__init__( parent, elem )
         self.name = elem.get( 'name', None )
         assert self.name is not None, "Required 'name' attribute missing from FromDataTableOutputActionOption"
-        assert self.name in self.tool.app.tool_data_tables, "Data table named '%s' is required by tool but not configured" % self.name
-        self.options = self.tool.app.tool_data_tables[ self.name ].get_fields()
-        self.column = elem.get( 'column', None )
-        assert self.column is not None, "Required 'column' attribute missing from FromDataTableOutputActionOption"
-        self.column = int( self.column )
-        self.offset = elem.get( 'offset', -1 )
-        self.offset = int( self.offset )
+        self.missing_tool_data_table_name = None
+        if self.name in self.tool.app.tool_data_tables:
+            self.options = self.tool.app.tool_data_tables[ self.name ].get_fields()
+            self.column = elem.get( 'column', None )
+            assert self.column is not None, "Required 'column' attribute missing from FromDataTableOutputActionOption"
+            self.column = int( self.column )
+            self.offset = elem.get( 'offset', -1 )
+            self.offset = int( self.offset )
+        else:
+            self.missing_tool_data_table_name = self.name
     def get_value( self, other_values ):
         options = self.options
         for filter in self.filters:

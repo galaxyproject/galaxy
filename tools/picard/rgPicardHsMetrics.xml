@@ -1,4 +1,4 @@
-<tool name="SAM/BAM Hybrid Selection Metrics" id="PicardHsMetrics" version="0.01">
+<tool name="SAM/BAM Hybrid Selection Metrics" id="PicardHsMetrics" version="0.02">
   <description>for targeted resequencing data</description>
   <command interpreter="python">
 
@@ -33,11 +33,13 @@
   </outputs>
   <tests>
     <test>
+      <!-- Uncomment this if maxheap parameter is enabled
+      <param name="maxheap" value="8G"  />
+      -->
       <param name="out_prefix" value="HSMetrics" />
       <param name="input_file" value="picard_input_summary_alignment_stats.sam" ftype="sam" />
       <param name="bait_bed" value="picard_input_bait.bed" />
       <param name="target_bed" value="picard_input_bait.bed"  />
-      <param name="maxheap" value="8G"  />
       <output name="html_file" file="picard_output_hs_transposed_summary_alignment_stats.html" ftype="html" lines_diff="212"/>
     </test>
   </tests>

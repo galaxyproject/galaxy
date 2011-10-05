@@ -1,0 +1,418 @@
+<tool id="gatk_variant_annotator" name="Variant Annotator" version="0.0.1">
+  <description></description>
+  <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
+   --stdout "${output_log}"
+   #if str( $reference_source.input_bam ) != "None":
+       -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
+       -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
+   #end if
+   -d "-B:variant,%(file_type)s" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
+   -p 'java 
+    -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
+    -T "VariantAnnotator"
+    ##--num_threads 4 ##hard coded, for now
+    -et "NO_ET" ##ET no phone home
+    ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
+    #if $reference_source.reference_source_selector != "history":
+        -R "${reference_source.ref_file.fields.path}"
+    #end if
+    -o "${output_vcf}"
+    #if str( $annotations_type.annotations_type_selector ) == "use_all_annotations":
+        --useAllAnnotations
+    #else:
+        #if $annotations_type.annotations.value:
+            #for $annotation in str( $annotations_type.annotations ).split( ',' ):
+                --annotation "${annotation}"
+            #end for
+        #end if
+    #end if
+##    #for $additional_annotation in $additional_annotations:
+##        --annotation "${additional_annotation.additional_annotation_type.additional_annotation_type_selector}"
+##        #for $name, $param in $additional_annotation.additional_annotation_type.iteritems():
+##            #if $name not in [ "__current_case__", "additional_annotation_type_selector" ]:
+##                --${name} "${param}"
+##            #end if
+##        #end for
+##    #end for
+    #if str( $reference_source.input_variant_name ):
+        --sampleName "${reference_source.input_variant_name}"
+    #end if
+    ${reference_source.input_variant_bti}
+   '
+    
+    #set $rod_binding_names = dict()
+    #for $rod_binding in $rod_bind:
+        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
+            #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
+        #elif str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'comp':
+            #set $rod_bind_name = "comp" + str( $rod_binding.rod_bind_type.custom_rod_name )
+        #else 
+            #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
+        #end if
+        #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
+        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
+            -p '--rodToIntervalTrackName "${rod_bind_name}"'
+        #end if
+    #end for
+    
+    ##start standard gatk options
+    #if $gatk_param_type.gatk_param_type_selector == "advanced":
+        #for $sample_metadata in $gatk_param_type.sample_metadata:
+            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #end for
+        #for $read_filter in $gatk_param_type.read_filter:
+            -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
+            ###raise Exception( str( dir( $read_filter ) ) )
+            #for $name, $param in $read_filter.read_filter_type.iteritems():
+                #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
+                    --${name} "${param}"
+                #end if
+            #end for
+            '
+        #end for
+        #if str( $gatk_param_type.input_intervals ) != "None":
+            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
+        #end if
+        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
+            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
+        #end if
+        
+        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
+        #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
+            -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
+        #end if
+        -p '
+        --baq "${gatk_param_type.baq}"
+        --baqGapOpenPenalty "${gatk_param_type.baq_gap_open_penalty}"
+        ${gatk_param_type.use_original_qualities}
+        --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
+        --validation_strictness "${gatk_param_type.validation_strictness}"
+        --interval_merging "${gatk_param_type.interval_merging}"
+        '
+        #if str( $gatk_param_type.read_group_black_list ) != "None":
+            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
+        #end if
+    #end if
+    #if str( $reference_source.reference_source_selector ) == "history":
+        -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
+    #end if
+    ##end standard gatk options
+    
+    ##start analysis specific options
+    #if $analysis_param_type.analysis_param_type_selector == "advanced":
+        -p '
+        #if $analysis_param_type.group.value:
+            #for $annotation_group in str( $analysis_param_type.group ).split( ',' ):
+                --group "${annotation_group}"
+            #end for
+        #end if
+        '
+    #end if
+  </command>
+  <inputs>
+    <conditional name="reference_source">
+      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <param name="input_variant" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <param name="input_variant_name" type="text" value="" label="Variant Name" help="Not needed for VCF inputs."/>
+        <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." />
+        <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" help="Not needed for all annotations." >
+          <validator type="unspecified_build" />
+          <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+        </param>
+        <param name="ref_file" type="select" label="Using reference genome">
+          <options from_data_table="picard_indexes">
+            <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
+          </options>
+        </param>
+      </when>
+      <when value="history"> <!-- FIX ME!!!! -->
+        <param name="input_variant" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <param name="input_variant_name" type="text" value="" label="Variant Name" help="Not needed for VCF inputs."/>
+        <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." />
+        <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+      </when>
+    </conditional>
+    <conditional name="annotations_type">
+      <param name="annotations_type_selector" type="select" label="Use all possible annotations">
+        <option value="use_all_annotations">Use all</option>
+        <option value="choose" selected="True">Use selected</option>
+      </param>
+      <when value="use_all_annotations">
+          <!-- no extra options here -->
+      </when>
+      <when value="choose">
+        <param name="annotations" type="select" multiple="True" display="checkboxes" label="Annotations to apply" >
+          <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
+          <option value="AlleleBalance" />
+          <option value="BaseQualityRankSumTest" />
+          <option value="DepthOfCoverage" />
+          <option value="HomopolymerRun" />
+          <option value="MappingQualityRankSumTest" />
+          <option value="MappingQualityZero" />
+          <option value="QualByDepth" />
+          <option value="RMSMappingQuality" />
+          <option value="SpanningDeletions" />
+          <option value="HaplotypeScore" />
+          <!-- annotations below were pulled from list option -->
+          <option value="ChromosomeCounts" />
+          <option value="IndelType" />
+          <option value="HardyWeinberg" />
+          <option value="BaseCounts" />
+          <option value="LowMQ" />
+          <option value="FisherStrand" />
+          <option value="GenomicAnnotation" />
+          <option value="GCContent" />
+          <option value="ReadPosRankSumTest" />
+          <option value="SBByDepth" />
+          <option value="ReadDepthAndAllelicFractionBySample" />
+          <option value="AlleleBalanceBySample" />
+          <option value="DepthPerAlleleBySample" />
+          <option value="MappingQualityZeroBySample" />
+          <option value="NBaseCount" />
+          <option value="GLstats" />
+          <option value="SampleList" />
+          <option value="MappingQualityZeroFraction" />
+        </param>
+      </when>
+    </conditional>
+    <!-- <repeat name="additional_annotations" title="Additional annotation">
+        <conditional name="additional_annotation_type">
+          <param name="additional_annotation_type_selector" type="select" label="Choose annotation type">
+            <option value="SnpEff">snpEff</option>
+          </param>
+          <when value="SnpEff">
+            <param name="snpEffFile" type="data" format="snpEff" label="snpEff output file" />
+          </when>
+        </conditional>
+    </repeat> -->
+    <repeat name="rod_bind" title="Binding for reference-ordered data">
+        <conditional name="rod_bind_type">
+          <param name="rod_bind_type_selector" type="select" label="Binding Type">
+            <option value="variant">Variants</option>
+	        <option value="dbsnp">dbSNP</option>
+	        <option value="snps">SNPs</option>
+            <option value="comp" selected="True">Comps</option>
+            <option value="indels">INDELs</option>
+            <option value="mask">Mask</option>
+            <option value="custom">Custom</option>
+          </param>
+          <when value="variant">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="Variant ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="comp">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp" label="ROD file" />
+              <param name="custom_rod_name" type="text" value="Unnamed" label="ROD Name"/>
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="dbsnp">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="snps">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="indels">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="mask">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="custom">
+              <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+        </conditional>
+    </repeat>
+    
+    <conditional name="gatk_param_type">
+      <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <repeat name="sample_metadata" title="Sample Metadata">
+            <param name="sample_metadata_file" type="data" format="txt" label="Sample file(s) in JSON format" />
+        </repeat>
+        <repeat name="read_filter" title="Read Filter">
+            <conditional name="read_filter_type">
+              <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+                <option value="MaxReadLength" selected="True">MaxReadLength</option>
+                <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+              </param>
+              <when value="ZeroMappingQualityRead">
+                  <!-- no extra options -->
+              </when>
+              <when value="MaxReadLength">
+                  <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+              </when>
+            </conditional>
+        </repeat>
+        <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
+        <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
+        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+          <option value="UNION" selected="True">UNION</option>
+          <option value="INTERSECTION">INTERSECTION</option>
+        </param>
+        <conditional name="downsampling_type">
+          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+            <option value="NONE" selected="True">NONE</option>
+            <option value="ALL_READS">ALL_READS</option>
+            <option value="BY_SAMPLE">BY_SAMPLE</option>
+          </param>
+          <when value="NONE">
+              <!-- no more options here -->
+          </when>
+          <when value="ALL_READS">
+              <conditional name="downsample_to_type">
+                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+                      <option value="downsample_to_coverage">Downsample by Coverage</option>
+                  </param>
+                  <when value="downsample_to_fraction">
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+                  </when>
+                  <when value="downsample_to_coverage">
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+                  </when>
+              </conditional>
+          </when>
+          <when value="BY_SAMPLE">
+              <conditional name="downsample_to_type">
+                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+                      <option value="downsample_to_coverage">Downsample by Coverage</option>
+                  </param>
+                  <when value="downsample_to_fraction">
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+                  </when>
+                  <when value="downsample_to_coverage">
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+                  </when>
+              </conditional>
+          </when>
+        </conditional>
+        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
+          <option value="OFF" selected="True">OFF</option>
+          <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
+          <option value="RECALCULATE">RECALCULATE</option>
+        </param>
+        <param name="baq_gap_open_penalty" type="integer" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
+        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
+        <param name="validation_strictness" type="select" label="How strict should we be with validation">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="LENIENT">LENIENT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
+        <param name="interval_merging" type="select" label="Interval merging rule">
+          <option value="ALL" selected="True">ALL</option>
+          <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
+        </param>
+        <param name="read_group_black_list" type="data" format="txt" optional="True" label="Read group black list" />
+      </when>
+    </conditional>
+    
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <param name="group" type="select" multiple="True" display="checkboxes" label="annotation interfaces/groups to apply to variant calls">
+          <option value="Standard">Standard</option>
+          <option value="Experimental">Experimental</option>
+          <option value="WorkInProgress">WorkInProgress</option>
+        </param>
+
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output_vcf" label="${tool.name} on ${on_string} (Variant File)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <test>
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
+          <param name="input_variant" value="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.vcf" ftype="vcf" />
+          <param name="annotations_type_selector" value="choose" />
+          <param name="annotations" value="AlleleBalance,BaseQualityRankSumTest,DepthOfCoverage,HomopolymerRun,MappingQualityRankSumTest,MappingQualityZero,QualByDepth,RMSMappingQuality,SpanningDeletions,HaplotypeScore" />
+          <!-- <param name="additional_annotation_type_selector" value="snpEff" />
+          <param name="snpEffFile" value="single_comment.dat" ftype="snpEff" /> -->
+          <param name="rod_bind_type_selector" value="dbsnp" />
+          <param name="rodToIntervalTrackName" />
+          <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <param name="gatk_param_type_selector" value="basic" />
+          <param name="analysis_param_type_selector" value="basic" />
+          <output name="output_vcf" file="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" lines_diff="2" /> 
+          <output name="output_log" file="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.log.contains" compare="contains" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+Annotates variant calls with context information.  Users can specify which of the available annotations to use.
+
+For more information on using the VariantAnnotator, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/VariantAnnotator&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
+
+------
+
+
+**Inputs**
+
+GenomeAnalysisTK: VariantAnnotator accepts a variant input file.
+
+
+**Outputs**
+
+The output is in VCF format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
+
+-------
+
+**Settings**::
+
+
+ sampleName           The sample (NA-ID) corresponding to the variant input (for non-VCF input only)
+ annotation           One or more specific annotations to apply to variant calls
+ group                One or more classes/groups of annotations to apply to variant calls
+ expression           One or more specific expressions to apply to variant calls; see documentation for more details
+ useAllAnnotations    Use all possible annotations (not for the faint of heart)
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>

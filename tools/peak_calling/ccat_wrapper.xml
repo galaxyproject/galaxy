@@ -135,5 +135,12 @@ bootstrapPass	${options_type[ 'bootstrap_pass' ]}
 This tool allows ChIP-seq peak/region calling using CCAT.
 
 View the original CCAT documentation: http://cmb.gis.a-star.edu.sg/ChIPSeq/paperCCAT.htm.
+
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
   </help>
 </tool>

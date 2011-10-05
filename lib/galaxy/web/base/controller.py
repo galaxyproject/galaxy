@@ -1,8 +1,9 @@
 """
 Contains functionality needed in every web interface
 """
-import os, time, logging, re, string, sys, glob
-from datetime import datetime, timedelta
+import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess
+from datetime import date, datetime, timedelta
+from time import strftime
 from galaxy import config, tools, web, util
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
@@ -11,8 +12,15 @@ from galaxy.web.framework import simplejson
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
 from galaxy.visualization.tracks.data_providers import get_data_provider
 from galaxy.visualization.tracks.visual_analytics import get_tool_def
+from galaxy.security.validate_user_input import validate_username
+from paste.httpexceptions import *
+from galaxy.exceptions import *
 
 from Cheetah.Template import Template
+
+
+pkg_resources.require( 'elementtree' )
+from elementtree import ElementTree, ElementInclude
 
 log = logging.getLogger( __name__ )
 
@@ -29,45 +37,164 @@ class BaseController( object ):
     def __init__( self, app ):
         """Initialize an interface for application 'app'"""
         self.app = app
+        self.sa_session = app.model.context
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
-    def get_class( self, trans, class_name ):
+    def get_class( self, class_name ):
         """ Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>). """
         if class_name == 'History':
-            item_class = trans.model.History
+            item_class = self.app.model.History
         elif class_name == 'HistoryDatasetAssociation':
-            item_class = trans.model.HistoryDatasetAssociation
+            item_class = self.app.model.HistoryDatasetAssociation
         elif class_name == 'Page':
-            item_class = trans.model.Page
+            item_class = self.app.model.Page
         elif class_name == 'StoredWorkflow':
-            item_class = trans.model.StoredWorkflow
+            item_class = self.app.model.StoredWorkflow
         elif class_name == 'Visualization':
-            item_class = trans.model.Visualization
+            item_class = self.app.model.Visualization
         elif class_name == 'Tool':
-            item_class = trans.model.Tool
+            item_class = self.app.model.Tool
         elif class_name == 'Job':
-            item_class == trans.model.Job
+            item_class = self.app.model.Job
+        elif class_name == 'User':
+            item_class = self.app.model.User
+        elif class_name == 'Group':
+            item_class = self.app.model.Group
+        elif class_name == 'Role':
+            item_class = self.app.model.Role
+        elif class_name == 'Quota':
+            item_class = self.app.model.Quota
+        elif class_name == 'Library':
+            item_class = self.app.model.Library
+        elif class_name == 'LibraryFolder':
+            item_class = self.app.model.LibraryFolder
+        elif class_name == 'LibraryDatasetDatasetAssociation':
+            item_class = self.app.model.LibraryDatasetDatasetAssociation
+        elif class_name == 'LibraryDataset':
+            item_class = self.app.model.LibraryDataset
         else:
             item_class = None
         return item_class
+    def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
+        """
+        Convenience method to get a model object with the specified checks.
+        """
+        try:
+            decoded_id = trans.security.decode_id( id )
+        except:
+            raise MessageException( "Malformed %s id ( %s ) specified, unable to decode" % ( class_name, str( id ) ), type='error' )
+        try:
+            item_class = self.get_class( class_name )
+            assert item_class is not None
+            item = trans.sa_session.query( item_class ).get( decoded_id )
+            assert item is not None
+        except:
+            log.exception( "Invalid %s id ( %s ) specified" % ( class_name, id ) )
+            raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
+        if check_ownership or check_accessible:
+            self.security_check( trans, item, check_ownership, check_accessible, encoded_id )
+        if deleted == True and not item.deleted:
+            raise ItemDeletionException( '%s "%s" is not deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
+        elif deleted == False and item.deleted:
+            raise ItemDeletionException( '%s "%s" is deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
+        return item
+    def get_user( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
+        return self.get_object( trans, id, 'User', check_ownership=False, check_accessible=False, deleted=deleted )
+    def get_group( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
+        return self.get_object( trans, id, 'Group', check_ownership=False, check_accessible=False, deleted=deleted )
+    def get_role( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
+        return self.get_object( trans, id, 'Role', check_ownership=False, check_accessible=False, deleted=deleted )
+    def encode_all_ids( self, trans, rval ):
+        """
+        Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
+
+        It might be useful to turn this in to a decorator
+        """
+        if type( rval ) != dict:
+            return rval
+        for k, v in rval.items():
+            if k == 'id' or k.endswith( '_id' ):
+                try:
+                    rval[k] = trans.security.encode_id( v )
+                except:
+                    pass # probably already encoded
+        return rval
 
 Root = BaseController
 
+class BaseUIController( BaseController ):
+    def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
+        try:
+            return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
+        except MessageException, e:
+            raise       # handled in the caller
+        except:
+            log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            raise Exception( 'Server error retrieving %s id ( %s ).' % ( class_name, str( id ) ) )
+
+class BaseAPIController( BaseController ):
+    def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
+        try:
+            return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
+        except ItemDeletionException, e:
+            raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified" % ( class_name, str( id ) ) )
+        except MessageException, e:
+            raise HTTPBadRequest( detail=e.err_msg )
+        except Exception, e:
+            log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            raise HTTPInternalServerError( comment=str( e ) )
+    def validate_in_users_and_groups( self, trans, payload ):
+        """
+        For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
+        """
+        def get_id( item, model_class, column ):
+            try:
+                return trans.security.decode_id( item )
+            except:
+                pass # maybe an email/group name
+            # this will raise if the item is invalid
+            return trans.sa_session.query( model_class ).filter( column == item ).first().id
+        new_in_users = []
+        new_in_groups = []
+        invalid = []
+        for item in util.listify( payload.get( 'in_users', [] ) ):
+            try:
+                new_in_users.append( get_id( item, trans.app.model.User, trans.app.model.User.table.c.email ) )
+            except:
+                invalid.append( item )
+        for item in util.listify( payload.get( 'in_groups', [] ) ):
+            try:
+                new_in_groups.append( get_id( item, trans.app.model.Group, trans.app.model.Group.table.c.name ) )
+            except:
+                invalid.append( item )
+        if invalid:
+            msg = "The following value(s) for associated users and/or groups could not be parsed: %s." % ', '.join( invalid )
+            msg += "  Valid values are email addresses of users, names of groups, or IDs of both."
+            raise Exception( msg )
+        payload['in_users'] = map( str, new_in_users )
+        payload['in_groups'] = map( str, new_in_groups )
+    def not_implemented( self, trans, **kwd ):
+        raise HTTPNotImplemented()
+
 class SharableItemSecurity:
     """ Mixin for handling security for sharable items. """
-    def security_check( self, user, item, check_ownership=False, check_accessible=False ):
+    def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
         if check_ownership:
             # Verify ownership.
-            if not user:
-                error( "Must be logged in to manage Galaxy items" )
-            if item.user != user:
-                error( "%s is not owned by current user" % item.__class__.__name__ )
+            if not trans.user:
+                raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
+            if item.user != trans.user:
+                raise ItemOwnershipException( "%s is not owned by the current user" % item.__class__.__name__, type='error' )
         if check_accessible:
-            # Verify accessible.
-            if ( item.user != user ) and ( not item.importable ) and ( user not in item.users_shared_with_dot_users ):
-                error( "%s is not accessible to current user" % item.__class__.__name__ )
+            if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
+                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_i9tem( trans.get_current_user_roles(), item, trans.user ) ):
+                    raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
+            else:
+                # Verify accessible.
+                if ( item.user != trans.user ) and ( not item.importable ) and ( trans.user not in item.users_shared_with_dot_users ):
+                    raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
         return item
 
 #
@@ -89,7 +216,7 @@ class UsesHistoryDatasetAssociation:
             except:
                 data = None
         if not data:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
+            raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
         if check_ownership:
             # Verify ownership.
             user = trans.get_user()
@@ -105,6 +232,16 @@ class UsesHistoryDatasetAssociation:
             else:
                 error( "You are not allowed to access this dataset" )
         return data
+    def get_history_dataset_association( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
+        """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
+        hda = self.get_object( trans, id, 'HistoryDatasetAssociation', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=False ) # check accessibility here
+        if check_accessible:
+            if trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+                if hda.state == trans.model.Dataset.states.UPLOAD:
+                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
+            else:
+                error( "You are not allowed to access this dataset" )
     def get_data( self, dataset, preview=True ):
         """ Gets a dataset's data. """
         # Get data from file, truncating if necessary.
@@ -119,6 +256,21 @@ class UsesHistoryDatasetAssociation:
                 dataset_data = open( dataset.file_name ).read(max_peek_size)
                 truncated = False
         return truncated, dataset_data
+
+class UsesLibrary:
+    def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
+        l = self.get_object( trans, id, 'Library' )
+        if check_accessible and not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), l ) ):
+            error( "LibraryFolder is not accessible to the current user" )
+        return l
+
+class UsesLibraryItems( SharableItemSecurity ):
+    def get_library_folder( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible )
+    def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation', check_ownership=False, check_accessible=check_accessible )
+    def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
 
 class UsesVisualization( SharableItemSecurity ):
     """ Mixin for controllers that use Visualization objects. """
@@ -151,48 +303,72 @@ class UsesVisualization( SharableItemSecurity ):
         if not visualization:
             error( "Visualization not found" )
         else:
-            return self.security_check( trans.get_user(), visualization, check_ownership, check_accessible )
+            return self.security_check( trans, visualization, check_ownership, check_accessible )
 
     def get_visualization_config( self, trans, visualization ):
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
 
         config = None
         if visualization.type == 'trackster':
-            # Trackster config; taken from tracks/browser
+            # Unpack Trackster config.
             latest_revision = visualization.latest_revision
             bookmarks = latest_revision.config.get( 'bookmarks', [] )
-            tracks = []
+            
+            def pack_track( track_dict ):
+                dataset_id = track_dict['dataset_id']
+                hda_ldda = track_dict.get('hda_ldda', 'hda')
+                if hda_ldda == "hda":
+                    dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+                else:
+                    dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(dataset_id) )
+
+                try:
+                    prefs = track_dict['prefs']
+                except KeyError:
+                    prefs = {}
+
+                track_type, _ = dataset.datatype.get_track_type()
+                track_data_provider_class = get_data_provider( original_dataset=dataset )
+                track_data_provider = track_data_provider_class( original_dataset=dataset )
+                
+                return {
+                    "track_type": track_type,
+                    "name": track_dict['name'],
+                    "hda_ldda": track_dict.get("hda_ldda", "hda"),
+                    "dataset_id": trans.security.encode_id( dataset.id ),
+                    "prefs": prefs,
+                    "mode": track_dict.get( 'mode', 'Auto' ),
+                    "filters": track_data_provider.get_filters(),
+                    "tool": get_tool_def( trans, dataset )
+                }
+            
+            def pack_collection( collection_dict ):
+                drawables = []
+                for drawable_dict in collection_dict[ 'drawables' ]:
+                    if 'track_type' in drawable_dict:
+                        drawables.append( pack_track( drawable_dict ) )
+                    else:
+                        drawables.append( pack_collection( drawable_dict ) )
+                return {
+                    'name': collection_dict.get( 'name', 'dummy' ),
+                    'obj_type': collection_dict[ 'obj_type' ],
+                    'drawables': drawables,
+                    'prefs': collection_dict.get( 'prefs', [] )
+                }
 
             # Set tracks.
+            tracks = []
             if 'tracks' in latest_revision.config:
-                for t in visualization.latest_revision.config['tracks']:
-                    dataset_id = t['dataset_id']
-                    hda_ldda = t.get('hda_ldda', 'hda')
-                    if hda_ldda == "hda":
-                        dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+                # Legacy code.
+                for track_dict in visualization.latest_revision.config[ 'tracks' ]:
+                    tracks.append( pack_track( track_dict ) )
+            elif 'view' in latest_revision.config:
+                for drawable_dict in visualization.latest_revision.config[ 'view' ][ 'drawables' ]:
+                    if 'track_type' in drawable_dict:
+                        tracks.append( pack_track( drawable_dict ) )
                     else:
-                        dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(dataset_id) )
-
-                    try:
-                        prefs = t['prefs']
-                    except KeyError:
-                        prefs = {}
-
-                    track_type, _ = dataset.datatype.get_track_type()
-                    track_data_provider_class = get_data_provider( original_dataset=dataset )
-                    track_data_provider = track_data_provider_class( original_dataset=dataset )
-
-                    tracks.append( {
-                        "track_type": track_type,
-                        "name": t['name'],
-                        "hda_ldda": t.get("hda_ldda", "hda"),
-                        "dataset_id": trans.security.encode_id( dataset.id ),
-                        "prefs": prefs,
-                        "filters": track_data_provider.get_filters(),
-                        "tool": get_tool_def( trans, dataset ),
-                        "is_child": t.get('is_child', False)
-                    } )
-
+                        tracks.append( pack_collection( drawable_dict ) )
+                
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ),
                         "tracks": tracks, "bookmarks": bookmarks, "chrom": "", "dbkey": visualization.dbkey }
 
@@ -213,7 +389,7 @@ class UsesStoredWorkflow( SharableItemSecurity ):
         if not workflow:
             error( "Workflow not found" )
         else:
-            return self.security_check( trans.get_user(), workflow, check_ownership, check_accessible )
+            return self.security_check( trans, workflow, check_ownership, check_accessible )
     def get_stored_workflow_steps( self, trans, stored_workflow ):
         """ Restores states for a stored workflow's steps. """
         for step in stored_workflow.latest_workflow.steps:
@@ -241,17 +417,10 @@ class UsesStoredWorkflow( SharableItemSecurity ):
 
 class UsesHistory( SharableItemSecurity ):
     """ Mixin for controllers that use History objects. """
-    def get_history( self, trans, id, check_ownership=True, check_accessible=False ):
+    def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
         """Get a History from the database by id, verifying ownership."""
-        # Load history from database
-        try:
-            history = trans.sa_session.query( trans.model.History ).get( trans.security.decode_id( id ) )
-        except TypeError:
-            history = None
-        if not history:
-            error( "History not found" )
-        else:
-            return self.security_check( trans.get_user(), history, check_ownership, check_accessible )
+        history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+        return self.security_check( trans, history, check_ownership, check_accessible )
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
         query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
@@ -1035,40 +1204,45 @@ class Sharable:
     @web.require_login( "share Galaxy items" )
     def set_public_username( self, trans, id, username, **kwargs ):
         """ Set user's public username and delegate to sharing() """
-        trans.get_user().username = username
+        user = trans.get_user()
+        message = validate_username( trans, username, user )
+        if message:
+            return trans.fill_template( '/sharing_base.mako', item=self.get_item( trans, id ), message=message, status='error' )
+        user.username = username
         trans.sa_session.flush
         return self.sharing( trans, id, **kwargs )
+        
     # Abstract methods.
     @web.expose
     @web.require_login( "modify Galaxy items" )
     def set_slug_async( self, trans, id, new_slug ):
         """ Set item slug asynchronously. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     @web.require_login( "share Galaxy items" )
     def sharing( self, trans, id, **kwargs ):
         """ Handle item sharing. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     @web.require_login( "share Galaxy items" )
     def share( self, trans, id=None, email="", **kwd ):
         """ Handle sharing an item with a particular user. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
         """ Display item by username and slug. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     @web.json
     @web.require_login( "get item name and link" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns item's name and link. """
-        pass
+        raise "Unimplemented Method"
     @web.expose
     @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
-        pass
+        raise "Unimplemented Method"
     # Helper methods.
     def _make_item_accessible( self, sa_session, item ):
         """ Makes item accessible--viewable and importable--and sets item's slug. Does not flush/commit changes, however. Item must have name, user, importable, and slug attributes. """
@@ -1099,6 +1273,13 @@ class Sharable:
             item.slug = slug
             return True
         return False
+    def get_item( self, trans, id ):
+        """ Return item based on id. """
+        raise "Unimplemented Method"
+
+class UsesQuota( object ):
+    def get_quota( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
+        return self.get_object( trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted )
 
 """
 Deprecated: `BaseController` used to be available under the name `Root`
@@ -1111,6 +1292,8 @@ class Admin( object ):
     user_list_grid = None
     role_list_grid = None
     group_list_grid = None
+    quota_list_grid = None
+    repository_list_grid = None
 
     @web.expose
     @web.require_admin
@@ -1120,8 +1303,12 @@ class Admin( object ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         if webapp == 'galaxy':
+            cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                                  .filter( trans.model.ToolShedRepository.deleted == False ) \
+                                                  .first()
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         webapp=webapp,
+                                        cloned_repositories=cloned_repositories,
                                         message=message,
                                         status=status )
         else:
@@ -1143,22 +1330,14 @@ class Admin( object ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        toolbox = self.app.toolbox
+        if params.get( 'reload_tool_button', False ):
+            tool_id = params.tool_id
+            message, status = toolbox.reload_tool_by_id( tool_id )
         return trans.fill_template( '/admin/reload_tool.mako',
-                                    toolbox=self.app.toolbox,
+                                    toolbox=toolbox,
                                     message=message,
                                     status=status )
-    @web.expose
-    @web.require_admin
-    def tool_reload( self, trans, tool_version=None, **kwd ):
-        params = util.Params( kwd )
-        tool_id = params.tool_id
-        self.app.toolbox.reload( tool_id )
-        message = 'Reloaded tool: ' + tool_id
-        return trans.fill_template( '/admin/reload_tool.mako',
-                                    toolbox=self.app.toolbox,
-                                    message=message,
-                                    status='done' )
-
     # Galaxy Role Stuff
     @web.expose
     @web.require_admin
@@ -2211,6 +2390,17 @@ class Admin( object ):
 
 ## ---- Utility methods -------------------------------------------------------
 
+def copy_sample_loc_file( trans, filename ):
+    """Copy xxx.loc.sample to ~/tool-data/xxx.loc.sample and ~/tool-data/xxx.loc"""
+    head, sample_loc_file = os.path.split( filename )
+    loc_file = sample_loc_file.replace( '.sample', '' )
+    tool_data_path = os.path.abspath( trans.app.config.tool_data_path )
+    # It's ok to overwrite the .sample version of the file.
+    shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
+    # Only create the .loc file if it does not yet exist.  We don't  
+    # overwrite it in case it contains stuff proprietary to the local instance.
+    if not os.path.exists( os.path.join( tool_data_path, loc_file ) ):
+        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
 def get_user( trans, id ):
     """Get a User from the database by id."""
     # Load user from database
@@ -2219,6 +2409,12 @@ def get_user( trans, id ):
     if not user:
         return trans.show_error_message( "User not found for id (%s)" % str( id ) )
     return user
+def get_user_by_username( trans, username ):
+    """Get a user from the database by username"""
+    # TODO: Add exception handling here.
+    return trans.sa_session.query( trans.model.User ) \
+                           .filter( trans.model.User.table.c.username == username ) \
+                           .one()
 def get_role( trans, id ):
     """Get a Role from the database by id."""
     # Load user from database
@@ -2235,3 +2431,51 @@ def get_group( trans, id ):
     if not group:
         return trans.show_error_message( "Group not found for id (%s)" % str( id ) )
     return group
+def get_quota( trans, id ):
+    """Get a Quota from the database by id."""
+    # Load user from database
+    id = trans.security.decode_id( id )
+    quota = trans.sa_session.query( trans.model.Quota ).get( id )
+    return quota
+def handle_sample_tool_data_table_conf_file( trans, filename ):
+    """
+    Parse the incoming filename and add new entries to the in-memory
+    trans.app.tool_data_tables dictionary as well as appending them 
+    to the shed's tool_data_table_conf.xml file on disk.
+    """
+    # Parse the incoming file and add new entries to the in-memory 
+    # trans.app.tool_data_tables dictionary.
+    error = False
+    message = ''
+    try:
+        new_table_elems = trans.app.tool_data_tables.add_new_entries_from_config_file( filename )
+    except Exception, e:
+        message = str( e )
+        error = True
+    if not error:
+        # Add an entry to the end of the tool_data_table_conf.xml file.
+        tdt_config = "%s/tool_data_table_conf.xml" %  trans.app.config.root
+        if os.path.exists( tdt_config ):
+            # Make a backup of the file since we're going to be changing it.
+            today = date.today()
+            backup_date = today.strftime( "%Y_%m_%d" )
+            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( trans.app.config.root, backup_date )
+            shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
+            # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
+            fh = tempfile.NamedTemporaryFile( 'wb' )
+            tmp_filename = fh.name
+            fh.close()
+            new_tdt_config = open( tmp_filename, 'wb' )
+            for i, line in enumerate( open( tdt_config, 'rb' ) ):
+                if line.find( '</tables>' ) >= 0:
+                    for new_table_elem in new_table_elems:
+                        new_tdt_config.write( '    %s\n' % util.xml_to_string( new_table_elem ).rstrip( '\n' ) )
+                    new_tdt_config.write( '</tables>\n' )
+                else:
+                    new_tdt_config.write( line )
+            new_tdt_config.close()
+            shutil.move( tmp_filename, os.path.abspath( tdt_config ) )
+        else:
+            message = "The required file named tool_data_table_conf.xml does not exist in the Galaxy install directory."
+            error = True
+    return error, message

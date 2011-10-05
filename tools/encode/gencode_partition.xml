@@ -35,5 +35,11 @@ A partition scheme has been defined that is similar to what has previously been 
 
 **Note:** Features overlapping more than one partition will take the identity of the lower-numbered partition. 
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Schenck I, He J, Zhang Y, Ghent M, Veeraraghavan N, Albert I, Miller W, Makova KD, Hardison RC, Nekrutenko A. A framework for collaborative analysis of ENCODE data: making large-scale analyses biologist-friendly. Genome Res. 2007 Jun;17(6):960-4. &lt;http://www.ncbi.nlm.nih.gov/pubmed/17568012&gt;`_
+
   </help>
 </tool>

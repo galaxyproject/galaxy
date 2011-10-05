@@ -11,7 +11,8 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.tools.actions import upload_common
 from galaxy.tags.tag_handler import GalaxyTagHandler
-from sqlalchemy.sql.expression import ClauseElement
+from sqlalchemy.sql.expression import ClauseElement, func
+from sqlalchemy.sql import select
 import webhelpers, logging, operator, os, tempfile, subprocess, shutil, tarfile
 from datetime import datetime
 from cgi import escape
@@ -26,11 +27,29 @@ class HistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
+            # Build query to get (state, count) pairs.
+            cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ] 
+            from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
+            where_clause = and_( trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id,
+                                 trans.app.model.HistoryDatasetAssociation.table.c.deleted == False,
+                                 trans.app.model.HistoryDatasetAssociation.table.c.visible == True,
+                                  )
+            group_by = trans.app.model.Dataset.table.c.state
+            query = select( columns=cols_to_select,
+                            from_obj=from_obj,
+                            whereclause=where_clause,
+                            group_by=group_by )
+                            
+            # Process results.
+            state_count_dict = {}
+            for row in trans.sa_session.execute( query ):
+                state, count = row
+                state_count_dict[ state ] = count
             rval = []
             for state in ( 'ok', 'running', 'queued', 'error' ):
-                total = sum( 1 for d in history.active_datasets if d.state == state )
-                if total:
-                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
+                count = state_count_dict.get( state, 0 )
+                if count:
+                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, count ) )
                 else:
                     rval.append( '' )
             return rval
@@ -156,7 +175,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         # A public history is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
-class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRatings, UsesHistory ):
+class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRatings, UsesHistory ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -271,9 +290,12 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                 n_deleted += 1
             if purge and trans.app.config.allow_user_dataset_purge:
                 for hda in history.datasets:
+                    if trans.user:
+                        trans.user.total_disk_usage -= hda.quota_amount( trans.user )
                     hda.purged = True
                     trans.sa_session.add( hda )
                     trans.log_event( "HDA id %s has been purged" % hda.id )
+                    trans.sa_session.flush()
                     if hda.dataset.user_can_purge:
                         try:
                             hda.dataset.full_delete()
@@ -679,7 +701,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         if not import_history:
             return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
         # History is importable if user is admin or it's accessible. TODO: probably want to have app setting to enable admin access to histories.
-        if not trans.user_is_admin() and not self.security_check( user, import_history, check_ownership=False, check_accessible=True ):
+        if not trans.user_is_admin() and not self.security_check( trans, import_history, check_ownership=False, check_accessible=True ):
             return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
         if user:
             #dan: I can import my own history.
@@ -758,7 +780,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         if history is None:
            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access history.
-        self.security_check( trans.get_user(), history, False, True)
+        self.security_check( trans, history, False, True)
 
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )
@@ -1204,3 +1226,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         hist = trans.sa_session.query( trans.app.model.History ).get( decoded_id )
         trans.set_history( hist )
         return trans.response.send_redirect( url_for( "/" ) )
+        
+    def get_item( self, trans, id ):
+        return self.get_history( trans, id )
+        

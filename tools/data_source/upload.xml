@@ -177,7 +177,7 @@ Lav is the primary output format for BLASTZ.  The first line of a .lav file begi
 
 **MAF**
 
-TBA and multiz multiple alignment format.  The first line of a .maf file begins with ##maf. This word is followed by white-space-separated "variable=value pairs". There should be no white space surrounding the "=".
+TBA and multiz multiple alignment format.  The first line of a .maf file begins with ##maf. This word is followed by white-space-separated "variable=value" pairs. There should be no white space surrounding the "=".
 
 -----
 

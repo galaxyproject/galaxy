@@ -194,6 +194,16 @@ GMAJ is an interactive viewer for MAF alignments, with support for optional anno
 
 For detailed information on GMAJ, click here_.
 
+
+------
+
+**Citation**
+
+If you use GMAJ, please cite `Blanchette M, Kent WJ, Riemer C, Elnitski L, Smit AF, Roskin KM, Baertsch R, Rosenbloom K, Clawson H, Green ED, Haussler D, Miller W. Aligning multiple genomic sequences with the threaded blockset aligner. Genome Res. 2004 Apr;14(4):708-15. &lt;http://www.ncbi.nlm.nih.gov/pubmed/15060014&gt;`_ and http://globin.cse.psu.edu/dist/gmaj/. 
+
+If you use this tool in Galaxy, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
+
 .. _here: /static/gmaj/docs/gmaj_readme.html
 .. _TBA: http://www.bx.psu.edu/miller_lab/
   </help>

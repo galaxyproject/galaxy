@@ -4,13 +4,15 @@
 <%
     from galaxy.util.expressions import ExpressionContext
     from galaxy import util
-    from galaxy.tools.parameters.basic import DataToolParameter, ColumnListParameter, SelectToolParameter
+    from galaxy.tools.parameters.basic import DataToolParameter, ColumnListParameter, GenomeBuildParameter, SelectToolParameter
     from galaxy.web.form_builder import SelectField
 
     is_admin = trans.user_is_admin()
     is_new = repository.is_new
+    can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
     can_rate = trans.user and repository.user != trans.user
     can_manage = is_admin or repository.user == trans.user
@@ -23,7 +25,7 @@
 
 <html>
     <head>
-        <title>Galaxy tool display</title>
+        <title>Galaxy tool preview</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ${h.css( "base" )}
     </head>
@@ -58,8 +60,8 @@
                     %endif
                 %elif input.type == "upload_dataset":
                     %if input.get_datatype( trans, other_values ).composite_type is None:
-                        # Have non-composite upload appear as before
-                        ${do_inputs( input.inputs, tool_state[input.name][0], prefix + input.name + "_" + str( 0 ) + "|", other_values )}
+                        ## Have non-composite upload appear as before
+                        ${do_inputs( input.inputs, 'files', prefix + input.name + "_" + str( 0 ) + "|", other_values )}
                     %else:
                         <div class="repeat-group">
                             <div class="form-title-row">
@@ -80,7 +82,7 @@
         <%def name="row_for_param( prefix, param, parent_state, other_values )">
             <%
                 label = param.get_label()
-                if isinstance( param, DataToolParameter ) or isinstance( param, ColumnListParameter ):
+                if isinstance( param, DataToolParameter ) or isinstance( param, ColumnListParameter ) or isinstance( param, GenomeBuildParameter ):
                     field = SelectField( param.name )
                     field.add_option( param.name, param.name )
                     field_html = field.get_html()
@@ -108,32 +110,41 @@
 
         <br/><br/>
         <ul class="manage-table-actions">
-            %if is_new:
-                <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
+            %if display_for_install:
+                <a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp='community', changeset_revision=changeset_revision )}">Install to local Galaxy</a>
             %else:
-                <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-                <div popupmenu="repository-${repository.id}-popup">
-                    %if can_manage:
-                        <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ) )}">Manage repository</a>
-                    %else:
-                        <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ) )}">View repository</a>
-                    %endif
-                    %if can_upload:
-                        <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
-                    %endif
-                    %if can_view_change_log:
-                        <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
-                    %endif
-                    %if can_browse_contents:
-                        <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
-                    %endif
-                    %if can_rate:
-                        <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
-                    %endif
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
-                </div>
+                %if is_new:
+                    <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
+                %else:
+                    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
+                    <div popupmenu="repository-${repository.id}-popup">
+                        %if can_manage:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Manage repository</a>
+                        %else:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">View repository</a>
+                        %endif
+                        %if can_upload:
+                            <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
+                        %endif
+                        %if can_view_change_log:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
+                        %endif
+                        %if can_browse_contents:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+                        %endif
+                        %if can_rate:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
+                        %endif
+                        %if can_contact_owner:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
+                        %endif
+                        %if can_download:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
+                            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
+                        %endif
+                    </div>
+                %endif
             %endif
         </ul>
         
@@ -141,26 +152,30 @@
             ${render_msg( message, status )}
         %endif
 
-        <div class="toolForm" id="${tool.id}">
-            <div class="toolFormTitle">${tool.name}</div>
-            <div class="toolFormBody">
-                <form id="tool_form" name="tool_form" action="" method="get">
-                    <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
-                    ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}  
-                </form>
+        %if tool:
+            <div class="toolForm" id="${tool.id}">
+                <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
+                <div class="toolFormBody">
+                    <form id="tool_form" name="tool_form" action="" method="get">
+                        <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
+                        ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}  
+                    </form>
+                </div>
             </div>
-        </div>
-        %if tool.help:
-            <div class="toolHelp">
-                <div class="toolHelpBody">
-                    <%
-                        # Convert to unicode to display non-ascii characters.
-                        if type( tool.help ) is not unicode:
-                            tool.help = unicode( tool.help, 'utf-8')
-                    %>
-                    ${tool.help}
-                </div>        
-            </div>
+            %if tool.help:
+                <div class="toolHelp">
+                    <div class="toolHelpBody">
+                        <%
+                            # Convert to unicode to display non-ascii characters.
+                            if type( tool.help ) is not unicode:
+                                tool.help = unicode( tool.help, 'utf-8')
+                        %>
+                        ${tool.help}
+                    </div>        
+                </div>
+            %endif
+        %else:
+            Tool not properly loaded.
         %endif
     </body>
 </html>

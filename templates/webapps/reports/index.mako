@@ -87,6 +87,7 @@
                     <div class="toolSectionBg">
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='registered_users' )}">Registered users</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='last_access_date' )}">Date of last login</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='user_disk_usage' )}">User disk usage</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>

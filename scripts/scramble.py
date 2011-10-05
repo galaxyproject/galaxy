@@ -45,7 +45,7 @@ try:
                 degg = e.eggs[0]
                 print "%s build dependency %s %s couldn't be downloaded" % ( egg.name, degg.name, degg.version )
                 print "automatically.  You can try building it by hand with:"
-                print "  python scripts/scramble.py %s-e %s" % ( config_agr, degg.name )
+                print "  python scripts/scramble.py %s-e %s" % ( config_arg, degg.name )
                 sys.exit( 1 )
         egg.scramble()
         sys.exit( 0 )

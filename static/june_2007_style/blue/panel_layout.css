@@ -36,6 +36,12 @@ div.unified-panel-body{position:absolute;top:2em;bottom:0;width:100%;margin-top:
 #masthead a{color:#eeeeee;text-decoration:none;}
 #masthead .title{font-family:verdana;padding:3px 10px;font-size:175%;font-weight:bold;z-index:-1;}
 #masthead a:hover{text-decoration:underline;}
+.quota-meter-container{position:absolute;top:0;right:0;height:32px;}
+.quota-meter{position:absolute;top:8px;right:8px;height:16px;width:100px;background-color:#C1C9E5;;}
+.quota-meter-bar{position:absolute;top:0;left:0;height:16px;background-color:#969DB3;;}
+.quota-meter-bar-warn{background-color:#FFB400;;}
+.quota-meter-bar-error{background-color:#FF4343;;}
+.quota-meter-text{position:absolute;top:50%;left:0;width:100px;height:16px;margin-top:-6px;text-align:center;z-index:9001;color:#000;;}
 .tab-group{margin:0;padding:0 10px;height:100%;white-space:nowrap;cursor:default;background:transparent;}
 .tab-group .tab{background:#2C3143;position:relative;float:left;margin:0;padding:0 1em;height:32px;line-height:32px;text-align:left;}
 .tab-group .tab .submenu{display:none;position:absolute;z-index:16000;left:0;top:32px;padding:1em;margin:-1em;padding-top:0;margin-top:0;background-color:rgba(0,0,0,0.5);-moz-border-radius:0 0 1em 1em;-webkit-border-bottom-right-radius:1em;-webkit-border-bottom-left-radius:1em;}

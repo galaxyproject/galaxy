@@ -14,8 +14,11 @@
             -j $pre_mrna_fraction
             
             ## Include reference annotation?
-            #if $reference_annotation.use_ref == "Yes":
+            #if $reference_annotation.use_ref == "Use reference annotation":
                 -G $reference_annotation.reference_annotation_file
+            #end if
+            #if $reference_annotation.use_ref == "Use reference annotation guide":
+		        -g $reference_annotation.reference_annotation_guide_file
             #end if
             
             ## Set paired-end parameters?
@@ -53,17 +56,21 @@
         <conditional name="reference_annotation">
             <param name="use_ref" type="select" label="Use Reference Annotation">
                 <option value="No">No</option>
-                <option value="Yes">Yes</option>
+                <option value="Use reference annotation">Use reference annotation</option>
+                <option value="Use reference annotation guide">Use reference annotation as guide</option>
             </param>
             <when value="No"></when>
-            <when value="Yes">
+            <when value="Use reference annotation">
                 <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
-            </when>
+            	</when>
+	        <when value="Use reference annotation guide">
+                <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
+                </when>
         </conditional>
         <conditional name="bias_correction">
             <param name="do_bias_correction" type="select" label="Perform Bias Correction" help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
-                <option value="Yes">Yes</option>
                 <option value="No">No</option>
+		<option value="Yes">Yes</option>
             </param>
             <when value="Yes">
                 <conditional name="seq_source">

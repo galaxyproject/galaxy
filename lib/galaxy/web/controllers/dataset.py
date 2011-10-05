@@ -145,7 +145,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
                 .filter( model.History.deleted==False ) \
                 .filter( self.model_class.visible==True )
         
-class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistoryDatasetAssociation, UsesItemRatings ):
+class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHistoryDatasetAssociation, UsesItemRatings ):
         
     stored_list_grid = HistoryDatasetAssociationListGrid()
 
@@ -380,8 +380,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             else:
                 return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         
-        mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-        trans.response.set_content_type(mime)
+        trans.response.set_content_type(data.get_mime())
         trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
         
         if to_ext or isinstance(data.datatype, datatypes.binary.Binary): # Saving the file, or binary file
@@ -393,12 +392,15 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                     to_ext = data.extension
                 valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
                 fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+                trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, to_ext)
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
         
         max_peek_size = 1000000 # 1 MB
+        if isinstance(data.datatype, datatypes.images.Html):
+            max_peek_size = 10000000 # 10 MB for html
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             return open( data.file_name )
         else:
@@ -713,8 +715,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
             if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image)  or isinstance(dataset.datatype, datatypes.images.Html):
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( dataset.extension.lower() )
-                trans.response.set_content_type( mime )
+                trans.response.set_content_type( dataset.get_mime() )
                 return open( dataset.file_name )
             else:
                 # Get rating data.
@@ -958,7 +959,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             assert topmost_parent in history.datasets, "Data does not belong to current history"
             # If the user is anonymous, make sure the HDA is owned by the current session.
             if not user:
-                assert trans.galaxy_session.id in [ s.id for s in hda.history.galaxy_sessions ], 'Invalid history dataset ID'
+                assert trans.galaxy_session.current_history_id == trans.history.id, 'Invalid history dataset ID'
             # If the user is known, make sure the HDA is owned by the current user.
             else:
                 assert topmost_parent.history.user == trans.user, 'Invalid history dataset ID'
@@ -972,6 +973,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             hda.purged = True
             trans.sa_session.add( hda )
             trans.log_event( "HDA id %s has been purged" % hda.id )
+            trans.sa_session.flush()
             # Don't delete anything if there are active HDAs or any LDDAs, even if
             # the LDDAs are deleted.  Let the cleanup scripts get it in the latter
             # case.

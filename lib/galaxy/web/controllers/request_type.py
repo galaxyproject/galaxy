@@ -72,7 +72,7 @@ class RequestTypeGrid( grids.Grid ):
         grids.GridAction( "Create new request type", dict( controller='request_type', action='create_request_type' ) )
     ]
 
-class RequestType( BaseController, UsesFormDefinitions ):
+class RequestType( BaseUIController, UsesFormDefinitions ):
     request_type_grid = RequestTypeGrid()
 
     @web.expose

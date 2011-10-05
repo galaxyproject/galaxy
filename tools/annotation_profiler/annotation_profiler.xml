@@ -132,5 +132,11 @@ Where::
 
 **TIP:** non-redundant (nr) refers to the set of intervals that remains after the intervals provided have been merged to resolve overlaps
 
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
   </help>
 </tool>

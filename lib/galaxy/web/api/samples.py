@@ -9,7 +9,7 @@ from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
 
-class SamplesAPIController( BaseController ):
+class SamplesAPIController( BaseAPIController ):
     update_types = Bunch( SAMPLE = [ 'sample_state', 'run_details' ],
                           SAMPLE_DATASET = [ 'sample_dataset_transfer_status' ] )
     update_type_values = []

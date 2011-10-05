@@ -13,6 +13,7 @@ from markupsafe import escape
 from elementtree import ElementTree
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
+from base.asserts import verify_assertions
 
 buffer = StringIO.StringIO()
 
@@ -639,7 +640,7 @@ class TwillTestCase( unittest.TestCase ):
             elem = elems[0]
         self.assertTrue( hid )
         self._assert_dataset_state( elem, 'ok' )
-        if self.is_zipped( filename ):
+        if filename is not None and self.is_zipped( filename ):
             errmsg = 'History item %s is a zip archive which includes invalid files:\n' % hid
             zip_file = zipfile.ZipFile( filename, "r" )
             name = zip_file.namelist()[0]
@@ -651,50 +652,58 @@ class TwillTestCase( unittest.TestCase ):
                 if ext != test_ext:
                     raise AssertionError( errmsg )
         else:
-            local_name = self.get_filename( filename )
-            temp_name = self.makeTfname(fname = filename)
             self.home()
             self.visit_page( "display?hid=" + hid )
             data = self.last_page()
-            file( temp_name, 'wb' ).write(data)
-            if self.keepOutdir > '':
-                ofn = os.path.join(self.keepOutdir,os.path.basename(local_name))
-                shutil.copy(temp_name,ofn)
-                log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
-            try:
-                # have to nest try-except in try-finally to handle 2.4
+            if attributes is not None and attributes.get( "assert_list", None ) is not None:
                 try:
-                    if attributes is None:
-                        attributes = {}
-                    compare = attributes.get( 'compare', 'diff' )
-                    if attributes.get( 'ftype', None ) == 'bam':
-                        local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
-                        local_name = local_fh.name
-                    extra_files = attributes.get( 'extra_files', None )
-                    if compare == 'diff':
-                        self.files_diff( local_name, temp_name, attributes=attributes )
-                    elif compare == 're_match':
-                        self.files_re_match( local_name, temp_name, attributes=attributes )
-                    elif compare == 're_match_multiline':
-                        self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-                    elif compare == 'sim_size':
-                        delta = attributes.get('delta','100')
-                        s1 = len(data)
-                        s2 = os.path.getsize(local_name)
-                        if abs(s1-s2) > int(delta):
-                           raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
-                    elif compare == "contains":
-                        self.files_contains( local_name, temp_name, attributes=attributes )
-                    else:
-                        raise Exception, 'Unimplemented Compare type: %s' % compare
-                    if extra_files:
-                        self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
+                    verify_assertions(data, attributes["assert_list"])
                 except AssertionError, err:
-                    errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+                    errmsg = 'History item %s different than expected\n' % (hid)
                     errmsg += str( err )
                     raise AssertionError( errmsg )
-            finally:
-                os.remove( temp_name )
+            if filename is not None:
+                local_name = self.get_filename( filename )
+                temp_name = self.makeTfname(fname = filename)
+                file( temp_name, 'wb' ).write(data)
+                if self.keepOutdir > '':
+                    ofn = os.path.join(self.keepOutdir,os.path.basename(local_name))
+                    shutil.copy(temp_name,ofn)
+                    log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
+                try:
+                    # have to nest try-except in try-finally to handle 2.4
+                    try:
+                        if attributes is None:
+                            attributes = {}
+                        compare = attributes.get( 'compare', 'diff' )
+                        if attributes.get( 'ftype', None ) == 'bam':
+                            local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
+                            local_name = local_fh.name
+                        extra_files = attributes.get( 'extra_files', None )
+                        if compare == 'diff':
+                            self.files_diff( local_name, temp_name, attributes=attributes )
+                        elif compare == 're_match':
+                            self.files_re_match( local_name, temp_name, attributes=attributes )
+                        elif compare == 're_match_multiline':
+                            self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+                        elif compare == 'sim_size':
+                            delta = attributes.get('delta','100')
+                            s1 = len(data)
+                            s2 = os.path.getsize(local_name)
+                            if abs(s1-s2) > int(delta):
+                                raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
+                        elif compare == "contains":
+                            self.files_contains( local_name, temp_name, attributes=attributes )
+                        else:
+                            raise Exception, 'Unimplemented Compare type: %s' % compare
+                        if extra_files:
+                            self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
+                    except AssertionError, err:
+                        errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+                        errmsg += str( err )
+                        raise AssertionError( errmsg )
+                finally:
+                    os.remove( temp_name )
 
     def _bam_to_sam( self, local_name, temp_name ):
         temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
@@ -728,6 +737,10 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
         data = self.last_page()
         file( temp_name, 'wb' ).write( data )
+        if self.keepOutdir > '':
+            ofn = os.path.join(self.keepOutdir,base_name)
+            shutil.copy(temp_name,ofn)
+            log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
         try:
             # have to nest try-except in try-finally to handle 2.4
             try:

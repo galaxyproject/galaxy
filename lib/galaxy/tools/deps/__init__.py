@@ -18,11 +18,10 @@ class DependencyManager( object ):
     and should each contain a file 'env.sh' which can be sourced to make the
     dependency available in the current shell environment.
     """
-
     def __init__( self, base_paths=[] ):
         """
-        Create a new dependency manager looking for packages under the 
-        paths listed in `base_paths`.
+        Create a new dependency manager looking for packages under the paths listed
+        in `base_paths`.  The default base path is app.config.tool_dependency_dir.
         """
         self.base_paths = []
         for base_path in base_paths:
@@ -31,19 +30,17 @@ class DependencyManager( object ):
             if not os.path.isdir( base_path ):
                 log.warn( "Path '%s' is not directory, ignoring", base_path )
             self.base_paths.append( os.path.abspath( base_path ) )
-
     def find_dep( self, name, version=None ):
         """
         Attempt to find a dependency named `name` at version `version`. If
         version is None, return the "default" version as determined using a 
         symbolic link (if found). Returns a triple of:
-            env_script, base_path, real_version
+        env_script, base_path, real_version
         """
         if version is None:
             return self._find_dep_default( name )
         else:
             return self._find_dep_versioned( name, version )
-
     def _find_dep_versioned( self, name, version ):
         for base_path in self.base_paths:
             path = os.path.join( base_path, name, version )
@@ -52,7 +49,6 @@ class DependencyManager( object ):
                 return script, path, version
         else:
             return None, None, None
-
     def _find_dep_default( self, name ):
         version = None
         for base_path in self.base_paths:
@@ -65,5 +61,3 @@ class DependencyManager( object ):
                     return script, real_path, real_version
         else:
             return None, None, None
-
-

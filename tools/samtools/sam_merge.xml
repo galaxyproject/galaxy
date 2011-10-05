@@ -1,18 +1,21 @@
-<tool id="sam_merge" name="Merge BAM Files" version="1.1.1">
+<tool id="sam_merge2" name="Merge BAM Files" version="1.1.2">
   <description>merges BAM files together</description>
   <requirements>
-    <requirement type="package">samtools</requirement>
+    <requirement type="package">picard</requirement>
   </requirements>
-  <command interpreter="python">
-    sam_merge.py 
-      $input1
-      $output1
-      $input2
+  <command>
+java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MSD=$mergeSD VALIDATION_STRINGENCY=LENIENT O=$output1 I=$input1 I=$input2 
       #for $i in $inputs
-        ${i.input}
-      #end for
+        I=${i.input}
+      #end for 
+    2&gt; $outlog
   </command>
   <inputs>
+    <param name="title" label="Name for the output merged bam file" type="text" default="Merged.bam"
+       help="This name will appear in your history so use it to remember what the new file in your history contains" />
+    <param name="mergeSD" value="true" type="boolean"  label="Merge all component bam file headers into the merged bam file"
+      truevalue="true" falsevalue="false" checked="yes" 
+      help="Control the MERGE_SEQUENCE_DICTIONARIES flag for Picard MergeSamFiles. Default (true) correctly propagates read groups and other important metadata" />
     <param name="input1" label="First file" type="data" format="bam" />
     <param name="input2" label="with file" type="data" format="bam" help="Need to add more files? Use controls below." />
     <repeat name="inputs" title="Input Files">
@@ -20,57 +23,39 @@
     </repeat>
   </inputs>
   <outputs>
-    <data format="bam" name="output1" label="${tool.name} on ${on_string}: merged BAM" />
+    <data format="bam" name="output1" label="${title}.bam" />
+    <data format="txt" name="outlog" label="${title}_${tool.name}.log" />
   </outputs>
   <tests>
     <!-- TODO: add ability to test framework to test without at least 
          one repeat element value
-    <test>
     -->
-      <!--
-      Bam merge command:
-      samtools merge test-data/sam_merge_out1.bam test-data/sam_merge_in1.bam test-data/sam_merge_in2.bam
-      -->
-    <!--
+    <test>
+      <param name="title" value="test1" />
+      <param name="mergeSD" value="true" />
       <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
       <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
       <output name="output1" file="sam_merge_out1.bam" ftype="bam" />
+      <output name="outlog" file="sam_merge_out1.log" ftype="txt" lines_diff="10"/>
     </test>
-    -->
     <test>
-      <!--
-      Bam merge command:
-      samtools merge sam_merge_out2.bam test-data/sam_merge_in1.bam test-data/sam_merge_in2.bam test-data/sam_merge_in3.bam
-      -->
+      <param name="title" value="test2" />
+      <param name="mergeSD" value="true" />
       <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
       <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
       <param name="input" value="sam_merge_in3.bam" ftype="bam" />
       <output name="output1" file="sam_merge_out2.bam" ftype="bam" />
+      <output name="outlog" file="sam_merge_out2.log" ftype="txt" lines_diff="10"/>
     </test>
-    <!-- TODO: add ability to test code to be able to test with multiple 
-         inputs (parameters with same value)
-    <test>
-    -->
-      <!--
-      Bam merge command:
-      samtools merge test-data/sam_merge_out3.bam test-data/sam_merge_in1.bam test-data/sam_merge_in2.bam test-data/sam_merge_in3.bam test-data/sam_merge_in4.bam
-      -->
-    <!--
-      <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
-      <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
-      <param name="input" value="sam_merge_in3.bam" ftype="bam" />
-      <param name="input" value="sam_merge_in4.bam" ftype="bam" />
-      <output name="output1" file="sam_merge_out3.bam" ftype="bam" />
-    </test>
-    -->
   </tests>
   <help>
 
 **What it does**
 
-This tool uses SAMTools_' merge command to merge any number of BAM files together into one BAM file.
+This tool uses the Picard_ merge command to merge any number of BAM files together into one BAM file while preserving the BAM
+metadata such as read groups
 
-.. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
+.. _Picard: http://picard.sourceforge.net/command-line-overview.shtml#MergeSamFiles
 
   </help>
 </tool>

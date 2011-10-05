@@ -47,6 +47,8 @@ def __main__():
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--pass_through', dest='pass_through_options', action='append', type="string", help='These options are passed through directly to GATK, without any modification.' )
     parser.add_option( '-d', '--dataset', dest='datasets', action='append', type="string", nargs=4, help='"-argument" "original_filename" "galaxy_filetype" "name_prefix"' )
+    parser.add_option( '', '--max_jvm_heap', dest='max_jvm_heap', action='store', type="string", default=None, help='If specified, the maximum java virtual machine heap size will be set to the provide value.' )
+    parser.add_option( '', '--max_jvm_heap_fraction', dest='max_jvm_heap_fraction', action='store', type="int", default=0, help='If specified, the maximum java virtual machine heap size will be set to the provide value as a fraction of total physical memory.' )
     parser.add_option( '', '--stdout', dest='stdout', action='store', type="string", default=None, help='If specified, the output of stdout will be written to this file.' )
     parser.add_option( '', '--stderr', dest='stderr', action='store', type="string", default=None, help='If specified, the output of stderr will be written to this file.' )
     parser.add_option( '', '--html_report_from_directory', dest='html_report_from_directory', action='append', type="string", nargs=2, help='"Target HTML File" "Directory"')
@@ -57,6 +59,10 @@ def __main__():
         cmd = ' '.join( options.pass_through_options )
     else:
         cmd = ''
+    if options.max_jvm_heap:
+        cmd.replace( 'java ', 'java -Xmx%s ' % ( options.max_jvm_heap ), 1 )
+    elif options.max_jvm_heap_fraction:
+        cmd.replace( 'java ', 'java -XX:DefaultMaxRAMFraction=%s  -XX:+UseParallelGC ' % ( options.max_jvm_heap_fraction ), 1 )
     if options.datasets:
         for ( dataset_arg, filename, galaxy_ext, prefix ) in options.datasets:
             gatk_filename = gatk_filename_from_galaxy( filename, galaxy_ext, target_dir = tmp_dir, prefix = prefix )

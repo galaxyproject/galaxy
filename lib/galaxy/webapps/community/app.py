@@ -1,5 +1,6 @@
 import sys, config
 import galaxy.tools.data
+import galaxy.quota
 import galaxy.datatypes.registry
 import galaxy.webapps.community.model
 from galaxy.web import security
@@ -36,5 +37,6 @@ class UniverseApplication( object ):
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_table_config_path )
         # Load security policy
         self.security_agent = self.model.security_agent
+        self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )
     def shutdown( self ):
         pass

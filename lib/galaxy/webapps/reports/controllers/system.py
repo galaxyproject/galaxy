@@ -6,7 +6,7 @@ from galaxy.model.orm import *
 import logging
 log = logging.getLogger( __name__ )
 
-class System( BaseController ):
+class System( BaseUIController ):
     @web.expose
     def index( self, trans, **kwd ):
         params = util.Params( kwd )

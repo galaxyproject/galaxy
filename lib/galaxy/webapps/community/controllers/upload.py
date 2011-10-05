@@ -14,7 +14,7 @@ CHUNK_SIZE = 2**20 # 1Mb
 class UploadError( Exception ):
     pass
 
-class UploadController( BaseController ):
+class UploadController( BaseUIController ):
     @web.expose
     @web.require_login( 'upload', use_panels=True, webapp='community' )
     def upload( self, trans, **kwd ):
@@ -95,6 +95,14 @@ class UploadController( BaseController ):
                         # exception.  If this happens, we'll try the following.
                         repo.dirstate.write()
                         repo.commit( user=trans.user.username, text=commit_message )
+                    if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
+                        # Handle the special case where a tool_data_table_conf.xml.sample
+                        # file is being uploaded by parsing the file and adding new entries
+                        # to the in-memory trans.app.tool_data_tables dictionary as well as
+                        # appending them to the shed's tool_data_table_conf.xml file on disk.
+                        error, error_message = handle_sample_tool_data_table_conf_file( trans, full_path )
+                        if error:
+                            message = '%s<br/>%s' % ( message, error_message )
                     if full_path.endswith( '.loc.sample' ):
                         # Handle the special case where a xxx.loc.sample file is
                         # being uploaded by copying it to ~/tool-data/xxx.loc.
@@ -208,6 +216,14 @@ class UploadController( BaseController ):
                                 pass
             for filename_in_archive in filenames_in_archive:
                 commands.add( repo.ui, repo, filename_in_archive )
+                if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
+                    # Handle the special case where a tool_data_table_conf.xml.sample
+                    # file is being uploaded by parsing the file and adding new entries
+                    # to the in-memory trans.app.tool_data_tables dictionary as well as
+                    # appending them to the shed's tool_data_table_conf.xml file on disk.
+                    error, message = handle_sample_tool_data_table_conf_file( trans, filename_in_archive )
+                    if error:
+                        return False, message, files_to_remove
                 if filename_in_archive.endswith( '.loc.sample' ):
                     # Handle the special case where a xxx.loc.sample file is
                     # being uploaded by copying it to ~/tool-data/xxx.loc.

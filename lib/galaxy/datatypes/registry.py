@@ -170,7 +170,8 @@ class Registry( object ):
                 'tabular'     : tabular.Tabular(),
                 'taxonomy'    : tabular.Taxonomy(),
                 'txt'         : data.Text(),
-                'wig'         : interval.Wiggle()
+                'wig'         : interval.Wiggle(),
+                'xml'         : xml.GenericXml(),
             }
             self.mimetypes_by_extension = { 
                 'ab1'         : 'application/octet-stream',
@@ -201,7 +202,8 @@ class Registry( object ):
                 'tabular'     : 'text/plain',
                 'taxonomy'    : 'text/plain',
                 'txt'         : 'text/plain',
-                'wig'         : 'text/plain'
+                'wig'         : 'text/plain',
+                'xml'         : 'application/xml',
             }
         # super supertype fix for input steps in workflows.
         if 'data' not in self.datatypes_by_extension:
@@ -214,6 +216,7 @@ class Registry( object ):
                 binary.Bam(),
                 binary.Sff(),
                 xml.BlastXml(),
+                xml.GenericXml(),
                 sequence.Maf(),
                 sequence.Lav(),
                 sequence.csFasta(),

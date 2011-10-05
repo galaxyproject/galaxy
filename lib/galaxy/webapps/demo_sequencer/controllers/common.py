@@ -8,7 +8,7 @@ from urllib import quote_plus, unquote_plus
 import logging
 log = logging.getLogger( __name__ )
 
-class CommonController( BaseController ):
+class CommonController( BaseUIController ):
     @web.expose
     def index( self, trans, **kwd ):
         redirect_action = util.restore_text( kwd.get( 'redirect_action', '' ) )

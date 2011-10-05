@@ -11,7 +11,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 
 log = logging.getLogger( __name__ )
 
-class RootController( BaseController, UsesHistory, UsesAnnotations ):
+class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -126,6 +126,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                                                hda_id = hda_id,
                                                show_deleted = show_deleted,
                                                show_hidden=show_hidden,
+                                               over_quota=trans.app.quota_agent.get_percent( trans=trans ) >= 100,
                                                message=message,
                                                status=status )
 
@@ -192,7 +193,25 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
 
     @web.json
     def history_get_disk_size( self, trans ):
-        return trans.history.get_disk_size( nice_size=True )
+        rval = { 'history' : trans.history.get_disk_size( nice_size=True ) }
+        for k, v in self.__user_get_usage( trans ).items():
+            rval['global_' + k] = v
+        return rval
+
+    @web.json
+    def user_get_usage( self, trans ):
+        return self.__user_get_usage( trans )
+
+    def __user_get_usage( self, trans ):
+        usage = trans.app.quota_agent.get_usage( trans )
+        percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage ) 
+        rval = {}
+        if percent is None:
+            rval['usage'] = util.nice_size( usage )
+        else:
+            rval['percent'] = percent
+        return rval
+
 
     ## ---- Dataset display / editing ----------------------------------------
 
@@ -222,8 +241,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         if data:
             current_user_roles = trans.get_current_user_roles()
             if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-                trans.response.set_content_type(mime)
+                trans.response.set_content_type(data.get_mime())
                 if tofile:
                     fStat = os.stat(data.file_name)
                     trans.response.headers['Content-Length'] = int(fStat.st_size)
@@ -464,49 +482,6 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] ) 
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" ) 
-
-    # @web.expose
-    # def masthead( self, trans, active_view=None ):
-    #     brand = trans.app.config.get( "brand", "" )
-    #     if brand:
-    #         brand ="<span class='brand'>/%s</span>" % brand
-    #     wiki_url = trans.app.config.get( "wiki_url", "http://g2.trac.bx.psu.edu/" )
-    #     bugs_email = trans.app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )
-    #     blog_url = trans.app.config.get( "blog_url", "http://g2.trac.bx.psu.edu/blog"   )
-    #     screencasts_url = trans.app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )
-    #     admin_user = "false"
-    #     admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
-    #     user = trans.get_user()
-    #     if user:
-    #         user_email = trans.get_user().email
-    #         if user_email in admin_users:
-    #             admin_user = "true"
-    #     return trans.fill_template( "/root/masthead.mako", brand=brand, wiki_url=wiki_url, 
-    #       blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url, admin_user=admin_user, active_view=active_view )
-
-    # @web.expose
-    # def dataset_errors( self, trans, id=None, **kwd ):
-    #     """View/fix errors associated with dataset"""
-    #     data = trans.app.model.HistoryDatasetAssociation.get( id )
-    #     p = kwd
-    #     if p.get("fix_errors", None):
-    #         # launch tool to create new, (hopefully) error free dataset
-    #         tool_params = {}
-    #         tool_params["tool_id"] = 'fix_errors'
-    #         tool_params["runtool_btn"] = 'T'
-    #         tool_params["input"] = id
-    #         tool_params["ext"] = data.ext
-    #         # send methods selected
-    #         repair_methods = data.datatype.repair_methods( data )
-    #         methods = []
-    #         for method, description in repair_methods:
-    #             if method in p: methods.append(method)
-    #         tool_params["methods"] = ",".join(methods)
-    #         url = "/tool_runner/index?" + urllib.urlencode(tool_params)
-    #         trans.response.send_redirect(url)                
-    #     else:
-    #         history = trans.app.model.History.get( data.history_id )
-    #         return trans.fill_template('dataset/validation.tmpl', data=data, history=history)
 
     # ---- Debug methods ----------------------------------------------------
 

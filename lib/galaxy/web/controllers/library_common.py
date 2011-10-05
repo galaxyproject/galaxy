@@ -68,7 +68,7 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-class LibraryCommon( BaseController, UsesFormDefinitions ):
+class LibraryCommon( BaseUIController, UsesFormDefinitions ):
     @web.json
     def library_item_updates( self, trans, ids=None, states=None ):
         # Avoid caching
@@ -852,6 +852,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                         # created_outputs_dict can be a string only if cntrller == 'api'
                         if type( created_outputs_dict ) == str:
                             return 400, created_outputs_dict
+                        elif type( created_outputs_dict ) == tuple:
+                            return created_outputs_dict[0], created_outputs_dict[1]
                         return 200, created_outputs_dict
                     total_added = len( created_outputs_dict.keys() )
                     ldda_id_list = [ str( v.id ) for k, v in created_outputs_dict.items() ]
@@ -1402,8 +1404,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             kwd['do_action'] = 'zip'
             return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=[id,], **kwd )
         else:
-            mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
-            trans.response.set_content_type( mime )
+            trans.response.set_content_type( ldda.get_mime() )
             fStat = os.stat( ldda.file_name )
             trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
             valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'

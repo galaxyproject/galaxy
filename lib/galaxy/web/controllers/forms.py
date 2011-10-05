@@ -66,7 +66,7 @@ class FormsGrid( grids.Grid ):
         grids.GridAction( "Create new form", dict( controller='forms', action='create_form_definition' ) )
     ]
 
-class Forms( BaseController ):
+class Forms( BaseUIController ):
     # Empty TextField
     empty_field = { 'name': '', 
                     'label': '', 

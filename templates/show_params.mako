@@ -49,6 +49,7 @@
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Dbkey:</td><td>${hda.dbkey}</td></tr>
         <tr><td>Format:</td><td>${hda.ext}</td></tr>
+        <tr><td>Tool Version:</td><td>${hda.tool_version}</td></tr>
 </table>
 <br />
 <table class="tabletip">

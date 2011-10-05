@@ -43,8 +43,6 @@ class SecurityHelper( object ):
         return self.id_cipher.encrypt( s ).encode( 'hex' )
     def decode_id( self, obj_id ):
         return int( self.id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" ) )
-    def decode_string_id( self, obj_id ):
-        return self.id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" )
     def encode_guid( self, session_key ):
         # Session keys are strings
         # Pad to a multiple of 8 with leading "!" 
@@ -57,4 +55,3 @@ class SecurityHelper( object ):
     def get_new_guid( self ):
         # Generate a unique, high entropy 128 bit random number
         return get_random_bytes( 16 )
-        

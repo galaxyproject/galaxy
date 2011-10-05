@@ -87,6 +87,13 @@ class GFFFeature( GFFInterval ):
             intervals_copy.append( interval.copy() )
         return GFFFeature(self.reader, self.chrom_col, self.feature_col, self.start_col, self.end_col, self.strand_col,
                           self.score_col, self.strand, intervals=intervals_copy )
+                          
+    def lines( self ):
+        lines = []
+        for interval in self.intervals:
+            lines.append( '\t'.join( interval.fields ) )
+        return lines
+            
                         
 class GFFIntervalToBEDReaderWrapper( NiceReaderWrapper ):
     """ 
@@ -126,6 +133,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         self.last_line = None
         self.cur_offset = 0
         self.seed_interval = None
+        self.seed_interval_line_len = 0
     
     def parse_row( self, line ):
         interval = GFFInterval( self, line.split( "\t" ), self.chrom_col, self.feature_col, \
@@ -153,12 +161,12 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             # For debugging, uncomment this to propogate parsing exceptions up. 
             # I.e. the underlying reason for an unexpected StopIteration exception 
             # can be found by uncommenting this. 
-            #raise e
+            # raise e
                
         #
         # Get next GFFFeature
         #
-        raw_size = 0 
+        raw_size = self.seed_interval_line_len
 
         # If there is no seed interval, set one. Also, if there are no more 
         # intervals to read, this is where iterator dies.
@@ -177,8 +185,9 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             return_val = self.seed_interval
             return_val.raw_size = len( self.current_line )
             self.seed_interval = None
+            self.seed_interval_line_len = 0
             return return_val
-    
+            
         # Initialize feature identifier from seed.
         feature_group = self.seed_interval.attributes.get( 'group', None ) # For GFF
         # For GFF3
@@ -209,21 +218,32 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             #finally:
             #raw_size += len( self.current_line )
             
-            # If interval not associated with feature, break.
+            # Ignore comments.
+            if isinstance( interval, Comment ):
+                continue
+            
+            # Determine if interval is part of feature.
+            part_of = True
             group = interval.attributes.get( 'group', None )
             # GFF test:
             if group and feature_group != group:
-                break
+                part_of = False
             # GFF3 test:
             parent_id = interval.attributes.get( 'Parent', None )
             cur_id = interval.attributes.get( 'ID', None )
             if ( cur_id and cur_id != feature_id ) or ( parent_id and parent_id != feature_id ):
-                break
+                part_of = False
             # GTF test:
             gene_id = interval.attributes.get( 'gene_id', None )
             transcript_id = interval.attributes.get( 'transcript_id', None )
             if ( transcript_id and transcript_id != feature_transcript_id ) or \
                ( gene_id and gene_id != feature_gene_id ):
+                part_of = False
+                
+            # If interval is not part of feature, clean up and break.
+            if not part_of:
+                # Adjust raw size because current line is not part of feature.
+                raw_size -= len( self.current_line )
                 break
     
             # Interval associated with feature.
@@ -231,6 +251,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
    
         # Last interval read is the seed for the next interval.
         self.seed_interval = interval
+        self.seed_interval_line_len = len( self.current_line )
         
         # Return feature.
         feature = GFFFeature( self, self.chrom_col, self.feature_col, self.start_col, \
@@ -244,7 +265,6 @@ class GFFReaderWrapper( NiceReaderWrapper ):
 
         return feature
         
-
 def convert_bed_coords_to_gff( interval ):
     """
     Converts an interval object's coordinates from BED format to GFF format. 

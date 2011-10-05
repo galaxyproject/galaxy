@@ -1,4 +1,4 @@
-<tool name="SAM/BAM GC Bias Metrics" id="PicardGCBiasMetrics" version="0.01">
+<tool name="SAM/BAM GC Bias Metrics" id="PicardGCBiasMetrics" version="0.02">
   <command interpreter="python">
     picard_wrapper.py -i "$input_file" -d "$html_file.files_path" -t "$html_file"
     --windowsize "$windowsize" --mingenomefrac "$mingenomefrac" -n "$out_prefix" --tmpdir "${__new_file_path__}"
@@ -64,7 +64,9 @@
   </outputs>
   <tests>
     <test>
+      <!-- Uncomment this if maxheap is enabled above
       <param name="maxheap" value="8G" />
+      -->
       <param name="out_prefix" value="CollectGCBias" />
       <param name="windowsize" value="100" />
       <param name="mingenomefrac" value="0.00001" />

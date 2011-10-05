@@ -103,7 +103,7 @@ class SingleTagContentsParser( sgmllib.SGMLParser ):
         if self.cur_tag == self.target_tag:
             self.tag_content += text
 
-class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
+class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
     
@@ -199,7 +199,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         if stored_workflow is None:
            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access workflow.
-        self.security_check( trans.get_user(), stored_workflow, False, True)
+        self.security_check( trans, stored_workflow, False, True)
         
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored_workflow )
@@ -380,7 +380,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     def rename( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name is not None:
-            stored.name = sanitize_html( new_name )
+            san_new_name = sanitize_html( new_name )
+            stored.name = san_new_name
+            stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             # For current workflows grid:
             trans.set_message ( "Workflow renamed to '%s'." % new_name )
@@ -398,7 +400,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     def rename_async( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name:
-            stored.name = new_name
+            san_new_name = sanitize_html( new_name )
+            stored.name = san_new_name
+            stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             return stored.name
             
@@ -1012,7 +1016,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
         stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
-        self.security_check( trans.get_user(), stored, False, True )
+        self.security_check( trans, stored, False, True )
         
         # Convert workflow to dict.
         workflow_dict = self._workflow_to_dict( trans, stored )
@@ -1432,7 +1436,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                     has_upgrade_messages=has_upgrade_messages,
                     errors=errors,
                     incoming=kwargs )
-    
+                    
+    def get_item( self, trans, id ):
+        return self.get_stored_workflow( trans, id ) 
+        
     @web.expose
     def tag_outputs( self, trans, id, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )

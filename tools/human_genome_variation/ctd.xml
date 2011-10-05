@@ -1,246 +1,223 @@
-<tool id="hgv_ctdBatch" name="CTD" version="1.0.0">
+<tool id="ctdBatch_1" name="CTD" version="1.0.0">
   <description>analysis of chemicals, diseases, or genes</description>
-
-  <command interpreter="perl">
-    ctd.pl $input $numerical_column $inType.inputType
-    #if $inType.inputType == "disease"
-      $inType.report ANY
-    #else if $inType.reportType.report == "cgixns"
-      $inType.reportType.report $inType.reportType.actType
-    #else
-      $inType.reportType.report ANY
-    #end if
-    $out_file1
-  </command>
-
+  <command interpreter="perl">#if $inType.inputType=="disease" #ctd.pl $input $numerical_column $inType.inputType $inType.report ANY $out_file1
+#else if $inType.reportType.report=="cgixns" #ctd.pl $input $numerical_column $inType.inputType $inType.reportType.report "$inType.reportType.actType" $out_file1
+#else #ctd.pl $input $numerical_column $inType.inputType $inType.reportType.report ANY $out_file1
+#end if</command>
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset" />
     <param name="numerical_column" type="data_column" data_ref="input" label="Column with identifiers" />
     <conditional name="inType">
-      <param name="inputType" label="Identifier type" type="select">
-        <option value="chem">Chemicals (MeSH names, synonyms or accession IDs, or CAS RNs)</option>
-        <option value="disease">Diseases (MeSH or OMIM names, synonyms or accession IDs)</option>
-        <option value="gene" selected="true">Genes (NCBI official symbols or accession IDs)</option>
-      </param>
-      <when value="chem">
-        <conditional name='reportType'>
-          <param name="report" label="Data to extract" type="select">
-            <option value="cgixns">Curated chemical-gene interactions</option>
-            <option value="genes">Curated gene associations</option>
-            <option value="pathways">Pathway associations</option>
-            <option value="diseases" selected="true">All disease relationships</option>
-            <option value="diseases_direct">  Direct disease relationships only</option>
-            <option value="diseases_inferred">  Inferred disease relationships only</option>
-            <option value="go">All GO associations</option>
-            <option value="go_p">  GO biological Processes only</option>
-            <option value="go_f">  GO molecular Functions only</option>
-            <option value="go_c">  GO cellular Components only</option>
-          </param>
-          <when value="genes">
-            <!-- do nothing -->
-          </when>
-          <when value="pathways">
-            <!-- do nothing -->
-          </when>
-          <when value="diseases">
-            <!-- do nothing -->
-          </when>
-          <when value="diseases_direct">
-            <!-- do nothing -->
-          </when>
-          <when value="diseases_inferred">
-            <!-- do nothing -->
-          </when>
-          <when value="go">
-            <!-- do nothing -->
-          </when>
-          <when value="go_p">
-            <!-- do nothing -->
-          </when>
-          <when value="go_f">
-            <!-- do nothing -->
-          </when>
-          <when value="go_c">
-            <!-- do nothing -->
-          </when>
-          <when value="cgixns">
-            <param name="actType" label="Interaction type" type="select">
-              <option value="ANY">ANY</option>
-              <option value="abundance">abundance</option>
-              <option value="activity">activity</option>
-              <option value="binding">binding</option>
-              <option value="cotreatment">cotreatment</option>
-              <option value="expression">expression</option>
-              <option value="folding">folding</option>
-              <option value="localization">localization</option>
-              <option value="metabolic processing">metabolic processing</option>
-              <option value="acetylation">- acetylation</option>
-              <option value="acylation">- acylation</option>
-              <option value="alkylation">- alkylation</option>
-              <option value="amination">- amination</option>
-              <option value="carbamoylation">- carbamoylation</option>
-              <option value="carboxylation">- carboxylation</option>
-              <option value="chemical synthesis">- chemical synthesis</option>
-              <option value="degradation">- degradation</option>
-              <option value="cleavage">    - cleavage</option>
-              <option value="hydrolysis">      - hydrolysis</option>
-              <option value="ethylation">- ethylation</option>
-              <option value="glutathionylation">- glutathionylation</option>
-              <option value="glycation">- glycation</option>
-              <option value="glycosylation">- glycosylation</option>
-              <option value="N-linked glycosylation">    - N-linked glycosylation</option>
-              <option value="O-linked glycosylation">    - O-linked glycosylation</option>
-              <option value="glucuronidation">    - glucuronidation</option>
-              <option value="hydroxylation">- hydroxylation</option>
-              <option value="lipidation">- lipidation</option>
-              <option value="farnesylation">    - farnesylation</option>
-              <option value="geranolyation">    - geranolyation</option>
-              <option value="myristolylation">    - myristolylation</option>
-              <option value="palmitoylation">    - palmitoylation</option>
-              <option value="prenylation">    - prenylation</option>
-              <option value="methylation">- methylation</option>
-              <option value="nitrosation">- nitrosation</option>
-              <option value="nucleotidylation">- nucleotidylation</option>
-              <option value="oxidation">- oxidation</option>
-              <option value="phosphorylation">- phosphorylation</option>
-              <option value="reduction">- reduction</option>
-              <option value="ribosylation">- ribosylation</option>
-              <option value="ADP-ribosylation">    - ADP-ribosylation</option>
-              <option value="sulfation">- sulfation</option>
-              <option value="sumoylation">- sumoylation</option>
-              <option value="ubiquitination">- ubiquitination</option>
-              <option value="mutagenesis">mutagenesis</option>
-              <option value="reaction">reaction</option>
-              <option value="response to chemical">response to chemical</option>
-              <option value="splicing">splicing</option>
-              <option value="stability">stability</option>
-              <option value="transport">transport</option>
-              <option value="secretion">- secretion</option>
-              <option value="export">    - export</option>
-              <option value="uptake">- uptake</option>
-              <option value="import">    - import</option>
-            </param>
-          </when>
-        </conditional>
-      </when>
-      <when value="disease">
-        <param name="report" label="Data to extract" type="select">
-          <option value="chems">Chemical associations</option>
-          <option value="chems_direct">Chemical associations direct relationships only</option>
-          <option value="chems_inferred">Chemical associations inferred relationships only</option>
+       <param name="inputType" label="Identifier type" type="select">
+          <option value="chem">Chemicals (MeSH names, synonyms or accession IDs, or CAS RNs)</option>
+          <option value="disease">Diseases (MeSH or OMIM names, synonyms or accession IDs)</option>
+          <option value="gene" selected="true">Genes (NCBI official symbols or accession IDs)</option>
+       </param>
+       <when value="chem">
+       <conditional name='reportType'>
+       <param name="report" label="Data to extract" type="select">
+          <option value="cgixns">Curated chemical-gene interactions</option>
           <option value="genes">Curated gene associations</option>
-          <option value="pathways">Pathway associations</option>
-        </param>
-      </when>
-      <when value="gene">
-        <conditional name='reportType'>
-          <param name="report" label="Data to extract" type="select">
-            <option value="cgixns">Curated chemical-gene interactions</option>
-            <option value="chems">Curated chemical associations</option>
-            <option value="pathways">Pathway associations</option>
-            <option value="diseases" selected="true">All disease relationships</option>
-            <option value="diseases_direct">  Direct disease relationships only</option>
-            <option value="diseases_inferred">  Inferred disease relationships only</option>
-            <option value="go">All GO associations</option>
-            <option value="go_p">  GO biological Processes only</option>
-            <option value="go_f">  GO molecular Functions only</option>
-            <option value="go_c">  GO cellular Components only</option>
+          <option value="pathways_inferred">Inferred pathway associations</option>
+	  <option value="pathways_enriched">Enriched pathway associations</option>
+          <option value="diseases" selected="true">All disease relationships</option>
+          <option value="diseases_curated">  Curated disease relationships only</option>
+          <option value="diseases_inferred">  Inferred disease relationships only</option>
+          <option value="go">All GO associations</option>
+          <option value="go_enriched">Enriched GO associations only</option>
+       </param>
+       <when value="genes">
+          <!-- do nothing -->
+       </when>
+       <when value="pathways">
+          <!-- do nothing -->
+       </when>
+       <when value="pathways_curated">
+          <!-- do nothing -->
+       </when>
+       <when value="pathways_inferred">
+          <!-- do nothing -->
+       </when>
+       <when value="diseases">
+          <!-- do nothing -->
+       </when>
+       <when value="diseases_curated">
+          <!-- do nothing -->
+       </when>
+       <when value="diseases_inferred">
+          <!-- do nothing -->
+       </when>
+       <when value="go">
+          <!-- do nothing -->
+       </when>
+       <when value="go_enriched">
+          <!-- do nothing -->
+       </when>
+       <when value="cgixns">
+          <param name="actType" label="Interaction type" type="select">
+             <option value="ANY">ANY</option>
+             <option value="abundance">abundance</option>
+             <option value="activity">activity</option>
+             <option value="binding">binding</option>
+             <option value="cotreatment">cotreatment</option>
+             <option value="expression">expression</option>
+             <option value="folding">folding</option>
+             <option value="localization">localization</option>
+             <option value="metabolic processing">metabolic processing</option>
+             <option value="acetylation">- acetylation</option>
+             <option value="acylation">- acylation</option>
+             <option value="alkylation">- alkylation</option>
+             <option value="amination">- amination</option>
+             <option value="carbamoylation">- carbamoylation</option>
+             <option value="carboxylation">- carboxylation</option>
+             <option value="chemical synthesis">- chemical synthesis</option>
+             <option value="degradation">- degradation</option>
+             <option value="cleavage">    - cleavage</option>
+             <option value="hydrolysis">      - hydrolysis</option>
+             <option value="ethylation">- ethylation</option>
+             <option value="glutathionylation">- glutathionylation</option>
+             <option value="glycation">- glycation</option>
+             <option value="glycosylation">- glycosylation</option>
+             <option value="N-linked glycosylation">    - N-linked glycosylation</option>
+             <option value="O-linked glycosylation">    - O-linked glycosylation</option>
+             <option value="glucuronidation">    - glucuronidation</option>
+             <option value="hydroxylation">- hydroxylation</option>
+             <option value="lipidation">- lipidation</option>
+             <option value="farnesylation">    - farnesylation</option>
+             <option value="geranolyation">    - geranolyation</option>
+             <option value="myristolylation">    - myristolylation</option>
+             <option value="palmitoylation">    - palmitoylation</option>
+             <option value="prenylation">    - prenylation</option>
+             <option value="methylation">- methylation</option>
+             <option value="nitrosation">- nitrosation</option>
+             <option value="nucleotidylation">- nucleotidylation</option>
+             <option value="oxidation">- oxidation</option>
+             <option value="phosphorylation">- phosphorylation</option>
+             <option value="reduction">- reduction</option>
+             <option value="ribosylation">- ribosylation</option>
+             <option value="ADP-ribosylation">    - ADP-ribosylation</option>
+             <option value="sulfation">- sulfation</option>
+             <option value="sumoylation">- sumoylation</option>
+             <option value="ubiquitination">- ubiquitination</option>
+             <option value="mutagenesis">mutagenesis</option>
+             <option value="reaction">reaction</option>
+             <option value="response to chemical">response to chemical</option>
+             <option value="splicing">splicing</option>
+             <option value="stability">stability</option>
+             <option value="transport">transport</option>
+             <option value="secretion">- secretion</option>
+             <option value="export">    - export</option>
+             <option value="uptake">- uptake</option>
+             <option value="import">    - import</option>
           </param>
-          <when value="chems">
-            <!-- do nothing -->
+       </when>
+     </conditional>
+     </when>
+     <when value="disease">
+       <param name="report" label="Data to extract" type="select">
+          <option value="chems">Chemical associations</option>
+          <option value="chems_curated">Curated chemical associations only</option>
+          <option value="chems_inferred">Inferred chemical associations only</option>
+          <option value="genes">Gene associations</option>
+          <option value="genes_curated">Curated gene associations</option>
+          <option value="genes_inferred">Inferred gene associations</option>
+          <option value="pathways_inferred">Inferred pathway associations</option>
+       </param>
+     </when>
+     <when value="gene">
+       <conditional name='reportType'>
+       <param name="report" label="Data to extract" type="select">
+          <option value="cgixns">Curated chemical-gene interactions</option>
+          <option value="chems_curated">Curated chemical associations</option>
+          <option value="pathways_curated">Curated pathway associations</option>
+          <option value="diseases" selected="true">All disease relationships</option>
+          <option value="diseases_curated">  Curated disease relationships only</option>
+          <option value="diseases_inferred">  Inferred disease relationships only</option>
+          <option value="go">All GO associations</option>
+       </param>
+       <when value="chems_curated">
+          <!-- do nothing -->
+       </when>
+       <when value="pathways_curated">
+          <!-- do nothing -->
+       </when>
+       <when value="diseases">
+          <!-- do nothing -->
+       </when>
+       <when value="diseases_curated">
+          <!-- do nothing -->
+       </when>
+       <when value="diseases_inferred">
+          <!-- do nothing -->
+       </when>
+       <when value="go">
+          <!-- do nothing -->
+       </when>
+       <when value="cgixns">
+          <param name="actType" label="Interaction type" type="select">
+             <option value="ANY">ANY</option>
+             <option value="abundance">abundance</option>
+             <option value="activity">activity</option>
+             <option value="binding">binding</option>
+             <option value="cotreatment">cotreatment</option>
+             <option value="expression">expression</option>
+             <option value="folding">folding</option>
+             <option value="localization">localization</option>
+             <option value="metabolic processing">metabolic processing</option>
+             <option value="acetylation">- acetylation</option>
+             <option value="acylation">- acylation</option>
+             <option value="alkylation">- alkylation</option>
+             <option value="amination">- amination</option>
+             <option value="carbamoylation">- carbamoylation</option>
+             <option value="carboxylation">- carboxylation</option>
+             <option value="chemical synthesis">- chemical synthesis</option>
+             <option value="degradation">- degradation</option>
+             <option value="cleavage">    - cleavage</option>
+             <option value="hydrolysis">      - hydrolysis</option>
+             <option value="ethylation">- ethylation</option>
+             <option value="glutathionylation">- glutathionylation</option>
+             <option value="glycation">- glycation</option>
+             <option value="glycosylation">- glycosylation</option>
+             <option value="N-linked glycosylation">    - N-linked glycosylation</option>
+             <option value="O-linked glycosylation">    - O-linked glycosylation</option>
+             <option value="glucuronidation">    - glucuronidation</option>
+             <option value="hydroxylation">- hydroxylation</option>
+             <option value="lipidation">- lipidation</option>
+             <option value="farnesylation">    - farnesylation</option>
+             <option value="geranolyation">    - geranolyation</option>
+             <option value="myristolylation">    - myristolylation</option>
+             <option value="palmitoylation">    - palmitoylation</option>
+             <option value="prenylation">    - prenylation</option>
+             <option value="methylation">- methylation</option>
+             <option value="nitrosation">- nitrosation</option>
+             <option value="nucleotidylation">- nucleotidylation</option>
+             <option value="oxidation">- oxidation</option>
+             <option value="phosphorylation">- phosphorylation</option>
+             <option value="reduction">- reduction</option>
+             <option value="ribosylation">- ribosylation</option>
+             <option value="ADP-ribosylation">    - ADP-ribosylation</option>
+             <option value="sulfation">- sulfation</option>
+             <option value="sumoylation">- sumoylation</option>
+             <option value="ubiquitination">- ubiquitination</option>
+             <option value="mutagenesis">mutagenesis</option>
+             <option value="reaction">reaction</option>
+             <option value="response to chemical">response to chemical</option>
+             <option value="splicing">splicing</option>
+             <option value="stability">stability</option>
+             <option value="transport">transport</option>
+             <option value="secretion">- secretion</option>
+             <option value="export">    - export</option>
+             <option value="uptake">- uptake</option>
+             <option value="import">    - import</option>
+          </param>
           </when>
-          <when value="pathways">
-            <!-- do nothing -->
-          </when>
-          <when value="diseases">
-            <!-- do nothing -->
-          </when>
-          <when value="diseases_direct">
-            <!-- do nothing -->
-          </when>
-          <when value="diseases_inferred">
-            <!-- do nothing -->
-          </when>
-          <when value="go">
-            <!-- do nothing -->
-          </when>
-          <when value="go_p">
-            <!-- do nothing -->
-          </when>
-          <when value="go_f">
-            <!-- do nothing -->
-          </when>
-          <when value="go_c">
-            <!-- do nothing -->
-          </when>
-          <when value="cgixns">
-            <param name="actType" label="Interaction type" type="select">
-              <option value="ANY">ANY</option>
-              <option value="abundance">abundance</option>
-              <option value="activity">activity</option>
-              <option value="binding">binding</option>
-              <option value="cotreatment">cotreatment</option>
-              <option value="expression">expression</option>
-              <option value="folding">folding</option>
-              <option value="localization">localization</option>
-              <option value="metabolic processing">metabolic processing</option>
-              <option value="acetylation">- acetylation</option>
-              <option value="acylation">- acylation</option>
-              <option value="alkylation">- alkylation</option>
-              <option value="amination">- amination</option>
-              <option value="carbamoylation">- carbamoylation</option>
-              <option value="carboxylation">- carboxylation</option>
-              <option value="chemical synthesis">- chemical synthesis</option>
-              <option value="degradation">- degradation</option>
-              <option value="cleavage">    - cleavage</option>
-              <option value="hydrolysis">      - hydrolysis</option>
-              <option value="ethylation">- ethylation</option>
-              <option value="glutathionylation">- glutathionylation</option>
-              <option value="glycation">- glycation</option>
-              <option value="glycosylation">- glycosylation</option>
-              <option value="N-linked glycosylation">    - N-linked glycosylation</option>
-              <option value="O-linked glycosylation">    - O-linked glycosylation</option>
-              <option value="glucuronidation">    - glucuronidation</option>
-              <option value="hydroxylation">- hydroxylation</option>
-              <option value="lipidation">- lipidation</option>
-              <option value="farnesylation">    - farnesylation</option>
-              <option value="geranolyation">    - geranolyation</option>
-              <option value="myristolylation">    - myristolylation</option>
-              <option value="palmitoylation">    - palmitoylation</option>
-              <option value="prenylation">    - prenylation</option>
-              <option value="methylation">- methylation</option>
-              <option value="nitrosation">- nitrosation</option>
-              <option value="nucleotidylation">- nucleotidylation</option>
-              <option value="oxidation">- oxidation</option>
-              <option value="phosphorylation">- phosphorylation</option>
-              <option value="reduction">- reduction</option>
-              <option value="ribosylation">- ribosylation</option>
-              <option value="ADP-ribosylation">    - ADP-ribosylation</option>
-              <option value="sulfation">- sulfation</option>
-              <option value="sumoylation">- sumoylation</option>
-              <option value="ubiquitination">- ubiquitination</option>
-              <option value="mutagenesis">mutagenesis</option>
-              <option value="reaction">reaction</option>
-              <option value="response to chemical">response to chemical</option>
-              <option value="splicing">splicing</option>
-              <option value="stability">stability</option>
-              <option value="transport">transport</option>
-              <option value="secretion">- secretion</option>
-              <option value="export">    - export</option>
-              <option value="uptake">- uptake</option>
-              <option value="import">    - import</option>
-            </param>
-          </when>
-        </conditional>
-      </when>
-    </conditional>
+          </conditional>
+     </when>
+   </conditional>
   </inputs>
-
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
-
-  <!-- broken for now.  will be fixed soon.
   <tests>
     <test>
       <param name="input" ftype="tabular" value="ctdBatchInput.txt" />
@@ -250,16 +227,11 @@
       <output name="out_file1" file="ctdBatchOut.txt" />
     </test>
   </tests>
-  -->
-
   <help>
+
 **Dataset formats**
 
 The input and output datasets are tabular_.  
-(`Dataset missing?`_)
-
-.. _tabular: ./static/formatHelp.html#tab
-.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -275,46 +247,46 @@ interaction type from the search-and-select box.  The choices that
 start with '-' are a subset of a choice above them; you can chose
 either the general interaction type or a more specific one.
 
-Website: http://ctd.mdibl.org/
+Home page: http://ctd.mdibl.org/
+
+.. _tabular: ./static/formatHelp.html#tab
 
 -----
 
 **Examples**
 
 - input data file:
-    HBB
+	HBB
 
-- select Column = c1, Identifier type = Genes, and Data to extract = All disease relationships
+- select column c1, Identifier type = Genes, and Data to extract = All disease relationships
 
 - output file::
 
     #Input  GeneSymbol  GeneName          GeneID  DiseaseName                  DiseaseID     GeneDiseaseRelation         OmimIDs  PubMedIDs
-    hbb     HBB         hemoglobin, beta  3043    Abnormalities, Drug-Induced  MESH:D000014  inferred via Ethanol                 17676605|18926900
-    hbb     HBB         hemoglobin, beta  3043    Abnormalities, Drug-Induced  MESH:D000014  inferred via Valproic Acid           8875741
+    hbb    HBB         hemoglobin, beta  3043    Abnormalities, Drug-Induced  MESH:D000014  inferred via Ethanol                 17676605|18926900
+    hbb    HBB         hemoglobin, beta  3043    Abnormalities, Drug-Induced  MESH:D000014  inferred via Valproic Acid           8875741
     etc.
 
 Another example: 
 
 - same input file:
-    HBB
+       HBB
 
-- select Column = c1, Identifier type = Genes, Data to extract = Curated chemical-gene interactions, and Interaction type = ANY
+- select column c1, Identifier type = Genes, Data to extract =  Curated chemical-gene interactions, and Interaction type = ANY
 
 - output file::
 
     #Input  GeneSymbol  GeneName          GeneID  ChemicalName             ChemicalID  CasRN    Organism         OrganismID  Interaction                                         InteractionTypes  PubMedIDs
-    hbb     HBB         hemoglobin, beta  3043    1-nitronaphthalene       C016614     86-57-7  Macaca mulatta   9544        1-nitronaphthalene metabolite binds to HBB protein  binding           16453347
-    hbb     HBB         hemoglobin, beta  3043    2,6-diisocyanatotoluene  C026942     91-08-7  Cavia porcellus  10141       2,6-diisocyanatotoluene binds to HBB protein        binding           8728499
+    hbb    HBB         hemoglobin, beta  3043    1-nitronaphthalene       C016614     86-57-7  Macaca mulatta   9544        1-nitronaphthalene metabolite binds to HBB protein  binding           16453347
+    hbb    HBB         hemoglobin, beta  3043    2,6-diisocyanatotoluene  C026942     91-08-7  Cavia porcellus  10141       2,6-diisocyanatotoluene binds to HBB protein        binding           8728499
     etc.
 
 -----
 
 **Reference**
 
-Davis AP, Murphy CG, Saraceni-Richards CA, Rosenstein MC, Wiegers TC, Mattingly CJ. (2009)
-Comparative Toxicogenomics Database: a knowledgebase and discovery tool for
-chemical-gene-disease networks.
-Nucleic Acids Res. 37(Database issue):D786-92. Epub 2008 Sep 9.
+Davis AP, Murphy CG, Saraceni-Richards CA, Rosenstein MC, Wiegers TC, Mattingly CJ. Comparative Toxicogenomics Database: a knowledgebase and discovery tool for chemical.gene.disease networks. Nucleic Acids Res. 2009 Jan;37(Database issue):D786-92.
 
-  </help>
+
+</help>
 </tool>

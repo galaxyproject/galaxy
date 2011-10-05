@@ -1,12 +1,12 @@
 <tool id="soap_denovo" name="SOAPdenovo" version="1.0.0">
   <description>Short-read de novo assembly</description>
   <!--
-      # SOAPdenovo127mer all -s ${soap_config} -o assembly -K ${k} -p 8 -d -D
+      # SOAPdenovo-127mer all -s ${soap_config} -o assembly -K ${k} -p 8 -d -D
       # cat ${soap_config} > ${output1}
       # cp ${soap_config} ${output1} &amp;&amp;
   -->
   <command>
-      SOAPdenovo127mer all -s ${soap_config} -o assembly -K ${k} -p 24 -d -D -R
+      SOAPdenovo-127mer all -s ${soap_config} -o assembly -K ${k} -p 24 -d -D -R
   </command>
   <inputs>
     <conditional name="inputs">

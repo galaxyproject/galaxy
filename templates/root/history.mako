@@ -300,7 +300,40 @@ $(function() {
     %if hda_id:
         self.location = "#${hda_id}";
     %endif
+
+    // Update the Quota Meter
+    $.ajax( {
+        type: "POST",
+        url: "${h.url_for( controller='root', action='user_get_usage' )}",
+        dataType: "json",
+        success : function ( data ) {
+            $.each( data, function( type, val ) {
+                quota_meter_updater( type, val );
+            });
+        }
+    });
 });
+
+// Updates the Quota Meter
+var quota_meter_updater = function ( type, val ) {
+    if ( type == "usage" ) {
+        $("#quota-meter-bar", window.top.document).css( "width", "0" );
+        $("#quota-meter-text", window.top.document).text( "Using " + val );
+    } else if ( type == "percent" ) {
+        $("#quota-meter-bar", window.top.document).removeClass("quota-meter-bar-warn quota-meter-bar-error");
+        if ( val >= 100 ) {
+            $("#quota-meter-bar", window.top.document).addClass("quota-meter-bar-error");
+            $("#quota-message-container").slideDown();
+        } else if ( val >= 85 ) {
+            $("#quota-meter-bar", window.top.document).addClass("quota-meter-bar-warn");
+            $("#quota-message-container").slideUp();
+        } else {
+            $("#quota-message-container").slideUp();
+        }
+        $("#quota-meter-bar", window.top.document).css( "width", val + "px" );
+        $("#quota-meter-text", window.top.document).text( "Using " + val + "%" );
+    }
+}
 
 // Looks for changes in dataset state using an async request. Keeps
 // calling itself (via setTimeout) until all datasets are in a terminal
@@ -362,7 +395,15 @@ var updater_callback = function ( tracked_datasets ) {
                         url: "${h.url_for( controller='root', action='history_get_disk_size' )}",
                         dataType: "json",
                         success: function( data ) {
-                            $("#history-size").text( data );
+                            $.each( data, function( type, val ) {
+                                if ( type == "history" ) {
+                                    $("#history-size").text( val );
+                                } else if ( type == "global_usage" ) {
+                                    quota_meter_updater( "usage", val );
+                                } else if ( type == "global_percent" ) {
+                                    quota_meter_updater( "percent", val );
+                                }
+                            });
                         }
                     });
                     check_history_size = false;
@@ -497,6 +538,17 @@ div.form-row {
     %if message:
         ${render_msg( message, status )}
     %endif
+</div>
+
+%if over_quota:
+<div id="quota-message-container">
+%else:
+<div id="quota-message-container" style="display: none;">
+%endif
+    <div id="quota-message" class="errormessage">
+        You are over your disk quota.  Tool execution is on hold until your disk usage drops below your allocated quota.
+    </div>
+    <br/>
 </div>
 
 %if not datasets:

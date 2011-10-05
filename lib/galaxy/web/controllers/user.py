@@ -10,6 +10,7 @@ from random import choice
 from galaxy.web.form_builder import * 
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.framework.helpers import iff
+from galaxy.security.validate_user_input import validate_email, validate_username, validate_password
 
 log = logging.getLogger( __name__ )
 
@@ -24,12 +25,9 @@ require_login_template = """
 require_login_nocreation_template = require_login_template % ""
 require_login_creation_template = require_login_template % "  If you don't already have an account, <a href='%s'>you may create one</a>."
 
-VALID_USERNAME_RE = re.compile( "^[a-z0-9\-]+$" )
-
 OPENID_PROVIDERS = { 'Google' : 'https://www.google.com/accounts/o8/id',
                      'Yahoo!' : 'http://yahoo.com',
                      'AOL/AIM' : 'http://openid.aol.com',
-                     'Flickr' : 'http://flickr.com',
                      'Launchpad' : 'http://login.launchpad.net',
                    }
 
@@ -50,7 +48,7 @@ class UserOpenIDGrid( grids.Grid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.user_id == trans.user.id )
 
-class User( BaseController, UsesFormDefinitions ):
+class User( BaseUIController, UsesFormDefinitions ):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
     
@@ -110,10 +108,10 @@ class User( BaseController, UsesFormDefinitions ):
         action = 'login'
         if auto_associate:
             action = 'openid_manage'
-        if trans.app.config.bugs_email is not None:
-            contact = '<a href="mailto:%s">contact support</a>' % trans.app.config.bugs_email
+        if trans.app.config.support_url is not None:
+            contact = '<a href="%s">support</a>' % trans.app.config.support_url
         else:
-            contact = 'contact support'
+            contact = 'support'
         message = 'Verification failed for an unknown reason.  Please contact support for assistance.'
         status = 'error'
         consumer = trans.app.openid_manager.get_consumer( trans )
@@ -196,7 +194,7 @@ class User( BaseController, UsesFormDefinitions ):
                                                       message=message,
                                                       status=status ) )
     @web.expose
-    def openid_associate( self, trans, cntrller, webapp='galaxy', **kwd ):
+    def openid_associate( self, trans, cntrller='user', webapp='galaxy', **kwd ):
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -267,7 +265,7 @@ class User( BaseController, UsesFormDefinitions ):
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
                 user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
             user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( self, trans, user_type_form_definition, user=user, **kwd )
+            widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
         else:
             user_type_fd_id_select_field = None
             user_type_form_definition = None
@@ -364,7 +362,7 @@ class User( BaseController, UsesFormDefinitions ):
                 else:
                     refresh_frames = [ 'masthead', 'history' ]
             message, status, user, success = self.__validate_login( trans, webapp, **kwd )
-            if success and referer and referer != trans.request.base + url_for( controller='user', action='logout' ):
+            if success and referer and not referer.startswith( trans.request.base + url_for( controller='user', action='logout' ) ):
                 redirect_url = referer
             elif success:
                 redirect_url = url_for( '/' )
@@ -415,7 +413,7 @@ class User( BaseController, UsesFormDefinitions ):
             success = True
         return ( message, status, user, success )
     @web.expose
-    def logout( self, trans, webapp='galaxy' ):
+    def logout( self, trans, webapp='galaxy', logout_all=False ):
         if webapp == 'galaxy':
             if trans.app.config.require_login:
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
@@ -425,7 +423,7 @@ class User( BaseController, UsesFormDefinitions ):
             refresh_frames = [ 'masthead' ]
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
-        trans.handle_user_logout()
+        trans.handle_user_logout( logout_all=logout_all )
         message = 'You have been logged out.<br>You can log in again, <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
             ( trans.request.referer, url_for( '/' ) )
         return trans.fill_template( '/user/logout.mako',
@@ -586,57 +584,6 @@ class User( BaseController, UsesFormDefinitions ):
             message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
             success = True
         return ( message, status, user, success )
-    def __validate_email( self, trans, email, user=None ):
-        message = ''
-        if user and user.email == email:
-            return message 
-        if len( email ) == 0 or "@" not in email or "." not in email:
-            message = "Enter a real email address"
-        elif len( email ) > 255:
-            message = "Email address exceeds maximum allowable length"
-        elif trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first():
-            message = "User with that email already exists"
-        return message
-    def __validate_username( self, trans, username, user=None ):
-        # User names must be at least four characters in length and contain only lower-case
-        # letters, numbers, and the '-' character.
-        if username in [ 'None', None, '' ]:
-            return ''
-        if user and user.username == username:
-            return ''
-        if len( username ) < 4:
-            return "User name must be at least 4 characters in length"
-        if len( username ) > 255:
-            return "User name cannot be more than 255 characters in length"
-        if not( VALID_USERNAME_RE.match( username ) ):
-            return "User name must contain only lower-case letters, numbers and '-'"
-        if trans.sa_session.query( trans.app.model.User ).filter_by( username=username ).first():
-            return "This user name is not available"
-        return ''
-    def __validate_password( self, trans, password, confirm ):
-        if len( password ) < 6:
-            return "Use a password of at least 6 characters"
-        elif password != confirm:
-            return "Passwords do not match"
-        return ''
-    def __validate( self, trans, params, email, password, confirm, username, webapp ):
-        # If coming from the community webapp, we'll require a public user name
-        if webapp == 'community' and not username:
-            return "A public user name is required"
-        message = self.__validate_email( trans, email )
-        if not message:
-            message = self.__validate_password( trans, password, confirm )
-        if not message and username:
-            message = self.__validate_username( trans, username )
-        if not message:
-            if webapp == 'galaxy':
-                if self.get_all_forms( trans, 
-                                       filter=dict( deleted=False ),
-                                       form_type=trans.app.model.FormDefinition.types.USER_INFO ):
-                    user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-                    if user_type_fd_id in [ 'none' ]:
-                        return "Select the user's type and information"
-        return message
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
         params = util.Params( kwd )
         if user and user.values:
@@ -748,7 +695,7 @@ class User( BaseController, UsesFormDefinitions ):
         if user and params.get( 'change_username_button', False ):
             username = kwd.get( 'username', '' )
             if username:
-                message = self.__validate_username( trans, username, user )
+                message = validate_username( trans, username, user )
             if message:
                 status = 'error'
             else:
@@ -784,9 +731,9 @@ class User( BaseController, UsesFormDefinitions ):
             email = util.restore_text( params.get( 'email', '' ) )
             username = util.restore_text( params.get( 'username', '' ) ).lower()
             # Validate the new values for email and username
-            message = self.__validate_email( trans, email, user )
+            message = validate_email( trans, email, user )
             if not message and username:
-                message = self.__validate_username( trans, username, user )
+                message = validate_username( trans, username, user )
             if message:
                 status = 'error'
             else:
@@ -815,7 +762,7 @@ class User( BaseController, UsesFormDefinitions ):
                     ok = False
             if ok:
                 # Validate the new password
-                message = self.__validate_password( trans, password, confirm )
+                message = validate_password( trans, password, confirm )
                 if message:
                     status = 'error'
                 else:
@@ -859,6 +806,8 @@ class User( BaseController, UsesFormDefinitions ):
         kwd[ 'id' ] = user_id
         if message:
             kwd[ 'message' ] = util.sanitize_text( message )
+        if status:
+            kwd[ 'status' ] = status
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='manage_user_info',
                                                           cntrller=cntrller,
@@ -911,6 +860,24 @@ class User( BaseController, UsesFormDefinitions ):
                                     webapp=webapp,
                                     message=message,
                                     status=status )
+    def __validate( self, trans, params, email, password, confirm, username, webapp ):
+        # If coming from the community webapp, we'll require a public user name
+        if webapp == 'community' and not username:
+            return "A public user name is required"
+        message = validate_email( trans, email )
+        if not message:
+            message = validate_password( trans, password, confirm )
+        if not message and username:
+            message = validate_username( trans, username )
+        if not message:
+            if webapp == 'galaxy':
+                if self.get_all_forms( trans, 
+                                       filter=dict( deleted=False ),
+                                       form_type=trans.app.model.FormDefinition.types.USER_INFO ):
+                    user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
+                    if user_type_fd_id in [ 'none' ]:
+                        return "Select the user's type and information"
+        return message
     @web.expose
     def set_default_permissions( self, trans, cntrller, **kwd ):
         """Sets the user's default permissions for the new histories"""
@@ -1197,6 +1164,9 @@ class User( BaseController, UsesFormDefinitions ):
     @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
+        #
+        # Process arguments and add/delete build.
+        #
         user = trans.user
         message = None
         lines_skipped = 0
@@ -1210,57 +1180,79 @@ class User( BaseController, UsesFormDefinitions ):
         else:
             dbkeys = from_json_string(user.preferences['dbkeys'])
         if 'delete' in kwds:
+            # Delete a build.
             key = kwds.get('key', '')
             if key and key in dbkeys:
                 del dbkeys[key]
         elif 'add' in kwds:
-            name     = kwds.get('name', '')
-            key      = kwds.get('key', '')
-            len_file = kwds.get('len_file', None)
-            if getattr(len_file, "file", None): # Check if it's a FieldStorage object
-                len_text = len_file.file.read()
-            else:
-                len_text = kwds.get('len_text', '')
-            if not name or not key or not len_text:
+            # Add new custom build.
+            name = kwds.get('name', '')
+            key = kwds.get('key', '')
+            dataset_id = kwds.get('dataset_id', '')
+            if not name or not key or not dataset_id:
                 message = "You must specify values for all the fields."
             elif key in dbkeys:
                 message = "There is already a custom build with that key. Delete it first if you want to replace it."
             else:
-                # Create new len file
-                new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
-                trans.sa_session.add( new_len )
-                new_len.name = name
-                new_len.visible = False
-                new_len.state = trans.app.model.Job.states.OK
-                new_len.info = "custom build .len file"
-                trans.sa_session.flush()
-                counter = 0
-                f = open(new_len.file_name, "w")
-                # LEN files have format:
-                #   <chrom_name><tab><chrom_length>
-                for line in len_text.split("\n"):
-                    lst = line.strip().rsplit(None, 1) # Splits at the last whitespace in the line
-                    if not lst or len(lst) < 2:
-                        lines_skipped += 1
-                        continue
-                    chrom, length = lst[0], lst[1]
-                    try:
-                        length = int(length)
-                    except ValueError:
-                        lines_skipped += 1
-                        continue
-                    counter += 1
-                    f.write("%s\t%s\n" % (chrom, length))
-                f.close()
-                dbkeys[key] = { "name": name, "len": new_len.id, "count": counter }
+                dataset_id = trans.security.decode_id( dataset_id )
+                dbkeys[key] = { "name": name, "fasta": dataset_id }
+        # Save builds.
+        # TODO: use database table to save builds.
         user.preferences['dbkeys'] = to_json_string(dbkeys)
         trans.sa_session.flush()
+        
+        #
+        # Display custom builds page.
+        #
+        
+        # Add chrom/contig count to dbkeys dict.
+        updated = False
+        for key, attributes in dbkeys.items():
+            if 'count' in attributes:
+                # Already have count, so do nothing.
+                continue
+                
+            # Get len file.
+            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( attributes[ 'fasta' ] )
+            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+            # HACK: need to request dataset again b/c get_converted_dataset()
+            # doesn't return dataset (as it probably should).
+            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+            if len_dataset.state == trans.app.model.Job.states.ERROR:
+                # Can't use len dataset.
+                continue
+                
+            # Get chrom count file.
+            # NOTE: this conversion doesn't work well with set_metadata_externally=False 
+            # because the conversion occurs before metadata can be set; the 
+            # dataset is marked as deleted and a subsequent conversion is run.
+            chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+            if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
+                # No valid linecount dataset.
+                continue
+            else:
+                # Set chrom count.
+                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                attributes[ 'count' ] = chrom_count
+                updated = True
+        
+        if updated:
+            user.preferences['dbkeys'] = to_json_string(dbkeys)
+            trans.sa_session.flush()
+            
+        
+        # Potential genome data for custom builds is limited to fasta datasets in current history for now.
+        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+                        .filter_by( history=trans.history, extension="fasta", deleted=False ) \
+                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
+        
         return trans.fill_template( 'user/dbkeys.mako',
                                     user=user,
                                     dbkeys=dbkeys,
                                     message=message,
                                     installed_len_files=self.installed_len_files,
                                     lines_skipped=lines_skipped,
+                                    fasta_hdas=fasta_hdas,
                                     use_panels=kwds.get( 'use_panels', None ) )          
     @web.expose
     @web.require_login()

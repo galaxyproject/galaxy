@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 
 import os, sys, logging, shutil
+from optparse import OptionParser
+
+parser = OptionParser()
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default='universe_wsgi.ini' )
+parser.add_option( '-p', '--platform', dest='platform', help='Fetch for a specific platform (by default, eggs are fetched for *this* platform' )
+( options, args ) = parser.parse_args()
+
+if not os.path.exists( options.config ):
+    print "Config file does not exist (see 'python %s --help'): %s" % ( sys.argv[0], options.config )
+    sys.exit( 1 )
 
 root = logging.getLogger()
 root.setLevel( 10 )
@@ -13,12 +23,13 @@ from galaxy.eggs import Crate, EggNotFetchable, py
 import pkg_resources
 
 try:
-    platform = sys.argv[1]
-    c = Crate( platform = platform )
+    assert options.platform
+    platform = options.platform
+    c = Crate( options.config, platform = platform )
     print "Platform forced to '%s'" % platform
 except:
     platform = '-'.join( ( py, pkg_resources.get_platform() ) )
-    c = Crate()
+    c = Crate( options.config )
     print "Using Python interpreter at %s, Version %s" % ( sys.executable, sys.version )
     print "This platform is '%s'" % platform
     print "Override with:"

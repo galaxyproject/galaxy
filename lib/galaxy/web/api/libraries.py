@@ -10,7 +10,7 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
-class LibrariesController( BaseController ):
+class LibrariesController( BaseAPIController ):
     
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -58,7 +58,8 @@ class LibrariesController( BaseController ):
             trans.response.status = 400
             return "Invalid library id ( %s ) specified." % str( library_id )
         item = library.get_api_value( view='element' )
-        item['contents_url'] = url_for( 'contents', library_id=library_id )
+        #item['contents_url'] = url_for( 'contents', library_id=library_id )
+        item['contents_url'] = url_for( 'library_contents', library_id=library_id )
         return item
 
     @web.expose_api
@@ -86,7 +87,7 @@ class LibrariesController( BaseController ):
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( library.id )
         rval = {}
-        rval['url'] = url_for( 'libraries', id=encoded_id )
+        rval['url'] = url_for( 'library', id=encoded_id )
         rval['name'] = name
         rval['id'] = encoded_id
         return [ rval ]

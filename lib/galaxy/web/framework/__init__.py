@@ -10,6 +10,7 @@ from Cheetah.Template import Template
 import base
 import pickle
 from galaxy import util
+from galaxy.exceptions import MessageException
 from galaxy.util.json import to_json_string, from_json_string
 
 pkg_resources.require( "simplejson" )
@@ -19,6 +20,7 @@ import helpers
 
 pkg_resources.require( "PasteDeploy" )
 from paste.deploy.converters import asbool
+import paste.httpexceptions
 
 pkg_resources.require( "Mako" )
 import mako.template
@@ -103,6 +105,9 @@ def expose_api( func ):
         except NoResultFound:
             error_message = 'Provided API key is not valid.'
             return error
+        if provided_key.user.deleted:
+            error_message = 'User account is deactivated, please contact an administrator.'
+            return error
         newest_key = provided_key.user.api_keys[0]
         if newest_key.key != provided_key.key:
             error_message = 'Provided API key has expired.'
@@ -117,10 +122,34 @@ def expose_api( func ):
                 return error
         trans.response.set_content_type( "application/json" )
         trans.set_user( provided_key.user )
-        if trans.debug:
-            return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
-        else:
-            return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+        # Perform api_run_as processing, possibly changing identity
+        if 'run_as' in kwargs:
+            if not trans.user_can_do_run_as():
+                error_message = 'User does not have permissions to run jobs as another user'
+                return error
+            try:
+                decoded_user_id = trans.security.decode_id( kwargs['run_as'] )
+            except TypeError:
+                trans.response.status = 400
+                return "Malformed user id ( %s ) specified, unable to decode." % str( kwargs['run_as'] )
+            try:
+                user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
+                trans.api_inherit_admin = trans.user_is_admin()
+                trans.set_user(user)
+            except:
+                trans.response.status = 400
+                return "That user does not exist."
+
+        try:
+            if trans.debug:
+                return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
+            else:
+                return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+        except paste.httpexceptions.HTTPException:
+            raise # handled
+        except:
+            log.exception( 'Uncaught exception in exposed API method:' )
+            raise paste.httpexceptions.HTTPServerError()
     if not hasattr(func, '_orig'):
         decorator._orig = func
     decorator.exposed = True
@@ -128,27 +157,24 @@ def expose_api( func ):
 
 def require_admin( func ):
     def decorator( self, trans, *args, **kwargs ):
-        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
-        if not admin_users:
-            return trans.show_error_message( "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration." )
-        user = trans.get_user()
-        if not user:
-            return trans.show_error_message( "You must be logged in as an administrator to access this feature." )
-        if not user.email in admin_users:
-            return trans.show_error_message( "You must be an administrator to access this feature." )
+        if not trans.user_is_admin():
+            msg = "You must be an administrator to access this feature."
+            admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+            user = trans.get_user()
+            if not admin_users:
+                msg = "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration."
+            elif not user:
+                msg = "You must be logged in as an administrator to access this feature."
+            trans.response.status = 403
+            if trans.response.get_content_type() == 'application/json':
+                return msg
+            else:
+                return trans.show_error_message( msg )
         return func( self, trans, *args, **kwargs )
     return decorator
 
 NOT_SET = object()
 
-class MessageException( Exception ):
-    """
-    Exception to make throwing errors from deep in controllers easier
-    """
-    def __init__( self, err_msg, type="info" ):
-        self.err_msg = err_msg
-        self.type = type
-        
 def error( message ):
     raise MessageException( message, type='error' )
 
@@ -197,6 +223,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
+        # Flag indicating whether this is an API call and the API key user is an administrator
+        self.api_inherit_admin = False
     def setup_i18n( self ):
         locales = []
         if 'HTTP_ACCEPT_LANGUAGE' in self.environ:
@@ -523,7 +551,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name=cookie_name )
-    def handle_user_logout( self ):
+    def handle_user_logout( self, logout_all=False ):
         """
         Logout the current user:
            - invalidate the current session
@@ -533,6 +561,14 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         prev_galaxy_session.is_valid = False
         self.galaxy_session = self.__create_new_session( prev_galaxy_session )
         self.sa_session.add_all( ( prev_galaxy_session, self.galaxy_session ) )
+        galaxy_user_id = prev_galaxy_session.user_id
+        if logout_all and galaxy_user_id is not None:
+            for other_galaxy_session in self.sa_session.query( self.app.model.GalaxySession ) \
+                                            .filter( and_( self.app.model.GalaxySession.table.c.user_id==galaxy_user_id,
+                                                                self.app.model.GalaxySession.table.c.is_valid==True,
+                                                                self.app.model.GalaxySession.table.c.id!=prev_galaxy_session.id ) ):
+                other_galaxy_session.is_valid = False
+                self.sa_session.add( other_galaxy_session )
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name='galaxysession' )
@@ -593,8 +629,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             roles = []
         return roles
     def user_is_admin( self ):
+        if self.api_inherit_admin:
+            return True
         admin_users = self.app.config.get( "admin_users", "" ).split( "," )
         return self.user and admin_users and self.user.email in admin_users
+    def user_can_do_run_as( self ):
+        run_as_users = self.app.config.get( "api_allow_run_as", "" ).split( "," )
+        return self.user and run_as_users and self.user.email in run_as_users
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox

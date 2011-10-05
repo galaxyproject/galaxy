@@ -1,6 +1,6 @@
 from galaxy.web.base.controller import *
 
-class Mobile( BaseController ):
+class Mobile( BaseUIController ):
     @web.expose
     def index( self, trans, **kwargs ):
         return trans.fill_template( "mobile/index.mako" )

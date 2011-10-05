@@ -7,8 +7,10 @@
     from galaxy.web.framework.helpers import time_ago
     is_admin = trans.user_is_admin()
     is_new = repository.is_new
+    can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
     can_rate = trans.user and repository.user != trans.user
     can_manage = is_admin or repository.user == trans.user
@@ -67,9 +69,9 @@
         <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
         <div popupmenu="repository-${repository.id}-popup">
             %if can_manage:
-                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ) )}">Manage repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">Manage repository</a>
             %else:
-                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ) )}">View repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">View repository</a>
             %endif
             %if can_upload:
                 <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
@@ -80,9 +82,11 @@
             %if can_rate:
                 <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
             %endif
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+            %if can_download:
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, file_type='gz' )}">Download as a .tar.gz file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, file_type='zip' )}">Download as a zip file</a>
+            %endif
         </div>
     %endif
 </ul>
@@ -94,6 +98,12 @@
 %if can_browse_contents:
     <div class="toolForm">
         <div class="toolFormTitle">Browse ${repository.name}</div>
+        %if can_download:
+            <div class="form-row">
+                <label>Clone this repository:</label>
+                ${render_clone_str( repository )}
+            </div>
+        %endif
         %if can_push:
             <form name="select_files_to_delete" id="select_files_to_delete" action="${h.url_for( controller='repository', action='select_files_to_delete', id=trans.security.encode_id( repository.id ))}" method="post" >
                 <div class="form-row" >

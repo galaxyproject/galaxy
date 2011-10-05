@@ -8,9 +8,9 @@ from sqlalchemy.sql import select
 
 log = logging.getLogger( __name__ )
 
-class TagsController ( BaseController ):
+class TagsController ( BaseUIController ):
     def __init__( self, app ):
-        BaseController.__init__( self, app )
+        BaseUIController.__init__( self, app )
         self.tag_handler = app.tag_handler
     @web.expose
     @web.require_login( "edit item tags" )
@@ -72,7 +72,7 @@ class TagsController ( BaseController ):
         if item_id is not None:
             item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
-        item_class = self.get_class( trans, item_class )
+        item_class = self.get_class( item_class )
         q = q.encode( 'utf-8' )
         if q.find( ":" ) == -1:
             return self._get_tag_autocomplete_names( trans, q, limit, timestamp, user, item, item_class )

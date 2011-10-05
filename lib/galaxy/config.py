@@ -5,7 +5,7 @@ Universe configuration builder.
 import sys, os, tempfile
 import logging, logging.config
 import ConfigParser
-from galaxy.util import string_as_bool
+from galaxy.util import string_as_bool, listify, parse_xml
 
 from galaxy import eggs
 import pkg_resources
@@ -45,11 +45,13 @@ class Configuration( object ):
         # web API
         self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
+        self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
+        self.tool_sheds_config = kwargs.get( 'tool_sheds_config_file', 'tool_sheds_conf.xml' )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.len_file_path = kwargs.get( "len_file_path", resolve_path(os.path.join(self.tool_data_path, 'shared','ucsc','chrom'), self.root) )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
-        self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )        
+        self.tool_configs = [ resolve_path( p, self.root ) for p in listify( kwargs.get( 'tool_config_file', 'tool_conf.xml' ) ) ]    
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
@@ -85,9 +87,11 @@ class Configuration( object ):
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
+        self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
-        self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
+        # Per-user Job concurrency limitations
+        self.user_job_limit = int( kwargs.get( 'user_job_limit', 0 ) )
         self.default_cluster_job_runner = kwargs.get( 'default_cluster_job_runner', 'local:///' )
         self.pbs_application_server = kwargs.get('pbs_application_server', "" )
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )
@@ -101,8 +105,8 @@ class Configuration( object ):
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,tair,modencode_worm,modencode_fly,sgd_yeast" ).lower().split(",")
         self.genetrack_display_sites = kwargs.get( 'genetrack_display_sites', "main,test" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
+        self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )
-        self.bugs_email = kwargs.get( 'bugs_email', None )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
@@ -115,9 +119,12 @@ class Configuration( object ):
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
-        # Location for dependencies
+        # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
+            # Setting the following flag to true will ultimately cause tool dependencies
+            # to be located in the shell environment and used by the job that is executing
+            # the tool.
             self.use_tool_dependencies = True
         else:
             self.tool_dependency_dir = None
@@ -174,10 +181,21 @@ class Configuration( object ):
         else:
             return default
     def check( self ):
+        paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
+        # Look for any tool shed configs and retrieve the tool_path attribute from the <toolbox> tag.
+        for config_filename in self.tool_configs:
+            tree = parse_xml( config_filename )
+            root = tree.getroot()
+            tool_path = root.get( 'tool_path' )
+            if tool_path not in [ None, False ]:
+                paths_to_check.append( resolve_path( tool_path, self.root ) )
         # Check that required directories exist
-        for path in self.root, self.tool_path, self.tool_data_path, self.template_path:
-            if not os.path.isdir( path ):
-                raise ConfigurationError("Directory does not exist: %s" % path )
+        for path in paths_to_check:
+            if path not in [ None, False ] and not os.path.isdir( path ):
+                try:
+                    os.makedirs( path )
+                except Exception, e:
+                    raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
         for path in self.file_path, \
                     self.new_file_path, \
@@ -197,9 +215,11 @@ class Configuration( object ):
                 except Exception, e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Check that required files exist
-        for path in self.tool_config, self.datatypes_config:
+        for path in self.tool_configs:
             if not os.path.isfile(path):
                 raise ConfigurationError("File not found: %s" % path )
+        if not os.path.isfile( self.datatypes_config ):
+            raise ConfigurationError("File not found: %s" % path )
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:

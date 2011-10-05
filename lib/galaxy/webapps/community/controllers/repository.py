@@ -1,7 +1,6 @@
-import os, logging, urllib, ConfigParser, tempfile, shutil, pexpect
+import os, logging, urllib, ConfigParser, tempfile, shutil
 from time import strftime
-from datetime import *
-
+from datetime import date, datetime
 from galaxy import util
 from galaxy.datatypes.checkers import *
 from galaxy.web.base.controller import *
@@ -74,8 +73,17 @@ class RepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.name
-    class RevisionColumn( grids.TextColumn ):
+    class RevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
+            """
+            Display a SelectField whose options are the changeset_revision
+            strings of all downloadable_revisions of this repository.
+            """
+            select_field = build_changeset_revision_select_field( trans, repository )
+            if len( select_field.options ) > 1:
+                return select_field.get_html()
             return repository.revision
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
@@ -121,13 +129,14 @@ class RepositoryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id, webapp="community" ) ),
-                    attach_popup=False ),
+                    link=( lambda item: dict( operation="view_or_manage_repository",
+                                              id=item.id,
+                                              webapp="community" ) ),
+                    attach_popup=True ),
         DescriptionColumn( "Synopsis",
                            key="description",
                            attach_popup=False ),
-        RevisionColumn( "Revision",
-                        attach_popup=False ),
+        RevisionColumn( "Revision" ),
         CategoryColumn( "Category",
                         model_class=model.Category,
                         key="Category.name",
@@ -159,7 +168,7 @@ class RepositoryListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [ grids.GridOperation( "Receive email alerts",
-                                        allow_multiple=True,
+                                        allow_multiple=False,
                                         condition=( lambda item: not item.deleted ),
                                         async_compatible=False ) ]
     standard_filters = []
@@ -173,8 +182,47 @@ class RepositoryListGrid( grids.Grid ):
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
 
-class RepositoryController( BaseController, ItemRatings ):
+class DownloadableRepositoryListGrid( RepositoryListGrid ):
+    class RevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
+        def get_value( self, trans, grid, repository ):
+            """
+            Display a SelectField whose options are the changeset_revision
+            strings of all downloadable_revisions of this repository.
+            """
+            select_field = build_changeset_revision_select_field( trans, repository )
+            if len( select_field.options ) > 1:
+                return select_field.get_html()
+            return repository.revision
+    title = "Downloadable repositories"
+    columns = [
+        RepositoryListGrid.NameColumn( "Name",
+                                       key="name",
+                                       attach_popup=True ),
+        RepositoryListGrid.DescriptionColumn( "Synopsis",
+                                              key="description",
+                                              attach_popup=False ),
+        RevisionColumn( "Revision" ),
+        RepositoryListGrid.UserColumn( "Owner",
+                                       model_class=model.User,
+                                       attach_popup=False,
+                                       key="User.username" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( self.model_class ) \
+                               .join( model.RepositoryMetadata.table ) \
+                               .join( model.User.table )
 
+class RepositoryController( BaseUIController, ItemRatings ):
+
+    downloadable_repository_list_grid = DownloadableRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
     category_list_grid = CategoryListGrid()
 
@@ -191,6 +239,14 @@ class RepositoryController( BaseController, ItemRatings ):
             # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
             # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
             # Since we are searching repositories and not categories, redirect to browse_repositories().
+            if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:
+                # The value of 'id' has been set to the search string, which is a repository name.
+                # We'll try to get the desired encoded repository id to pass on.
+                try:
+                    repository = get_repository_by_name( trans, kwd[ 'id' ] )
+                    kwd[ 'id' ] = trans.security.encode_id( repository.id )
+                except:
+                    pass
             return self.browse_repositories( trans, **kwd )
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
@@ -205,6 +261,182 @@ class RepositoryController( BaseController, ItemRatings ):
         # Render the list view
         return self.category_list_grid( trans, **kwd )
     @web.expose
+    def browse_downloadable_repositories( self, trans, **kwd ):
+        # Set the toolshedgalaxyurl cookie so we can get back
+        # to the calling local Galaxy instance.
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if galaxy_url:
+            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        repository_id = kwd.get( 'id', None )
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "preview_tools_in_changeset":
+                repository = get_repository( trans, repository_id )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='preview_tools_in_changeset',
+                                                                  repository_id=repository_id,
+                                                                  changeset_revision=repository.tip ) )
+
+        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
+        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # all of the received values to see which value is not the repository tip.  If we find it, we
+        # know the refresh_on_change occurred, and we have the necessary repository id and change set
+        # revision to pass on.
+        for k, v in kwd.items():
+            changset_revision_str = 'changeset_revision_'
+            if k.startswith( changset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+                repository = get_repository( trans, repository_id )
+                if repository.tip != v:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='preview_tools_in_changeset',
+                                                                      repository_id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=v ) )
+        url_args = dict( action='browse_downloadable_repositories',
+                         operation='preview_tools_in_changeset',
+                         repository_id=repository_id )
+        self.downloadable_repository_list_grid.operations = [ grids.GridOperation( "Preview and install tools",
+                                                                                   url_args=url_args,
+                                                                                   allow_multiple=False,
+                                                                                   async_compatible=False ) ]
+
+        # Render the list view
+        return self.downloadable_repository_list_grid( trans, **kwd )
+    @web.expose
+    def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, repository_id )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+        else:
+            metadata = None
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
+        return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
+                                    repository=repository,
+                                    changeset_revision=changeset_revision,
+                                    revision_label=revision_label,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    metadata=metadata,
+                                    display_for_install=True,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    def install_repository_revision( self, trans, repository_id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+        repository = get_repository( trans, repository_id )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        # Redirect back to local Galaxy to perform install.
+        tool_shed_url = trans.request.host
+        repository_clone_url = generate_clone_url( trans, repository_id )
+        # TODO: support https in the following url.
+        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&name=%s&description=%s&repository_clone_url=%s&changeset_revision=%s' % \
+            ( galaxy_url, tool_shed_url, repository.name, repository.description, repository_clone_url, changeset_revision )
+        return trans.response.send_redirect( url )
+    @web.expose
+    def check_for_updates( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        # The sender didn't store galaxy_url in a cookie since
+        # this method immediately redirects back to the caller.
+        galaxy_url = kwd[ 'galaxy_url' ]
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        webapp = params.get( 'webapp', None )
+        tool_shed_url = trans.request.host
+        # Start building up the url to redirect back to the calling Galaxy instance.
+        # TODO: support https in the following url.
+        url = 'http://%s/admin/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, tool_shed_url )
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        #if error:
+        #    url += '&message=%s&status=error' % message
+        #else:
+        url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
+            ( repository.name, repository.user.username, changeset_revision )
+        if changeset_revision == repository.tip:
+            # If changeset_revision is the repository tip, then
+            # we know there are no additional updates for the tools.
+            url += repository.tip
+        else:
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
+                                                                                 trans.security.encode_id( repository.id ),
+                                                                                 changeset_revision )
+            if repository_metadata:
+                # If changeset_revision is in the repository_metadata table for this
+                # repository, then we know there are no additional updates for the tools.
+                url += changeset_revision
+            else:
+                # The changeset_revision column in the repository_metadata table has been
+                # updated with a new changeset_revision value since the repository was cloned.
+                repo_dir = repository.repo_path
+                repo = hg.repository( get_configured_ui(), repo_dir )
+                # Load each tool in the repository's changeset_revision to generate a list of
+                # tool guids, since guids differentiate tools by id and version.
+                ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+                if ctx is not None:        
+                    tool_guids = []
+                    for filename in ctx:
+                        # Find all tool configs in this repository changeset_revision.
+                        if filename.endswith( '.xml' ):
+                            fctx = ctx[ filename ]
+                            # Write the contents of the old tool config to a temporary file.
+                            fh = tempfile.NamedTemporaryFile( 'w' )
+                            tmp_filename = fh.name
+                            fh.close()
+                            fh = open( tmp_filename, 'w' )
+                            fh.write( fctx.data() )
+                            fh.close()
+                            try:
+                                tool = load_tool( trans, tmp_filename )
+                                if tool is not None:
+                                    tool_guids.append( generate_tool_guid( trans, repository, tool ) )
+                            except:
+                                # File must not be a valid tool config even though it has a .xml extension.
+                                pass
+                            try:
+                                os.unlink( tmp_filename )
+                            except:
+                                pass
+                    tool_guids.sort()
+                    if tool_guids:
+                        # Compare our list of tool guids against those in each repository_metadata record
+                        # for the repository to find the repository_metadata record with the changeset_revision
+                        # value we want to pass back to the caller.
+                        found = False
+                        for repository_metadata in get_repository_metadata_by_repository_id( trans, trans.security.encode_id( repository.id ) ):
+                            metadata = repository_metadata.metadata
+                            metadata_tool_guids = []
+                            for tool_dict in metadata[ 'tools' ]:
+                                metadata_tool_guids.append( tool_dict[ 'guid' ] )
+                            metadata_tool_guids.sort()
+                            if tool_guids == metadata_tool_guids:
+                                # We've found the repository_metadata record whose changeset_revision
+                                # value has been updated.
+                                url += repository_metadata.changeset_revision
+                                found = True
+                                break
+                        if not found:
+                            # There must be a problem in the data, so we'll just send back the received changeset_revision.
+                            log.debug( "Possible data corruption - updated repository_metadata cannot be found for repository id %d." % repository.id )
+                            url += changeset_revision
+                    else:
+                        # There are not tools in the changeset_revision, so no tool updates are possible.
+                        url += changeset_revision
+        return trans.response.send_redirect( url )
+    @web.expose
     def browse_repositories( self, trans, **kwd ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
@@ -212,7 +444,7 @@ class RepositoryController( BaseController, ItemRatings ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
-                repository_id = kwd.get( 'id', None )
+                repository_id = kwd[ 'id' ]
                 repository = get_repository( trans, repository_id )
                 is_admin = trans.user_is_admin()
                 if is_admin or repository.user == trans.user:
@@ -257,12 +489,32 @@ class RepositoryController( BaseController, ItemRatings ):
                 category = get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
-                if kwd[ 'id' ]:
-                    return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                      action='set_email_alerts',
-                                                                      **kwd ) )
+                if trans.user:
+                    if kwd[ 'id' ]:
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='set_email_alerts',
+                                                                          **kwd ) )
                 else:
+                    kwd[ 'message' ] = 'You must be logged in to set email alerts.'
+                    kwd[ 'status' ] = 'error'
                     del kwd[ 'operation' ]
+        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
+        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # all of the received values to see which value is not the repository tip.  If we find it, we
+        # know the refresh_on_change occurred, and we have the necessary repository id and change set
+        # revision to pass on.
+        for k, v in kwd.items():
+            changset_revision_str = 'changeset_revision_'
+            if k.startswith( changset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+                repository = get_repository( trans, repository_id )
+                if repository.tip != v:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='browse_repositories',
+                                                                      operation='view_or_manage_repository',
+                                                                      id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=v ) )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
     @web.expose
@@ -427,12 +679,66 @@ class RepositoryController( BaseController, ItemRatings ):
         current_working_dir = os.getcwd()
         # Update repository files for browsing.
         update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
+    @web.expose
+    def contact_owner( self, trans, id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, id )
+        if trans.user and trans.user.email:
+            return trans.fill_template( "/webapps/community/repository/contact_owner.mako",
+                                        repository=repository,
+                                        message=message,
+                                        status=status )
+        else:
+            # Do all we can to eliminate spam.
+            return trans.show_error_message( "You must be logged in to contact the owner of a repository." )
+    @web.expose
+    def send_to_owner( self, trans, id, message='' ):
+        repository = get_repository( trans, id )
+        if not message:
+            message = 'Enter a message'
+            status = 'error'
+        elif trans.user and trans.user.email:
+            smtp_server = trans.app.config.smtp_server
+            from_address = trans.app.config.email_from
+            if smtp_server is None or from_address is None:
+                return trans.show_error_message( "Mail is not configured for this Galaxy tool shed instance" )
+            to_address = repository.user.email
+            # Get the name of the server hosting the tool shed instance.
+            host = trans.request.host
+            # Build the email message
+            body = string.Template( contact_owner_template ) \
+                .safe_substitute( username=trans.user.username,
+                                  repository_name=repository.name,
+                                  email=trans.user.email,
+                                  message=message,
+                                  host=host )
+            subject = "Regarding your tool shed repository named %s" % repository.name
+            # Send it
+            try:
+                util.send_mail( from_address, to_address, subject, body, trans.app.config )
+                message = "Your message has been sent"
+                status = "done"
+            except Exception, e:
+                message = "An error occurred sending your message by email: %s" % str( e )
+                status = "error"
+        else:
+            # Do all we can to eliminate spam.
+            return trans.show_error_message( "You must be logged in to contact the owner of a repository." )
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='contact_owner',
+                                                          id=id,
+                                                          message=message,
+                                                          status=status ) )
     @web.expose
     def select_files_to_delete( self, trans, id, **kwd ):
         params = util.Params( kwd )
@@ -506,10 +812,12 @@ class RepositoryController( BaseController, ItemRatings ):
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -520,6 +828,7 @@ class RepositoryController( BaseController, ItemRatings ):
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         alerts = params.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
@@ -545,11 +854,23 @@ class RepositoryController( BaseController, ItemRatings ):
                 trans.sa_session.flush()
         checked = alerts_checked or ( user and user.email in email_alerts )
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
-        repository_metadata = get_repository_metadata( trans, id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
         else:
             metadata = None
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
+        if is_malicious:
+            if trans.app.security_agent.can_push( trans.user, repository ):
+                message += malicious_error_can_push
+            else:
+                message += malicious_error
+            status = 'error'
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -558,6 +879,10 @@ class RepositoryController( BaseController, ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
+                                    changeset_revision=changeset_revision,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    revision_label=revision_label,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -570,6 +895,7 @@ class RepositoryController( BaseController, ItemRatings ):
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
         repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         description = util.restore_text( params.get( 'description', repository.description ) )
         long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
@@ -666,11 +992,25 @@ class RepositoryController( BaseController, ItemRatings ):
         allow_push_select_field = self.__build_allow_push_select_field( trans, current_allow_push_list )
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
-        repository_metadata = get_repository_metadata( trans, id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
+            is_malicious = repository_metadata.malicious
         else:
             metadata = None
+            is_malicious = False
+        if is_malicious:
+            if trans.app.security_agent.can_push( trans.user, repository ):
+                message += malicious_error_can_push
+            else:
+                message += malicious_error
+            status = 'error'
+        malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
         categories = get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
@@ -681,6 +1021,9 @@ class RepositoryController( BaseController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
+                                    changeset_revision=changeset_revision,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    revision_label=revision_label,
                                     selected_categories=selected_categories,
                                     categories=categories,
                                     metadata=metadata,
@@ -688,6 +1031,8 @@ class RepositoryController( BaseController, ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
+                                    malicious_check_box=malicious_check_box,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -713,9 +1058,11 @@ class RepositoryController( BaseController, ItemRatings ):
                             'parent' : ctx.parents()[0] }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/view_changelog.mako', 
                                     repository=repository,
                                     changesets=changesets,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -725,7 +1072,7 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
-        ctx = get_change_set( trans, repo, ctx_str )
+        ctx = get_changectx_for_changeset( trans, repo, ctx_str )
         if ctx is None:
             message = "Repository does not include changeset revision '%s'." % str( ctx_str )
             status = 'error'
@@ -740,6 +1087,7 @@ class RepositoryController( BaseController, ItemRatings ):
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( self.to_html_escaped( diff ) )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
                                     repository=repository,
                                     ctx=ctx,
@@ -752,6 +1100,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     ignored=ignored,
                                     clean=clean,
                                     diffs=diffs,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -781,15 +1130,18 @@ class RepositoryController( BaseController, ItemRatings ):
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
                                     repository=repository,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     rra=rra,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
+    @web.require_login( "set email alerts" )
     def set_email_alerts( self, trans, **kwd ):
         # Set email alerts for selected repositories
         params = util.Params( kwd )
@@ -829,128 +1181,95 @@ class RepositoryController( BaseController, ItemRatings ):
     @web.expose
     @web.require_login( "set repository metadata" )
     def set_metadata( self, trans, id, ctx_str, **kwd ):
-        message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
-        if not message:
-            message = "Metadata for change set revision '%s' has been reset." % str( ctx_str )
+        malicious = kwd.get( 'malicious', '' )
+        if kwd.get( 'malicious_button', False ):
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, ctx_str )
+            malicious_checked = CheckboxField.is_checked( malicious )
+            repository_metadata.malicious = malicious_checked
+            trans.sa_session.add( repository_metadata )
+            trans.sa_session.flush()
+            if malicious_checked:
+                message = "The repository tip has been defined as malicious."
+            else:
+                message = "The repository tip has been defined as <b>not</b> malicious."
+            status = 'done'
+        else:
+            # The set_metadata_button was clicked
+            message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
+            if not message:
+                message = "Metadata for change set revision '%s' has been reset." % str( ctx_str )
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,
+                                                          changeset_revision=ctx_str,
+                                                          malicious=malicious,
                                                           message=message,
                                                           status=status ) )
     @web.expose
-    def add_tool_data_table_entry( self, trans, name_attr, repository_id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', '' ) )
-        status = params.get( 'status', 'done' )
-        comment_char = util.restore_text( params.get( 'comment_char', '#' ) )
-        loc_filename = util.restore_text( params.get( 'loc_filename', '' ) )
-        repository = get_repository( trans, repository_id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
-        column_fields = self.__get_column_fields( **kwd )
-        if params.get( 'add_field_button', False ):
-            # Add a field
-            field_index = len( column_fields ) + 1
-            field_tup = ( '%i_field_name' % field_index, '' )
-            column_fields.append( field_tup )
-        elif params.get( 'remove_button', False ):
-            # Delete a field - find the index of the field to be removed from the remove button label
-            index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
-            tup_to_remove = column_fields[ index ]
-            column_fields.remove( tup_to_remove )
-            # Re-number field tups
-            new_column_fields = []
-            for field_index, old_field_tup in enumerate( column_fields ):
-                name = '%i_field_name' % ( field_index + 1 )
-                value = old_field_tup[1]
-                new_column_fields.append( ( name, value ) )
-            column_fields = new_column_fields
-        elif params.get( 'add_tool_data_table_entry_button', False ):
-            # Add an entry to the end of the tool_data_table_conf.xml file
-            tdt_config = "%s/tool_data_table_conf.xml" %  trans.app.config.root
-            if os.path.exists( tdt_config ):
-                # Make a backup of the file since we're going to be changing it.
-                today = date.today()
-                backup_date = today.strftime( "%Y_%m_%d" )
-                tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( trans.app.config.root, backup_date )
-                shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
-                # Generate the string of column names
-                column_names = ', '.join( [ column_tup[1] for column_tup in column_fields ] )
-                # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
-                fh = tempfile.NamedTemporaryFile( 'wb' )
-                tmp_filename = fh.name
-                fh.close()
-                new_tdt_config = open( tmp_filename, 'wb' )
-                for i, line in enumerate( open( tdt_config, 'rb' ) ):
-                    if line.startswith( '</tables>' ):
-                        break
-                    new_tdt_config.write( line )
-                new_tdt_config.write( '    <!-- Location of %s files -->\n' % name_attr )
-                new_tdt_config.write( '    <table name="%s" comment_char="%s">\n' % ( name_attr, comment_char ) )
-                new_tdt_config.write( '        <columns>%s</columns>\n' % column_names )
-                new_tdt_config.write( '        <file path="tool-data/%s" />\n' % loc_filename )
-                new_tdt_config.write( '    </table>\n' )
-                # Now write the last line of the file
-                new_tdt_config.write( '</tables>\n' )
-                new_tdt_config.close()
-                shutil.move( tmp_filename, os.path.abspath( tdt_config ) )
-                # Reload the tool_data_table_conf entries
-                trans.app.tool_data_tables = galaxy.tools.data.ToolDataTableManager( trans.app.config.tool_data_table_config_path )
-                message = "The new entry has been added to the tool_data_table_conf.xml file, so click the <b>Reset metadata</b> button below."
-                # TODO: what if ~/tool-data/<loc_filename> doesn't exist?  We need to figure out how to 
-                # force the user to upload it's sample to the repository in order to generate metadata.
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='manage_repository',
-                                                                  id=repository_id,
-                                                                  message=message,
-                                                                  status=status ) )
-        return trans.fill_template( '/webapps/community/repository/add_tool_data_table_entry.mako', 
-                                    name_attr=name_attr,
-                                    repository=repository,
-                                    comment_char=comment_char,
-                                    loc_filename=loc_filename,
-                                    column_fields=column_fields,
-                                    message=message,
-                                    status=status )
-    def __get_column_fields( self, **kwd ):
-        '''
-        Return a dictionary of the user-entered form fields representing columns
-        in the location file.
-        '''
-        params = util.Params( kwd )
-        column_fields = []
-        index = 0
-        while True:
-            name = '%i_field_name' % ( index + 1 )
-            if kwd.has_key( name ):
-                value = util.restore_text( params.get( name, '' ) )
-                field_tup = ( name, value )
-                index += 1
-                column_fields.append( field_tup )
-            else:
-                break
-        return column_fields
-    @web.expose
-    def display_tool( self, trans, repository_id, tool_config, **kwd ):
+    def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
         repository = get_repository( trans, repository_id )
+        repo = hg.repository( get_configured_ui(), repository.repo_path )          
         try:
-            tool = load_tool( trans, os.path.abspath( tool_config ) )
+            if changeset_revision == repository.tip:
+                # Get the tool config from the file system we use for browsing.
+                tool = load_tool( trans, os.path.abspath( tool_config ) )
+            else:
+                # Get the tool config file name from the hgweb url, something like:
+                # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
+                old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
+                ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+                fctx = None
+                for filename in ctx:
+                    filename_head, filename_tail = os.path.split( filename )
+                    if filename_tail == old_tool_config_file_name:
+                        fctx = ctx[ filename ]
+                        break
+                if fctx:
+                    # Write the contents of the old tool config to a temporary file.
+                    fh = tempfile.NamedTemporaryFile( 'w' )
+                    tmp_filename = fh.name
+                    fh.close()
+                    fh = open( tmp_filename, 'w' )
+                    fh.write( fctx.data() )
+                    fh.close()
+                    tool = load_tool( trans, tmp_filename )
+                    try:
+                        os.unlink( tmp_filename )
+                    except:
+                        pass
+                else:
+                    tool = None
             tool_state = self.__new_state( trans )
+            is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
                                         repository=repository,
+                                        changeset_revision=changeset_revision,
                                         tool=tool,
                                         tool_state=tool_state,
+                                        is_malicious=is_malicious,
+                                        display_for_install=display_for_install,
                                         message=message,
                                         status=status )
         except Exception, e:
-            message = 'Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error.' % str( e )
+            message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % str( e )
+        if display_for_install:
             return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='manage_repository',
-                                                              id=repository_id,
+                                                              action='preview_tools_in_changeset',
+                                                              repository_id=repository_id,
+                                                              changeset_revision=changeset_revision,
                                                               message=message,
                                                               status='error' ) )
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='browse_repositories',
+                                                          operation='view_or_manage_repository',
+                                                          id=repository_id,
+                                                          changeset_revision=changeset_revision,
+                                                          message=message,
+                                                          status='error' ) )
     def __new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will not be initialized
@@ -967,24 +1286,40 @@ class RepositoryController( BaseController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None
-        repository_metadata = get_repository_metadata( trans, repository_id, changeset_revision ).metadata
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision ).metadata
         if 'tools' in repository_metadata:
             for tool_metadata_dict in repository_metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
                     metadata = tool_metadata_dict
-                    tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
+                    try:
+                        # We may be attempting to load a tool that no longer exists in the repository tip.
+                        tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
+                    except:
+                        tool = None
                     break
+        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+        changeset_revision_select_field = build_changeset_revision_select_field( trans,
+                                                                                 repository,
+                                                                                 selected_value=changeset_revision,
+                                                                                 add_id_to_name=False )
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
                                     metadata=metadata,
+                                    changeset_revision=changeset_revision,
+                                    revision_label=revision_label,
+                                    changeset_revision_select_field=changeset_revision_select_field,
+                                    is_malicious=is_malicious,
+                                    display_for_install=display_for_install,
                                     message=message,
                                     status=status )
     @web.expose
-    def download( self, trans, repository_id, file_type, **kwd ):
+    def download( self, trans, repository_id, changeset_revision, file_type, **kwd ):
         # Download an archive of the repository files compressed as zip, gz or bz2.
         params = util.Params( kwd )
         repository = get_repository( trans, repository_id )
@@ -993,11 +1328,11 @@ class RepositoryController( BaseController, ItemRatings ):
         # [web]
         # allow_archive = bz2, gz, zip
         if file_type == 'zip':
-            file_type_str = 'tip.zip'
+            file_type_str = '%s.zip' % changeset_revision
         elif file_type == 'bz2':
-            file_type_str = 'tip.tar.bz2'
+            file_type_str = '%s.tar.bz2' % changeset_revision
         elif file_type == 'gz':
-            file_type_str = 'tip.tar.gz'
+            file_type_str = '%s.tar.gz' % changeset_revision
         repository.times_downloaded += 1
         trans.sa_session.add( repository )
         trans.sa_session.flush()
@@ -1012,7 +1347,12 @@ class RepositoryController( BaseController, ItemRatings ):
         trans.response.headers['Expires'] = '0'
         repository = trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( repository_id ) )
         folder_path = key
-        files_list = self.__get_files( trans, repository, folder_path )
+        try:
+            files_list = self.__get_files( trans, folder_path )
+        except OSError, e:
+            if str( e ).find( 'No such file or directory' ) >= 0:
+                # We have a repository with no contents.
+                return []
         folder_contents = []
         for filename in files_list:
             is_folder = False
@@ -1027,31 +1367,20 @@ class RepositoryController( BaseController, ItemRatings ):
                          "key": full_path }
                 folder_contents.append( node )
         return folder_contents
-    def __get_files( self, trans, repository, folder_path ):
-        def print_ticks( d ):
-            pass
-        cmd  = "ls -p '%s'" % folder_path
-        # Handle the authentication message if keys are not set - the message is
-        output = pexpect.run( cmd,
-                              events={ pexpect.TIMEOUT : print_ticks }, 
-                              timeout=10 )
-        if 'No such file or directory' in output:
-            if 'root' in output:
-                # The repository is empty
-                return []
-            else:
-                # Some strange error occurred, the selected file was displayed, but
-                # does not exist in the sub-directory from which it was displayed.
-                # This should not happen...
-                status = 'error'
-                message = "No folder named (%s) exists." % folder_path
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='browse_repositories',
-                                                                  operation="view_or_manage_repository",
-                                                                  id=trans.security.encode_id( repository.id ),
-                                                                  status=status,
-                                                                  message=message ) )
-        return output.split()
+    def __get_files( self, trans, folder_path ):
+        contents = []
+        for item in os.listdir( folder_path ):
+            # Skip .hg directories
+            if str( item ).startswith( '.hg' ):
+                continue
+            if os.path.isdir( os.path.join( folder_path, item ) ):
+                # Append a '/' character so that our jquery dynatree will
+                # function properly.
+                item = '%s/' % item
+            contents.append( item )
+        if contents:
+            contents.sort()
+        return contents
     @web.json
     def get_file_contents( self, trans, file_path ):
         # Avoid caching

@@ -6,9 +6,11 @@
 <%
     from galaxy.web.framework.helpers import time_ago
     is_new = repository.is_new
+    can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_rate = not is_new and trans.user and repository.user != trans.user
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
     can_view_change_log = not is_new
     if can_push:
@@ -79,9 +81,14 @@
             %endif
             %if can_browse_contents:
                 <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+            %endif
+            %if can_contact_owner:
+                <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
+            %endif
+            %if can_download:
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
             %endif
         </div>
     %endif
@@ -91,13 +98,37 @@
     ${render_msg( message, status )}
 %endif
 
+%if len( changeset_revision_select_field.options ) > 1:
+    <div class="toolForm">
+        <div class="toolFormTitle">Repository revision</div>
+        <div class="toolFormBody">
+            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+                <div class="form-row">
+                    <%
+                        if changeset_revision == repository.tip:
+                            tip_str = 'repository tip'
+                        else:
+                            tip_str = ''
+                    %>
+                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Select a revision to inspect and download versions of tools from this repository.
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <p/>
+%endif
 <div class="toolForm">
     <div class="toolFormTitle">${repository.name}</div>
     <div class="toolFormBody">
-        <div class="form-row">
-            <label>Clone this repository:</label>
-            ${render_clone_str( repository )}
-        </div>
+        %if can_download:
+            <div class="form-row">
+                <label>Clone this repository:</label>
+                ${render_clone_str( repository )}
+            </div>
+        %endif
         <div class="form-row">
             <label>Name:</label>
             %if can_browse_contents:
@@ -120,9 +151,9 @@
         <div class="form-row">
             <label>Revision:</label>
             %if can_view_change_log:
-                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${repository.revision}</a>
+                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
             %else:
-                ${repository.revision}
+                ${revision_label}
             %endif
         </div>
         <div class="form-row">
@@ -145,98 +176,7 @@
         %endif
     </div>
 </div>
-%if metadata:
-    <p/>
-    <div class="toolForm">
-        <div class="toolFormTitle">Repository metadata</div>
-        <div class="toolFormBody">
-            %if 'tools' in metadata:
-                <div class="form-row">
-                    <table width="100%">
-                        <tr bgcolor="#D8D8D8" width="100%">
-                            <td><label>Tools:</label></td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="form-row">
-                    <% tool_dicts = metadata[ 'tools' ] %>
-                    <table class="grid">
-                        <tr>
-                            <td><b>name</b></td>
-                            <td><b>description</b></td>
-                            <td><b>version</b></td>
-                            <td><b>requirements</b></td>
-                        </tr>
-                        %for tool_dict in tool_dicts:
-                            <tr>
-                                <td>
-                                    <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                        <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">
-                                            ${tool_dict[ 'name' ]}
-                                        </a>
-                                    </div>
-                                    <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                        <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip, tool_id=tool_dict[ 'id' ] )}">View all metadata for this tool</a>
-                                    </div>
-                                </td>
-                                <td>${tool_dict[ 'description' ]}</td>
-                                <td>${tool_dict[ 'version' ]}</td>
-                                <td>
-                                    <%
-                                        if 'requirements' in tool_dict:
-                                            requirements = tool_dict[ 'requirements' ]
-                                        else:
-                                            requirements = None
-                                    %>
-                                    %if requirements:
-                                        <%
-                                            requirements_str = ''
-                                            for requirement_dict in tool_dict[ 'requirements' ]:
-                                                requirements_str += '%s (%s), ' % ( requirement_dict[ 'name' ], requirement_dict[ 'type' ] )
-                                            requirements_str = requirements_str.rstrip( ', ' )
-                                        %>
-                                        ${requirements_str}
-                                    %else:
-                                        none
-                                    %endif
-                                </td>
-                            </tr>
-                        %endfor
-                    </table>
-                </div>
-                <div style="clear: both"></div>
-            %endif
-            %if 'workflows' in metadata:
-                <div class="form-row">
-                    <table width="100%">
-                        <tr bgcolor="#D8D8D8" width="100%">
-                            <td><label>Workflows:</label></td>
-                        </tr>
-                    </table>
-                </div>
-                <div style="clear: both"></div>
-                <div class="form-row">
-                    <% workflow_dicts = metadata[ 'workflows' ] %>
-                    <table class="grid">
-                        <tr>
-                            <td><b>name</b></td>
-                            <td><b>format-version</b></td>
-                            <td><b>annotation</b></td>
-                        </tr>
-                        %for workflow_dict in workflow_dicts:
-                            <tr>
-                                <td>${workflow_dict[ 'name' ]}</td>
-                                <td>${workflow_dict[ 'format-version' ]}</td>
-                                <td>${workflow_dict[ 'annotation' ]}</td>
-                            </tr>
-                        %endfor
-                    </table>
-                </div>
-                <div style="clear: both"></div>
-            %endif
-        </div>
-    </div>
-%endif
+${render_repository_tools_and_workflows( metadata )}
 %if repository.categories:
     <p/>
     <div class="toolForm">

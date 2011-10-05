@@ -22,12 +22,12 @@ import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
 
-def add_controllers( webapp, app ):
+def add_ui_controllers( webapp, app ):
     """
     Search for controllers in the 'galaxy.web.controllers' module and add 
     them to the webapp.
     """
-    from galaxy.web.base.controller import BaseController
+    from galaxy.web.base.controller import BaseUIController
     from galaxy.web.base.controller import ControllerUnavailable
     import galaxy.web.controllers
     controller_dir = galaxy.web.controllers.__path__[0]
@@ -45,11 +45,11 @@ def add_controllers( webapp, app ):
             # Look for a controller inside the modules
             for key in dir( module ):
                 T = getattr( module, key )
-                if isclass( T ) and T is not BaseController and issubclass( T, BaseController ):
-                    webapp.add_controller( name, T( app ) )
+                if isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
+                    webapp.add_ui_controller( name, T( app ) )
 
 def add_api_controllers( webapp, app ):
-    from galaxy.web.base.controller import BaseController
+    from galaxy.web.base.controller import BaseAPIController
     from galaxy.web.base.controller import ControllerUnavailable
     import galaxy.web.api
     controller_dir = galaxy.web.api.__path__[0]
@@ -66,7 +66,7 @@ def add_api_controllers( webapp, app ):
                 module = getattr( module, comp )
             for key in dir( module ):
                 T = getattr( module, key )
-                if isclass( T ) and T is not BaseController and issubclass( T, BaseController ):
+                if isclass( T ) and T is not BaseAPIController and issubclass( T, BaseAPIController ):
                     webapp.add_api_controller( name, T( app ) )
 
 def app_factory( global_conf, **kwargs ):
@@ -87,7 +87,7 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxysession' )
-    add_controllers( webapp, app )
+    add_ui_controllers( webapp, app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
     # These two routes handle our simple needs at the moment
@@ -106,19 +106,34 @@ def app_factory( global_conf, **kwargs ):
     # If enabled, add the web API
     if asbool( kwargs.get( 'enable_api', False ) ):
         add_api_controllers( webapp, app )
-        webapp.api_mapper.resource( 'content', 
-                                    'contents', 
+        webapp.api_mapper.resource( 'content',
+                                    'contents',
+                                    controller='library_contents',
+                                    name_prefix='library_',
                                     path_prefix='/api/libraries/:library_id', 
                                     parent_resources=dict( member_name='library', collection_name='libraries' ) )
+        webapp.api_mapper.resource( 'content',
+                                    'contents',
+                                    controller='history_contents',
+                                    name_prefix='history_',
+                                    path_prefix='/api/histories/:history_id', 
+                                    parent_resources=dict( member_name='history', collection_name='histories' ) )
+        webapp.api_mapper.resource( 'permission',
+                                    'permissions',
+                                    path_prefix='/api/libraries/:library_id',
+                                    parent_resources=dict( member_name='library', collection_name='libraries' ) )      
         webapp.api_mapper.resource( 'library', 'libraries', path_prefix='/api' )
         webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
         webapp.api_mapper.resource( 'request', 'requests', path_prefix='/api' )
         webapp.api_mapper.resource( 'form', 'forms', path_prefix='/api' )
         webapp.api_mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
         webapp.api_mapper.resource( 'role', 'roles', path_prefix='/api' )
-        webapp.api_mapper.resource( 'user', 'users', path_prefix='/api' )
+        webapp.api_mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+        webapp.api_mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
         webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
-        
+        webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
+        #webapp.api_mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
+
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):

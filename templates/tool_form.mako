@@ -83,7 +83,7 @@
                                 var ids = [];
                                 counter = 1;
                                 $('input[name=ldda_ids]:checked').each(function() {
-                                    var name = $.trim( $(this).siblings("div").find("a").text() );
+                                    var name = $.trim( $(this).siblings("label").text() );
                                     var id = $(this).val();
                                     names.push( counter + ". " + name );
                                     counter += 1;
@@ -247,20 +247,36 @@
     <br/>
 %endif
 
-## handle calculating the redict url for the special case where we have nginx proxy
-## upload and need to do url_for on the redirect portion of the tool action
 <%
+    # Render an error message if a dynamically generated select list is missing a required
+    # index file or entry in the tool_data_table_conf.xml file.
+    message = ""
+    params_with_missing_data_table_entry = tool.params_with_missing_data_table_entry
+    params_with_missing_index_file = tool.params_with_missing_index_file
+    if params_with_missing_data_table_entry:
+        param = params_with_missing_data_table_entry[0]
+        message += "Data table named '%s' is required by tool but not configured.  " % param.options.missing_tool_data_table_name
+    if tool.params_with_missing_index_file:
+        param = params_with_missing_index_file[0]
+        message += "Index file named '%s' is required by tool but not available.  " % param.options.missing_index_file
+
+    # Handle calculating the redirect url for the special case where we have nginx proxy
+    # upload and need to do url_for on the redirect portion of the tool action.
     try:
         tool_url = h.url_for(tool.action)
     except AttributeError:
         assert len(tool.action) == 2
         tool_url = tool.action[0] + h.url_for(tool.action[1])
 %>
+%if message:
+    <div class="errormessage">${message}</div>
+    <br/>
+%endif
 <div class="toolForm" id="${tool.id}">
     %if tool.has_multiple_pages:
         <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
     %else:
-        <div class="toolFormTitle">${tool.name}</div>
+        <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
     %endif
     <div class="toolFormBody">
         <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}">

@@ -68,7 +68,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
 
 
-class VisualizationController( BaseController, Sharable, UsesAnnotations, 
+class VisualizationController( BaseUIController, Sharable, UsesAnnotations, 
                                 UsesHistoryDatasetAssociation, UsesVisualization, 
                                 UsesItemRatings ):
     _user_list_grid = VisualizationListGrid()
@@ -92,13 +92,14 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
     @web.expose
     @web.require_login()
     def clone(self, trans, id, *args, **kwargs):
-        visualization = self.get_visualization( trans, id, check_ownership=False )
+        visualization = self.get_visualization( trans, id, check_ownership=False )            
         user = trans.get_user()
-        if trans.sa_session.query( model.VisualizationUserShareAssociation ) \
-                    .filter_by( user=user, visualization=visualization ).count() == 0:
-            error( "Visualization is not owned by or shared with current user" )
+        owner = ( visualization.user == user )
+        new_title = "Copy of '%s'" % visualization.title
+        if not owner:
+            new_title += " shared by %s" % visualization.user.email
             
-        cloned_visualization = visualization.copy( user=trans.user, title="Copy of '%s'" % visualization.title )
+        cloned_visualization = visualization.copy( user=trans.user, title=new_title )
         
         # Persist
         session = trans.sa_session
@@ -299,7 +300,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
             raise web.httpexceptions.HTTPNotFound()
         
         # Security check raises error if user cannot access visualization.
-        self.security_check( trans.get_user(), visualization, False, True)
+        self.security_check( trans, visualization, False, True)
         
         # Get rating data.
         user_item_rating = 0
@@ -451,4 +452,6 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako" )
 
+    def get_item( self, trans, id ):
+        return self.get_visualization( trans, id )
     

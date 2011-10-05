@@ -49,5 +49,12 @@ This tool allows masking base characters in FASTQ format files dependent upon us
 
 This tool is not available for use on color space (csSanger) formats.
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor N, Taylor J, Nekrutenko A; Galaxy Team. Manipulation of FASTQ data with Galaxy. Bioinformatics. 2010 Jul 15;26(14):1783-5. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20562416&gt;`_
+
+
   </help>
 </tool>

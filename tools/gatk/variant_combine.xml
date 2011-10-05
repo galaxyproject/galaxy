@@ -1,0 +1,312 @@
+<tool id="gatk_variant_combine" name="Combine Variants" version="0.0.1">
+  <description></description>
+  <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
+   --stdout "${output_log}"
+   
+   #set $priority_order = []
+   #for $input_variant in $reference_source.input_variants:
+       -d "-B:${input_variant.input_variant_name},%(file_type)s" "${input_variant.input_variant}" "${input_variant.input_variant.ext}" "input_variant_${input_variant.input_variant_name}"
+       #set $input_variant_name = str( $input_variant.input_variant_name )
+       #assert $input_variant_name not in $priority_order, "Variant Names must be unique" ##this should be handled by a validator
+       #silent $priority_order.append( $input_variant_name )
+   #end for
+   -p 'java 
+    -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
+    -T "CombineVariants"
+    --out "${output_variants}"
+    ##--num_threads 4 ##hard coded, for now
+    -et "NO_ET" ##ET no phone home
+    ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
+    #if $reference_source.reference_source_selector != "history":
+        -R "${reference_source.ref_file.fields.path}"
+    #end if
+   --rod_priority_list "${ ','.join( $priority_order ) }"
+   '
+   
+   
+    ##start standard gatk options
+    #if $gatk_param_type.gatk_param_type_selector == "advanced":
+        #for $sample_metadata in $gatk_param_type.sample_metadata:
+            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #end for
+        #for $read_filter in $gatk_param_type.read_filter:
+            -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
+            ###raise Exception( str( dir( $read_filter ) ) )
+            #for $name, $param in $read_filter.read_filter_type.iteritems():
+                #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
+                    --${name} "${param}"
+                #end if
+            #end for
+            '
+        #end for
+        #if str( $gatk_param_type.input_intervals ) != "None":
+            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
+        #end if
+        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
+            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
+        #end if
+        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
+        #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
+            -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
+        #end if
+        -p '
+        --baq "${gatk_param_type.baq}"
+        --baqGapOpenPenalty "${gatk_param_type.baq_gap_open_penalty}"
+        ${gatk_param_type.use_original_qualities}
+        --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
+        --validation_strictness "${gatk_param_type.validation_strictness}"
+        --interval_merging "${gatk_param_type.interval_merging}"
+        '
+        #if str( $gatk_param_type.read_group_black_list ) != "None":
+            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
+        #end if
+    #end if
+    #if $reference_source.reference_source_selector == "history":
+        -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
+    #end if
+    ##end standard gatk options
+    
+    
+    ##start analysis specific options
+    #if $analysis_param_type.analysis_param_type_selector == "advanced":
+        -p '
+        --genotypemergeoption "${analysis_param_type.genotype_merge_option}"
+        --filteredrecordsmergetype "${analysis_param_type.filtered_records_merge_type}"
+        ${analysis_param_type.print_complex_merges}
+        ${analysis_param_type.filtered_are_uncalled}
+        ${analysis_param_type.minimal_vcf}
+        ${analysis_param_type.assume_identical_samples}
+        
+        #if str( $analysis_param_type.set_key ):
+            --setKey "${analysis_param_type.set_key}"
+        #end if
+        
+        --minimumN "${analysis_param_type.minimum_n}"
+        '
+    #end if
+  </command>
+  <inputs>
+    
+    <conditional name="reference_source">
+      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <repeat min="1" name="input_variants" title="Variants to Merge">
+          <param name="input_variant" type="data" format="vcf" label="Input variant file" />
+          <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
+            <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
+          </param>
+        </repeat>
+        <param name="ref_file" type="select" label="Using reference genome">
+          <options from_data_table="picard_indexes">
+            <!-- <filter type="data_meta" key="dbkey" ref="input_variants.input_variant" column="dbkey"/> -->
+          </options>
+        </param>
+      </when>
+      <when value="history"> <!-- FIX ME!!!! -->
+        <repeat min="1" name="input_variants" title="Variants to Merge">
+          <param name="input_variant" type="data" format="vcf" label="Input variant file" />
+          <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
+            <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
+          </param>
+        </repeat>
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+      </when>
+    </conditional>
+        
+    <conditional name="gatk_param_type">
+      <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <repeat name="sample_metadata" title="Sample Metadata">
+            <param name="sample_metadata_file" type="data" format="txt" label="Sample file(s) in JSON format" />
+        </repeat>
+        <repeat name="read_filter" title="Read Filter">
+            <conditional name="read_filter_type">
+		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+		        <option value="MaxReadLength" selected="True">MaxReadLength</option>
+		        <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+		      </param>
+	          <when value="ZeroMappingQualityRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MaxReadLength">
+	              <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+	          </when>
+            </conditional>
+        </repeat>
+        <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
+        <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
+        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+          <option value="UNION" selected="True">UNION</option>
+          <option value="INTERSECTION">INTERSECTION</option>
+        </param>
+        <conditional name="downsampling_type">
+          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+            <option value="NONE" selected="True">NONE</option>
+            <option value="ALL_READS">ALL_READS</option>
+            <option value="BY_SAMPLE">BY_SAMPLE</option>
+          </param>
+          <when value="NONE">
+	          <!-- no more options here -->
+	      </when>
+          <when value="ALL_READS">
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
+          <when value="BY_SAMPLE">
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
+        </conditional>
+        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
+          <option value="OFF" selected="True">OFF</option>
+          <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
+          <option value="RECALCULATE">RECALCULATE</option>
+        </param>
+        <param name="baq_gap_open_penalty" type="integer" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
+        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
+        <param name="validation_strictness" type="select" label="How strict should we be with validation">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="LENIENT">LENIENT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
+        <param name="interval_merging" type="select" label="Interval merging rule">
+          <option value="ALL" selected="True">ALL</option>
+          <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
+        </param>
+        <param name="read_group_black_list" type="data" format="txt" optional="True" label="Read group black list" />
+      </when>
+    </conditional>
+    
+    
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <param name="genotype_merge_option" type="select" label="How should we merge genotype records across records for samples shared across the ROD files" >
+          <option value="UNIQUIFY" />
+          <option value="PRIORITIZE" selected="true"/>
+          <option value="UNSORTED" />
+          <option value="REQUIRE_UNIQUE" />
+        </param> 
+        <param name="filtered_records_merge_type" type="select" label="How should we deal with records seen at the same site in the VCF, but with different FILTER fields? " >
+          <option value="KEEP_IF_ANY_UNFILTERED" selected="true"/>
+          <option value="KEEP_IF_ALL_UNFILTERED" />
+        </param> 
+        
+        <param name="print_complex_merges" checked="false" type="boolean" truevalue="--printComplexMerges" falsevalue="" label="Print out interesting sites requiring complex compatibility merging" />
+        <param name="filtered_are_uncalled" checked="false" type="boolean" truevalue="--filteredAreUncalled" falsevalue="" label="If true, then filtered VCFs are treated as uncalled, so that filtered set annotation don't appear in the combined VCF" />
+        <param name="minimal_vcf" checked="false" type="boolean" truevalue="--minimalVCF" falsevalue="" label="If true, then the output VCF will contain no INFO or genotype INFO field" />
+        
+        <param name="set_key" type="text" value="" label="Key, by default set, in the INFO key=value tag emitted describing which set the combined VCF record came from."/>
+        <param name="assume_identical_samples" checked="false" type="boolean" truevalue="--assumeIdenticalSamples" falsevalue="" label="If true, assume input VCFs have identical sample sets and disjoint calls so that one can simply perform a merge sort to combine the VCFs into one, drastically reducing the runtime." />
+        <param name="minimum_n" type="integer" value="1" label="Combine variants and output site only if variant is present in at least N input files."/>
+        
+      </when>
+    </conditional>
+    
+    
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output_variants" label="${tool.name} on ${on_string} (variants)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <test>
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
+          <param name="input_variant_name" value="from_variant_annotator" />
+          <param name="gatk_param_type_selector" value="basic" />
+          <param name="analysis_param_type_selector" value="basic" />
+          <output name="output_variants" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.vcf" lines_diff="2" />
+          <output name="output_log" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.log.contains" compare="contains" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+Combines VCF records from different sources; supports both full merges and set unions. Merge: combines multiple records into a single one; if sample names overlap then they are uniquified. Union: assumes each rod represents the same set of samples (although this is not enforced); using the priority list (if provided), emits a single record instance at every position represented in the rods.
+
+For more information on using the CombineVariants module, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/CombineVariants&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
+
+------
+
+**Inputs**
+
+GenomeAnalysisTK: CombineVariants accepts variant files as input.
+
+------
+
+**Outputs**
+
+The output is a combined vcf file.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
+
+-------
+
+**Settings**::
+
+ out                         File to which variants should be written
+ genotypemergeoption         How should we merge genotype records for samples shared across the ROD files? (UNIQUIFY|PRIORITIZE|UNSORTED|REQUIRE_UNIQUE)
+ filteredrecordsmergetype    How should we deal with records seen at the same site in the VCF, but with different FILTER fields? KEEP_IF_ANY_UNFILTERED PASSes the record if any record is unfiltered, KEEP_IF_ALL_UNFILTERED requires all records to be unfiltered (KEEP_IF_ANY_UNFILTERED|KEEP_IF_ALL_UNFILTERED)
+ rod_priority_list           When taking the union of variants containing genotypes: a comma-separated string describing the priority ordering for the genotypes as far as which record gets emitted; a complete priority list MUST be provided
+ printComplexMerges          Print out interesting sites requiring complex compatibility merging
+ filteredAreUncalled         If true, then filtered VCFs are treated as uncalled, so that filtered set annotation don't appear in the combined VCF
+ minimalVCF                  If true, then the output VCF will contain no INFO or genotype INFO field
+ setKey                      Key, by default set, in the INFO key=value tag emitted describing which set the combined VCF record came from.  Set to null if you don't want the set field emitted.
+ assumeIdenticalSamples      If true, assume input VCFs have identical sample sets and disjoint calls so that one can simply perform a merge sort to combine the VCFs into one, drastically reducing the runtime.
+ minimumN                    Combine variants and output site only if variant is present in at least N input files.
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>

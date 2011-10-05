@@ -43,11 +43,6 @@ class WL3:
         tlf = open(templog,'w')
         process = subprocess.Popen(cl, shell=True, stderr=tlf, stdout=tlf)
         rval = process.wait()
-        if rval <> 0:
-             print >> sys.stderr, '## rgWebLogo3.py error - executing %s returned error code %d' % cl
-             print >> sys.stderr, '## This may be a data problem or a tool dependency (%s) installation problem' % WEBLOGO
-             print >> sys.stderr, '## Please ensure %s is correctly installed and working on the command line -see http://code.google.com/p/weblogo' % WEBLOGO
-             sys.exit(1)
         tlf.close()
         tlogs = ''.join(open(templog,'r').readlines())
         if len(tlogs) > 1:
@@ -55,6 +50,11 @@ class WL3:
         else:
             s = '## executing %s returned status %d. Nothing appeared on stderr/stdout\n' % (cl,rval)
         os.unlink(templog) # always
+        if rval <> 0:
+             print >> sys.stderr, '## rgWebLogo3.py error - executing %s returned error code %d' % (cl,rval)
+             print >> sys.stderr, '## This may be a data problem or a tool dependency (%s) installation problem' % WEBLOGO
+             print >> sys.stderr, '## Please ensure %s is correctly installed and working on the command line -see http://code.google.com/p/weblogo' % WEBLOGO
+             sys.exit(1)
         return s
 
         

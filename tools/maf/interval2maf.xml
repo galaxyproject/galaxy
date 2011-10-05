@@ -283,5 +283,12 @@ the tool will create **a single** history item containing 12 alignment blocks (n
   s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG 
   s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG 
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
+
   </help>
 </tool>

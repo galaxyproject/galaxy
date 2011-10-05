@@ -191,9 +191,9 @@ class FTPFileField(BaseField):
     def get_html( self, prefix="" ):
         rval = FTPFileField.thead
         if self.dir is None:
-            rval += '<tr><td colspan="3"><em>Please <a href="%s">create</a> or <a href="%s">log in to</a> a Galaxy account to view files uploaded via FTP.</em></td></tr>' % ( url_for( controller='user', action='create', cntrller='user', referer=url_for( controller='root' ) ), url_for( controller='user', action='login', cntrller='user', referer=url_for( controller='root' ) ) )
+            rval += '<tr><td colspan="4"><em>Please <a href="%s">create</a> or <a href="%s">log in to</a> a Galaxy account to view files uploaded via FTP.</em></td></tr>' % ( url_for( controller='user', action='create', cntrller='user', referer=url_for( controller='root' ) ), url_for( controller='user', action='login', cntrller='user', referer=url_for( controller='root' ) ) )
         elif not os.path.exists( self.dir ):
-            rval += '<tr><td colspan="3"><em>Your FTP upload directory contains no files.</em></td></tr>'
+            rval += '<tr><td colspan="4"><em>Your FTP upload directory contains no files.</em></td></tr>'
         else:
             uploads = []
             for ( dirpath, dirnames, filenames ) in os.walk( self.dir ):
@@ -204,7 +204,7 @@ class FTPFileField(BaseField):
                                           size=nice_size( statinfo.st_size ),
                                           ctime=time.strftime( "%m/%d/%Y %I:%M:%S %p", time.localtime( statinfo.st_ctime ) ) ) )
             if not uploads:
-                rval += '<tr><td colspan="3"><em>Your FTP upload directory contains no files.</em></td></tr>'
+                rval += '<tr><td colspan="4"><em>Your FTP upload directory contains no files.</em></td></tr>'
             for upload in uploads:
                 rval += FTPFileField.trow % ( prefix, self.name, upload['path'], upload['path'], upload['size'], upload['ctime'] )
         rval += FTPFileField.tfoot

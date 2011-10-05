@@ -6,11 +6,13 @@ python ./scripts/check_python.py
 [ $? -ne 0 ] && exit 1
 
 SAMPLES="
-    external_service_types_conf.xml.sample
     datatypes_conf.xml.sample
+    external_service_types_conf.xml.sample
     reports_wsgi.ini.sample
+    shed_tool_conf.xml.sample
     tool_conf.xml.sample
     tool_data_table_conf.xml.sample
+    tool_sheds_conf.xml.sample
     universe_wsgi.ini.sample
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/*.sample

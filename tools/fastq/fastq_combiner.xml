@@ -66,5 +66,12 @@ This tool joins a FASTA file to a Quality Score file, creating a single FASTQ bl
 Specifying a set of quality scores is optional; when not provided, the output will be fastqsanger or fastqcssanger (when a csfasta is provided) with each quality score being the maximal allowed value (93).
 
 Use this tool, for example, to convert 454-type output to FASTQ.
+
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor N, Taylor J, Nekrutenko A; Galaxy Team. Manipulation of FASTQ data with Galaxy. Bioinformatics. 2010 Jul 15;26(14):1783-5. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20562416&gt;`_
+
   </help>
 </tool>

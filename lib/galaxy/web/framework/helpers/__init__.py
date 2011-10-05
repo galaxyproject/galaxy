@@ -6,8 +6,11 @@ from webhelpers import *
 from galaxy.util.json import to_json_string
 from galaxy.util import hash_util
 from datetime import datetime, timedelta
+import time
 
 from cgi import escape
+
+server_starttime = int(time.time())
 
 # If the date is more than one week ago, then display the actual date instead of in words
 def time_ago( x ):
@@ -38,20 +41,18 @@ def css( *args ):
     Take a list of stylesheet names (no extension) and return appropriate string
     of link tags.
     
-    TODO: This has a hardcoded "?v=X" to defeat caching. This should be done
-          in a better way.
+    Cache-bust with time that server started running on
     """
-    return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css?v=3" ) for name in args ] )
+    return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css?v=%s" % server_starttime ) for name in args ] )
         
 def js( *args ):
     """
     Take a list of javascript names (no extension) and return appropriate
     string of script tags.
 
-    TODO: This has a hardcoded "?v=X" to defeat caching. This should be done
-          in a better way.
+    Cache-bust with time that server started running on
     """
-    return "\n".join( [ javascript_include_tag( "/static/scripts/" + name + ".js?v=8" ) for name in args ] )
+    return "\n".join( [ javascript_include_tag( "/static/scripts/" + name + ".js?v=%s" % server_starttime ) for name in args ] )
     
 # Hashes
 
