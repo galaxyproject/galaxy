@@ -218,7 +218,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         outfname = data.name[0:150]
         outfname = ''.join(c in valid_chars and c or '_' for c in outfname)
         if (params.do_action == None):
-     	    params.do_action = 'zip' # default
+            params.do_action = 'zip' # default
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         if not data:
@@ -370,6 +370,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                     to_ext = data.extension
                 valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
                 fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+                trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, to_ext)
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
