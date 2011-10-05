@@ -544,7 +544,7 @@ def nice_size(size):
 
 def size_to_bytes( size ):
     """
-    Returns a number of bytes if given a reasably formatted string with the size
+    Returns a number of bytes if given a reasonably formatted string with the size
     """
     # Assume input in bytes if we can convert directly to an int
     try:
