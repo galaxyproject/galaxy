@@ -4200,7 +4200,8 @@ extend(VariantPainter.prototype, FeaturePainter.prototype, {
         if (no_label) {
             ctx.fillStyle = block_color;
             ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
-        } else { // Show blocks, labels, etc.                        
+        } 
+        else { // Show blocks, labels, etc.                        
             // Unpack.
             var ref_base = feature[4], alt_base = feature[5], qual = feature[6];
         
@@ -4232,6 +4233,8 @@ extend(VariantPainter.prototype, FeaturePainter.prototype, {
                 ctx.fillStyle = block_color;
             }
         }
+        
+        return [f_start, f_end];
     }
 });
 
@@ -4519,6 +4522,9 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             }
             ctx.fillStyle = block_color;
         }
+        
+        // FIXME: provide actual coordinates for drawn read.
+        return [0,0];
     }
 });
 
