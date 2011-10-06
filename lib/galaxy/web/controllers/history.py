@@ -1214,7 +1214,7 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                 name += " (active items only)"
                 new_history = history.copy( name=name, target_user=user )
         if len( histories ) == 1:
-            msg = 'Clone with name "%s" is now included in your previously stored histories.' % new_history.name
+            msg = 'Clone with name "<a href="%s" target="_top">%s</a>" is now included in your previously stored histories.' % ( url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) ) , new_history.name )
         else:
             msg = '%d cloned histories are now included in your previously stored histories.' % len( histories )
         return trans.show_ok_message( msg )
