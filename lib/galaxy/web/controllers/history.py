@@ -88,7 +88,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
-        grids.GridOperation( "Delete and remove datasets from disk", condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Delete Permanently", confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), async_compatible=True ),
     ]
     standard_filters = [
@@ -240,8 +240,8 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                         return trans.response.send_redirect( url_for( "/" ) )
                     else:
                         trans.template_context['refresh_frames'] = ['history']
-                elif operation in ( "delete", "delete and remove datasets from disk" ):
-                    if operation == "delete and remove datasets from disk":
+                elif operation in ( "delete", "delete permanently" ):
+                    if operation == "delete permanently":
                         status, message = self._list_delete( trans, histories, purge=True )
                     else:
                         status, message = self._list_delete( trans, histories )
@@ -303,6 +303,9 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                             trans.sa_session.add( hda.dataset )
                         except:
                             log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+                history.purged = True
+                self.sa_session.add( history )
+                self.sa_session.flush()
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
@@ -467,7 +470,30 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
         return trans.fill_template( "history/display_structured.mako", items=items )
 
     @web.expose
-    def delete_current( self, trans ):
+    def purge_deleted_datasets( self, trans ):
+        count = 0
+        if trans.app.config.allow_user_dataset_purge:
+            for hda in trans.history.datasets:
+                if not hda.deleted or hda.purged:
+                    continue
+                if trans.user:
+                    trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.log_event( "HDA id %s has been purged" % hda.id )
+                trans.sa_session.flush()
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) ) 
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+                count += 1
+        return trans.show_ok_message( "%d datasets have been deleted permanently" % count, refresh_frames=['history'] )
+
+    @web.expose
+    def delete_current( self, trans, purge=False ):
         """Delete just the active history -- this does not require a logged in user."""
         history = trans.get_history()
         if history.users_shared_with:
@@ -477,6 +503,24 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
             trans.sa_session.add( history )
             trans.sa_session.flush()
             trans.log_event( "History id %d marked as deleted" % history.id )
+        if purge and trans.app.config.allow_user_dataset_purge:
+            for hda in history.datasets:
+                if trans.user:
+                    trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.log_event( "HDA id %s has been purged" % hda.id )
+                trans.sa_session.flush()
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+            history.purged = True
+            self.sa_session.add( history )
+            self.sa_session.flush()
         # Regardless of whether it was previously deleted, we make a new history active
         trans.new_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
