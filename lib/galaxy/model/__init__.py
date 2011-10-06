@@ -17,6 +17,7 @@ from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
+from sqlalchemy.sql.expression import func
 import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
 
 if sys.version_info[:2] < ( 2, 5 ):
@@ -468,7 +469,12 @@ class History( object, UsesAnnotations ):
         return self.get_disk_size( nice_size=False )
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
-        rval = sum( [ d.get_total_size() for d in list( set( [ hda.dataset for hda in self.datasets if not hda.purged ] ) ) if not d.purged ] )
+        db_session = object_session( self )
+        rval = db_session.query( func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
+                                                     .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                                                     .distinct().subquery().c.total_size ) ).first()[0]
+        if rval is None:
+            rval = 0
         if nice_size:
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
