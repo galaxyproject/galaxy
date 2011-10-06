@@ -26,6 +26,7 @@
     <tool file="data_source/epigraph_import.xml" />
     <tool file="data_source/epigraph_import_test.xml" />
     <tool file="data_source/hbvar.xml" />
+    <tool file="data_source/genomespace_file_browser_dev.xml" />
     <tool file="validation/fix_errors.xml" />
   </section>
   <section name="Send Data" id="send">
