@@ -242,7 +242,7 @@
         If you're not familiar with Galaxy, please consider visiting the
         <a href="${h.url_for( controller='root' )}" target="_top">welcome page</a>.
         To learn more about what Galaxy is and what it can do for you, please visit
-        the <a href="$add_frame.wiki_url" target="_top">Galaxy wiki</a>.
+        the <a href="${add_frame.wiki_url}" target="_top">Galaxy wiki</a>.
     </div>
     <br/>
 %endif
