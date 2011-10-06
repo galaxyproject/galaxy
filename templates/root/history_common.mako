@@ -263,6 +263,7 @@
                         <br />
                     %endfor
                 %elif for_editing:
+                    <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
                     <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
                 %endif
     
