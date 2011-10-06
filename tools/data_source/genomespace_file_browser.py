@@ -109,8 +109,8 @@ def download_from_genomespace_file_browser( json_parameter_file ):
     assert None not in [ username, token ], "Missing GenomeSpace username or token."
     output_filename = datasource_params.get( "output", None )
     dataset_id = json_params['output_data'][0]['dataset_id']
+    hda_id = json_params['output_data'][0]['hda_id']
     url_opener = get_cookie_opener( username, token )
-    file_count = 1
     file_url_prefix = "fileUrl"
     file_type_prefix = "fileFormat"
     metadata_parameter_file = open( json_params['job_config']['TOOL_PROVIDED_JOB_METADATA_FILE'], 'wb' )
@@ -120,19 +120,16 @@ def download_from_genomespace_file_browser( json_parameter_file ):
             name = name[len( file_url_prefix ):]
             file_numbers.append( int( name ) )
     file_numbers.sort()
-    print 'file_numbers', file_numbers
-    #print 'datasource_params', datasource_params
     for file_num in file_numbers:
         url_key = "%s%i" % ( file_url_prefix, file_num )
         download_url = datasource_params.get( url_key, None )
         if download_url is None:
-            print 'wtf none', file_num
             break
         filetype_key = "%s%i" % ( file_type_prefix, file_num )
         filetype_url = datasource_params.get( filetype_key, None )
         galaxy_ext = get_galaxy_ext_from_genomespace_format_url( url_opener, filetype_url )
         if output_filename is None:
-            output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_output%i_visible_%s' % ( dataset_id, file_count, galaxy_ext ) )
+            output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_output%i_visible_%s' % ( hda_id, file_num, galaxy_ext ) )
         else:
             if dataset_id is not None:
                metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'dataset',

@@ -2028,6 +2028,7 @@ class DataSourceTool( Tool ):
             data_dict = dict( out_data_name = out_name,
                               ext = data.ext,
                               dataset_id = data.dataset.id,
+                              hda_id = data.id,
                               file_name = file_name,
                               extra_files_path = extra_files_path )
             
