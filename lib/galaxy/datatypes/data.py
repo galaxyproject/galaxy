@@ -360,9 +360,12 @@ class Data( object ):
         but might be brittle. Need to revisit this.
         """
         if len(split_files) == 1:
-            os.system( 'mv -f %s %s' % ( split_files[0], output_file ) )
+            cmd = 'mv -f %s %s' % ( split_files[0], output_file ) 
         else:
-            os.system( 'cat %s > %s' % ( ' '.join(split_files), output_file ) )
+            cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file ) 
+        result = os.system(cmd)
+        if result != 0:
+            raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
 
 class Text( Data ):
@@ -532,6 +535,13 @@ class Text( Data ):
             raise
         f.close()
     split = staticmethod(split)
+
+class LineCount( Text ):
+    """
+    Dataset contains a single line with a single integer that denotes the
+    line count for a related dataset. Used for custom builds.
+    """
+    pass
 
 class Newick( Text ):
     pass

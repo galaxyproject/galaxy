@@ -148,6 +148,7 @@ ImplicitlyConvertedDatasetAssociation.table = Table( "implicitly_converted_datas
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
+    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
     Column( "hda_parent_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "ldda_parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
@@ -469,9 +470,10 @@ Task.table = Table( "task", metadata,
     Column( "stderr", TEXT ),
     Column( "traceback", TEXT ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True, nullable=False ),
-    Column( "part_file", String(1024)),
+    Column( "working_directory", String(1024)),
     Column( "task_runner_name", String( 255 ) ),
-    Column( "task_runner_external_id", String( 255 ) ) )
+    Column( "task_runner_external_id", String( 255 ) ),
+    Column( "prepare_input_files_cmd", TEXT ) )
 
 PostJobAction.table = Table("post_job_action", metadata,
     Column("id", Integer, primary_key=True),
@@ -1211,6 +1213,9 @@ assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvert
                         LibraryDatasetDatasetAssociation, 
                         primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
                      
+                     dataset_ldda=relation( 
+                        LibraryDatasetDatasetAssociation, 
+                        primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.ldda_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
                      dataset=relation( 
                         HistoryDatasetAssociation, 
                         primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_id == HistoryDatasetAssociation.table.c.id ) ) ) )
@@ -1594,7 +1599,7 @@ assign_mapper( context, Page, Page.table,
                      annotations=relation( PageAnnotationAssociation, order_by=PageAnnotationAssociation.table.c.id, backref="pages" ),
                      ratings=relation( PageRatingAssociation, order_by=PageRatingAssociation.table.c.id, backref="pages" )  
                    ) )
-
+                   
 assign_mapper( context, ToolShedRepository, ToolShedRepository.table )
 
 # Set up proxy so that 

@@ -7,6 +7,7 @@ import data
 import logging
 import re
 import string
+import os
 from cgi import escape
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
@@ -14,7 +15,51 @@ import galaxy.model
 from galaxy import util
 from sniff import *
 
+import pkg_resources
+pkg_resources.require("simplejson")
+import simplejson
+
 log = logging.getLogger(__name__)
+
+class SequenceSplitLocations( data.Text ):
+    """
+    Class storing information about a sequence file composed of multiple gzip files concatenated as
+    one OR an uncompressed file. In the GZIP case, each sub-file's location is stored in start and end. 
+    The format of the file is JSON:
+    { "sections" : [
+            { "start" : "x", "end" : "y", "clusters" : "z" },
+            ...
+    ]}
+    """
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            try:
+                parsed_data = simplejson.load(open(dataset.file_name))
+                # dataset.peek = simplejson.dumps(data, sort_keys=True, indent=4)
+                dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+                dataset.blurb = '%d sections' % len(parsed_data['sections'])
+            except Exception, e:
+                dataset.peek = 'Not FQTOC file'
+                dataset.blurb = 'Not FQTOC file'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    file_ext = "fqtoc"
+
+    def sniff( self, filename ):
+        if os.path.getsize(filename) < 50000:
+            try:
+                data = simplejson.load(open(filename))
+                sections = data['sections']
+                for section in sections:
+                    if 'start' not in section or 'end' not in section or 'clusters' not in section:
+                        return False
+                return True
+            except:
+                pass
+        return False
+
 
 class Sequence( data.Text ):
     """Class describing a sequence"""
@@ -50,143 +95,237 @@ class Sequence( data.Text ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
+    def get_sequences_per_file(total_clusters, split_params):
+        if split_params['split_mode'] == 'number_of_parts':
+            # legacy basic mode - split into a specified number of parts
+            parts = int(split_params['split_size'])
+            sequences_per_file = [total_clusters/parts for i in range(parts)]
+            for i in range(total_clusters % parts):
+                sequences_per_file[i] += 1
+        elif split_params['split_mode'] == 'to_size':
+            # loop through the sections and calculate the number of clusters
+            chunk_size = long(split_params['split_size'])
+
+            chunks = total_clusters / chunk_size
+            rem = total_clusters % chunk_size
+            sequences_per_file = [chunk_size for i in range(total_clusters / chunk_size)]
+            # TODO: Should we invest the time in a better way to handle small remainders?
+            if rem > 0:
+                sequences_per_file.append(rem)
+        else:
+            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+        return sequences_per_file
+    get_sequences_per_file = staticmethod(get_sequences_per_file)
+
+    def do_slow_split( cls, input_datasets, subdir_generator_function, split_params):
+        # count the clusters so we can split
+        # TODO: if metadata is present, take the number of lines / 4
+        if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
+            total_clusters = input_datasets[0].metadata.sequences
+        else:
+            input_file = input_datasets[0].file_name
+            compress = is_gzip(input_file)
+            if compress:
+                # gzip is really slow before python 2.7!
+                in_file = gzip.GzipFile(input_file, 'r')
+            else:
+                # TODO
+                # if a file is not compressed, seek locations can be calculated and stored
+                # ideally, this would be done in metadata
+                # TODO
+                # Add BufferedReader if python 2.7?
+                in_file = open(input_file, 'rt')
+            total_clusters = long(0)
+            for i, line in enumerate(in_file):
+                total_clusters += 1
+            in_file.close()
+            total_clusters /= 4
+
+        sequences_per_file = cls.get_sequences_per_file(total_clusters, split_params)
+        return cls.write_split_files(input_datasets, None, subdir_generator_function, sequences_per_file)
+    do_slow_split = classmethod(do_slow_split)
+
+    def do_fast_split( cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
+        data = simplejson.load(open(toc_file_datasets[0].file_name))
+        sections = data['sections']
+        total_clusters = long(0)
+        for section in sections:
+            total_clusters += long(section['clusters'])
+        sequences_per_file = cls.get_sequences_per_file(total_clusters, split_params)
+        return cls.write_split_files(input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file)
+    do_fast_split = classmethod(do_fast_split)
+
+    def write_split_files(cls, input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file):
+        directories = []
+        def get_subdir(idx):
+            if idx < len(directories):
+                return directories[idx]
+            dir = subdir_generator_function()
+            directories.append(dir)
+            return dir
+
+        # we know how many splits and how many clusters in each. What remains is to write out instructions for the 
+        # splitting of all the input files. To decouple the format of those instructions from this code, the exact format of
+        # those instructions is delegated to scripts
+        start_sequence=0
+        for part_no in range(len(sequences_per_file)):
+            dir = get_subdir(part_no)
+            for ds_no in range(len(input_datasets)):
+                ds = input_datasets[ds_no]
+                base_name = os.path.basename(ds.file_name)
+                part_path = os.path.join(dir, base_name)
+                split_data = dict(class_name='%s.%s' % (cls.__module__, cls.__name__),
+                                  output_name=part_path,
+                                  input_name=ds.file_name,
+                                  args=dict(start_sequence=start_sequence, num_sequences=sequences_per_file[part_no]))
+                if toc_file_datasets is not None:
+                    toc = toc_file_datasets[ds_no]
+                    split_data['args']['toc_file'] = toc.file_name
+                f = open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w')
+                simplejson.dump(split_data, f)
+                f.close()
+            start_sequence += sequences_per_file[part_no]
+        return directories
+    write_split_files = classmethod(write_split_files)
     
-    def split( input_files, subdir_generator_function, split_params):
+    def split( cls, input_datasets, subdir_generator_function, split_params):
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
         if split_params is None:
-            return
-        
-        def split_calculate_clusters( input_file, get_dir, default_clusters):
-            """
-            Split the 0th file into even sized chunks, and return the number of clusters in each
-            """
-            compress = is_gzip(input_file)
-            if compress:
-# TODO: Python 2.4, 2.5 don't have io.BufferedReader!!!
-# add a buffered reader because gzip is really slow before python 2.7
-                in_file = gzip.GzipFile(input_file, 'r')
-            else:
-                in_file = open(input_file, 'rt')
-            part_file = None
-            part = 0
-            local_clusters_per_file = []
-            for i, line in enumerate(in_file):
-                cluster_number,  line_in_cluster = divmod(i, 4)
-                current_part, remainder = divmod(cluster_number, default_clusters)
-                
-                if (current_part != part or part_file is None):
-                    if (part_file):
-                        part_file.close()
-                    part = current_part
-                    part_dir = get_dir()
-                    part_path = os.path.join(part_dir, os.path.basename(input_file))
-# TODO: If the input was compressed, compress the output?
-                    part_file = open(part_path, 'w')
-                    local_clusters_per_file.append(default_clusters)
-                part_file.write(line)
-            if (part_file):
-                part_file.close()
-            in_file.close()
-            local_clusters_per_file[part] = remainder + 1
-            return local_clusters_per_file
-    
-        def split_to_size(input_file, get_dir, clusters_per_file):
-            """
-            Split the files beyond the 0th to the same number of clusters as the 0th.
-            This is used to split in a variety of ways, so these are both legal for
-            clusters_per_file:
-                [ 10000, 10000, 10000, 10000, 2 ] # to_size=10000, 40002 total
-                [ 10001, 10001, 10000, 10000 ] # number_of_parts = 4, 40002 total
+            return None
 
-            """
-            compress = is_gzip(input_file)
-            if compress:
-# TODO: Python 2.4, 2.5 don't have io.BufferedReader!!!
-# add a buffered reader because gzip is really slow before python 2.7
-                in_file = gzip.GzipFile(input_file, 'r')
-            else:
-                in_file = open(input_file, 'rt')
-            part_file = None
-            part = 0
-            clusters_this_part = 0
-            for i, line in enumerate(in_file):
-                cluster_number,  line_in_cluster = divmod(i, 4)
-                if clusters_this_part  == clusters_per_file[part]:
-                    current_part = part + 1
-                else:
-                    current_part = part
-                
-                if (current_part != part or part_file is None):
-                    if (part_file):
-                        part_file.close()
-                    part = current_part
-                    clusters_this_part = 0
-                    part_dir = get_dir()
-                    part_path = os.path.join(part_dir, os.path.basename(input_file))
-# TODO: If the input was compressed, compress the output?
-                    part_file = open(part_path, 'w')
-                    if clusters_per_file is None and part > 0:
-                        local_clusters_per_file.append(default_clusters)
-                part_file.write(line)
-                if line_in_cluster == 3:
-                    clusters_this_part += 1
-            if (part_file):
-                part_file.close()
-            in_file.close()
+        # first, see if there are any associated FQTOC files that will give us the split locations
+        # if so, we don't need to read the files to do the splitting
+        toc_file_datasets = []
+        for ds in input_datasets:
+            tmp_ds = ds
+            fqtoc_file = None
+            while fqtoc_file is None and tmp_ds is not None:
+                fqtoc_file = tmp_ds.get_converted_files_by_type('fqtoc')
+                tmp_ds = tmp_ds.copied_from_library_dataset_dataset_association
 
-        directories = []
-        def create_subdir():
-            dir = subdir_generator_function()
-            directories.append(dir)
-            return dir
+            if fqtoc_file is not None:
+                toc_file_datasets.append(fqtoc_file)
+
+        if len(toc_file_datasets) == len(input_datasets):
+            return cls.do_fast_split(input_datasets, toc_file_datasets, subdir_generator_function, split_params)
+        return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
+    split = classmethod(split)
+
+    def process_split_file(data):
+        """
+        This is called in the context of an external process launched by a Task (possibly not on the Galaxy machine)
+        to create the input files for the Task. The parameters:
+        data - a dict containing the contents of the split file
+        """
+        args = data['args']
+        input_name = data['input_name']
+        output_name = data['output_name']
+        start_sequence = long(args['start_sequence'])
+        sequence_count = long(args['num_sequences'])
         
-        clusters_per_file = None
-        if split_params['split_mode'] == 'number_of_parts':
-            # legacy splitting. To keep things simple, just scan the 0th file and count the clusters,
-            # then split it
-            clusters_per_file = []
-            in_file = open(input_files[0], 'rt')
-            for i, line in enumerate(in_file):
-                pass
-            in_file.close()
-            length = (i+1)/4
-            
-            if length <= 0:
-                raise Exception('Invalid sequence file %s' % input_files[0])
-            parts = int(split_params['split_size'])
-            if length < parts:
-                parts = length
-            len_each, remainder = divmod(length, parts)
-            while length > 0:
-                chunk = len_each
-                if remainder > 0:
-                    chunk += 1
-                clusters_per_file.append(chunk)
-                remainder=- 1
-                length -= chunk
-            split_to_size(input_files[0],  create_subdir,  clusters_per_file)
-        elif split_params['split_mode'] == 'to_size':
-            # split one file and see what the cluster sizes turn out to be
-            clusters_per_file = split_calculate_clusters(input_files[0],  create_subdir,  
-                int(split_params['split_size']))
+        if 'toc_file' in args:
+            toc_file = simplejson.load(open(args['toc_file'], 'r'))
+            commands = Sequence.get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count)
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            commands = Sequence.get_split_commands_sequential(is_gzip(input_name), input_name, output_name, start_sequence, sequence_count)
+        for cmd in commands:
+            if 0 != os.system(cmd):
+                raise Exception("Executing '%s' failed" % cmd)
+        return True
+    process_split_file = staticmethod(process_split_file)
+    
+    def get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count):
+        """
+        Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
+        shell commands that will extract the parts necessary
+        >>> three_sections=[dict(start=0, end=74, clusters=10), dict(start=74, end=148, clusters=10), dict(start=148, end=148+76, clusters=10)]
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=10)
+        ['dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=1, sequence_count=5)
+        ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +5 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=20)
+        ['dd bs=1 skip=0 count=148 if=./input.gz 2> /dev/null >> ./output.gz']
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=10)
+        ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +21 2> /dev/null) | head -20 | gzip -c >> ./output.gz', '(dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +1 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=10, sequence_count=10)
+        ['dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=20)
+        ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +21 2> /dev/null) | head -20 | gzip -c >> ./output.gz', 'dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null >> ./output.gz', '(dd bs=1 skip=148 count=76 if=./input.gz 2> /dev/null )| zcat | ( tail -n +1 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
+        """
+        sections = toc_file['sections']
+        result = []
+
+        current_sequence = long(0)
+        i=0
+        # skip to the section that contains my starting sequence
+        while i < len(sections) and start_sequence >= current_sequence + long(sections[i]['clusters']):
+            current_sequence += long(sections[i]['clusters'])
+            i += 1
+        if i == len(sections): # bad input data!
+            raise Exception('No FQTOC section contains starting sequence %s' % start_sequence)
+    
+        # These two variables act as an accumulator for consecutive entire blocks that
+        # can be copied verbatim (without decompressing)
+        start_chunk = long(-1)
+        end_chunk = long(-1)
+        copy_chunk_cmd = 'dd bs=1 skip=%s count=%s if=%s 2> /dev/null >> %s'
         
-        # split the rest, using the same number of clusters for each file
-        current_dir_idx = [0] # use a list to get around Python 2.x lame closure support
-        def get_subdir():
-            if len(directories) <= current_dir_idx[0]:
-                raise Exception('FASTQ files do not have the same number of clusters - splitting failed')
-            result = directories[current_dir_idx[0]]
-            current_dir_idx[0] = current_dir_idx[0] + 1
-            return result
-            
-        for i in range(1,  len(input_files)):
-            current_dir_idx[0] = 0
-            split_to_size(input_files[i],  get_subdir,  clusters_per_file)
-    split = staticmethod(split)
+        while sequence_count > 0 and i < len(sections):
+            # we need to extract partial data. So, find the byte offsets of the chunks that contain the data we need
+            # use a combination of dd (to pull just the right sections out) tail (to skip lines) and head (to get the 
+            # right number of lines
+            sequences = long(sections[i]['clusters'])
+            skip_sequences = start_sequence-current_sequence
+            sequences_to_extract = min(sequence_count, sequences-skip_sequences)
+            start_copy = long(sections[i]['start'])
+            end_copy = long(sections[i]['end'])
+            if sequences_to_extract < sequences:
+                if start_chunk > -1:
+                    result.append(copy_chunk_cmd % (start_chunk, end_chunk-start_chunk, input_name, output_name))
+                    start_chunk = -1
+                # extract, unzip, trim, recompress
+                result.append('(dd bs=1 skip=%s count=%s if=%s 2> /dev/null )| zcat | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c >> %s' % 
+                    (start_copy, end_copy-start_copy, input_name, skip_sequences*4+1, sequences_to_extract*4, output_name))
+            else: # whole section - add it to the start_chunk/end_chunk accumulator
+                if start_chunk == -1:
+                    start_chunk = start_copy
+                end_chunk = end_copy
+            sequence_count -= sequences_to_extract
+            start_sequence += sequences_to_extract
+            current_sequence += sequences
+            i += 1
+        if start_chunk > -1:
+            result.append(copy_chunk_cmd % (start_chunk, end_chunk-start_chunk, input_name, output_name))
+                
+        if sequence_count > 0:
+            raise Exception('%s sequences not found in file' % sequence_count)
+             
+        return result
+    get_split_commands_with_toc = staticmethod(get_split_commands_with_toc)
+
+
+    def get_split_commands_sequential(is_compressed, input_name, output_name, start_sequence, sequence_count):
+        """
+        Does a brain-dead sequential scan & extract of certain sequences
+        >>> Sequence.get_split_commands_sequential(True, './input.gz', './output.gz', start_sequence=0, sequence_count=10)
+        ['zcat "./input.gz" | ( tail -n +1 2> /dev/null) | head -40 | gzip -c > "./output.gz"']
+        >>> Sequence.get_split_commands_sequential(False, './input.fastq', './output.fastq', start_sequence=10, sequence_count=10)
+        ['tail -n +41 "./input.fastq" 2> /dev/null | head -40 > "./output.fastq"']
+        """
+        start_line = start_sequence * 4
+        line_count = sequence_count * 4
+        # TODO: verify that tail can handle 64-bit numbers
+        if is_compressed:
+            cmd = 'zcat "%s" | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c' % (input_name, start_line+1, line_count)
+        else:
+            cmd = 'tail -n +%s "%s" 2> /dev/null | head -%s'  % (start_line+1, input_name, line_count)
+        cmd += ' > "%s"' % output_name
+        
+        return [cmd]
+    get_split_commands_sequential = staticmethod(get_split_commands_sequential)
 
 
 
@@ -690,3 +829,7 @@ class Lav( data.Text ):
                 return False
         except:
             return False
+
+if __name__ == '__main__':
+    import doctest, sys
+    doctest.testmod(sys.modules[__name__])

@@ -1,5 +1,6 @@
 import os, logging,  shutil
-from galaxy import model
+from galaxy import model, util
+
 
 log = logging.getLogger( __name__ )
     
@@ -54,7 +55,7 @@ def do_split (job_wrapper):
         raise Exception(log_error)
     
     # split the first one to build up the task directories
-    input_files = []
+    input_datasets = []
     for input in parent_job.input_datasets:
         if input.name in split_inputs:
             this_input_files = job_wrapper.get_input_dataset_fnames(input.dataset)
@@ -62,13 +63,13 @@ def do_split (job_wrapper):
                 log_error = "The input '%s' is composed of multiple files - splitting is not allowed" % str(input.name)
                 log.error(log_error)
                 raise Exception(log_error)
-            input_files.extend(this_input_files)    
+            input_datasets.append(input.dataset)
     
     input_type = type_to_input_map.keys()[0]
     # DBTODO execute an external task to do the splitting, this should happen at refactor.
     # If the number of tasks is sufficiently high, we can use it to calculate job completion % and give a running status.
     try:
-        input_type.split(input_files, get_new_working_directory_name, parallel_settings)
+        input_type.split(input_datasets, get_new_working_directory_name, parallel_settings)
     except AttributeError:
         log_error = "The type '%s' does not define a method for splitting files" % str(input_type)
         log.error(log_error)
@@ -82,8 +83,9 @@ def do_split (job_wrapper):
                 for file in names:
                     os.symlink(file, os.path.join(dir,  os.path.basename(file)))
     tasks = []
+    prepare_files = os.path.join(util.galaxy_directory(), 'extract_dataset_parts.sh') + ' %s'
     for dir in task_dirs:
-        task = model.Task(parent_job, dir)
+        task = model.Task(parent_job, dir, prepare_files % dir)
         tasks.append(task)
     return tasks
                                
@@ -106,44 +108,51 @@ def do_merge( job_wrapper,  task_wrappers):
     
     illegal_outputs = [x for x in merge_outputs if x in pickone_outputs]
     if len(illegal_outputs) > 0:
-        raise Exception("Outputs have conflicting parallelism attributes: %s" % str( illegal_outputs ))
-
+        return ('Tool file error', 'Outputs have conflicting parallelism attributes: %s' % str( illegal_outputs ))
     
-    working_directory = job_wrapper.working_directory
-    task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
-    # TODO: Output datasets can be very complex. This doesn't handle metadata files
-    outputs = job_wrapper.get_output_datasets_and_fnames()
-    pickone_done = []
-    task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
-    for output in outputs:
-        output_file_name = str(outputs[output][1])
-        base_output_name = os.path.basename(output_file_name)
-        if output in merge_outputs:
-            output_type = outputs[output][0].datatype
-            output_files = [os.path.join(dir,base_output_name) for dir in task_dirs]
-            log.debug('files %s ' % output_files)
-            output_type.merge(output_files, output_file_name)
-            log.debug('merge finished: %s' % output_file_name)
-            pass # TODO: merge all the files
-        elif output in pickone_outputs:
-            # just pick one of them
-            if output not in pickone_done:
-                task_file_name = os.path.join(task_dirs[0], base_output_name)
-                shutil.move( task_file_name,  output_file_name )
-                pickone_done.append(output)
-        else:
-            log_error = "The output '%s' does not define a method for implementing parallelism" % output
-            log.error(log_error)
-            raise Exception(log_error)
-
     stdout = ''
-    stderr=''
+    stderr = ''
+    
+    try:
+        working_directory = job_wrapper.working_directory
+        task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
+        # TODO: Output datasets can be very complex. This doesn't handle metadata files
+        outputs = job_wrapper.get_output_datasets_and_fnames()
+        pickone_done = []
+        task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
+        for output in outputs:
+            output_file_name = str(outputs[output][1])
+            base_output_name = os.path.basename(output_file_name)
+            if output in merge_outputs:
+                output_type = outputs[output][0].datatype
+                output_files = [os.path.join(dir,base_output_name) for dir in task_dirs]
+                log.debug('files %s ' % output_files)
+                output_type.merge(output_files, output_file_name)
+                log.debug('merge finished: %s' % output_file_name)
+                pass # TODO: merge all the files
+            elif output in pickone_outputs:
+                # just pick one of them
+                if output not in pickone_done:
+                    task_file_name = os.path.join(task_dirs[0], base_output_name)
+                    shutil.move( task_file_name,  output_file_name )
+                    pickone_done.append(output)
+            else:
+                log_error = "The output '%s' does not define a method for implementing parallelism" % output
+                log.error(log_error)
+                raise Exception(log_error)
+    except Exception, e:
+        stdout = 'Error merging files';
+        stderr = str(e)
+        
+
     for tw in task_wrappers:
         # Prevent repetitive output, e.g. "Sequence File Aligned"x20
         # Eventually do a reduce for jobs that output "N reads mapped", combining all N for tasks.
-        if stdout.strip() != tw.get_task().stdout.strip():
-            stdout += tw.get_task().stdout
-        if stderr.strip() != tw.get_task().stderr.strip():                        
-            stderr += tw.get_task().stderr
+        out = tw.get_task().stdout.strip()
+        err = tw.get_task().stderr.strip()
+        if len(out) > 0:
+            stdout += tw.working_directory + ':\n' + out
+        if len(err) > 0:
+            stderr += tw.working_directory + ':\n' + err
     return (stdout,  stderr)
     
