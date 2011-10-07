@@ -116,8 +116,8 @@
             async_ops['${operation.label.lower()}'] = "True";
         %endfor
         
-        // Initialize grid controls
-        function init_grid_controls() {
+        // Init operation buttons.
+        var init_operation_buttons = function() {
             // Initialize operation buttons.
             $('input[name=operation]:submit').each(function() {
                 $(this).click( function() {
@@ -132,6 +132,11 @@
                    do_operation(webapp, operation_name, item_ids); 
                 });
             });
+        };
+        
+        // Initialize grid controls
+        function init_grid_controls() {
+            init_operation_buttons();    
             
             // Initialize submit image elements.
             $('.submit-image').each( function() {
@@ -569,6 +574,7 @@
                     
                     // Init grid.
                     init_grid_elements();
+                    init_operation_buttons();
                     make_popup_menus();
                     
                     // Hide loading overlay.
@@ -577,7 +583,7 @@
                     // Show message if there is one.
                     var message = $.trim( parsed_response_text[2] );
                     if (message != "") {
-                        $('#grid-message').html( message );
+                        $('#grid-message').html( message ).show();
                         setTimeout( function() { $('#grid-message').hide(); }, 5000);
                     }
                 }
