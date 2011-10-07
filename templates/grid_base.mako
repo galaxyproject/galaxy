@@ -117,7 +117,7 @@
         %endfor
         
         // Init operation buttons.
-        var init_operation_buttons = function() {
+        function init_operation_buttons() {
             // Initialize operation buttons.
             $('input[name=operation]:submit').each(function() {
                 $(this).click( function() {

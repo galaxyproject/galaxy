@@ -2627,16 +2627,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             }
         }
                 
-        // If we can draw now, do so
+        // If we can draw now, do so.
         if ( can_draw_now ) {
             extend( tile_data, more_tile_data );
             var tile = track.draw_tile(tile_data, track.mode, resolution, tile_index, w_scale, seq_data);
-            track.tile_cache.set(key, tile);
-            // Don't show if no tile
+            // Don't cache, show if no tile.
             if (tile !== undefined) {
+                track.tile_cache.set(key, tile);
                 track.show_tile(tile, parent_element, w_scale);
             }
-            return tile
+            return tile;
         }
          
         // Can't draw now, so trigger another redraw when the data is ready
