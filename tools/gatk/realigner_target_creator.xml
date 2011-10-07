@@ -1,6 +1,7 @@
-<tool id="gatk_realigner_target_creator" name="Realigner Target Creator" version="0.0.1">
+<tool id="gatk_realigner_target_creator" name="Realigner Target Creator" version="0.0.2">
   <description>for use in local realignment</description>
   <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
    --stdout "${output_log}"
    -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
    -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
@@ -15,9 +16,6 @@
     #end if
    '
     #set $rod_binding_names = dict()
-    #if str( $input_dbsnp_rod ) != "None":
-        -d "-D" "${input_dbsnp_rod}" "${input_dbsnp_rod.ext}" "dbsnp_rod"
-    #end if
     #for $rod_binding in $rod_bind:
         #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
             #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
@@ -108,14 +106,18 @@
       </when>
     </conditional>
     
-    <param name="input_dbsnp_rod" type="data" format="gatk_dbsnp" optional="True" label="dbSNP reference ordered data (ROD)" />
     <repeat name="rod_bind" title="Binding for reference-ordered data">
         <conditional name="rod_bind_type">
 	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
-	        <option value="snps" selected="True">SNPs</option>
+	        <option value="dbsnp" selected="True">dbSNP</option>
+	        <option value="snps">SNPs</option>
 	        <option value="indels">INDELs</option>
 	        <option value="custom">Custom</option>
 	      </param>
+          <when value="dbsnp">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
@@ -250,8 +252,7 @@
           <param name="reference_source_selector" value="history" />
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_bam" value="gatk/fake_phiX_reads_1.bam" ftype="bam" />
-          <param name="input_dbsnp_rod"  />
-          <param name="rod_bind_type_selector" value="snps" />
+          <param name="rod_bind_type_selector" value="dbsnp" />
           <param name="rodToIntervalTrackName" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
           <param name="gatk_param_type_selector" value="basic" />
@@ -265,23 +266,25 @@
 
 Emits intervals for the Local Indel Realigner to target for cleaning.  Ignores 454 reads, MQ0 reads, and reads with consecutive indel operators in the CIGAR string.
 
+For more information on local realignment around indels using the GATK, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Local_realignment_around_indels&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
+
 ------
 
-Please cite the website "http://addlink.here" as well as:
-
-Add citation here 2011.
-
-------
-
-**Input formats**
+**Inputs**
 
 GenomeAnalysisTK: RealignerTargetCreator accepts an aligned BAM input file.
 
-------
 
 **Outputs**
 
-The output is in GATK Interval format, see http://addlink.here for more details.
+The output is in GATK Interval format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
 
 -------
 
@@ -291,6 +294,14 @@ The output is in GATK Interval format, see http://addlink.here for more details.
  mismatchFraction    fraction of base qualities needing to mismatch for a position to have high entropy; to disable set to &lt;= 0 or &gt; 1
  minReadsAtLocus     minimum reads at a locus to enable using the entropy calculation
  maxIntervalSize     maximum interval size
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 
   </help>
 </tool>

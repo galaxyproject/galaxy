@@ -143,7 +143,6 @@ class Velvet( Html ):
 
     def __init__( self, **kwd ):
         Html.__init__( self, **kwd )
-        log.debug( "Velvet log info  %s" % 'JJ __init__')
         self.add_composite_file( 'Sequences', mimetype = 'text/html', description = 'Sequences', substitute_name_with_metadata = None, is_binary = False )
         self.add_composite_file( 'Roadmaps', mimetype = 'text/html', description = 'Roadmaps', substitute_name_with_metadata = None, is_binary = False )
         self.add_composite_file( 'Log', mimetype = 'text/html', description = 'Log', optional = 'True', substitute_name_with_metadata = None, is_binary = False )

@@ -23,3 +23,9 @@ galaxy.solaris-smf.xml:
 
     SMF Manifest for Solaris 10 and OpenSolaris.  Import with `svccfg import
     galaxy.solaris-smf.xml`.
+
+gls.pl:
+
+    "Galaxy ls", for sites where Galaxy logins match system logins, this script
+    can be used to list the filesystem paths to a user's history datasets.
+    Requires site modifications.  Written and submitted by Simon McGowan.

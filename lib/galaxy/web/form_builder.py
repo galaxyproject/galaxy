@@ -4,7 +4,7 @@ Classes for generating HTML forms
 
 import logging, sys, os, time
 from cgi import escape
-from galaxy.util import restore_text, relpath, nice_size, string_as_bool
+from galaxy.util import restore_text, relpath, nice_size
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -88,9 +88,17 @@ class CheckboxField(BaseField):
     >>> print CheckboxField( "bar", checked="yes" ).get_html()
     <input type="checkbox" id="bar" name="bar" value="true" checked="checked"><input type="hidden" name="bar" value="true">
     """
-    def __init__( self, name, checked=None ):
+    def __init__( self, name, checked=None, refresh_on_change = False, refresh_on_change_values = None ):
         self.name = name
         self.checked = ( checked == True ) or ( isinstance( checked, basestring ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
+        self.refresh_on_change = refresh_on_change
+        self.refresh_on_change_values = refresh_on_change_values or []
+        if self.refresh_on_change: 
+            self.refresh_on_change_text = ' refresh_on_change="true" '
+            if self.refresh_on_change_values:
+                self.refresh_on_change_text = '%s refresh_on_change_values="%s" ' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
+        else:
+            self.refresh_on_change_text = ''
     def get_html( self, prefix="", disabled=False ):
         if self.checked:
             checked_text = ' checked="checked"'
@@ -102,8 +110,8 @@ class CheckboxField(BaseField):
         # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
-        return '<input type="checkbox" id="%s" name="%s" value="true"%s%s><input type="hidden" name="%s%s" value="true"%s>' \
-            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), prefix, self.name, self.get_disabled_str( disabled ) )
+        return '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>' \
+            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) )
     @staticmethod
     def is_checked( value ):
         if value == True:
@@ -112,8 +120,6 @@ class CheckboxField(BaseField):
         # above for clarification.  Basically, if value is not True, then it will always be a list with
         # 2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
         # checked, then value will be only the hidden field.
-        if isinstance( value, basestring ):
-            return string_as_bool( value )
         return isinstance( value, list ) and len( value ) == 2
     def set_checked(self, value):
         if isinstance( value, basestring ):
@@ -185,9 +191,9 @@ class FTPFileField(BaseField):
     def get_html( self, prefix="" ):
         rval = FTPFileField.thead
         if self.dir is None:
-            rval += '<tr><td colspan="3"><em>Please <a href="%s">create</a> or <a href="%s">log in to</a> a Galaxy account to view files uploaded via FTP.</em></td></tr>' % ( url_for( controller='user', action='create', referer=url_for( controller='root' ) ), url_for( controller='user', action='login', referer=url_for( controller='root' ) ) )
+            rval += '<tr><td colspan="4"><em>Please <a href="%s">create</a> or <a href="%s">log in to</a> a Galaxy account to view files uploaded via FTP.</em></td></tr>' % ( url_for( controller='user', action='create', cntrller='user', referer=url_for( controller='root' ) ), url_for( controller='user', action='login', cntrller='user', referer=url_for( controller='root' ) ) )
         elif not os.path.exists( self.dir ):
-            rval += '<tr><td colspan="3"><em>Your FTP upload directory contains no files.</em></td></tr>'
+            rval += '<tr><td colspan="4"><em>Your FTP upload directory contains no files.</em></td></tr>'
         else:
             uploads = []
             for ( dirpath, dirnames, filenames ) in os.walk( self.dir ):
@@ -198,7 +204,7 @@ class FTPFileField(BaseField):
                                           size=nice_size( statinfo.st_size ),
                                           ctime=time.strftime( "%m/%d/%Y %I:%M:%S %p", time.localtime( statinfo.st_ctime ) ) ) )
             if not uploads:
-                rval += '<tr><td colspan="3"><em>Your FTP upload directory contains no files.</em></td></tr>'
+                rval += '<tr><td colspan="4"><em>Your FTP upload directory contains no files.</em></td></tr>'
             for upload in uploads:
                 rval += FTPFileField.trow % ( prefix, self.name, upload['path'], upload['path'], upload['size'], upload['ctime'] )
         rval += FTPFileField.tfoot
@@ -255,7 +261,7 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
     <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=[], size=None ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None ):
         self.name = name
         self.multiple = multiple or False
         self.size = size
@@ -268,7 +274,7 @@ class SelectField(BaseField):
             raise Exception, "Unknown display type: %s" % display
         self.display = display
         self.refresh_on_change = refresh_on_change
-        self.refresh_on_change_values = refresh_on_change_values
+        self.refresh_on_change_values = refresh_on_change_values or []
         if self.refresh_on_change: 
             self.refresh_on_change_text = ' refresh_on_change="true"'
             if self.refresh_on_change_values:
@@ -646,6 +652,27 @@ class HistoryField( BaseField ):
             return self.value
         else:
             return '-'
+            
+class LibraryField( BaseField ):
+    def __init__( self, name, value=None, trans=None ):
+        self.name = name
+        self.lddas = value
+        self.trans = trans
+    def get_html( self, prefix="", disabled=False ):
+        if not self.lddas:
+            ldda_ids = ""
+            text = "Select library dataset(s)"
+        else:
+            ldda_ids = "||".join( [ self.trans.security.encode_id( ldda.id ) for ldda in self.lddas ] )
+            text = "<br />".join( [ "%s. %s" % (i+1, ldda.name) for i, ldda in enumerate(self.lddas)] )
+        return '<a href="javascript:void(0);" class="add-librarydataset">%s</a> \
+                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda_ids), quote=True ) )
+
+    def get_display_text(self):
+        if self.ldda:
+            return self.ldda.name
+        else:
+            return 'None'
 
 def get_suite():
     """Get unittest suite for this module"""

@@ -13,6 +13,7 @@ scripts/scramble/archives
 
 # Database stuff
 database/beaker_sessions
+database/community_files
 database/compiled_templates
 database/files
 database/pbs

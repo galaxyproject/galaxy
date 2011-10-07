@@ -2,7 +2,8 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp
+import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib
+from email.MIMEText import MIMEText
 
 # Older py compatibility
 try:
@@ -126,7 +127,8 @@ mapped_chars = { '>' :'__gt__',
                  '@' : '__at__',
                  '\n' : '__cn__',
                  '\r' : '__cr__',
-                 '\t' : '__tc__'
+                 '\t' : '__tc__',
+                 '#' : '__pd__'
                  }
 
 def restore_text(text):
@@ -177,7 +179,7 @@ def sanitize_for_filename( text, default=None ):
         return default
     return out
 
-class Params:
+class Params( object ):
     """
     Stores and 'sanitizes' parameters. Alphanumeric characters and the  
     non-alphanumeric ones that are deemed safe are let to pass through (see L{valid_chars}).
@@ -195,9 +197,9 @@ class Params:
     >>> par.get('price', 0)
     0
     >>> par.symbols            # replaces unknown symbols with X
-    ['alpha', '__lt____gt__', 'XrmXX!']
+    ['alpha', '__lt____gt__', 'XrmX__pd__!']
     >>> par.flatten()          # flattening to a list
-    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmXX!')]
+    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmX__pd__!')]
     """
     
     # is NEVER_SANITIZE required now that sanitizing for tool parameters can be controlled on a per parameter basis and occurs via InputValueWrappers?
@@ -526,7 +528,7 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 Mb'
     """
-    words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
+    words = [ 'bytes', 'Kb', 'Mb', 'Gb', 'Tb' ]
     try:
         size = float( size )
     except:
@@ -539,6 +541,80 @@ def nice_size(size):
                 return "%d bytes" % size
             return "%.1f %s" % (size, word)
     return '??? bytes'
+
+def size_to_bytes( size ):
+    """
+    Returns a number of bytes if given a reasonably formatted string with the size
+    """
+    # Assume input in bytes if we can convert directly to an int
+    try:
+        return int( size )
+    except:
+        pass
+    # Otherwise it must have non-numeric characters
+    size_re = re.compile( '([\d\.]+)\s*([tgmk]b?|b|bytes?)$' )
+    size_match = re.match( size_re, size.lower() )
+    assert size_match is not None
+    size = float( size_match.group(1) )
+    multiple = size_match.group(2)
+    if multiple.startswith( 't' ):
+        return int( size * 1024**4 )
+    elif multiple.startswith( 'g' ):
+        return int( size * 1024**3 )
+    elif multiple.startswith( 'm' ):
+        return int( size * 1024**2 )
+    elif multiple.startswith( 'k' ):
+        return int( size * 1024 )
+    elif multiple.startswith( 'b' ):
+        return int( size )
+
+def send_mail( frm, to, subject, body, config ):
+    """
+    Sends an email.
+    """
+    header_to = to
+    if isinstance( to, list ):
+        header_to = ', '.join( to )
+    msg = MIMEText( body )
+    msg[ 'To' ] = header_to
+    msg[ 'From' ] = frm
+    msg[ 'Subject' ] = subject
+    if config.smtp_server is None:
+        log.error( "Mail is not configured for this Galaxy instance." )
+        log.info( msg )
+        return
+    s = smtplib.SMTP()
+    s.connect( config.smtp_server )
+    try:
+        s.starttls()
+        log.debug( 'Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server )
+    except RuntimeError, e:
+        log.warning( 'SSL/TLS support is not available to your Python interpreter: %s' % e )
+    except smtplib.SMTPHeloError, e:
+        log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
+        s.close()
+        raise
+    except smtplib.SMTPException, e:
+        log.warning( 'The server does not support the STARTTLS extension: %s' % e )
+    if config.smtp_username and config.smtp_password:
+        try:
+            s.login( config.smtp_username, config.smtp_password )
+        except smtplib.SMTPHeloError, e:
+            log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
+            s.close()
+            raise
+        except smtplib.SMTPAuthenticationError, e:
+            log.error( "The server didn't accept the username/password combination: %s" % e )
+            s.close()
+            raise
+        except smtplib.SMTPError, e:
+            log.error( "No suitable authentication method was found: %s" % e )
+            s.close()
+            raise
+    if isinstance( to, basestring ):
+        to = [ to ]
+    s.sendmail( frm, to, msg.as_string() )
+    s.quit()
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 # The dbnames list is used in edit attributes and the upload tool

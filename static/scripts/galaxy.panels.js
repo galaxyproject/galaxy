@@ -214,7 +214,7 @@ function show_modal( title, body, buttons, extra_buttons, init_fn ) {
         init_fn();
     }
 };
-    
+
 function show_in_overlay( options ) {
     var width = options.width || '600';
     var height = options.height || '400';
@@ -226,9 +226,9 @@ function show_in_overlay( options ) {
     show_modal( null, $( "<div style='margin: -5px;'><img id='close_button' style='position:absolute;right:-17px;top:-15px;src='" + image_path + "/closebox.png'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) );
     $("#close_button").bind( "click", function() { hide_modal(); } );
 }
-    
+
 // Tab management
-	
+
 $(function() {
     $(".tab").each( function() {
         var submenu = $(this).children( ".submenu" );

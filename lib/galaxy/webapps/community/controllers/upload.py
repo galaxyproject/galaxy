@@ -1,18 +1,20 @@
 import sys, os, shutil, logging, tarfile, tempfile
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
-from common import get_categories, get_repository
-from mercurial import hg, ui
+from galaxy.datatypes.checkers import *
+from common import *
+from mercurial import hg, ui, commands
 
 log = logging.getLogger( __name__ )
 
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
+CHUNK_SIZE = 2**20 # 1Mb
 
 class UploadError( Exception ):
     pass
 
-class UploadController( BaseController ):
+class UploadController( BaseUIController ):
     @web.expose
     @web.require_login( 'upload', use_panels=True, webapp='community' )
     def upload( self, trans, **kwd ):
@@ -25,9 +27,260 @@ class UploadController( BaseController ):
         repository_id = params.get( 'repository_id', '' )
         repository = get_repository( trans, repository_id )
         repo_dir = repository.repo_path
-        repo = hg.repository( ui.ui(), repo_dir )
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        uncompress_file = util.string_as_bool( params.get( 'uncompress_file', 'true' ) )
+        remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
-        upload_point = params.get( 'upload_point', None )
+        upload_point = self.__get_upload_point( repository, **kwd )
+        # Get the current repository tip.
+        tip = repository.tip
+        if params.get( 'upload_button', False ):
+            current_working_dir = os.getcwd()
+            file_data = params.get( 'file_data', '' )
+            if file_data == '':
+                message = 'No files were entered on the upload form.'
+                status = 'error'
+                uploaded_file = None
+            elif file_data not in ( '', None ):
+                uploaded_file = file_data.file
+                uploaded_file_name = uploaded_file.name
+                uploaded_file_filename = file_data.filename
+            isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
+            if uploaded_file:
+                isgzip = False
+                isbz2 = False
+                if uncompress_file:
+                    isgzip = is_gzip( uploaded_file_name )
+                    if not isgzip:
+                        isbz2 = is_bz2( uploaded_file_name )
+                ok = True
+                if isempty:
+                    tar = None
+                    istar = False
+                else:                
+                    # Determine what we have - a single file or an archive
+                    try:
+                        if ( isgzip or isbz2 ) and uncompress_file:
+                            # Open for reading with transparent compression.
+                            tar = tarfile.open( uploaded_file_name, 'r:*' )
+                        else:
+                            tar = tarfile.open( uploaded_file_name )
+                        istar = True
+                    except tarfile.ReadError, e:
+                        tar = None
+                        istar = False
+                if istar:
+                    ok, message, files_to_remove = self.upload_tar( trans,
+                                                                    repository,
+                                                                    tar,
+                                                                    uploaded_file,
+                                                                    upload_point,
+                                                                    remove_repo_files_not_in_tar,
+                                                                    commit_message )
+                else:
+                    if ( isgzip or isbz2 ) and uncompress_file:
+                        uploaded_file_filename = self.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
+                    if upload_point is not None:
+                        full_path = os.path.abspath( os.path.join( repo_dir, upload_point, uploaded_file_filename ) )
+                    else:
+                        full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
+                    # Move the uploaded file to the load_point within the repository hierarchy.
+                    shutil.move( uploaded_file_name, full_path )
+                    commands.add( repo.ui, repo, full_path )
+                    try:
+                        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                    except Exception, e:
+                        # I never have a problem with commands.commit on a Mac, but in the test/production
+                        # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                        # exception.  If this happens, we'll try the following.
+                        repo.dirstate.write()
+                        repo.commit( user=trans.user.username, text=commit_message )
+                    if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
+                        # Handle the special case where a tool_data_table_conf.xml.sample
+                        # file is being uploaded by parsing the file and adding new entries
+                        # to the in-memory trans.app.tool_data_tables dictionary as well as
+                        # appending them to the shed's tool_data_table_conf.xml file on disk.
+                        error, error_message = handle_sample_tool_data_table_conf_file( trans, full_path )
+                        if error:
+                            message = '%s<br/>%s' % ( message, error_message )
+                    if full_path.endswith( '.loc.sample' ):
+                        # Handle the special case where a xxx.loc.sample file is
+                        # being uploaded by copying it to ~/tool-data/xxx.loc.
+                        copy_sample_loc_file( trans, full_path )
+                    handle_email_alerts( trans, repository )
+                if ok:
+                    # Update the repository files for browsing.
+                    update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
+                    # Get the new repository tip.
+                    if tip != repository.tip:
+                        if ( isgzip or isbz2 ) and uncompress_file:
+                            uncompress_str = ' uncompressed and '
+                        else:
+                            uncompress_str = ' '
+                        message = "The file '%s' has been successfully%suploaded to the repository." % ( uploaded_file_filename, uncompress_str )
+                        if istar and remove_repo_files_not_in_tar and files_to_remove:
+                            if upload_point is not None:
+                                message += "  %d files were removed from the repository relative to the selected upload point '%s'." % ( len( files_to_remove ), upload_point )
+                            else:
+                                message += "  %d files were removed from the repository root." % len( files_to_remove )
+                    else:
+                        message = 'No changes to repository.'      
+                    # Set metadata on the repository tip
+                    error_message, status = set_repository_metadata( trans, repository_id, repository.tip, **kwd )
+                    if error_message:
+                        message = '%s<br/>%s' % ( message, error_message )
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='manage_repository',
+                                                                          id=repository_id,
+                                                                          message=message,
+                                                                          status=status ) )
+                    trans.response.send_redirect( web.url_for( controller='repository',
+                                                               action='browse_repository',
+                                                               id=repository_id,
+                                                               commit_message='Deleted selected files',
+                                                               message=message,
+                                                               status=status ) )
+                else:
+                    status = 'error'
+        selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
+        return trans.fill_template( '/webapps/community/repository/upload.mako',
+                                    repository=repository,
+                                    commit_message=commit_message,
+                                    uncompress_file=uncompress_file,
+                                    remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
+                                    message=message,
+                                    status=status )
+    def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message ):
+        # Upload a tar archive of files.
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        files_to_remove = []
+        ok, message = self.__check_archive( tar )
+        if not ok:
+            tar.close()
+            uploaded_file.close()
+            return ok, message, files_to_remove
+        else:
+            if upload_point is not None:
+                full_path = os.path.abspath( os.path.join( repo_dir, upload_point ) )
+            else:
+                full_path = os.path.abspath( repo_dir )
+            filenames_in_archive = [ tarinfo_obj.name for tarinfo_obj in tar.getmembers() ]
+            filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
+            # Extract the uploaded tar to the load_point within the repository hierarchy.
+            tar.extractall( path=full_path )
+            tar.close()
+            uploaded_file.close()
+            if remove_repo_files_not_in_tar and not repository.is_new:
+                # We have a repository that is not new (it contains files), so discover
+                # those files that are in the repository, but not in the uploaded archive.
+                for root, dirs, files in os.walk( full_path ):
+                    if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                        if '.hg' in dirs:
+                            # Don't visit .hg directories - should be impossible since we don't
+                            # allow uploaded archives that contain .hg dirs, but just in case...
+                            dirs.remove( '.hg' )
+                        if 'hgrc' in files:
+                             # Don't include hgrc files in commit.
+                            files.remove( 'hgrc' )
+                        for name in files:
+                            full_name = os.path.join( root, name )
+                            if full_name not in filenames_in_archive:
+                                files_to_remove.append( full_name )
+                for repo_file in files_to_remove:
+                    # Remove files in the repository (relative to the upload point)
+                    # that are not in the uploaded archive.
+                    try:
+                        commands.remove( repo.ui, repo, repo_file, force=True )
+                    except Exception, e:
+                        # I never have a problem with commands.remove on a Mac, but in the test/production
+                        # tool shed environment, it throws an exception whenever I delete all files from a
+                        # repository.  If this happens, we'll try the following.
+                        relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
+                        repo.dirstate.remove( relative_selected_file )
+                        repo.dirstate.write()
+                        absolute_selected_file = os.path.abspath( selected_file )
+                        if os.path.isdir( absolute_selected_file ):
+                            try:
+                                os.rmdir( absolute_selected_file )
+                            except OSError, e:
+                                # The directory is not empty
+                                pass
+                        elif os.path.isfile( absolute_selected_file ):
+                            os.remove( absolute_selected_file )
+                            dir = os.path.split( absolute_selected_file )[0]
+                            try:
+                                os.rmdir( dir )
+                            except OSError, e:
+                                # The directory is not empty
+                                pass
+            for filename_in_archive in filenames_in_archive:
+                commands.add( repo.ui, repo, filename_in_archive )
+                if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
+                    # Handle the special case where a tool_data_table_conf.xml.sample
+                    # file is being uploaded by parsing the file and adding new entries
+                    # to the in-memory trans.app.tool_data_tables dictionary as well as
+                    # appending them to the shed's tool_data_table_conf.xml file on disk.
+                    error, message = handle_sample_tool_data_table_conf_file( trans, filename_in_archive )
+                    if error:
+                        return False, message, files_to_remove
+                if filename_in_archive.endswith( '.loc.sample' ):
+                    # Handle the special case where a xxx.loc.sample file is
+                    # being uploaded by copying it to ~/tool-data/xxx.loc.
+                    copy_sample_loc_file( trans, filename_in_archive )
+            try:
+                commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+            except Exception, e:
+                # I never have a problem with commands.commit on a Mac, but in the test/production
+                # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                # exception.  If this happens, we'll try the following.
+                repo.dirstate.write()
+                repo.commit( user=trans.user.username, text=commit_message )
+            handle_email_alerts( trans, repository )
+            return True, '', files_to_remove
+    def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
+        if isgzip:
+            self.__handle_gzip( repository, uploaded_file_name )
+            return uploaded_file_filename.rstrip( '.gz' )
+        if isbz2:
+            self.__handle_bz2( repository, uploaded_file_name )
+            return uploaded_file_filename.rstrip( '.bz2' )
+    def __handle_gzip( self, repository, uploaded_file_name ):
+        fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
+        gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
+        while 1:
+            try:
+                chunk = gzipped_file.read( CHUNK_SIZE )
+            except IOError, e:
+                os.close( fd )
+                os.remove( uncompressed )
+                log.exception( 'Problem uncompressing gz data "%s": %s' % ( uploaded_file_name, str( e ) ) )
+                return
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        gzipped_file.close()
+        shutil.move( uncompressed, uploaded_file_name )
+    def __handle_bz2( self, repository, uploaded_file_name ):
+        fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_bunzip2_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
+        bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
+        while 1:
+            try:
+                chunk = bzipped_file.read( CHUNK_SIZE )
+            except IOError:
+                os.close( fd )
+                os.remove( uncompressed )
+                log.exception( 'Problem uncompressing bz2 data "%s": %s' % ( uploaded_file_name, str( e ) ) )
+                return
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        bzipped_file.close()
+        shutil.move( uncompressed, uploaded_file_name )
+    def __get_upload_point( self, repository, **kwd ):
+        upload_point = kwd.get( 'upload_point', None )
         if upload_point is not None:
             # The value of upload_point will be something like: database/community_files/000/repo_12/1.bed
             if os.path.exists( upload_point ):
@@ -44,270 +297,8 @@ class UploadController( BaseController ):
                     upload_point = None
             else:
                 # Must have been an error selecting something that didn't exist, so default to repository root
-                # TODO: throw an exception????
                 upload_point = None
-        else:
-            # Default to repository root
-            upload_point = None
-        if params.get( 'upload_button', False ):
-            ctx = repo.changectx( "tip" )
-            current_working_dir = os.getcwd()
-            file_data = params.get( 'file_data', '' )
-            if file_data == '':
-                message = 'No files were entered on the upload form.'
-                status = 'error'
-                uploaded_file = None
-            elif file_data not in ( '', None ):
-                uploaded_file = file_data.file
-            if uploaded_file:
-                # TODO: our current support for browsing repo contents requires a copy
-                # of the repository files in the repo root directory.  To produce these
-                # copies, we update without passing the -r null flag (see below).  When
-                # we're uploading more files, we have to clean out the repo root directory
-                # so we can move them into it.  We need to eliminate all this when we figure
-                # out how to browse the repository files.
-                os.chdir( repo_dir )
-                os.system( 'hg update -r null > /dev/null 2>&1' )
-                os.chdir( current_working_dir )
-                ok = True
-                files_to_commit = []
-                # Determine what we have - a single file or an archive
-                try:
-                    tar = tarfile.open( uploaded_file.name )
-                    istar = True
-                except tarfile.ReadError, e:
-                    istar = False
-                if istar:
-                    ok, message = self.__check_archive( tar )
-                    if ok:
-                        if repository.is_new:
-                            tar.extractall( path=repo_dir )
-                            tar.close()
-                            uploaded_file.close()
-                            # TODO: The following will only work on new, empty repos, 
-                            # need to also handle repos with existing contents
-                            for root, dirs, files in os.walk( repo_dir, topdown=False ):
-                                # Don't visit .hg directories and don't include hgrc files in commit.
-                                if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                                    if '.hg' in dirs:
-                                        # Don't visit .hg directories
-                                        dirs.remove( '.hg' )
-                                    if 'hgrc' in files:
-                                         # Don't include hgrc files in commit - should be impossible
-                                         # since we don't visit .hg dirs, but just in case...
-                                        files.remove( 'hgrc' )
-                                    for name in files:
-                                        relative_root = root.split( 'repo_%d' % repository.id )[ 1 ].lstrip ( '/' )
-                                        if upload_point is not None:
-                                            file_path = os.path.join( relative_root, upload_point, name )
-                                        else:
-                                            file_path = os.path.join( relative_root, name )
-                                        # Check if the file is tracked and make it tracked if not.
-                                        repo_contains = file_path in [ i for i in ctx.manifest() ]
-                                        if not repo_contains:
-                                            # Add the file to the dirstate
-                                            repo.dirstate.add( file_path )
-                                            files_to_commit.append( file_path )
-                        else:
-                            # The repo already contains the file, so we need to make sure the file being
-                            # uploaded is different from the file in the repo.  This is a temporary brute-
-                            # force method.
-                            # Make a clone of the repository in a temporary location
-                            tmp_dir = tempfile.mkdtemp()
-                            tmp_archive_dir = os.path.join( tmp_dir, 'tmp_archive_dir' )
-                            if not os.path.exists( tmp_archive_dir ):
-                                os.makedirs( tmp_archive_dir )
-                            cmd = "hg clone %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-                            os.chdir( tmp_archive_dir )
-                            os.system( cmd )
-                            os.chdir( current_working_dir )
-                            cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
-                            if upload_point is not None:
-                                full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point, file_data.filename ) )
-                            else:
-                                full_path = os.path.abspath( os.path.join( cloned_repo_dir, file_data.filename ) )
-                            # Extract the uploaded tarball to the load_point within the cloned repository hierarchy
-                            tar.extractall( path=full_path )
-                            tar.close()
-                            uploaded_file.close()
-                            # We want these change sets to be associated with the owner of the repository, so we'll
-                            # set the HGUSER environment variable accordingly.
-                            os.environ[ 'HGUSER' ] = trans.user.username
-                            # Add the file to the cloned repository.  If it's already tracked, this should do nothing.
-                            os.chdir( cloned_repo_dir )
-                            os.system( 'hg add > /dev/null 2>&1' )
-                            os.chdir( current_working_dir )
-                            os.chdir( cloned_repo_dir )
-                            # Commit the change set to the cloned repository
-                            os.system( "hg commit -m '%s' > /dev/null 2>&1" % commit_message )
-                            os.chdir( current_working_dir )
-                            # Push the change set to the master repository
-                            cmd = "hg push %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-                            os.chdir( cloned_repo_dir )
-                            os.system( cmd )
-                            # Change the current working directory to the original
-                            os.chdir( current_working_dir )
-                            # Since we extracted the archive into repo_dir, a copy of the archive's
-                            # files remains there.  The following will remove them.  It would be
-                            # more ideal if we could use the mercurial api to do this, but I haven't
-                            # yet discovered a way to pass the -r null flag to repo.update().
-                            # TODO: our current support for browsing repo contents requires a copy
-                            # of the repository files in the repo root directory.  To produce these
-                            # copies, we'll update without passing the -r null flag.  When we figure
-                            # out how to browse the repository files, uncomment the -r flag below.
-                            os.chdir( repo_dir )
-                            os.system( 'hg update > /dev/null 2>&1' )
-                            os.chdir( current_working_dir )
-                            # Remove tmp directory
-                            shutil.rmtree( tmp_dir )
-                            message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
-                            trans.response.send_redirect( web.url_for( controller='repository',
-                                                                       action='browse_repository',
-                                                                       message=message,
-                                                                       id=trans.security.encode_id( repository.id ) ) )
-
-
-                    else:
-                        tar.close()
-                else:
-                    """
-                    # TODO: This segment uses the mercurial api (and works), but we need the
-                    # api section below to be functional in order for this segment to be used.
-                    # In the meantime, we use the repository.is_new check below...
-                    repo_contains = file_path in [ i for i in ctx.manifest() ]
-                    if not repo_contains:
-                        repo.dirstate.add( file_path )
-                        files_to_commit.append( file_path )
-                    """
-                    if repository.is_new:
-                        # We're uploading a single file
-                        if upload_point is not None:
-                            full_path = os.path.abspath( os.path.join( upload_point, file_data.filename ) )
-                            file_path = os.path.join( upload_point, file_data.filename )
-                        else:
-                            full_path = os.path.abspath( os.path.join( repo_dir, file_data.filename ) )
-                            file_path = os.path.join( file_data.filename )
-                        shutil.move( uploaded_file.name, full_path )
-                        repo.dirstate.add( file_path )
-                        files_to_commit.append( file_path )
-                    else:
-                        """
-                        # TODO: This segment attempts to use the mercurial api, but is not functional.
-                        # Until we get it working, we're using the brute force method below it.
-                        fctx = None
-                        for changeset in repo.changelog:
-                            ctx = repo.changectx( changeset )
-                            if file_path not in ctx.files():
-                                continue
-                            fctx = ctx[ file_path ]
-                            break
-                        # We now have the parent version of the upload file.
-                        if fctx:
-                            data = fctx.data()
-                            # TODO: obviously very bad way of comparing files...
-                            file_path_data = open( full_path ).read()
-                            different = data != file_path_data
-                            if different:
-                                # TODO: how do you insert a new version of an existing file using the mercurial api???
-                                # the follwoin gis not correct!
-                                #repo.dirstate.normallookup( file_path )
-                                #files_to_commit.append( file_path )
-                                pass
-                        """
-                        # The repo already contains the file, so we need to make sure the file being
-                        # uploaded is different from the file in the repo.  This is a temporary brute-
-                        # force method.
-                        # Make a clone of the repository in a temporary location
-                        tmp_dir = tempfile.mkdtemp()
-                        tmp_archive_dir = os.path.join( tmp_dir, 'tmp_archive_dir' )
-                        if not os.path.exists( tmp_archive_dir ):
-                            os.makedirs( tmp_archive_dir )
-                        cmd = "hg clone %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-                        os.chdir( tmp_archive_dir )
-                        os.system( cmd )
-                        os.chdir( current_working_dir )
-                        cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
-                        if upload_point is not None:
-                            full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point, file_data.filename ) )
-                        else:
-                            full_path = os.path.abspath( os.path.join( cloned_repo_dir, file_data.filename ) )
-                        # Move the uploaded file to the load_point within the cloned repository hierarchy
-                        shutil.move( uploaded_file.name, full_path )
-                        # We want these change sets to be associated with the owner of the repository, so we'll
-                        # set the HGUSER environment variable accordingly.
-                        os.environ[ 'HGUSER' ] = trans.user.username
-                        # Add the file to the cloned repository.  If it's already tracked, this should do nothing.
-                        os.chdir( cloned_repo_dir )
-                        os.system( 'hg add > /dev/null 2>&1' )
-                        os.chdir( current_working_dir )
-                        os.chdir( cloned_repo_dir )
-                        # Commit the change set to the cloned repository
-                        os.system( "hg commit -m '%s' > /dev/null 2>&1" % commit_message )
-                        os.chdir( current_working_dir )
-                        # Push the change set to the master repository
-                        cmd = "hg push %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-                        os.chdir( cloned_repo_dir )
-                        os.system( cmd )
-                        os.chdir( current_working_dir )
-                        # Since we extracted the archive into repo_dir, a copy of the archive's
-                        # files remains there.  The following will remove them.  It would be
-                        # more ideal if we could use the mercurial api to do this, but I haven't
-                        # yet discovered a way to pass the -r null flag to repo.update().
-                        # TODO: our current support for browsing repo contents requires a copy
-                        # of the repository files in the repo root directory.  To produce these
-                        # copies, we'll update without passing the -r null flag.  When we figure
-                        # out how to browse the repository files, uncomment the -r flag below.
-                        os.chdir( repo_dir )
-                        os.system( 'hg update > /dev/null 2>&1' )
-                        os.chdir( current_working_dir )
-                        # Remove tmp directory
-                        shutil.rmtree( tmp_dir )
-                        message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
-                        trans.response.send_redirect( web.url_for( controller='repository',
-                                                                   action='browse_repository',
-                                                                   message=message,
-                                                                   id=trans.security.encode_id( repository.id ) ) )
-                if ok:
-                    if files_to_commit:
-                        repo.dirstate.write()
-                        repo.commit( text=commit_message )
-                        # Since we extracted the archive into repo_dir, a copy of the archive's
-                        # files remains there.  The following will remove them.  It would be
-                        # more ideal if we could use the mercurial api to do this, but I haven't
-                        # yet discovered a way to pass the -r null flag to repo.update().
-                        # TODO: our current support for browsing repo contents requires a copy
-                        # of the repository files in the repo root directory.  To produce these
-                        # copies, we'll update without passing the -r null flag.  When we figure
-                        # out how to browse the repository files, uncomment the -r flag below.
-                        os.chdir( repo_dir )
-                        os.system( 'hg update > /dev/null 2>&1' )
-                        #os.system( 'hg update -r null' )
-                        os.chdir( current_working_dir )
-                        message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
-                        trans.response.send_redirect( web.url_for( controller='repository',
-                                                                   action='browse_repository',
-                                                                   message=message,
-                                                                   id=trans.security.encode_id( repository.id ) ) )
-                else:
-                    status = 'error'
-                # Since we extracted the archive into repo_dir, a copy of the archive's
-                # files remains there.  The following will remove them.  It would be
-                # more ideal if we could use the mercurial api to do this, but I haven't
-                # yet discovered a way to pass the -r null flag to repo.update().
-                # TODO: our current support for browsing repo contents requires a copy
-                # of the repository files in the repo root directory.  To produce these
-                # copies, we'll update without passing the -r null flag.  When we figure
-                # out how to browse the repository files, uncomment the -r flag below.
-                os.chdir( repo_dir )
-                os.system( 'hg update > /dev/null 2>&1' )
-                #os.system( 'hg update -r null' )
-                os.chdir( current_working_dir )
-        selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
-        return trans.fill_template( '/webapps/community/repository/upload.mako',
-                                    repository=repository,
-                                    commit_message=commit_message,
-                                    message=message,
-                                    status=status )
+        return upload_point
     def __check_archive( self, archive ):
         for member in archive.getmembers():
             # Allow regular files and directories only

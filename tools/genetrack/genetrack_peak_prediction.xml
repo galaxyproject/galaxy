@@ -54,6 +54,12 @@ This tool will generate genome wide peak prediction from an index file.
 
 - **Prediction method** the function used to average nearby values
 
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
 </help>
 
 </tool>

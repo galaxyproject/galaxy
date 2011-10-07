@@ -156,10 +156,15 @@ class DRMAAJobRunner( BaseJobRunner ):
             jt.nativeSpecification = native_spec
 
         script = drm_template % (job_wrapper.galaxy_lib_dir, os.path.abspath( job_wrapper.working_directory ), command_line)
-        fh = file( jt.remoteCommand, "w" )
-        fh.write( script )
-        fh.close()
-        os.chmod( jt.remoteCommand, 0750 )
+        try:
+            fh = file( jt.remoteCommand, "w" )
+            fh.write( script )
+            fh.close()
+            os.chmod( jt.remoteCommand, 0750 )
+        except:
+            job_wrapper.fail( "failure preparing job script", exception=True )
+            log.exception("failure running job %s" % job_wrapper.get_id_tag())
+            return                          
 
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:

@@ -1,4 +1,5 @@
-<tool id="cuffcompare" name="Cuffcompare" version="0.9.1">
+<tool id="cuffcompare" name="Cuffcompare" version="0.0.5">
+    <!-- Wrapper supports Cuffcompare versions v1.0.0-v1.0.3 -->
     <description>compare assembled transcripts to a reference annotation and track Cufflinks transcripts across multiple experiments</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -26,20 +27,20 @@
                 --index_dir=${GALAXY_DATA_INDEX_DIR}
             #end if
             
+            ## Outputs.
+            --combined-transcripts=${transcripts_combined}
+            
             ## Inputs.
             ${first_input}
             #for $input_file in $input_files:
               ${input_file.additional_input}
             #end for
+            
     </command>
     <inputs>
-        <param format="gtf" name="first_input" type="data" label="GTF file produced by Cufflinks" help="">
-            <validator type="unspecified_build" />
-        </param>
+        <param format="gtf" name="first_input" type="data" label="GTF file produced by Cufflinks" help=""/>
         <repeat name="input_files" title="Additional GTF Input Files">
-            <param format="gtf" name="additional_input" type="data" label="GTF file produced by Cufflinks" help="">
-                <validator type="unspecified_build" />
-            </param>
+            <param format="gtf" name="additional_input" type="data" label="GTF file produced by Cufflinks" help=""/>
         </repeat>
         <conditional name="annotation">
             <param name="use_ref_annotation" type="select" label="Use Reference Annotation">
@@ -75,19 +76,22 @@
     </inputs>
 
     <outputs>
-        <data format="txt" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy" from_work_dir="cc_output" />
-        <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: ${first_input.hid} data tmap file" from_work_dir="input1.tmap" />
-        <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${first_input.hid} refmap file" from_work_dir="input1.refmap"/>
-        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} tmap file" from_work_dir="input2.tmap">
+        <data format="txt" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy" 
+            from_work_dir="cc_output.stats" />
+        <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: ${first_input.hid} data tmap file"
+            from_work_dir="cc_output.input1.tmap" />
+        <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${first_input.hid} refmap file" 
+            from_work_dir="cc_output.input1.refmap"/>
+        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} tmap file" from_work_dir="cc_output.input2.tmap">
             <filter>len( input_files ) > 0</filter>
         </data>
-        <data format="tabular" name="input2_refmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} refmap file" from_work_dir="input2.refmap">
+        <data format="tabular" name="input2_refmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} refmap file" from_work_dir="cc_output.input2.refmap">
             <filter>len( input_files ) > 0</filter>
         </data>
         <data format="tabular" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking" from_work_dir="cc_output.tracking">
             <filter>len( input_files ) > 0</filter>
         </data>
-        <data format="gtf" name="transcripts_combined" label="${tool.name} on ${on_string}: combined transcripts" from_work_dir="cc_output.combined.gtf"/>
+        <data format="gtf" name="transcripts_combined" label="${tool.name} on ${on_string}: combined transcripts"/>
     </outputs>
 
     <tests>

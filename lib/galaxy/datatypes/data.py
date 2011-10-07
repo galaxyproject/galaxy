@@ -430,13 +430,13 @@ class Text( Data ):
             if line and not line.startswith( '#' ):
                 data_lines += 1
         return data_lines
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False, skipchars=[] ):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte, skipchars=skipchars )
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
@@ -548,7 +548,7 @@ def get_test_fname( fname ):
     path, name = os.path.split(__file__)
     full_path = os.path.join( path, 'test', fname )
     return full_path
-def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
+def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=[] ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
     
@@ -576,8 +576,14 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
             data_checked = True
         if file_type in [ 'gzipped', 'binary' ]:
             break
-        lines.append( line )
-        count += 1
+        skip_line = False
+        for skipchar in skipchars:
+            if line.startswith( skipchar ):
+                skip_line = True
+                break
+        if not skip_line:
+            lines.append( line )
+            count += 1
     temp.close()
     if file_type in [ 'gzipped', 'binary' ]: 
         text = "%s file" % file_type 

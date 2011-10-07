@@ -6,6 +6,10 @@ import data, logging, binascii
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
+from galaxy import eggs
+import pkg_resources
+pkg_resources.require( "bx-python" )
+from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 from urllib import urlencode, quote_plus
 import zipfile, gzip
 import os, subprocess, tempfile
@@ -14,7 +18,7 @@ import struct
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
-unsniffable_binary_formats = [ 'ab1', 'scf' ]
+unsniffable_binary_formats = [ 'ab1', 'scf', 'h5' ]
 
 class Binary( data.Data ):
     """Binary data"""
@@ -50,7 +54,7 @@ class Ab1( Binary ):
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
-    MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
 
     def _get_samtools_version( self ):
         # Determine the version of samtools being used.  Wouldn't it be nice if
@@ -202,7 +206,24 @@ class Bam( Binary ):
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
     def get_track_type( self ):
         return "ReadTrack", {"data": "bai", "index": "summary_tree"}
-    
+
+class H5( Binary ):
+    """Class describing an HDF5 file"""
+    file_ext = "h5"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek  = "Binary h5 file" 
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Binary h5 sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     file_ext = "scf"
@@ -288,7 +309,30 @@ class BigBed(BigWig):
         Binary.__init__( self, **kwd )
         self._magic = 0x8789F2EB
         self._name = "BigBed"
-        
     def get_track_type( self ):
         return "LineTrack", {"data_standalone": "bigbed"}
 
+class TwoBit (Binary):
+    """Class describing a TwoBit format nucleotide file"""
+    
+    file_ext = "twobit"
+    
+    def sniff(self, filename):
+        try:
+            input = file(filename)
+            magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
+            if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
+                return True
+        except IOError:
+            return False
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary TwoBit format nucleotide file"
+            dataset.blurb = data.nice_size(dataset.get_size())
+        else:
+            return super(TwoBit, self).set_peek(dataset, is_multi_byte)
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Binary TwoBit format nucleotide file (%s)" % (data.nice_size(dataset.get_size()))

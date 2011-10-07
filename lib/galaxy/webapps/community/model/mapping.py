@@ -104,9 +104,21 @@ Repository.table = Table( "repository", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "description" , TEXT ),
+    Column( "long_description" , TEXT ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "private", Boolean, default=False ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "email_alerts", JSONType, nullable=True ),
+    Column( "times_downloaded", Integer ) )
+
+RepositoryMetadata.table = Table( "repository_metadata", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "metadata", JSONType, nullable=True ),
+    Column( "malicious", Boolean, default=False ) )
 
 RepositoryRatingAssociation.table = Table( "repository_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -122,22 +134,6 @@ RepositoryCategoryAssociation.table = Table( "repository_category_association", 
     Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
     Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
 
-Tool.table = Table( "tool", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
-    Column( "tool_id", TrimmedString( 255 ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "newer_version_id", Integer, ForeignKey( "tool.id" ), nullable=True ),
-    Column( "name", TrimmedString( 255 ), index=True ),
-    Column( "description" , TEXT ),
-    Column( "user_description" , TEXT ),
-    Column( "version", TrimmedString( 255 ) ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "external_filename" , TEXT ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "suite", Boolean, default=False, index=True ) )
-
 Category.table = Table( "category", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -146,32 +142,6 @@ Category.table = Table( "category", metadata,
     Column( "description" , TEXT ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-ToolCategoryAssociation.table = Table( "tool_category_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-    Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
-
-Event.table = Table( 'event', metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "state", TrimmedString( 255 ), index=True ),
-    Column( "comment", TEXT ) )
-
-ToolEventAssociation.table = Table( "tool_event_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-    Column( "event_id", Integer, ForeignKey( "event.id" ), index=True ) )
-
-ToolRatingAssociation.table = Table( "tool_rating_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "rating", Integer, index=True ),
-    Column( "comment", TEXT ) )
-
 Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
@@ -179,27 +149,10 @@ Tag.table = Table( "tag", metadata,
     Column( "name", TrimmedString(255) ), 
     UniqueConstraint( "name" ) )
 
-ToolTagAssociation.table = Table( "tool_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True),
-    Column( "value", TrimmedString(255), index=True),
-    Column( "user_value", TrimmedString(255), index=True) )
-
-ToolAnnotationAssociation.table = Table( "tool_annotation_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "annotation", TEXT, index=True) )
-
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 assign_mapper( context, User, User.table, 
-    properties=dict( tools=relation( Tool, primaryjoin=( Tool.table.c.user_id == User.table.c.id ), order_by=( Tool.table.c.name ) ),               
-                     active_tools=relation( Tool, primaryjoin=( ( Tool.table.c.user_id == User.table.c.id ) & ( not_( Tool.table.c.deleted ) ) ), order_by=( Tool.table.c.name ) ),
-                     active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
+    properties=dict( active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ) ) )
 
 assign_mapper( context, Group, Group.table,
@@ -233,55 +186,18 @@ assign_mapper( context, GalaxySession, GalaxySession.table,
 assign_mapper( context, Tag, Tag.table,
     properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[Tag.table.c.id] ) ) ) )
 
-assign_mapper( context, ToolTagAssociation, ToolTagAssociation.table,
-    properties=dict( tag=relation(Tag, backref="tagged_tools"), user=relation( User ) ) )
-                    
-assign_mapper( context, ToolAnnotationAssociation, ToolAnnotationAssociation.table,
-    properties=dict( tool=relation( Tool ), user=relation( User ) ) )
-
-assign_mapper( context, Tool, Tool.table, 
-    properties = dict(
-        categories=relation( ToolCategoryAssociation ),
-        events=relation( ToolEventAssociation, secondary=Event.table,
-                         primaryjoin=( Tool.table.c.id==ToolEventAssociation.table.c.tool_id ),
-                         secondaryjoin=( ToolEventAssociation.table.c.event_id==Event.table.c.id ),
-                         order_by=desc( Event.table.c.update_time ),
-                         viewonly=True,
-                         uselist=True ),
-        ratings=relation( ToolRatingAssociation, order_by=desc( ToolRatingAssociation.table.c.update_time ), backref="tools" ),
-        user=relation( User.mapper ),
-        older_version=relation(
-            Tool,
-            primaryjoin=( Tool.table.c.newer_version_id == Tool.table.c.id ),
-            backref=backref( "newer_version", primaryjoin=( Tool.table.c.newer_version_id == Tool.table.c.id ), remote_side=[Tool.table.c.id] ) )
-        ) )
-
-
-assign_mapper( context, ToolCategoryAssociation, ToolCategoryAssociation.table,
-    properties=dict(
-        category=relation( Category ),
-        tool=relation( Tool ) ) )
-
-assign_mapper( context, ToolRatingAssociation, ToolRatingAssociation.table,
-    properties=dict( tool=relation( Tool ), user=relation( User ) ) )
-
-assign_mapper( context, Event, Event.table,
-               properties=None )
-
-assign_mapper( context, ToolEventAssociation, ToolEventAssociation.table,
-    properties=dict(
-        tool=relation( Tool ),
-        event=relation( Event ) ) )
-
 assign_mapper( context, Category, Category.table,
-    properties=dict( tools=relation( ToolCategoryAssociation ),
-                     repositories=relation( RepositoryCategoryAssociation ) ) )
+    properties=dict( repositories=relation( RepositoryCategoryAssociation ) ) )
 
 assign_mapper( context, Repository, Repository.table, 
     properties = dict(
         categories=relation( RepositoryCategoryAssociation ),
         ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
-        user=relation( User.mapper ) ) )
+        user=relation( User.mapper ),
+        downloadable_revisions=relation( RepositoryMetadata, order_by=desc( RepositoryMetadata.table.c.id ) ) ) )
+
+assign_mapper( context, RepositoryMetadata, RepositoryMetadata.table,
+    properties=dict( repository=relation( Repository ) ) )
 
 assign_mapper( context, RepositoryRatingAssociation, RepositoryRatingAssociation.table,
     properties=dict( repository=relation( Repository ), user=relation( User ) ) )
@@ -309,11 +225,8 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( enable_next_gen_tool_shed, file_path, url, engine_options={}, create_tables=False ):
+def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
-    if not enable_next_gen_tool_shed:
-        # Connect tool archive location to the file path
-        Tool.file_path = file_path
     # Load the appropriate db module
     load_egg_for_url( url )
     # Create the database engine

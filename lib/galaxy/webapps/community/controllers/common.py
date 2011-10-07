@@ -1,15 +1,54 @@
-import tarfile
+import os, string, socket, logging
+from time import strftime
+from datetime import *
+from galaxy.tools import *
+from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.web.form_builder import SelectField
 from galaxy.model.item_attrs import UsesItemRatings
-import logging
+from mercurial import hg, ui, commands
+
 log = logging.getLogger( __name__ )
+
+email_alert_template = """
+GALAXY TOOL SHED REPOSITORY UPDATE ALERT
+-----------------------------------------------------------------------------
+You received this alert because you registered to receive email whenever
+changes were made to the repository named "${repository_name}".
+-----------------------------------------------------------------------------
+
+Date of change: ${display_date}
+Changed by:     ${username}
+
+Revision: ${revision}
+Change description:
+${description}
+
+-----------------------------------------------------------------------------
+This change alert was sent from the Galaxy tool shed hosted on the server
+"${host}"
+"""
+
+contact_owner_template = """
+GALAXY TOOL SHED REPOSITORY MESSAGE
+------------------------
+
+The user '${username}' sent you the following message regarding your tool shed
+repository named '${repository_name}'.  You can respond by sending a reply to
+the user's email address: ${email}.
+-----------------------------------------------------------------------------
+${message}
+-----------------------------------------------------------------------------
+This message was sent from the Galaxy Tool Shed instance hosted on the server
+'${host}'
+"""
 
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
+
+malicious_error = "  This changeset cannot be downloaded because it potentially produces malicious behavior or contains inappropriate content."
+malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
 
 class ItemRatings( UsesItemRatings ):
     """Overrides rate_item method since we also allow for comments"""
@@ -34,508 +73,8 @@ class ItemRatings( UsesItemRatings ):
             trans.sa_session.flush()
         return item_rating
 
-class ToolListGrid( grids.Grid ):
-    class NameColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            return tool.name
-    class TypeColumn( grids.BooleanColumn ):
-        def get_value( self, trans, grid, tool ):
-            if tool.is_suite:
-                return 'Suite'
-            return 'Tool'
-    class VersionColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            return tool.version
-    class DescriptionColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            return tool.description
-    class CategoryColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            rval = '<ul>'
-            if tool.categories:
-                for tca in tool.categories:
-                    rval += '<li><a href="browse_tools?operation=tools_by_category&id=%s&webapp=community">%s</a></li>' \
-                        % ( trans.security.encode_id( tca.category.id ), tca.category.name )
-            else:
-                rval += '<li>not set</li>'
-            rval += '</ul>'
-            return rval
-    class ToolCategoryColumn( grids.GridColumn ):
-        def filter( self, trans, user, query, column_filter ):
-            """Modify query to filter by category."""
-            if column_filter == "All":
-                pass
-            return query.filter( model.Category.name == column_filter )
-    class UserColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            if tool.user:
-                return tool.user.username
-            return 'no user'
-    class EmailColumn( grids.TextColumn ):
-        def filter( self, trans, user, query, column_filter ):
-            if column_filter == 'All':
-                return query
-            return query.filter( and_( model.Tool.table.c.user_id == model.User.table.c.id,
-                                       model.User.table.c.email == column_filter ) )
-    # Grid definition
-    title = "Tools"
-    model_class = model.Tool
-    template='/webapps/community/tool/grid.mako'
-    default_sort_key = "name"
-    columns = [
-        NameColumn( "Name",
-                    key="Tool.name",
-                    link=( lambda item: dict( operation="view_tool", id=item.id, webapp="community" ) ),
-                    attach_popup=False ),
-        DescriptionColumn( "Description",
-                           key="description",
-                           attach_popup=False ),
-        VersionColumn( "Version",
-                       key="version",
-                       attach_popup=False,
-                       filterable="advanced" ),
-        CategoryColumn( "Category",
-                        model_class=model.Category,
-                        key="Category.name",
-                        attach_popup=False ),
-        UserColumn( "Uploaded By",
-                     model_class=model.User,
-                     link=( lambda item: dict( operation="tools_by_user", id=item.id, webapp="community" ) ),
-                     attach_popup=False,
-                     key="username" ),
-        TypeColumn( "Type",
-                     key="suite",
-                     attach_popup=False ),
-        grids.CommunityRatingColumn( "Average Rating",
-                                     key="rating" ),
-        # Columns that are valid for filtering but are not visible.
-        EmailColumn( "Email",
-                     model_class=model.User,
-                     key="email",
-                     visible=False ),
-        ToolCategoryColumn( "Category",
-                            model_class=model.Category,
-                            key="Category.name",
-                            visible=False )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search tool name, description, version", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-    operations = []
-    standard_filters = []
-    default_filter = {}
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
-    def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class ) \
-                               .join( model.User.table ) \
-                               .join( model.ToolEventAssociation.table ) \
-                               .join( model.Event.table ) \
-                               .outerjoin( model.ToolCategoryAssociation.table ) \
-                               .outerjoin( model.Category.table )
-
-class CategoryListGrid( grids.Grid ):
-    class NameColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, category ):
-            return category.name
-    class DescriptionColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, category ):
-            return category.description
-    class ToolsColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, category ):
-            if category.tools:
-                viewable_tools = 0
-                for tca in category.tools:
-                    viewable_tools += 1
-                return viewable_tools
-            return 0
-
-    # Grid definition
-    webapp = "community"
-    title = "Categories"
-    model_class = model.Category
-    template='/webapps/community/category/grid.mako'
-    default_sort_key = "name"
-    columns = [
-        NameColumn( "Name",
-                    key="name",
-                    link=( lambda item: dict( operation="tools_by_category", id=item.id, webapp="community" ) ),
-                    attach_popup=False,
-                    filterable="advanced" ),
-        DescriptionColumn( "Description",
-                    key="description",
-                    attach_popup=False,
-                    filterable="advanced" ),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" ),
-        ToolsColumn( "Tools",
-                     model_class=model.Tool,
-                     attach_popup=False )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search category name, description",
-                                                cols_to_filter=[ columns[0], columns[1] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-
-    # Override these
-    global_actions = []
-    operations = []
-    standard_filters = []
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
-                
-class CommonController( BaseController, ItemRatings ):
-    @web.expose
-    def edit_tool( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='Select a tool to edit',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        can_edit = trans.app.security_agent.can_edit( trans.user, trans.user_is_admin(), cntrller, tool )
-        if not can_edit:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='You are not allowed to edit this tool',
-                                                              status='error' ) )
-        if params.get( 'edit_tool_button', False ):
-            if params.get( 'in_categories', False ):
-                in_categories = [ trans.sa_session.query( trans.app.model.Category ).get( x ) for x in util.listify( params.in_categories ) ]
-                trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=in_categories )
-            else:
-                # There must not be any categories associated with the tool
-                trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=[] )
-            user_description = util.restore_text( params.get( 'user_description', '' ) )
-            if user_description:
-                tool.user_description = user_description
-            else:
-                tool.user_description = ''
-            trans.sa_session.add( tool )
-            trans.sa_session.flush()
-            message = "Tool '%s' description and category associations have been saved" % tool.name
-            return trans.response.send_redirect( web.url_for( controller='common',
-                                                              action='edit_tool',
-                                                              cntrller=cntrller,
-                                                              id=id,
-                                                              message=message,
-                                                              status='done' ) )
-        elif params.get( 'approval_button', False ):
-            user_description = util.restore_text( params.get( 'user_description', '' ) )
-            if user_description:
-                tool.user_description = user_description
-                if params.get( 'in_categories', False ):
-                    in_categories = [ trans.sa_session.query( trans.app.model.Category ).get( x ) for x in util.listify( params.in_categories ) ]
-                    trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=in_categories )
-                else:
-                    # There must not be any categories associated with the tool
-                    trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=[] )
-                trans.sa_session.add( tool )
-                trans.sa_session.flush()
-                # Move the state from NEW to WAITING
-                event = trans.app.model.Event( state=trans.app.model.Tool.states.WAITING )
-                tea = trans.app.model.ToolEventAssociation( tool, event )
-                trans.sa_session.add_all( ( event, tea ) )
-                trans.sa_session.flush()
-                message = "Tool '%s' has been submitted for approval and can no longer be modified" % ( tool.name )
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='view_tool',
-                                                                  cntrller=cntrller,
-                                                                  id=id,
-                                                                  message=message,
-                                                                  status='done' ) )
-            else:
-                # The user_description field is required when submitting for approval
-                message = 'A user description is required prior to approval.'
-                status = 'error'
-        in_categories = []
-        out_categories = []
-        for category in get_categories( trans ):
-            if category in [ x.category for x in tool.categories ]:
-                in_categories.append( ( category.id, category.name ) )
-            else:
-                out_categories.append( ( category.id, category.name ) )
-        if tool.is_rejected:
-            # Include the comments regarding the reason for rejection
-            reason_for_rejection = tool.latest_event.comment
-        else:
-            reason_for_rejection = ''
-        can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_purge = trans.app.security_agent.can_purge( trans.user, trans.user_is_admin(), cntrller )
-        can_upload_new_version = trans.app.security_agent.can_upload_new_version( trans.user, tool )
-        can_view = trans.app.security_agent.can_view( trans.user, trans.user_is_admin(), cntrller, tool )
-        return trans.fill_template( '/webapps/community/tool/edit_tool.mako',
-                                    cntrller=cntrller,
-                                    tool=tool,
-                                    id=id,
-                                    in_categories=in_categories,
-                                    out_categories=out_categories,
-                                    can_approve_or_reject=can_approve_or_reject,
-                                    can_delete=can_delete,
-                                    can_download=can_download,
-                                    can_edit=can_edit,
-                                    can_purge=can_purge,
-                                    can_upload_new_version=can_upload_new_version,
-                                    can_view=can_view,
-                                    reason_for_rejection=reason_for_rejection,
-                                    message=message,
-                                    status=status )
-    @web.expose
-    def view_tool( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='Select a tool to view',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        can_view = trans.app.security_agent.can_view( trans.user, trans.user_is_admin(), cntrller, tool )
-        if not can_view:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='You are not allowed to view this tool',
-                                                              status='error' ) )
-        avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool, webapp_model=trans.model )
-        can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_edit = trans.app.security_agent.can_edit( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_purge = trans.app.security_agent.can_purge( trans.user, trans.user_is_admin(), cntrller )
-        can_rate = trans.app.security_agent.can_rate( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_upload_new_version = trans.app.security_agent.can_upload_new_version( trans.user, tool )
-        categories = [ tca.category for tca in tool.categories ]
-        display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
-        tool_file_contents = tarfile.open( tool.file_name, 'r' ).getnames()
-        tra = self.get_user_item_rating( trans.sa_session, trans.user, tool, webapp_model=trans.model )
-        visible_versions = trans.app.security_agent.get_visible_versions( trans.user, trans.user_is_admin(), cntrller, tool )
-        if tool.is_rejected:
-            # Include the comments regarding the reason for rejection
-            reason_for_rejection = tool.latest_event.comment
-        else:
-            reason_for_rejection = ''
-        return trans.fill_template( '/webapps/community/tool/view_tool.mako',
-                                    avg_rating=avg_rating,
-                                    categories=categories,
-                                    can_approve_or_reject=can_approve_or_reject,
-                                    can_delete=can_delete,
-                                    can_download=can_download,
-                                    can_edit=can_edit,
-                                    can_purge=can_purge,
-                                    can_rate=can_rate,
-                                    can_upload_new_version=can_upload_new_version,
-                                    can_view=can_view,
-                                    cntrller=cntrller,
-                                    display_reviews=display_reviews,
-                                    num_ratings=num_ratings,
-                                    reason_for_rejection=reason_for_rejection,
-                                    tool=tool,
-                                    tool_file_contents=tool_file_contents,
-                                    tra=tra,
-                                    visible_versions=visible_versions,
-                                    message=message,
-                                    status=status )
-    @web.expose
-    def delete_tool( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            message='Select a tool to delete'
-            status='error'
-        else:
-            tool = get_tool( trans, id )
-            if not trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool ):
-                return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                                  action='browse_tools',
-                                                                  cntrller=cntrller,
-                                                                  message='You are not allowed to delete this tool',
-                                                                  status='error' ) )
-            # Create a new event
-            event = trans.model.Event( state=trans.model.Tool.states.DELETED )
-            # Flush so we can get an event id
-            trans.sa_session.add( event )
-            trans.sa_session.flush()
-            # Associate the tool with the event
-            tea = trans.model.ToolEventAssociation( tool=tool, event=event )
-            # Delete the tool, keeping state for categories, events and versions
-            tool.deleted = True
-            trans.sa_session.add_all( ( tool, tea ) )
-            trans.sa_session.flush()
-            # TODO: What if the tool has versions, should they all be deleted?
-            message = "Tool '%s' version %s has been marked deleted" % ( tool.name, tool.version )
-            status = 'done'
-        return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                          action='browse_tools',
-                                                          cntrller=cntrller,
-                                                          message=message,
-                                                          status=status ) )
-    @web.expose
-    def download_tool( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller='tool',
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='Select a tool to download',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        if not trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool ):
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='You are not allowed to download this tool',
-                                                              status='error' ) )
-        trans.response.set_content_type( tool.mimetype )
-        trans.response.headers['Content-Length'] = int( os.stat( tool.file_name ).st_size )
-        trans.response.headers['Content-Disposition'] = 'attachment; filename=%s' % tool.download_file_name
-        return open( tool.file_name )
-    @web.expose
-    def upload_new_tool_version( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='Select a tool to upload a new version',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        if not trans.app.security_agent.can_upload_new_version( trans.user, tool ):
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='You are not allowed to upload a new version of this tool',
-                                                              status='error' ) )
-        return trans.response.send_redirect( web.url_for( controller='tool_upload',
-                                                          action='upload',
-                                                          message=message,
-                                                          status=status,
-                                                          replace_id=id ) )
-    @web.expose
-    @web.require_login( "view tool history" )
-    def view_tool_history( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='Select a tool to view its history',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        can_view = trans.app.security_agent.can_view( trans.user, trans.user_is_admin(), cntrller, tool )
-        if not can_view:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message="You are not allowed to view this tool's history",
-                                                              status='error' ) )
-        can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_edit = trans.app.security_agent.can_edit( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
-        events = [ tea.event for tea in tool.events ]
-        events = [ ( event.state, time_ago( event.update_time ), event.comment ) for event in events ]
-        return trans.fill_template( '/webapps/community/common/view_tool_history.mako', 
-                                    cntrller=cntrller,
-                                    events=events,
-                                    tool=tool,
-                                    can_approve_or_reject=can_approve_or_reject,
-                                    can_edit=can_edit,
-                                    can_delete=can_delete,
-                                    can_download=can_download,
-                                    can_view=can_view,
-                                    message=message,
-                                    status=status )
-    @web.expose
-    @web.require_login( "rate tools" )
-    def rate_tool( self, trans, cntrller, **kwd ):
-        """ Rate a tool and return updated rating data. """
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message='Select a tool to rate',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        can_rate = trans.app.security_agent.can_rate( trans.user, trans.user_is_admin(), cntrller, tool )
-        if not can_rate:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              cntrller=cntrller,
-                                                              message="You are not allowed to rate this tool",
-                                                              status='error' ) )
-        if params.get( 'rate_button', False ):
-            rating = int( params.get( 'rating', '0' ) )
-            comment = util.restore_text( params.get( 'comment', '' ) )
-            rating = self.rate_item( trans, trans.user, tool, rating, comment )
-        avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool, webapp_model=trans.model )
-        can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_edit = trans.app.security_agent.can_edit( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
-        can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
-        display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
-        tra = self.get_user_item_rating( trans.sa_session, trans.user, tool, webapp_model=trans.model )
-        return trans.fill_template( '/webapps/community/common/rate_tool.mako', 
-                                    cntrller=cntrller,
-                                    tool=tool,
-                                    avg_rating=avg_rating,
-                                    can_approve_or_reject=can_approve_or_reject,
-                                    can_edit=can_edit,
-                                    can_delete=can_delete,
-                                    can_download=can_download,
-                                    can_rate=can_rate,
-                                    display_reviews=display_reviews,
-                                    num_ratings=num_ratings,
-                                    tra=tra,
-                                    message=message,
-                                    status=status )
-
 ## ---- Utility methods -------------------------------------------------------
 
-def get_versions( item ):
-    """Get all versions of item"""
-    versions = [ item ]
-    this_item = item
-    while item.newer_version:
-        versions.insert( 0, item.newer_version )
-        item = item.newer_version
-    item = this_item
-    while item.older_version:
-        versions.append( item.older_version[ 0 ] )
-        item = item.older_version[ 0 ]
-    return versions
 def get_categories( trans ):
     """Get all categories from the database"""
     return trans.sa_session.query( trans.model.Category ) \
@@ -544,36 +83,539 @@ def get_categories( trans ):
 def get_category( trans, id ):
     """Get a category from the database"""
     return trans.sa_session.query( trans.model.Category ).get( trans.security.decode_id( id ) )
-def get_tool( trans, id ):
-    """Get a tool from the database"""
-    return trans.sa_session.query( trans.model.Tool ).get( trans.security.decode_id( id ) )
-def get_latest_versions_of_tools( trans ):
-    """Get only the latest version of each tool from the database"""
-    return trans.sa_session.query( trans.model.Tool ) \
-                           .filter( trans.model.Tool.table.c.newer_version_id == None ) \
-                           .order_by( trans.model.Tool.table.c.name )
-def get_latest_versions_of_tools_by_state( trans, state ):
-    """Get only the latest version of each tool whose state is the received state from the database"""
-    tools = []
-    for tool in trans.sa_session.query( trans.model.Tool ) \
-                                .order_by( trans.model.Tool.table.c.name ):
-        if tool.state == state:
-            tools.append( tool )
-    return tools
-def get_event( trans, id ):
-    """Get an event from the databse"""
-    return trans.sa_session.query( trans.model.Event ).get( trans.security.decode_id( id ) )
-def get_user( trans, id ):
-    """Get a user from the database"""
-    return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
 def get_repository( trans, id ):
     """Get a repository from the database via id"""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
+def get_repository_by_name_and_owner( trans, name, owner ):
+    """Get a repository from the database via name and owner"""
+    user = get_user_by_username( trans, owner )
+    return trans.sa_session.query( trans.model.Repository ) \
+                             .filter( and_( trans.model.Repository.table.c.name == name,
+                                            trans.model.Repository.table.c.user_id == user.id ) ) \
+                             .first()
+def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
+    """Get metadata for a specified repository change set from the database"""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
+                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
+                           .first()
+def get_repository_metadata_by_id( trans, id ):
+    """Get repository metadata from the database"""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
+def get_repository_metadata_by_repository_id( trans, id ):
+    """Get all metadata records for a specified repository."""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                           .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) )
+def get_revision_label( trans, repository, changeset_revision ):
+    """
+    Return a string consisting of the human read-able 
+    changeset rev and the changeset revision string.
+    """
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+    if ctx:
+        return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+    else:
+        return "-1:%s" % changeset_revision
+def get_latest_repository_metadata( trans, id ):
+    """Get last metadata defined for a specified repository from the database"""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                           .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
+                           .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
+                           .first()
+def generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict ):
+    """
+    Update the received metadata_dict with changes that have been applied
+    to the received exported_workflow_dict.  Store everything except the
+    workflow steps in the database.
+    """
+    workflow_dict = { 'a_galaxy_workflow' : exported_workflow_dict[ 'a_galaxy_workflow' ],
+                      'name' :exported_workflow_dict[ 'name' ],
+                      'annotation' : exported_workflow_dict[ 'annotation' ],
+                      'format-version' : exported_workflow_dict[ 'format-version' ] }
+    if 'workflows' in metadata_dict:
+        metadata_dict[ 'workflows' ].append( workflow_dict )
+    else:
+        metadata_dict[ 'workflows' ] = [ workflow_dict ]
+    return metadata_dict
+def new_workflow_metadata_required( trans, id, metadata_dict ):
+    """
+    TODO: Currently everything about an exported workflow except the name is hard-coded, so
+    there's no real way to differentiate versions of exported workflows.  If this changes at
+    some future time, this method should be enhanced accordingly...
+    """
+    if 'workflows' in metadata_dict:
+        repository_metadata = get_latest_repository_metadata( trans, id )
+        if repository_metadata:
+            if repository_metadata.metadata:
+                # The repository has metadata, so update the workflows value - no new record is needed.
+                return False
+        else:
+            # There is no saved repository metadata, so we need to create a new repository_metadata table record.
+            return True
+    # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
+    # record is not needed.
+    return False
+def generate_clone_url( trans, repository_id ):
+    repository = get_repository( trans, repository_id )
+    protocol, base = trans.request.base.split( '://' )
+    if trans.user:
+        username = '%s@' % trans.user.username
+    else:
+        username = ''
+    return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
+def generate_tool_guid( trans, repository, tool ):
+    """
+    Generate a guid for the received tool.  The form of the guid is    
+    <tool shed host>/repos/<tool shed username>/<tool shed repo name>/<tool id>/<tool version>
+    """
+    return '%s/repos/%s/%s/%s/%s' % ( trans.request.host,
+                                      repository.user.username,
+                                      repository.name,
+                                      tool.id,
+                                      tool.version )
+def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
+    """
+    Check all of the tool's input parameters, looking for any that are dynamically generated
+    using external data files to make sure the files exist.
+    """
+    can_set_metadata = True
+    correction_msg = ''
+    for input_param in tool.input_params:
+        if isinstance( input_param, galaxy.tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
+            # If the tool refers to .loc files or requires an entry in the
+            # tool_data_table_conf.xml, make sure all requirements exist.
+            options = input_param.dynamic_options or input_param.options
+            if options:
+                if options.tool_data_table or options.missing_tool_data_table_name:
+                    # Make sure the repository contains a tool_data_table_conf.xml.sample file.
+                    sample_found = False
+                    for sample_file in sample_files:
+                        head, tail = os.path.split( sample_file )
+                        if tail == 'tool_data_table_conf.xml.sample':
+                            sample_found = True
+                            error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
+                            if error:
+                                can_set_metadata = False
+                                invalid_files.append( ( tail, correction_msg ) ) 
+                            else:
+                                options.missing_tool_data_table_name = None
+                            break
+                    if not sample_found:
+                        can_set_metadata = False
+                        correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
+                        correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
+                        correction_msg += "that includes the required entry to resolve this issue.<br/>"
+                        invalid_files.append( ( name, correction_msg ) )
+                if options.index_file or options.missing_index_file:
+                    # Make sure the repository contains the required xxx.loc.sample file.
+                    index_file = options.index_file or options.missing_index_file
+                    index_head, index_tail = os.path.split( index_file )
+                    sample_found = False
+                    for sample_file in sample_files:
+                        sample_head, sample_tail = os.path.split( sample_file )
+                        if sample_tail == '%s.sample' % index_tail:
+                            copy_sample_loc_file( trans, sample_file )
+                            options.index_file = index_tail
+                            options.missing_index_file = None
+                            options.tool_data_table.missing_index_file = None
+                            sample_found = True
+                            break
+                    if not sample_found:
+                        can_set_metadata = False
+                        correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
+                        correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_tail )
+                        invalid_files.append( ( name, correction_msg ) )
+    return can_set_metadata, invalid_files
+def generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict ):
+    """
+    Update the received metadata_dict with changes that have been
+    applied to the received tool.
+    """
+    repository = get_repository( trans, id )
+    # Handle tool.requirements.
+    tool_requirements = []
+    for tr in tool.requirements:
+        name=tr.name
+        type=tr.type
+        if type == 'fabfile':
+            version = None
+            fabfile = tr.fabfile
+            method = tr.method
+        else:
+            version = tr.version
+            fabfile = None
+            method = None
+        requirement_dict = dict( name=name,
+                                 type=type,
+                                 version=version,
+                                 fabfile=fabfile,
+                                 method=method )
+        tool_requirements.append( requirement_dict )
+    # Handle tool.tests.
+    tool_tests = []
+    if tool.tests:
+        for ttb in tool.tests:
+            test_dict = dict( name=ttb.name,
+                              required_files=ttb.required_files,
+                              inputs=ttb.inputs,
+                              outputs=ttb.outputs )
+            tool_tests.append( test_dict )
+    tool_dict = dict( id=tool.id,
+                      guid = generate_tool_guid( trans, repository, tool ),
+                      name=tool.name,
+                      version=tool.version,
+                      description=tool.description,
+                      version_string_cmd = tool.version_string_cmd,
+                      tool_config=tool_config,
+                      requirements=tool_requirements,
+                      tests=tool_tests )
+    if 'tools' in metadata_dict:
+        metadata_dict[ 'tools' ].append( tool_dict )
+    else:
+        metadata_dict[ 'tools' ] = [ tool_dict ]
+    return metadata_dict
+def new_tool_metadata_required( trans, id, metadata_dict ):
+    """
+    Compare the last saved metadata for each tool in the repository with the new metadata
+    in metadata_dict to determine if a new repository_metadata table record is required, or
+    if the last saved metadata record can updated instead.
+    """
+    if 'tools' in metadata_dict:
+        repository_metadata = get_latest_repository_metadata( trans, id )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata and 'tools' in metadata:
+                saved_tool_ids = []
+                # The metadata for one or more tools was successfully generated in the past
+                # for this repository, so we first compare the version string for each tool id
+                # in metadata_dict with what was previously saved to see if we need to create
+                # a new table record or if we can simply update the existing record.
+                for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
+                    for saved_tool_metadata_dict in metadata[ 'tools' ]:
+                        if saved_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
+                            saved_tool_ids.append( saved_tool_metadata_dict[ 'id' ] )
+                        if new_tool_metadata_dict[ 'id' ] == saved_tool_metadata_dict[ 'id' ]:
+                            if new_tool_metadata_dict[ 'version' ] != saved_tool_metadata_dict[ 'version' ]:
+                                return True
+                # So far, a new metadata record is not required, but we still have to check to see if
+                # any new tool ids exist in metadata_dict that are not in the saved metadata.  We do
+                # this because if a new tarball was uploaded to a repository that included tools, it
+                # may have removed existing tool files if they were not included in the uploaded tarball.
+                for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
+                    if new_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
+                        return True
+            else:
+                # We have repository metadata that does not include metadata for any tools in the
+                # repository, so we can update the existing repository metadata.
+                return False
+        else:
+            # There is no saved repository metadata, so we need to create a new repository_metadata
+            # table record.
+            return True
+    # The received metadata_dict includes no metadata for tools, so a new repository_metadata table
+    # record is not needed.
+    return False
+def set_repository_metadata( trans, id, changeset_revision, **kwd ):
+    """Set repository metadata"""
+    message = ''
+    status = 'done'
+    repository = get_repository( trans, id )
+    repo_dir = repository.repo_path
+    repo = hg.repository( get_configured_ui(), repo_dir )
+    invalid_files = []
+    sample_files = []
+    ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+    if ctx is not None:
+        metadata_dict = {}
+        if changeset_revision == repository.tip:
+            for root, dirs, files in os.walk( repo_dir ):
+                if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                    if '.hg' in dirs:
+                        # Don't visit .hg directories - should be impossible since we don't
+                        # allow uploaded archives that contain .hg dirs, but just in case...
+                        dirs.remove( '.hg' )
+                    if 'hgrc' in files:
+                         # Don't include hgrc files in commit.
+                        files.remove( 'hgrc' )
+                    # Find all special .sample files first.
+                    for name in files:
+                        if name.endswith( '.sample' ):
+                            sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
+                    for name in files:
+                        # Find all tool configs.
+                        if name.endswith( '.xml' ):
+                            try:
+                                full_path = os.path.abspath( os.path.join( root, name ) )
+                                tool = load_tool( trans, full_path )
+                                if tool is not None:
+                                    can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
+                                    if can_set_metadata:
+                                        # Update the list of metadata dictionaries for tools in metadata_dict.
+                                        tool_config = os.path.join( root, name )
+                                        metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
+                            except Exception, e:
+                                invalid_files.append( ( name, str( e ) ) )
+                        # Find all exported workflows
+                        elif name.endswith( '.ga' ):
+                            try:
+                                full_path = os.path.abspath( os.path.join( root, name ) )
+                                # Convert workflow data from json
+                                fp = open( full_path, 'rb' )
+                                workflow_text = fp.read()
+                                fp.close()
+                                exported_workflow_dict = from_json_string( workflow_text )
+                                # Update the list of metadata dictionaries for workflows in metadata_dict.
+                                metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
+                            except Exception, e:
+                                invalid_files.append( ( name, str( e ) ) )
+        else:
+            # Find all special .sample files first.
+            for filename in ctx:
+                if filename.endswith( '.sample' ):
+                    sample_files.append( os.path.abspath( os.path.join( root, filename ) ) )
+            # Get all tool config file names from the hgweb url, something like:
+            # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
+            for filename in ctx:
+                # Find all tool configs - should not have to update metadata for workflows for now.
+                if filename.endswith( '.xml' ):
+                    fctx = ctx[ filename ]
+                    # Write the contents of the old tool config to a temporary file.
+                    fh = tempfile.NamedTemporaryFile( 'w' )
+                    tmp_filename = fh.name
+                    fh.close()
+                    fh = open( tmp_filename, 'w' )
+                    fh.write( fctx.data() )
+                    fh.close()
+                    try:
+                        tool = load_tool( trans, tmp_filename )
+                        if tool is not None:
+                            can_set_metadata, invalid_files = check_tool_input_params( trans, filename, tool, sample_files, invalid_files )
+                            if can_set_metadata:
+                                # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
+                                # here is the relative path to the config file within the change set context, something
+                                # like filtering.xml, but when the change set was the repository tip, the value was
+                                # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
+                                # anything, but may result in a bit of confusion when maintaining the code / data over time.
+                                metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
+                    except Exception, e:
+                        invalid_files.append( ( name, str( e ) ) )
+                    try:
+                        os.unlink( tmp_filename )
+                    except:
+                        pass
+        if metadata_dict:
+            if changeset_revision == repository.tip:
+                if new_tool_metadata_required( trans, id, metadata_dict ) or new_workflow_metadata_required( trans, id, metadata_dict ):
+                    # Create a new repository_metadata table row.
+                    repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
+                    trans.sa_session.add( repository_metadata )
+                    trans.sa_session.flush()
+                else:
+                    # Update the last saved repository_metadata table row.
+                    repository_metadata = get_latest_repository_metadata( trans, id )
+                    repository_metadata.changeset_revision = changeset_revision
+                    repository_metadata.metadata = metadata_dict
+                    trans.sa_session.add( repository_metadata )
+                    trans.sa_session.flush()
+            else:
+                # We're re-generating metadata for an old repository revision.
+                repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+                repository_metadata.metadata = metadata_dict
+                trans.sa_session.add( repository_metadata )
+                trans.sa_session.flush()
+        else:
+            message = "Change set revision '%s' includes no tools or exported workflows for which metadata can be set." % str( changeset_revision )
+            status = "error"
+    else:
+        # change_set is None
+        message = "Repository does not include change set revision '%s'." % str( changeset_revision )
+        status = 'error'
+    if invalid_files:
+        if metadata_dict:
+            message = "Metadata was defined for some items in change set revision '%s'.  " % str( changeset_revision )
+            message += "Correct the following problems if necessary and reset metadata.<br/>"
+        else:
+            message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( changeset_revision )
+        for itc_tup in invalid_files:
+            tool_file, exception_msg = itc_tup
+            if exception_msg.find( 'No such file or directory' ) >= 0:
+                exception_items = exception_msg.split()
+                missing_file_items = exception_items[7].split( '/' )
+                missing_file = missing_file_items[-1].rstrip( '\'' )
+                if missing_file.endswith( '.loc' ):
+                    sample_ext = '%s.sample' % missing_file
+                else:
+                    sample_ext = missing_file
+                correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( missing_file )
+                correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % sample_ext
+            else:
+               correction_msg = exception_msg
+            message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )
+        status = 'error'
+    return message, status
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
-    return trans.sa_session.query( app.model.Repository ).filter_by( name=name ).one()
-def get_repository_tip( repository ):
-    # The received repository must be a mercurial repository, not a db record.
-    tip_changeset = repository.changelog.tip()
-    tip_ctx = repository.changectx( tip_changeset )
-    return "%s:%s" % ( str( tip_ctx.rev() ), tip_ctx.parents()[0] )
+    return trans.sa_session.query( trans.model.Repository ).filter_by( name=name ).one()
+def get_changectx_for_changeset( trans, repo, changeset_revision, **kwd ):
+    """Retrieve a specified changectx from a repository"""
+    for changeset in repo.changelog:
+        ctx = repo.changectx( changeset )
+        if str( ctx ) == changeset_revision:
+            return ctx
+    return None
+def change_set_is_malicious( trans, id, changeset_revision, **kwd ):
+    """Check the malicious flag in repository metadata for a specified change set"""
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    if repository_metadata:
+        return repository_metadata.malicious
+    return False
+def get_configured_ui():
+    # Configure any desired ui settings.
+    _ui = ui.ui()
+    # The following will suppress all messages.  This is
+    # the same as adding the following setting to the repo
+    # hgrc file' [ui] section:
+    # quiet = True
+    _ui.setconfig( 'ui', 'quiet', True )
+    return _ui
+def get_user( trans, id ):
+    """Get a user from the database by id"""
+    return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
+def handle_email_alerts( trans, repository ):
+    repo_dir = repository.repo_path
+    repo = hg.repository( get_configured_ui(), repo_dir )
+    smtp_server = trans.app.config.smtp_server
+    if smtp_server and repository.email_alerts:
+        # Send email alert to users that want them.
+        if trans.app.config.email_from is not None:
+            email_from = trans.app.config.email_from
+        elif trans.request.host.split( ':' )[0] == 'localhost':
+            email_from = 'galaxy-no-reply@' + socket.getfqdn()
+        else:
+            email_from = 'galaxy-no-reply@' + trans.request.host.split( ':' )[0]
+        tip_changeset = repo.changelog.tip()
+        ctx = repo.changectx( tip_changeset )
+        t, tz = ctx.date()
+        date = datetime( *time.gmtime( float( t ) - tz )[:6] )
+        display_date = date.strftime( "%Y-%m-%d" )
+        try:
+            username = ctx.user().split()[0]
+        except:
+            username = ctx.user()
+        # Build the email message
+        body = string.Template( email_alert_template ) \
+            .safe_substitute( host=trans.request.host,
+                              repository_name=repository.name,
+                              revision='%s:%s' %( str( ctx.rev() ), ctx ),
+                              display_date=display_date,
+                              description=ctx.description(),
+                              username=username )
+        frm = email_from
+        subject = "Galaxy tool shed repository update alert"
+        email_alerts = from_json_string( repository.email_alerts )
+        for email in email_alerts:
+            to = email.strip()
+            # Send it
+            try:
+                util.send_mail( frm, to, subject, body, trans.app.config )
+            except Exception, e:
+                log.exception( "An error occurred sending a tool shed repository update alert by email." )
+def update_for_browsing( trans, repository, current_working_dir, commit_message='' ):
+    # Make a copy of a repository's files for browsing, remove from disk all files that
+    # are not tracked, and commit all added, modified or removed files that have not yet
+    # been committed.
+    repo_dir = repository.repo_path
+    repo = hg.repository( get_configured_ui(), repo_dir )
+    # The following will delete the disk copy of only the files in the repository.
+    #os.system( 'hg update -r null > /dev/null 2>&1' )
+    repo.ui.pushbuffer()
+    commands.status( repo.ui, repo, all=True )
+    status_and_file_names = repo.ui.popbuffer().strip().split( "\n" )
+    # status_and_file_names looks something like:
+    # ['? README', '? tmap_tool/tmap-0.0.9.tar.gz', '? dna_filtering.py', 'C filtering.py', 'C filtering.xml']
+    # The codes used to show the status of files are:
+    # M = modified
+    # A = added
+    # R = removed
+    # C = clean
+    # ! = deleted, but still tracked
+    # ? = not tracked
+    # I = ignored
+    files_to_remove_from_disk = []
+    files_to_commit = []
+    for status_and_file_name in status_and_file_names:
+        if status_and_file_name.startswith( '?' ) or status_and_file_name.startswith( 'I' ):
+            files_to_remove_from_disk.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
+        elif status_and_file_name.startswith( 'M' ) or status_and_file_name.startswith( 'A' ) or status_and_file_name.startswith( 'R' ):
+            files_to_commit.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
+    for full_path in files_to_remove_from_disk:
+        # We'll remove all files that are not tracked or ignored.
+        if os.path.isdir( full_path ):
+            try:
+                os.rmdir( full_path )
+            except OSError, e:
+                # The directory is not empty
+                pass
+        elif os.path.isfile( full_path ):
+            os.remove( full_path )
+            dir = os.path.split( full_path )[0]
+            try:
+                os.rmdir( dir )
+            except OSError, e:
+                # The directory is not empty
+                pass
+    if files_to_commit:
+        if not commit_message:
+            commit_message = 'Committed changes to: %s' % ', '.join( files_to_commit )
+        repo.dirstate.write()
+        repo.commit( user=trans.user.username, text=commit_message )
+    os.chdir( repo_dir )
+    os.system( 'hg update > /dev/null 2>&1' )
+    os.chdir( current_working_dir )
+def load_tool( trans, config_file ):
+    """
+    Load a single tool from the file named by `config_file` and return 
+    an instance of `Tool`.
+    """
+    # Parse XML configuration file and get the root element
+    tree = util.parse_xml( config_file )
+    root = tree.getroot()
+    if root.tag == 'tool':
+        # Allow specifying a different tool subclass to instantiate
+        if root.find( "type" ) is not None:
+            type_elem = root.find( "type" )
+            module = type_elem.get( 'module', 'galaxy.tools' )
+            cls = type_elem.get( 'class' )
+            mod = __import__( module, globals(), locals(), [cls])
+            ToolClass = getattr( mod, cls )
+        elif root.get( 'tool_type', None ) is not None:
+            ToolClass = tool_types.get( root.get( 'tool_type' ) )
+        else:
+            ToolClass = Tool
+        return ToolClass( config_file, root, trans.app )
+    return None
+def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True ):
+    """
+    Build a SelectField whose options are the changeset_revision
+    strings of all downloadable_revisions of the received repository.
+    """
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    options = []
+    refresh_on_change_values = []
+    for repository_metadata in repository.downloadable_revisions:
+        changeset_revision = repository_metadata.changeset_revision
+        revision_label = get_revision_label( trans, repository, changeset_revision )
+        options.append( ( revision_label, changeset_revision ) )
+        refresh_on_change_values.append( changeset_revision )
+    if add_id_to_name:
+        name = 'changeset_revision_%d' % repository.id
+    else:
+        name = 'changeset_revision'
+    select_field = SelectField( name=name,
+                                refresh_on_change=True,
+                                refresh_on_change_values=refresh_on_change_values )
+    for option_tup in options:
+        selected = selected_value and option_tup[1] == selected_value
+        select_field.add_option( option_tup[0], option_tup[1], selected=selected )
+    return select_field

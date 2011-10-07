@@ -1,6 +1,7 @@
-<tool id="gatk_count_covariates" name="Count Covariates" version="0.0.1">
+<tool id="gatk_count_covariates" name="Count Covariates" version="0.0.2">
   <description>on BAM files</description>
   <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
    --stdout "${output_log}"
    -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
    -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
@@ -23,10 +24,6 @@
    '
     
     #set $snp_dataset_provided = False
-    #if str( $input_dbsnp_rod ) != "None":
-        -d "-D" "${input_dbsnp_rod}" "${input_dbsnp_rod.ext}" "dbsnp_rod"
-        #set $snp_dataset_provided = True
-    #end if
     #set $rod_binding_names = dict()
     #for $rod_binding in $rod_bind:
         #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
@@ -34,7 +31,7 @@
         #else
             #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
         #end if
-        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'snps':
+        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'dbsnp':
             #set $snp_dataset_provided = True
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
@@ -149,28 +146,38 @@
       <option value="QualityScoreCovariate" />
       <option value="CycleCovariate" />
       <option value="DinucCovariate" />
-      <!-- covariates below were pull from source code, since the list option doesn't seem to work (when tried) -->
+      <!-- covariates below were pulled from list option -->
       <option value="HomopolymerCovariate" />
+      <option value="GCContentCovariate" />
       <option value="MappingQualityCovariate" />
       <option value="MinimumNQSCovariate" />
       <option value="PositionCovariate" />
       <option value="PrimerRoundCovariate" />
       <option value="TileCovariate" />
     </param>
-    <param name="input_dbsnp_rod" type="data" format="gatk_dbsnp" optional="True" label="dbSNP reference ordered data (ROD)" />
+    
     <repeat name="rod_bind" title="Binding for reference-ordered data">
         <conditional name="rod_bind_type">
 	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
-	        <option value="snps" selected="True">SNPs</option>
+	        <option value="dbsnp" selected="True">dbSNP</option>
+	        <option value="snps">SNPs</option>
 	        <option value="indels">INDELs</option>
 	        <option value="mask">Mask</option>
 	        <option value="custom">Custom</option>
 	      </param>
+          <when value="dbsnp">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="indels">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="mask">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
@@ -357,8 +364,7 @@
           <param name="reference_source_selector" value="history" />
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_bam" value="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam" />
-          <param name="input_dbsnp_rod"  />
-          <param name="rod_bind_type_selector" value="snps" />
+          <param name="rod_bind_type_selector" value="dbsnp" />
           <param name="rodToIntervalTrackName" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
           <param name="standard_covs" value="True" />
@@ -377,55 +383,55 @@ However, if you do not provide this file, the '--run_without_dbsnp_potentially_r
   
 **What it does**
 
-     This walker is designed to work as the first pass in a two-pass processing step. It does a by-locus traversal 
-     operating only at sites that are not in dbSNP. We assume that all reference mismatches we see are therefore errors 
-     and indicative of poor base quality. This walker generates tables based on various user-specified covariates (such 
-     as read group, reported quality score, cycle, and dinucleotide) Since there is a large amount of data one can then 
-     calculate an empirical probability of error given the particular covariates seen at this site, where p(error) = num 
-     mismatches / num observations The output file is a CSV list of (the several covariate values, num observations, num 
-     mismatches, empirical quality score) The first non-comment line of the output file gives the name of the covariates 
-     that were used for this calculation.  Note: ReadGroupCovariate and QualityScoreCovariate are required covariates 
-     and will be added for the user regardless of whether or not they were specified Note: This walker is designed to be 
-     used in conjunction with TableRecalibrationWalker.
+This walker is designed to work as the first pass in a two-pass processing step. It does a by-locus traversal operating only at sites that are not in dbSNP. We assume that all reference mismatches we see are therefore errors and indicative of poor base quality. This walker generates tables based on various user-specified covariates (such as read group, reported quality score, cycle, and dinucleotide) Since there is a large amount of data one can then calculate an empirical probability of error given the particular covariates seen at this site, where p(error) = num mismatches / num observations The output file is a CSV list of (the several covariate values, num observations, num mismatches, empirical quality score) The first non-comment line of the output file gives the name of the covariates that were used for this calculation.  Note: ReadGroupCovariate and QualityScoreCovariate are required covariates and will be added for the user regardless of whether or not they were specified Note: This walker is designed to be used in conjunction with TableRecalibrationWalker.
 
+For more information on base quality score recalibration using the GATK, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Base_quality_score_recalibration&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
 
 ------
 
-Please cite the website "http://addlink.here" as well as:
-
-Add citation here 2011.
-
-------
-
-**Input formats**
+**Inputs**
 
 GenomeAnalysisTK: CountCovariates accepts an aligned BAM input file.
 
-------
 
 **Outputs**
 
-The output is in CSV format, see http://addlink.here for more details.
+The output is in CSV format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
 
 -------
 
 **Settings**::
 
 
- default_read_group                           If a read has no read group then default to the provided String.
- default_platform                                If a read has no platform then default to the provided String. Valid options are illumina, 454, and solid.
- force_read_group                               If provided, the read group ID of EVERY read will be forced to be the provided String. This is useful to collapse all data into a single read group.
- force_platform                                    If provided, the platform of EVERY read will be forced to be the provided String. Valid options are illumina, 454, and solid.
- window_size_nqs                                 The window size used by MinimumNQSCovariate for its calculation
- homopolymer_nback                           The number of previous bases to look at in HomopolymerCovariate
- exception_if_no_tile                               If provided, TileCovariate will throw an exception when no tile can be found. The default behavior is to use tile = -1
- solid_recal_mode                             How should we recalibrate solid bases in whichthe reference was inserted? Options = DO_NOTHING, SET_Q_ZERO, SET_Q_ZERO_BASE_N, or REMOVE_REF_BIAS (DO_NOTHING|SET_Q_ZERO|SET_Q_ZERO_BASE_N|REMOVE_REF_BIAS)
- solid_nocall_strategy   Defines the behavior of the recalibrator when it encounters no calls in the color space. Options = THROW_EXCEPTION, LEAVE_READ_UNRECALIBRATED, or PURGE_READ (THROW_EXCEPTION|LEAVE_READ_UNRECALIBRATED|PURGE_READ)
- recal_file                                     Filename for the input covariates table recalibration .csv file
- out                                                           The output CSV file
- recal_file                                                     Filename for the outputted covariates table recalibration file
- standard_covs                                                                Use the standard set of covariates in addition to the ones listed using the -cov argument
- run_without_dbsnp_potentially_ruining_quality   If specified, allows the recalibrator to be used without a dbsnp rod. Very unsafe and for expert users only.
+ default_read_group                               If a read has no read group then default to the provided String.
+ default_platform                                 If a read has no platform then default to the provided String. Valid options are illumina, 454, and solid.
+ force_read_group                                 If provided, the read group ID of EVERY read will be forced to be the provided String. This is useful to collapse all data into a single read group.
+ force_platform                                   If provided, the platform of EVERY read will be forced to be the provided String. Valid options are illumina, 454, and solid.
+ window_size_nqs                                  The window size used by MinimumNQSCovariate for its calculation
+ homopolymer_nback                                The number of previous bases to look at in HomopolymerCovariate
+ exception_if_no_tile                             If provided, TileCovariate will throw an exception when no tile can be found. The default behavior is to use tile = -1
+ solid_recal_mode                                 How should we recalibrate solid bases in whichthe reference was inserted? Options = DO_NOTHING, SET_Q_ZERO, SET_Q_ZERO_BASE_N, or REMOVE_REF_BIAS (DO_NOTHING|SET_Q_ZERO|SET_Q_ZERO_BASE_N|REMOVE_REF_BIAS)
+ solid_nocall_strategy                            Defines the behavior of the recalibrator when it encounters no calls in the color space. Options = THROW_EXCEPTION, LEAVE_READ_UNRECALIBRATED, or PURGE_READ (THROW_EXCEPTION|LEAVE_READ_UNRECALIBRATED|PURGE_READ)
+ recal_file                                       Filename for the input covariates table recalibration .csv file
+ out                                              The output CSV file
+ recal_file                                       Filename for the outputted covariates table recalibration file
+ standard_covs                                    Use the standard set of covariates in addition to the ones listed using the -cov argument
+ run_without_dbsnp_potentially_ruining_quality    If specified, allows the recalibrator to be used without a dbsnp rod. Very unsafe and for expert users only.
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 
   </help>
 </tool>

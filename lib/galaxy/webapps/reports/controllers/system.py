@@ -6,7 +6,7 @@ from galaxy.model.orm import *
 import logging
 log = logging.getLogger( __name__ )
 
-class System( BaseController ):
+class System( BaseUIController ):
     @web.expose
     def index( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -112,7 +112,7 @@ class System( BaseController ):
                 except:
                     pass
             message = str( dataset_count ) + " datasets were deleted more than " + str( deleted_datasets_days ) + \
-            " days ago, but have not yet been purged, disk space: " + str( disk_space ) + "."
+            " days ago, but have not yet been purged, disk space: " + nice_size( disk_space ) + "."
         else:
             message = "Enter the number of days."
         return str( deleted_datasets_days ), message

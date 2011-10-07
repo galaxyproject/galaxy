@@ -116,8 +116,8 @@
             async_ops['${operation.label.lower()}'] = "True";
         %endfor
         
-        // Initialize grid controls
-        function init_grid_controls() {
+        // Init operation buttons.
+        function init_operation_buttons() {
             // Initialize operation buttons.
             $('input[name=operation]:submit').each(function() {
                 $(this).click( function() {
@@ -132,6 +132,11 @@
                    do_operation(webapp, operation_name, item_ids); 
                 });
             });
+        };
+        
+        // Initialize grid controls
+        function init_grid_controls() {
+            init_operation_buttons();    
             
             // Initialize submit image elements.
             $('.submit-image').each( function() {
@@ -569,6 +574,7 @@
                     
                     // Init grid.
                     init_grid_elements();
+                    init_operation_buttons();
                     make_popup_menus();
                     
                     // Hide loading overlay.
@@ -577,7 +583,7 @@
                     // Show message if there is one.
                     var message = $.trim( parsed_response_text[2] );
                     if (message != "") {
-                        $('#grid-message').html( message );
+                        $('#grid-message').html( message ).show();
                         setTimeout( function() { $('#grid-message').hide(); }, 5000);
                     }
                 }
@@ -689,7 +695,7 @@
             width : 100%;
             height : 100%;
             z-index : 14000;
-            position : absolute;
+            position : fixed;
             display: none;
         }
         ## If page is displayed in panels, pad from edges for readability.
@@ -708,6 +714,7 @@
 <%namespace file="./grid_common.mako" import="*" />
 
 <%def name="make_grid( grid )">
+    <div class="loading-elt-overlay"></div>
     <table>
         <tr>
             <td width="75%">${self.render_grid_header( grid )}</td>
@@ -769,9 +776,7 @@
         if show_item_checkboxes or multiple_item_ops_exist:
             show_item_checkboxes = True
     %>
-
     <form action="${url()}" method="post" onsubmit="return false;">
-        <div class="loading-elt-overlay"></div>
         <table id="grid-table" class="grid">
             <thead id="grid-table-header">
                 <tr>
@@ -1013,6 +1018,21 @@
                 %endfor
             </td>
         </tr>
+    %endif
+    %if len([o for o in grid.operations if o.global_operation]) > 0:
+    <tr>
+        <td colspan="100">
+            %for operation in grid.operations:
+            %if operation.global_operation:
+                <%
+                    link = operation.global_operation()
+                    href = url( **link )
+                %>
+                <a class="action-button" href="${href}">${operation.label}</a>
+            %endif
+            %endfor
+        </td>
+    </tr>
     %endif
 </%def>
 

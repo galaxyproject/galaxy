@@ -46,44 +46,30 @@
             <div class="toolSectionList">
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                    %if trans.app.config.enable_next_gen_tool_shed:
-                        Repositories
-                    %else:
-                        Tools
-                    %endif
+                    Repositories
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        %if trans.app.config.enable_next_gen_tool_shed:
-                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories', webapp='community' )}">Browse by category</a></div>
-                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', webapp='community' )}">Browse all repositories</a></div>
-                            %if trans.user:
-                                <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_repositories', webapp='community' )}">Browse your repositories</a></div>
-                            %endif
-                        %else:
-                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_categories', webapp='community' )}">Browse by category</a></div>
-                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools', operation='approved_tools', webapp='community' )}">Browse all tools</a></div>
-                            %if trans.user:
-                                <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools', operation='my_tools', webapp='community' )}">Browse your tools</a></div>
-                            %endif
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories', webapp='community' )}">Browse by category</a>
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', webapp='community' )}">Browse all repositories</a>
+                        </div>
+                        %if trans.user:
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_repositories', webapp='community' )}">Browse my repositories</a>
+                            </div>
                         %endif
                     </div>
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle">
-                            %if trans.app.config.enable_next_gen_tool_shed:
-                                %if trans.user:
-                                    <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository', webapp='community' )}">Create new repository</a>
-                                %else:
-                                    <a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login to create a repository</a>
-                                %endif
+                            %if trans.user:
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository', webapp='community' )}">Create new repository</a>
                             %else:
-                                %if trans.user:
-                                    <a target="galaxy_main" href="${h.url_for( controller='tool_upload', action='upload', type='tool', webapp='community' )}">Upload a tool</a>
-                                %else:
-                                    <a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login to upload</a>
-                                %endif
+                                <a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login to create a repository</a>
                             %endif
                         </div>
                     </div>
@@ -97,10 +83,8 @@
     <%
         if trans.app.config.require_login and not trans.user:
             center_url = h.url_for( controller='user', action='login', message=message, status=status, webapp='community' )
-        elif trans.app.config.enable_next_gen_tool_shed:
-            center_url = h.url_for( controller='repository', action='browse_categories', message=message, status=status, webapp='community' )
         else:
-            center_url = h.url_for( controller='tool', action='browse_categories', message=message, status=status, webapp='community' )
+            center_url = h.url_for( controller='repository', action='browse_categories', message=message, status=status, webapp='community' )
     %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

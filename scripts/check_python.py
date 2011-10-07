@@ -8,7 +8,7 @@ contains instructions on how to force Galaxy to use a different version.""" % sy
 
 def check_python():
     try:
-        assert sys.version_info[:2] >= ( 2, 4 ) and sys.version_info[:2] <= ( 2, 6 )
+        assert sys.version_info[:2] >= ( 2, 4 ) and sys.version_info[:2] <= ( 2, 7 )
     except AssertionError:
         print >>sys.stderr, msg
         raise

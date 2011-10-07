@@ -7,13 +7,13 @@ from sqlalchemy import desc
 from galaxy import util
 from galaxy import web
 from galaxy.tools.parameters import visit_input_values, DataToolParameter
-from galaxy.web.base.controller import BaseController, url_for
+from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.workflow.modules import module_factory
 from galaxy.jobs.actions.post import ActionBox
 
 log = logging.getLogger(__name__)
 
-class WorkflowsAPIController(BaseController):
+class WorkflowsAPIController(BaseAPIController):
     @web.expose_api
     def index(self, trans, **kwd):
         """
@@ -27,6 +27,14 @@ class WorkflowsAPIController(BaseController):
                 desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
             item = wf.get_api_value(value_mapper={'id':trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
+            item['url'] = url_for('workflow', id=encoded_id)
+            rval.append(item)
+        for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
+                user=trans.user ).join( 'stored_workflow' ).filter(
+                trans.app.model.StoredWorkflow.deleted == False ).order_by(
+                desc( trans.app.model.StoredWorkflow.update_time ) ).all():
+            item = wf_sa.stored_workflow.get_api_value(value_mapper={'id':trans.security.encode_id})
+            encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
             item['url'] = url_for('workflow', id=encoded_id)
             rval.append(item)
         return rval
@@ -98,9 +106,8 @@ class WorkflowsAPIController(BaseController):
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
                     hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif ds_map[k]['src'] == 'ld':
-                    ld_t, ld_id = trans.security.decode_string_id(ds_map[k]['id']).split('.')
                     ldda = trans.sa_session.query(self.app.model.LibraryDataset).get(
-                            ld_id).library_dataset_dataset_association
+                            trans.security.decode_id(ds_map[k]['id'])).library_dataset_dataset_association
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
                     hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif ds_map[k]['src'] == 'hda':

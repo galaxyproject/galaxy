@@ -1,0 +1,178 @@
+<tool id="peakcalling_sicer" name="SICER" version="0.0.1">
+  <description>Statistical approach for the Identification of ChIP-Enriched Regions</description>
+  <command interpreter="python">sicer_wrapper.py 
+  --bed_file '${input_bed_file}' 
+  #if str( $input_control_file ) != 'None':
+      --control_file '${input_control_file}'
+      --significant_islands_output_file "${significant_islands_output_file}"
+      --islands_summary_output_file "${islands_summary_output_file}"
+      --significant_islands_summary_output_file "${significant_islands_summary_output_file}"
+  #end if
+  ${fix_off_by_one_errors}
+  --dbkey '${input_bed_file.dbkey}'
+  --redundancy_threshold '${redundancy_threshold}'
+  --window_size '${window_size}'
+  --fragment_size '${fragment_size}'
+  --effective_genome_fraction '${effective_genome_fraction}'
+  --gap_size '${gap_size}'
+  --error_cut_off '${error_cut_off}'
+  ##output files
+  --stdout "${output_log_file}"
+  --redundancy_removed_test_bed_output_file "${redundancy_removed_test_bed_output_file}"
+  --redundancy_removed_control_bed_output_file "${redundancy_removed_control_bed_output_file}"
+  --score_island_output_file "${score_island_output_file}"
+  --summary_graph_output_file "${summary_graph_output_file}"
+  --test_normalized_wig_output_file "${test_normalized_wig_output_file}"
+  --island_filtered_output_file "${island_filtered_output_file}"
+  --island_filtered_normalized_wig_output_file "${island_filtered_normalized_wig_output_file}"
+  </command>
+  <requirements>
+    <requirement type="package" version="1.1">SICER</requirement>
+  </requirements>
+  <inputs>
+    <param name="input_bed_file" type="data" format="bed" label="ChIP-Seq Tag File" >
+      <validator type="expression" message="SICER is not available for the genome.">value is not None and value.dbkey in [ 'mm8', 'mm9', 'hg18', 'hg19', 'dm2', 'dm3', 'sacCer1', 'pombe', 'rn4', 'tair8' ]</validator>
+    </param>
+    <param name="input_control_file" type="data" format="bed" label="ChIP-Seq Control File" optional="True"> <!-- fix me, add filter to match dbkeys -->
+      <options>
+        <filter type="data_meta" ref="input_bed_file" key="dbkey" />
+      </options>
+    </param>
+    <param name="fix_off_by_one_errors" type="boolean" truevalue="--fix_off_by_one_errors" falsevalue="" checked="True" label="Fix off-by-one errors in output files" help="SICER creates non-standard output files, this option will fix these coordinates"/> 
+    <param name="redundancy_threshold" type="integer" label="Redundancy Threshold" value="1" help="The number of copies of identical reads allowed in a library" />
+    <param name="window_size" type="integer" label="Window size" value="200" help="Resolution of SICER algorithm. For histone modifications, one can use 200 bp" />
+    <param name="fragment_size" type="integer" label="Fragment size" value="150" help="for determination of the amount of shift from the beginning of a read to the center of the DNA fragment represented by the read. FRAGMENT_SIZE=150 means the shift is 75." />
+    <param name="effective_genome_fraction" type="float" label="Effective genome fraction" value="0.74" help="Effective Genome as fraction of the genome size. It depends on read length." />
+    <param name="gap_size" type="integer" label="Gap size" value="600" help="Needs to be multiples of window size. Namely if the window size is 200, the gap size should be 0, 200, 400, 600, ..." />
+    <param name="error_cut_off" type="float" label="Statistic threshold value" value="0.01" help="FDR (with control) or E-value (without control)" />
+  </inputs>
+  <outputs>
+    <data name="redundancy_removed_test_bed_output_file" format="bed" label="${tool.name} on ${on_string} (test-${redundancy_threshold}-removed.bed)"/>
+    <data name="redundancy_removed_control_bed_output_file" format="bed" label="${tool.name} on ${on_string} (control-${redundancy_threshold}-removed.bed)">
+      <filter>input_control_file is not None</filter>
+    </data>
+    <data name="summary_graph_output_file" format="bedgraph" label="${tool.name} on ${on_string} (test-W${window_size}.graph)"/>
+    <data name="test_normalized_wig_output_file" format="wig" label="${tool.name} on ${on_string} (test-W${window_size}-normalized.wig)"/>
+    <data name="significant_islands_output_file" format="interval" label="${tool.name} on ${on_string} (test-W${window_size}-G${gap_size}-FDR${error_cut_off}-island.bed)">
+      <filter>input_control_file is not None</filter>
+    </data>
+    <data name="island_filtered_output_file" format="bed" label="${tool.name} on ${on_string} (#if str( $input_control_file ) != 'None' then ''.join( map( str, [ 'test-W', $window_size, '-G',$gap_size, '-FDR', $error_cut_off, '-islandfiltered.bed' ] ) ) else ''.join( map( str, [ 'test-W', $window_size, '-G', $gap_size, '-E', $error_cut_off, '-islandfiltered.bed' ] ) ) #)"/>
+    <data name="island_filtered_normalized_wig_output_file" format="wig" label="${tool.name} on ${on_string} (#if str( $input_control_file ) != 'None' then ''.join( map( str, [ 'test-W', $window_size, '-G',$gap_size, '-FDR', $error_cut_off, '-islandfiltered-normalized.wig' ] ) ) else ''.join( map( str, [ 'test-W', $window_size, '-G', $gap_size, '-E', $error_cut_off, '-islandfiltered-normalized.wig' ] ) ) #)"/>
+    <data name="score_island_output_file" format="interval" label="${tool.name} on ${on_string} (#if str( $input_control_file ) != 'None' then ''.join( map( str, [ 'test-W', $window_size, '-G',$gap_size, '.scoreisland' ] ) ) else ''.join( map( str, [ 'test-W', $window_size, '-G', $gap_size, '-E', $error_cut_off, '.scoreisland' ] ) ) #)"/>
+    <data name="islands_summary_output_file" format="interval" label="${tool.name} on ${on_string} (test-W${window_size}-G${gap_size}-islands-summary)">
+      <filter>input_control_file is not None</filter>
+    </data>
+    <data name="significant_islands_summary_output_file" format="interval" label="${tool.name} on ${on_string} (test-W${window_size}-G${gap_size}-islands-summary-FDR${error_cut_off})">
+      <filter>input_control_file is not None</filter>
+    </data>
+    <data name="output_log_file" format="txt" label="${tool.name} on ${on_string} (log)"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_bed_file" value="chipseq_enriched.bed.gz" ftype="bed" dbkey="mm8" />
+      <param name="input_control_file" />
+      <param name="fix_off_by_one_errors" />
+      <param name="redundancy_threshold" value="1" />
+      <param name="window_size" value="200" />
+      <param name="fragment_size" value="150" />
+      <param name="effective_genome_fraction" value="0.74" />
+      <param name="gap_size" value="600" />
+      <param name="error_cut_off" value="0.01" />
+      <output name="redundancy_removed_test_bed_output_file" file="peakcalling_sicer/test_1/test-1-removed.bed" />
+      <output name="summary_graph_output_file" file="peakcalling_sicer/test_1/test-W200.graph" />
+      <output name="test_normalized_wig_output_file" file="peakcalling_sicer/test_1/test-W200-normalized.wig" />
+      <output name="island_filtered_output_file" file="peakcalling_sicer/test_1/test-W200-G600-E0.01-islandfiltered.bed" />
+      <output name="island_filtered_normalized_wig_output_file" file="peakcalling_sicer/test_1/test-W200-G600-E0.01-islandfiltered-normalized.wig" />
+      <output name="score_island_output_file" file="peakcalling_sicer/test_1/test-W200-G600-E0.01.scoreisland" />
+      <output name="output_log_file" file="peakcalling_sicer/test_1/output_log_file.contains" compare="contains"/>
+    </test>
+    <test>
+      <param name="input_bed_file" value="chipseq_enriched.bed.gz" ftype="bed" dbkey="mm8" />
+      <param name="input_control_file" value="chipseq_input.bed.gz" ftype="bed" dbkey="mm8" />
+      <param name="fix_off_by_one_errors" />
+      <param name="redundancy_threshold" value="1" />
+      <param name="window_size" value="200" />
+      <param name="fragment_size" value="150" />
+      <param name="effective_genome_fraction" value="0.74" />
+      <param name="gap_size" value="600" />
+      <param name="error_cut_off" value="0.01" />
+      <output name="redundancy_removed_test_bed_output_file" file="peakcalling_sicer/test_2/test-1-removed.bed" />
+      <output name="redundancy_removed_control_bed_output_file" file="peakcalling_sicer/test_2/control-1-removed.bed" />
+      <output name="summary_graph_output_file" file="peakcalling_sicer/test_2/test-W200.graph" />
+      <output name="test_normalized_wig_output_file" file="peakcalling_sicer/test_2/test-W200-normalized.wig" />
+      <output name="significant_islands_output_file" file="peakcalling_sicer/test_2/test-W200-G600-FDR0.01-island.bed" />
+      <output name="island_filtered_output_file" file="peakcalling_sicer/test_2/test-W200-G600-FDR0.01-islandfiltered.bed" />
+      <output name="island_filtered_normalized_wig_output_file" file="peakcalling_sicer/test_2/test-W200-G600-FDR0.01-islandfiltered-normalized.wig" />
+      <output name="score_island_output_file" file="peakcalling_sicer/test_2/test-W200-G600.scoreisland" />
+      <output name="islands_summary_output_file" file="peakcalling_sicer/test_2/test-W200-G600-islands-summary" />
+      <output name="significant_islands_summary_output_file" file="peakcalling_sicer/test_2/test-W200-G600-islands-summary-FDR0.01" />
+      <output name="output_log_file" file="peakcalling_sicer/test_2/output_log_file.contains" compare="contains"/>
+    </test>
+    <test>
+      <param name="input_bed_file" value="chipseq_enriched.bed.gz" ftype="bed" dbkey="mm8" />
+      <param name="input_control_file" value="chipseq_input.bed.gz" ftype="bed" dbkey="mm8" />
+      <param name="fix_off_by_one_errors" value="True" />
+      <param name="redundancy_threshold" value="1" />
+      <param name="window_size" value="200" />
+      <param name="fragment_size" value="150" />
+      <param name="effective_genome_fraction" value="0.74" />
+      <param name="gap_size" value="600" />
+      <param name="error_cut_off" value="0.01" />
+      <output name="redundancy_removed_test_bed_output_file" file="peakcalling_sicer/test_2/test-1-removed.bed" />
+      <output name="redundancy_removed_control_bed_output_file" file="peakcalling_sicer/test_2/control-1-removed.bed" />
+      <output name="summary_graph_output_file" file="peakcalling_sicer/test_3/test-W200.graph" />
+      <output name="test_normalized_wig_output_file" file="peakcalling_sicer/test_2/test-W200-normalized.wig" />
+      <output name="significant_islands_output_file" file="peakcalling_sicer/test_3/test-W200-G600-FDR0.01-island.bed" />
+      <output name="island_filtered_output_file" file="peakcalling_sicer/test_2/test-W200-G600-FDR0.01-islandfiltered.bed" />
+      <output name="island_filtered_normalized_wig_output_file" file="peakcalling_sicer/test_2/test-W200-G600-FDR0.01-islandfiltered-normalized.wig" />
+      <output name="score_island_output_file" file="peakcalling_sicer/test_3/test-W200-G600.scoreisland" />
+      <output name="islands_summary_output_file" file="peakcalling_sicer/test_3/test-W200-G600-islands-summary" />
+      <output name="significant_islands_summary_output_file" file="peakcalling_sicer/test_3/test-W200-G600-islands-summary-FDR0.01" />
+      <output name="output_log_file" file="peakcalling_sicer/test_2/output_log_file.contains" compare="contains"/>
+    </test>
+    <test>
+      <param name="input_bed_file" value="chipseq_enriched.bed.gz" ftype="bed" dbkey="mm8" />
+      <param name="input_control_file" />
+      <param name="fix_off_by_one_errors" value="True" />
+      <param name="redundancy_threshold" value="1" />
+      <param name="window_size" value="200" />
+      <param name="fragment_size" value="150" />
+      <param name="effective_genome_fraction" value="0.74" />
+      <param name="gap_size" value="600" />
+      <param name="error_cut_off" value="0.01" />
+      <output name="redundancy_removed_test_bed_output_file" file="peakcalling_sicer/test_1/test-1-removed.bed" />
+      <output name="summary_graph_output_file" file="peakcalling_sicer/test_4/test-W200.graph" />
+      <output name="test_normalized_wig_output_file" file="peakcalling_sicer/test_1/test-W200-normalized.wig" />
+      <output name="island_filtered_output_file" file="peakcalling_sicer/test_1/test-W200-G600-E0.01-islandfiltered.bed" />
+      <output name="island_filtered_normalized_wig_output_file" file="peakcalling_sicer/test_1/test-W200-G600-E0.01-islandfiltered-normalized.wig" />
+      <output name="score_island_output_file" file="peakcalling_sicer/test_4/test-W200-G600-E0.01.scoreisland" />
+      <output name="output_log_file" file="peakcalling_sicer/test_1/output_log_file.contains" compare="contains"/>
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+SICER first and foremost is a filtering tool. Its main functions are::
+  
+  1. Delineation of the significantly ChIP-enriched regions, which can be used to associate with other genomic landmarks. 
+  2. Identification of reads on the ChIP-enriched regions, which can be used for profiling and other quantitative analysis.
+
+View the original SICER documentation: http://home.gwu.edu/~wpeng/Software.htm.
+
+------
+
+.. class:: warningmark
+
+  By default, SICER creates files that do not conform to standards (e.g. BED files are closed, not half-open). This could have implications for downstream analysis.
+  To force the output of SICER to be formatted properly to standard file formats, check the **"Fix off-by-one errors in output files"** option.
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `Zang C, Schones DE, Zeng C, Cui K, Zhao K, Peng W. A clustering approach for identification of enriched domains from histone modification ChIP-Seq data. Bioinformatics. 2009 Aug 1;25(15):1952-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/19505939&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>

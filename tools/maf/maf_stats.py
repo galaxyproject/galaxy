@@ -55,12 +55,16 @@ def __main__():
     out = open(output_filename, 'w')
     
     num_region = None
+    num_bad_region = 0
     species_summary = {}
     total_length = 0
     #loop through interval file
     for num_region, region in enumerate( bx.intervals.io.NiceReaderWrapper( open( input_interval_filename, 'r' ), chrom_col = chr_col, start_col = start_col, end_col = end_col, fix_strand = True, return_header = False, return_comments = False ) ):
         src = "%s.%s" % ( dbkey, region.chrom )
         region_length = region.end - region.start
+        if region_length < 1:
+            num_bad_region += 1
+            continue
         total_length += region_length
         coverage = { dbkey: BitSet( region_length ) }
         
@@ -99,6 +103,8 @@ def __main__():
     out.close()
     if num_region is not None:
         print "%i regions were processed with a total length of %i." % ( num_region + 1, total_length )
+    if num_bad_region:
+        print "%i regions were invalid." % ( num_bad_region )
     maf_utilities.remove_temp_index_file( index_filename )
 
 if __name__ == "__main__": __main__()

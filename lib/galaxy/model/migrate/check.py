@@ -20,7 +20,7 @@ dialect_to_egg = {
     "mysql" : "MySQL_python"
 }
 
-def create_or_verify_database( url, engine_options={} ):
+def create_or_verify_database( url, galaxy_config_file, engine_options={} ):
     """
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
@@ -98,8 +98,11 @@ def create_or_verify_database( url, engine_options={} ):
     # Verify that the code and the DB are in sync
     db_schema = schema.ControlledSchema( engine, migrate_repository )
     if migrate_repository.versions.latest != db_schema.version:
-        raise Exception( "Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh upgrade'."
-                            % ( db_schema.version, migrate_repository.versions.latest ) )
+        config_arg = ''
+        if os.path.abspath( os.path.join( os.getcwd(), 'universe_wsgi.ini' ) ) != galaxy_config_file:
+            config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
+        raise Exception( "Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh%s upgrade'."
+                            % ( db_schema.version, migrate_repository.versions.latest, config_arg ) )
     else:
         log.info( "At database version %d" % db_schema.version )
         

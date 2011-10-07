@@ -1,16 +1,24 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/community/common/common.mako" import="*" />
+<%namespace file="/webapps/community/repository/common.mako" import="*" />
 
 <%
     from galaxy.web.framework.helpers import time_ago
     from urllib import quote_plus
+    is_admin = trans.user_is_admin()
     is_new = repository.is_new
+    can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
     can_rate = repository.user != trans.user
-    can_manage = repository.user == trans.user
+    can_manage = is_admin or repository.user == trans.user
     can_view_change_log = not is_new
+    if can_push:
+        browse_label = 'Browse or delete repository files'
+    else:
+        browse_label = 'Browse repository files'
 %>
 
 <%!
@@ -68,9 +76,9 @@
         <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
         <div popupmenu="repository-${repository.id}-popup">
             %if can_manage:
-                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ) )}">Manage repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">Manage repository</a>
             %else:
-                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ) )}">View repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">View repository</a>
             %endif
             %if can_upload:
                 <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
@@ -79,7 +87,15 @@
                 <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
             %endif
             %if can_browse_contents:
-                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">Browse repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+            %endif
+            %if can_contact_owner:
+                <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
+            %endif
+            %if can_download:
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, file_type='gz' )}">Download as a .tar.gz file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, file_type='zip' )}">Download as a zip file</a>
             %endif
         </div>
     %endif
@@ -88,6 +104,12 @@
 %if repository.user != trans.user:
     <div class="toolForm">
         <div class="toolFormTitle">${repository.name}</div>
+        %if can_download:
+            <div class="form-row">
+                <label>Clone this repository:</label>
+                ${render_clone_str( repository )}
+            </div>
+        %endif
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Description:</label>
@@ -96,7 +118,7 @@
             </div>
             <div class="form-row">
                 <label>Version:</label>
-                ${repository.version}
+                ${repository.revision}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
@@ -135,9 +157,13 @@
                 <div class="form-row">
                     <label>Review:</label>
                     %if rra and rra.comment:
-                        <div class="form-row-input"><textarea name="comment" rows="5" cols="35">${rra.comment}</textarea></div>
+                        <div class="form-row-input">
+                            <pre><textarea name="comment" rows="5" cols="80">${rra.comment}</textarea></pre>
+                        </div>
                     %else:
-                        <div class="form-row-input"><textarea name="comment" rows="5" cols="35"></textarea></div>
+                        <div class="form-row-input">
+                            <textarea name="comment" rows="5" cols="80"></textarea>
+                        </div>
                     %endif
                     <div style="clear: both"></div>
                 </div>
@@ -172,7 +198,7 @@
                             %>
                             <tr>
                                 <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${review.comment}</td>
+                                <td><pre>${review.comment}</pre></td>
                                 <td>${time_ago( review.update_time )}</td>
                                 <td>${review.user.username}</td>
                             </tr>

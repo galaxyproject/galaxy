@@ -1,3 +1,5 @@
+<%namespace file="/message.mako" import="render_msg" />
+
 <% _=n_ %>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
@@ -105,6 +107,11 @@ function annotation_handling(parent_elt) {
     });
 };
 
+// Update the message for async operations
+function render_message(message, status) {
+    $("div#message-container").html( "<div class=\"" + status + "message\">" + message + "</div><br/>" );
+}
+
 $(function() {
     var historywrapper = $("div.historyItemWrapper");
     init_history_items(historywrapper);
@@ -115,8 +122,8 @@ $(function() {
             $(this).click( function() {
                 $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
                 $.ajax({
-                    url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { alert( "Delete failed" ); },
+                    url: "${h.url_for( controller='dataset', action='delete_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { render_message( "Dataset deletion failed", "error" ); },
                     success: function(msg) {
                         if (msg === "OK") {
                             %if show_deleted:
@@ -133,21 +140,40 @@ $(function() {
                             %endif
                             $(".tipsy").remove();
                         } else {
-                            alert( "Delete failed" );
+                            render_message( "Dataset deletion failed", "error" );
                         }
                     }
                 });
                 return false;
             });
         });
+
         // Undelete link
         $(this).find("a.historyItemUndelete").each( function() {
             var data_id = this.id.split( "-" )[1];
             $(this).click( function() {
                 $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
                 $.ajax({
-                    url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { alert( "Undelete failed" ) },
+                    url: "${h.url_for( controller='dataset', action='undelete_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { render_message( "Dataset undeletion failed", "error" ); },
+                    success: function() {
+                        var to_update = {};
+                        to_update[data_id] = "none";
+                        updater( to_update );
+                    }
+                });
+                return false;
+            });
+        });
+        
+        // Purge link
+        $(this).find("a.historyItemPurge").each( function() {
+            var data_id = this.id.split( "-" )[1];
+            $(this).click( function() {
+                $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
+                $.ajax({
+                    url: "${h.url_for( controller='dataset', action='purge_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { render_message( "Dataset removal from disk failed", "error" ) },
                     success: function() {
                         var to_update = {};
                         to_update[data_id] = "none";
@@ -239,14 +265,47 @@ $(function() {
     
     // Updater
     updater(
-        ${ h.to_json_string( dict([(data.id, data.state) for data in reversed( datasets ) if data.visible and data.state not in TERMINAL_STATES]) ) }
+        ${ h.to_json_string( dict([(trans.app.security.encode_id(data.id), data.state) for data in reversed( datasets ) if data.visible and data.state not in TERMINAL_STATES]) ) }
     );
     
     // Navigate to a dataset.
     %if hda_id:
         self.location = "#${hda_id}";
     %endif
+
+    // Update the Quota Meter
+    $.ajax( {
+        type: "POST",
+        url: "${h.url_for( controller='root', action='user_get_usage' )}",
+        dataType: "json",
+        success : function ( data ) {
+            $.each( data, function( type, val ) {
+                quota_meter_updater( type, val );
+            });
+        }
+    });
 });
+
+// Updates the Quota Meter
+var quota_meter_updater = function ( type, val ) {
+    if ( type == "usage" ) {
+        $("#quota-meter-bar", window.top.document).css( "width", "0" );
+        $("#quota-meter-text", window.top.document).text( "Using " + val );
+    } else if ( type == "percent" ) {
+        $("#quota-meter-bar", window.top.document).removeClass("quota-meter-bar-warn quota-meter-bar-error");
+        if ( val >= 100 ) {
+            $("#quota-meter-bar", window.top.document).addClass("quota-meter-bar-error");
+            $("#quota-message-container").slideDown();
+        } else if ( val >= 85 ) {
+            $("#quota-meter-bar", window.top.document).addClass("quota-meter-bar-warn");
+            $("#quota-message-container").slideUp();
+        } else {
+            $("#quota-message-container").slideUp();
+        }
+        $("#quota-meter-bar", window.top.document).css( "width", val + "px" );
+        $("#quota-meter-text", window.top.document).text( "Using " + val + "%" );
+    }
+}
 
 // Looks for changes in dataset state using an async request. Keeps
 // calling itself (via setTimeout) until all datasets are in a terminal
@@ -266,7 +325,8 @@ var updater_callback = function ( tracked_datasets ) {
     // Build request data
     var ids = [],
         states = [],
-        force_history_refresh = false;
+        force_history_refresh = false,
+        check_history_size = false;
         
     $.each( tracked_datasets, function ( id, state ) {
         ids.push( id );
@@ -291,14 +351,35 @@ var updater_callback = function ( tracked_datasets ) {
                     if ( val.force_history_refresh ){
                         force_history_refresh = true;
                     }
-                    delete tracked_datasets[ parseInt(id) ];
+                    delete tracked_datasets[id];
+                    // When a dataset becomes terminal, check for changes in history disk size
+                    check_history_size = true;
                 } else {
-                    tracked_datasets[ parseInt(id) ] = val.state;
+                    tracked_datasets[id] = val.state;
                 }
             });
             if ( force_history_refresh ) {
                 parent.frames.galaxy_history.location.reload();
             } else {
+                if ( check_history_size ) {
+                    $.ajax( {
+                        type: "POST",
+                        url: "${h.url_for( controller='root', action='history_get_disk_size' )}",
+                        dataType: "json",
+                        success: function( data ) {
+                            $.each( data, function( type, val ) {
+                                if ( type == "history" ) {
+                                    $("#history-size").text( val );
+                                } else if ( type == "global_usage" ) {
+                                    quota_meter_updater( "usage", val );
+                                } else if ( type == "global_percent" ) {
+                                    quota_meter_updater( "percent", val );
+                                }
+                            });
+                        }
+                    });
+                    check_history_size = false;
+                }
                 // Keep going (if there are still any items to track)
                 updater( tracked_datasets ); 
             }
@@ -378,13 +459,17 @@ div.form-row {
 
 <div id="history-name-area" class="historyLinks">
     
-    %if trans.get_user():
-    <div id="history-name-container">
-        <div id="history-name" class="tooltip editable-text" title="Click to rename history">${history.get_display_name() | h}</div>
-    </div>
-    %endif
-                               
+    <div id="history-name-container" style="position: relative;">
+        %if trans.get_user():
+            <div id="history-size" style="position: absolute; top: 3px; right: 0px;">${history.get_disk_size(nice_size=True)}</div>
+            <div id="history-name" style="margin-right: 50px;" class="tooltip editable-text" title="Click to rename history">${history.get_display_name() | h}</div>
+            
+        %else:
+            <div id="history-size">${history.get_disk_size(nice_size=True)}</div>
+        %endif
+    </div>                     
 </div>
+<div style="clear: both;"></div>
 
 %if history.deleted:
     <div class="warningmessagesmall">
@@ -406,20 +491,37 @@ div.form-row {
     
         ## Annotation elt.
         <div id="history-annotation-area" style="display: none">
-   	        <b>Annotation / Notes:</b>
-   	        <div id="history-annotation-container">
-		    <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
-    		    %if annotation:
+            <strong>Annotation / Notes:</strong>
+            <div id="history-annotation-container">
+            <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
+                %if annotation:
                     ${h.to_unicode( annotation ) | h}
                 %else:
                     <em>Describe or add notes to history</em>
                 %endif
-		    </div>
+            </div>
             </div>
         </div>
         
     </div>
 %endif
+
+<div id="message-container">
+    %if message:
+        ${render_msg( message, status )}
+    %endif
+</div>
+
+%if over_quota:
+<div id="quota-message-container">
+%else:
+<div id="quota-message-container" style="display: none;">
+%endif
+    <div id="quota-message" class="errormessage">
+        You are over your disk quota.  Tool execution is on hold until your disk usage drops below your allocated quota.
+    </div>
+    <br/>
+</div>
 
 %if not datasets:
 
@@ -430,7 +532,7 @@ div.form-row {
     ## Render requested datasets, ordered from newest to oldest
     %for data in reversed( datasets ):
         %if data.visible or show_hidden:
-            <div class="historyItemContainer" id="historyItemContainer-${data.id}">
+            <div class="historyItemContainer" id="historyItemContainer-${trans.app.security.encode_id(data.id)}">
                 ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing = True )}
             </div>
         %endif

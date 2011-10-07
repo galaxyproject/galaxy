@@ -8,9 +8,12 @@ import twill
 import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
 pkg_resources.require( "elementtree" )
+pkg_resources.require( "MarkupSafe" )
+from markupsafe import escape
 from elementtree import ElementTree
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
+from base.asserts import verify_assertions
 
 buffer = StringIO.StringIO()
 
@@ -239,7 +242,12 @@ class TwillTestCase( unittest.TestCase ):
         else:
             self.visit_page( "history" )
         for subpatt in patt.split():
-            tc.find(subpatt)
+            try:
+                tc.find( subpatt )
+            except:
+                fname = self.write_temp_file( tc.browser.get_html() )
+                errmsg = "no match to '%s'\npage content written to '%s'" % ( subpatt, fname )
+                raise AssertionError( errmsg )
         self.home()
     def clear_history( self ):
         """Empties a history of all datasets"""
@@ -377,7 +385,7 @@ class TwillTestCase( unittest.TestCase ):
         """Switches to a history in the current list of histories"""
         self.visit_url( "%s/history/list?operation=switch&id=%s" % ( self.url, id ) )
         if name:
-            self.check_history_for_string( name )
+            self.check_history_for_string( escape( name ) )
         self.home()
     def view_stored_active_histories( self, strings_displayed=[] ):
         self.home()
@@ -467,7 +475,7 @@ class TwillTestCase( unittest.TestCase ):
             elem = data_list[-1]
             hid = int( elem.get('hid') )
         self.assertTrue( hid )
-        self.visit_page( "edit?hid=%s" % hid )
+        self.visit_page( "dataset/edit?hid=%s" % hid )
         for subpatt in patt.split():
             tc.find(subpatt)
     def delete_history_item( self, hda_id, strings_displayed=[] ):
@@ -476,7 +484,7 @@ class TwillTestCase( unittest.TestCase ):
             hda_id = int( hda_id )
         except:
             raise AssertionError, "Invalid hda_id '%s' - must be int" % hda_id
-        self.visit_url( "%s/root/delete?show_deleted_on_refresh=False&id=%s" % ( self.url, hda_id ) )
+        self.visit_url( "%s/datasets/%s/delete?show_deleted_on_refresh=False" % ( self.url, self.security.encode_id( hda_id ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
     def undelete_history_item( self, hda_id, strings_displayed=[] ):
@@ -485,7 +493,7 @@ class TwillTestCase( unittest.TestCase ):
             hda_id = int( hda_id )
         except:
             raise AssertionError, "Invalid hda_id '%s' - must be int" % hda_id
-        self.visit_url( "%s/dataset/undelete?id=%s" % ( self.url, hda_id ) )
+        self.visit_url( "%s/datasets/%s/undelete" % ( self.url, self.security.encode_id( hda_id ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
     def display_history_item( self, hda_id, strings_displayed=[] ):
@@ -504,7 +512,7 @@ class TwillTestCase( unittest.TestCase ):
                                  strings_displayed=[], strings_not_displayed=[] ):
         """Edit history_dataset_association attribute information"""
         self.home()
-        self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
+        self.visit_url( "%s/datasets/%s/edit" % ( self.url, self.security.encode_id( hda_id ) ) )
         submit_required = False
         self.check_page_for_string( 'Edit Attributes' )
         if new_name:
@@ -538,9 +546,9 @@ class TwillTestCase( unittest.TestCase ):
     def auto_detect_metadata( self, hda_id ):
         """Auto-detect history_dataset_association metadata"""
         self.home()
-        self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
+        self.visit_url( "%s/datasets/%s/edit" % ( self.url, self.security.encode_id( hda_id ) ) )
         self.check_page_for_string( 'This will inspect the dataset and attempt' )
-        tc.fv( 'auto_detect', 'id', hda_id )
+        tc.fv( 'auto_detect', 'detect', 'Auto-detect' )
         tc.submit( 'detect' )
         try:
             self.check_page_for_string( 'Attributes have been queued to be updated' )
@@ -552,7 +560,7 @@ class TwillTestCase( unittest.TestCase ):
     def convert_format( self, hda_id, target_type ):
         """Convert format of history_dataset_association"""
         self.home()
-        self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
+        self.visit_url( "%s/datasets/%s/edit" % ( self.url, self.security.encode_id( hda_id ) ) )
         self.check_page_for_string( 'This will inspect the dataset and attempt' )
         tc.fv( 'convert_data', 'target_type', target_type )
         tc.submit( 'convert_data' )
@@ -562,7 +570,7 @@ class TwillTestCase( unittest.TestCase ):
     def change_datatype( self, hda_id, datatype ):
         """Change format of history_dataset_association"""
         self.home()
-        self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
+        self.visit_url( "%s/datasets/%s/edit" % ( self.url, self.security.encode_id( hda_id ) ) )
         self.check_page_for_string( 'This will change the datatype of the existing dataset but' )
         tc.fv( 'change_datatype', 'datatype', datatype )
         tc.submit( 'change' )
@@ -611,13 +619,10 @@ class TwillTestCase( unittest.TestCase ):
         return hids
 
     def makeTfname(self, fname=None):
-	"""
-        safe temp name - preserve the file extension for tools that interpret it
-	"""
+        """safe temp name - preserve the file extension for tools that interpret it"""
         suffix = os.path.split(fname)[-1] # ignore full path
-	fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
-	return temp_prefix
-
+        fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
+        return temp_prefix
 
     def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
@@ -635,7 +640,7 @@ class TwillTestCase( unittest.TestCase ):
             elem = elems[0]
         self.assertTrue( hid )
         self._assert_dataset_state( elem, 'ok' )
-        if self.is_zipped( filename ):
+        if filename is not None and self.is_zipped( filename ):
             errmsg = 'History item %s is a zip archive which includes invalid files:\n' % hid
             zip_file = zipfile.ZipFile( filename, "r" )
             name = zip_file.namelist()[0]
@@ -647,50 +652,58 @@ class TwillTestCase( unittest.TestCase ):
                 if ext != test_ext:
                     raise AssertionError( errmsg )
         else:
-            local_name = self.get_filename( filename )
-            temp_name = self.makeTfname(fname = filename)
             self.home()
             self.visit_page( "display?hid=" + hid )
             data = self.last_page()
-            file( temp_name, 'wb' ).write(data)
-            if self.keepOutdir > '':
-                ofn = os.path.join(self.keepOutdir,os.path.basename(local_name))
-                shutil.copy(temp_name,ofn)
-                log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
-            try:
-                # have to nest try-except in try-finally to handle 2.4
+            if attributes is not None and attributes.get( "assert_list", None ) is not None:
                 try:
-                    if attributes is None:
-                        attributes = {}
-                    compare = attributes.get( 'compare', 'diff' )
-                    if attributes.get( 'ftype', None ) == 'bam':
-                        local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
-                        local_name = local_fh.name
-                    extra_files = attributes.get( 'extra_files', None )
-                    if compare == 'diff':
-                        self.files_diff( local_name, temp_name, attributes=attributes )
-                    elif compare == 're_match':
-                        self.files_re_match( local_name, temp_name, attributes=attributes )
-                    elif compare == 're_match_multiline':
-                        self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-    	            elif compare == 'sim_size':
-    	                delta = attributes.get('delta','100')
-    	                s1 = len(data)
-    	                s2 = os.path.getsize(local_name)
-    	                if abs(s1-s2) > int(delta):
-    	                   raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
-                    elif compare == "contains":
-                        self.files_contains( local_name, temp_name, attributes=attributes )
-                    else:
-                        raise Exception, 'Unimplemented Compare type: %s' % compare
-                    if extra_files:
-                        self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
+                    verify_assertions(data, attributes["assert_list"])
                 except AssertionError, err:
-                    errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+                    errmsg = 'History item %s different than expected\n' % (hid)
                     errmsg += str( err )
                     raise AssertionError( errmsg )
-            finally:
-                os.remove( temp_name )
+            if filename is not None:
+                local_name = self.get_filename( filename )
+                temp_name = self.makeTfname(fname = filename)
+                file( temp_name, 'wb' ).write(data)
+                if self.keepOutdir > '':
+                    ofn = os.path.join(self.keepOutdir,os.path.basename(local_name))
+                    shutil.copy(temp_name,ofn)
+                    log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
+                try:
+                    # have to nest try-except in try-finally to handle 2.4
+                    try:
+                        if attributes is None:
+                            attributes = {}
+                        compare = attributes.get( 'compare', 'diff' )
+                        if attributes.get( 'ftype', None ) == 'bam':
+                            local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
+                            local_name = local_fh.name
+                        extra_files = attributes.get( 'extra_files', None )
+                        if compare == 'diff':
+                            self.files_diff( local_name, temp_name, attributes=attributes )
+                        elif compare == 're_match':
+                            self.files_re_match( local_name, temp_name, attributes=attributes )
+                        elif compare == 're_match_multiline':
+                            self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+                        elif compare == 'sim_size':
+                            delta = attributes.get('delta','100')
+                            s1 = len(data)
+                            s2 = os.path.getsize(local_name)
+                            if abs(s1-s2) > int(delta):
+                                raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
+                        elif compare == "contains":
+                            self.files_contains( local_name, temp_name, attributes=attributes )
+                        else:
+                            raise Exception, 'Unimplemented Compare type: %s' % compare
+                        if extra_files:
+                            self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
+                    except AssertionError, err:
+                        errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+                        errmsg += str( err )
+                        raise AssertionError( errmsg )
+                finally:
+                    os.remove( temp_name )
 
     def _bam_to_sam( self, local_name, temp_name ):
         temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
@@ -724,6 +737,10 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
         data = self.last_page()
         file( temp_name, 'wb' ).write( data )
+        if self.keepOutdir > '':
+            ofn = os.path.join(self.keepOutdir,base_name)
+            shutil.copy(temp_name,ofn)
+            log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
         try:
             # have to nest try-except in try-finally to handle 2.4
             try:
@@ -749,7 +766,7 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += str( err )
                 raise AssertionError( errmsg )
         finally:
-	    os.remove( temp_name )
+            os.remove( temp_name )
 
     def is_zipped( self, filename ):
         if not zipfile.is_zipfile( filename ):

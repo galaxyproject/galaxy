@@ -17,7 +17,7 @@ class AddFrameData:
         self.debug = None
         self.from_noframe = None
 
-class ToolRunner( BaseController ):
+class ToolRunner( BaseUIController ):
 
     #Hack to get biomart to work, ideally, we could pass tool_id to biomart and receive it back
     @web.expose

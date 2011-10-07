@@ -20,12 +20,12 @@ import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
 
-def add_controllers( webapp, app ):
+def add_ui_controllers( webapp, app ):
     """
     Search for controllers in the 'galaxy.webapps.controllers' module and add 
     them to the webapp.
     """
-    from galaxy.web.base.controller import BaseController
+    from galaxy.web.base.controller import BaseUIController
     from galaxy.web.base.controller import ControllerUnavailable
     import galaxy.webapps.reports.controllers
     controller_dir = galaxy.webapps.reports.controllers.__path__[0]
@@ -39,8 +39,8 @@ def add_controllers( webapp, app ):
             # Look for a controller inside the modules
             for key in dir( module ):
                 T = getattr( module, key )
-                if isclass( T ) and T is not BaseController and issubclass( T, BaseController ):
-                    webapp.add_controller( name, T( app ) )
+                if isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
+                    webapp.add_ui_controller( name, T( app ) )
 
 def app_factory( global_conf, **kwargs ):
     """Return a wsgi application serving the root object"""
@@ -53,7 +53,7 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxyreportssession' )
-    add_controllers( webapp, app )
+    add_ui_controllers( webapp, app )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/:controller/:action', controller="root", action='index' )
     webapp.add_route( '/:action', controller='root', action='index' )

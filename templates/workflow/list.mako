@@ -15,16 +15,16 @@
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">
             %if message:
-            <%
-                try:
-                    status
-                except:
-                    status = "done"
-            %>
-            <p />
-            <div class="${status}message">
-                ${h.to_unicode( message )}
-            </div>
+                <%
+                    try:
+                        status
+                    except:
+                        status = "done"
+                %>
+                <p />
+                <div class="${status}message">
+                    ${h.to_unicode( message )}
+                </div>
             %endif
 
             <h2>Your workflows</h2>
@@ -43,7 +43,7 @@
                     </a>
                 </li>
             </ul>
-  
+
             %if workflows:
                 <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" style="width:100%;">
                     <tr class="header">
@@ -56,7 +56,7 @@
                         <tr>
                             <td>
                                 <div class="menubutton" style="float: left;" id="wf-${i}-popup">
-                                ${h.to_unicode( workflow.name )}
+                                ${h.to_unicode( workflow.name ) | h}
                                 </div>
                             </td>
                             <td>${len(workflow.latest_workflow.steps)}</td>
@@ -72,7 +72,7 @@
                                 <a class="action-button" confirm="Are you sure you want to delete workflow '${h.to_unicode( workflow.name ) | h}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>
                                 </div>
                             </td>
-                        </tr>    
+                        </tr>
                     %endfor
                 </table>
             %else:
@@ -101,12 +101,12 @@
                             <td>${len(workflow.latest_workflow.steps)}</td>
                             <td>
                                 <div popupmenu="shared-${i}-popup">
-            						<a class="action-button" href="${h.url_for( action='display_by_username_and_slug', username=workflow.user.username, slug=workflow.slug)}" target="_top">View</a>
-            	                    <a class="action-button" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">Run</a>
-            	                    <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
+                                    <a class="action-button" href="${h.url_for( action='display_by_username_and_slug', username=workflow.user.username, slug=workflow.slug)}" target="_top">View</a>
+                                    <a class="action-button" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">Run</a>
+                                    <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
                                 </div>
                             </td>
-                        </tr>    
+                        </tr>
                     %endfor
                 </table>
             %else:
@@ -121,5 +121,5 @@
                 <span>Configure your workflow menu</span>
             </a>
         </div>
-    </div>    
+    </div>
 </%def>

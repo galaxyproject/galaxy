@@ -46,7 +46,7 @@
             title="Show ${item_display_name} content"></a>
         <a class="toggle-contract icon-button tooltip" href="${display_href}" title="Hide ${item_display_name} content"></a>
     </div>
-    <div style="float: right">
+    <div style="float: right;">
         ${self.render_item_links( item )}
     </div>
     <h4><a class="toggle-embed tooltip" href="${display_href}" title="Show or hide ${item_display_name} content">Galaxy ${get_class_display_name( item.__class__ )} | ${get_item_name( item )}</a></h4>

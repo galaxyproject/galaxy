@@ -1,6 +1,7 @@
-<tool id="gatk_analyze_covariates" name="Analyze Covariates" version="0.0.1">
-  <description>- perform local realignment</description>
+<tool id="gatk_analyze_covariates" name="Analyze Covariates" version="0.0.2">
+  <description>- draw plots</description>
 <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
    --stdout "${output_log}"
    --html_report_from_directory "${output_html}" "${output_html.files_path}"
    -p 'java 
@@ -33,8 +34,8 @@
         <param name="ignore_q" type="integer" value="5" label="Ignore bases with reported quality less than this number."/>
         <param name="num_read_groups" type="integer" value="-1" label="Only process N read groups."/>
         <param name="max_quality_score" type="integer" value="50" label="Max quality score"/>
-        <param name="max_histogram_value" type="integer" value="0" label="Max quality score"/>
-        <param name="do_indel_quality" type="boolean" truevalue="--do_indel_quality" falsevalue="" label="Max quality score"/>
+        <param name="max_histogram_value" type="integer" value="0" label="Max histogram value"/>
+        <param name="do_indel_quality" type="boolean" truevalue="--do_indel_quality" falsevalue="" label="Do indel quality"/>
       </when>
     </conditional>
   </inputs>
@@ -53,40 +54,49 @@
   <help>
 **What it does**
 
-     Create collapsed versions of the recal csv file and call R scripts to plot residual error versus the various covariates.
+Create collapsed versions of the recal csv file and call R scripts to plot residual error versus the various covariates.
 
+For more information on base quality score recalibration using the GATK, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Base_quality_score_recalibration&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
 
 ------
 
-Please cite the website "http://addlink.here" as well as:
-
-Add citation here 2011.
-
-------
-
-**Input formats**
+**Inputs**
 
 GenomeAnalysisTK: AnalyzeCovariates accepts an recal CSV file.
 
-------
 
 **Outputs**
 
-The output is in and HTML file with links to PDF graphs and a data files, see http://addlink.here for more details.
+The output is in and HTML file with links to PDF graphs and a data files.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
 
 -------
 
 **Settings**::
 
- recal_file                   The input recal csv file to analyze
- output_dir                   The directory in which to output all the plots and intermediate data files
- path_to_Rscript           The path to your implementation of Rscript. For Broad users this is maybe /broad/tools/apps/R-2.6.0/bin/Rscript
- path_to_resources     Path to resources folder holding the Sting R scripts.
- ignoreQ                           Ignore bases with reported quality less than this number.
- numRG                                 Only process N read groups. Default value: -1 (process all read groups)
- max_quality_score          The integer value at which to cap the quality scores, default is 50
- max_histogram_value   If supplied, this value will be the max value of the histogram plots
- do_indel_quality                             If supplied, this value will be the max value of the histogram plots
+ recal_file             The input recal csv file to analyze
+ output_dir             The directory in which to output all the plots and intermediate data files
+ path_to_Rscript        The path to your implementation of Rscript. For Broad users this is maybe /broad/tools/apps/R-2.6.0/bin/Rscript
+ path_to_resources      Path to resources folder holding the Sting R scripts.
+ ignoreQ                Ignore bases with reported quality less than this number.
+ numRG                  Only process N read groups. Default value: -1 (process all read groups)
+ max_quality_score      The integer value at which to cap the quality scores, default is 50
+ max_histogram_value    If supplied, this value will be the max value of the histogram plots
+ do_indel_quality       If supplied, this value will be the max value of the histogram plots
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 
   </help>
 </tool>

@@ -399,32 +399,44 @@ class DynamicOptions( object ):
         self.separator = elem.get( 'separator', '\t' )
         self.line_startswith = elem.get( 'startswith', None )
         data_file = elem.get( 'from_file', None )
+        self.index_file = None
+        self.missing_index_file = None
         dataset_file = elem.get( 'from_dataset', None )
         from_parameter = elem.get( 'from_parameter', None )
         tool_data_table_name = elem.get( 'from_data_table', None )
-        
         # Options are defined from a data table loaded by the app
         self.tool_data_table = None
+        self.missing_tool_data_table_name = None
         if tool_data_table_name:
             app = tool_param.tool.app
-            assert tool_data_table_name in app.tool_data_tables, \
-                "Data table named '%s' is required by tool but not configured" % tool_data_table_name
-            self.tool_data_table = app.tool_data_tables[ tool_data_table_name ]
-            # Column definitions are optional, but if provided override those from the table
-            if elem.find( "column" ) is not None:
-                self.parse_column_definitions( elem )
+            if tool_data_table_name in app.tool_data_tables:
+                self.tool_data_table = app.tool_data_tables[ tool_data_table_name ]
+                # Set self.missing_index_file if the index file to
+                # which the tool_data_table refers does not exist.
+                if self.tool_data_table.missing_index_file:
+                    self.missing_index_file = self.tool_data_table.missing_index_file
+                else:
+                    # Column definitions are optional, but if provided override those from the table
+                    if elem.find( "column" ) is not None:
+                        self.parse_column_definitions( elem )
+                    else:
+                        self.columns = self.tool_data_table.columns
             else:
-                self.columns = self.tool_data_table.columns
-            
-        # Options are defined by parsing tabular text data from an data file
+                self.missing_tool_data_table_name = tool_data_table_name
+                log.warn( "Data table named '%s' is required by tool but not configured" % tool_data_table_name )
+        # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
         elif data_file is not None or dataset_file is not None or from_parameter is not None:
             self.parse_column_definitions( elem )
             if data_file is not None:
                 data_file = data_file.strip()
                 if not os.path.isabs( data_file ):
-                    data_file = os.path.join( self.tool_param.tool.app.config.tool_data_path, data_file )
-                self.file_fields = self.parse_file_fields( open( data_file ) )
+                    full_path = os.path.join( self.tool_param.tool.app.config.tool_data_path, data_file )
+                    if os.path.exists( full_path ):
+                        self.index_file = data_file
+                        self.file_fields = self.parse_file_fields( open( full_path ) )
+                    else:
+                        self.missing_index_file = data_file
             elif dataset_file is not None:
                 self.dataset_ref_name = dataset_file
                 self.has_dataset_dependencies = True
@@ -440,6 +452,9 @@ class DynamicOptions( object ):
         # Load Validators
         for validator in elem.findall( 'validator' ):
             self.validators.append( validation.Validator.from_element( self.tool_param, validator ) )
+        
+        if self.dataset_ref_name:
+            tool_param.data_ref = self.dataset_ref_name
             
     def parse_column_definitions( self, elem ):
         for column_elem in elem.findall( 'column' ):

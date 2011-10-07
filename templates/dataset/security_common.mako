@@ -1,11 +1,11 @@
-<%def name="render_select( current_actions, action_key, action, all_roles )">
+<%def name="render_select( current_actions, action_key, action, roles )">
     <%
         import sets
         in_roles = sets.Set()
         for a in current_actions:
             if a.action == action.action:
                 in_roles.add( a.role )
-        out_roles = filter( lambda x: x not in in_roles, all_roles )
+        out_roles = filter( lambda x: x not in in_roles, roles )
     %>
     <p>
         <b>${action.action}:</b> ${action.description}
@@ -16,28 +16,28 @@
     </p>
     <div style="width: 100%; white-space: nowrap;">
         <div style="float: left; width: 50%;">
-            Roles associated:<br/>
+            Roles associated:<br />
             <select name="${action_key}_in" id="${action_key}_in_select" class="in_select" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" multiple>
                 %for role in in_roles:
                     <option value="${role.id}">${role.name}</option>
                 %endfor
-            </select> <br/>
+            </select> <br />
             <div style="width: 98%; text-align: right"><input type="submit" id="${action_key}_remove_button" class="role_remove_button" value=">>"/></div>
         </div>
         <div style="width: 50%;">
-            Roles not associated:<br/>
+            Roles not associated:<br />
             <select name="${action_key}_out" id="${action_key}_out_select" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" multiple>
                 %for role in out_roles:
                     <option value="${role.id}">${role.name}</option>
                 %endfor
-            </select> <br/>
+            </select> <br />
             <input type="submit" id="${action_key}_add_button" class="role_add_button" value="<<"/>
         </div>
     </div>
 </%def>
 
 ## Any permission ( e.g., 'DATASET_ACCESS' ) included in the do_not_render param will not be rendered on the page.
-<%def name="render_permission_form( obj, obj_name, form_url, all_roles, do_not_render=[] )">
+<%def name="render_permission_form( obj, obj_name, form_url, roles, do_not_render=[], all_roles=[] )">
     <%
         if isinstance( obj, trans.app.model.User ):
             current_actions = obj.default_permissions
@@ -109,7 +109,14 @@
                 %for k, v in permitted_actions:
                     %if k not in do_not_render:
                         <div class="form-row">
-                            ${render_select( current_actions, k, v, all_roles )}
+                            ## LIBRARY_ACCESS is a special case because we need to render all roles instead of
+                            ## roles derived from the roles associated with LIBRARY_ACCESS.
+                            <% render_all_roles = k == 'LIBRARY_ACCESS' %>
+                            %if render_all_roles:
+                                ${render_select( current_actions, k, v, all_roles )}
+                            %else:
+                                ${render_select( current_actions, k, v, roles )}
+                            %endif
                         </div>
                     %endif
                 %endfor

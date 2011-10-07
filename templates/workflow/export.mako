@@ -22,9 +22,8 @@
     ##
     ## Renders form for exporting workflow to myExperiment.
     ##
-    <h3>Export to myExperiment <em>sandbox</em></h3>
+    <h3>Export to myExperiment</h3>
     
-    ##def export_to_myexp( self, trans, id, myexp_username, myexp_password ):    
     <div class="toolForm"> 
         <div class="toolFormTitle">Export</div> 
         <form action="${h.url_for( action='export_to_myexp', id=trans.security.encode_id( item.id ) )}" 

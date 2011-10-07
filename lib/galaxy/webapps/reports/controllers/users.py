@@ -10,7 +10,7 @@ import sqlalchemy as sa
 import logging
 log = logging.getLogger( __name__ )
 
-class Users( BaseController ):
+class Users( BaseUIController ):
     @web.expose
     def registered_users( self, trans, **kwd ):
         message = util.restore_text( kwd.get( 'message', '' ) )
@@ -115,4 +115,17 @@ class Users( BaseController ):
         return trans.fill_template( '/webapps/reports/users_last_access_date.mako',
                                     users=users,
                                     not_logged_in_for_days=not_logged_in_for_days,
+                                    message=message )
+
+    @web.expose
+    def user_disk_usage( self, trans, **kwd ):
+        message = util.restore_text( kwd.get( 'message', '' ) )
+        user_cutoff = int( kwd.get( 'user_cutoff', 60 ) )
+        # disk_usage isn't indexed
+        users = sorted( trans.sa_session.query( galaxy.model.User ).all(), key=operator.attrgetter( 'disk_usage' ), reverse=True )
+        if user_cutoff:
+            users = users[:user_cutoff]
+        return trans.fill_template( '/webapps/reports/users_user_disk_usage.mako',
+                                    users=users,
+                                    user_cutoff=user_cutoff,
                                     message=message )

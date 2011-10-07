@@ -103,11 +103,11 @@ class SingleTagContentsParser( sgmllib.SGMLParser ):
         if self.cur_tag == self.target_tag:
             self.tag_content += text
 
-class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
+class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
     
-    __myexp_url = "sandbox.myexperiment.org:80"
+    __myexp_url = "www.myexperiment.org:80"
     
     @web.expose
     def index( self, trans ):
@@ -199,7 +199,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         if stored_workflow is None:
            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access workflow.
-        self.security_check( trans.get_user(), stored_workflow, False, True)
+        self.security_check( trans, stored_workflow, False, True)
         
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored_workflow )
@@ -364,7 +364,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Update workflow attributes if new values submitted.
         if 'name' in kwargs:
             # Rename workflow.
-            stored.name = kwargs[ 'name' ]
+            stored.name = sanitize_html( kwargs['name'] )
         if 'annotation' in kwargs:
             # Set workflow annotation; sanitize annotation before adding it.
             annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
@@ -380,7 +380,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     def rename( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name is not None:
-            stored.name = new_name
+            san_new_name = sanitize_html( new_name )
+            stored.name = san_new_name
+            stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             # For current workflows grid:
             trans.set_message ( "Workflow renamed to '%s'." % new_name )
@@ -398,7 +400,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     def rename_async( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name:
-            stored.name = new_name
+            san_new_name = sanitize_html( new_name )
+            stored.name = san_new_name
+            stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             return stored.name
             
@@ -972,7 +976,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # NOTE: blocks web thread.
         headers = {}
         if myexp_username and myexp_password:
-            auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))[:-1]
+            auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
             headers = { "Authorization" : "Basic %s" % auth_header }
         conn.request( "GET", "/workflow.xml?id=%s&elements=content" % myexp_id, headers=headers )
         response = conn.getresponse()
@@ -1012,7 +1016,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
         stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
-        self.security_check( trans.get_user(), stored, False, True )
+        self.security_check( trans, stored, False, True )
         
         # Convert workflow to dict.
         workflow_dict = self._workflow_to_dict( trans, stored )
@@ -1037,8 +1041,8 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         request = unicode( request_raw.strip(), 'utf-8' )
         
         # Do request and get result.
-        auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))[:-1]
-        headers = { "Content-type": "text/xml", "Accept": "text/plain", "Authorization" : "Basic %s" % auth_header }
+        auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
+        headers = { "Content-type": "text/xml", "Accept": "text/xml", "Authorization" : "Basic %s" % auth_header }
         conn = httplib.HTTPConnection( self.__myexp_url )
         # NOTE: blocks web thread.
         conn.request("POST", "/workflow.xml", request, headers)
@@ -1432,7 +1436,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                     has_upgrade_messages=has_upgrade_messages,
                     errors=errors,
                     incoming=kwargs )
-    
+                    
+    def get_item( self, trans, id ):
+        return self.get_stored_workflow( trans, id ) 
+        
     @web.expose
     def tag_outputs( self, trans, id, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
@@ -1592,6 +1599,15 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 'annotation' : annotation_str
             }
             
+            # Add post-job actions to step dict.
+            if module.type == 'tool':
+                pja_dict = {}
+                for pja in step.post_job_actions:
+                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type, 
+                                                                      output_name = pja.output_name,
+                                                                      action_arguments = pja.action_arguments )
+                step_dict[ 'post_job_actions' ] = pja_dict
+
             # Data inputs
             step_dict['inputs'] = []
             if module.type == "data_input":
@@ -1695,6 +1711,12 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
                 self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+            # Unpack and add post-job actions.
+            post_job_actions = step_dict.get( 'post_job_actions', {} )
+            for name, pja_dict in post_job_actions.items():
+                pja = PostJobAction( pja_dict[ 'action_type' ], 
+                                     step, pja_dict[ 'output_name' ], 
+                                     pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections

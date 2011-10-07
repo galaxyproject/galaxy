@@ -1,4 +1,4 @@
-<tool id="fastq_groomer" name="FASTQ Groomer" version="1.0.3">
+<tool id="fastq_groomer" name="FASTQ Groomer" version="1.0.4">
   <description>convert between various FASTQ quality formats</description>
   <command interpreter="python">fastq_groomer.py '$input_file' '$input_type' '$output_file'
 #if str( $options_type['options_type_selector'] ) == 'basic':
@@ -240,6 +240,15 @@
       <param name="summarize_input" value="summarize_input" />
       <output name="output_file" file="sanger_full_range_as_solexa.fastqsolexa" />
     </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_as_cssanger_adapter_base_with_quality_score.fastqcssanger_fake_score" ftype="fastq" />
+      <param name="input_type" value="cssanger" />
+      <param name="options_type_selector" value="advanced" />
+      <param name="output_type" value="cssanger" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_as_cssanger.fastqcssanger" />
+    </test>
     <!-- Test fastq with line wrapping -->
     <test>
       <param name="input_file" value="wrapping_original_sanger.fastqsanger" ftype="fastq" />
@@ -348,6 +357,12 @@ When converting between color space (csSanger) and base/sequence space (Sanger, 
    X - Solexa       Solexa+64, 67 values (-5, 62) (-5 to 40 expected in raw reads)
 
 Diagram adapted from http://en.wikipedia.org/wiki/FASTQ_format
+
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor N, Taylor J, Nekrutenko A; Galaxy Team. Manipulation of FASTQ data with Galaxy. Bioinformatics. 2010 Jul 15;26(14):1783-5. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20562416&gt;`_
 
 
 .. _Cock PJ, Fields CJ, Goto N, Heuer ML, Rice PM. The Sanger FASTQ file format for sequences with quality scores, and the Solexa/Illumina FASTQ variants. Nucleic Acids Res. 2009 Dec 16.: http://www.ncbi.nlm.nih.gov/pubmed/20015970

@@ -1,11 +1,3 @@
-body, html {
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-}
-
 body {
     font: 75% "Lucida Grande",verdana,arial,helvetica,sans-serif; 
     background: ${layout_bg};
@@ -259,11 +251,62 @@ div.unified-panel-body {
         padding: 3px 10px;
         font-size: 175%;
         font-weight: bold;
+        z-index: -1;
     }
 }
 
 #masthead a:hover {
     text-decoration: underline;
+}
+
+.quota-meter-container
+{
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 32px;
+}
+
+.quota-meter
+{
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    height: 16px;
+    width: 100px;
+    background-color: $quota_meter_bg;
+}
+
+.quota-meter-bar
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 16px;
+    background-color: $quota_meter_bar;
+}
+
+.quota-meter-bar-warn
+{
+    background-color: $quota_meter_warn_bar;
+}
+
+.quota-meter-bar-error
+{
+    background-color: $quota_meter_error_bar;
+}
+
+.quota-meter-text
+{
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100px;
+    height: 16px;
+    margin-top: -6px;
+    text-align: center;
+    z-index: 9001;
+    color: $quota_meter_text;
 }
 
 ## Tabs

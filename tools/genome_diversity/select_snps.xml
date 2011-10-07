@@ -3,7 +3,7 @@
 
   <command interpreter="python">
     select_snps.py "--input=$input" "--output=$output" "--chrlens_loc=${GALAXY_DATA_INDEX_DIR}/gd.chrlens.loc" "--num_snps=$num_snps"
-    #if $override_metadata.value == "0":
+    #if $override_metadata.choice == "0":
       "--ref_chrom_col=${input.metadata.ref}" "--ref_pos_col=${input.metadata.rPos}" "--species=${input.metadata.species}"
     #else
       "--ref_chrom_col=$ref_col" "--ref_pos_col=$rpos_col" "--species=$species"
@@ -14,7 +14,7 @@
     <param format="tabular" name="input" type="data" label="Selected SNPS dataset"/>
     <param name="num_snps" type="integer" value="10" optional="false" min="1" label="Number of SNPs"/>
     <conditional name="override_metadata">
-      <param name="value" type="select" format="integer" label="choose columns">
+      <param name="choice" type="select" format="integer" label="choose columns">
         <option value="0" selected="true">No, get columns from metadata</option>
         <option value="1" >Yes, choose columns</option>
       </param>
@@ -35,15 +35,15 @@
   </inputs>
 
   <outputs>
-    <data format="wsf" name="output"/>
+    <data format="wsf" name="output" metadata_source="input"/>
   </outputs>
 
   <tests>
     <test>
-      <param name="input" value="gd.sample.wsf"/>
-      <param name="num_snps" value="9"/>
-      <param name="override_metadata" value="0"/>
-      <output name="output" value="gd.select_snps.wsf"/>
+      <param name="input" value="gd.sample.wsf" ftype="wsf"/>
+      <param name="num_snps" value="5"/>
+      <param name="choice" value="0"/>
+      <output name="output" file="gd.select_snps.wsf"/>
     </test>
   </tests>
 
@@ -51,7 +51,9 @@
   <help>
 **What it does**
 
-  If selects a specified number of SNPs from the dataset.
+  It attempts to select a specified number of SNPs from the dataset, making them
+  approximately uniformly spaced relative to the reference genome. The number
+  actually selected may be slightly more than the specified number.
 
 -----
 

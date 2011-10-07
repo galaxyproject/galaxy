@@ -420,11 +420,10 @@ class TestLibrarySecurity( TwillTestCase ):
                                str( role1.id ),
                                permissions_in=[ 'DATASET_ACCESS' ],
                                strings_displayed=[ 'Permissions updated for 3 datasets.' ] )
+        # Even though we've eliminated the roles associated with the LIBRARY_MANAGE_PERMISSIONS permission,
+        # none of the roles associated with the DATASET_MANAGE permission sould have been changed.
         check_edit_page( latest_3_lddas,
-                         strings_displayed=[ 'View Permissions' ],
-                         strings_not_displayed=[ 'Manage dataset permissions on',
-                                                 'can manage roles associated with permissions on this library item',
-                                                 'can import this dataset into their history for analysis' ] )
+                         strings_displayed=[ 'manage permissions' ] )
     def test_060_restrict_access_to_library2( self ):
         """Testing restricting access to library2"""
         # Logged in as admin_user

@@ -1,13 +1,13 @@
-<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.1">
+<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.2">
   <description>- perform local realignment</description>
   <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "2"
    --stdout "${output_log}"
    -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
    -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "IndelRealigner"
-    ##-quiet ##this appears to have no effect...confirmed by gatk programmers
     -o "${output_bam}"
     -et "NO_ET" ##ET no phone home
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
@@ -19,9 +19,6 @@
    '
    
     #set $rod_binding_names = dict()
-    #if str( $input_dbsnp_rod ) != "None":
-        -d "-D" "${input_dbsnp_rod}" "${input_dbsnp_rod.ext}" "dbsnp_rod"
-    #end if
     #for $rod_binding in $rod_bind:
         #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
             #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
@@ -87,12 +84,13 @@
         -p '
         --entropyThreshold "${analysis_param_type.entropy_threshold}"
         ${analysis_param_type.simplify_bam}
+        --consensusDeterminationModel "${analysis_param_type.consensus_determination_model}"
         --maxIsizeForMovement "${analysis_param_type.max_insert_size_for_movement}"
         --maxPositionalMoveAllowed "${analysis_param_type.max_positional_move_allowed}"
         --maxConsensuses "${analysis_param_type.max_consensuses}"
         --maxReadsForConsensuses "${analysis_param_type.max_reads_for_consensuses}"
         --maxReadsForRealignment "${analysis_param_type.max_reads_for_realignment}"
-        "${analysis_param_type.no_original_alignment_tags}"
+        ${analysis_param_type.no_original_alignment_tags}
         '
     #end if
   </command>
@@ -120,14 +118,18 @@
       </when>
     </conditional>
     <param name="target_intervals" type="data" format="gatk_interval,bed,picard_interval_list" label="Restrict realignment to provided intervals" />
-    <param name="input_dbsnp_rod" type="data" format="gatk_dbsnp" optional="True" label="dbSNP reference ordered data (ROD)" />
     <repeat name="rod_bind" title="Binding for reference-ordered data">
         <conditional name="rod_bind_type">
 	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
-	        <option value="snps" selected="True">SNPs</option>
+	        <option value="dbsnp" selected="True">dbSNP</option>
+	        <option value="snps">SNPs</option>
 	        <option value="indels">INDELs</option>
 	        <option value="custom">Custom</option>
 	      </param>
+          <when value="dbsnp">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
@@ -249,7 +251,11 @@
         
         <param name="entropy_threshold" type="float" value="0.15" label="percentage of mismatching base quality scores at a position to be considered having high entropy" />
         <param name="simplify_bam" type="boolean" checked="False" truevalue="-simplifyBAM" falsevalue="" label="Simplify BAM"/>
-        
+        <param name="consensus_determination_model" type="select" label="Consensus Determination Model">
+          <option value="KNOWNS_ONLY">KNOWNS_ONLY</option>
+          <option value="USE_READS" selected="True">USE_READS</option>
+          <option value="USE_SW">USE_SW</option>
+        </param>
         <param name="max_insert_size_for_movement" type="integer" value="3000" label="Maximum insert size of read pairs that we attempt to realign" />
         <param name="max_positional_move_allowed" type="integer" value="200" label="Maximum positional move in basepairs that a read can be adjusted during realignment" />
         <param name="max_consensuses" type="integer" value="30" label="Max alternate consensuses to try" />
@@ -269,14 +275,22 @@
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="target_intervals" value="gatk/gatk_realigner_target_creator/gatk_realigner_target_creator_out_1.gatk_interval" ftype="gatk_interval" />
           <param name="input_bam" value="gatk/fake_phiX_reads_1.bam" ftype="bam" />
-          <param name="input_dbsnp_rod"  />
           <param name="rod_bind_type_selector" value="snps" />
           <param name="rodToIntervalTrackName" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
           <param name="lod_threshold" value="5.0" />
           <param name="knowns_only" />
           <param name="gatk_param_type_selector" value="basic" />
-          <param name="analysis_param_type_selector" value="basic" />
+          <param name="analysis_param_type_selector" value="advanced" />
+          <param name="entropy_threshold" value="0.15" />
+          <param name="simplify_bam" />
+          <param name="consensus_determination_model" value="USE_SW" />
+          <param name="max_insert_size_for_movement" value="3000" />
+          <param name="max_positional_move_allowed" value="200" />
+          <param name="max_consensuses" value="30" />
+          <param name="max_reads_for_consensuses" value="120" />
+          <param name="max_reads_for_realignment" value="20000" />
+          <param name="no_original_alignment_tags" />
           <output name="output_bam" file="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam" lines_diff="2" /> 
           <output name="output_log" file="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.log.contains" compare="contains" />
       </test>
@@ -284,49 +298,56 @@
   <help>
 **What it does**
 
-     Performs local realignment of reads based on misalignments due to the presence of indels. Unlike most mappers, this 
-     walker uses the full alignment context to determine whether an appropriate alternate reference (i.e. indel) exists 
-     and updates SAMRecords accordingly.
+Performs local realignment of reads based on misalignments due to the presence of indels. Unlike most mappers, this walker uses the full alignment context to determine whether an appropriate alternate reference (i.e. indel) exists and updates SAMRecords accordingly.
+
+For more information on local realignment around indels using the GATK, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Local_realignment_around_indels&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
 
 ------
 
-Please cite the website "http://addlink.here" as well as:
-
-Add citation here 2011.
-
-------
-
-**Input formats**
+**Inputs**
 
 GenomeAnalysisTK: IndelRealigner accepts an aligned BAM and a list of intervals to realign as input files.
 
-------
 
 **Outputs**
 
-The output is in the BAM format, see http://addlink.here for more details.
+The output is in the BAM format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
 
 -------
 
 **Settings**::
 
- targetIntervals                intervals file output from RealignerTargetCreator
- LODThresholdForCleaning            LOD threshold above which the cleaner will clean
- entropyThreshold                      percentage of mismatches at a locus to be considered having high entropy
- out                                                      Output bam
- bam_compression                       Compression level to use for writing BAM files
- disable_bam_indexing                                              Turn off on-the-fly creation of indices for output BAM files.
- simplifyBAM                                          If provided, output BAM files will be simplified to include just key reads for downstream variation discovery analyses (removing duplicates, PF-, non-primary reads), as well stripping all extended tags from the kept reads except the read group identifier
- useOnlyKnownIndels                                    Don't run 'Smith-Waterman' to generate alternate consenses; use only known indels provided as RODs for constructing the alternate references.
- maxReadsInMemory                  max reads allowed to be kept in memory at a time by the SAMFileWriter. Keep it low to minimize memory consumption (but the tool may skip realignment on regions with too much coverage.  If it is too low, it may generate errors during realignment); keep it high to maximize realignment (but make sure to give Java enough memory).
- maxIsizeForMovement               maximum insert size of read pairs that we attempt to realign
- maxPositionalMoveAllowed   maximum positional move in basepairs that a read can be adjusted during realignment
- maxConsensuses                   max alternate consensuses to try (necessary to improve performance in deep coverage)
- maxReadsForConsensuses           max reads used for finding the alternate consensuses (necessary to improve performance in deep coverage)
- maxReadsForRealignment         max reads allowed at an interval for realignment; if this value is exceeded, realignment is not attempted and the reads are passed to the output file(s) as-is
- noOriginalAlignmentTags                                   Don't output the original cigar or alignment start tags for each realigned read in the output bam.
- targetIntervalsAreNotSorted                      This tool assumes that the target interval list is sorted; if the list turns out to be unsorted, it will throw an exception.  Use this argument when your interval list is not sorted to instruct the Realigner to first sort it in memory.
+ targetIntervals              intervals file output from RealignerTargetCreator
+ LODThresholdForCleaning      LOD threshold above which the cleaner will clean
+ entropyThreshold             percentage of mismatches at a locus to be considered having high entropy
+ out                          Output bam
+ bam_compression              Compression level to use for writing BAM files
+ disable_bam_indexing         Turn off on-the-fly creation of indices for output BAM files.
+ simplifyBAM                  If provided, output BAM files will be simplified to include just key reads for downstream variation discovery analyses (removing duplicates, PF-, non-primary reads), as well stripping all extended tags from the kept reads except the read group identifier
+ useOnlyKnownIndels           Don't run 'Smith-Waterman' to generate alternate consenses; use only known indels provided as RODs for constructing the alternate references.
+ maxReadsInMemory             max reads allowed to be kept in memory at a time by the SAMFileWriter. Keep it low to minimize memory consumption (but the tool may skip realignment on regions with too much coverage.  If it is too low, it may generate errors during realignment); keep it high to maximize realignment (but make sure to give Java enough memory).
+ maxIsizeForMovement          maximum insert size of read pairs that we attempt to realign
+ maxPositionalMoveAllowed     maximum positional move in basepairs that a read can be adjusted during realignment
+ maxConsensuses               max alternate consensuses to try (necessary to improve performance in deep coverage)
+ maxReadsForConsensuses       max reads used for finding the alternate consensuses (necessary to improve performance in deep coverage)
+ maxReadsForRealignment       max reads allowed at an interval for realignment; if this value is exceeded, realignment is not attempted and the reads are passed to the output file(s) as-is
+ noOriginalAlignmentTags      Don't output the original cigar or alignment start tags for each realigned read in the output bam.
+ targetIntervalsAreNotSorted  This tool assumes that the target interval list is sorted; if the list turns out to be unsorted, it will throw an exception.  Use this argument when your interval list is not sorted to instruct the Realigner to first sort it in memory.
 
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 
   </help>
 </tool>

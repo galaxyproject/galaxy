@@ -1,4 +1,5 @@
-<tool id="cufflinks" name="Cufflinks" version="0.9.1">
+<tool id="cufflinks" name="Cufflinks" version="0.0.5">
+    <!-- Wrapper supports Cufflinks versions v1.0.0-v1.0.3 -->
     <description>transcript assembly and FPKM (RPKM) estimates for RNA-Seq data</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -13,8 +14,11 @@
             -j $pre_mrna_fraction
             
             ## Include reference annotation?
-            #if $reference_annotation.use_ref == "Yes":
+            #if $reference_annotation.use_ref == "Use reference annotation":
                 -G $reference_annotation.reference_annotation_file
+            #end if
+            #if $reference_annotation.use_ref == "Use reference annotation guide":
+		        -g $reference_annotation.reference_annotation_guide_file
             #end if
             
             ## Set paired-end parameters?
@@ -41,9 +45,7 @@
             #end if
     </command>
     <inputs>
-        <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help="">
-            <validator type="unspecified_build" />
-        </param>    
+        <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
         <param name="max_intron_len" type="integer" value="300000" min="1" max="600000" label="Max Intron Length" help=""/>
         <param name="min_isoform_fraction" type="float" value="0.05" min="0" max="1" label="Min Isoform Fraction" help=""/>
         <param name="pre_mrna_fraction" type="float" value="0.05" min="0" max="1" label="Pre MRNA Fraction" help=""/>
@@ -54,17 +56,21 @@
         <conditional name="reference_annotation">
             <param name="use_ref" type="select" label="Use Reference Annotation">
                 <option value="No">No</option>
-                <option value="Yes">Yes</option>
+                <option value="Use reference annotation">Use reference annotation</option>
+                <option value="Use reference annotation guide">Use reference annotation as guide</option>
             </param>
             <when value="No"></when>
-            <when value="Yes">
+            <when value="Use reference annotation">
                 <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
-            </when>
+            	</when>
+	        <when value="Use reference annotation guide">
+                <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
+                </when>
         </conditional>
         <conditional name="bias_correction">
             <param name="do_bias_correction" type="select" label="Perform Bias Correction" help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
-                <option value="Yes">Yes</option>
                 <option value="No">No</option>
+		<option value="Yes">Yes</option>
             </param>
             <when value="Yes">
                 <conditional name="seq_source">
@@ -99,6 +105,7 @@
         <data format="gtf" name="assembled_isoforms" label="${tool.name} on ${on_string}: assembled transcripts"/>
     </outputs>
 
+    <trackster_conf/>
     <tests>
         <!--
             Simple test that uses test data included with cufflinks.

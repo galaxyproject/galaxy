@@ -10,6 +10,7 @@ def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--num-threads', dest='num_threads', help='Use this many threads to align reads. The default is 1.' )
+    parser.add_option( '-C', '--color-space', dest='color_space', action='store_true', help='This indicates color-space data' )
     parser.add_option( '-J', '--junctions-output', dest='junctions_output_file', help='Junctions output file; formate is BED.' )
     parser.add_option( '-H', '--hits-output', dest='accepted_hits_output_file', help='Accepted hits output file; formate is BAM.' )
     parser.add_option( '', '--own-file', dest='own_file', help='' )
@@ -86,11 +87,21 @@ def __main__():
     except:
         sys.stdout.write( 'Could not determine Tophat version\n' )
 
+    # Color or base space
+    space = ''
+    if options.color_space:
+        space = '-C'
+
     # Creat bowtie index if necessary.
     tmp_index_dir = tempfile.mkdtemp()
     if options.own_file:
-        index_path = os.path.join( tmp_index_dir, os.path.split( options.own_file )[1] )
-        cmd_index = 'bowtie-build -f %s %s' % ( options.own_file, index_path )
+        index_path = os.path.join( tmp_index_dir, '.'.join( os.path.split( options.own_file )[1].split( '.' )[:-1] ) )
+        try:
+            os.link( options.own_file, index_path + '.fa' )
+        except:
+            # Tophat prefers (but doesn't require) fasta file to be in same directory, with .fa extension
+            pass
+        cmd_index = 'bowtie-build %s -f %s %s' % ( space, options.own_file, index_path )
         try:
             tmp = tempfile.NamedTemporaryFile( dir=tmp_index_dir ).name
             tmp_stderr = open( tmp, 'wb' )
@@ -123,7 +134,7 @@ def __main__():
     reads = options.input1
     if options.input2:
         reads += ' ' + options.input2
-    opts = '-p %s' % options.num_threads
+    opts = '-p %s %s' % ( options.num_threads, space )
     if options.single_paired == 'paired':
         opts += ' -r %s' % options.mate_inner_dist
     if options.settings == 'preSet':
@@ -152,8 +163,9 @@ def __main__():
             if options.allow_indels:
                 # Max options do not work for Tophat v1.2.0, despite documentation to the contrary.
                 opts += ' --allow-indels'
-                #opts += ' --allow-indels --max-insertion-length %i --max-deletion-length %i' % ( int( options.max_insertion_length ), int( options.max_deletion_length ) )
-
+                #opts += ' --max-insertion-length %i --max-deletion-length %i' % ( int( options.max_insertion_length ), int( options.max_deletion_length ) )
+                # need to warn user of this fact
+                sys.stdout.write( "Max insertion length and max deletion length options don't work in Tophat v1.2.0\n" )
 
             # Search type options.
             if options.coverage_search:
@@ -169,20 +181,20 @@ def __main__():
             if options.single_paired == 'paired':
                 opts += ' --mate-std-dev %s' % options.mate_std_dev
             if options.seg_mismatches:
-                opts += ' --segment-mismatches %d' % int(options.seg_mismatches)
+                opts += ' --segment-mismatches %d' % int( options.seg_mismatches )
             if options.seg_length:
-                opts += ' --segment-length %d' % int(options.seg_length)
+                opts += ' --segment-length %d' % int( options.seg_length )
             if options.min_segment_intron:
-                opts += ' --min-segment-intron %d' % int(options.min_segment_intron)
+                opts += ' --min-segment-intron %d' % int( options.min_segment_intron )
             if options.max_segment_intron:
-                opts += ' --max-segment-intron %d' % int(options.max_segment_intron)
+                opts += ' --max-segment-intron %d' % int( options.max_segment_intron )
             cmd = cmd % ( opts, index_path, reads )
         except Exception, e:
             # Clean up temp dirs
             if os.path.exists( tmp_index_dir ):
                 shutil.rmtree( tmp_index_dir )
             stop_err( 'Something is wrong with the alignment parameters and the alignment could not be run\n' + str( e ) )
-    print cmd
+    #print cmd
 
     # Run
     try:

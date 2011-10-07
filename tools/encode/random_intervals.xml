@@ -54,5 +54,11 @@ This tool will attempt to create a random set of intervals that mimic those foun
 **Regions to use** options
   * Bounding region of interest based on the dataset build.
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Schenck I, He J, Zhang Y, Ghent M, Veeraraghavan N, Albert I, Miller W, Makova KD, Hardison RC, Nekrutenko A. A framework for collaborative analysis of ENCODE data: making large-scale analyses biologist-friendly. Genome Res. 2007 Jun;17(6):960-4. &lt;http://www.ncbi.nlm.nih.gov/pubmed/17568012&gt;`_
+
   </help>
 </tool>

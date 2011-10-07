@@ -126,7 +126,19 @@
     border-top: 1px solid #eee;
     border-bottom: 1px solid #eee;
 }
-    
+
+.group-handle {
+    cursor: move;
+    float: left;
+    background: #eee url('/static/images/tracks/block.png');
+    width: 12px;
+    height: 12px;
+}
+.group {
+    min-height: 20px;
+    border-top: 2px solid #888;
+    border-bottom: 2px solid #888;
+}    
 .track {
     /* border-top: solid #DDDDDD 1px; */
     /* border-bottom: solid #DDDDDD 1px; */
@@ -163,8 +175,13 @@
 .track-tile canvas {
     position: relative;
     z-index: 100;
-    border: solid white;
-    border-width: 2px 0px 0px 0px;
+}
+
+.tile-message {
+    border-bottom: solid 1px red;
+    text-align: center;
+    color: red;
+    background-color: white;
 }
 
 .track.error .track-content {
@@ -226,17 +243,31 @@ input {
     font: 10px verdana;
 }
 .dynamic-tool, .filters {
-    width: 410px;
     margin-left: 0.25em;
     padding-bottom:0.5em;
+}
+.dynamic-tool {
+    width:410px;
+}
+.filters > .sliders, .display-controls {
+    float: left;
+    margin: 1em;
+}
+.sliders{
+    width: 410px;
+}
+.display-controls{
+    border-left: solid 2px #DDDDDD;
+    padding-left: 1em
 }
 .slider-row {
     margin-top: 0.4em;
     margin-left: 1em;
 }
-.slider-label {
+.elt-label {
     float: left;
     font-weight: bold;
+    margin-right: 1em;
 }
 .slider {
     float: right;
@@ -270,5 +301,38 @@ input {
     height: 7px;
     border: solid #999 1px;
     z-index: 100;
+}
+.bookmark {
+    background:white;
+    border:solid #999 1px;
+    border-right:none;
+    margin:0.5em;
+    margin-right:0;
+    padding:0.5em;
+}
+.bookmark .position {
+    font-weight:bold;
+}
+.delete-icon-container {
+    float:right;
+}
+
+.icon {
+    display:inline-block;
+    width:16px;
+    height:16px;
+}
+.icon.more-down {
+    background:url('../images/fugue/arrow-transition-270-bw.png') no-repeat 0px 0px;
+}
+.icon.more-across {
+    background: url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;
+}
+.intro {
+    padding: 1em;
+}
+.intro > .action-button {
+    background-color: #CCC;
+    padding: 1em;
 }
 

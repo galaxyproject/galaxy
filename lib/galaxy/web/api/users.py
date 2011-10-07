@@ -2,59 +2,79 @@
 API operations on User objects.
 """
 import logging
-from galaxy.web.base.controller import BaseController, url_for
-from galaxy import web
+from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy import web, util
 from elementtree.ElementTree import XML
+from paste.httpexceptions import *
 
 log = logging.getLogger( __name__ )
 
-class UserAPIController( BaseController ):
+class UserAPIController( BaseAPIController ):
     @web.expose_api
-    def index( self, trans, **kwd ):
+    def index( self, trans, deleted='False', **kwd ):
         """
         GET /api/users
+        GET /api/users/deleted
         Displays a collection (list) of users.
         """
-        if not trans.user_is_admin():
-            trans.response.status = 403
-            return "You are not authorized to view the list of users."
         rval = []
-        for user in trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.deleted == False ):
+        query = trans.sa_session.query( trans.app.model.User )
+        deleted = util.string_as_bool( deleted )
+        if deleted:
+            route = 'deleted_user'
+            query = query.filter( trans.app.model.User.table.c.deleted == True )
+            # only admins can see deleted users
+            if not trans.user_is_admin():
+                return []
+        else:
+            route = 'user'
+            query = query.filter( trans.app.model.User.table.c.deleted == False )
+            # special case: user can see only their own user
+            if not trans.user_is_admin():
+                item = trans.user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+                item['url'] = url_for( route, id=encoded_id )
+                return item
+        for user in query:
             item = user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id( user.id )
-            item['url'] = url_for( 'user', id=encoded_id )
+            item['url'] = url_for( route, id=encoded_id )
             rval.append( item )
         return rval
 
     @web.expose_api
-    def show( self, trans, id, **kwd ):
+    def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/users/{encoded_user_id}
+        GET /api/users/deleted/{encoded_user_id}
         Displays information about a user.
         """
-        if not trans.user_is_admin():
-            trans.response.status = 403
-            return "You are not authorized to view user info."
-        user_id = id
+        deleted = util.string_as_bool( deleted )
         try:
-            decoded_user_id = trans.security.decode_id( user_id )
-        except TypeError:
-            trans.response.status = 400
-            return "Malformed user id ( %s ) specified, unable to decode." % str( user_id )
-        try:
-            user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
+            user = self.get_user( trans, id, deleted=deleted )
+            if not trans.user_is_admin():
+                assert trans.user == user
+                assert not user.deleted
         except:
-            trans.response.status = 400
-            return "That user does not exist."
-        item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )    
-        item['url'] = url_for( 'user', id=user_id )
+            if trans.user_is_admin():
+                raise
+            else:
+                raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
+        item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+                                                                  'total_disk_usage': float } )    
         return item
     
-    @web.expose_api
-    def create( self, trans, payload, **kwd ):
-        """
-        POST /api/users
-        Creates a new user.
-        """
-        trans.response.status = 403
-        return "Not implemented."
+    @web.expose
+    def create( self, trans, **kwd ):
+        raise HTTPNotImplemented()
+
+    @web.expose
+    def update( self, trans, **kwd ):
+        raise HTTPNotImplemented()
+
+    @web.expose
+    def delete( self, trans, **kwd ):
+        raise HTTPNotImplemented()
+
+    @web.expose
+    def undelete( self, trans, **kwd ):
+        raise HTTPNotImplemented()

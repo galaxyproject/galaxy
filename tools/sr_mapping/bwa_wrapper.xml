@@ -5,6 +5,10 @@
     bwa_wrapper.py 
       --threads="4"
 
+      #if $input1.ext == "fastqillumina":
+            --illumina1.3
+      #end if
+
       ## reference source
       --fileSource=$genomeSource.refGenomeSource
       #if $genomeSource.refGenomeSource == "history":
@@ -93,11 +97,11 @@
         <option value="paired">Paired-end</option>
       </param>
       <when value="single">
-        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33" />
+        <param name="input1" type="data" format="fastqsanger,fastqillumina" label="FASTQ file" help="FASTQ with either Sanger-scaled quality values (fastqsanger) or Illumina-scaled quality values (fastqillumina)" />
       </when>
       <when value="paired">
-        <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33" />
-        <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33" />
+        <param name="input1" type="data" format="fastqsanger,fastqillumina" label="Forward FASTQ file" help="FASTQ with either Sanger-scaled quality values (fastqsanger) or Illumina-scaled quality values (fastqillumina)" />
+        <param name="input2" type="data" format="fastqsanger,fastqillumina" label="Reverse FASTQ file" help="FASTQ with either Sanger-scaled quality values (fastqsanger) or Illumina-scaled quality values (fastqillumina)" />
       </when>
     </conditional>
     <conditional name="params">
@@ -127,7 +131,7 @@
         <conditional name="readGroup">
           <param name="specReadGroup" type="select" label="Specify the read group for this file? (samse/sampe -r)">
             <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option value="no" selected="True">No</option>
           </param>
           <when value="yes">
             <param name="rgid" type="text" size="25" label="Read group identiﬁer (ID). Each @RG line must have a unique ID. The value of ID is used in the RG 
@@ -324,7 +328,7 @@ There is no such thing (yet) as an automated gearshift in short read mapping. It
 
 **Input formats**
 
-BWA accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare your files.
+BWA accepts files in either Sanger FASTQ format (galaxy type *fastqsanger*) or Illumina FASTQ format (galaxy type *fastqillumina*). Use the FASTQ Groomer to prepare your files.
 
 ------
 

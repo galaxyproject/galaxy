@@ -330,7 +330,94 @@ function replace_big_select_inputs(min_length, max_length) {
     });
 }
 
-// Edit and save text asynchronously.
+/**
+ * Returns editable text element. Element is a div with text: (a) when user clicks on text, a textbox/area 
+ * enables user to edit text; (b) when user presses enter key, element's text is set.
+ */
+// TODO: use this function to implement async_save_text (implemented below).
+function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish) {
+    // Set defaults if necessary.
+    if (num_cols === undefined) {
+        num_cols = 30;
+    }
+    if (num_rows === undefined) {
+        num_rows = 4;
+    }
+    
+    // Create div for element.
+    var container = $("<div/>").addClass("editable-text").text(text).click(function() {
+        // If there's already an input element, editing is active, so do nothing.
+        if ($(this).children(":input").length > 0) {
+            return;
+        }
+        
+        container.removeClass("editable-text");
+        
+        // Handler for setting element text.
+        var set_text = function(new_text, do_on_finish) {
+            container.find(":input").remove();
+            
+            if (new_text != "") {
+                container.text(new_text);
+            }
+            else {
+                // No text; need a line so that there is a click target.
+                container.html("<br>");
+            }
+            container.addClass("editable-text");
+
+            if (do_on_finish && on_finish) {
+                on_finish(new_text);
+            }
+        };
+        
+        // Create input element(s) for editing.
+        var cur_text = container.text(),
+            input_elt, button_elt;
+            
+        if (use_textarea) {
+            input_elt = $("<textarea/>").attr({ rows: num_rows, cols: num_cols }).text($.trim(cur_text)).keyup(function(e) {
+                if (e.keyCode === 27) {
+                    // Escape key.
+                    set_text(cur_text);
+                }
+            });
+            button_elt = $("<button/>").text("Done").click(function() {
+                set_text(input_elt.val(), true);
+                // Return false so that click does not propogate to container.
+                return false;
+            });
+        }
+        else {
+            input_elt = $("<input type='text'/>").attr({ value: $.trim(cur_text), size: num_cols })
+            .blur(function() {
+                set_text(cur_text);
+            }).keyup(function(e) {
+                if (e.keyCode === 27) {
+                    // Escape key.
+                    $(this).trigger("blur");
+                } else if (e.keyCode === 13) {
+                    // Enter key.
+                    set_text($(this).val(), true);
+                }
+            });
+        }               
+                                
+        // Replace text with input object(s) and focus & select.
+        container.text("");
+        container.append(input_elt);
+        if (button_elt) {
+            container.append(button_elt);
+        }
+        input_elt.focus();
+        input_elt.select();
+    }); 
+    return container;
+}
+
+/** 
+ * Edit and save text asynchronously.
+ */
 function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish) {
     // Set defaults if necessary.
     if (num_cols === undefined) {
@@ -341,7 +428,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
     }
     
     // Set up input element.
-    $("#" + click_to_edit_elt).live( "click", function() {
+    $("#" + click_to_edit_elt).live("click", function() {
         // Check if this is already active
         if ( $("#renaming-active").length > 0) {
             return;
@@ -399,7 +486,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
         }
         // Replace text with input object and focus & select.
         text_elt.hide();
-        t.insertAfter( text_elt );
+        t.insertAfter(text_elt);
         t.focus();
         t.select();
         
@@ -588,6 +675,23 @@ $(document).ready( function() {
         select_field.get(0).form.submit();
     });
     
+    // checkboxes refresh on change
+    $(":checkbox[refresh_on_change='true']").click( function() {
+        var select_field = $(this),
+            select_val = select_field.val(),
+            refresh = false,
+            ref_on_change_vals = select_field.attr("refresh_on_change_values");
+        if (ref_on_change_vals) {
+            ref_on_change_vals = ref_on_change_vals.split(',');
+            var last_selected_value = select_field.attr("last_selected_value");
+            if ($.inArray(select_val, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
+                return;
+            }
+        }
+        $(window).trigger("refresh_on_change");
+        select_field.get(0).form.submit();
+    });
+    
     // Links with confirmation
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );
@@ -621,4 +725,5 @@ $(document).ready( function() {
         }
         return anchor;
     });
+
 });

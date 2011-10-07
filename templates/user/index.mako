@@ -18,10 +18,23 @@
             %if trans.app.config.enable_openid:
                 <li><a href="${h.url_for( controller='user', action='openid_manage', cntrller=cntrller )}">${ ('Manage OpenIDs')}</a> linked to your account</li>
             %endif
+            %if trans.app.config.use_remote_user:
+                %if trans.app.config.remote_user_logout_href:
+                    <li><a href="${trans.app.config.remote_user_logout_href}" target="_top">${_('Logout')}</a></li>
+                %endif
+            %else:
+                <li><a href="${h.url_for( controller='user', action='logout', logout_all=True )}" target="_top">${_('Logout')}</a> ${_('of all user sessions')}</li>
+            %endif
         %else:
             <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller,  webapp='community' )}">${_('Manage your information')}</a></li>
         %endif
     </ul>
+    <p>
+        You are using <strong>${trans.user.get_disk_usage( nice_size=True )}</strong> of disk space in this Galaxy instance.
+        %if trans.app.config.enable_quotas:
+            Your disk quota is: <strong>${trans.app.quota_agent.get_quota( trans.user, nice_size=True )}</strong>.
+        %endif
+    </p>
 %else:
     %if not message:
         <p>${n_('You are currently not logged in.')}</p>

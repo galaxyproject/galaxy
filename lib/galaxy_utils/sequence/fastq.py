@@ -153,6 +153,8 @@ class fastqSequencingRead( SequencingRead ):
             rval.quality = reversed( rval.get_decimal_quality_scores() )
             rval.quality = "%s " % " ".join( map( str, rval.quality ) )
         return rval
+    def apply_galaxy_conventions( self ):
+        pass
 
 class fastqSangerRead( fastqSequencingRead ):
     format = 'sanger'
@@ -206,7 +208,7 @@ class fastqCSSangerRead( fastqSequencingRead ):
         if self.has_adapter_base():
             qual_len = len( self.get_ascii_quality_scores() )
             seq_len = len( self.sequence )
-            assert qual_len + 1 == seq_len, "Invalid FASTQ file: quality score length (%i) does not match sequence length (%i with adapter base)" % ( qual_len, seq_len )
+            assert ( qual_len + 1 == seq_len ) or ( qual_len == seq_len ), "Invalid FASTQ file: quality score length (%i) does not match sequence length (%i with adapter base)" % ( qual_len, seq_len ) #SRA adds FAKE/DUMMY quality scores to the adapter base, we'll allow the reading of the Improper score here, but remove it in the Reader when "apply_galaxy_conventions" is set to True
         else:
             return fastqSequencingRead.assert_sequence_quality_lengths( self )
     def get_sequence( self ):
@@ -262,7 +264,12 @@ class fastqCSSangerRead( fastqSequencingRead ):
         elif new_adapter:
             rval.sequence = "%s%s" % ( new_adapter, rval.sequence )
         return rval
-
+    def apply_galaxy_conventions( self ):  
+        if self.has_adapter_base() and len( self.sequence ) == len( self.get_ascii_quality_scores() ): #SRA adds FAKE/DUMMY quality scores to the adapter base, we remove them here
+            if self.is_ascii_encoded():
+                self.quality = self.quality[1:]
+            else:
+                self.quality = " ".join( map( str, self.get_decimal_quality_scores()[1:] ) )
 
 FASTQ_FORMATS = {}
 for format in [ fastqIlluminaRead, fastqSolexaRead, fastqSangerRead, fastqCSSangerRead ]:
@@ -417,9 +424,10 @@ class fastqAggregator( object ):
         return column_stats
 
 class fastqReader( object ):
-    def __init__( self, fh, format = 'sanger' ):
+    def __init__( self, fh, format = 'sanger', apply_galaxy_conventions = False ):
         self.file = fh
         self.format = format
+        self.apply_galaxy_conventions = apply_galaxy_conventions
     def close( self ):
         return self.file.close()
     def next(self):
@@ -438,7 +446,7 @@ class fastqReader( object ):
         while True:
             line = self.file.readline()
             if not line:
-                raise Exception( 'Invalid FASTQ file: could not parse second instance of sequence identifier.' )
+                raise Exception( 'Invalid FASTQ file: could not find quality score of sequence identifier %s.' % rval.identifier )
             line = line.rstrip( '\n\r' )
             if line.startswith( '+' ) and ( len( line ) == 1 or line[1:].startswith( fastq_header[1:] ) ):
                 rval.description = line
@@ -450,6 +458,8 @@ class fastqReader( object ):
                 break
             rval.append_quality( line )
         rval.assert_sequence_quality_lengths()
+        if self.apply_galaxy_conventions:
+            rval.apply_galaxy_conventions()
         return rval
     def __iter__( self ):
         while True:
@@ -494,13 +504,14 @@ class fastqVerboseErrorReader( fastqReader ):
             raise e
 
 class fastqNamedReader( object ):
-    def __init__( self, fh, format = 'sanger' ):
+    def __init__( self, fh, format = 'sanger', apply_galaxy_conventions = False  ):
         self.file = fh
         self.format = format
         self.reader = fastqReader( self.file, self.format )
         #self.last_offset = self.file.tell()
         self.offset_dict = {}
         self.eof = False
+        self.apply_galaxy_conventions = apply_galaxy_conventions
     def close( self ):
         return self.file.close()
     def get( self, sequence_id ):
@@ -531,6 +542,8 @@ class fastqNamedReader( object ):
                     if fastq_read.identifier not in self.offset_dict:
                         self.offset_dict[ fastq_read.identifier ] = []
                     self.offset_dict[ fastq_read.identifier ].append( offset )
+        if rval is not None and self.apply_galaxy_conventions:
+            rval.apply_galaxy_conventions()
         return rval
     def has_data( self ):
         #returns a string representation of remaining data, or empty string (False) if no data remaining
@@ -547,7 +560,7 @@ class fastqNamedReader( object ):
                 eof = True
             self.file.seek( offset )
         if count:
-            rval = "There were %i known sequence reads not utilized. "
+            rval = "There were %i known sequence reads not utilized. " % count
         if not eof:
             rval = "%s%s" % ( rval, "An additional unknown number of reads exist in the input that were not utilized." )
         return rval
@@ -615,6 +628,16 @@ class fastqJoiner( object ):
             elif identifier[-1] == "2":
                 identifier = "%s1" % identifier[:-1]
         return identifier
+    def is_first_mate( self, sequence_id ):
+        is_first = None
+        if not isinstance( sequence_id, basestring ):
+            sequence_id = sequence_id.identifier
+        if sequence_id[-2] == '/':
+            if sequence_id[-1] == "1":
+                is_first = True
+            else:
+                is_first = False
+        return is_first
 
 class fastqSplitter( object ):   
     def split( self, fastq_read ):

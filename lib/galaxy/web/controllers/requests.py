@@ -1,7 +1,6 @@
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import *
-from galaxy import model, util
 from galaxy.web.form_builder import *
 from galaxy.web.controllers.requests_common import RequestsGrid
 import logging
@@ -16,7 +15,7 @@ class UserRequestsGrid( RequestsGrid ):
     def apply_query_filter( self, trans, query, **kwd ):
         return query.filter_by( user=trans.user )
 
-class Requests( BaseController ):
+class Requests( BaseUIController ):
     request_grid = UserRequestsGrid()
 
     @web.expose
@@ -89,4 +88,4 @@ class Requests( BaseController ):
             self.request_grid.global_actions = []
         # Render the list view
         return self.request_grid( trans, **kwd )
-    
+

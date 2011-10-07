@@ -51,7 +51,7 @@
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="maf/maf_to_bed.xml" />
-    <tool file="maf/maf_to_interval.xml" /> 
+    <tool file="maf/maf_to_interval.xml" />
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
     <tool file="fastq/fastq_to_fasta.xml" />
@@ -78,13 +78,13 @@
         <tool file="filters/gff/extract_GFF_Features.xml" />
         <tool file="filters/gff/gff_filter_by_attribute.xml" />
         <tool file="filters/gff/gff_filter_by_feature_count.xml" />
-		<tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
+        <tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
     <tool file="filters/joiner.xml" />
     <tool file="filters/compare.xml"/>
     <tool file="new_operations/subtract_query.xml"/>
-    <tool file="stats/grouping.xml" />   
+    <tool file="stats/grouping.xml" />
     <tool file="new_operations/column_join.xml"/>
   </section>
   <section name="Extract Features" id="features">
@@ -112,7 +112,7 @@
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
-    <tool file="new_operations/intersect.xml" />  
+    <tool file="new_operations/intersect.xml" />
     <tool file="new_operations/subtract.xml" />
     <tool file="new_operations/merge.xml" />
     <tool file="new_operations/concat.xml" />
@@ -127,7 +127,7 @@
   </section>
   <section name="Statistics" id="stats">
     <tool file="stats/gsummary.xml" />
-    <tool file="filters/uniq.xml" /> 
+    <tool file="filters/uniq.xml" />
     <tool file="stats/cor.xml" />
     <tool file="stats/generate_matrix_for_pca_lda.xml" />
     <tool file="stats/lda_analy.xml" />
@@ -203,6 +203,12 @@
     <tool file="human_genome_variation/lps.xml" />
     <tool file="human_genome_variation/hilbertvis.xml" />
   </section>
+  <section name="Genome Diversity" id="gd">
+    <tool file="genome_diversity/extract_primers.xml" />
+    <tool file="genome_diversity/select_snps.xml" />
+    <tool file="genome_diversity/select_restriction_enzymes.xml" />
+    <tool file="genome_diversity/extract_flanking_dna.xml" />
+  </section>
   <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss_5/emboss_antigenic.xml" />
     <tool file="emboss_5/emboss_backtranseq.xml" />
@@ -217,13 +223,13 @@
     <tool file="emboss_5/emboss_chips.xml" />
     <tool file="emboss_5/emboss_cirdna.xml" />
     <tool file="emboss_5/emboss_codcmp.xml" />
-    <tool file="emboss_5/emboss_coderet.xml" /> 
+    <tool file="emboss_5/emboss_coderet.xml" />
     <tool file="emboss_5/emboss_compseq.xml" />
-    <tool file="emboss_5/emboss_cpgplot.xml" /> 
+    <tool file="emboss_5/emboss_cpgplot.xml" />
     <tool file="emboss_5/emboss_cpgreport.xml" />
     <tool file="emboss_5/emboss_cusp.xml" />
     <tool file="emboss_5/emboss_cutseq.xml" />
-    <tool file="emboss_5/emboss_dan.xml" /> 
+    <tool file="emboss_5/emboss_dan.xml" />
     <tool file="emboss_5/emboss_degapseq.xml" />
     <tool file="emboss_5/emboss_descseq.xml" />
     <tool file="emboss_5/emboss_diffseq.xml" />
@@ -239,7 +245,7 @@
     <tool file="emboss_5/emboss_etandem.xml" />
     <tool file="emboss_5/emboss_extractfeat.xml" />
     <tool file="emboss_5/emboss_extractseq.xml" />
-    <tool file="emboss_5/emboss_freak.xml" /> 
+    <tool file="emboss_5/emboss_freak.xml" />
     <tool file="emboss_5/emboss_fuzznuc.xml" />
     <tool file="emboss_5/emboss_fuzzpro.xml" />
     <tool file="emboss_5/emboss_fuzztran.xml" />
@@ -260,7 +266,7 @@
     <tool file="emboss_5/emboss_merger.xml" />
     <tool file="emboss_5/emboss_msbar.xml" />
     <tool file="emboss_5/emboss_needle.xml" />
-    <tool file="emboss_5/emboss_newcpgreport.xml" /> 
+    <tool file="emboss_5/emboss_newcpgreport.xml" />
     <tool file="emboss_5/emboss_newcpgseek.xml" />
     <tool file="emboss_5/emboss_newseq.xml" />
     <tool file="emboss_5/emboss_noreturn.xml" />
@@ -288,7 +294,7 @@
     <tool file="emboss_5/emboss_revseq.xml" />
     <tool file="emboss_5/emboss_seqmatchall.xml" />
     <tool file="emboss_5/emboss_seqret.xml" />
-    <tool file="emboss_5/emboss_showfeat.xml" /> 
+    <tool file="emboss_5/emboss_showfeat.xml" />
     <tool file="emboss_5/emboss_shuffleseq.xml" />
     <tool file="emboss_5/emboss_sigcleave.xml" />
     <tool file="emboss_5/emboss_sirna.xml" />
@@ -310,7 +316,7 @@
     <tool file="emboss_5/emboss_water.xml" />
     <tool file="emboss_5/emboss_wobble.xml" />
     <tool file="emboss_5/emboss_wordcount.xml" />
-    <tool file="emboss_5/emboss_wordmatch.xml" /> 
+    <tool file="emboss_5/emboss_wordmatch.xml" />
   </section>
   <label text="NGS Toolbox Beta" id="ngs" />
   <section name="NGS: QC and manipulation" id="cshl_library_information">
@@ -376,6 +382,7 @@
    <tool file="samtools/pileup_parser.xml" />
    <tool file="samtools/pileup_interval.xml" />
    <tool file="samtools/samtools_flagstat.xml" />
+   <tool file="samtools/samtools_rmdup.xml" />
   </section>
   <section name="NGS: Indel Analysis" id="indel_analysis">
     <tool file="indels/sam_indel_filter.xml" />
@@ -384,6 +391,7 @@
   </section>
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />
+   <tool file="peak_calling/sicer_wrapper.xml" />
    <tool file="genetrack/genetrack_indexer.xml" />
    <tool file="genetrack/genetrack_peak_prediction.xml" />
   </section>

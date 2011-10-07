@@ -69,7 +69,7 @@ class LibraryListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class LibraryAdmin( BaseController ):
+class LibraryAdmin( BaseUIController ):
 
     library_list_grid = LibraryListGrid()
 

@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<tool_sheds>
+    <tool_shed name="Galaxy main tool shed" url="http://toolshed.g2.bx.psu.edu/"/>
+    <tool_shed name="Galaxy test tool shed" url="http://testtoolshed.g2.bx.psu.edu/"/>
+</tool_sheds>

@@ -227,7 +227,7 @@ def build_maf_index_species_chromosomes( filename, index_species = None ):
     except Exception, e:
         #most likely a bad MAF
         log.debug( 'Building MAF index on %s failed: %s' % ( filename, e ) )
-        return ( None, [], {} )
+        return ( None, [], {}, 0 )
     return ( indexes, species, species_chromosomes, blocks )
 
 #builds and returns ( index, index_filename ) for specified maf_file

@@ -75,6 +75,7 @@ def __main__():
     parser.add_option( '-D', '--dbkey', dest='dbkey', help='Dbkey for reference genome' )
     parser.add_option( '-X', '--do_not_build_index', dest='do_not_build_index', action='store_true', help="Don't build index" )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
+    parser.add_option( '-I', '--illumina1.3', dest='illumina13qual', help='Input FASTQ files have Illuina 1.3 quality scores' )
     (options, args) = parser.parse_args()
 
     # output version # of tool
@@ -163,10 +164,14 @@ def __main__():
             stop_err( 'Error indexing reference sequence. ' + str( e ) )
     else:
         ref_file_name = options.ref
+    if options.illumina13qual:
+        illumina_quals = "-I"
+    else:
+        illumina_quals = ""
 
     # set up aligning and generate aligning command options
     if options.params == 'pre_set':
-        aligning_cmds = '-t %s %s' % ( options.threads, color_space )
+        aligning_cmds = '-t %s %s %s' % ( options.threads, color_space, illumina_quals )
         gen_alignment_cmds = ''
     else:
         if options.maxEditDist != '0':
@@ -185,11 +190,11 @@ def __main__():
             noIterSearch = '-N'
         else:
             noIterSearch = ''
-        aligning_cmds = '-n %s -o %s -e %s -d %s -i %s %s -k %s -t %s -M %s -O %s -E %s %s %s %s' % \
+        aligning_cmds = '-n %s -o %s -e %s -d %s -i %s %s -k %s -t %s -M %s -O %s -E %s %s %s %s %s' % \
                         ( editDist, options.maxGapOpens, options.maxGapExtens, options.disallowLongDel,
                           options.disallowIndel, seed, options.maxEditDistSeed, options.threads,
                           options.mismatchPenalty, options.gapOpenPenalty, options.gapExtensPenalty,
-                          suboptAlign, noIterSearch, color_space )
+                          suboptAlign, noIterSearch, color_space, illumina_quals )
         if options.genAlignType == 'paired':
             gen_alignment_cmds = '-a %s -o %s' % ( options.maxInsertSize, options.maxOccurPairing )
             if options.outputTopNDisc:

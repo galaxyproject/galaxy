@@ -170,6 +170,7 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False, forc
                                                  app.model.History.table.c.update_time < cutoff_time ) ) \
                                   .options( eagerload( 'datasets' ) )
     for history in histories:
+        print "### Processing history id %d (%s)" % (history.id, history.name) 
         for dataset_assoc in history.datasets:
             _purge_dataset_instance( dataset_assoc, app, remove_from_disk, info_only = info_only ) #mark a DatasetInstance as deleted, clear associated files, and mark the Dataset as deleted if it is deletable
         if not info_only:
@@ -182,6 +183,8 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False, forc
             history.purged = True
             app.sa_session.add( history )
             app.sa_session.flush()
+        else:
+            print "History id %d will be purged (without 'info_only' mode)" % history.id
         history_count += 1
     stop = time.time()
     print 'Purged %d histories.' % history_count
@@ -310,17 +313,21 @@ def delete_datasets( app, cutoff_time, remove_from_disk, info_only = False, forc
     dataset_ids.extend( [ row.id for row in history_dataset_ids_query.execute() ] )
     # Process each of the Dataset objects
     for dataset_id in dataset_ids:
-        print "######### Processing dataset id:", dataset_id
         dataset = app.sa_session.query( app.model.Dataset ).get( dataset_id )
-        if dataset.id not in skip and _dataset_is_deletable( dataset ):
-            deleted_dataset_count += 1
-            for dataset_instance in dataset.history_associations + dataset.library_associations:
-                # Mark each associated HDA as deleted
-                _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children=True, info_only=info_only, is_deletable=True )
-                deleted_instance_count += 1
+        if dataset.id in skip:
+            continue
         skip.append( dataset.id )
+        print "######### Processing dataset id:", dataset_id
+        if not _dataset_is_deletable( dataset ):
+            print "Dataset is not deletable (shared between multiple histories/libraries, at least one is not deleted)"
+            continue
+        deleted_dataset_count += 1
+        for dataset_instance in dataset.history_associations + dataset.library_associations:
+            # Mark each associated HDA as deleted
+            _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children=True, info_only=info_only, is_deletable=True )
+            deleted_instance_count += 1
     stop = time.time()
-    print "Examined %d datasets, marked %d as deleted and purged %d dataset instances" % ( len( skip ), deleted_dataset_count, deleted_instance_count )
+    print "Examined %d datasets, marked %d datasets and %d dataset instances (HDA) as deleted" % ( len( skip ), deleted_dataset_count, deleted_instance_count )
     print "Total elapsed time: ", stop - start
     print "##########################################" 
 
@@ -360,15 +367,24 @@ def _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_ch
     # A dataset_instance is either a HDA or an LDDA.  Purging a dataset instance marks the instance as deleted, 
     # and marks the associated dataset as deleted if it is not associated with another active DatsetInstance.
     if not info_only:
-        print "Marking as deleted: ", dataset_instance.__class__.__name__, " id ", dataset_instance.id
+        print "Marking as deleted: %s id %d (for dataset id %d)" % \
+            ( dataset_instance.__class__.__name__, dataset_instance.id, dataset_instance.dataset.id )
         dataset_instance.mark_deleted( include_children = include_children )
         dataset_instance.clear_associated_files()
         app.sa_session.add( dataset_instance )
         app.sa_session.flush()
         app.sa_session.refresh( dataset_instance.dataset )
+    else:
+        print "%s id %d (for dataset id %d) will be marked as deleted (without 'info_only' mode)" % \
+            ( dataset_instance.__class__.__name__, dataset_instance.id, dataset_instance.dataset.id )
     if is_deletable or _dataset_is_deletable( dataset_instance.dataset ):
         # Calling methods may have already checked _dataset_is_deletable, if so, is_deletable should be True
         _delete_dataset( dataset_instance.dataset, app, remove_from_disk, info_only=info_only, is_deletable=is_deletable )
+    else:
+        if info_only:
+            print "Not deleting dataset ", dataset_instance.dataset.id, " (will be possibly deleted without 'info_only' mode)"
+        else:
+            print "Not deleting dataset %d (shared between multiple histories/libraries, at least one not deleted)" % dataset_instance.dataset.id
     #need to purge children here
     if include_children:
         for child in dataset_instance.children:
@@ -396,8 +412,13 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletab
                                                .filter( app.model.MetadataFile.table.c.lda_id==ldda.id ):
                 metadata_files.append( metadata_file )
         for metadata_file in metadata_files:
-            print "The following metadata files attached to associations of Dataset '%s' have been purged:" % dataset.id
-            if not info_only:
+            op_description = "marked as deleted"
+            if remove_from_disk:
+                op_description = op_description + " and purged from disk"
+            if info_only:
+                print "The following metadata files attached to associations of Dataset '%s' will be %s (without 'info_only' mode):" % ( dataset.id, op_description )
+            else:
+                print "The following metadata files attached to associations of Dataset '%s' have been %s:" % ( dataset.id, op_description )
                 if remove_from_disk:
                     try:
                         print "Removing disk file ", metadata_file.file_name
@@ -411,10 +432,13 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletab
                 app.sa_session.add( metadata_file )
                 app.sa_session.flush()
             print "%s" % metadata_file.file_name
-        print "Deleting dataset id", dataset.id
-        dataset.deleted = True
-        app.sa_session.add( dataset )
-        app.sa_session.flush()
+        if not info_only:
+            print "Deleting dataset id", dataset.id
+            dataset.deleted = True
+            app.sa_session.add( dataset )
+            app.sa_session.flush()
+        else:
+            print "Dataset %i will be deleted (without 'info_only' mode)" % ( dataset.id )
 
 def _purge_dataset( app, dataset, remove_from_disk, info_only = False ):
     if dataset.deleted:
@@ -429,10 +453,19 @@ def _purge_dataset( app, dataset, remove_from_disk, info_only = False ):
                         # Remove associated extra files from disk if they exist
                         if dataset.extra_files_path and os.path.exists( dataset.extra_files_path ):
                             shutil.rmtree( dataset.extra_files_path ) #we need to delete the directory and its contents; os.unlink would always fail on a directory
+                        usage_users = []
+                        for hda in dataset.history_associations:
+                            if not hda.purged and hda.history.user is not None and hda.history.user not in usage_users:
+                                usage_users.append( hda.history.user )
+                        for user in usage_users:
+                            user.total_disk_usage -= dataset.total_size
+                            app.sa_session.add( user )
                     print "Purging dataset id", dataset.id
                     dataset.purged = True
                     app.sa_session.add( dataset )
                     app.sa_session.flush()
+                else:
+                    print "Dataset %i will be purged (without 'info_only' mode)" % (dataset.id)
             else:
                 print "This dataset (%i) is not purgable, the file (%s) will not be removed.\n" % ( dataset.id, dataset.file_name )
         except OSError, exc:

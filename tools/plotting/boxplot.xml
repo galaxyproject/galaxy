@@ -97,6 +97,12 @@ Creates a boxplot graph. Its main purpose is to display a distribution of qualit
 
 .. image:: ./static/images/solid_qual.png
 
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor N, Taylor J, Nekrutenko A; Galaxy Team. Manipulation of FASTQ data with Galaxy. Bioinformatics. 2010 Jul 15;26(14):1783-5. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20562416&gt;`_
+
 
   </help>
 </tool>

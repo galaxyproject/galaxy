@@ -4,7 +4,8 @@ Galaxy Tool Shed data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile, mimetypes, ConfigParser
+import os.path, os, errno, sys, codecs, operator, logging, tarfile, mimetypes, ConfigParser
+from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
@@ -19,8 +20,6 @@ class User( object ):
         self.deleted = False
         self.purged = False
         self.username = None
-        # Relationships
-        self.tools = []
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash( text_type=cleartext )
@@ -90,11 +89,14 @@ class Repository( object ):
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
-    def __init__( self, name=None, description=None, user_id=None, private=False ):
+    def __init__( self, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None, times_downloaded=0 ):
         self.name = name or "Unnamed repository"
         self.description = description
+        self.long_description = long_description
         self.user_id = user_id
         self.private = private
+        self.email_alerts = email_alerts
+        self.times_downloaded = times_downloaded
     @property
     def repo_path( self ):
         # Repository locations on disk are defined in the hgweb.config file
@@ -112,168 +114,51 @@ class Repository( object ):
                 return config.get( "paths", option )
         raise Exception( "Entry for repository %s missing in %s/hgweb.config file." % ( lhs, os.getcwd() ) )
     @property
+    def revision( self ):
+        repo = hg.repository( ui.ui(), self.repo_path )
+        tip_ctx = repo.changectx( repo.changelog.tip() )
+        return "%s:%s" % ( str( tip_ctx.rev() ), str( repo.changectx( repo.changelog.tip() ) ) )
+    @property
+    def tip( self ):
+        repo = hg.repository( ui.ui(), self.repo_path )
+        return str( repo.changectx( repo.changelog.tip() ) )
+    @property
     def is_new( self ):
         repo = hg.repository( ui.ui(), self.repo_path )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
-class Tool( object ):
-    file_path = '/tmp' # Overridden in mapping.__init__()
-    states = Bunch( NEW = 'new',
-                    ERROR = 'error',
-                    DELETED = 'deleted',
-                    WAITING = 'waiting',
-                    APPROVED = 'approved',
-                    REJECTED = 'rejected',
-                    ARCHIVED = 'archived' )
-    def __init__( self, guid=None, tool_id=None, name=None, description=None, user_description=None, 
-                  category=None, version=None, user_id=None, external_filename=None, suite=False ):
-        self.guid = guid
-        self.tool_id = tool_id
-        self.name = name or "Unnamed tool"
-        self.description = description
-        self.user_description = user_description
-        self.version = version or "1.0.0"
-        self.user_id = user_id
-        self.external_filename = external_filename
-        self.deleted = False
-        self.__extension = None
-        self.suite = suite
-    def get_file_name( self ):
-        if not self.external_filename:
-            assert self.id is not None, "ID must be set before filename used (commit the object)"
-            dir = os.path.join( self.file_path, 'tools', *directory_hash_id( self.id ) )
-            # Create directory if it does not exist
-            if not os.path.exists( dir ):
-                os.makedirs( dir )
-            # Return filename inside hashed directory
-            filename = os.path.join( dir, "tool_%d.dat" % self.id )
+    @property
+    def allow_push( self ):
+        repo = hg.repository( ui.ui(), self.repo_path )
+        return repo.ui.config( 'web', 'allow_push' )
+    def set_allow_push( self, usernames, remove_auth='' ):
+        allow_push = util.listify( self.allow_push )
+        if remove_auth:
+            allow_push.remove( remove_auth )
         else:
-            filename = self.external_filename
-        # Make filename absolute
-        return os.path.abspath( filename )
-    def set_file_name( self, filename ):
-        if not filename:
-            self.external_filename = None
-        else:
-            self.external_filename = filename
-    file_name = property( get_file_name, set_file_name )
-    def create_from_datatype( self, datatype_bunch ):
-        # TODO: ensure guid is unique and generate a new one if not.
-        self.guid = datatype_bunch.guid
-        self.tool_id = datatype_bunch.id
-        self.name = datatype_bunch.name
-        self.description = datatype_bunch.description
-        self.version = datatype_bunch.version
-        self.user_id = datatype_bunch.user.id
-        self.suite = datatype_bunch.suite
-    @property
-    def state( self ):
-        latest_event = self.latest_event
-        if latest_event:
-            return latest_event.state
-        return None
-    @property
-    def latest_event( self ):
-        if self.events:
-            events = [ tea.event for tea in self.events ]
-            # Get the last event that occurred ( events mapper is sorted descending )
-            return events[0]
-        return None
-    # Tool states
-    @property
-    def is_new( self ):
-        return self.state == self.states.NEW
-    @property
-    def is_error( self ):
-        return self.state == self.states.ERROR
-    @property
-    def is_deleted( self ):
-        return self.state == self.states.DELETED
-    @property
-    def is_waiting( self ):
-        return self.state == self.states.WAITING
-    @property
-    def is_approved( self ):
-        return self.state == self.states.APPROVED
-    @property
-    def is_rejected( self ):
-        return self.state == self.states.REJECTED
-    @property
-    def is_archived( self ):
-        return self.state == self.states.ARCHIVED
-    def get_state_message( self ):
-        if self.is_suite:
-            label = 'tool suite'
-        else:
-            label = 'tool'
-        if self.is_new:
-            return '<font color="red"><b><i>This is an unsubmitted version of this %s</i></b></font>' % label
-        if self.is_error:
-            return '<font color="red"><b><i>This %s is in an error state</i></b></font>' % label
-        if self.is_deleted:
-            return '<font color="red"><b><i>This is a deleted version of this %s</i></b></font>' % label
-        if self.is_waiting:
-            return '<font color="red"><b><i>This version of this %s is awaiting administrative approval</i></b></font>' % label
-        if self.is_approved:
-            return '<b><i>This is the latest approved version of this %s</i></b>' % label
-        if self.is_rejected:
-            return '<font color="red"><b><i>This version of this %s has been rejected by an administrator</i></b></font>' % label
-        if self.is_archived:
-            return '<font color="red"><b><i>This is an archived version of this %s</i></b></font>' % label
-    @property
-    def extension( self ):
-        # if instantiated via a query, this unmapped property won't exist
-        if '_Tool__extension' not in dir( self ):
-            self.__extension = None
-        if self.__extension is None:
-            head = open( self.file_name, 'rb' ).read( 4 )
-            try:
-                assert head[:3] == 'BZh'
-                assert int( head[-1] ) in range( 0, 10 )
-                self.__extension = 'tar.bz2'
-            except AssertionError:
-                pass
-        if self.__extension is None:
-            try:
-                assert head[:2] == '\037\213'
-                self.__extension = 'tar.gz'
-            except:
-                pass
-        if self.__extension is None:
-            self.__extension = 'tar'
-        return self.__extension
-    @property
-    def is_suite( self ):
-        return self.suite
-    @property
-    def label( self ):
-        if self.is_suite:
-            return 'tool suite'
-        else:
-            return 'tool'
-    @property
-    def type( self ):
-        # Hack
-        if self.is_suite:
-            return 'toolsuite'
-        return 'tool'
-    @property
-    def download_file_name( self ):
-        return '%s_%s.%s' % ( self.tool_id, self.version, self.extension )
-    @property
-    def mimetype( self ):
-        return mimetypes.guess_type( self.download_file_name )[0]
+            for username in util.listify( usernames ):
+                if username not in allow_push:
+                    allow_push.append( username )
+        allow_push = '%s\n' % ','.join( allow_push )
+        repo = hg.repository( ui.ui(), path=self.repo_path )
+        # Why doesn't the following work?
+        #repo.ui.setconfig( 'web', 'allow_push', allow_push )
+        lines = repo.opener( 'hgrc', 'rb' ).readlines()
+        fp = repo.opener( 'hgrc', 'wb' )
+        for line in lines:
+            if line.startswith( 'allow_push' ):
+                fp.write( 'allow_push = %s' % allow_push )
+            else:
+                fp.write( line )
+        fp.close()
 
-class Event( object ):
-    def __init__( self, state=None, comment='' ):
-        self.state = state
-        self.comment = comment
-
-class ToolEventAssociation( object ):
-    def __init__( self, tool=None, event=None ):
-        self.tool = tool
-        self.event = event
-
+class RepositoryMetadata( object ):
+    def __init__( self, repository_id=None, changeset_revision=None, metadata=None, malicious=False ):
+        self.repository_id = repository_id
+        self.changeset_revision = changeset_revision
+        self.metadata = metadata or dict()
+        self.malicious = malicious
+    
 class ItemRatingAssociation( object ):
     def __init__( self, id=None, user=None, item=None, rating=0, comment='' ):
         self.id = id
@@ -285,10 +170,6 @@ class ItemRatingAssociation( object ):
         """ Set association's item. """
         pass
 
-class ToolRatingAssociation( ItemRatingAssociation ):
-    def set_item( self, tool ):
-        self.tool = tool
-
 class RepositoryRatingAssociation( ItemRatingAssociation ):
     def set_item( self, repository ):
         self.repository = repository
@@ -298,11 +179,6 @@ class Category( object ):
         self.name = name
         self.description = description
         self.deleted = deleted
-
-class ToolCategoryAssociation( object ):
-    def __init__( self, tool=None, category=None ):
-        self.tool = tool
-        self.category = category
 
 class RepositoryCategoryAssociation( object ):
     def __init__( self, repository=None, category=None ):
@@ -327,12 +203,6 @@ class ItemTagAssociation ( object ):
         self.user_tname = user_tname
         self.value = None
         self.user_value = None
-        
-class ToolTagAssociation ( ItemTagAssociation ):
-    pass
-
-class ToolAnnotationAssociation( object ):
-    pass
 
 ## ---- Utility methods -------------------------------------------------------
 def sort_by_attr( seq, attr ):

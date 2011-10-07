@@ -1,21 +1,29 @@
 <%inherit file="/base.mako"/>
-<%namespace file="/message.mako" import="javascripts" />
 <%def name="title()">Copy History Items</%def>
 
 <%def name="javascripts()">
 
-${parent.javascripts()}
-${h.js( "jquery", "galaxy.base" )}
-<script type="text/javascript">
-    $(function() {
-        $("#select-multiple").click(function() {
-            $("#single-dest-select").val("");
-            $("#single-destination").hide();
-            $("#multiple-destination").show();
+    ${parent.javascripts()}
+    ${h.js( "jquery", "galaxy.base" )}
+    
+    <script type="text/javascript">
+        $(function() {
+            $("#select-multiple").click(function() {
+                $("#single-dest-select").val("");
+                $("#single-destination").hide();
+                $("#multiple-destination").show();
+            });
         });
-    });
-</script>
-      
+        %if 'history' in refresh_frames:
+            if ( parent.frames && parent.frames.galaxy_history ) {
+                parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history')}";
+                if ( parent.force_right_panel ) {
+                    parent.force_right_panel( 'show' );
+                }
+            }
+        %endif
+    </script>
+    
 </%def>
 
 %if error_msg:
@@ -66,7 +74,7 @@ ${h.js( "jquery", "galaxy.base" )}
                         %>
                         <div class="form-row">
                             <input type="checkbox" name="source_dataset_ids" id="dataset_${encoded_id}" value="${encoded_id}"${checked}/>
-                            <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${data.name}</label>
+                            <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name)}</label>
                         </div>
                     %endfor
                 %else:

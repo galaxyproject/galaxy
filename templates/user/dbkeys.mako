@@ -56,6 +56,10 @@
                 pre.toggle();
             });     
         });
+        $("#installed_builds").hide();
+        $("#show_installed_builds").click(function() {
+            $("#installed_builds").show();
+        });
     });
 
     </script>
@@ -72,10 +76,8 @@
     % elif lines_skipped > 0:
         <div class="warningmessagelarge">Skipped ${lines_skipped} lines that could not be parsed. (Line was either blank or not 2-column, with 2nd column being an integer)</div>
     % endif
-    
-    <h2>Custom Database/Builds</h2>
 
-    <p>Current custom builds:</p>
+    <h3>Current Custom Builds:</h3>
 
     % if dbkeys:
         <table id="custom_dbkeys" class="colored" cellspacing="0" cellpadding="0">
@@ -101,6 +103,8 @@
     ##                </pre>
                     % if 'count' in dct:
                         ${dct['count']}
+                    % else:
+                        ?
                     % endif
                 </td>
                 <td><form action="dbkeys" method="post"><input type="hidden" name="key" value="${key}" /><input type="submit" name="delete" value="Delete" /></form></td>
@@ -110,12 +114,17 @@
     % else:
         <p>You currently have no custom builds.</p>
     % endif
-    <p>Builds with system-installed len files: <em>${installed_len_files}</em></p>
-    <br />
     
+    <p>
+        <a id="show_installed_builds" href="javascript:void(0);">Show loaded, system-installed builds</a>
+        <blockquote id="installed_builds">${installed_len_files}</blockquote>
+    </p>
+    
+    <hr />
+    <h3>Add a Custom Build</h3>
     <form action="dbkeys" method="post" enctype="multipart/form-data">
         <div class="toolForm" style="float: left;">
-            <div class="toolFormTitle">Add a Custom Build</div>
+            <div class="toolFormTitle">New Build</div>
             <div class="toolFormBody">
                 <div class="form-row">
                     <label for="name">Build Name (eg: Mouse):</label>
@@ -126,10 +135,12 @@
                     <input type="text" id="key" name="key" />
                 </div>
                 <div class="form-row">
-                    <label for="len_file">Upload .len file:</label>
-                    <input type="file" id="len_file" name="len_file" /><br />
-                    <label for="len_text">Or paste length info below:</label>
-                    <textarea id="len_text" name="len_text" cols="30" rows="10"></textarea>
+                    <label for="len_file">Build Genome:</label>
+                    <select name="dataset_id">
+                    %for dataset in fasta_hdas:
+                        <option value="${trans.security.encode_id( dataset.id )}">${dataset.hid}: ${dataset.name}</option>
+                    %endfor
+                    </select>
                 </div>
             
                 <div class="form-row"><input type="submit" name="add" value="Submit"/></div>

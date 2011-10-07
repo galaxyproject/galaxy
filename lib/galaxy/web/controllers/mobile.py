@@ -1,6 +1,6 @@
 from galaxy.web.base.controller import *
 
-class Mobile( BaseController ):
+class Mobile( BaseUIController ):
     @web.expose
     def index( self, trans, **kwargs ):
         return trans.fill_template( "mobile/index.mako" )
@@ -47,7 +47,7 @@ class Mobile( BaseController ):
         error = password_error = None
         user = trans.sa_session.query( model.User ).filter_by( email = email ).first()
         if not user:
-            error = "No such user"
+            error = "No such user (please note that login is case sensitive)"
         elif user.deleted:
             error = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
         elif user.external:

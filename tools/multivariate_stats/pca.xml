@@ -1,4 +1,4 @@
-<tool id="pca1" name="Principal Component Analysis" version="1.0.1">
+<tool id="pca1" name="Principal Component Analysis" version="1.0.2">
   <description> </description>
   <command interpreter="python">
     pca.py 

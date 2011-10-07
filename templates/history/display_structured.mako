@@ -91,7 +91,7 @@ elif entity_name == "WorkflowInvocation":
 </%def>
 
 <%def name="render_item_hda( hda, children  )">
-    ${render_dataset( hda, hda.hid )}
+    ${render_dataset( hda, hda.hid, display_structured=True )}
 </%def>
 
 <%def name="render_item_job( job, children  )">

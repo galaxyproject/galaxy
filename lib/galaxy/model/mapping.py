@@ -49,7 +49,8 @@ User.table = Table( "galaxy_user", metadata,
     Column( "external", Boolean, default=False ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
-    Column( "purged", Boolean, index=True, default=False ) )
+    Column( "purged", Boolean, index=True, default=False ),
+    Column( "disk_usage", Numeric( 15, 0 ), index=True ) )
 
 UserAddress.table = Table( "user_address", metadata,
     Column( "id", Integer, primary_key=True),
@@ -112,11 +113,13 @@ HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
     Column( "peek" , TEXT ),
+    Column( "tool_version" , TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ),
     Column( "visible", Boolean ) )
 
 Dataset.table = Table( "dataset", metadata, 
@@ -129,7 +132,8 @@ Dataset.table = Table( "dataset", metadata,
     Column( "purgable", Boolean, default=True ),
     Column( "external_filename" , TEXT ),
     Column( "_extra_files_path", TEXT ),
-    Column( 'file_size', Numeric( 15, 0 ) ) )
+    Column( 'file_size', Numeric( 15, 0 ) ),
+    Column( 'total_size', Numeric( 15, 0 ) ) )
 
 HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_dataset_association_display_at_authorization", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -193,6 +197,37 @@ Role.table = Table( "role", metadata,
     Column( "description", TEXT ),
     Column( "type", String( 40 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
+
+UserQuotaAssociation.table = Table( "user_quota_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "quota_id", Integer, ForeignKey( "quota.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+GroupQuotaAssociation.table = Table( "group_quota_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "quota_id", Integer, ForeignKey( "quota.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+Quota.table = Table( "quota", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", String( 255 ), index=True, unique=True ),
+    Column( "description", TEXT ),
+    Column( "bytes", BigInteger ),
+    Column( "operation", String( 8 ) ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+DefaultQuotaAssociation.table = Table( "default_quota_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "type", String( 32 ), index=True, unique=True ),
+    Column( "quota_id", Integer, ForeignKey( "quota.id" ), index=True ) )
 
 DatasetPermissions.table = Table( "dataset_permissions", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -271,6 +306,7 @@ LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_associa
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
     Column( "peek" , TEXT ),
+    Column( "tool_version" , TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
@@ -327,6 +363,17 @@ LibraryDatasetDatasetInfoAssociation.table = Table( 'library_dataset_dataset_inf
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
+ToolShedRepository.table = Table( "tool_shed_repository", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_shed", TrimmedString( 255 ), index=True ),
+    Column( "name", TrimmedString( 255 ), index=True ),
+    Column( "description" , TEXT ),
+    Column( "owner", TrimmedString( 255 ), index=True ),
+    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -367,6 +414,12 @@ JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", metadata,
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
     
+JobToInputLibraryDatasetAssociation.table = Table( "job_to_input_library_dataset", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
+    Column( "name", String(255) ) )
+
 JobToOutputLibraryDatasetAssociation.table = Table( "job_to_output_library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -472,8 +525,8 @@ GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "current_history_id", Integer, ForeignKey( "history.id" ), nullable=True ),
     Column( "session_key", TrimmedString( 255 ), index=True, unique=True ), # unique 128 bit random number coerced to a string
     Column( "is_valid", Boolean, default=False ),
-    Column( "prev_session_id", Integer ) # saves a reference to the previous session so we have a way to chain them together
-    )
+    Column( "prev_session_id", Integer ), # saves a reference to the previous session so we have a way to chain them together
+    Column( "disk_usage", Numeric( 15, 0 ), index=True ) )
 
 GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1132,7 +1185,10 @@ assign_mapper( context, Dataset, Dataset.table,
             primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
         active_history_associations=relation( 
             HistoryDatasetAssociation, 
-            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == False ) ) ),
+            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == False ) & ( HistoryDatasetAssociation.table.c.purged == False ) ) ),
+        purged_history_associations=relation(
+            HistoryDatasetAssociation,
+            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.purged == True ) ) ),
         library_associations=relation( 
             LibraryDatasetDatasetAssociation, 
             primaryjoin=( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
@@ -1238,6 +1294,21 @@ assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
         role=relation( Role )
     )
 )
+
+assign_mapper( context, Quota, Quota.table,
+    properties=dict( users=relation( UserQuotaAssociation ),
+                     groups=relation( GroupQuotaAssociation ) ) )
+
+assign_mapper( context, UserQuotaAssociation, UserQuotaAssociation.table,
+    properties=dict( user=relation( User, backref="quotas" ),
+                     quota=relation( Quota ) ) )
+
+assign_mapper( context, GroupQuotaAssociation, GroupQuotaAssociation.table,
+    properties=dict( group=relation( Group, backref="quotas" ),
+                     quota=relation( Quota ) ) )
+
+assign_mapper( context, DefaultQuotaAssociation, DefaultQuotaAssociation.table,
+    properties=dict( quota=relation( Quota, backref="default" ) ) )
 
 assign_mapper( context, DatasetPermissions, DatasetPermissions.table,
     properties=dict(
@@ -1370,6 +1441,9 @@ assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociati
 assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )
 
+assign_mapper( context, JobToInputLibraryDatasetAssociation, JobToInputLibraryDatasetAssociation.table,
+    properties=dict( job=relation( Job ), dataset=relation( LibraryDatasetDatasetAssociation, lazy=False ) ) )
+
 assign_mapper( context, JobToOutputLibraryDatasetAssociation, JobToOutputLibraryDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( LibraryDatasetDatasetAssociation, lazy=False ) ) )
 
@@ -1404,6 +1478,7 @@ assign_mapper( context, Job, Job.table,
                      input_datasets=relation( JobToInputDatasetAssociation ),
                      output_datasets=relation( JobToOutputDatasetAssociation ),
                      post_job_actions=relation( PostJobActionAssociation, lazy=False ),
+                     input_library_datasets=relation( JobToInputLibraryDatasetAssociation ),
                      output_library_datasets=relation( JobToOutputLibraryDatasetAssociation ),
                      external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
 
@@ -1519,7 +1594,9 @@ assign_mapper( context, Page, Page.table,
                      annotations=relation( PageAnnotationAssociation, order_by=PageAnnotationAssociation.table.c.id, backref="pages" ),
                      ratings=relation( PageRatingAssociation, order_by=PageRatingAssociation.table.c.id, backref="pages" )  
                    ) )
-                   
+
+assign_mapper( context, ToolShedRepository, ToolShedRepository.table )
+
 # Set up proxy so that 
 #   Page.users_shared_with
 # returns a list of users that page is shared with.

@@ -2,6 +2,8 @@
 ## Utilities for sharing items and displaying shared items.
 ## HACK: these should probably go in the web helper object.
 ##
+## TODO: FIXME Cannot import model here, because grids are
+## used across webapps, and each webapp has it's own model.
 
 <%! from galaxy import model %>
 
@@ -88,7 +90,7 @@
     elif a_class == model.UserOpenID:
         class_plural = "OpenIDs"
     else:
-        class_plural = a_class.__name__ + "s"
+        class_plural = "items"
     return class_plural
 %>
 </%def>

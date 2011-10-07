@@ -100,6 +100,13 @@
             ${ldda.get_size( nice_size=True )}
             <div style="clear: both"></div>
         </div>
+        %if ldda.tool_version:
+            <div class="form-row">
+                <label>Tool version:</label>
+                ${ldda.tool_version}
+                <div style="clear: both"></div>
+            </div>
+        %endif
         <div class="form-row">
             <label>Data type:</label>
             ${ldda.ext}
@@ -135,6 +142,7 @@
         <div class="form-row">
             <div>${ldda.blurb}</div>
         </div>
+        ## We want to display all metadata item here, whether marked visible or not since they are all pretty useful
         %for name, spec in ldda.metadata.spec.items():
             <div class="form-row">
                 <label>${spec.desc.replace( ' (click box & select)', '' )}:</label>
@@ -153,7 +161,7 @@
         %endfor
         %if ldda.peek != "no peek":
             <div class="form-row">
-               <div id="info${ldda.id}" class="historyItemBody">
+                <div id="info${ldda.id}" class="historyItemBody">
                     <label>Peek:</label>
                     <div><pre id="peek${ldda.id}" class="peek">${ldda.display_peek()}</pre></div>
                 </div>

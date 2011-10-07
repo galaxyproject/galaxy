@@ -90,10 +90,14 @@ class LibrarySelectionGrid( LibraryListGrid ):
 class DbKeyColumn( grids.GridColumn ):
     """ Column for filtering by and displaying dataset dbkey. """
     def filter( self, trans, user, query, dbkey ):
-        """ Filter by dbkey. """
+        """ Filter by dbkey; datasets without a dbkey are returned as well. """
         # use raw SQL b/c metadata is a BLOB
         dbkey = dbkey.replace("'", "\\'")
-        return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+        return query.filter( or_( \
+                                or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
+                                or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
+                                )
+                            )
                     
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
@@ -144,21 +148,21 @@ class TracksterSelectionGrid( grids.Grid ):
     template = "/tracks/add_to_viz.mako"
     async_template = "/page/select_items_grid_async.mako"
     model_class = model.Visualization
-    default_filter = { "deleted" : "False" , "shared" : "All" }
-    default_sort_key = "title"
+    default_sort_key = "-update_time"
     use_async = True
     use_paging = False
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="standard" ),
-        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization )
+        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
 
     def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class )
+        return trans.sa_session.query( self.model_class ).filter( self.model_class.deleted == False )
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.user_id == trans.user.id )                    
         
-class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAssociation ):
+class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetAssociation ):
     """
     Controller for track browser interface. Handles building a new browser from
     datasets in the current history, and display of the resulting browser.
@@ -168,17 +172,14 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     histories_grid = HistorySelectionGrid()
     history_datasets_grid = HistoryDatasetsSelectionGrid()
     tracks_grid = TracksterSelectionGrid()
-    
-    #
-    # TODO: need to encode dataset id and use 
-    #   UsesHistoryDatasetAssociation.get_dataset
-    # for better dataset security.
-    #
-    
+        
     available_tracks = None
     available_genomes = None
     
-    def _init_references(self, trans):
+    def _init_references( self, trans ):
+        """
+        Create a list of builds that have reference data specified in twobit.loc file.
+        """
         avail_genomes = {}
         for line in open( os.path.join( trans.app.config.tool_data_path, "twobit.loc" ) ):
             if line.startswith("#"): continue
@@ -187,6 +188,29 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 key, path = val
                 avail_genomes[key] = path
         self.available_genomes = avail_genomes
+        
+    def _has_reference_data( self, trans, dbkey ):
+        # Initialize built-in builds if necessary.
+        if not self.available_genomes:
+            self._init_references( trans )
+        
+        # Look for key in built-in builds.
+        if dbkey in self.available_genomes:
+            # There is built-in reference data.
+            return True
+            
+        # Look for key in user's custom builds.
+        # TODO: how to make this work for shared visualizations?
+        user = trans.user
+        if user and 'dbkeys' in trans.user.preferences:
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+            if dbkey in user_keys:
+                dbkey_attributes = user_keys[ dbkey ]
+                if 'fasta' in dbkey_attributes:
+                    # Fasta + converted datasets can provide reference data.
+                    return True
+                    
+        return False
     
     @web.expose
     @web.require_login()
@@ -229,9 +253,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         """
         Display browser for the datasets listed in `dataset_ids`.
         """
-        decoded_id = trans.security.decode_id( id )
-        session = trans.sa_session
-        vis = session.query( model.Visualization ).get( decoded_id )
+        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
         
         new_dataset = kwargs.get("dataset_id", None)
@@ -295,11 +317,17 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         #
         len_file = None
         len_ds = None
-        # If there is any dataset in the history of extension `len`, this will use it
+        user_keys = {}
         if 'dbkeys' in vis_user.preferences:
             user_keys = from_json_string( vis_user.preferences['dbkeys'] )
-            if vis_dbkey in user_keys:  
-                len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ vis_dbkey ][ 'len' ] ).file_name
+            if vis_dbkey in user_keys:
+                dbkey_attributes = user_keys[ vis_dbkey ]
+                if 'fasta' in dbkey_attributes:
+                    build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
+                    len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
+                # Backwards compatibility: look for len file directly.
+                elif 'len' in dbkey_attributes:
+                    len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ vis_dbkey ][ 'len' ] ).file_name
 
         if not len_file:
             len_ds = trans.db_dataset_for( dbkey )
@@ -307,7 +335,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % vis_dbkey )
             else:
                 len_file = len_ds.file_name
-        
+
         #
         # Get chroms data:
         #   (a) chrom name, len;
@@ -371,37 +399,56 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         except:
             # No more chroms to read.
             pass
-        
-        # Check for reference chrom
-        if self.available_genomes is None: self._init_references(trans)        
-        
+                
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
-        return { 'reference': vis_dbkey in self.available_genomes, 'chrom_info': to_sort, 
+        return { 'reference': self._has_reference_data( trans, vis_dbkey ), 'chrom_info': to_sort, 
                  'prev_chroms' : prev_chroms, 'next_chroms' : next_chroms, 'start_index' : start_index }
         
     @web.json
     def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
-        if self.available_genomes is None: self._init_references(trans)
-
-        if dbkey not in self.available_genomes:
+        """
+        Return reference data for a build.
+        """
+        
+        if not self._has_reference_data( trans, dbkey ):
             return None
         
+        #    
+        # Get twobit file with reference data.
+        #
+        twobit_file_name = None
+        if dbkey in self.available_genomes:
+            # Built-in twobit.
+            twobit_file_name = self.available_genomes[dbkey]
+        else:
+            # From custom build.
+            # TODO: how to make this work for shared visualizations?
+            user = trans.user
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+            dbkey_attributes = user_keys[ dbkey ]
+            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( dbkey_attributes[ 'fasta' ] )
+            error = self._convert_dataset( trans, fasta_dataset, 'twobit' )
+            if error:
+                return error
+            else:
+                twobit_dataset = fasta_dataset.get_converted_dataset( trans, 'twobit' )
+                twobit_file_name = twobit_dataset.file_name
+            
+        # Read and return reference data.
         try:
-            twobit = TwoBitFile( open(self.available_genomes[dbkey]) )
+            twobit = TwoBitFile( open( twobit_file_name ) )
+            if chrom in twobit:
+                seq_data = twobit[chrom].get( int(low), int(high) )
+                return { 'dataset_type': 'refseq', 'data': seq_data }
         except IOError:
             return None
-            
-        if chrom in twobit:
-            return twobit[chrom].get(int(low), int(high))        
-        
-        return None
         
     @web.json
     def raw_data( self, trans, dataset_id, chrom, low, high, **kwargs ):
         """
         Uses original (raw) dataset to return data. This method is useful 
-        when the dataset is not yet indexed and hence using /data would
+        when the dataset is not yet indexed and hence using data would
         be slow because indexes need to be created.
         """
         
@@ -412,8 +459,14 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return msg
             
         # Return data.
+        data = None
+        # TODO: for raw data requests, map dataset type to provider using dict in data_providers.py
         if isinstance( dataset.datatype, Gff ):
             data = GFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
+            data[ 'dataset_type' ] = 'interval_index'
+            data[ 'extra_info' ] = None
+        if isinstance( dataset.datatype, Bed ):
+            data = RawBedDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
             data[ 'extra_info' ] = None
         return data
@@ -476,9 +529,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
         
     @web.json
-    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, **kwargs ):
+    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, start_val=0, max_vals=5000, **kwargs ):
         """
-        Called by the browser to request a block of data
+        Provides a block of data from a dataset.
         """
     
         # Parameter check.
@@ -533,15 +586,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
-        data = data_provider.get_data( chrom, low, high, **kwargs )
-        message = None
-        if isinstance(data, dict) and 'message' in data:
-            message = data['message']
-            tracks_dataset_type = data.get( 'data_type', tracks_dataset_type )
-            track_data = data['data']
-        else:
-            track_data = data
-        return { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info, 'data': track_data, 'message': message }
+        result = data_provider.get_data( chrom, low, high, int(start_val), int(max_vals), **kwargs )
+        result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
+        return result
         
     @web.json
     def save( self, trans, **kwargs ):
@@ -568,24 +615,51 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         vis_rev.visualization = vis
         vis_rev.title = vis.title
         vis_rev.dbkey = dbkey
-        # Tracks from payload
-        tracks = []
-        for track in decoded_payload['tracks']:
-            tracks.append( {    "dataset_id": track['dataset_id'],
-                                "hda_ldda": track.get('hda_ldda', "hda"),
-                                "name": track['name'],
-                                "track_type": track['track_type'],
-                                "prefs": track['prefs'],
-                                "is_child": track.get('is_child', False)
-            } )
+        
+        def unpack_track( track_json ):
+            """ Unpack a track from its json. """
+            return {
+                "dataset_id": track_json['dataset_id'],
+                "hda_ldda": track_json.get('hda_ldda', "hda"),
+                "name": track_json['name'],
+                "track_type": track_json['track_type'],
+                "prefs": track_json['prefs'],
+                "mode": track_json['mode']
+            }
+        
+        def unpack_collection( collection_json ):
+            """ Unpack a collection from its json. """
+            unpacked_drawables = []
+            drawables = collection_json[ 'drawables' ]
+            for drawable_json in drawables:
+                if 'track_type' in drawable_json:
+                    drawable = unpack_track( drawable_json )
+                else:
+                    drawable = unpack_collection( drawable_json )
+                unpacked_drawables.append( drawable )
+            return {
+                "name": collection_json.get( 'name', '' ),
+                "obj_type": collection_json[ 'obj_type' ],
+                "drawables": unpacked_drawables,
+                "prefs": collection_json.get( 'prefs' , [] )
+            }
+
+        # TODO: unpack and validate bookmarks:
+        def unpack_bookmarks( bookmarks_json ):
+            return 
+        
+        # Unpack and validate view content.
+        view_content = unpack_collection( decoded_payload[ 'view' ] )
+        bookmarks = unpack_bookmarks( decoded_payload[ 'bookmarks' ] )
+        vis_rev.config = { "view": view_content, "bookmarks": bookmarks }
         # Viewport from payload
         if 'viewport' in decoded_payload:
             chrom = decoded_payload['viewport']['chrom']
             start = decoded_payload['viewport']['start']
             end = decoded_payload['viewport']['end']
-            vis_rev.config = { "tracks": tracks, "viewport": { 'chrom': chrom, 'start': start, 'end': end } }
-        else:
-            vis_rev.config = { "tracks": tracks }
+            overview = decoded_payload['viewport']['overview']
+            vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
+        
         vis.latest_revision = vis_rev
         session.add( vis_rev )
         session.flush()
@@ -734,8 +808,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if run_on_region:
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
-                # TODO: put together more robust way to determine if a dataset can be indexed.
-                if hasattr( input_dataset, 'get_track_type' ):
+                if get_data_provider( original_dataset=input_dataset ):
                     # Can index dataset.
                     track_type, data_sources = input_dataset.datatype.get_track_type()
                     # Convert to datasource that provides 'data' because we need to
@@ -748,7 +821,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Return any messages generated during conversions.
         return_message = _get_highest_priority_msg( messages_list )
         if return_message:
-            return return_message
+            return to_json_string( return_message )
             
         #
         # Set target history (the history that tool will use for inputs/outputs).
@@ -768,7 +841,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         #
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
-            if run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
+            if input_dataset is None: #optional dataset and dataset wasn't selected
+                tool_params[ jida.name ] = None
+            elif run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
                 # Dataset is indexed and hence a subset can be extracted and used
                 # as input.
                 track_type, data_sources = input_dataset.datatype.get_track_type()

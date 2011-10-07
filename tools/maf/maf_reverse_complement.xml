@@ -41,5 +41,13 @@ becomes::
   s hg17.chr7     31156555 58 - 158628139 CCTCTTCCACTATAGACCTCCTTAAACAAAATAATGAAAAATGAATAAACCACAAATT
   s panTro1.chr6  31691510 58 - 161576975 CCTCTTCCACTATAGACCTCCTTAAACAAAATAATGAAAAACGAATAAACCACAAATT
   s mm5.chr6     120816549 54 - 149721531 CCTCTTCCACTGAGGAATTTCTTTTTTTAAATGATGAGCAATCAATGAAACG----TT
+
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
+
   </help>
 </tool>

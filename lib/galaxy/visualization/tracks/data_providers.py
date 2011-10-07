@@ -3,7 +3,7 @@ Data providers for tracks visualizations.
 """
 
 import sys
-from math import floor, ceil, log, pow
+from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
 if sys.version_info[:2] == (2, 4):
@@ -13,19 +13,16 @@ pkg_resources.require( "numpy" )
 from galaxy.datatypes.util.gff_util import *
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
-from bx.arrays.array_tree import FileArrayTreeDict
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Vcf
 from galaxy.datatypes.interval import Bed, Gff, Gtf
-from galaxy.datatypes.util.gff_util import parse_gff_attributes
 
 from pysam import csamtools, ctabix
 
-MAX_VALS = 5000 # only display first MAX_VALS features
-ERROR_MAX_VALS = "Only the first " + str(MAX_VALS) + " %s in the region denoted by the red line are displayed."
+ERROR_MAX_VALS = "Only the first %i %s in this region are displayed."
 
 # Return None instead of NaN to pass jQuery 1.4's strict JSON
 def float_nan(n):
@@ -33,7 +30,20 @@ def float_nan(n):
         return None
     else:
         return float(n)
-
+        
+def get_bounds( reads, start_pos_index, end_pos_index ):
+    """
+    Returns the minimum and maximum position for a set of reads.
+    """
+    max_low = sys.maxint
+    max_high = -sys.maxint
+    for read in reads:
+        if read[ start_pos_index ] < max_low:
+            max_low = read[ start_pos_index ]
+        if read[ end_pos_index ] > max_high:
+            max_high = read[ end_pos_index ]
+    return max_low, max_high
+        
 class TracksDataProvider( object ):
     """ Base class for tracks data providers. """
     
@@ -73,8 +83,15 @@ class TracksDataProvider( object ):
         # Override.
         pass
         
-    def get_data( self, chrom, start, end, **kwargs ):
-        """ Returns data in region defined by chrom, start, and end. """
+    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
+        """ 
+        Returns data in region defined by chrom, start, and end. start_val and
+        max_vals are used to denote the data to return: start_val is the first element to 
+        return and max_vals indicates the number of values to return.
+        
+        Return value must be a dictionary with the following attributes:
+            dataset_type, data
+        """
         # Override.
         pass
         
@@ -118,6 +135,88 @@ class TracksDataProvider( object ):
                     { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index], \
                     'index' : attrs[ 'index' ] } )
         return filters
+
+class BedDataProvider( TracksDataProvider ):
+    """
+    Abstract class that processes BED data from text format to payload format.
+    
+    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
+    """
+    
+    def get_iterator( self, chrom, start, end ):
+        raise "Unimplemented Method"
+        
+    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
+        iterator = self.get_iterator( chrom, start, end )
+        return self.process_data( iterator, start_val, max_vals, **kwargs )
+    
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
+        Provides
+        """
+        # Build data to return. Payload format is:
+        # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
+        #   <thick_end>, <blocks> ]
+        # 
+        # First three entries are mandatory, others are optional.
+        #
+        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        no_detail = ( "no_detail" in kwargs )
+        rval = []
+        message = None
+        for count, line in enumerate( iterator ):
+            if count < start_val:
+                continue
+            if max_vals and count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                break
+            # TODO: can we use column metadata to fill out payload?
+            # TODO: use function to set payload data
+
+            feature = line.split()
+            length = len(feature)
+            # Unique id is just a hash of the line
+            payload = [ hash(line), int(feature[1]), int(feature[2]) ]
+
+            if no_detail:
+                rval.append( payload )
+                continue
+
+            # Simpler way to add stuff, but type casting is not done.
+            # Name, score, strand, thick start, thick end.
+            #end = min( len( feature ), 8 )
+            #payload.extend( feature[ 3:end ] )
+
+            # Name, strand, thick start, thick end.
+            if length >= 4:
+                payload.append(feature[3])
+            if length >= 6:
+                payload.append(feature[5])
+            if length >= 8:
+                payload.append(int(feature[6]))
+                payload.append(int(feature[7]))
+
+            # Blocks.
+            if length >= 12:
+                block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
+                block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
+                blocks = zip( block_sizes, block_starts )
+                payload.append( [ ( int(feature[1]) + block[1], int(feature[1]) + block[1] + block[0] ) for block in blocks ] )
+
+            # Score (filter data)    
+            if length >= 5 and filter_cols and filter_cols[0] == "Score":
+                payload.append( float(feature[4]) )
+
+            rval.append( payload )
+
+        return { 'data': rval, 'message': message }
+
+    def write_data_to_file( self, chrom, start, end, filename ):
+        iterator = self.get_iterator( chrom, start, end )
+        out = open( filename, "w" )
+        for line in iterator:
+            out.write( "%s\n" % line )
+        out.close()
             
 class SummaryTreeDataProvider( TracksDataProvider ):
     """
@@ -213,14 +312,31 @@ class BamDataProvider( TracksDataProvider ):
         # Cleanup.
         bamfile.close()
     
-    def get_data( self, chrom, start, end, **kwargs ):
+    def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
         """
-        Fetch intervals in the region 
+        Fetch reads in the region and additional metadata.
+        
+        Returns a dict with the following attributes:
+            data - a list of reads with the format 
+                    [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
+                where <read_1> has the format
+                    [<start>, <end>, <cigar>, ?<read_seq>?]
+                and <read_2> has the format
+                    [<start>, <end>, <cigar>, ?<read_seq>?]
+                For single-end reads, read has format:
+                    [<guid>, <start>, <end>, <name>, cigar, seq] 
+                NOTE: read end and sequence data are not valid for reads outside of
+                requested region and should not be used.
+            
+            max_low - lowest coordinate for the returned reads
+            max_high - highest coordinate for the returned reads
+            message - error/informative message
         """
         start, end = int(start), int(end)
         orig_data_filename = self.original_dataset.file_name
         index_filename = self.converted_dataset.file_name
         no_detail = "no_detail" in kwargs
+        
         # Attempt to open the BAM file with index
         bamfile = csamtools.Samfile( filename=orig_data_filename, mode='rb', index_filename=index_filename )
         message = None
@@ -235,21 +351,15 @@ class BamDataProvider( TracksDataProvider ):
                     return None
             else:
                 return None
-        # Encode reads as list of lists; each read is a list with the format 
-        #   [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
-        # where <read_1> has the format
-        #   [<start>, <end>, <cigar>, ?<read_seq>?]
-        # and <read_2> has the format
-        #   [<start>, <end>, <cigar>, ?<read_seq>?]
-        # For single-end reads, read has format:
-        #   [<guid>, <start>, <end>, <name>, cigar, seq] 
-        # NOTE: read end and sequence data are not valid for reads outside of
-        # requested region and should not be used.
+                
+        # Encode reads as list of lists.
         results = []
         paired_pending = {}
-        for read in data:
-            if len(results) > MAX_VALS:
-                message = ERROR_MAX_VALS % "reads"
+        for count, read in enumerate( data ):
+            if count < start_val:
+                continue
+            if count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "reads" )
                 break
             qname = read.qname
             seq = read.seq
@@ -273,7 +383,9 @@ class BamDataProvider( TracksDataProvider ):
                     paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos, 'rlen': read_len, 'cigar': read.cigar }
             else:
                 results.append( [ "%i_%s" % ( read.pos, qname ), read.pos, read.pos + read_len, qname, read.cigar, read.seq] )
+                
         # Take care of reads whose mates are out of range.
+        # TODO: count paired reads when adhering to max_vals?
         for qname, read in paired_pending.iteritems():
             if read['mate_start'] < read['start']:
                 # Mate is before read.
@@ -293,9 +405,13 @@ class BamDataProvider( TracksDataProvider ):
                 r2 = [ read['mate_start'], read['mate_start'] ]
 
             results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2 ] )
-
+            
+        # Clean up.
         bamfile.close()
-        return { 'data': results, 'message': message }
+        
+        max_low, max_high = get_bounds( results, 1, 2 )
+                
+        return { 'data': results, 'message': message, 'max_low': max_low, 'max_high': max_high }
 
 class BBIDataProvider( TracksDataProvider ):
     """
@@ -311,7 +427,7 @@ class BBIDataProvider( TracksDataProvider ):
         f.close()
         return all_dat is not None
         
-    def get_data( self, chrom, start, end, **kwargs ):
+    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
         # Bigwig has the possibility of it being a standalone bigwig file, in which case we use
         # original_dataset, or coming from wig->bigwig conversion in which we use converted_dataset
         f, bbi = self._get_dataset()
@@ -323,9 +439,10 @@ class BBIDataProvider( TracksDataProvider ):
                 return None
             
             all_dat = all_dat[0] # only 1 summary
-            return { 'max': float( all_dat['max'] ), \
-                     'min': float( all_dat['min'] ), \
-                     'total_frequency': float( all_dat['coverage'] ) }
+            return { 'data' : { 'max': float( all_dat['max'] ), \
+                                'min': float( all_dat['min'] ), \
+                                'total_frequency': float( all_dat['coverage'] ) } \
+                    }
                      
         start = int(start)
         end = int(end)
@@ -350,7 +467,7 @@ class BBIDataProvider( TracksDataProvider ):
                 result.append( (pos, float_nan(dat_dict['mean']) ) )
                 pos += step_size
             
-        return result
+        return { 'data': result }
 
 class BigBedDataProvider( BBIDataProvider ):
     def _get_dataset( self ):
@@ -401,7 +518,7 @@ class FilterableMixin:
                           'type': 'int', 
                           'index': filter_col, 
                           'tool_id': 'Filter1',
-                          'tool_exp_name': 'c5' } ]
+                          'tool_exp_name': 'c6' } ]
             filter_col += 1
             if isinstance( self.original_dataset.datatype, Gtf ):
                 # Create filters based on dataset metadata.
@@ -473,11 +590,14 @@ class TabixDataProvider( FilterableMixin, TracksDataProvider ):
         
         return tabix.fetch(reference=chrom, start=start, end=end)
         
-    def get_data( self, chrom, start, end, **kwargs ):
+    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
         iterator = self.get_iterator( chrom, start, end )
-        return self.process_data(iterator, **kwargs)
-     
+        return self.process_data( iterator, start_val, max_vals, **kwargs )
+    
 class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
+    """
+    Interval index files used only for GFF files.
+    """
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
     
     def write_data_to_file( self, chrom, start, end, filename ):
@@ -493,12 +613,11 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
                 out.write(interval.raw_line + '\n')
         out.close()
     
-    def get_data( self, chrom, start, end, **kwargs ):
+    def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
         start, end = int(start), int(end)
         source = open( self.original_dataset.file_name )
         index = Indexes( self.converted_dataset.file_name )
         results = []
-        count = 0
         message = None
 
         # If chrom is not found in indexes, try removing the first three 
@@ -517,14 +636,15 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
         #
         filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
-        for start, end, offset in index.find(chrom, start, end):
-            if count >= MAX_VALS:
-                message = ERROR_MAX_VALS % "features"
+        for count, val in enumerate( index.find(chrom, start, end) ):
+            start, end, offset = val[0], val[1], val[2]
+            if count < start_val:
+                continue
+            if count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "features" )
                 break
-            count += 1
             source.seek( offset )
             # TODO: can we use column metadata to fill out payload?
-            # TODO: use function to set payload data
             
             # GFF dataset.
             reader = GFFReaderWrapper( source, fix_strand=True )
@@ -535,143 +655,96 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
             results.append( payload )
 
         return { 'data': results, 'message': message }
-        
-class BedDataProvider( TabixDataProvider ):
-    """
-    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
-    """
-        
-    def process_data( self, iterator, **kwargs ):
-        #
-        # Build data to return. Payload format is:
-        # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
-        #   <thick_end>, <blocks> ]
-        # 
-        # First three entries are mandatory, others are optional.
-        #
-        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
-        no_detail = ( "no_detail" in kwargs )
-        count = 0
-        rval = []
-        message = None
-        for line in iterator:
-            if count >= MAX_VALS:
-                message = ERROR_MAX_VALS % "features"
-                break
-            count += 1
-            # TODO: can we use column metadata to fill out payload?
-            # TODO: use function to set payload data
-            
-            feature = line.split()
-            length = len(feature)
-            # Unique id is just a hash of the line
-            payload = [ hash(line), int(feature[1]), int(feature[2]) ]
-            
-            if no_detail:
-                rval.append( payload )
-                continue
-            
-            # Simpler way to add stuff, but type casting is not done.
-            # Name, score, strand, thick start, thick end.
-            #end = min( len( feature ), 8 )
-            #payload.extend( feature[ 3:end ] )
-            
-            # Name, strand, thick start, thick end.
-            if length >= 4:
-                payload.append(feature[3])
-            if length >= 6:
-                payload.append(feature[5])
-            if length >= 8:
-                payload.append(int(feature[6]))
-                payload.append(int(feature[7]))
-
-            # Blocks.
-            if length >= 12:
-                block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
-                block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
-                blocks = zip( block_sizes, block_starts )
-                payload.append( [ ( int(feature[1]) + block[1], int(feature[1]) + block[1] + block[0] ) for block in blocks ] )
-            
-            # Score (filter data)    
-            if length >= 5 and filter_cols and filter_cols[0] == "Score":
-                payload.append( float(feature[4]) )
                 
-            rval.append( payload )
-            
-        return { 'data': rval, 'message': message }
-        
-    def write_data_to_file( self, chrom, start, end, filename ):
-        iterator = self.get_iterator( chrom, start, end )
-        out = open( filename, "w" )
-        for line in iterator:
-            out.write( line )
-        out.close()
-        
-class VcfDataProvider( TracksDataProvider ):
+class VcfDataProvider( TabixDataProvider ):
     """
     VCF data provider for the Galaxy track browser.
 
     Payload format: 
-    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score]
+    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score ]
     """
 
     col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
 
-    def process_data( self, iterator, **kwargs ):
+    def process_data( self, iterator, start_val=0, max_vals=sys.maxint, **kwargs ):
         rval = []
-        count = 0
         message = None
         
-        reader = galaxy_utils.sequence.vcf.Reader( iterator )
-        for line in reader:
-            if count >= MAX_VALS:
-                message = ERROR_MAX_VALS % "features"
+        for count, line in enumerate( iterator ):
+            if count < start_val:
+                continue
+            if count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( "max_vals", "features" )
                 break
-            count += 1
             
             feature = line.split()
-            payload = [ hash(line), vcf_line.pos-1, vcf_line.pos, \
+            payload = [ hash(line), int(feature[1])-1, int(feature[1]),
                         # ID: 
-                        feature[2], \
+                        feature[2],
                         # reference base(s):
-                        feature[3], \
+                        feature[3],
                         # alternative base(s)
-                        feature[4], \
+                        feature[4],
                         # phred quality score
-                        int( feature[5] )]
+                        float( feature[5] )]
             rval.append(payload)
 
-        return { 'data_type' : 'vcf', 'data': rval, 'message': message }
+        return { 'data': rval, 'message': message }
 
 class GFFDataProvider( TracksDataProvider ):
     """
     Provide data from GFF file.
     
     NOTE: this data provider does not use indices, and hence will be very slow
-    for large datasets. 
+    for large datasets.
     """
-    def get_data( self, chrom, start, end, **kwargs ):
+    def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
         start, end = int( start ), int( end )
         source = open( self.original_dataset.file_name )
         results = []
-        count = 0
         message = None
         offset = 0
         
-        for feature in GFFReaderWrapper( source, fix_strand=True ):
+        for count, feature in enumerate( GFFReaderWrapper( source, fix_strand=True ) ):
+            if count < start_val:
+                continue
+            if count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "reads" )
+                break
+                
             feature_start, feature_end = convert_gff_coords_to_bed( [ feature.start, feature.end ] )
             if feature.chrom != chrom or feature_start < start or feature_end > end:
                 continue
-            if count >= MAX_VALS:
-                message = ERROR_MAX_VALS % "features"
-                break
-            count += 1
             payload = package_gff_feature( feature )
             payload.insert( 0, offset )
             results.append( payload )
             offset += feature.raw_size
             
         return { 'data': results, 'message': message }
+        
+class BedTabixDataProvider( TabixDataProvider, BedDataProvider ):
+    """
+    Provides data from a BED file indexed via tabix.
+    """
+    pass
+    
+class RawBedDataProvider( BedDataProvider ):
+    """
+    Provide data from BED file.
+
+    NOTE: this data provider does not use indices, and hence will be very slow
+    for large datasets.
+    """
+    
+    def get_iterator( self, chrom, start, end ):
+        def line_filter_iter():
+            for line in open( self.original_dataset.file_name ):
+                feature = line.split()
+                feature_chrom, feature_start, feature_end = feature[ 0:3 ]
+                if feature_chrom != chrom or feature_start > end or feature_end < start:
+                    continue
+                yield line
+        return line_filter_iter()
        
 #        
 # Helper methods.
@@ -681,7 +754,7 @@ class GFFDataProvider( TracksDataProvider ):
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
-    "tabix": { Vcf: VcfDataProvider, Bed: BedDataProvider, "default" : TabixDataProvider },
+    "tabix": { Vcf: VcfDataProvider, Bed: BedTabixDataProvider, "default" : TabixDataProvider },
     "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider,
@@ -693,6 +766,7 @@ def get_data_provider( name=None, original_dataset=None ):
     """
     Returns data provider class by name and/or original dataset.
     """
+    data_provider = None
     if name:
         value = dataset_type_name_to_data_provider[ name ]
         if isinstance( value, dict ):

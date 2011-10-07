@@ -3,7 +3,7 @@
 
   <command interpreter="python2.5">
     select_restriction_enzymes.py "--input=$input" "--output=$output" "--primers_loc=${GALAXY_DATA_INDEX_DIR}/gd.primers.loc"
-    #if $override_metadata.value == "0":
+    #if $override_metadata.choice == "0":
       "--scaffold_col=${input.metadata.scaffold}" "--pos_col=${input.metadata.pos}" "--species=${input.metadata.species}"
     #else
       "--scaffold_col=$scaf_col" "--pos_col=$pos_col" "--species=$species"
@@ -14,7 +14,7 @@
   <inputs>
     <param format="tabular" name="input" type="data" label="Selected SNPS dataset"/>
     <conditional name="override_metadata">
-      <param name="value" type="select" format="integer" label="choose columns">
+      <param name="choice" type="select" format="integer" label="choose columns">
         <option value="0" selected="true">No, get columns from metadata</option>
         <option value="1" >Yes, choose columns</option>
       </param>
@@ -42,22 +42,24 @@
   </inputs>
 
   <outputs>
-    <data format="wsf" name="output"/>
+    <data format="wsf" name="output" metadata_source="input"/>
   </outputs>
 
   <tests>
     <test>
-      <param name="input" value="gd.sample.wsf"/>
-      <param name="override_metadata" value="0"/>
+      <param name="input" value="gd.sample.wsf" ftype="wsf"/>
+      <param name="choice" value="0"/>
       <param name="enzymes" value="BanI,BstOI,Hsp92II"/>
-      <output name="output" value="gd.select_restrictionenzymes.wsf"/>
+      <output name="output" file="gd.select_restriction_enzymes.wsf"/>
     </test>
   </tests>
 
   <help>
 **What it does**
 
-  It selects SNPs in the dataset by restriction enzyme.
+  It selects the SNPs that are differentially cut by at least one of the
+  specified restriction enzymes. The enzymes are required to cut the amplified
+  segment (for the specified PCR primers) only at the SNP.
 
 -----
 

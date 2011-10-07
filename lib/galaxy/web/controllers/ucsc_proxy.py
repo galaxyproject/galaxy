@@ -11,7 +11,7 @@ import re, urllib, logging
 
 log = logging.getLogger( __name__ )
 
-class UCSCProxy( BaseController ):
+class UCSCProxy( BaseUIController ):
 
     def create_display(self, store):
         """Creates a more meaningulf display name"""

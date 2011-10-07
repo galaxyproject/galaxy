@@ -61,7 +61,7 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
     <form id="add_samples" name="add_samples" action="${h.url_for( controller='requests_common', action='add_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}" method="post">
         %if displayable_sample_widgets:
             <%
-                grid_header = '<h3>Add Samples to Sequencing Request "%s"</h3>' % request.name
+                grid_header = '<h3>Add samples to sequencing request "%s"</h3>' % request.name
             %>
             ${render_samples_grid( cntrller, request, displayable_sample_widgets, action='edit_samples', adding_new_samples=True, encoded_selected_sample_ids=[], render_buttons=False, grid_header=grid_header )}
             <div class="toolParamHelp" style="clear: both;">
@@ -89,8 +89,6 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
             %endif
             <p/>
             <div class="form-row">
-                ## hidden element to make twill work.
-                ## Greg will fix this
                 <input type="hidden" name="twill" value=""/>
                 %if ( request.samples or displayable_sample_widgets ) and len( displayable_sample_widgets ) > len( request.samples ):
                     <input type="submit" name="add_sample_button" value="Add sample" />
@@ -111,22 +109,20 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
 </div>
 %if is_unsubmitted:
     <p/>
-    ##<div class="toolForm">
-        ##<div class="toolFormTitle">Import samples from csv file</div>
-        <h4><img src="/static/images/silk/resultset_next.png" alt="Hide" onclick="showContent(this);" style="cursor:pointer;"/> Import samples from csv file</h4>
-        <div style="display:none;">
-            <div class="toolFormBody">
-                <form id="import" name="import" action="${h.url_for( controller='requests_common', action='add_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}" enctype="multipart/form-data" method="post" >
-                    <div class="form-row">
-                        <input type="file" name="file_data" />
-                        <input type="submit" name="import_samples_button" value="Import samples"/>
-                        <div class="toolParamHelp" style="clear: both;">
-                            The csv file must be in the following format:<br/>
-                            SampleName,DataLibrary,DataLibraryFolder,FieldValue1,FieldValue2...
-                        </div>
+    <h4><img src="/static/images/silk/resultset_next.png" alt="Hide" onclick="showContent(this);" style="cursor:pointer;"/>Import samples from csv file</h4>
+    <div style="display:none;">
+        <div class="toolFormBody">
+            <form id="import" name="import" action="${h.url_for( controller='requests_common', action='add_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}" enctype="multipart/form-data" method="post" >
+                <div class="form-row">
+                    <input type="file" name="file_data" />
+                    <input type="submit" name="import_samples_button" value="Import samples"/>
+                    <div class="toolParamHelp" style="clear: both;">
+                        The csv file must be in the following format.<br/>
+                        The [:FieldValue] is optional, the named form field will contain the value after the ':' if included.<br/>
+                        SampleName,DataLibraryName,FolderName,HistoryName,WorkflowName,Field1Name:Field1Value,Field2Name:Field2Value...
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
-    ##</div>
+    </div>
 %endif

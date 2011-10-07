@@ -56,5 +56,12 @@ This tool takes an interval file as input.  This input should contain a set of c
     chr1	59373	59376	NM_001005484	0	+	ACA	ACA	Thr	ACA	614523	15.11	0	2162384	0.284187729839	585	chr1	59373	59374	rs2691305	0	-	A	A	C/T	genomic	single	unknown	0	0	unknown	exact	3	GCA
     chr1	59412	59415	NM_001005484	0	+	GCG	GCG	Ala	GCG	299495	7.37	0	2820741	0.106176001271	585	chr1	59414	59415	rs2531266	0	+	G	G	C/G	genomic	single	by-submitter	0	0	unknown	exact	3	GCC
     chr1	59412	59415	NM_001005484	0	+	GCG	GCG	Ala	GCG	299495	7.37	0	2820741	0.106176001271	585	chr1	59414	59415	rs55874132	0	+	G	G	C/G	genomic	single	unknown	0	0	coding-synon	exact	1	GCC
+
+------
+
+**Citation**
+
+If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
+
   </help>
 </tool>

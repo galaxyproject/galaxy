@@ -6,11 +6,13 @@ python ./scripts/check_python.py
 [ $? -ne 0 ] && exit 1
 
 SAMPLES="
-    external_service_types_conf.xml.sample
     datatypes_conf.xml.sample
+    external_service_types_conf.xml.sample
     reports_wsgi.ini.sample
+    shed_tool_conf.xml.sample
     tool_conf.xml.sample
     tool_data_table_conf.xml.sample
+    tool_sheds_conf.xml.sample
     universe_wsgi.ini.sample
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/*.sample
@@ -32,7 +34,7 @@ for arg in "$@"; do
     [ "$arg" = "--stop-daemon" ] && FETCH_EGGS=0; break
 done
 if [ $FETCH_EGGS -eq 1 ]; then
-    python ./scripts/check_eggs.py quiet
+    python ./scripts/check_eggs.py -q
     if [ $? -ne 0 ]; then
         echo "Some eggs are out of date, attempting to fetch..."
         python ./scripts/fetch_eggs.py

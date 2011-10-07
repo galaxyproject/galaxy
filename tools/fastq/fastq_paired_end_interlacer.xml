@@ -1,0 +1,72 @@
+<tool id="fastq_paired_end_interlacer" name="FASTQ interlacer" version="1.1">
+  <description>on paired end reads</description>
+  <command interpreter="python">fastq_paired_end_interlacer.py '$input1_file' '${input1_file.extension[len( 'fastq' ):]}' '$input2_file' '${input2_file.extension[len( 'fastq' ):]}' '$outfile_pairs' '$outfile_singles'</command>
+  <inputs>
+    <param name="input1_file" type="data" format="fastqsanger,fastqcssanger" label="Left-hand mates" />
+    <param name="input2_file" type="data" format="fastqsanger,fastqcssanger" label="Right-hand mates" />
+  </inputs>
+  <outputs>
+    <!-- $input1_file.name = filename  , e.g. paired_end_2_errors.fastqsanger -->
+    <!-- $input1_file.id   = ID        , e.g. 10 -->
+    <!-- $input1_file.hid  = history ID, e.g. 5  -->
+    <data name="outfile_pairs"   format="input" label="FASTQ interlacer pairs from data ${input1_file.hid} and data ${input2_file.hid}"/>
+    <data name="outfile_singles" format="input" label="FASTQ interlacer singles from data ${input1_file.hid} and data ${input2_file.hid}"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1_file" value="paired_end_1.fastqsanger" ftype="fastqsanger" />
+      <param name="input2_file" value="paired_end_2.fastqsanger" ftype="fastqsanger" />
+      <output name="outfile_pairs" file="paired_end_merged.fastqsanger" />
+      <output name="outfile_singles" file="paired_end_merged_singles.fastqsanger" />
+    </test>
+    <test>
+      <param name="input1_file" value="paired_end_1_errors.fastqsanger" ftype="fastqsanger" />
+      <param name="input2_file" value="paired_end_2_errors.fastqsanger" ftype="fastqsanger" />
+      <output name="outfile_pairs" file="paired_end_merged_cleaned.fastqsanger" />
+      <output name="outfile_singles" file="paired_end_merged_cleaned_singles.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool joins paired end FASTQ reads from two separate files, one with the left mates and one with the right mates, into a single files where left mates alternate with their right mates. The join is performed using sequence identifiers, allowing the two files to contain differing ordering. If a sequence identifier does not appear in both files, it is included in a separate file.
+
+Sequence identifiers with /1 and /2 appended override the left-hand and right-hand designation; i.e. if the reads end with /1 and /2, the read containing /1 will be used as the left-hand read and the read containing /2 will be used as the right-hand read. Sequences without this designation will follow the left-hand and right-hand settings set by the user.
+
+-----
+
+**Input**
+
+Left-hand mates, for example::
+
+    @1539:931/1
+    ACTTCCCGCGCGTGAAGGCGCCGGCAAACGAGGCTCGGGAAGGGGCTCCCG
+    +1539:931/1
+    BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+Right-hand mates, for example::
+
+    @1539:931/2
+    CGCCATTCCGAATCGTAGTTGTCGGCGTCTTCCAGTGCGGCAAGGCATCGT
+    +1539:931/2
+    WNUUZ\P^`BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+-----
+
+**Output**
+
+A multiple-fastq file containing interlaced left and right paired reads::
+
+    @1539:931/1
+    ACTTCCCGCGCGTGAAGGCGCCGGCAAACGAGGCTCGGGAAGGGGCTCCCG
+    +1539:931/1
+    BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+    @1539:931/2
+    CGCCATTCCGAATCGTAGTTGTCGGCGTCTTCCAGTGCGGCAAGGCATCGT
+    +1539:931/2
+    WNUUZ\P^`BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+A multiple-fastq file containing reads that have no mate is also produced.
+
+  </help>
+</tool>

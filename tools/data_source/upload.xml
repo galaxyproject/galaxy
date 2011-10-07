@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<tool name="Upload File" id="upload1" version="1.1.2">
+<tool name="Upload File" id="upload1" version="1.1.3">
   <description>
     from your computer  
   </description>
@@ -11,7 +11,12 @@
     #while $varExists('output%i' % $outnum):
         #set $output = $getVar('output%i' % $outnum)
         #set $outnum += 1
-        ${output.dataset.dataset.id}:${output.files_path}:${output}
+        #set $file_name = $output.file_name
+        ## FIXME: This is not future-proof for other uses of external_filename (other than for use by the library upload's "link data" feature)
+        #if $output.dataset.dataset.external_filename:
+            #set $file_name = "None"
+        #end if
+        ${output.dataset.dataset.id}:${output.files_path}:${file_name}
     #end while
   </command>
   <inputs nginx_upload="true">
@@ -172,7 +177,7 @@ Lav is the primary output format for BLASTZ.  The first line of a .lav file begi
 
 **MAF**
 
-TBA and multiz multiple alignment format.  The first line of a .maf file begins with ##maf. This word is followed by white-space-separated "variable=value pairs". There should be no white space surrounding the "=".
+TBA and multiz multiple alignment format.  The first line of a .maf file begins with ##maf. This word is followed by white-space-separated "variable=value" pairs. There should be no white space surrounding the "=".
 
 -----
 

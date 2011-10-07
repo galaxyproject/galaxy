@@ -8,7 +8,7 @@
       <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
     <![endif]-->
     
-    ${h.js( "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "jquery.autocomplete", "trackster", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
+    ${h.js( "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
 </%def>
 
 <%def name="stylesheets()">
@@ -49,11 +49,16 @@
 </%def>
 
 <%def name="render_item_links( visualization )">
-    
+    <a 
+        href="${h.url_for( controller='/visualization', action='imp', id=trans.security.encode_id( visualization.id ) )}"
+        class="icon-button import"
+        ## Needed to overwide initial width so that link is floated left appropriately.
+        style="width: 100%"
+        title="Import visualization">Import visualization</a>
 </%def>
 
 <%def name="render_item( visualization, config )">
-    <div id="${visualization.id}" class="unified-panel-body" style="overflow:none;top:0px;"></div>
+    <div id="${trans.security.encode_id( visualization.id )}" class="unified-panel-body" style="overflow:none;top:0px;"></div>
 
     <script type="text/javascript">
         // TODO: much of this code is copied from browser.mako -- create shared base and use in both places.
@@ -71,69 +76,30 @@
             converted_datasets_state_url = "${h.url_for( controller='/tracks', action='converted_datasets_state' )}",
             addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
             view,
-            container_element = $("#${visualization.id}");
+            container_element = $("#${trans.security.encode_id( visualization.id )}");
         
         $(function() {
             
             if (container_element.parents(".item-content").length > 0) { // Embedded viz
                 container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
             } else { // Viewing just one shared viz
-                $("#right-border").live("click", function() { view.resize_window(); });
+                $("#right-border").click(function() { view.resize_window(); });
             }
             
-            // Create view and add tracks.
+            // Create visualization.
             var callback;
             %if 'viewport' in config:
                 var callback = function() { view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} ); }
             %endif
-            view = new View(container_element, "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}", callback);
-            ## A little ugly and redundant, but it gets the job done moving the config from python to JS:
-            var tracks_config = JSON.parse('${ h.to_json_string( config.get('tracks') ) }');
-            var track_config, track, parent_track, parent_obj;
-            for (var i = 0; i < tracks_config.length; i++) {
-                track_config = tracks_config[i];
-                track = new addable_track_types[track_config["track_type"]](
-                                track_config['name'], 
-                                view,
-                                track_config['hda_ldda'],
-                                track_config['dataset_id'],
-                                track_config['prefs'], 
-                                track_config['filters'],
-                                track_config['tool'], 
-                                (track_config.is_child ? parent_track : undefined));
-                parent_obj = view;
-                if (track_config.is_child) {
-                    parent_obj = parent_track;
-                }
-                else {
-                    // New parent track is this track.
-                    parent_track = track;
-                }
-                parent_obj.add_track(track);
-            }
+            view = create_visualization( container_element, "${config.get('title') | h}", 
+                                         "${config.get('vis_id')}", "${config.get('dbkey')}",
+                                         JSON.parse('${ h.to_json_string( config.get( 'viewport', dict() ) ) }'),
+                                         JSON.parse('${ h.to_json_string( config.get('tracks') ) }'),
+                                         JSON.parse('${ h.to_json_string( config.get('bookmarks') ) }')
+                                         );
             
-            //
-            // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
-            //
-            $(document).keydown(function(e) {
-                // Key codes: left == 37, up == 38, right == 39, down == 40
-                switch(e.which) {
-                    case 37:
-                        view.move_fraction(0.25);
-                        break
-                    case 38:
-                        var change = Math.round(view.viewport_container.height()/15.0);
-                        view.viewport_container.scrollTo('-=' + change + 'px');
-                        break;
-                    case 39:
-                        view.move_fraction(-0.25);
-                        break;
-                    case 40:
-                        var change = Math.round(view.viewport_container.height()/15.0);
-                        view.viewport_container.scrollTo('+=' + change + 'px');
-                        break;
-                }
-            });
+            // Set up keyboard navigation.
+            init_keyboard_nav(view);
         });
 
     </script>

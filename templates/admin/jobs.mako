@@ -21,11 +21,11 @@
     report this error".
 </p>
 
-<form name="jobs" action="${h.url_for()}" method="POST">
 
 <p/>
 
 %if jobs:
+<form name="jobs" action="${h.url_for()}" method="POST">
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <td>&nbsp;</td>
@@ -84,10 +84,12 @@
         </div>
     </div>
     <p/>
+</form>
 %else:
     <div class="infomessage">There are no unfinished jobs to show with current cutoff time.</div>
     <p/>
 %endif
+<form name="jobs" action="${h.url_for()}" method="POST">
     <div class="toolForm">
         <div class="toolFormTitle">
             Update Jobs
@@ -110,30 +112,33 @@
             </div>
         </div>
     </div>
-	<p/>
+</form>
+<form name="jobs" action="${h.url_for()}" method="POST">
+    <p/>
     <div class="toolForm">
         <div class="toolFormTitle">
             Administrative Job Lock
         </div>
         <div class="toolFormBody">
-	%if job_lock==True:
             <div class="form-row">
-				<p>All job execution is currently locked.  Click here to unlock.</p>
-				<input type='hidden' name='job_lock' value='unlock'/>
+                <input type="hidden" name="ajl_submit" value="True"/>
+    %if job_lock==True:
+                <p>Job dispatching is currently <strong>locked</strong>.</p>
+                <label>
+                    <input type='checkbox' name='job_lock' checked='checked' />
+                    Prevent jobs from dispatching.
+                </label>
+    %else:
+                <p>Job dispatching is currently <strong>unlocked</strong>.</p>
+                <label>
+                    <input type='checkbox' name='job_lock' />
+                    Prevent jobs from dispatching.
+                </label>
+    %endif
             </div>
             <div class="form-row">
-                <input type="submit" class="primary-button" name="submit" value="Unlock">
+                <input type="submit" class="primary-button" name="submit" value="Update">
             </div>
-	%else:
-		    <div class="form-row">
-				<p>To prevent new jobs from dispatching, you can lock the job queue here.</p>
-				<input type='hidden' name='job_lock' value='lock'/>
-		    </div>
-		    <div class="form-row">
-		        <input type="submit" class="primary-button" name="submit" value="Lock">
-		    </div>
-	%endif
         </div>
     </div>
-
 </form>

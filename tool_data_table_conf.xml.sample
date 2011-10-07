@@ -25,7 +25,7 @@
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bowtie_indices.loc" />
     </table>
-    <!-- Locations of indexes in the Bowtie color mapper format -->
+    <!-- Locations of indexes in the Bowtie color-space mapper format -->
     <table name="bowtie_indexes_color" comment_char="#">
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bowtie_indices_color.loc" />
@@ -35,7 +35,7 @@
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bwa_index.loc" />
     </table>
-    <!-- Locations of indexes in the BWA color mapper format -->
+    <!-- Locations of indexes in the BWA color-space mapper format -->
     <table name="bwa_indexes_color" comment_char="#">
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bwa_index_color.loc" />
@@ -60,7 +60,7 @@
         <columns>value, name, path</columns>
         <file path="tool-data/perm_base_index.loc" />
     </table>
-    <!-- Locations of PerM color index files -->
+    <!-- Locations of PerM color-space index files -->
     <table name="perm_color_indexes" comment_char="#">
         <columns>value, name, path</columns>
         <file path="tool-data/perm_color_index.loc" />
@@ -79,6 +79,11 @@
     <table name="tophat_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bowtie_indices.loc" />
+    </table>
+    <!-- Locations of indexes in the Bowtie color-space mapper format for TopHat to use -->
+    <table name="tophat_indexes_color" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/bowtie_indices_color.loc" />
     </table>
     <!-- Locations of configurations in the CCAT peak/region caller format -->
     <table name="ccat_configurations" comment_char="#">

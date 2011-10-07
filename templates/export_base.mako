@@ -98,7 +98,7 @@
 
 <%def name="render_footer()">
     <p><br><br>
-    <a href=${h.url_for( action="list" )}>Back to ${self.item_class_plural_name} List</a>
+    <a href="${h.url_for( action="list" )}">Back to ${self.item_class_plural_name} List</a>
 </%def>
 
 <%def name="body()">

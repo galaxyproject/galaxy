@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.5
 
+import sys
 import cdblib
 
 def _openfile( filename=None, mode='r' ):
@@ -21,7 +22,7 @@ def get_filename_from_loc( species=None, filename=None ):
     return None
 
 
-class SnpFile:
+class SnpFile( object ):
     def __init__( self, filename=None, seq_col=1, pos_col=2, ref_seq_col=7, ref_pos_col=8 ):
         self.filename = filename
         self.fh = _openfile( filename )
@@ -31,6 +32,7 @@ class SnpFile:
         self.ref_pos_col = ref_pos_col
         self.elems = None
         self.line = None
+        self.comments = []
 
     def next( self ):
         while self.fh:
@@ -40,11 +42,14 @@ class SnpFile:
                 self.line = None
                 self.elems = None
                 return None
-            if self.line and not self.line.startswith( '#' ):
+            if self.line:
                 self.line = self.line.rstrip( '\r\n' )
                 if self.line:
-                    self.elems = self.line.split( '\t' )
-                    return 1
+                    if self.line.startswith( '#' ):
+                        self.comments.append( self.line )
+                    else:
+                        self.elems = self.line.split( '\t' )
+                        return 1
 
     def get_seq_pos( self ):
         if self.elems:
@@ -59,7 +64,7 @@ class SnpFile:
             return None, None
 
 
-class IndexedFile:
+class IndexedFile( object ):
 
     def __init__( self, data_file=None, index_file=None ):
         self.data_file = data_file
@@ -171,4 +176,91 @@ class SnpcallsFile( IndexedFile ):
             return flanking_seq
         else:
             return None
+
+
+
+class LocationFile( object ):
+    def __init__(self, filename):
+        self.build_map(filename)
+
+    def build_map(self, filename):
+        self.map = {}
+        self.open_file(filename)
+        for line in self.read_lines():
+            elems = line.split('\t', 1)
+            if len(elems) == 2:
+                self.map[ elems[0].strip() ] = elems[1].strip()
+        self.close_file()
+
+    def read_lines(self):
+        for line in self.fh:
+            if not line.startswith('#'):
+                line = line.rstrip('\r\n')
+                yield line
+
+    def open_file(self, filename):
+        self.filename = filename
+        try:
+            self.fh = open(filename, 'r')
+        except IOError, err:
+            print >> sys.stderr, "Error opening location file '%s': %s" % (filename, str(err))
+            sys.exit(1)
+
+    def close_file(self):
+        self.fh.close()
+
+    def loc_file( self, key ):
+        if key in self.map:
+            return self.map[key]
+        else:
+            print >> sys.stderr, "'%s' does not appear in location file '%s'" % (key, self.filename)
+            sys.exit(1)
+        
+class ChrLens( object ):
+    def __init__( self, location_file, species ):
+        self.chrlen_loc = LocationFile( location_file )
+        self.chrlen_filename = self.chrlen_loc.loc_file( species )
+        self.build_map()
+
+    def build_map(self):
+        self.map = {}
+        self.open_file(self.chrlen_filename)
+        for line in self.read_lines():
+            elems = line.split('\t', 1)
+            if len(elems) == 2:
+                chrom = elems[0].strip()
+                chrom_len_text = elems[1].strip()
+                try:
+                    chrom_len = int( chrom_len_text )
+                except ValueError:
+                    print >> sys.stderr, "Bad length '%s' for chromosome '%s' in '%s'" % (chrom_len_text, chrom, self.chrlen_filename)
+                self.map[ chrom ] = chrom_len
+        self.close_file()
+
+    def read_lines(self):
+        for line in self.fh:
+            if not line.startswith('#'):
+                line = line.rstrip('\r\n')
+                yield line
+
+    def open_file(self, filename):
+        self.filename = filename
+        try:
+            self.fh = open(filename, 'r')
+        except IOError, err:
+            print >> sys.stderr, "Error opening chromosome length file '%s': %s" % (filename, str(err))
+            sys.exit(1)
+
+    def close_file(self):
+        self.fh.close()
+
+    def length( self, key ):
+        if key in self.map:
+            return self.map[key]
+        else:
+            return None
+
+    def __iter__( self ):
+        for chrom in self.map:
+            yield chrom
 

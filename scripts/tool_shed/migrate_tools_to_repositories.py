@@ -8,6 +8,8 @@ associated with them, and migrates old tool shed stuff to new tool shed stuff.
 
 ====== CRITICAL =======
 
+0. This script must be run on a repo updated to changeset:   5621:4618be57481b
+
 1. Before running this script, make sure the following config setting is set in community_wsgi.ini
 
 # Enable next-gen tool shed features
@@ -16,10 +18,6 @@ enable_next_gen_tool_shed = True
 2. This script requires the Galaxy instance to use Postgres for database storage.  
 
 To run this script, use "sh migrate_tools_to_repositories.sh" from this directory
-
-TODO: This script currently creates hg repos under the name of the user running the script.  When
-we get the hgweb stuff working, see if we can correct this, creating repos under the user name of the
-user that uploaded the tool archive.
 '''
 
 import sys, os, subprocess, ConfigParser, shutil, tarfile, tempfile
@@ -61,12 +59,12 @@ def get_versions( app, item ):
     this_item = item
     while item.newer_version:
         if item.newer_version.state in valid_states:
-            versions.insert( 0, item.newer_version )
+            versions.append( item.newer_version )
         item = item.newer_version
     item = this_item
     while item.older_version:
         if item.older_version[ 0 ].state in valid_states:
-            versions.append( item.older_version[ 0 ] )
+            versions.insert( 0, item.older_version[ 0 ] )
         item = item.older_version[ 0 ]
     return versions
 

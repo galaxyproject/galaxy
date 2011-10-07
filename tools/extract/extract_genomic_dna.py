@@ -14,6 +14,7 @@ import pkg_resources
 pkg_resources.require( "bx-python" )
 import sys, string, os, re, tempfile, subprocess
 from bx.cookbook import doc_optparse
+from bx.intervals.io import Header, Comment
 import bx.seq.nib
 import bx.seq.twobit
 from galaxy.tools.util.galaxyops import *
@@ -111,9 +112,17 @@ def __main__():
     #
     # Fetch sequences.
     #
+    
+    # Get feature's line(s).
+    def get_lines( feature ):
+        if isinstance( feature, gff_util.GFFFeature ):
+            return feature.lines()
+        else:
+            return [ feature.rstrip( '\r\n' ) ]
+    
     skipped_lines = 0
     first_invalid_line = 0
-    invalid_line = ''
+    invalid_lines = []
     fout = open( output_filename, "w" )
     warnings = []
     warning = ''
@@ -121,7 +130,13 @@ def __main__():
     file_iterator = open( input_filename )
     if gff_format and interpret_features:
         file_iterator = gff_util.GFFReaderWrapper( file_iterator, fix_strand=False )
-    for i, feature in enumerate( file_iterator ):
+    line_count = 1
+    for feature in file_iterator:
+        # Ignore comments, headers.
+        if isinstance( feature, ( Header, Comment ) ):
+            line_count += 1
+            continue
+            
         if gff_format and interpret_features:
             # Processing features.
             gff_util.convert_gff_coords_to_bed( feature )
@@ -145,18 +160,18 @@ def __main__():
                 except:
                     warning = "Invalid chrom, start or end column values. "
                     warnings.append( warning )
-                    skipped_lines += 1
-                    if not invalid_line:
-                        first_invalid_line = i + 1
-                        invalid_line = line
+                    if not invalid_lines:
+                        invalid_lines = get_lines( feature )
+                        first_invalid_line = line_count
+                    skipped_lines += len( invalid_lines )
                     continue
                 if start > end:
                     warning = "Invalid interval, start '%d' > end '%d'.  " % ( start, end )
                     warnings.append( warning )
-                    skipped_lines += 1
-                    if not invalid_line:
-                        first_invalid_line = i + 1
-                        invalid_line = line
+                    if not invalid_lines:
+                        invalid_lines = get_lines( feature )
+                        first_invalid_line = line_count
+                    skipped_lines += len( invalid_lines )
                     continue
 
                 if strand not in ['+', '-']:
@@ -174,13 +189,13 @@ def __main__():
                 nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( seq_path, chrom ) ) )
             try:
                 sequence = nib.get( start, end-start )
-            except:
+            except Exception, e:
                 warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " %( start, end-start, dbkey )
                 warnings.append( warning )
-                skipped_lines += 1
-                if not invalid_line:
-                    first_invalid_line = i + 1
-                    invalid_line = line
+                if not invalid_lines:
+                    invalid_lines = get_lines( feature )
+                    first_invalid_line = line_count
+                skipped_lines += len( invalid_lines )
                 continue
         elif seq_path and os.path.isfile( seq_path ):
             if not(twobitfile):
@@ -194,29 +209,29 @@ def __main__():
                 else:
                     sequence = twobitfile[chrom][start:end]
             except:
-                warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " %( start, end-start, dbkey )
+                warning = "Unable to fetch the sequence from '%d' to '%d' for chrom '%s'. " %( start, end-start, chrom )
                 warnings.append( warning )
-                skipped_lines += 1
-                if not invalid_line:
-                    first_invalid_line = i + 1
-                    invalid_line = line
+                if not invalid_lines:
+                    invalid_lines = get_lines( feature )
+                    first_invalid_line = line_count
+                skipped_lines += len( invalid_lines )
                 continue
         else:
             warning = "Chromosome by name '%s' was not found for build '%s'. " % ( chrom, dbkey )
             warnings.append( warning )
-            skipped_lines += 1
-            if not invalid_line:
-                first_invalid_line = i + 1
-                invalid_line = line
+            if not invalid_lines:
+                invalid_lines = get_lines( feature )
+                first_invalid_line = line_count
+            skipped_lines += len( invalid_lines )
             continue
         if sequence == '':
             warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'. " \
                         % ( chrom, start, end, dbkey )
             warnings.append( warning )
-            skipped_lines += 1
-            if not invalid_line:
-                first_invalid_line = i + 1
-                invalid_line = line
+            if not invalid_lines:
+                invalid_lines = get_lines( feature )
+                first_invalid_line = line_count
+            skipped_lines += len( invalid_lines )
             continue
         if includes_strand_col and strand == "-":
             sequence = reverse_complement( sequence )
@@ -248,6 +263,12 @@ def __main__():
             else:
                 format_str = "%s\t%s\n"
             fout.write( format_str % ( meta_data, str( sequence ) ) )
+            
+        # Update line count.
+        if isinstance( feature, gff_util.GFFFeature ):
+            line_count += len( feature.intervals )
+        else:
+            line_count += 1
 
     fout.close()
 
@@ -256,6 +277,7 @@ def __main__():
         warn_msg += warnings[0]
         print warn_msg
     if skipped_lines:
-        print 'Skipped %d invalid lines, 1st is #%d, "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+        # Error message includes up to the first 10 skipped lines.
+        print 'Skipped %d invalid lines, 1st is #%d, "%s"' % ( skipped_lines, first_invalid_line, '\n'.join( invalid_lines[:10] ) )
 
 if __name__ == "__main__": __main__()
