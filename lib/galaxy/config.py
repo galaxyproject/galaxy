@@ -52,7 +52,13 @@ class Configuration( object ):
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.len_file_path = kwargs.get( "len_file_path", resolve_path(os.path.join(self.tool_data_path, 'shared','ucsc','chrom'), self.root) )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
-        self.tool_configs = [ resolve_path( p, self.root ) for p in listify( kwargs.get( 'tool_config_file', 'tool_conf.xml' ) ) ]    
+        if 'tool_config_file' in kwargs:
+            tcf = kwargs[ 'tool_config_file' ]
+        elif 'tool_config_files' in kwargs:
+            tcf = kwargs[ 'tool_config_files' ]
+        else:
+            tcf = 'tool_conf.xml'
+        self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ] 
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )

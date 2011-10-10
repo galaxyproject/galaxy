@@ -124,8 +124,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #new_file_path = database/tmp
 
 # Tool config files, defines what tools are available in Galaxy.
-# Tools can be locally developed or installed from tool sheds.
-#tool_config_file = tool_conf.xml
+# Tools can be locally developed or installed from Galaxy tool sheds.
+#tool_config_file = tool_conf.xml,shed_tool_conf.xml
 
 # Default path to the directory containing the tools defined in tool_conf.xml.
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.

@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.tools.search import ToolBoxSearch
 import logging
 log = logging.getLogger( __name__ )
 
@@ -693,6 +694,15 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     @web.expose
     @web.require_admin
     def install_tool_shed_repository( self, trans, **kwd ):
+        if not trans.app.toolbox.shed_tool_confs:
+            message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one shed tool configuration file name with a '
+            message += '<b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> attribute value which is a directory relative to the Galaxy installation '
+            message += 'directory in order to automatically install tools from a Galaxy tool shed (e.g., the file name <b>shed_tool_conf.xml</b> whose '
+            message += '<b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
+            message += '<a href="http://wiki.g2.bx.psu.edu/Tool%20Shed#Automatic_installation_of_Galaxy_tool_shed_repository_tools_into_a_local_Galaxy_instance" '
+            message += 'target=_blank">Automatic installation of Galaxy tool shed repository tools into a local Galaxy instance</a> section of the '
+            message += '<a href="http://wiki.g2.bx.psu.edu/Tool%20Shed" target="_blank">Galaxy tool shed wiki</a> for all of the details.'
+            return trans.show_error_message( message )
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -782,6 +792,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                                     pass
                                 # Append the new section to the shed_tool_config file.
                                 self.__add_shed_tool_conf_entry( trans, shed_tool_conf, new_tool_section )
+                                if trans.app.toolbox_search.enabled:
+                                    # If search support for tools is enabled, index the new installed tools.
+                                    trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
                             message = 'Revision <b>%s</b> of repository <b>%s</b> has been installed in tool panel section <b>%s</b>.' % \
                                 ( changeset_revision, name, tool_section.name )
                             return trans.show_ok_message( message )
