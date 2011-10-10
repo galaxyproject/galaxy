@@ -75,6 +75,16 @@ class ToolParameter( object ):
         """
         return None
 
+    def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used ):
+        """
+        Get the starting value for the parameter, but if fetching from the history, try
+        to find a value that has not yet been used. already_used is a list of objects that
+        tools must manipulate (by adding to it) to store a memento that they can use to detect
+        if a value has already been chosen from the history. This is to support the capability to
+        choose each dataset once
+        """
+        return self.get_initial_value(trans, context);
+
     def get_required_enctype( self ):
         """
         If this parameter needs the form to have a specific encoding
@@ -1389,6 +1399,9 @@ class DataToolParameter( ToolParameter ):
         return field
 
     def get_initial_value( self, trans, context ):
+        return self.get_initial_value_from_history_prevent_repeats(trans, context, None);
+
+    def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used ):
         """
         NOTE: This is wasteful since dynamic options and dataset collection
               happens twice (here and when generating HTML). 
@@ -1401,7 +1414,7 @@ class DataToolParameter( ToolParameter ):
         assert history is not None, "DataToolParameter requires a history"
         if self.optional:
             return None
-        most_recent_dataset = [None]
+        most_recent_dataset = []
         filter_value = None
         if self.options:
             try:
@@ -1427,15 +1440,19 @@ class DataToolParameter( ToolParameter ):
                             data = converted_dataset
                     if not is_valid or ( self.options and self._options_filter_attribute( data ) != filter_value ):
                         continue
-                    most_recent_dataset[0] = data
+                    most_recent_dataset.append(data)
                 # Also collect children via association object
                 dataset_collector( data.children )
         dataset_collector( history.datasets )
-        most_recent_dataset = most_recent_dataset.pop()
-        if most_recent_dataset is not None:
-            return most_recent_dataset
-        else:
-            return ''
+        most_recent_dataset.reverse()
+        if already_used is not None:
+            for val in most_recent_dataset:
+                if val is not None and val not in already_used:
+                    already_used.append(val)
+                    return val
+        if len(most_recent_dataset) > 0:
+            return most_recent_dataset[0]
+        return ''
 
     def from_html( self, value, trans, other_values={} ):
         # Can't look at history in workflow mode, skip validation and such,
