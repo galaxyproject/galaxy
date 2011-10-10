@@ -27,7 +27,7 @@ class SequenceSplitLocations( data.Text ):
     one OR an uncompressed file. In the GZIP case, each sub-file's location is stored in start and end. 
     The format of the file is JSON:
     { "sections" : [
-            { "start" : "x", "end" : "y", "clusters" : "z" },
+            { "start" : "x", "end" : "y", "sequences" : "z" },
             ...
     ]}
     """
@@ -53,7 +53,7 @@ class SequenceSplitLocations( data.Text ):
                 data = simplejson.load(open(filename))
                 sections = data['sections']
                 for section in sections:
-                    if 'start' not in section or 'end' not in section or 'clusters' not in section:
+                    if 'start' not in section or 'end' not in section or 'sequences' not in section:
                         return False
                 return True
             except:
@@ -96,20 +96,20 @@ class Sequence( data.Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def get_sequences_per_file(total_clusters, split_params):
+    def get_sequences_per_file(total_sequences, split_params):
         if split_params['split_mode'] == 'number_of_parts':
             # legacy basic mode - split into a specified number of parts
             parts = int(split_params['split_size'])
-            sequences_per_file = [total_clusters/parts for i in range(parts)]
-            for i in range(total_clusters % parts):
+            sequences_per_file = [total_sequences/parts for i in range(parts)]
+            for i in range(total_sequences % parts):
                 sequences_per_file[i] += 1
         elif split_params['split_mode'] == 'to_size':
-            # loop through the sections and calculate the number of clusters
+            # loop through the sections and calculate the number of sequences
             chunk_size = long(split_params['split_size'])
 
-            chunks = total_clusters / chunk_size
-            rem = total_clusters % chunk_size
-            sequences_per_file = [chunk_size for i in range(total_clusters / chunk_size)]
+            chunks = total_sequences / chunk_size
+            rem = total_sequences % chunk_size
+            sequences_per_file = [chunk_size for i in range(total_sequences / chunk_size)]
             # TODO: Should we invest the time in a better way to handle small remainders?
             if rem > 0:
                 sequences_per_file.append(rem)
@@ -119,10 +119,10 @@ class Sequence( data.Text ):
     get_sequences_per_file = staticmethod(get_sequences_per_file)
 
     def do_slow_split( cls, input_datasets, subdir_generator_function, split_params):
-        # count the clusters so we can split
+        # count the sequences so we can split
         # TODO: if metadata is present, take the number of lines / 4
         if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
-            total_clusters = input_datasets[0].metadata.sequences
+            total_sequences = input_datasets[0].metadata.sequences
         else:
             input_file = input_datasets[0].file_name
             compress = is_gzip(input_file)
@@ -136,23 +136,23 @@ class Sequence( data.Text ):
                 # TODO
                 # Add BufferedReader if python 2.7?
                 in_file = open(input_file, 'rt')
-            total_clusters = long(0)
+            total_sequences = long(0)
             for i, line in enumerate(in_file):
-                total_clusters += 1
+                total_sequences += 1
             in_file.close()
-            total_clusters /= 4
+            total_sequences /= 4
 
-        sequences_per_file = cls.get_sequences_per_file(total_clusters, split_params)
+        sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, None, subdir_generator_function, sequences_per_file)
     do_slow_split = classmethod(do_slow_split)
 
     def do_fast_split( cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
         data = simplejson.load(open(toc_file_datasets[0].file_name))
         sections = data['sections']
-        total_clusters = long(0)
+        total_sequences = long(0)
         for section in sections:
-            total_clusters += long(section['clusters'])
-        sequences_per_file = cls.get_sequences_per_file(total_clusters, split_params)
+            total_sequences += long(section['sequences'])
+        sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file)
     do_fast_split = classmethod(do_fast_split)
 
@@ -165,7 +165,7 @@ class Sequence( data.Text ):
             directories.append(dir)
             return dir
 
-        # we know how many splits and how many clusters in each. What remains is to write out instructions for the 
+        # we know how many splits and how many sequences in each. What remains is to write out instructions for the 
         # splitting of all the input files. To decouple the format of those instructions from this code, the exact format of
         # those instructions is delegated to scripts
         start_sequence=0
@@ -241,7 +241,7 @@ class Sequence( data.Text ):
         """
         Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
         shell commands that will extract the parts necessary
-        >>> three_sections=[dict(start=0, end=74, clusters=10), dict(start=74, end=148, clusters=10), dict(start=148, end=148+76, clusters=10)]
+        >>> three_sections=[dict(start=0, end=74, sequences=10), dict(start=74, end=148, sequences=10), dict(start=148, end=148+76, sequences=10)]
         >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=10)
         ['dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
         >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=1, sequence_count=5)
@@ -261,8 +261,8 @@ class Sequence( data.Text ):
         current_sequence = long(0)
         i=0
         # skip to the section that contains my starting sequence
-        while i < len(sections) and start_sequence >= current_sequence + long(sections[i]['clusters']):
-            current_sequence += long(sections[i]['clusters'])
+        while i < len(sections) and start_sequence >= current_sequence + long(sections[i]['sequences']):
+            current_sequence += long(sections[i]['sequences'])
             i += 1
         if i == len(sections): # bad input data!
             raise Exception('No FQTOC section contains starting sequence %s' % start_sequence)
@@ -277,7 +277,7 @@ class Sequence( data.Text ):
             # we need to extract partial data. So, find the byte offsets of the chunks that contain the data we need
             # use a combination of dd (to pull just the right sections out) tail (to skip lines) and head (to get the 
             # right number of lines
-            sequences = long(sections[i]['clusters'])
+            sequences = long(sections[i]['sequences'])
             skip_sequences = start_sequence-current_sequence
             sequences_to_extract = min(sequence_count, sequences-skip_sequences)
             start_copy = long(sections[i]['start'])
