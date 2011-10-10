@@ -59,6 +59,21 @@ class HistoryListGrid( grids.Grid ):
             if not history.deleted:
                 link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
             return link
+    class DeletedColumn( grids.DeletedColumn ):
+        def get_value( self, trans, grid, history ):
+            if history == trans.history:
+                return "<strong>current history</strong>"
+            if history.purged:
+                return "deleted permanently"
+            elif history.deleted:
+                return "deleted"
+            return ""
+        def sort( self, trans, query, ascending, column_name=None ):
+            if ascending:
+                query = query.order_by( self.model_class.table.c.purged.asc(), self.model_class.table.c.update_time.desc() )
+            else:
+                query = query.order_by( self.model_class.table.c.purged.desc(), self.model_class.table.c.update_time.desc() )
+            return query
 
     # Grid definition
     title = "Saved Histories"
@@ -74,8 +89,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridColumn( "Size on Disk", key="get_disk_size_bytes", format=nice_size, sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Status", key="deleted", visible=False, filterable="advanced" )
+        DeletedColumn( "Status", key="deleted", filterable="advanced" )
     ]
     columns.append(
         grids.MulticolFilterColumn(
@@ -85,11 +99,12 @@ class HistoryListGrid( grids.Grid ):
                 )
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "View", allow_multiple=False ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
-        grids.GridOperation( "Delete Permanently", confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
-        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -104,7 +119,7 @@ class HistoryListGrid( grids.Grid ):
     def get_current_item( self, trans, **kwargs ):
         return trans.get_history()
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter_by( user=trans.user, purged=False, importing=False )
+        return query.filter_by( user=trans.user, importing=False )
 
 class SharedHistoryListGrid( grids.Grid ):
     # Custom column types
@@ -212,6 +227,15 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                 if 'name' in kwargs:
                     del kwargs['name'] # Remove ajax name param that rename method uses
                 return self.rename( trans, **kwargs )
+            if operation == "view":
+                history = self.get_history( trans, kwargs.get( 'id', None ) )
+                if history:
+                    return trans.response.send_redirect( url_for( controller='history',
+                                                                  action='view',
+                                                                  id=kwargs['id'],
+                                                                  show_deleted=history.deleted,
+                                                                  use_panels=False ) )
+                    #return self.view( trans, id=kwargs['id'], show_deleted=history.deleted, use_panels=False )
             history_ids = util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
             status, message = None, None
@@ -793,7 +817,7 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
             """ % ( web.url_for( id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
 
     @web.expose
-    def view( self, trans, id=None, show_deleted=False ):
+    def view( self, trans, id=None, show_deleted=False, use_panels=True ):
         """View a history. If a history is importable, then it is viewable by any user."""
         # Get history to view.
         if not id:
@@ -808,10 +832,15 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
         # View history.
         show_deleted = util.string_as_bool( show_deleted )
         datasets = self.get_history_datasets( trans, history_to_view, show_deleted=show_deleted )
+        try:
+            use_panels = util.string_as_bool( use_panels )
+        except:
+            pass # already a bool
         return trans.stream_template_mako( "history/view.mako",
                                            history = history_to_view,
                                            datasets = datasets,
-                                           show_deleted = show_deleted )
+                                           show_deleted = show_deleted,
+                                           use_panels = use_panels )
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):

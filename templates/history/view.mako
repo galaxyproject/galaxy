@@ -1,7 +1,15 @@
-<%inherit file="/webapps/galaxy/base_panels.mako"/>
 <%namespace file="/display_common.mako" import="get_history_link, get_controller_name" />
 <%namespace file="/root/history_common.mako" import="render_dataset" />
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
+
+<%!
+    def inherit(context):
+        if context.get('use_panels'):
+            return '/webapps/galaxy/base_panels.mako'
+        else:
+            return '/base.mako'
+%>
+<%inherit file="${inherit(context)}"/>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -63,6 +71,10 @@
 %>
 </%def>
 
+<%def name="body()">
+    ${center_panel()}
+</%def>
+
 <%def name="center_panel()">
     ## Get URL to other histories owned by user that owns this history.
     <%
@@ -81,14 +93,16 @@
         <div style="overflow: auto; height: 100%;">
             ## Render view of history.
             <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
+                %if not history.purged:
                     <a href="${h.url_for( action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
-                <a href="${get_history_link( history )}">${_('refresh')}</a> 
-                %if show_deleted:
-                | <a href="${h.url_for( id=trans.security.encode_id(history.id), show_deleted=False )}">${_('hide deleted')}</a> 
-                %else:
-                | <a href="${h.url_for( id=trans.security.encode_id(history.id), show_deleted=True )}">${_('show deleted')}</a> 
+                    <a href="${get_history_link( history )}">${_('refresh')}</a> |
                 %endif
-                | <a href="#" class="toggle">collapse all</a>
+                %if show_deleted:
+                    <a href="${h.url_for( id=trans.security.encode_id(history.id), show_deleted=False, use_panels=use_panels )}">${_('hide deleted')}</a> |
+                %else:
+                    <a href="${h.url_for( id=trans.security.encode_id(history.id), show_deleted=True, use_panels=use_panels )}">${_('show deleted')}</a> |
+                %endif
+                <a href="#" class="toggle">collapse all</a>
             </div>
 
             <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
