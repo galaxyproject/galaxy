@@ -687,7 +687,7 @@ Bowtie accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare yo
 
 **A Note on Built-in Reference Genomes**
 
-Some genomes have multiple variants. If only one "type" of genome is listed, it is the Full version, which means that everything that came in the original genome data download (possibly with mitochondrial and plasmid DNA added if it wasn't already included). The Full version is available for every genome. Some genomes also come in the Canonical variant, which contains only the "canonical" (well-defined) chromosomes or segments, such as chr1-chr22, chrX, chrY, and chrM for human. Other variations include gender. These will come in the canonical form only, so the general Canonical variant is actually Canonical Female and the other is Canonical Male (identical to female excluding chrX).
+The default variant for all genomes is "Full", defined as all primary chromosomes (or scaffolds/contigs) including mitochondrial plus associated unmapped and other plasmid segments. When only one version of a genome is available in this tool, it represents the default "Full" variant. Some genomes will have more than one variant available. The "Canonical Male" or sometimes simply "Canonical" variant contains the primary chromosomes for a genome. For example a human "Canonical" variant contains chr1-chr22, chrX, chrY, and chrM. The "Canonical Female" variant contains the primary chromosomes excluding chrY.
 
 ------
 
