@@ -804,7 +804,7 @@ def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
     # Return full feature.
     payload = [ feature.start, 
                 feature.end, 
-                feature.name(), 
+                feature.name(),
                 feature.strand,
                 # No notion of thick start, end in GFF, so make everything
                 # thick.
@@ -828,9 +828,13 @@ def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
     # Add filter data to payload.
     for col in filter_cols:
         if col == "Score":
-            payload.append( feature.score )
+            payload.append( float( feature.score ) )
         elif col in feature.attributes:
-            payload.append( feature.attributes[col] )
+            try:
+                payload.append( float( feature.attributes[col] ) )
+            except:
+                # Feature is not a float.
+                payload.append( feature.attributes[col] )
         else:
             # Dummy value.
             payload.append( "na" )
