@@ -45,6 +45,7 @@
     <tool file="filters/tailWrapper.xml" />
     <tool file="filters/trimmer.xml" />
     <tool file="filters/wc_gnu.xml" />
+    <tool file="filters/secure_hash_message_digest.xml" />
   </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/bed2gff.xml" />
