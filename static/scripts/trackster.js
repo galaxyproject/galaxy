@@ -808,8 +808,6 @@ var View = function(container, title, vis_id, dbkey) {
     this.vis_id = vis_id;
     this.dbkey = dbkey;
     this.title = title;
-    // Alias tracks to point at drawables. TODO: changes tracks to 'drawables' or something similar.
-    this.tracks = this.drawables;
     this.label_tracks = [];
     this.tracks_to_be_redrawn = [];
     this.max_low = 0;
@@ -1106,10 +1104,10 @@ extend( View.prototype, DrawableCollection.prototype, {
                 view.reset();
                 view.request_redraw(true);
 
-                for (var track_id = 0, len = view.tracks.length; track_id < len; track_id++) {
-                    var track = view.tracks[track_id];
-                    if (track.init) {
-                        track.init();
+                for (var i = 0, len = view.drawables.length; i < len; i++) {
+                    var drawable = view.drawables[i];
+                    if (drawable.init) {
+                        drawable.init();
                     }
                 }
             }
@@ -1201,7 +1199,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         var 
             view = this,
             // Either redrawing a single track or all view's tracks.
-            track_list = (track ? [track] : view.tracks),
+            track_list = (track ? [track] : view.drawables),
             track_index;
         
         // Add/update tracks in track list to redraw list.
@@ -2321,7 +2319,6 @@ extend(Track.prototype, Drawable.prototype, {
                 track.container_div.addClass("error");
                 track.content_div.text(DATA_ERROR);
                 if (result.message) {
-                    var track_id = track.view.tracks.indexOf(track);
                     var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").click(function() {
                         show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
                     });
@@ -2951,8 +2948,8 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
             track.set_name(track.prefs.name);
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             // Update the y-axis
-            $('#linetrack_' + track.track_id + '_minval').text(track.prefs.min_value);
-            $('#linetrack_' + track.track_id + '_maxval').text(track.prefs.max_value);
+            $('#linetrack_' + track.dataset_id + '_minval').text(track.prefs.min_value);
+            $('#linetrack_' + track.dataset_id + '_maxval').text(track.prefs.max_value);
             track.tile_cache.clear();
             track.request_draw();
         }
@@ -2999,8 +2996,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }).appendTo(track.container_div);
     },
     predraw_init: function() {
-        var track = this,
-            track_id = track.view.tracks.indexOf(track);
+        var track = this;
         
         track.vertical_range = undefined;
         return $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: null, high: null,
@@ -3011,8 +3007,8 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 track.prefs.min_value = data.min;
                 track.prefs.max_value = data.max;
                 // Update the config
-                $('#track_' + track_id + '_minval').val(track.prefs.min_value);
-                $('#track_' + track_id + '_maxval').val(track.prefs.max_value);
+                $('#track_' + track.dataset_id + '_minval').val(track.prefs.min_value);
+                $('#track_' + track.dataset_id + '_maxval').val(track.prefs.max_value);
             }
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             track.total_frequency = data.total_frequency;
@@ -3020,8 +3016,8 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             // Draw y-axis labels if necessary
             track.container_div.find(".yaxislabel").remove();
             
-            var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(round(track.prefs.min_value, 3));
-            var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(round(track.prefs.max_value, 3));
+            var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track.dataset_id + '_minval').text(round(track.prefs.min_value, 3));
+            var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track.dataset_id + '_maxval').text(round(track.prefs.max_value, 3));
             
             max_label.css({ position: "absolute", top: "24px", left: "10px" });
             max_label.prependTo(track.container_div);

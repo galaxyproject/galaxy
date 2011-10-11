@@ -113,9 +113,9 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
         
         // Set overview.
         var overview_track;
-        for (var i = 0; i < view.tracks.length; i++) {
-            if (view.tracks[i].name == overview_track_name) {
-                view.set_overview(view.tracks[i]);
+        for (var i = 0; i < view.drawables.length; i++) {
+            if (view.drawables[i].name == overview_track_name) {
+                view.set_overview(view.drawables[i]);
                 break;
             }
         }
