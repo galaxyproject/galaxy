@@ -205,7 +205,10 @@ class BedDataProvider( TracksDataProvider ):
 
             # Score (filter data)    
             if length >= 5 and filter_cols and filter_cols[0] == "Score":
-                payload.append( float(feature[4]) )
+                try:
+                    payload.append( float( feature[4] ) )
+                except:
+                    payload.append( feature[4] )
 
             rval.append( payload )
 
@@ -828,7 +831,10 @@ def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
     # Add filter data to payload.
     for col in filter_cols:
         if col == "Score":
-            payload.append( float( feature.score ) )
+            try: 
+                payload.append( float( feature.score ) )
+            except:
+                payload.append( feature.score )
         elif col in feature.attributes:
             try:
                 payload.append( float( feature.attributes[col] ) )
