@@ -1638,7 +1638,7 @@ extend(NumberFilter.prototype, {
             // No element to filter on.
             return true;
         }
-        var val = parseFloat(element[this.index]);
+        var val = element[this.index];
         return (isNaN(val) || (val >= this.low && val <= this.high));
     },
     /**
