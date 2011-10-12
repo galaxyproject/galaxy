@@ -1134,13 +1134,13 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                 if history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
-                hist_names_str = ", ".join( [ hist.name for hist in target_histories ] )
+                hist_names_str = ", ".join( ['<a href="%s" target="_top">%s</a>' % 
+                                            ( url_for( controller="history", action="switch_to_history", \
+                                                        hist_id=trans.security.encode_id( hist.id ) ), hist.name ) \
+                                                        for hist in target_histories ] )
                 num_source = len( source_dataset_ids ) - invalid_datasets
                 num_target = len(target_histories)
                 done_msg = "%i %s copied to %i %s: %s." % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str )
-                if new_history is not None:
-                    done_msg += " <a href=\"%s\" target=\"_top\">Switch to the new history.</a>" % url_for( 
-                        controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) )
                 trans.sa_session.refresh( history )
         source_datasets = history.visible_datasets
         target_histories = [history]

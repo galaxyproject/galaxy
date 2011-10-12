@@ -309,10 +309,19 @@ var
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 5,
     CACHED_DATA = 5;
-
-function round_1000(num) {
-    return Math.round(num * 1000) / 1000;    
-};
+    
+/**
+ * Round a number to a given number of decimal places.
+ */
+function round(num, places) {
+    // Default rounding is to integer.
+    if (!places) {
+        places = 0;
+    }
+    
+    var val = Math.pow(10, places);
+    return Math.round(num * val) / val;
+}
 
 /**
  * Generic cache that handles key/value pairs.
@@ -799,8 +808,6 @@ var View = function(container, title, vis_id, dbkey) {
     this.vis_id = vis_id;
     this.dbkey = dbkey;
     this.title = title;
-    // Alias tracks to point at drawables. TODO: changes tracks to 'drawables' or something similar.
-    this.tracks = this.drawables;
     this.label_tracks = [];
     this.tracks_to_be_redrawn = [];
     this.max_low = 0;
@@ -1097,10 +1104,10 @@ extend( View.prototype, DrawableCollection.prototype, {
                 view.reset();
                 view.request_redraw(true);
 
-                for (var track_id = 0, len = view.tracks.length; track_id < len; track_id++) {
-                    var track = view.tracks[track_id];
-                    if (track.init) {
-                        track.init();
+                for (var i = 0, len = view.drawables.length; i < len; i++) {
+                    var drawable = view.drawables[i];
+                    if (drawable.init) {
+                        drawable.init();
                     }
                 }
             }
@@ -1192,7 +1199,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         var 
             view = this,
             // Either redrawing a single track or all view's tracks.
-            track_list = (track ? [track] : view.tracks),
+            track_list = (track ? [track] : view.drawables),
             track_index;
         
         // Add/update tracks in track list to redraw list.
@@ -1629,7 +1636,7 @@ extend(NumberFilter.prototype, {
             // No element to filter on.
             return true;
         }
-        var val = parseFloat(element[this.index]);
+        var val = element[this.index];
         return (isNaN(val) || (val >= this.low && val <= this.high));
     },
     /**
@@ -2085,7 +2092,8 @@ extend(DrawableConfig.prototype, {
 /**
  * Tiles drawn by tracks.
  */
-var Tile = function(index, resolution, canvas, data) {
+var Tile = function(track, index, resolution, canvas, data) {
+    this.track = track;
     this.index = index;
     this.low = index * DENSITY * resolution;
     this.high = (index + 1) * DENSITY * resolution;
@@ -2096,26 +2104,114 @@ var Tile = function(index, resolution, canvas, data) {
     this.stale = false;
 };
 
-var SummaryTreeTile = function(index, resolution, canvas, data, max_val) {
-    Tile.call(this, index, resolution, canvas, data);
+/**
+ * Perform pre-display actions.
+ */
+Tile.prototype.predisplay_actions = function() {};
+
+var SummaryTreeTile = function(track, index, resolution, canvas, data, max_val) {
+    Tile.call(this, track, index, resolution, canvas, data);
     this.max_val = max_val;
 };
+extend(SummaryTreeTile.prototype, Tile.prototype);
 
-var FeatureTrackTile = function(index, resolution, canvas, data, message, feature_mapper) {
-    Tile.call(this, index, resolution, canvas, data);
+var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, message, feature_mapper) {
+    Tile.call(this, track, index, resolution, canvas, data);
+    this.mode = mode;
     this.message = message;
     this.feature_mapper = feature_mapper;
-    
-    //
-    // Set up display of feature data on mouseover.
-    //
-    var tile = this;
-    $(this.canvas).mousemove(function (e) {
-        var feature_data = tile.feature_mapper.get_feature_data(e.offsetX, e.offsetY);
-        
-        // TODO: show popup with feature's information.
-    });
+};
+extend(FeatureTrackTile.prototype, Tile.prototype);
 
+/**
+ * Sets up support for popups.
+ */
+FeatureTrackTile.prototype.predisplay_actions = function() {
+    //
+    // Add support for popups.
+    //
+    var tile = this,
+        popups = {};
+        
+    // Only show popups in Pack mode.
+    if (tile.mode !== "Pack") { return; }
+    
+    $(this.canvas).mousemove(function (e) {
+        // Get feature data for position.
+        var 
+            this_offset = $(this).offset(),
+            offsetX = e.pageX - this_offset.left,
+            offsetY = e.pageY - this_offset.top,
+            feature_data = tile.feature_mapper.get_feature_data(offsetX, offsetY),
+            feature_uid = (feature_data ? feature_data[0] : null);
+        // Hide visible popup if not over a feature or over a different feature.
+        $(this).siblings(".feature-popup").each(function() {
+            if ( !feature_uid || 
+                 $(this).attr("id") !== feature_uid.toString() ) {
+                $(this).remove();
+            }
+        });
+            
+        if (feature_data) {
+            // Get or create popup.
+            var popup = popups[feature_uid];
+            if (!popup) {
+                // Create feature's popup element.            
+                var 
+                    feature_uid = feature_data[0],
+                    feature_dict = {
+                        name: feature_data[3],
+                        start: feature_data[1],
+                        end: feature_data[2],
+                        strand: feature_data[4]
+                    },
+                    filters = tile.track.filters_manager.filters,
+                    filter;
+                
+                // Add filter values to feature dict.   
+                for (var i = 0; i < filters.length; i++) {
+                    filter = filters[i];
+                    feature_dict[filter.name] = feature_data[filter.index];
+                }
+                
+                // Build popup.
+                
+                var popup = $("<div/>").attr("id", feature_uid).addClass("feature-popup"),
+                    key, value, 
+                    table = $("<table/>").appendTo(popup), row;
+                for (key in feature_dict) {
+                    value = feature_dict[key];
+                    row = $("<tr/>").appendTo(table);
+                    $("<th/>").appendTo(row).text(key);
+                    $("<td/>").attr("align", "left").appendTo(row)
+                              .text(typeof(value) == 'number' ? round(value, 2) : value);
+                }
+                popups[feature_uid] = popup;
+            }
+            
+            // Attach popup to canvas's parent.
+            popup.appendTo($(tile.canvas).parent());
+            
+            // Offsets are within canvas, but popup must be positioned relative to parent element.
+            // parseInt strips "px" from left, top measurements. +7 so that mouse pointer does not
+            // overlap popup.
+            var 
+                popupX = offsetX + parseInt( tile.canvas.css("left") ) + 7,
+                popupY = offsetY + parseInt( tile.canvas.css("top") ) + 7;
+            popup.css("left", popupX + "px").css("top", popupY + "px")
+        }
+        else if (!e.isPropagationStopped()) {
+            // Propogate event to other tiles because overlapping tiles prevent mousemove from being 
+            // called on tiles under this tile.
+            e.stopPropagation();
+            $(this).siblings().each(function() {
+                $(this).trigger(e);
+            });
+        }
+    })
+    .mouseleave(function() {
+        $(this).siblings(".feature-popup").remove();
+    });
 };
 
 /**
@@ -2223,7 +2319,6 @@ extend(Track.prototype, Drawable.prototype, {
                 track.container_div.addClass("error");
                 track.content_div.text(DATA_ERROR);
                 if (result.message) {
-                    var track_id = track.view.tracks.indexOf(track);
                     var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").click(function() {
                         show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
                     });
@@ -2492,7 +2587,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
             // Need to undo offsets when placing image data.
             tgt_ctx.putImageData(data, -track.left_offset, (tile.data.dataset_type === "summary_tree" ? SUMMARY_TREE_TOP_PADDING : 0));
-            new_tile = new Tile(-1, resolution, new_canvas);
+            new_tile = new Tile(track, -1, resolution, new_canvas);
             overview_tile.resolve(new_tile);
         });
         
@@ -2697,6 +2792,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         // Show tile element.
         //
+        
+        tile.predisplay_actions();
       
         // Position tile element, recalculate left position at display time
         var range = this.view.high - this.view.low,
@@ -2812,7 +2909,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 var c_start = Math.round(c * w_scale);
                 ctx.fillText(seq[c], c_start + track.left_offset, 10);
             }
-            return new Tile(tile_index, resolution, canvas, seq);
+            return new Tile(track, tile_index, resolution, canvas, seq);
         }
         this.content_div.css("height", "0px");
     }
@@ -2851,8 +2948,8 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
             track.set_name(track.prefs.name);
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             // Update the y-axis
-            $('#linetrack_' + track.track_id + '_minval').text(track.prefs.min_value);
-            $('#linetrack_' + track.track_id + '_maxval').text(track.prefs.max_value);
+            $('#linetrack_' + track.dataset_id + '_minval').text(track.prefs.min_value);
+            $('#linetrack_' + track.dataset_id + '_maxval').text(track.prefs.max_value);
             track.tile_cache.clear();
             track.request_draw();
         }
@@ -2899,8 +2996,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }).appendTo(track.container_div);
     },
     predraw_init: function() {
-        var track = this,
-            track_id = track.view.tracks.indexOf(track);
+        var track = this;
         
         track.vertical_range = undefined;
         return $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: null, high: null,
@@ -2911,8 +3007,8 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 track.prefs.min_value = data.min;
                 track.prefs.max_value = data.max;
                 // Update the config
-                $('#track_' + track_id + '_minval').val(track.prefs.min_value);
-                $('#track_' + track_id + '_maxval').val(track.prefs.max_value);
+                $('#track_' + track.dataset_id + '_minval').val(track.prefs.min_value);
+                $('#track_' + track.dataset_id + '_maxval').val(track.prefs.max_value);
             }
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             track.total_frequency = data.total_frequency;
@@ -2920,8 +3016,8 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             // Draw y-axis labels if necessary
             track.container_div.find(".yaxislabel").remove();
             
-            var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(round_1000(track.prefs.min_value));
-            var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(round_1000(track.prefs.max_value));
+            var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track.dataset_id + '_minval').text(round(track.prefs.min_value, 3));
+            var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track.dataset_id + '_maxval').text(round(track.prefs.max_value, 3));
             
             max_label.css({ position: "absolute", top: "24px", left: "10px" });
             max_label.prependTo(track.container_div);
@@ -2955,7 +3051,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var painter = new painters.LinePainter(result.data, tile_low, tile_high, this.prefs, mode);
         painter.draw(ctx, width, height);
         
-        return new Tile(tile_index, resolution, canvas, result.data);
+        return new Tile(this.track, tile_index, resolution, canvas, result.data);
     } 
 });
 
@@ -3288,7 +3384,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             // Deal with left_offset by translating.
             ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
             painter.draw(ctx, width, required_height);
-            return new SummaryTreeTile(tile_index, resolution, canvas, result.data, result.max);
+            return new SummaryTreeTile(track, tile_index, resolution, canvas, result.data, result.max);
         }
 
         // Start dealing with row-by-row tracks
@@ -3347,7 +3443,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             feature_mapper.translation = -left_offset;
         }
         
-        return new FeatureTrackTile(tile_index, resolution, canvas, result.data, result.message, feature_mapper);        
+        return new FeatureTrackTile(track, tile_index, resolution, canvas, result.data, mode, result.message, feature_mapper);        
     }
 });
 
@@ -3891,7 +3987,7 @@ FeaturePositionMapper.prototype.map_feature_data = function(feature_data, slot, 
  */
 FeaturePositionMapper.prototype.get_feature_data = function(x, y) {
     // Find slot using Y.
-    var slot = Math.floor(y/this.slot_height),
+    var slot = Math.floor( y/this.slot_height ),
         feature_dict;
 
     // May not be over a slot due to padding, margin, etc.
