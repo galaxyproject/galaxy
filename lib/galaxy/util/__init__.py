@@ -623,6 +623,9 @@ ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data"
 gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
 genetrack_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "genetrack", "genetrack_sites.txt" ), check_builds=False )
 
+def galaxy_directory():
+    return os.path.abspath(galaxy_root_path)
+
 if __name__ == '__main__':
     import doctest, sys
     doctest.testmod(sys.modules[__name__], verbose=False)

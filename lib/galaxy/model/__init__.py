@@ -204,18 +204,19 @@ class Task( object ):
                     ERROR = 'error',
                     DELETED = 'deleted' )
 
-    def __init__( self, job, part_file = None ):
+    def __init__( self, job, working_directory, prepare_files_cmd ):
         self.command_line = None
         self.parameters = []
         self.state = Task.states.NEW
         self.info = None
-        self.part_file = part_file
+        self.working_directory = working_directory
         self.task_runner_name = None
         self.task_runner_external_id = None
         self.job = job
         self.stdout = None
         self.stderr = None
-
+        self.prepare_input_files_cmd = prepare_files_cmd
+    
     def set_state( self, state ):
         self.state = state
 
@@ -896,7 +897,9 @@ class DatasetInstance( object ):
     def get_converted_files_by_type( self, file_type ):
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
-                return assoc.dataset
+                if assoc.dataset:
+                    return assoc.dataset
+                return assoc.dataset_ldda
         return None
     def get_converted_dataset_deps(self, trans, target_ext):
         """
@@ -1588,7 +1591,12 @@ class DatasetToValidationErrorAssociation( object ):
 class ImplicitlyConvertedDatasetAssociation( object ):
     def __init__( self, id = None, parent = None, dataset = None, file_type = None, deleted = False, purged = False, metadata_safe = True ):
         self.id = id
-        self.dataset = dataset
+        if isinstance(dataset, HistoryDatasetAssociation):
+            self.dataset = dataset
+        elif isinstance(dataset, LibraryDatasetDatasetAssociation):
+            self.dataset_ldda = dataset
+        else:
+            raise AttributeError, 'Unknown dataset type provided for dataset: %s' % type( dataset )
         if isinstance(parent, HistoryDatasetAssociation):
             self.parent_hda = parent
         elif isinstance(parent, LibraryDatasetDatasetAssociation):
