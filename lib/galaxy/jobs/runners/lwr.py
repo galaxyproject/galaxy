@@ -249,6 +249,12 @@ class LwrJobRunner( BaseJobRunner ):
 
         try:
             job_wrapper.prepare()
+            if hasattr(job_wrapper, 'prepare_input_files_cmds') and job_wrapper.prepare_input_files_cmds is not None:
+                for cmd in job_wrapper.prepare_input_file_cmds: # run the commands to stage the input files
+                    #log.debug( 'executing: %s' % cmd )
+                    if 0 != os.system(cmd):
+                        raise Exception('Error running file staging command: %s' % cmd)
+                job_wrapper.prepare_input_files_cmds = None # prevent them from being used in-line
             command_line = self.build_command_line( job_wrapper, include_metadata=False )
         except:
             job_wrapper.fail( "failure preparing job", exception=True )

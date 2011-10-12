@@ -1,0 +1,13 @@
+<tool id="CONVERTER_fastq_to_fqtoc0" name="Convert FASTQ files to seek locations" version="1.0.0" hidden="true">
+  <command interpreter="python">fastq_to_fqtoc.py $input1 $output1</command>
+  <inputs>
+    <page>
+        <param format="fastq" name="input1" type="data" label="Choose FASTQ file"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="fqtoc" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>
