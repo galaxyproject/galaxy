@@ -189,7 +189,7 @@ class DownloadableRepositoryListGrid( RepositoryListGrid ):
         def get_value( self, trans, grid, repository ):
             """
             Display a SelectField whose options are the changeset_revision
-            strings of all downloadable_revisions of this repository.
+            strings of all download-able revisions of this repository.
             """
             select_field = build_changeset_revision_select_field( trans, repository )
             if len( select_field.options ) > 1:
@@ -220,8 +220,75 @@ class DownloadableRepositoryListGrid( RepositoryListGrid ):
                                .join( model.RepositoryMetadata.table ) \
                                .join( model.User.table )
 
+class MatchedRepositoryListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.repository.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.repository.description
+    class RevisionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.changeset_revision
+    class UserColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.repository.user:
+                return repository_metadata.repository.user.username
+            return 'no user'
+    # Grid definition
+    title = "Matched repositories"
+    model_class = model.RepositoryMetadata
+    template='/webapps/community/repository/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        NameColumn( "Name",
+                    key="name",
+                    link=( lambda item: dict( operation="view_or_manage_repository",
+                                              id=item.repository.id,
+                                              webapp="community" ) ),
+                    attach_popup=True ),
+        DescriptionColumn( "Synopsis",
+                           key="description",
+                           attach_popup=False ),
+        RevisionColumn( "Revision" ),
+        UserColumn( "Owner",
+                     model_class=model.User,
+                     attach_popup=False,
+                     key="User.username" )
+    ]
+    operations = []
+    standard_filters = []
+    default_filter = {}
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, trans, **kwd ):
+        match_tuples = kwd.get( 'match_tuples', [] )
+        clause_list = []
+        if match_tuples:
+            for match_tuple in match_tuples:
+                repository_id, changeset_revision = match_tuple
+                clause_list.append( "%s=%d and %s='%s'" % ( self.model_class.table.c.repository_id,
+                                                            int( repository_id ),
+                                                            self.model_class.table.c.changeset_revision,
+                                                            changeset_revision ) )
+            q = trans.sa_session.query( self.model_class ) \
+                                .join( model.Repository ) \
+                                .join( model.User.table ) \
+                                .filter( or_( *clause_list ) )
+            return trans.sa_session.query( self.model_class ) \
+                                   .join( model.Repository ) \
+                                   .join( model.User.table ) \
+                                   .filter( or_( *clause_list ) )
+        # Return an empty query
+        return trans.sa_session.query( self.model_class ) \
+                               .join( model.Repository ) \
+                               .join( model.User.table ) \
+                               .filter( self.model_class.table.c.repository_id == 0 )
+
 class RepositoryController( BaseUIController, ItemRatings ):
 
+    matched_repository_list_grid = MatchedRepositoryListGrid()
     downloadable_repository_list_grid = DownloadableRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
     category_list_grid = CategoryListGrid()
@@ -303,6 +370,76 @@ class RepositoryController( BaseUIController, ItemRatings ):
 
         # Render the list view
         return self.downloadable_repository_list_grid( trans, **kwd )
+    @web.expose
+    def find_tools( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories',
+                                                                  **kwd ) )
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        # Set the toolshedgalaxyurl cookie so we can get back
+        # to the calling local Galaxy instance.
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if galaxy_url:
+            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        tool_id = kwd.get( 'tool_id', '' ).lower()
+        tool_name = kwd.get( 'tool_name', '' ).lower()
+        tool_version = kwd.get( 'tool_version', '' ).lower()
+        exact_matches = params.get( 'exact_matches', '' )
+        exact_matches_checked = CheckboxField.is_checked( exact_matches )
+        match_tuples = []
+        if tool_id or tool_name or tool_version:
+            for repository_metadata in trans.sa_session.query( model.RepositoryMetadata.table ).all():
+                metadata = repository_metadata.metadata
+                tools = metadata[ 'tools' ]
+                found = False
+                for tool_dict in tools:
+                    if tool_id and not tool_name and not tool_version:
+                        tool_dict_tool_id = tool_dict[ 'id' ].lower()
+                        found = ( tool_id == tool_dict_tool_id ) or \
+                                ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 )
+                    elif tool_name and not tool_id and not tool_version:
+                        tool_dict_tool_name = tool_dict[ 'name' ].lower()
+                        found = ( tool_name == tool_dict_tool_name ) or \
+                                ( not exact_matches_checked and tool_dict_tool_name.find( tool_name ) >= 0 )
+                    elif tool_version and not tool_id and not tool_name:
+                        tool_dict_tool_version = tool_dict[ 'version' ].lower()
+                        found = ( tool_version == tool_dict_tool_version ) or \
+                                ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 )
+                    elif tool_id and tool_name and not tool_version:
+                        tool_dict_tool_id = tool_dict[ 'id' ].lower()
+                        tool_dict_tool_name = tool_dict[ 'name' ].lower()
+                        found = ( tool_id == tool_dict_tool_id and tool_name == tool_dict_tool_name ) or \
+                                ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
+                    elif tool_id and tool_version and not tool_name:
+                        tool_dict_tool_id = tool_dict[ 'id' ].lower()
+                        tool_dict_tool_version = tool_dict[ 'version' ].lower()
+                        found = ( tool_id == tool_dict_tool_id and tool_version == tool_dict_tool_version ) or \
+                                ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 and tool_dict_tool_version.find( tool_version ) >= 0 )
+                    elif tool_version and tool_name and not tool_id:
+                        tool_dict_tool_version = tool_dict[ 'version' ].lower()
+                        tool_dict_tool_name = tool_dict[ 'name' ].lower()
+                        found = ( tool_version == tool_dict_tool_version and tool_name == tool_dict_tool_name ) or \
+                                ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
+                if found:
+                    match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+            kwd[ 'match_tuples' ] = match_tuples
+            kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
+                ( tool_id, tool_name, tool_version, str( exact_matches_checked ) )
+            # Render the list view
+            return self.matched_repository_list_grid( trans, **kwd )
+        exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
+        return trans.fill_template( '/webapps/community/repository/find_tools.mako',
+                                    tool_id=tool_id,
+                                    tool_name=tool_name,
+                                    tool_version=tool_version,
+                                    exact_matches_check_box=exact_matches_check_box,
+                                    message=message,
+                                    status=status )
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
