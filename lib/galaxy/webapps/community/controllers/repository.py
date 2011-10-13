@@ -244,7 +244,7 @@ class MatchedRepositoryListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     link=( lambda item: dict( operation="view_or_manage_repository",
-                                              id=item.repository.id,
+                                              id=item.id,
                                               webapp="community" ) ),
                     attach_popup=True ),
         DescriptionColumn( "Synopsis",
@@ -373,11 +373,23 @@ class RepositoryController( BaseUIController, ItemRatings ):
     @web.expose
     def find_tools( self, trans, **kwd ):
         if 'operation' in kwd:
-            operation = kwd['operation'].lower()
+            operation = kwd[ 'operation' ].lower()
             if operation == "view_or_manage_repository":
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='browse_repositories',
-                                                                  **kwd ) )
+                repository_metadata = get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository_id = trans.security.encode_id( repository_metadata.repository.id )
+                repository = get_repository( trans, repository_id )
+                is_admin = trans.user_is_admin()
+                # The received id is a RepositoryMetadata.id, so we have to get the repository id.
+                kwd[ 'id' ] = repository_id
+                kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
+                if is_admin or repository.user == trans.user:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='manage_repository',
+                                                                      **kwd ) )
+                else:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='view_repository',
+                                                                      **kwd ) )
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
