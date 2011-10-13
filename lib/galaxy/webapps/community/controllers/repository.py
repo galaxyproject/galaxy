@@ -239,16 +239,14 @@ class MatchedRepositoryListGrid( grids.Grid ):
     title = "Matched repositories"
     model_class = model.RepositoryMetadata
     template='/webapps/community/repository/grid.mako'
-    default_sort_key = "name"
+    default_sort_key = "Repository.name"
     columns = [
         NameColumn( "Name",
-                    key="name",
                     link=( lambda item: dict( operation="view_or_manage_repository",
                                               id=item.id,
                                               webapp="community" ) ),
                     attach_popup=True ),
         DescriptionColumn( "Synopsis",
-                           key="description",
                            attach_popup=False ),
         RevisionColumn( "Revision" ),
         UserColumn( "Owner",
@@ -272,14 +270,11 @@ class MatchedRepositoryListGrid( grids.Grid ):
                                                             int( repository_id ),
                                                             self.model_class.table.c.changeset_revision,
                                                             changeset_revision ) )
-            q = trans.sa_session.query( self.model_class ) \
-                                .join( model.Repository ) \
-                                .join( model.User.table ) \
-                                .filter( or_( *clause_list ) )
             return trans.sa_session.query( self.model_class ) \
                                    .join( model.Repository ) \
                                    .join( model.User.table ) \
-                                   .filter( or_( *clause_list ) )
+                                   .filter( or_( *clause_list ) ) \
+                                   .order_by( model.Repository.name )
         # Return an empty query
         return trans.sa_session.query( self.model_class ) \
                                .join( model.Repository ) \
