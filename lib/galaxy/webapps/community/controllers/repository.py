@@ -293,7 +293,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        return trans.fill_template( '/webapps/community/index.mako', message=message, status=status )
+        # See if there are any RepositoryMetadata records since menu items require them.
+        repository_metadata = trans.sa_session.query( model.RepositoryMetadata ).first()
+        return trans.fill_template( '/webapps/community/index.mako',
+                                    repository_metadata=repository_metadata,
+                                    message=message,
+                                    status=status )
     @web.expose
     def browse_categories( self, trans, **kwd ):
         if 'f-free-text-search' in kwd:
@@ -400,7 +405,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         exact_matches_checked = CheckboxField.is_checked( exact_matches )
         match_tuples = []
         if tool_id or tool_name or tool_version:
-            for repository_metadata in trans.sa_session.query( model.RepositoryMetadata.table ).all():
+            for repository_metadata in trans.sa_session.query( model.RepositoryMetadata ):
                 metadata = repository_metadata.metadata
                 tools = metadata[ 'tools' ]
                 found = False

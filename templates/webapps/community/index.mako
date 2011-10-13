@@ -61,9 +61,11 @@
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_repositories', webapp='community' )}">Browse my repositories</a>
                             </div>
                         %endif
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools', webapp='community' )}">Search for tools</a>
-                        </div>
+                        %if repository_metadata:
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools', webapp='community' )}">Search for valid tools</a>
+                            </div>
+                        %endif
                     </div>
                 </div>
                 <div class="toolSectionBody">

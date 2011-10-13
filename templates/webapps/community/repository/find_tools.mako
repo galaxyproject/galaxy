@@ -15,10 +15,10 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Search repositories for tools</div>
+    <div class="toolFormTitle">Search repositories for valid tools</div>
     <div class="toolFormBody">
         <div class="form-row">
-            Enter any combination of the following tool attributes to locate matching tools.
+            Valid tools are those that properly load in Galaxy.  Enter any combination of the following tool attributes to locate matching valid tools.
         </div>
         <div style="clear: both"></div>
         <form name="find_tools" id="find_tools" action="${h.url_for( controller='repository', action='find_tools' )}" method="post" >
