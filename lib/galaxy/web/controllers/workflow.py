@@ -1157,14 +1157,15 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             galaxy_url = trans.request.host
                             message += "The workflow requires the following tools that are not available in this Galaxy instance."
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/><br/>"
-                            for missing_tool_tup in missing_tool_tups:
-                                missing_tool_id = missing_tool_tup[0]
-                                for tool_shed_name, tool_shed_url in trans.app.tool_shed_registry.tool_sheds.items():
-                                    if tool_shed_url.endswith( '/' ):
-                                        tool_shed_url = tool_shed_url.rstrip( '/' )
-                                        url = '%s/repository/find_tools?tool_id=%s&galaxy_url=%s&webapp=community' % ( tool_shed_url, missing_tool_id, galaxy_url )
-                                    message += '<a href="%s">%s</a><br/>' % ( url, tool_shed_name )
-                                    status = 'error'
+                            for tool_shed_name, tool_shed_url in trans.app.tool_shed_registry.tool_sheds.items():
+                                if tool_shed_url.endswith( '/' ):
+                                    tool_shed_url = tool_shed_url.rstrip( '/' )
+                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=community' % ( tool_shed_url, galaxy_url )
+                                    for missing_tool_tup in missing_tool_tups:
+                                        missing_tool_id = missing_tool_tup[0]
+                                        url += '&tool_id=%s' % missing_tool_id
+                                message += '<a href="%s">%s</a><br/>' % ( url, tool_shed_name )
+                                status = 'error'
                             return trans.response.send_redirect( web.url_for( controller='admin',
                                                                               action='index',
                                                                               webapp='galaxy',

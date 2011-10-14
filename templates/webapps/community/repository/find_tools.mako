@@ -19,6 +19,8 @@
     <div class="toolFormBody">
         <div class="form-row">
             Valid tools are those that properly load in Galaxy.  Enter any combination of the following tool attributes to locate matching valid tools.
+            Comma-separated strings may be entered in each field to expand search criteria.  Each field must contain the same number of comma-separated
+            strings if these types of strings are entered in more than one field.
         </div>
         <div style="clear: both"></div>
         <form name="find_tools" id="find_tools" action="${h.url_for( controller='repository', action='find_tools' )}" method="post" >

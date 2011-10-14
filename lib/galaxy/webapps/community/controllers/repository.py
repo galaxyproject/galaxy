@@ -280,8 +280,18 @@ class MatchedRepositoryListGrid( grids.Grid ):
                                .join( model.User.table ) \
                                .filter( self.model_class.table.c.repository_id == 0 )
 
+class InstallMatchedRepositoryListGrid( MatchedRepositoryListGrid ):
+    # Grid definition
+    title = "Repositories with required tools"
+    operations = [ grids.GridOperation( "Preview and install tools",
+                                        url_args = dict( action='find_tools',
+                                                         operation='install_tools' ),
+                                        allow_multiple=True,
+                                        async_compatible=False ) ]
+
 class RepositoryController( BaseUIController, ItemRatings ):
 
+    install_matched_repository_list_grid = InstallMatchedRepositoryListGrid()
     matched_repository_list_grid = MatchedRepositoryListGrid()
     downloadable_repository_list_grid = DownloadableRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
@@ -366,11 +376,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                    url_args=url_args,
                                                                                    allow_multiple=False,
                                                                                    async_compatible=False ) ]
-
         # Render the list view
         return self.downloadable_repository_list_grid( trans, **kwd )
     @web.expose
     def find_tools( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        # Set the toolshedgalaxyurl cookie so we can get back
+        # to the calling local Galaxy instance.
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if galaxy_url:
+            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if operation == "view_or_manage_repository":
@@ -389,61 +406,98 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='view_repository',
                                                                       **kwd ) )
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', '' ) )
-        status = params.get( 'status', 'done' )
-        # Set the toolshedgalaxyurl cookie so we can get back
-        # to the calling local Galaxy instance.
-        galaxy_url = kwd.get( 'galaxy_url', None )
-        if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
-        tool_id = kwd.get( 'tool_id', '' ).lower()
-        tool_name = kwd.get( 'tool_name', '' ).lower()
-        tool_version = kwd.get( 'tool_version', '' ).lower()
+            if operation == "preview and install tools":
+                pass
+        tool_ids = [ tid.lower() for tid in util.listify( kwd.get( 'tool_id', '' ) ) ]
+        tool_names = [ tn.lower() for tn in util.listify( kwd.get( 'tool_name', '' ) ) ]
+        tool_versions = [ tv.lower() for tv in util.listify( kwd.get( 'tool_version', '' ) ) ]
         exact_matches = params.get( 'exact_matches', '' )
         exact_matches_checked = CheckboxField.is_checked( exact_matches )
         match_tuples = []
-        if tool_id or tool_name or tool_version:
+        ok = True
+        if tool_ids or tool_names or tool_versions:
             for repository_metadata in trans.sa_session.query( model.RepositoryMetadata ):
                 metadata = repository_metadata.metadata
                 tools = metadata[ 'tools' ]
-                found = False
                 for tool_dict in tools:
-                    if tool_id and not tool_name and not tool_version:
-                        tool_dict_tool_id = tool_dict[ 'id' ].lower()
-                        found = ( tool_id == tool_dict_tool_id ) or \
-                                ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 )
-                    elif tool_name and not tool_id and not tool_version:
-                        tool_dict_tool_name = tool_dict[ 'name' ].lower()
-                        found = ( tool_name == tool_dict_tool_name ) or \
-                                ( not exact_matches_checked and tool_dict_tool_name.find( tool_name ) >= 0 )
-                    elif tool_version and not tool_id and not tool_name:
-                        tool_dict_tool_version = tool_dict[ 'version' ].lower()
-                        found = ( tool_version == tool_dict_tool_version ) or \
-                                ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 )
-                    elif tool_id and tool_name and not tool_version:
-                        tool_dict_tool_id = tool_dict[ 'id' ].lower()
-                        tool_dict_tool_name = tool_dict[ 'name' ].lower()
-                        found = ( tool_id == tool_dict_tool_id and tool_name == tool_dict_tool_name ) or \
-                                ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
-                    elif tool_id and tool_version and not tool_name:
-                        tool_dict_tool_id = tool_dict[ 'id' ].lower()
-                        tool_dict_tool_version = tool_dict[ 'version' ].lower()
-                        found = ( tool_id == tool_dict_tool_id and tool_version == tool_dict_tool_version ) or \
-                                ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 and tool_dict_tool_version.find( tool_version ) >= 0 )
-                    elif tool_version and tool_name and not tool_id:
-                        tool_dict_tool_version = tool_dict[ 'version' ].lower()
-                        tool_dict_tool_name = tool_dict[ 'name' ].lower()
-                        found = ( tool_version == tool_dict_tool_version and tool_name == tool_dict_tool_name ) or \
-                                ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
-                if found:
-                    match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
-            kwd[ 'match_tuples' ] = match_tuples
-            kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                ( tool_id, tool_name, tool_version, str( exact_matches_checked ) )
-            # Render the list view
-            return self.matched_repository_list_grid( trans, **kwd )
+                    if tool_ids and not tool_names and not tool_versions:
+                        for tool_id in tool_ids:
+                            if self._in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id ):
+                                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                    elif tool_names and not tool_ids and not tool_versions:
+                        for tool_name in tool_names:
+                            if self._in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name ):
+                                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                    elif tool_versions and not tool_ids and not tool_names:
+                        for tool_version in tool_versions:
+                            if self._in_tool_dict( tool_dict, exact_matches_checked, tool_version=tool_version ):
+                                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                    elif tool_ids and tool_names and not tool_versions:
+                        if len( tool_ids ) == len( tool_names ):
+                            for i, tool_id in enumerate( tool_ids ):
+                                tool_name = tool_names[ i ]
+                                if self._in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name ):
+                                    match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                        else:
+                            message = "No search performed - each field must contain the same number of comma-separated items."
+                            status = "error"
+                            ok = False
+                    elif tool_ids and tool_versions and not tool_names:
+                        if len( tool_ids )  == len( tool_versions ):
+                            for i, tool_id in enumerate( tool_ids ):
+                                tool_version = tool_versions[ i ]
+                                if self._in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_version=tool_version ):
+                                    match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                        else:
+                            message = "No search performed - each field must contain the same number of comma-separated items."
+                            status = "error"
+                            ok = False
+                    elif tool_versions and tool_names and not tool_ids:
+                        if len( tool_versions ) == len( tool_names ):
+                            for i, tool_version in enumerate( tool_versions ):
+                                tool_name = tool_names[ i ]
+                                if self._in_tool_dict( tool_dict, exact_matches_checked, tool_version=tool_version, tool_name=tool_name ):
+                                    match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                        else:
+                            message = "No search performed - each field must contain the same number of comma-separated items."
+                            status = "error"
+                            ok = False
+            if ok:
+                kwd[ 'match_tuples' ] = match_tuples
+                # Render the list view
+                if galaxy_url:
+                    # Our request originated from a Galaxy instance, so we're listing tools
+                    # that have been found for a workflow in Galaxy.
+                    return self.install_matched_repository_list_grid( trans, **kwd )
+                else:
+                    if tool_ids:
+                        tool_id_str = ','.join( tool_ids )
+                    else:
+                        tool_id_str = ''
+                    if tool_names:
+                        tool_name_str = ','.join( tool_names )
+                    else:
+                        tool_name_str = ''
+                    if tool_versions:
+                        tool_version_str = ','.join( tool_versions )
+                    else:
+                        tool_version_str = ''
+                    kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
+                        ( tool_id_str, tool_name_str, tool_version_str, str( exact_matches_checked ) )
+                    return self.matched_repository_list_grid( trans, **kwd )
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
+        if tool_ids:
+            tool_id = ','.join( tool_ids )
+        else:
+            tool_id = ''
+        if tool_names:
+            tool_name = ','.join( tool_names )
+        else:
+            tool_name = ''
+        if tool_versions:
+            tool_version = ','.join( tool_versions )
+        else:
+            tool_version = ''
         return trans.fill_template( '/webapps/community/repository/find_tools.mako',
                                     tool_id=tool_id,
                                     tool_name=tool_name,
@@ -451,6 +505,36 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
+    def _in_tool_dict( self, tool_dict, exact_matches_checked, tool_id=None, tool_name=None, tool_version=None ):
+        found = False
+        if tool_id and not tool_name and not tool_version:
+            tool_dict_tool_id = tool_dict[ 'id' ].lower()
+            found = ( tool_id == tool_dict_tool_id ) or \
+                    ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 )
+        elif tool_name and not tool_id and not tool_version:
+            tool_dict_tool_name = tool_dict[ 'name' ].lower()
+            found = ( tool_name == tool_dict_tool_name ) or \
+                    ( not exact_matches_checked and tool_dict_tool_name.find( tool_name ) >= 0 )
+        elif tool_version and not tool_id and not tool_name:
+            tool_dict_tool_version = tool_dict[ 'version' ].lower()
+            found = ( tool_version == tool_dict_tool_version ) or \
+                    ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 )
+        elif tool_id and tool_name and not tool_version:
+            tool_dict_tool_id = tool_dict[ 'id' ].lower()
+            tool_dict_tool_name = tool_dict[ 'name' ].lower()
+            found = ( tool_id == tool_dict_tool_id and tool_name == tool_dict_tool_name ) or \
+                    ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
+        elif tool_id and tool_version and not tool_name:
+            tool_dict_tool_id = tool_dict[ 'id' ].lower()
+            tool_dict_tool_version = tool_dict[ 'version' ].lower()
+            found = ( tool_id == tool_dict_tool_id and tool_version == tool_dict_tool_version ) or \
+                    ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 and tool_dict_tool_version.find( tool_version ) >= 0 )
+        elif tool_version and tool_name and not tool_id:
+            tool_dict_tool_version = tool_dict[ 'version' ].lower()
+            tool_dict_tool_name = tool_dict[ 'name' ].lower()
+            found = ( tool_version == tool_dict_tool_version and tool_name == tool_dict_tool_name ) or \
+                    ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
+        return found
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
