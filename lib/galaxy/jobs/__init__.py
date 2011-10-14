@@ -332,6 +332,9 @@ class JobWrapper( object ):
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
 
+    def get_job_runner( self ):
+        return self.tool.job_runner
+
     def get_job( self ):
         return self.sa_session.query( model.Job ).get( self.job_id )
 
@@ -1118,22 +1121,22 @@ class DefaultJobDispatcher( object ):
             self.job_runners[name] = runner( self.app )
             log.debug( 'Loaded job runner: %s' % display_name )
 
+    def __get_runner_name( self, job_wrapper ):
+        if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
+            runnner_name = "tasks"
+        else:
+            runner_name = ( job_wrapper.get_job_runner().split(":", 1) )[0]
+        return runner_name
+
     def put( self, job_wrapper ):
         try:
-            if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None:
-                if isinstance(job_wrapper, TaskWrapper):
-                    #DBTODO Refactor
-                    runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
-                    log.debug( "dispatching task %s, of job %d, to %s runner" %( job_wrapper.task_id, job_wrapper.job_id, runner_name ) )
-                    self.job_runners[runner_name].put( job_wrapper )
-                else:
-                    runner_name = "tasks"
-                log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
-                self.job_runners[runner_name].put( job_wrapper )
+            runner_name = self.__get_runner_name( job_wrapper )
+            if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and isinstance(job_wrapper, TaskWrapper):
+                #DBTODO Refactor
+                log.debug( "dispatching task %s, of job %d, to %s runner" %( job_wrapper.task_id, job_wrapper.job_id, runner_name ) )
             else:
-                runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
                 log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
-                self.job_runners[runner_name].put( job_wrapper )
+            self.job_runners[runner_name].put( job_wrapper )
         except KeyError:
             log.error( 'put(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
             job_wrapper.fail( 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.' )

@@ -164,7 +164,7 @@ class SGEJobRunner( BaseJobRunner ):
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
 
-        runner_url = job_wrapper.tool.job_runner
+        runner_url = job_wrapper.get_job_runner()
         
         # This is silly, why would we queue a job with no command line?
         if not command_line:
@@ -377,7 +377,7 @@ class SGEJobRunner( BaseJobRunner ):
         sge_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.id)
         sge_job_state.job_file = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job.id)
         sge_job_state.job_id = str( job.job_runner_external_id )
-        sge_job_state.runner_url = job_wrapper.tool.job_runner
+        sge_job_state.runner_url = job_wrapper.get_job_runner()
         job_wrapper.command_line = job.command_line
         sge_job_state.job_wrapper = job_wrapper
         if job.state == model.Job.states.RUNNING:

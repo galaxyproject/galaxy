@@ -236,7 +236,7 @@ class LwrJobRunner( BaseJobRunner ):
         return  lwr_url 
 
     def get_client_from_wrapper(self, job_wrapper):
-        return self.get_client( job_wrapper.tool.job_runner, job_wrapper.job_id )
+        return self.get_client( job_wrapper.get_job_runner(), job_wrapper.job_id )
 
     def get_client(self, job_runner, job_id):
         lwr_url = self.determine_lwr_url( job_runner )
@@ -245,7 +245,7 @@ class LwrJobRunner( BaseJobRunner ):
     def run_job( self, job_wrapper ):
         stderr = stdout = command_line = ''
 
-        runner_url = job_wrapper.tool.job_runner
+        runner_url = job_wrapper.get_job_runner()
 
         try:
             job_wrapper.prepare()
