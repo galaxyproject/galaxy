@@ -88,9 +88,8 @@ class HistoriesController( BaseAPIController, UsesHistory ):
                     state = states.QUEUED
                 elif summary[states.OK] == num_sets:
                     state = states.OK                       
-				item['state_details'] = summary
+                item['state_details'] = summary
             item['contents_url'] = url_for( 'history_contents', history_id=history_id )
-              
             item['state'] = state
         except Exception, e:
             item = "Error in history API at showing history detail"
