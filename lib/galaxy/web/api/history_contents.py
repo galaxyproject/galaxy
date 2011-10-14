@@ -14,7 +14,7 @@ import routes
 
 log = logging.getLogger( __name__ )
 
-class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociation, UsesHistory ):
+class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociation, UsesHistory, UsesLibrary, UsesLibraryItems ):
 
     @web.expose_api
     def index( self, trans, history_id, **kwd ):
@@ -85,7 +85,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
         if from_ld_id:
             try:
-                ld = get_library_content_for_access( trans, from_ld_id )
+                ld = self.get_library_dataset( trans, from_ld_id, check_ownership=False, check_accessible=False )
                 assert type( ld ) is trans.app.model.LibraryDataset, "Library content id ( %s ) is not a dataset" % from_ld_id
             except AssertionError, e:
                 trans.response.status = 400

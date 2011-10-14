@@ -133,6 +133,8 @@ mapped_chars = { '>' :'__gt__',
 
 def restore_text(text):
     """Restores sanitized text"""
+    if not text:
+        return text
     for key, value in mapped_chars.items():
         text = text.replace(value, key)
     return text
