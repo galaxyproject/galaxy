@@ -33,7 +33,6 @@ drmaa_state = {
 }
 
 drm_template = """#!/bin/sh
-#$ -S /bin/sh
 GALAXY_LIB="%s"
 if [ "$GALAXY_LIB" != "None" ]; then
     if [ -n "$PYTHONPATH" ]; then
