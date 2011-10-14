@@ -1764,7 +1764,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             # FIXME: Position should be handled inside module
             step.position = step_dict['position']
             module = module_factory.from_dict( trans, step_dict, secure=False )
-            if module.tool is None:
+            if module.type == 'tool' and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
                 missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
                 if missing_tool_tup not in missing_tool_tups:
