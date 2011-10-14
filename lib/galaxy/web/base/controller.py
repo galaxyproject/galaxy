@@ -1299,9 +1299,8 @@ class Admin( object ):
     @web.require_admin
     def index( self, trans, **kwd ):
         webapp = kwd.get( 'webapp', 'galaxy' )
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
             cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ) \
                                                   .filter( trans.model.ToolShedRepository.deleted == False ) \
@@ -1320,10 +1319,16 @@ class Admin( object ):
     @web.require_admin
     def center( self, trans, **kwd ):
         webapp = kwd.get( 'webapp', 'galaxy' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
-            return trans.fill_template( '/webapps/galaxy/admin/center.mako' )
+            return trans.fill_template( '/webapps/galaxy/admin/center.mako',
+                                        message=message,
+                                        status=status )
         else:
-            return trans.fill_template( '/webapps/community/admin/center.mako' )
+            return trans.fill_template( '/webapps/community/admin/center.mako',
+                                        message=message,
+                                        status=status )
     @web.expose
     @web.require_admin
     def reload_tool( self, trans, **kwd ):

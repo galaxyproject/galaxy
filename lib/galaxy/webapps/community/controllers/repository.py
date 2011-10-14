@@ -251,8 +251,7 @@ class MatchedRepositoryListGrid( grids.Grid ):
         RevisionColumn( "Revision" ),
         UserColumn( "Owner",
                      model_class=model.User,
-                     attach_popup=False,
-                     key="User.username" )
+                     attach_popup=False )
     ]
     operations = []
     standard_filters = []

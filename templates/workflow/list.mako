@@ -37,7 +37,7 @@
                     </a>
                 </li>
                 <li>
-                    <a class="action-button" href="${h.url_for( action='import_workflow' )}">
+                    <a class="action-button" href="${h.url_for( controller='workflow', action='import_workflow' )}">
                         <img src="${h.url_for('/static/images/fugue/arrow-090.png')}" />
                         <span>Upload or import workflow</span>
                     </a>
@@ -63,22 +63,20 @@
                             ## <td>${str(workflow.update_time)[:19]}</td>
                             <td>
                                 <div popupmenu="wf-${i}-popup">
-                                <a class="action-button" href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">Edit</a>
-                                <a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(workflow.id) )}" target="_parent">Run</a>
-                                <a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id(workflow.id) )}">Share or Publish</a>
-                                <a class="action-button" href="${h.url_for( action='export', id=trans.security.encode_id(workflow.id) )}">Download or Export</a>
-                                <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
-                                <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(workflow.id) )}">Rename</a>
-                                <a class="action-button" confirm="Are you sure you want to delete workflow '${h.to_unicode( workflow.name ) | h}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>
+                                <a class="action-button" href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id( workflow.id ) )}" target="_parent">Edit</a>
+                                <a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id( workflow.id ) )}" target="_parent">Run</a>
+                                <a class="action-button" href="${h.url_for( controller='workflow', action='sharing', id=trans.security.encode_id( workflow.id ) )}">Share or Publish</a>
+                                <a class="action-button" href="${h.url_for( controller='workflow', action='export', id=trans.security.encode_id( workflow.id ) )}">Download or Export</a>
+                                <a class="action-button" href="${h.url_for( controller='workflow', action='clone', id=trans.security.encode_id( workflow.id ) )}">Clone</a>
+                                <a class="action-button" href="${h.url_for( controller='workflow', action='rename', id=trans.security.encode_id( workflow.id ) )}">Rename</a>
+                                <a class="action-button" confirm="Are you sure you want to delete workflow '${h.to_unicode( workflow.name ) | h}'?" href="${h.url_for( controller='workflow', action='delete', id=trans.security.encode_id( workflow.id ) )}">Delete</a>
                                 </div>
                             </td>
                         </tr>
                     %endfor
                 </table>
             %else:
-
                 You have no workflows.
-
             %endif
 
             <h2>Workflows shared with you by others</h2>
@@ -101,18 +99,16 @@
                             <td>${len(workflow.latest_workflow.steps)}</td>
                             <td>
                                 <div popupmenu="shared-${i}-popup">
-                                    <a class="action-button" href="${h.url_for( action='display_by_username_and_slug', username=workflow.user.username, slug=workflow.slug)}" target="_top">View</a>
-                                    <a class="action-button" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">Run</a>
-                                    <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
+                                    <a class="action-button" href="${h.url_for( controller='workflow', action='display_by_username_and_slug', username=workflow.user.username, slug=workflow.slug )}" target="_top">View</a>
+                                    <a class="action-button" href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id( workflow.id ) )}">Run</a>
+                                    <a class="action-button" href="${h.url_for( controller='workflow', action='clone', id=trans.security.encode_id( workflow.id ) )}">Clone</a>
                                 </div>
                             </td>
                         </tr>
                     %endfor
                 </table>
             %else:
-
                 No workflows have been shared with you.
-
             %endif
 
             <h2>Other options</h2>
