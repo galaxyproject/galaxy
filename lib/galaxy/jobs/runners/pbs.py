@@ -292,7 +292,7 @@ class PBSJobRunner( BaseJobRunner ):
         if not job_id:
             errno, text = pbs.error()
             log.debug( "(%s) pbs_submit failed, PBS error %d: %s" % (galaxy_job_id, errno, text) )
-            job_wrapper.fail( "Unable to run this job due to a cluster error" )
+            job_wrapper.fail( "Unable to run this job due to a cluster error, please retry it later" )
             return
 
         if pbs_queue_name is None:
@@ -419,7 +419,7 @@ class PBSJobRunner( BaseJobRunner ):
                     assert int( status.exit_status ) == 0
                     log.debug("(%s/%s) PBS job has completed successfully" % ( galaxy_job_id, job_id ) )
                 except AssertionError:
-                    pbs_job_state.fail_message = 'Job cannot be completed due to a cluster error.  Please retry or'
+                    pbs_job_state.fail_message = 'Job cannot be completed due to a cluster error, please retry it later'
                     log.error( '(%s/%s) PBS job failed: %s' % ( galaxy_job_id, job_id, JOB_EXIT_STATUS.get( int( status.exit_status ), 'Unknown error: %s' % status.exit_status ) ) )
                     self.work_queue.put( ( 'fail', pbs_job_state ) )
                     continue
