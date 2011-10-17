@@ -1804,7 +1804,7 @@ var FiltersManager = function(track, filters_list) {
     var sliders_div = $("<div/>").addClass("sliders").appendTo(this.parent_div);
     var manager = this;
     $.each(this.filters, function(index, filter) {
-        filter.container = $("<div/>").addClass("slider-row").appendTo(sliders_div);
+        filter.container = $("<div/>").addClass("filter-row slider-row").appendTo(sliders_div);
         
         // Set up filter label (name, values).
         var filter_label = $("<div/>").addClass("elt-label").appendTo(filter.container)
@@ -1860,25 +1860,39 @@ var FiltersManager = function(track, filters_list) {
     //
     var 
         display_controls_div = $("<div/>").addClass("display-controls").appendTo(this.parent_div),
-        header_text = $("<span/>").addClass("elt-label").text("Transparency:").appendTo(display_controls_div),
-        alpha_select = $("<select/>").attr("name", "alpha_dropdown").appendTo(display_controls_div);
-    
-    // Dropdown for selecting attribute to use for alpha channel manipulation.
-    this.alpha_filter = null;
-    $("<option/>").attr("value", -1).text("== None ==").appendTo(alpha_select);
-    for (var i = 0; i < this.filters.length; i++) {
-        $("<option/>").attr("value", i).text(this.filters[i].name).appendTo(alpha_select);
-    }
-    alpha_select.change(function() {
-        $(this).children("option:selected").each(function() {
-            var filterIndex = parseInt($(this).val());
-            manager.alpha_filter = (filterIndex >= 0 ? manager.filters[filterIndex] : null);
-            manager.track.request_draw(true, true);
-        })
+        formatting_div,
+        header_text,
+        select,
+        // TODO: find better way to specify and change control filters.
+        filter_controls_dict = { 
+            "Transparency": function(new_filter) { manager.alpha_filter = new_filter; },
+            "Height" : function(new_filter) { manager.height_filter = new_filter; }
+        };
+        
+    $.each(filter_controls_dict, function(control_name, filter) {
+        // Display name and select option.
+        formatting_div = $("<div/>").addClass("filter-row").appendTo(display_controls_div),
+        header_text = $("<span/>").addClass("elt-label").text(control_name + ":").appendTo(formatting_div),
+        select = $("<select/>").attr("name", control_name + "_dropdown").css("float", "right").appendTo(formatting_div);
+
+        // Dropdown for selecting filter.
+        $("<option/>").attr("value", -1).text("== None ==").appendTo(select);
+        for (var i = 0; i < manager.filters.length; i++) {
+            $("<option/>").attr("value", i).text(manager.filters[i].name).appendTo(select);
+        }
+        select.change(function() {
+            $(this).children("option:selected").each(function() {
+                var filterIndex = parseInt($(this).val());
+                filter_controls_dict[control_name]( (filterIndex >= 0 ? manager.filters[filterIndex] : null) );
+                manager.track.request_draw(true, true);
+            })
+        });
+        
+        // Clear floating.
+        $("<div style='clear: both;'/>").appendTo(formatting_div);
     });
     
     // Clear floating.
-    // Add to clear floating layout.
     $("<div style='clear: both;'/>").appendTo(this.parent_div);
 };
 
@@ -1892,6 +1906,7 @@ extend(FiltersManager.prototype, {
             filter.slider.slider("option", "values", [filter.min, filter.max]);
         }
         this.alpha_filter = null;
+        this.height_filter = null;
     },
     run_on_dataset: function() {
         // Get or create dictionary item.
@@ -1979,20 +1994,20 @@ extend(FiltersManager.prototype, {
 });
 
 /**
- * Generates alpha values based on filter and feature's value for filter.
+ * Generates scale values based on filter and feature's value for filter.
  */
-var FilterAlphaGenerator = function(filter, default_alpha) {
-    painters.AlphaGenerator.call(this, default_alpha);
+var FilterScaler = function(filter, default_val) {
+    painters.Scaler.call(this, default_val);
     this.filter = filter;
 };
 
-FilterAlphaGenerator.prototype.gen_alpha = function(feature_data) {
-    // If filter is not initalized yet, return default alpha.
+FilterScaler.prototype.gen_val = function(feature_data) {
+    // If filter is not initalized yet, return default val.
     if (this.filter.high === Number.MAX_VALUE || this.filter.low === -Number.MAX_VALUE || this.filter.low === this.filter.high) {
-        return this.default_alpha;
+        return this.default_val;
     }
     
-    // Alpha value is ratio of (filter's value compared to low) to (complete filter range).
+    // Scaling value is ratio of (filter's value compared to low) to (complete filter range).
     return ( ( parseFloat(feature_data[this.filter.index]) - this.filter.low ) / ( this.filter.high - this.filter.low ) );
 };
 
@@ -3419,9 +3434,10 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }        
         
         // Create painter, and canvas of sufficient size to contain all features.
-        var filter_alpha_generator = (this.filters_manager.alpha_filter ? new FilterAlphaGenerator(this.filters_manager.alpha_filter) : null);
+        var filter_alpha_scaler = (this.filters_manager.alpha_filter ? new FilterScaler(this.filters_manager.alpha_filter) : null);
+        var filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null);
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
-        var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_generator, ref_seq);
+        var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, ref_seq);
         var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required));
         var canvas = this.view.canvas_manager.new_canvas();
         var feature_mapper = null;
@@ -3755,17 +3771,17 @@ var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y
 };
 
 /**
- * Base class for all alpha generators.
+ * Base class for all scalers. Scalers produce values that are used to change (scale) drawing attributes.
  */
-var AlphaGenerator = function(default_alpha) {
-    this.default_alpha = (default_alpha ? default_alpha : 1);
+var Scaler = function(default_val) {
+    this.default_val = (default_val ? default_val : 1);
 };
 
 /**
- * Base method for generating an alpha channel value; returns default alpha  if not implemented.
+ * Produce a scaling value.
  */
-AlphaGenerator.prototype.gen_alpha = function(data) {
-    return this.default_alpha;  
+Scaler.prototype.gen_val = function(input) {
+    return this.default_val;
 };
 
 /**
@@ -4008,9 +4024,10 @@ FeaturePositionMapper.prototype.get_feature_data = function(x, y) {
 /**
  * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
  */
-var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_generator) {
+var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
     Painter.call(this, data, view_start, view_end, prefs, mode);
-    this.alpha_generator = (alpha_generator ? alpha_generator : new AlphaGenerator());
+    this.alpha_scaler = (alpha_scaler ? alpha_scaler : new Scaler());
+    this.height_scaler = (height_scaler ? height_scaler : new Scaler());
 };
 
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
@@ -4085,8 +4102,8 @@ var DENSE_TRACK_HEIGHT = 10,
     LABEL_SPACING = 2,
     CONNECTOR_COLOR = "#ccc";
 
-var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_generator) {
-    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_generator);
+var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
 };
 
 extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
@@ -4131,8 +4148,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             label_color = this.prefs.label_color;
         
         // Set global alpha.
-        ctx.globalAlpha = this.alpha_generator.gen_alpha(feature);
-
+        ctx.globalAlpha = this.alpha_scaler.gen_val(feature);
+        
         // In dense mode, put all data in top slot.
         if (mode == "Dense") {
             slot = 1;
@@ -4141,7 +4158,6 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         if (mode === "no_detail") {
             // No details for feature, so only one way to display.
             ctx.fillStyle = block_color;
-            // TODO: what should width be here?
             ctx.fillRect(f_start, y_center + 5, f_end - f_start, NO_DETAIL_FEATURE_HEIGHT);
         } 
         else { // Mode is either Squish or Pack:
@@ -4181,6 +4197,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 }                            
                 ctx.fillRect(f_start, y_center, f_end - f_start, thick_height);
             } else { 
+                //
                 // There are feature blocks and mode is either Squish or Pack.
                 //
                 // Approach: (a) draw whole feature as connector/intron and (b) draw blocks as 
@@ -4213,6 +4230,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 }
                 ctx.fillRect(f_start, cur_y_center, f_end - f_start, cur_height);
                 
+                // Draw blocks.
+                var start_and_height;
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
                         block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
@@ -4223,17 +4242,16 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
                     // Draw thin block.
                     ctx.fillStyle = block_color;
-                    ctx.fillRect(block_start, y_center + (thick_height-thin_height)/2 + 1, 
-                                 block_end - block_start, thin_height);
+                    ctx.fillRect(block_start, y_center + (thick_height-thin_height)/2 + 1, block_end - block_start, thin_height );
 
                     // If block intersects with thick region, draw block as thick.
                     // - No thick is sometimes encoded as thick_start == thick_end, so don't draw in that case
                     if (thick_start !== undefined && feature_te > feature_ts && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
-                            block_thick_end = Math.min(block_end, thick_end); 
-                        ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
+                            block_thick_end = Math.min(block_end, thick_end);
+                        ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
                         if ( feature_blocks.length == 1 && mode == "Pack") {
-                            // Exactly one block  means we have no introns, but do have a distinct "thick" region,
+                            // Exactly one block means we have no introns, but do have a distinct "thick" region,
                             // draw arrows over it if in pack mode
                             if (feature_strand === "+") {
                                 ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
@@ -4245,12 +4263,33 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                                 block_thick_start += 2;
                                 block_thick_end -= 2;
                             }
-                            ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
+                            ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
                         }   
                     }
                 }
+                                
+                // FIXME: Height scaling only works in Pack mode right now.
+                if (mode === "Pack") {
+                    // Reset alpha so height scaling is not impacted by alpha scaling.
+                    ctx.globalAlpha = 1;
+                    
+                    // Height scaling: draw white lines to reduce height according to height scale factor.
+                    ctx.fillStyle = "white"; // TODO: set this to background color.
+                    var 
+                        hscale_factor = this.height_scaler.gen_val(feature),
+                        // Ceil ensures that min height is >= 1.
+                        new_height = Math.ceil(thick_height * hscale_factor),
+                        ws_height = Math.round( (thick_height-new_height)/2 );
+                    if (hscale_factor !== 1) {
+                        ctx.fillRect(f_start, cur_y_center + 1, f_end - f_start, ws_height);
+                        ctx.fillRect(f_start, cur_y_center + thick_height - ws_height + 1, f_end - f_start, ws_height);
+                    }   
+                }                
             }
             
+            // Reset alpha so that label is not transparent.
+            ctx.globalAlpha = 1;
+                        
             // Draw label for Pack mode.
             if (mode === "Pack" && feature_start > tile_low) {
                 ctx.fillStyle = label_color;
@@ -4276,8 +4315,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 });
 
 
-var VariantPainter = function(data, view_start, view_end, prefs, mode, alpha_generator) {
-    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_generator);
+var VariantPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
 }
 
 extend(VariantPainter.prototype, FeaturePainter.prototype, {
@@ -4334,8 +4373,8 @@ extend(VariantPainter.prototype, FeaturePainter.prototype, {
     }
 });
 
-var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_generator, ref_seq) {
-    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_generator);
+var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler, ref_seq) {
+    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
     this.ref_seq = ref_seq;
 };
 
@@ -4624,7 +4663,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
     }
 });
 
-exports.AlphaGenerator = AlphaGenerator;
+exports.Scaler = Scaler;
 exports.SummaryTreePainter = SummaryTreePainter;
 exports.LinePainter = LinePainter;
 exports.LinkedFeaturePainter = LinkedFeaturePainter;

@@ -46,7 +46,8 @@ input{font:10px verdana;}
 .filters>.sliders,.display-controls{float:left;margin:1em;}
 .sliders{width:410px;}
 .display-controls{border-left:solid 2px #DDDDDD;padding-left:1em}
-.slider-row{margin-top:0.4em;margin-left:1em;}
+.filter-row{margin-top:0.4em;}
+.slider-row{margin-left:1em;}
 .elt-label{float:left;font-weight:bold;margin-right:1em;}
 .slider{float:right;width:200px;position:relative;}
 .tool-name{font-size:110%;font-weight:bold;}
