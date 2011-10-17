@@ -3,7 +3,9 @@ from galaxy import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.tools.search import ToolBoxSearch
-import logging
+from galaxy.tools import json_fix
+from galaxy.util.hash_util import *
+import simplejson, binascii, logging
 log = logging.getLogger( __name__ )
 
 from galaxy.actions.admin import AdminActions
@@ -688,9 +690,19 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        trans.set_cookie( trans.request.host, name='toolshedgalaxyurl' )
-        url = '%s/repository/browse_downloadable_repositories?webapp=galaxy' % tool_shed_url
+        galaxy_url = trans.request.host
+        url = '%s/repository/browse_downloadable_repositories?galaxy_url=%s&webapp=community' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
+    def _decode( self, trans, value, secure=True ):
+        if secure:
+            # Extract and verify hash
+            a, b = value.split( ":" )
+            value = binascii.unhexlify( b )
+            test = hmac_new( trans.app.config.tool_secret, value )
+            assert a == test
+        # Restore from string
+        values = json_fix( simplejson.loads( value ) )
+        return values
     @web.expose
     @web.require_admin
     def install_tool_shed_repository( self, trans, **kwd ):
@@ -703,10 +715,10 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             message += 'target=_blank">Automatic installation of Galaxy tool shed repository tools into a local Galaxy instance</a> section of the '
             message += '<a href="http://wiki.g2.bx.psu.edu/Tool%20Shed" target="_blank">Galaxy tool shed wiki</a> for all of the details.'
             return trans.show_error_message( message )
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        tool_shed_url = trans.get_cookie( name='galaxytoolshedurl' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        tool_shed_url = kwd[ 'tool_shed_url' ]
+        repo_info_dict = kwd[ 'repo_info_dict' ]
         if kwd.get( 'select_tool_panel_section_button', False ):
             shed_tool_conf = kwd[ 'shed_tool_conf' ]
             # Get the tool path.
@@ -716,18 +728,12 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             if 'tool_panel_section' in kwd:
                 section_key = 'section_%s' % kwd[ 'tool_panel_section' ]
                 tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                # Get the number of repositories to clone from a cookie.
-                num_repos_to_clone = int( trans.get_cookie( name='numrepostoclone' ) )
+                # Decode the encoded repo_info_dict param value.
+                repo_info_dict = self._decode( trans, repo_info_dict )
                 # Clone the repository to the configured location.
                 current_working_dir = os.getcwd()
-                for index in range( 0, num_repos_to_clone ):
-                    cookie_name = 'toolshedrepository%i' % index
-                    clone_repo_info_str = trans.get_cookie( name=cookie_name )
-                    clone_repo_info_items = clone_repo_info_str.split( '&' )
-                    name = clone_repo_info_items[ 0 ]
-                    description = clone_repo_info_items[ 1 ]
-                    repository_clone_url = clone_repo_info_items[ 2 ]
-                    changeset_revision = clone_repo_info_items[ 3 ]
+                for name, repo_info_tuple in repo_info_dict.items():
+                    description, repository_clone_url, changeset_revision = repo_info_tuple
                     clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, changeset_revision ) )
                     if os.path.exists( clone_dir ):
                         # Repository and revision has already been cloned.
@@ -825,6 +831,8 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             shed_tool_conf_select_field = None
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
         return trans.fill_template( '/admin/select_tool_panel_section.mako',
+                                    tool_shed_url=tool_shed_url,
+                                    repo_info_dict=repo_info_dict,
                                     shed_tool_conf=shed_tool_conf,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
@@ -836,12 +844,11 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         params = util.Params( kwd )
         repository_id = params.get( 'id', None )
         repository = get_repository( trans, repository_id )
-        trans.set_cookie( trans.request.host, name='toolshedgalaxyurl' )
+        galaxy_url = trans.request.host
         # Send a request to the relevant tool shed to see if there are any updates.
         # TODO: support https in the following url.
-        # TODO: Set cookies for name, owner, changeset-revision instead of sending in request
-        url = 'http://%s/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&webapp=community' % \
-            ( repository.tool_shed, repository.name, repository.owner, repository.changeset_revision )
+        url = 'http://%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=community' % \
+            ( repository.tool_shed, galaxy_url, repository.name, repository.owner, repository.changeset_revision )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
@@ -1087,10 +1094,10 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             # http://test@bx.psu.edu:9009/repos/some_username/column
             items = repository_clone_url.split( '@' )
             tmp_url = items[ 1 ]
-        elif repository_clone_url.find( '\/\/' ) > 0:
+        elif repository_clone_url.find( '//' ) > 0:
             # We have an url that includes only a protocol, something like:
             # http://bx.psu.edu:9009/repos/some_username/column
-            items = repository_clone_url.split( '\/\/' )
+            items = repository_clone_url.split( '//' )
             tmp_url = items[ 1 ]
         else:
             tmp_url = repository_clone_url

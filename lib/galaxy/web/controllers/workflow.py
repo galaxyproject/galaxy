@@ -1156,14 +1156,12 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             # involved in workflow development needs to figure out what it will take to be able to switch
                             # back and forth between Galaxy (with panels ) and the workflow view (without panels ), having 
                             # the Galaxy panels displayed whenever in Galaxy.
-                            trans.set_cookie( trans.request.host, name='toolshedgalaxyurl' )
-                            galaxy_url = trans.request.host
                             message += "The workflow requires the following tools that are not available in this Galaxy instance."
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/><br/>"
                             for tool_shed_name, tool_shed_url in trans.app.tool_shed_registry.tool_sheds.items():
                                 if tool_shed_url.endswith( '/' ):
                                     tool_shed_url = tool_shed_url.rstrip( '/' )
-                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
+                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, trans.request.host )
                                     for missing_tool_tup in missing_tool_tups:
                                         missing_tool_id = missing_tool_tup[0]
                                         url += '&tool_id=%s' % missing_tool_id
