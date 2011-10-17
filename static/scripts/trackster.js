@@ -4375,7 +4375,7 @@ extend(VariantPainter.prototype, FeaturePainter.prototype, {
 
 var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler, ref_seq) {
     FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
-    this.ref_seq = ref_seq;
+    this.ref_seq = (ref_seq ? ref_seq.data : null);
 };
 
 ReadPainter.prototype.default_prefs = extend({}, FeaturePainter.prototype.default_prefs, { show_insertions: false });
@@ -4410,8 +4410,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             tile_region = [tile_low, tile_high],
             base_offset = 0,
             seq_offset = 0,
-            gap = 0
-            ref_seq = this.ref_seq.data,
+            gap = 0,
             char_width_px = ctx.canvas.manager.char_width_px;
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
@@ -4465,8 +4464,8 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             // TODO: this can be made much more efficient by computing the complete sequence
                             // to draw and then drawing it.
                             for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                if (this.prefs.show_differences && ref_seq) {
-                                    var ref_char = ref_seq[seq_start - tile_low + c];
+                                if (this.prefs.show_differences && this.ref_seq) {
+                                    var ref_char = this.ref_seq[seq_start - tile_low + c];
                                     if (!ref_char || ref_char.toLowerCase() === seq[c].toLowerCase()) {
                                         continue;
                                     }
