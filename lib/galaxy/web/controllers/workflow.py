@@ -1150,17 +1150,20 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     if missing_tool_tups:
                         if trans.user_is_admin():
                             # A required tool is not available in the local Galaxy instance.
-                            # TODO: It would sure be nice to be able to redirec to a mako tempalte here that displays a nice
-                            # page including the links to the configured tool shed instead of this stupd message, but trying
+                            # TODO: It would sure be nice to be able to redirect to a mako template here that displays a nice
+                            # page including the links to the configured tool sheds instead of this message, but trying
                             # to get the panels back is a nightmare since workflow eliminates the Galaxy panels.  Someone 
-                            #involved in workflow development needs to figure out what it will take to get the Galaxy panels back...
+                            # involved in workflow development needs to figure out what it will take to be able to switch
+                            # back and forth between Galaxy (with panels ) and the workflow view (without panels ), having 
+                            # the Galaxy panels displayed whenever in Galaxy.
+                            trans.set_cookie( trans.request.host, name='toolshedgalaxyurl' )
                             galaxy_url = trans.request.host
                             message += "The workflow requires the following tools that are not available in this Galaxy instance."
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/><br/>"
                             for tool_shed_name, tool_shed_url in trans.app.tool_shed_registry.tool_sheds.items():
                                 if tool_shed_url.endswith( '/' ):
                                     tool_shed_url = tool_shed_url.rstrip( '/' )
-                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=community' % ( tool_shed_url, galaxy_url )
+                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
                                     for missing_tool_tup in missing_tool_tups:
                                         missing_tool_id = missing_tool_tup[0]
                                         url += '&tool_id=%s' % missing_tool_id

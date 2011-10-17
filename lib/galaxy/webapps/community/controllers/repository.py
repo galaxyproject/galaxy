@@ -284,8 +284,9 @@ class InstallMatchedRepositoryListGrid( MatchedRepositoryListGrid ):
     # Grid definition
     title = "Repositories with required tools"
     operations = [ grids.GridOperation( "Preview and install tools",
-                                        url_args = dict( action='find_tools',
-                                                         operation='install_tools' ),
+                                        url_args = dict( controller='repository',
+                                                         action='find_tools',
+                                                         webapp='community' ),
                                         allow_multiple=True,
                                         async_compatible=False ) ]
 
@@ -383,6 +384,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'galaxy' )
         # Set the toolshedgalaxyurl cookie so we can get back
         # to the calling local Galaxy instance.
         galaxy_url = kwd.get( 'galaxy_url', None )
@@ -390,11 +392,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
+            is_admin = trans.user_is_admin()
             if operation == "view_or_manage_repository":
                 repository_metadata = get_repository_metadata_by_id( trans, kwd[ 'id' ] )
                 repository_id = trans.security.encode_id( repository_metadata.repository.id )
                 repository = get_repository( trans, repository_id )
-                is_admin = trans.user_is_admin()
                 # The received id is a RepositoryMetadata.id, so we have to get the repository id.
                 kwd[ 'id' ] = repository_id
                 kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
@@ -407,7 +409,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                       action='view_repository',
                                                                       **kwd ) )
             if operation == "preview and install tools":
-                pass
+                galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+                trans.set_cookie( trans.request.host, name='galaxytoolshedurl' )
+                # TODO: support https in the following url.
+                url = 'http://%s/admin/install_tool_shed_repository' % ( galaxy_url )
+                repos_to_clone = util.listify( kwd[ 'id' ] )
+                num_repos_to_clone = len( repos_to_clone )
+                trans.set_cookie( num_repos_to_clone, name='numrepostoclone' )
+                for index in range( 0, num_repos_to_clone ):
+                    repository_metadata_id = repos_to_clone[ index ]
+                    self._set_clone_repository_cookie( trans, index, repository_metadata_id )
+                return trans.response.send_redirect( url )
         tool_ids = [ tid.lower() for tid in util.listify( kwd.get( 'tool_id', '' ) ) ]
         tool_names = [ tn.lower() for tn in util.listify( kwd.get( 'tool_name', '' ) ) ]
         tool_versions = [ tv.lower() for tv in util.listify( kwd.get( 'tool_version', '' ) ) ]
@@ -499,6 +511,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         else:
             tool_version = ''
         return trans.fill_template( '/webapps/community/repository/find_tools.mako',
+                                    webapp=webapp,
                                     tool_id=tool_id,
                                     tool_name=tool_name,
                                     tool_version=tool_version,
@@ -535,6 +548,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
             found = ( tool_version == tool_dict_tool_version and tool_name == tool_dict_tool_name ) or \
                     ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
         return found
+    def _set_clone_repository_cookie( self, trans, index, repository_metadata_id ):
+        cookie_name = 'toolshedrepository%i' % index
+        repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
+        repository_id = trans.security.encode_id( repository.id )
+        changeset_revision = repository_metadata.changeset_revision
+        # Redirect back to local Galaxy to perform install.
+        repository_clone_url = generate_clone_url( trans, repository_id )
+        cookie_value = '%s&%s&%s&%s' % ( repository.name, repository.description, repository_clone_url, changeset_revision )
+        trans.set_cookie( cookie_value, name=cookie_name )
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
@@ -570,11 +593,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         # Redirect back to local Galaxy to perform install.
-        tool_shed_url = trans.request.host
+        trans.set_cookie( trans.request.host, name='galaxytoolshedurl' )
         repository_clone_url = generate_clone_url( trans, repository_id )
         # TODO: support https in the following url.
-        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&name=%s&description=%s&repository_clone_url=%s&changeset_revision=%s' % \
-            ( galaxy_url, tool_shed_url, repository.name, repository.description, repository_clone_url, changeset_revision )
+        url = 'http://%s/admin/install_tool_shed_repository?name=%s&description=%s&repository_clone_url=%s&changeset_revision=%s' % \
+            ( galaxy_url, repository.name, repository.description, repository_clone_url, changeset_revision )
         return trans.response.send_redirect( url )
     @web.expose
     def check_for_updates( self, trans, **kwd ):
@@ -588,14 +611,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         webapp = params.get( 'webapp', None )
-        tool_shed_url = trans.request.host
+        trans.set_cookie( trans.request.host, name='galaxytoolshedurl' )
         # Start building up the url to redirect back to the calling Galaxy instance.
         # TODO: support https in the following url.
-        url = 'http://%s/admin/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, tool_shed_url )
+        url = 'http://%s/admin/update_to_changeset_revision' % galaxy_url
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        #if error:
-        #    url += '&message=%s&status=error' % message
-        #else:
         url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
             ( repository.name, repository.user.username, changeset_revision )
         if changeset_revision == repository.tip:

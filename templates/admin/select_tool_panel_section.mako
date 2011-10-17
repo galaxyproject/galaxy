@@ -23,9 +23,9 @@
 <br/>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Install tools from repository '${name}'</div>
+    <div class="toolFormTitle">Load tools into tool panel</div>
     <div class="toolFormBody">
-    <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin', action='install_tool_shed_repository', tool_shed_url=tool_shed_url, name=name, description=description, changeset_revision=changeset_revision, repository_clone_url=repository_clone_url )}" method="post" >
+    <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin', action='install_tool_shed_repository' )}" method="post" >
         %if shed_tool_conf_select_field:
             <div class="form-row">
                 <label>Shed tool configuration file:</label>

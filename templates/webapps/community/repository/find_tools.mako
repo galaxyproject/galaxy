@@ -23,7 +23,7 @@
             strings if these types of strings are entered in more than one field.
         </div>
         <div style="clear: both"></div>
-        <form name="find_tools" id="find_tools" action="${h.url_for( controller='repository', action='find_tools' )}" method="post" >
+        <form name="find_tools" id="find_tools" action="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}" method="post" >
             <div class="form-row">
                 <label>Tool id:</label>
                 <input name="tool_id" type="textfield" value="${tool_id}" size="40"/>
