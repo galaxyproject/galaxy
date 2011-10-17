@@ -4411,7 +4411,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             base_offset = 0,
             seq_offset = 0,
             gap = 0
-            ref_seq = this.ref_seq,
+            ref_seq = this.ref_seq.data,
             char_width_px = ctx.canvas.manager.char_width_px;
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
