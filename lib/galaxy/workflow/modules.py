@@ -209,9 +209,18 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def from_workflow_step( Class, trans, step ):
         tool_id = step.tool_id
+        install_tool_id = None
         if tool_id not in trans.app.toolbox.tools_by_id:
-            return None
-        else:
+            for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
+                if available_tool_id.find( tool_id ) >=0:
+                    # We're attempting to match tool id against a tool guid.
+                    # TODO: match by tool_id (and version if we attempt that, but 
+                    # workflows will break) is not good enough because
+                    # 2 tools installed from a tool shed could both match this.  We
+                    # need to present a select list here.
+                    install_tool_id = available_tool_id
+                    break
+        if tool_id in trans.app.toolbox.tools_by_id or install_tool_id:
             module = Class( trans, tool_id )
             module.state = DefaultToolState()
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
@@ -223,6 +232,7 @@ class ToolModule( WorkflowModule ):
                 pjadict[pja.action_type] = pja
             module.post_job_actions = pjadict
             return module
+        return None
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = self.tool_id
