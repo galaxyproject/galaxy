@@ -693,13 +693,12 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         galaxy_url = trans.request.host
         url = '%s/repository/browse_downloadable_repositories?galaxy_url=%s&webapp=community' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
-    def _decode( self, trans, value, secure=True ):
-        if secure:
-            # Extract and verify hash
-            a, b = value.split( ":" )
-            value = binascii.unhexlify( b )
-            test = hmac_new( trans.app.config.tool_secret, value )
-            assert a == test
+    def _decode( self, value ):
+        # Extract and verify hash
+        a, b = value.split( ":" )
+        value = binascii.unhexlify( b )
+        test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+        assert a == test
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
         return values
@@ -729,7 +728,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                 section_key = 'section_%s' % kwd[ 'tool_panel_section' ]
                 tool_section = trans.app.toolbox.tool_panel[ section_key ]
                 # Decode the encoded repo_info_dict param value.
-                repo_info_dict = self._decode( trans, repo_info_dict )
+                repo_info_dict = self._decode( repo_info_dict )
                 # Clone the repository to the configured location.
                 current_working_dir = os.getcwd()
                 for name, repo_info_tuple in repo_info_dict.items():

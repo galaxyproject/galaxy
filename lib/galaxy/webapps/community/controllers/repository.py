@@ -423,7 +423,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     changeset_revision = repository_metadata.changeset_revision
                     repository_clone_url = generate_clone_url( trans, repository_id )
                     repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
-                encoded_repo_info_dict = self._encode( trans, repo_info_dict, secure=True )
+                encoded_repo_info_dict = self._encode( repo_info_dict )
                 url += '&repo_info_dict=%s' % encoded_repo_info_dict
                 return trans.response.send_redirect( url )
         tool_ids = [ tid.lower() for tid in util.listify( kwd.get( 'tool_id', '' ) ) ]
@@ -554,15 +554,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
             found = ( tool_version == tool_dict_tool_version and tool_name == tool_dict_tool_name ) or \
                     ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
         return found
-    def _encode( self, trans, repo_info_dict, secure=True ):
+    def _encode( self, repo_info_dict ):
         value = simplejson.dumps( repo_info_dict )
-        # Make it secure
-        if secure:
-            a = hmac_new( trans.app.config.tool_secret, value )
-            b = binascii.hexlify( value )
-            return "%s:%s" % ( a, b )
-        else:
-            return value
+        a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+        b = binascii.hexlify( value )
+        return "%s:%s" % ( a, b )
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
