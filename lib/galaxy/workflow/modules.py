@@ -171,15 +171,10 @@ class ToolModule( WorkflowModule ):
         except KeyError, e:
             # Handle the case where the workflow requires a tool not available in the local Galaxy instance.
             self.tool = None
-            # TODO: Instead of parsing the guid, get the tool_id and version from the shed_tool_conf.xml,
-            # which requires enhancements to the tool loading process.
+            # The id value of tools installed from a Galaxy tool shed is a guid, but
+            # these tool's old_id attribute should contain what we're looking for.
             for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
-                if available_tool_id.find( tool_id ) >=0:
-                    # We're attempting to match tool id against a tool guid.
-                    # TODO: match by tool_id (and version if we attempt that, but 
-                    # workflows will break) is not good enough because
-                    # 2 tools installed from a tool shed could both match this.  We
-                    # need to present a select list here.
+                if tool_id == available_tool.old_id:
                     self.tool = available_tool
                     break
         self.post_job_actions = {}
@@ -211,13 +206,10 @@ class ToolModule( WorkflowModule ):
         tool_id = step.tool_id
         install_tool_id = None
         if tool_id not in trans.app.toolbox.tools_by_id:
+            # The id value of tools installed from a Galaxy tool shed is a guid, but
+            # these tool's old_id attribute should contain what we're looking for.
             for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
-                if available_tool_id.find( tool_id ) >=0:
-                    # We're attempting to match tool id against a tool guid.
-                    # TODO: match by tool_id (and version if we attempt that, but 
-                    # workflows will break) is not good enough because
-                    # 2 tools installed from a tool shed could both match this.  We
-                    # need to present a select list here.
+                if tool_id == available_tool.old_id:
                     install_tool_id = available_tool_id
                     break
         if tool_id in trans.app.toolbox.tools_by_id or install_tool_id:

@@ -104,6 +104,14 @@ class ToolBox( object ):
         try:
             path = elem.get( "file" )
             tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+            if guid is not None:
+                # Tool was installed from a Galaxy tool shed.
+                tool.tool_shed = elem.find( "tool_shed" ).text
+                tool.repository_name = elem.find( "repository_name" ).text
+                tool.repository_owner = elem.find( "repository_owner" ).text
+                tool.changeset_revision = elem.find( "changeset_revision" ).text
+                tool.old_id = elem.find( "id" ).text
+                tool.version = elem.find( "version" ).text
             if self.app.config.get_bool( 'enable_tool_tags', False ):
                 tag_names = elem.get( "tags", "" ).split( "," )
                 for tag_name in tag_names:
@@ -364,9 +372,7 @@ class ToolParallelismInfo(object):
             # legacy basic mode - provide compatible defaults
             self.attributes['split_size'] = 20
             self.attributes['split_mode'] = 'number_of_parts'
-            
-        
-    
+
 class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
@@ -387,6 +393,13 @@ class Tool:
         # easily ensure that parameter dependencies like index files or
         # tool_data_table_conf.xml entries exist.
         self.input_params = []
+        # Attributes of tools installed from Galaxy tool sheds.
+        self.tool_shed = None
+        self.repository_name = None
+        self.repository_owner = None
+        self.changeset_revision = None
+        self.old_id = None
+        self.version = None
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
     
@@ -407,14 +420,14 @@ class Tool:
             raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
         # TODO: can this be generated automatically?
-        if guid is not None:
-            self.id = guid
-        else:
+        if guid is None:
             self.id = root.get( "id" )
+            self.version = root.get( "version" )
+        else:
+            self.id = guid
         if not self.id: 
-            raise Exception, "Missing tool 'id'" 
-        self.version = root.get( "version" )
-        if not self.version: 
+            raise Exception, "Missing tool 'id'"
+        if not self.version:
             # For backward compatibility, some tools may not have versions yet.
             self.version = "1.0.0"
         # Support multi-byte tools
