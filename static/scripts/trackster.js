@@ -561,13 +561,13 @@ var ReferenceTrackDataManager = function(num_elements, track, subset) {
     DataManager.call(this, num_elements, track, subset);
 };
 extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototype, {
-    load_data: function(chrom, low, high, mode, resolution, extra_params) {
+    load_data: function(low, high, mode, resolution, extra_params) {
         if (resolution > 1) {
             // Now that data is pre-fetched before draw, we don't load reference tracks
-            // unless it's at the bottom level
-            return;
+            // unless it's at the bottom level.
+            return { data: null };
         }
-        return DataManager.prototype.load_data.call(this, chrom, low, high, mode, resolution, extra_params);
+        return DataManager.prototype.load_data.call(this, low, high, mode, resolution, extra_params);
     }
 });
 
