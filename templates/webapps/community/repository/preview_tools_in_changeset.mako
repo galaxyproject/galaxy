@@ -64,7 +64,7 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp='community', changeset_revision=changeset_revision )}">Install to local Galaxy</a>
+    <a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp=webapp, changeset_revision=changeset_revision )}">Install to local Galaxy</a>
 </ul>
 
 %if message:
@@ -98,4 +98,4 @@
     </div>
 </div>
 <p/>
-${render_repository_tools_and_workflows( metadata, display_for_install=display_for_install )}
+${render_repository_tools_and_workflows( metadata, webapp=webapp )}

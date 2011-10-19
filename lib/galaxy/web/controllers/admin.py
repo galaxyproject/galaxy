@@ -688,20 +688,28 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         return self.repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
+    def browse_tool_sheds( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        return trans.fill_template( '/webapps/galaxy/admin/tool_sheds.mako',
+                                    webapp='galaxy',
+                                    message=message,
+                                    status='error' )
+    @web.expose
+    @web.require_admin
+    def find_tools_in_tool_shed( self, trans, **kwd ):
+        tool_shed_url = kwd[ 'tool_shed_url' ]
+        galaxy_url = trans.request.host
+        url = '%s/repository/find_tools?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
+        return trans.response.send_redirect( url )
+    @web.expose
+    @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = trans.request.host
-        url = '%s/repository/browse_downloadable_repositories?galaxy_url=%s&webapp=community' % ( tool_shed_url, galaxy_url )
+        url = '%s/repository/browse_downloadable_repositories?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
-    def _decode( self, value ):
-        # Extract and verify hash
-        a, b = value.split( ":" )
-        value = binascii.unhexlify( b )
-        test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
-        assert a == test
-        # Restore from string
-        values = json_fix( simplejson.loads( value ) )
-        return values
     @web.expose
     @web.require_admin
     def install_tool_shed_repository( self, trans, **kwd ):
@@ -728,7 +736,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                 section_key = 'section_%s' % kwd[ 'tool_panel_section' ]
                 tool_section = trans.app.toolbox.tool_panel[ section_key ]
                 # Decode the encoded repo_info_dict param value.
-                repo_info_dict = self._decode( repo_info_dict )
+                repo_info_dict = self.__decode( repo_info_dict )
                 # Clone the repository to the configured location.
                 current_working_dir = os.getcwd()
                 for name, repo_info_tuple in repo_info_dict.items():
@@ -846,7 +854,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         galaxy_url = trans.request.host
         # Send a request to the relevant tool shed to see if there are any updates.
         # TODO: support https in the following url.
-        url = 'http://%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=community' % \
+        url = 'http://%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
             ( repository.tool_shed, galaxy_url, repository.name, repository.owner, repository.changeset_revision )
         return trans.response.send_redirect( url )
     @web.expose
@@ -1149,6 +1157,15 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             section_str += '        </tool>\n'
         section_str += '    </section>\n'
         return section_str
+    def __decode( self, value ):
+        # Extract and verify hash
+        a, b = value.split( ":" )
+        value = binascii.unhexlify( b )
+        test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+        assert a == test
+        # Restore from string
+        values = json_fix( simplejson.loads( value ) )
+        return values
 
 ## ---- Utility methods -------------------------------------------------------
 

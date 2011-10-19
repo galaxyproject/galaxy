@@ -283,13 +283,14 @@ class MatchedRepositoryListGrid( grids.Grid ):
 
 class InstallMatchedRepositoryListGrid( MatchedRepositoryListGrid ):
     # Grid definition
-    title = "Repositories with required tools"
-    operations = [ grids.GridOperation( "Install tools",
-                                        url_args = dict( controller='repository',
-                                                         action='find_tools',
-                                                         webapp='community' ),
-                                        allow_multiple=True,
-                                        async_compatible=False ) ]
+    title = "Repositories that contain tools matching search criteria"
+    columns = [ col for col in MatchedRepositoryListGrid.columns ]
+    # Override the NameColumn
+    columns[ 0 ] = MatchedRepositoryListGrid.NameColumn( "Name",
+                                                         link=( lambda item: dict( operation="view_or_manage_repository",
+                                                                                   id=item.id,
+                                                                                   webapp="galaxy" ) ),
+                                                         attach_popup=True )
 
 class RepositoryController( BaseUIController, ItemRatings ):
 
@@ -340,6 +341,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return self.category_list_grid( trans, **kwd )
     @web.expose
     def browse_downloadable_repositories( self, trans, **kwd ):
+        webapp = kwd.get( 'webapp', 'community' )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
@@ -366,12 +368,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if repository.tip != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='preview_tools_in_changeset',
+                                                                      webapp=webapp,
                                                                       repository_id=trans.security.encode_id( repository.id ),
                                                                       changeset_revision=v ) )
         url_args = dict( action='browse_downloadable_repositories',
                          operation='preview_tools_in_changeset',
+                         webapp=webapp,
                          repository_id=repository_id )
-        self.downloadable_repository_list_grid.operations = [ grids.GridOperation( "Preview and install tools",
+        self.downloadable_repository_list_grid.operations = [ grids.GridOperation( "Preview and install",
                                                                                    url_args=url_args,
                                                                                    allow_multiple=False,
                                                                                    async_compatible=False ) ]
@@ -396,18 +400,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 repository = get_repository( trans, repository_id )
                 kwd[ 'id' ] = repository_id
                 kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
-                if is_admin or repository.user == trans.user:
+                if webapp == 'community' and ( is_admin or repository.user == trans.user ):
                     a = 'manage_repository'
                 else:
                     a = 'view_repository'
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action=a,
                                                                   **kwd ) )
-            if operation == "install tools":
+            if operation == "install":
                 repo_info_dict = {}
                 galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
                 # TODO: support https in the following url.
-                url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s' % ( galaxy_url, trans.request.host )
+                url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s' % ( galaxy_url, trans.request.host, webapp )
                 repository_metadata_ids = util.listify( kwd[ 'id' ] )
                 for repository_metadata_id in repository_metadata_ids:
                     repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
@@ -416,7 +420,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     changeset_revision = repository_metadata.changeset_revision
                     repository_clone_url = generate_clone_url( trans, repository_id )
                     repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
-                encoded_repo_info_dict = self._encode( repo_info_dict )
+                encoded_repo_info_dict = self.__encode( repo_info_dict )
                 url += '&repo_info_dict=%s' % encoded_repo_info_dict
                 return trans.response.send_redirect( url )
         tool_ids = [ item.lower() for item in util.listify( kwd.get( 'tool_id', '' ) ) ]
@@ -427,17 +431,19 @@ class RepositoryController( BaseUIController, ItemRatings ):
         match_tuples = []
         ok = True
         if tool_ids or tool_names or tool_versions:
-            ok, match_tuples = self._search_repository_metadata( trans, tool_ids, tool_names, tool_versions, exact_matches_checked )
+            ok, match_tuples = self.__search_repository_metadata( trans, tool_ids, tool_names, tool_versions, exact_matches_checked )
             if ok:
                 kwd[ 'match_tuples' ] = match_tuples
                 # Render the list view
-                if galaxy_url:
-                    # Our request originated from a Galaxy instance, so we're listing tools
-                    # that have been found for a workflow in Galaxy.
+                if webapp == 'galaxy':
+                    # Our request originated from a Galaxy instance.
+                    install_url_args = dict( controller='repository', action='find_tools', webapp=webapp )
+                    operations = [ grids.GridOperation( "Install", url_args=install_url_args, allow_multiple=True, async_compatible=False ) ]
+                    self.install_matched_repository_list_grid.operations = operations
                     return self.install_matched_repository_list_grid( trans, **kwd )
                 else:
                     kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        ( self._stringify( tool_ids ), self._stringify( tool_names ), self._stringify( tool_versions ), str( exact_matches_checked ) )
+                        ( self.__stringify( tool_ids ), self.__stringify( tool_names ), self.__stringify( tool_versions ), str( exact_matches_checked ) )
                     return self.matched_repository_list_grid( trans, **kwd )
             else:
                 message = "No search performed - each field must contain the same number of comma-separated items."
@@ -445,13 +451,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
         return trans.fill_template( '/webapps/community/repository/find_tools.mako',
                                     webapp=webapp,
-                                    tool_id=self._stringify( tool_ids ),
-                                    tool_name=self._stringify( tool_names ),
-                                    tool_version=self._stringify( tool_versions ),
+                                    tool_id=self.__stringify( tool_ids ),
+                                    tool_name=self.__stringify( tool_names ),
+                                    tool_version=self.__stringify( tool_versions ),
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
-    def _search_repository_metadata( self, trans, tool_ids, tool_names, tool_versions, exact_matches_checked ):
+    def __search_repository_metadata( self, trans, tool_ids, tool_names, tool_versions, exact_matches_checked ):
         match_tuples = []
         ok = True
         for repository_metadata in trans.sa_session.query( model.RepositoryMetadata ):
@@ -460,38 +466,38 @@ class RepositoryController( BaseUIController, ItemRatings ):
             for tool_dict in tools:
                 if tool_ids and not tool_names and not tool_versions:
                     for tool_id in tool_ids:
-                        if self._in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id ):
+                        if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id ):
                             match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
                 elif tool_names and not tool_ids and not tool_versions:
                     for tool_name in tool_names:
-                        if self._in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name ):
+                        if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name ):
                             match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
                 elif tool_versions and not tool_ids and not tool_names:
                     for tool_version in tool_versions:
-                        if self._in_tool_dict( tool_dict, exact_matches_checked, tool_version=tool_version ):
+                        if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_version=tool_version ):
                             match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
                 elif tool_ids and tool_names and not tool_versions:
                     if len( tool_ids ) == len( tool_names ):
-                        match_tuples = self._search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
+                        match_tuples = self.__search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
                     elif len( tool_ids ) == 1 or len( tool_names ) == 1:
-                        tool_ids, tool_names = self._make_same_length( tool_ids, tool_names )
-                        match_tuples = self._search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
+                        tool_ids, tool_names = self.__make_same_length( tool_ids, tool_names )
+                        match_tuples = self.__search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
                     else:
                         ok = False
                 elif tool_ids and tool_versions and not tool_names:
                     if len( tool_ids )  == len( tool_versions ):
-                        match_tuples = self._search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
+                        match_tuples = self.__search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
                     elif len( tool_ids ) == 1 or len( tool_versions ) == 1:
-                        tool_ids, tool_versions = self._make_same_length( tool_ids, tool_versions )
-                        match_tuples = self._search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
+                        tool_ids, tool_versions = self.__make_same_length( tool_ids, tool_versions )
+                        match_tuples = self.__search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
                     else:
                         ok = False
                 elif tool_versions and tool_names and not tool_ids:
                     if len( tool_versions ) == len( tool_names ):
-                        match_tuples = self._search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
+                        match_tuples = self.__search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
                     elif len( tool_versions ) == 1 or len( tool_names ) == 1:
-                        tool_versions, tool_names = self._make_same_length( tool_versions, tool_names )
-                        match_tuples = self._search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
+                        tool_versions, tool_names = self.__make_same_length( tool_versions, tool_names )
+                        match_tuples = self.__search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
                     else:
                         ok = False
                 elif tool_versions and tool_names and tool_ids:
@@ -499,12 +505,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         for i, tool_version in enumerate( tool_versions ):
                             tool_name = tool_names[ i ]
                             tool_id = tool_ids[ i ]
-                            if self._in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name, tool_version=tool_version ):
+                            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name, tool_version=tool_version ):
                                 match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
                     else:
                         ok = False
         return ok, match_tuples
-    def _in_tool_dict( self, tool_dict, exact_matches_checked, tool_id=None, tool_name=None, tool_version=None ):
+    def __in_tool_dict( self, tool_dict, exact_matches_checked, tool_id=None, tool_name=None, tool_version=None ):
         found = False
         if tool_id and not tool_name and not tool_version:
             tool_dict_tool_id = tool_dict[ 'id' ].lower()
@@ -545,13 +551,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
                       tool_dict_tool_name.find( tool_name ) >= 0 and \
                       tool_dict_tool_id.find( tool_id ) >= 0 )
         return found
-    def _stringify( self, list ):
+    def __stringify( self, list ):
         if list:
             return ','.join( list )
         return ''
-    def _make_same_length( self, list1, list2 ):
+    def __make_same_length( self, list1, list2 ):
         # If either list is 1 item, we'll append to it until its 
-        #length is the same as the other.
+        # length is the same as the other.
         if len( list1 ) == 1:
             for i in range( 1, len( list2 ) ):
                 list1.append( list1[ 0 ] )
@@ -559,25 +565,25 @@ class RepositoryController( BaseUIController, ItemRatings ):
             for i in range( 1, len( list1 ) ):
                 list2.append( list2[ 0 ] )
         return list1, list2
-    def _search_ids_names( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names ):
+    def __search_ids_names( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names ):
         for i, tool_id in enumerate( tool_ids ):
             tool_name = tool_names[ i ]
-            if self._in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name ):
+            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name ):
                 match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
         return match_tuples
-    def _search_ids_versions( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions ):
+    def __search_ids_versions( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions ):
         for i, tool_id in enumerate( tool_ids ):
             tool_version = tool_versions[ i ]
-            if self._in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_version=tool_version ):
+            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_version=tool_version ):
                 match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
         return match_tuples
-    def _search_names_versions( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions ):
+    def __search_names_versions( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions ):
         for i, tool_name in enumerate( tool_names ):
             tool_version = tool_versions[ i ]
-            if self._in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name, tool_version=tool_version ):
+            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name, tool_version=tool_version ):
                 match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
         return match_tuples
-    def _encode( self, repo_info_dict ):
+    def __encode( self, repo_info_dict ):
         value = simplejson.dumps( repo_info_dict )
         a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
         b = binascii.hexlify( value )
@@ -587,6 +593,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -605,7 +612,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     metadata=metadata,
-                                    display_for_install=True,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -631,7 +638,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        webapp = params.get( 'webapp', None )
+        webapp = params.get( 'webapp', 'community' )
         # Start building up the url to redirect back to the calling Galaxy instance.
         # TODO: support https in the following url.
         url = 'http://%s/admin/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, trans.request.host )
@@ -713,6 +720,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
         # to take this approach because the "-" character is illegal in HTTP requests.
+        if 'webapp' not in kwd:
+            kwd[ 'webapp' ] = 'community'
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
@@ -855,6 +864,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 message = "Repository '%s' has been created." % repository.name
                 trans.response.send_redirect( web.url_for( controller='repository',
                                                            action='view_repository',
+                                                           webapp='community',
                                                            message=message,
                                                            id=trans.security.encode_id( repository.id ) ) )
         return trans.fill_template( '/webapps/community/repository/create_repository.mako',
@@ -945,6 +955,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
@@ -957,6 +968,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     repository=repository,
                                     commit_message=commit_message,
                                     is_malicious=is_malicious,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -1098,6 +1110,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
+        webapp = params.get( 'webapp', 'community' )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
@@ -1155,6 +1168,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     is_malicious=is_malicious,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -1191,6 +1205,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_repository',
                                                                   id=id,
+                                                                  webapp='community',
                                                                   message=message,
                                                                   status=status ) )
             if repo_name != repository.name:
@@ -1482,7 +1497,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
+        webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )          
         try:
@@ -1523,12 +1538,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                         tool=tool,
                                         tool_state=tool_state,
                                         is_malicious=is_malicious,
-                                        display_for_install=display_for_install,
+                                        webapp=webapp,
                                         message=message,
                                         status=status )
         except Exception, e:
             message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % str( e )
-        if display_for_install:
+        if webapp == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',
                                                               repository_id=repository_id,
@@ -1558,7 +1573,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
+        webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None
@@ -1587,7 +1602,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     is_malicious=is_malicious,
-                                    display_for_install=display_for_install,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose

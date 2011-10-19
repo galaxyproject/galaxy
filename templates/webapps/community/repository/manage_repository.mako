@@ -77,13 +77,13 @@
                 <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
             %endif
             %if can_view_change_log:
-                <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ), webapp='community' )}">View change log</a>
             %endif
             %if can_rate:
                 <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
             %endif
             %if can_browse_contents:
-                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ), webapp='community' )}">${browse_label}</a>
             %endif
             %if can_contact_owner:
                 <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
@@ -290,7 +290,7 @@ ${render_repository_tools_and_workflows( metadata, can_set_metadata=True )}
         <div class="toolFormBody">
             %if display_reviews:
                 <div class="form-row">
-                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=False )}"><label>Hide Reviews</label></a>
+                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=False, webapp='community' )}"><label>Hide Reviews</label></a>
                 </div>
                 <table class="grid">
                     <thead>
@@ -317,7 +317,7 @@ ${render_repository_tools_and_workflows( metadata, can_set_metadata=True )}
                 </table>
             %else:
                 <div class="form-row">
-                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=True )}"><label>Display Reviews</label></a>
+                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=True, webapp='community' )}"><label>Display Reviews</label></a>
                 </div>
             %endif
         </div>

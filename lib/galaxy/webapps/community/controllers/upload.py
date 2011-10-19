@@ -138,6 +138,7 @@ class UploadController( BaseUIController ):
                                                                action='browse_repository',
                                                                id=repository_id,
                                                                commit_message='Deleted selected files',
+                                                               webapp='community',
                                                                message=message,
                                                                status=status ) )
                 else:
