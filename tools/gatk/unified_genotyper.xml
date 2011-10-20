@@ -1,9 +1,14 @@
-<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.2">
+<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.3">
   <description>SNP and indel caller</description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    #for $i, $input_bam in enumerate( $reference_source.input_bams ):
+       ${dir( $input_bam.input_bam )}
+       ${dir( $input_bam.input_bam.dataset )}
        -d "-I" "${input_bam.input_bam}" "${input_bam.input_bam.ext}" "gatk_input_${i}"
        -d "" "${input_bam.input_bam.metadata.bam_index}" "bam_index" "gatk_input_${i}" ##hardcode galaxy ext type as bam_index
    #end for
@@ -11,12 +16,14 @@
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "UnifiedGenotyper"
     --num_threads 4 ##hard coded, for now
-    -o "${output_vcf}"
+    --out "${output_vcf}"
+    --metrics_file "${output_metrics}"
     -et "NO_ET" ##ET no phone home
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"
     #end if
+    --genotype_likelihoods_model "${genotype_likelihoods_model}"
     --standard_min_confidence_threshold_for_calling "${standard_min_confidence_threshold_for_calling}"
     --standard_min_confidence_threshold_for_emitting "${standard_min_confidence_threshold_for_emitting}"
    '
@@ -28,7 +35,7 @@
             #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+        -d "--dbsnp:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
             -p '--rodToIntervalTrackName "${rod_bind_name}"'
         #end if
@@ -81,13 +88,15 @@
     ##start analysis specific options
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         -p '
-        --genotype_likelihoods_model "${analysis_param_type.genotype_likelihoods_model}"
         --p_nonref_model "${analysis_param_type.p_nonref_model}"
         --heterozygosity "${analysis_param_type.heterozygosity}"
         --pcr_error_rate "${analysis_param_type.pcr_error_rate}"
-        --genotyping_mode "${analysis_param_type.genotyping_mode}"
+        --genotyping_mode "${analysis_param_type.genotyping_mode_type.genotyping_mode}"
+        #if str( $analysis_param_type.genotyping_mode_type.genotyping_mode ) == 'GENOTYPE_GIVEN_ALLELES':
+            --alleles "${analysis_param_type.genotyping_mode_type.input_alleles_rod}"
+        #end if
         --output_mode "${analysis_param_type.output_mode}"
-        ${analysis_param_type.noSLOD}
+        ${analysis_param_type.compute_SLOD}
         --min_base_quality_score "${analysis_param_type.min_base_quality_score}"
         --min_mapping_quality_score "${analysis_param_type.min_mapping_quality_score}"
         --max_deletion_fraction "${analysis_param_type.max_deletion_fraction}"
@@ -120,7 +129,7 @@
         <repeat name="input_bams" title="Sample BAM file" min="1">
             <param name="input_bam" type="data" format="bam" label="BAM file">
               <validator type="unspecified_build" />
-              <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+              <validator type="dataset_metadata_in_data_table" table_name="picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
             </param>
         </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
@@ -146,24 +155,30 @@
 	        <option value="custom">Custom</option>
 	      </param>
           <when value="dbsnp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="snps">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="indels">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
         </conditional>
     </repeat>
+    
+    <param name="genotype_likelihoods_model" type="select" label="Genotype likelihoods calculation model to employ">
+      <option value="BOTH" selected="True">BOTH</option>
+      <option value="SNP">SNP</option>
+      <option value="INDEL">INDEL</option>
+    </param>
     
     <param name="standard_min_confidence_threshold_for_calling" type="float" value="30.0" label="The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be called" />
     <param name="standard_min_confidence_threshold_for_emitting" type="float" value="30.0" label="The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be emitted (and filtered if less than the calling threshold)" />
@@ -271,27 +286,30 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="genotype_likelihoods_model" type="select" label="Genotype likelihoods calculation model to employ">
-          <option value="BOTH" selected="True">BOTH</option>
-          <option value="SNP">SNP</option>
-          <option value="INDEL">INDEL</option>
-        </param>
         <param name="p_nonref_model" type="select" label="Non-reference probability calculation model to employ">
           <option value="EXACT" selected="True">EXACT</option>
           <option value="GRID_SEARCH">GRID_SEARCH</option>
         </param>
         <param name="heterozygosity" type="float" value="1e-3" label="Heterozygosity value used to compute prior likelihoods for any locus" />
         <param name="pcr_error_rate" type="float" value="1e-4" label="The PCR error rate to be used for computing fragment-based likelihoods" />
-        <param name="genotyping_mode" type="select" label="How to determine the alternate allele to use for genotyping">
-          <option value="DISCOVERY" selected="True">DISCOVERY</option>
-          <option value="GENOTYPE_GIVEN_ALLELES">GENOTYPE_GIVEN_ALLELES</option>
-        </param>
+        <conditional name="genotyping_mode_type">
+          <param name="genotyping_mode" type="select" label="How to determine the alternate allele to use for genotyping">
+            <option value="DISCOVERY" selected="True">DISCOVERY</option>
+            <option value="GENOTYPE_GIVEN_ALLELES">GENOTYPE_GIVEN_ALLELES</option>
+          </param>
+          <when value="DISCOVERY">
+            <!-- Do nothing here -->
+          </when>
+          <when value="GENOTYPE_GIVEN_ALLELES">
+            <param name="input_alleles_rod" type="data" format="vcf" label="Alleles ROD file" />
+          </when>
+        </conditional>
         <param name="output_mode" type="select" label="Should we output confident genotypes (i.e. including ref calls) or just the variants?">
           <option value="EMIT_VARIANTS_ONLY" selected="True">EMIT_VARIANTS_ONLY</option>
           <option value="EMIT_ALL_CONFIDENT_SITES">EMIT_ALL_CONFIDENT_SITES</option>
           <option value="EMIT_ALL_SITES">EMIT_ALL_SITES</option>
         </param>
-        <param name="noSLOD" type="boolean" truevalue="--noSLOD" falsevalue="" label="Do not calculate the SLOD" />
+        <param name="compute_SLOD" type="boolean" truevalue="--computeSLOD" falsevalue="" label="Compute the SLOD" />
         <param name="min_base_quality_score" type="integer" value="17" label="Minimum base quality required to consider a base for calling" />
         <param name="min_mapping_quality_score" type="integer" value="20" label="Minimum read mapping quality required to consider a read for calling" />
         <param name="max_deletion_fraction" type="float" value="0.05" label="Maximum fraction of reads with deletions spanning this locus for it to be callable" help="to disable, set to &lt; 0 or &gt; 1" />
@@ -302,16 +320,35 @@
         <param name="indelHaplotypeSize" type="integer" value="80" label="Indel haplotype size" />
         <param name="doContextDependentGapPenalties" type="boolean" truevalue="--doContextDependentGapPenalties" falsevalue="" label="Vary gap penalties by context" />
 	    <param name="annotation" type="select" multiple="True" display="checkboxes" label="Annotation Types">
-	      <option value="AlleleBalance">AlleleBalance</option>
-	      <option value="BaseQualityRankSumTest">BaseQualityRankSumTest</option>
-	      <option value="DepthOfCoverage">DepthOfCoverage</option>
-	      <option value="HomopolymerRun">HomopolymerRun</option>
-	      <option value="MappingQualityRankSumTest">MappingQualityRankSumTest</option>
-	      <option value="MappingQualityZero">MappingQualityZero</option>
-	      <option value="QualByDepth">QualByDepth</option>
-	      <option value="RMSMappingQuality">RMSMappingQuality</option>
-	      <option value="SpanningDeletions">SpanningDeletions</option>
-	      <option value="HaplotypeScore">HaplotypeScore</option>
+          <option value="ChromosomeCounts"/>
+          <option value="IndelType"/>
+          <option value="SpanningDeletions"/>
+          <option value="HardyWeinberg"/>
+          <option value="NBaseCount"/>
+          <option value="MappingQualityZero"/>
+          <option value="AlleleBalance"/>
+          <option value="BaseCounts"/>
+          <option value="LowMQ"/>
+          <option value="InbreedingCoeff"/>
+          <option value="RMSMappingQuality"/>
+          <option value="HaplotypeScore"/>
+          <option value="TechnologyComposition"/>
+          <option value="SampleList"/>
+          <option value="FisherStrand"/>
+          <option value="HomopolymerRun"/>
+          <option value="DepthOfCoverage"/>
+          <option value="SnpEff"/>
+          <option value="MappingQualityZeroFraction"/>
+          <option value="GCContent"/>
+          <option value="MappingQualityRankSumTest"/>
+          <option value="ReadPosRankSumTest"/>
+          <option value="BaseQualityRankSumTest"/>
+          <option value="QualByDepth"/>
+          <option value="SBByDepth"/>
+          <option value="ReadDepthAndAllelicFractionBySample"/>
+          <option value="AlleleBalanceBySample"/>
+          <option value="DepthPerAlleleBySample"/>
+          <option value="MappingQualityZeroBySample"/>
 	    </param>
 	    <param name="group" type="select" multiple="True" display="checkboxes" label="Annotation Interfaces/Groups">
 	      <option value="Standard">Standard</option>
@@ -324,6 +361,7 @@
   </inputs>
   <outputs>
     <data format="vcf" name="output_vcf" label="${tool.name} on ${on_string} (VCF)" />
+    <data format="txt" name="output_metrics" label="${tool.name} on ${on_string} (metrics)" />
     <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
   </outputs>
   <!-- FIXME! <trackster_conf/> -->
@@ -333,9 +371,9 @@
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
           <param name="rod_bind_type_selector" value="dbsnp" />
-          <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <param name="input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
           <param name="rodToIntervalTrackName" />
-          <param name="standard_min_confidence_threshold_for_calling" value="4" />
+          <param name="standard_min_confidence_threshold_for_calling" value="0" />
           <param name="standard_min_confidence_threshold_for_emitting" value="4" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="advanced" />
@@ -345,7 +383,7 @@
           <param name="pcr_error_rate" value="0.0001" />
           <param name="genotyping_mode" value="DISCOVERY" />
           <param name="output_mode" value="EMIT_ALL_CONFIDENT_SITES" />
-          <param name="noSLOD" />
+          <param name="compute_SLOD" />
           <param name="min_base_quality_score" value="17" />
           <param name="min_mapping_quality_score" value="20" />
           <param name="max_deletion_fraction" value="-1" />
@@ -357,8 +395,9 @@
           <param name="doContextDependentGapPenalties" />
           <!-- <param name="annotation" value="" />
           <param name="group" value="" /> -->
-          <output name="output_vcf" file="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.vcf" lines_diff="2"/> 
-          <output name="output_log" file="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.log.contains" compare="contains"/>
+          <output name="output_vcf" file="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.vcf" lines_diff="4" /> 
+          <output name="output_metrics" file="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.metrics" /> 
+          <output name="output_log" file="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.log.contains" compare="contains" />
       </test>
   </tests>
   <help>

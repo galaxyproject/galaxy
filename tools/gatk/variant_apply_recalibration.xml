@@ -1,9 +1,14 @@
-<tool id="gatk_variant_apply_recalibration" name="Apply Variant Recalibration" version="0.0.1">
+<tool id="gatk_variant_apply_recalibration" name="Apply Variant Recalibration" version="0.0.2">
   <description></description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
-   -d "-B:input,%(file_type)s" "${reference_source.input_variants}" "${reference_source.input_variants.ext}" "input_variants"
+   #for $var_count, $variant in enumerate( $reference_source.variants ):
+      -d "--input:input_${var_count},%(file_type)s" "${variant.input_variants}" "${variant.input_variants.ext}" "input_variants_${var_count}"
+   #end for
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "ApplyRecalibration"
@@ -62,21 +67,18 @@
     ##end standard gatk options
     
     ##start analysis specific options
+    -p '
+    --mode "${mode}"
     
-    #if $analysis_param_type.analysis_param_type_selector == "advanced":
-        -p '
-        --mode "${analysis_param_type.mode}"
-        
-        #for $ignore_filter in $analysis_param_type.ignore_filters:
-            #set $ignore_filter_name = str( $ignore_filter.ignore_filter_type.ignore_filter_type_selector )
-            #if $ignore_filter_name == "custom":
-              #set $ignore_filter_name = str( $ignore_filter.ignore_filter_type.filter_name )
-            #end if
-            --ignore_filter "${ignore_filter_name}"
-        #end for
-        '
-    #end if
-    -p '--ts_filter_level "${ts_filter_level}"'
+    #for $ignore_filter in $ignore_filters:
+        #set $ignore_filter_name = str( $ignore_filter.ignore_filter_type.ignore_filter_type_selector )
+        #if $ignore_filter_name == "custom":
+          #set $ignore_filter_name = str( $ignore_filter.ignore_filter_type.filter_name )
+        #end if
+        --ignore_filter "${ignore_filter_name}"
+    #end for
+    --ts_filter_level "${ts_filter_level}"
+    '
   </command>
   <inputs>
     <conditional name="reference_source">
@@ -85,17 +87,21 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variants" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <repeat name="variants" title="Variant" min="1">
+          <param name="input_variants" type="data" format="vcf" label="Variant file to annotate" />
+        </repeat>
         <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" />
         <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" />
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
-            <filter type="data_meta" key="dbkey" ref="input_variants" column="dbkey"/>
-          </options>
+         <!--  <options from_data_table="picard_indexes">
+            <filter type="data_meta" key="dbkey" ref="variants[0].input_variants" column="dbkey"/>
+          </options> -->
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variants" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <repeat name="variants" title="Variant" min="1">
+          <param name="input_variants" type="data" format="vcf" label="Variant file to annotate" />
+        </repeat>
         <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" />
         <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" />
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
@@ -193,15 +199,6 @@
       </when>
     </conditional>
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
         <param name="mode" type="select" label="Recalibration mode">
           <option value="SNP" selected="True">SNP</option>
           <option value="INDEL">INDEL</option>
@@ -219,8 +216,6 @@
             </when>
           </conditional>
         </repeat>
-      </when>
-    </conditional>
     <param name="ts_filter_level" type="float" label="truth sensitivity level at which to start filtering, used here to indicate filtered variants in plots" value="99.0"/>
   </inputs>
   <outputs>

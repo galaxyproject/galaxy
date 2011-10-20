@@ -1,7 +1,10 @@
-<tool id="gatk_analyze_covariates" name="Analyze Covariates" version="0.0.2">
+<tool id="gatk_analyze_covariates" name="Analyze Covariates" version="0.0.3">
   <description>- draw plots</description>
-<command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
+  <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    --html_report_from_directory "${output_html}" "${output_html.files_path}"
    -p 'java 

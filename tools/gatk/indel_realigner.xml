@@ -1,7 +1,10 @@
-<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.2">
+<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.3">
   <description>- perform local realignment</description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
    -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
@@ -26,7 +29,7 @@
             #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+        -d "-known:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
             -p '--rodToIntervalTrackName "${rod_bind_name}"'
         #end if
@@ -104,7 +107,7 @@
       <when value="cached">
         <param name="input_bam" type="data" format="bam" label="BAM file">
           <validator type="unspecified_build" />
-          <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+          <validator type="dataset_metadata_in_data_table" table_name="picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
         <param name="ref_file" type="select" label="Using reference genome">
           <options from_data_table="picard_indexes">
@@ -114,7 +117,11 @@
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
         <param name="input_bam" type="data" format="bam" label="BAM file" />
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file">
+          <options>
+            <filter type="data_meta" key="dbkey" ref="input_bam" /> <!-- FIX ME!!!! -->
+          </options>
+        </param>
       </when>
     </conditional>
     <param name="target_intervals" type="data" format="gatk_interval,bed,picard_interval_list" label="Restrict realignment to provided intervals" />
@@ -277,7 +284,7 @@
           <param name="input_bam" value="gatk/fake_phiX_reads_1.bam" ftype="bam" />
           <param name="rod_bind_type_selector" value="snps" />
           <param name="rodToIntervalTrackName" />
-          <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <param name="input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
           <param name="lod_threshold" value="5.0" />
           <param name="knowns_only" />
           <param name="gatk_param_type_selector" value="basic" />

@@ -1,7 +1,10 @@
-<tool id="gatk_table_recalibration" name="Table Recalibration" version="0.0.2">
+<tool id="gatk_table_recalibration" name="Table Recalibration" version="0.0.3">
   <description>on BAM files</description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
    -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
@@ -120,7 +123,7 @@
       <when value="cached">
         <param name="input_bam" type="data" format="bam" label="BAM file">
           <validator type="unspecified_build" />
-          <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+          <validator type="dataset_metadata_in_data_table" table_name="picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
         <param name="ref_file" type="select" label="Using reference genome">
           <options from_data_table="picard_indexes">

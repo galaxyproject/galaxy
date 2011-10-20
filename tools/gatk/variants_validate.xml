@@ -1,9 +1,12 @@
-<tool id="gatk_validate_variants" name="Validate Variants" version="0.0.1">
+<tool id="gatk_validate_variants" name="Validate Variants" version="0.0.2">
   <description></description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
-   -d "-B:variant,%(file_type)s" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
+   -d "--variant:variant,%(file_type)s" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "ValidateVariants"
@@ -17,19 +20,12 @@
     ${do_not_validate_filtered_records}
    '
    
-    #set $rod_binding_names = dict()
-    #for $rod_binding in $rod_bind:
-        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
-            #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
-        #else
-            #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
+    #if str( $dbsnp_rod_bind_type.dbsnp_rod_bind_type_selector ) == 'set_dbsnp':
+        -d "--dbsnp:${dbsnp_rod_bind_type.dbsnp_rod_name},%(file_type)s" "${dbsnp_rod_bind_type.dbsnp_input_rod}" "${dbsnp_rod_bind_type.dbsnp_input_rod.ext}" "input_dbsnp_${dbsnp_rod_bind_type.dbsnp_rod_name}"
+        #if str( $dbsnp_rod_bind_type.dbsnp_rodToIntervalTrackName ):
+            -p '--rodToIntervalTrackName "${dbsnp_rod_bind_type.dbsnp_rod_name}"'
         #end if
-        #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
-        #end if
-    #end for
+    #end if
    
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
@@ -96,38 +92,21 @@
       </when>
     </conditional>
     
-    <repeat name="rod_bind" title="Binding for reference-ordered data">
-        <conditional name="rod_bind_type">
-	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
-	        <!--  <option value="variant" selected="True">Variant</option> -->
-	        <option value="dbsnp" selected="True">dbSNP</option>
-	        <option value="snps">SNPs</option>
-	        <!-- <option value="indels">INDELs</option>
-	        <option value="custom">Custom</option> -->
-	      </param>
-          <when value="variant">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" /> <!-- this should be restricted to genome type, or genome type should be limited as a result of this selection -->
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="dbsnp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="snps">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="indels">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="custom">
-              <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-        </conditional>
-    </repeat>
+    <conditional name="dbsnp_rod_bind_type">
+      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file">
+        <option value="set_dbsnp" selected="True">Set dbSNP</option>
+        <option value="exclude_dbsnp">Don't set dbSNP</option>
+      </param>
+      <when value="exclude_dbsnp">
+        <!-- Do nothing here -->
+      </when>
+      <when value="set_dbsnp">
+        <param name="dbsnp_input_rod" type="data" format="vcf" label="ROD file" />
+        <param name="dbsnp_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+        <param name="dbsnp_rod_name" type="hidden" value="dbsnp" label="ROD Name"/>
+      </when>
+    </conditional>
+    
     <param name="warn_on_errors" type="boolean" checked="False" truevalue="-warnOnErrors" falsevalue="" label="instead of terminating the run at the first error, print warning messages for each error seen. "/>
     <param name="do_not_validate_filtered_records" type="boolean" checked="False" truevalue="-doNotValidateFilteredRecords" falsevalue="" label="do not try to validate records that are FILTERed. "/>
     
@@ -231,9 +210,9 @@
           <param name="reference_source_selector" value="history" />
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
-          <param name="rod_bind_type_selector" value="dbsnp" />
-          <param name="rodToIntervalTrackName" />
-          <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <param name="dbsnp_rod_bind_type_selector" value="set_dbsnp" />
+          <param name="dbsnp_rodToIntervalTrackName" />
+          <param name="dbsnp_input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
           <param name="warn_on_errors" value="True"/>
           <param name="do_not_validate_filtered_records" />
           <param name="gatk_param_type_selector" value="basic" />

@@ -1,9 +1,14 @@
-<tool id="gatk_variant_recalibrator" name="Variant Recalibrator" version="0.0.1">
+<tool id="gatk_variant_recalibrator" name="Variant Recalibrator" version="0.0.2">
   <description></description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
-   -d "-B:input,%(file_type)s" "${reference_source.input_variants}" "${reference_source.input_variants.ext}" "input_variants"
+   #for $var_count, $variant in enumerate( $reference_source.variants ):
+      -d "--input:input_${var_count},%(file_type)s" "${variant.input_variants}" "${variant.input_variants.ext}" "input_variants_${var_count}"
+   #end for
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "VariantRecalibrator"
@@ -29,9 +34,9 @@
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
         #if $rod_binding.rod_bind_type.rod_training_type.rod_training_type_selector == "not_training_truth_known":
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+        -d "--resource:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #else:
-        -d "-B:${rod_bind_name},%(file_type)s,known=${rod_binding.rod_bind_type.rod_training_type.known},training=${rod_binding.rod_bind_type.rod_training_type.training},truth=${rod_binding.rod_bind_type.rod_training_type.truth},bad=${rod_binding.rod_bind_type.rod_training_type.bad},prior=${rod_binding.rod_bind_type.rod_training_type.prior}" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+        -d "--resource:${rod_bind_name},%(file_type)s,known=${rod_binding.rod_bind_type.rod_training_type.known},training=${rod_binding.rod_bind_type.rod_training_type.training},truth=${rod_binding.rod_bind_type.rod_training_type.truth},bad=${rod_binding.rod_bind_type.rod_training_type.bad},prior=${rod_binding.rod_bind_type.rod_training_type.prior}" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #end if
         #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
             -p '--rodToIntervalTrackName "${rod_bind_name}"'
@@ -89,11 +94,11 @@
             --use_annotation "${annotation}"
         #end for
     #end if
+    --mode "${mode}"
     '
     
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         -p '
-        --mode "${analysis_param_type.mode}"
         --maxGaussians "${analysis_param_type.max_gaussians}"
         --maxIterations "${analysis_param_type.max_iterations}"
         --numKMeans "${analysis_param_type.num_k_means}"
@@ -102,8 +107,11 @@
         --shrinkage "${analysis_param_type.shrinkage}"
         --dirichlet "${analysis_param_type.dirichlet}"
         --priorCounts "${analysis_param_type.prior_counts}"
-        --percentBadVariants "${analysis_param_type.percent_bad_variants}"
-        --minNumBadVariants "${analysis_param_type.min_num_bad_variants}"
+        #if str( $analysis_param_type.bad_variant_selector.bad_variant_selector_type ) == 'percent':
+            --percentBadVariants "${analysis_param_type.bad_variant_selector.percent_bad_variants}"
+        #else:
+            --minNumBadVariants "${analysis_param_type.bad_variant_selector.min_num_bad_variants}"
+        #end if
         --target_titv "${analysis_param_type.target_titv}"
         #for $tranche in [ $tranche.strip() for $tranche in str( $analysis_param_type.ts_tranche ).split( ',' ) if $tranche.strip() ]
             --TStranche "${tranche}"
@@ -131,15 +139,19 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variants" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <repeat name="variants" title="Variant" min="1">
+          <param name="input_variants" type="data" format="vcf" label="Variant file to recalibrate" />
+        </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
-            <filter type="data_meta" key="dbkey" ref="input_variants" column="dbkey"/>
-          </options>
+          <!-- <options from_data_table="picard_indexes">
+            <filter type="data_meta" key="dbkey" ref="variants[0].input_variants" column="dbkey"/>
+          </options> -->
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variants" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <repeat name="variants" title="Variant" min="1">
+          <param name="input_variants" type="data" format="vcf" label="Variant file to recalibrate" />
+        </repeat>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
@@ -323,37 +335,42 @@
     
     <param name="annotations" type="select" multiple="True" display="checkboxes" label="annotations which should used for calculations">
       <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
-      <option value="AlleleBalance" />
-      <option value="BaseQualityRankSumTest" />
-      <option value="DepthOfCoverage" />
-      <option value="HomopolymerRun" />
-      <option value="MappingQualityRankSumTest" />
-      <option value="MappingQualityZero" />
-      <option value="QualByDepth" />
-      <option value="RMSMappingQuality" />
-      <option value="SpanningDeletions" />
-      <option value="HaplotypeScore" />
-      <!-- annotations below were pulled from list option -->
-      <option value="ChromosomeCounts" />
-      <option value="IndelType" />
-      <option value="HardyWeinberg" />
-      <option value="BaseCounts" />
-      <option value="LowMQ" />
-      <option value="FisherStrand" />
-      <option value="GenomicAnnotation" />
-      <option value="GCContent" />
-      <option value="ReadPosRankSumTest" />
-      <option value="SBByDepth" />
-      <option value="ReadDepthAndAllelicFractionBySample" />
-      <option value="AlleleBalanceBySample" />
-      <option value="DepthPerAlleleBySample" />
-      <option value="MappingQualityZeroBySample" />
-      <option value="NBaseCount" />
-      <option value="GLstats" />
-      <option value="SampleList" />
-      <option value="MappingQualityZeroFraction" />
+      <option value="ChromosomeCounts"/>
+      <option value="IndelType"/>
+      <option value="SpanningDeletions"/>
+      <option value="HardyWeinberg"/>
+      <option value="NBaseCount"/>
+      <option value="MappingQualityZero"/>
+      <option value="AlleleBalance"/>
+      <option value="BaseCounts"/>
+      <option value="LowMQ"/>
+      <option value="InbreedingCoeff"/>
+      <option value="RMSMappingQuality"/>
+      <option value="HaplotypeScore"/>
+      <option value="TechnologyComposition"/>
+      <option value="SampleList"/>
+      <option value="FisherStrand"/>
+      <option value="HomopolymerRun"/>
+      <option value="DepthOfCoverage"/>
+      <option value="SnpEff"/>
+      <option value="MappingQualityZeroFraction"/>
+      <option value="GCContent"/>
+      <option value="MappingQualityRankSumTest"/>
+      <option value="ReadPosRankSumTest"/>
+      <option value="BaseQualityRankSumTest"/>
+      <option value="QualByDepth"/>
+      <option value="SBByDepth"/>
+      <option value="ReadDepthAndAllelicFractionBySample"/>
+      <option value="AlleleBalanceBySample"/>
+      <option value="DepthPerAlleleBySample"/>
+      <option value="MappingQualityZeroBySample"/>
     </param>
     
+        <param name="mode" type="select" label="Recalibration mode">
+          <option value="SNP" selected="True">SNP</option>
+          <option value="INDEL">INDEL</option>
+          <option value="BOTH">BOTH</option>
+        </param>
     
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
@@ -455,11 +472,6 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="mode" type="select" label="Recalibration mode">
-          <option value="SNP" selected="True">SNP</option>
-          <option value="INDEL">INDEL</option>
-          <option value="BOTH">BOTH</option>
-        </param>
         <param name="max_gaussians" type="integer" label="maximum number of Gaussians to try during variational Bayes Algorithm" value="10"/>
         <param name="max_iterations" type="integer" label="maximum number of maximum number of VBEM iterations to be performed in variational Bayes Algorithm" value="100"/>
         <param name="num_k_means" type="integer" label="number of k-means iterations to perform in order to initialize the means of the Gaussians in the Gaussian mixture model" value="30"/>
@@ -468,8 +480,18 @@
         <param name="shrinkage" type="float" label="shrinkage parameter in variational Bayes algorithm" value="1.0"/>
         <param name="dirichlet" type="float" label="dirichlet parameter in variational Bayes algorithm" value="0.001"/>
         <param name="prior_counts" type="float" label="number of prior counts to use in variational Bayes algorithm" value="20.0"/>
-        <param name="percent_bad_variants" type="float" label="percentage of the worst scoring variants to use when building the Gaussian mixture model of bad variants. 0.07 means bottom 7 percent." value="0.03"/>
-        <param name="min_num_bad_variants" type="integer" label="minimum amount of worst scoring variants to use when building the Gaussian mixture model of bad variants. Will override -percentBad arugment if necessary" value="2000"/>
+        <conditional name="bad_variant_selector">
+          <param name="bad_variant_selector_type" type="select" label="Basic or Advanced Analysis options">
+            <option value="percent" selected="True">Percent</option>
+            <option value="min_num">Number</option>
+          </param>
+          <when value="percent">
+            <param name="percent_bad_variants" type="float" label="percentage of the worst scoring variants to use when building the Gaussian mixture model of bad variants. 0.07 means bottom 7 percent." value="0.03"/>
+          </when>
+          <when value="min_num">
+            <param name="min_num_bad_variants" type="integer" label="minimum amount of worst scoring variants to use when building the Gaussian mixture model of bad variants. Will override -percentBad arugment if necessary" value="2000"/>
+          </when>
+        </conditional>
         <param name="target_titv" type="float" label="expected novel Ti/Tv ratio to use when calculating FDR tranches and for display on optimization curve output figures. (approx 2.15 for whole genome experiments). ONLY USED FOR PLOTTING PURPOSES!" value="2.15"/>
         <param name="ts_tranche" type="text" label="levels of novel false discovery rate (FDR, implied by ti/tv) at which to slice the data. (in percent, that is 1.0 for 1 percent)" value="100.0, 99.9, 99.0, 90.0"/>
         <repeat name="ignore_filters" title="Ignore Filter">

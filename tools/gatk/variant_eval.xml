@@ -1,9 +1,14 @@
-<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.1">
+<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.2">
   <description></description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
-   -d "-B:eval,%(file_type)s" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
+   #for $var_count, $variant in enumerate( $reference_source.variants ):
+      -d "--eval:input_${var_count},%(file_type)s" "${variant.input_variant}" "${variant.input_variant.ext}" "input_variants_${var_count}"
+   #end for
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "VariantEval"
@@ -16,23 +21,25 @@
     #end if
    '
    
-    #set $rod_binding_names = dict()
-    #for $rod_binding in $rod_bind:
-        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
-            #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
-        #else
-            #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
+    #for $rod_binding in $comp_rod_bind:
+        -d "--comp:${rod_binding.comp_rod_name},%(file_type)s" "${rod_binding.comp_input_rod}" "${rod_binding.comp_input_rod.ext}" "input_comp_${rod_binding.comp_rod_name}"
+        #if str( $rod_binding.comp_rodToIntervalTrackName ):
+            -p '--rodToIntervalTrackName "${rod_binding.comp_rod_name}"'
         #end if
-        #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
+        #if str( $rod_binding.comp_known_names ):
+            -p '--known_names "${rod_binding.comp_rod_name}"'
         #end if
-        #if str( $rod_binding.rod_bind_type.known_names ):
-            -p '--known_names "${rod_bind_name}"'
-        #end if
-        
     #end for
+    
+    #if str( $dbsnp_rod_bind_type.dbsnp_rod_bind_type_selector ) == 'set_dbsnp':
+        -d "--dbsnp:${dbsnp_rod_bind_type.dbsnp_rod_name},%(file_type)s" "${dbsnp_rod_bind_type.dbsnp_input_rod}" "${dbsnp_rod_bind_type.dbsnp_input_rod.ext}" "input_dbsnp_${dbsnp_rod_bind_type.dbsnp_rod_name}"
+        #if str( $dbsnp_rod_bind_type.dbsnp_rodToIntervalTrackName ):
+            -p '--rodToIntervalTrackName "${dbsnp_rod_bind_type.dbsnp_rod_name}"'
+            #if str( $dbsnp_rod_bind_type.dbsnp_known_names ):
+                -p '--known_names "${dbsnp_rod_bind_type.dbsnp_rod_name}"'
+            #end if
+        #end if
+    #end if
    
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
@@ -138,50 +145,45 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variant" type="data" format="vcf" label="Input variant file" />
+        <repeat name="variants" title="Variant" min="1">
+          <param name="input_variant" type="data" format="vcf" label="Input variant file" />
+        </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <!--<options from_data_table="picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
-          </options>
+          </options>-->
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variant" type="data" format="vcf" label="Input variant file" />
+        <repeat name="variants" title="Variant" min="1">
+          <param name="input_variant" type="data" format="vcf" label="Input variant file" />
+        </repeat>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
     
-    <repeat name="rod_bind" title="Binding for reference-ordered data">
-        <conditional name="rod_bind_type">
-	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
-	        <option value="dbsnp" selected="True">dbSNP</option>
-	        <option value="snps">SNPs</option>
-	        <option value="indels">INDELs</option>
-	        <option value="custom">Custom</option>
-	      </param>
-          <when value="dbsnp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-              <param name="known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Treat ROD as known when splitting eval rods into known and novel subsets" />
-          </when>
-          <when value="snps">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-              <param name="known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Treat ROD as known when splitting eval rods into known and novel subsets" />
-          </when>
-          <when value="indels">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-              <param name="known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Treat ROD as known when splitting eval rods into known and novel subsets" />
-          </when>
-          <when value="custom">
-              <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-              <param name="known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Treat ROD as known when splitting eval rods into known and novel subsets" />
-          </when>
-        </conditional>
+    <repeat name="comp_rod_bind" title="Binding for reference-ordered comparison data">
+      <param name="comp_input_rod" type="data" format="vcf" label="Comparison ROD file" />
+      <param name="comp_rod_name" type="text" value="Unnamed" label="Comparison ROD Name"/>
+      <param name="comp_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use Comparison ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+      <param name="comp_known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Use Comparison ROD as known_names" />
     </repeat>
+    
+    <conditional name="dbsnp_rod_bind_type">
+      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file">
+        <option value="set_dbsnp" selected="True">Set dbSNP</option>
+        <option value="exclude_dbsnp">Don't set dbSNP</option>
+      </param>
+      <when value="exclude_dbsnp">
+        <!-- Do nothing here -->
+      </when>
+      <when value="set_dbsnp">
+        <param name="dbsnp_input_rod" type="data" format="vcf" label="dbSNP ROD file" />
+        <param name="dbsnp_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use dbSNP ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+        <param name="dbsnp_rod_name" type="hidden" value="dbsnp" label="dbSNP ROD Name"/>
+        <param name="dbsnp_known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Use dbSNP ROD as known_names" />
+      </when>
+    </conditional>
     
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
@@ -293,7 +295,7 @@
           <param name="sample" value="" type="text" label="Derive eval and comp contexts using only these sample genotypes, when genotypes are available in the original context"/>
         </repeat>
         
-        <param name="stratification_modules" type="select" multiple="True" display="checkboxes" label="Stratification modules to apply to the eval track(s)" >
+        <param name="stratification_modules" type="select" multiple="True" display="checkboxes" label="Stratification modules to apply to the w track(s)" >
           <!-- do these need individual options also? gatk wiki has little info -->
           <option value="AlleleFrequency" />
           <option value="AlleleCount" />
@@ -356,10 +358,11 @@
           <param name="reference_source_selector" value="history" />
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
-          <param name="rod_bind_type_selector" value="dbsnp" />
-          <param name="rodToIntervalTrackName" />
-          <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
-          <param name="known_names" value="True"/>
+          <param name="dbsnp_rod_bind_type_selector" value="set_dbsnp" />
+          <param name="dbsnp_rodToIntervalTrackName" />
+          <param name="dbsnp_input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
+          <param name="dbsnp_known_names" value="True"/>
+          <param name="comp_rod_bind" value="0" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="basic" />
           <output name="output_table" file="gatk/gatk_variant_eval/gatk_variant_eval_out_1.tabular" />

@@ -1,12 +1,15 @@
-<tool id="gatk_variant_combine" name="Combine Variants" version="0.0.1">
+<tool id="gatk_variant_combine" name="Combine Variants" version="0.0.2">
   <description></description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    
    #set $priority_order = []
    #for $input_variant in $reference_source.input_variants:
-       -d "-B:${input_variant.input_variant_name},%(file_type)s" "${input_variant.input_variant}" "${input_variant.input_variant.ext}" "input_variant_${input_variant.input_variant_name}"
+       -d "--variant:${input_variant.input_variant_name},%(file_type)s" "${input_variant.input_variant}" "${input_variant.input_variant.ext}" "input_variant_${input_variant.input_variant_name}"
        #set $input_variant_name = str( $input_variant.input_variant_name )
        #assert $input_variant_name not in $priority_order, "Variant Names must be unique" ##this should be handled by a validator
        #silent $priority_order.append( $input_variant_name )
@@ -21,6 +24,7 @@
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"
     #end if
+   --genotypemergeoption "${genotype_merge_option}"
    --rod_priority_list "${ ','.join( $priority_order ) }"
    '
    
@@ -72,7 +76,6 @@
     ##start analysis specific options
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         -p '
-        --genotypemergeoption "${analysis_param_type.genotype_merge_option}"
         --filteredrecordsmergetype "${analysis_param_type.filtered_records_merge_type}"
         ${analysis_param_type.print_complex_merges}
         ${analysis_param_type.filtered_are_uncalled}
@@ -95,7 +98,7 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat min="1" name="input_variants" title="Variants to Merge">
+        <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here.">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
           <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
             <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
@@ -108,7 +111,7 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat min="1" name="input_variants" title="Variants to Merge">
+        <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here.">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
           <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
             <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
@@ -117,7 +120,14 @@
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
-        
+    
+    <param name="genotype_merge_option" type="select" label="How should we merge genotype records across records for samples shared across the ROD files" >
+      <option value="UNIQUIFY" />
+      <option value="PRIORITIZE" selected="true"/>
+      <option value="UNSORTED" />
+      <option value="REQUIRE_UNIQUE" />
+    </param>
+    
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
         <option value="basic" selected="True">Basic</option>
@@ -219,16 +229,10 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="genotype_merge_option" type="select" label="How should we merge genotype records across records for samples shared across the ROD files" >
-          <option value="UNIQUIFY" />
-          <option value="PRIORITIZE" selected="true"/>
-          <option value="UNSORTED" />
-          <option value="REQUIRE_UNIQUE" />
-        </param> 
         <param name="filtered_records_merge_type" type="select" label="How should we deal with records seen at the same site in the VCF, but with different FILTER fields? " >
           <option value="KEEP_IF_ANY_UNFILTERED" selected="true"/>
           <option value="KEEP_IF_ALL_UNFILTERED" />
-        </param> 
+        </param>
         
         <param name="print_complex_merges" checked="false" type="boolean" truevalue="--printComplexMerges" falsevalue="" label="Print out interesting sites requiring complex compatibility merging" />
         <param name="filtered_are_uncalled" checked="false" type="boolean" truevalue="--filteredAreUncalled" falsevalue="" label="If true, then filtered VCFs are treated as uncalled, so that filtered set annotation don't appear in the combined VCF" />
@@ -253,9 +257,10 @@
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
           <param name="input_variant_name" value="from_variant_annotator" />
+          <param name="genotype_merge_option" value="PRIORITIZE" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="basic" />
-          <output name="output_variants" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.vcf" lines_diff="2" />
+          <output name="output_variants" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.vcf" lines_diff="4" />
           <output name="output_log" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.log.contains" compare="contains" />
       </test>
   </tests>
