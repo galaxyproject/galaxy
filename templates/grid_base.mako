@@ -777,6 +777,7 @@
             show_item_checkboxes = True
     %>
     <form action="${url()}" method="post" onsubmit="return false;">
+        <input type="hidden" name="webapp" value="${webapp}"/>
         <table id="grid-table" class="grid">
             <thead id="grid-table-header">
                 <tr>

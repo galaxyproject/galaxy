@@ -183,7 +183,7 @@ class RepositoryListGrid( grids.Grid ):
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
 
-class DownloadableRepositoryListGrid( RepositoryListGrid ):
+class ValidRepositoryListGrid( RepositoryListGrid ):
     class RevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )
@@ -196,7 +196,7 @@ class DownloadableRepositoryListGrid( RepositoryListGrid ):
             if len( select_field.options ) > 1:
                 return select_field.get_html()
             return repository.revision
-    title = "Downloadable repositories"
+    title = "Valid repositories"
     columns = [
         RepositoryListGrid.NameColumn( "Name",
                                        key="name",
@@ -210,11 +210,6 @@ class DownloadableRepositoryListGrid( RepositoryListGrid ):
                                        attach_popup=False,
                                        key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
-                                                cols_to_filter=[ columns[0], columns[1] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
     operations = []
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ) \
@@ -237,7 +232,7 @@ class MatchedRepositoryListGrid( grids.Grid ):
                 return repository_metadata.repository.user.username
             return 'no user'
     # Grid definition
-    title = "Matched repositories"
+    title = "Repositories with matching tools"
     model_class = model.RepositoryMetadata
     template='/webapps/community/repository/grid.mako'
     default_sort_key = "Repository.name"
@@ -282,21 +277,19 @@ class MatchedRepositoryListGrid( grids.Grid ):
                                .filter( self.model_class.table.c.repository_id == 0 )
 
 class InstallMatchedRepositoryListGrid( MatchedRepositoryListGrid ):
-    # Grid definition
-    title = "Repositories that contain tools matching search criteria"
     columns = [ col for col in MatchedRepositoryListGrid.columns ]
     # Override the NameColumn
     columns[ 0 ] = MatchedRepositoryListGrid.NameColumn( "Name",
                                                          link=( lambda item: dict( operation="view_or_manage_repository",
                                                                                    id=item.id,
                                                                                    webapp="galaxy" ) ),
-                                                         attach_popup=True )
+                                                         attach_popup=False )
 
 class RepositoryController( BaseUIController, ItemRatings ):
 
     install_matched_repository_list_grid = InstallMatchedRepositoryListGrid()
     matched_repository_list_grid = MatchedRepositoryListGrid()
-    downloadable_repository_list_grid = DownloadableRepositoryListGrid()
+    valid_repository_list_grid = ValidRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
     category_list_grid = CategoryListGrid()
 
@@ -340,7 +333,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # Render the list view
         return self.category_list_grid( trans, **kwd )
     @web.expose
-    def browse_downloadable_repositories( self, trans, **kwd ):
+    def browse_valid_repositories( self, trans, **kwd ):
         webapp = kwd.get( 'webapp', 'community' )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
@@ -352,6 +345,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 repository = get_repository( trans, repository_id )
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
+                                                                  webapp=webapp,
                                                                   repository_id=repository_id,
                                                                   changeset_revision=repository.tip ) )
         # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
@@ -371,16 +365,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                       webapp=webapp,
                                                                       repository_id=trans.security.encode_id( repository.id ),
                                                                       changeset_revision=v ) )
-        url_args = dict( action='browse_downloadable_repositories',
+        url_args = dict( action='browse_valid_repositories',
                          operation='preview_tools_in_changeset',
                          webapp=webapp,
                          repository_id=repository_id )
-        self.downloadable_repository_list_grid.operations = [ grids.GridOperation( "Preview and install",
-                                                                                   url_args=url_args,
-                                                                                   allow_multiple=False,
-                                                                                   async_compatible=False ) ]
+        self.valid_repository_list_grid.operations = [ grids.GridOperation( "Preview and install",
+                                                                            url_args=url_args,
+                                                                            allow_multiple=False,
+                                                                            async_compatible=False ) ]
         # Render the list view
-        return self.downloadable_repository_list_grid( trans, **kwd )
+        return self.valid_repository_list_grid( trans, **kwd )
     @web.expose
     def find_tools( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -391,38 +385,35 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
         if 'operation' in kwd:
-            operation = kwd[ 'operation' ].lower()
-            is_admin = trans.user_is_admin()
-            if operation == "view_or_manage_repository":
-                # The received id is a RepositoryMetadata id, so we have to get the repository id.
-                repository_metadata = get_repository_metadata_by_id( trans, kwd[ 'id' ] )
-                repository_id = trans.security.encode_id( repository_metadata.repository.id )
-                repository = get_repository( trans, repository_id )
-                kwd[ 'id' ] = repository_id
-                kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
-                if webapp == 'community' and ( is_admin or repository.user == trans.user ):
-                    a = 'manage_repository'
-                else:
-                    a = 'view_repository'
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action=a,
-                                                                  **kwd ) )
-            if operation == "install":
-                repo_info_dict = {}
-                galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-                # TODO: support https in the following url.
-                url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s' % ( galaxy_url, trans.request.host, webapp )
-                repository_metadata_ids = util.listify( kwd[ 'id' ] )
-                for repository_metadata_id in repository_metadata_ids:
-                    repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
-                    repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
-                    repository_id = trans.security.encode_id( repository.id )
-                    changeset_revision = repository_metadata.changeset_revision
-                    repository_clone_url = generate_clone_url( trans, repository_id )
-                    repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
-                encoded_repo_info_dict = self.__encode( repo_info_dict )
-                url += '&repo_info_dict=%s' % encoded_repo_info_dict
-                return trans.response.send_redirect( url )
+            item_id = kwd.get( 'id', '' )
+            if item_id:
+                operation = kwd[ 'operation' ].lower()
+                is_admin = trans.user_is_admin()
+                if operation == "view_or_manage_repository":
+                    # The received id is a RepositoryMetadata id, so we have to get the repository id.
+                    repository_metadata = get_repository_metadata_by_id( trans, item_id )
+                    repository_id = trans.security.encode_id( repository_metadata.repository.id )
+                    repository = get_repository( trans, repository_id )
+                    kwd[ 'id' ] = repository_id
+                    kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
+                    if webapp == 'community' and ( is_admin or repository.user == trans.user ):
+                        a = 'manage_repository'
+                    else:
+                        a = 'view_repository'
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action=a,
+                                                                      **kwd ) )
+                if operation == "install":
+                    galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+                    encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
+                    # TODO: support https in the following url.
+                    url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
+                        ( galaxy_url, trans.request.host, webapp, encoded_repo_info_dict )
+                    return trans.response.send_redirect( url )
+            else:
+                # This can only occur when there is a multi-select grid with check boxes and an operation,
+                # and the user clicked the operation button without checking any of the check boxes.
+                return trans.show_error_message( "No items were selected." )
         tool_ids = [ item.lower() for item in util.listify( kwd.get( 'tool_id', '' ) ) ]
         tool_names = [ item.lower() for item in util.listify( kwd.get( 'tool_name', '' ) ) ]
         tool_versions = [ item.lower() for item in util.listify( kwd.get( 'tool_version', '' ) ) ]
@@ -436,7 +427,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 kwd[ 'match_tuples' ] = match_tuples
                 # Render the list view
                 if webapp == 'galaxy':
-                    # Our request originated from a Galaxy instance.
+                    # Our initial request originated from a Galaxy instance.
+                    global_actions = [ grids.GridAction( "Browse valid repositories",
+                                                         dict( controller='repository', action='browse_valid_repositories', webapp=webapp ) ),
+                                       grids.GridAction( "Search for valid tools",
+                                                         dict( controller='repository', action='find_tools', webapp=webapp ) ) ]
+                    self.install_matched_repository_list_grid.global_actions = global_actions
                     install_url_args = dict( controller='repository', action='find_tools', webapp=webapp )
                     operations = [ grids.GridOperation( "Install", url_args=install_url_args, allow_multiple=True, async_compatible=False ) ]
                     self.install_matched_repository_list_grid.operations = operations
@@ -583,8 +579,21 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name, tool_version=tool_version ):
                 match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
         return match_tuples
-    def __encode( self, repo_info_dict ):
-        value = simplejson.dumps( repo_info_dict )
+    def __encode_repo_info_dict( self, trans, webapp, repository_metadata_ids ):
+        repo_info_dict = {}
+        for repository_metadata_id in repository_metadata_ids:
+            repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+            repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
+            repository_id = trans.security.encode_id( repository.id )
+            changeset_revision = repository_metadata.changeset_revision
+            repository_clone_url = generate_clone_url( trans, repository_id )
+            repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
+        return self.__encode( repo_info_dict )
+    def __encode( self, val ):
+        if isinstance( val, dict ):
+            value = simplejson.dumps( val )
+        else:
+            value = val
         a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
         b = binascii.hexlify( value )
         return "%s:%s" % ( a, b )
@@ -620,14 +629,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+        repository_clone_url = generate_clone_url( trans, repository_id )        
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        repo_info_dict = {}
+        repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
+        encoded_repo_info_dict = self.__encode( repo_info_dict )
         # Redirect back to local Galaxy to perform install.
-        repository_clone_url = generate_clone_url( trans, repository_id )
         # TODO: support https in the following url.
-        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&name=%s&description=%s&repository_clone_url=%s&changeset_revision=%s' % \
-            ( galaxy_url, trans.request.host, repository.name, repository.description, repository_clone_url, changeset_revision )
+        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&repo_info_dict=%s' % \
+            ( galaxy_url, trans.request.host, encoded_repo_info_dict )
         return trans.response.send_redirect( url )
     @web.expose
     def check_for_updates( self, trans, **kwd ):
