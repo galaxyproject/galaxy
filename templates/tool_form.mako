@@ -120,7 +120,13 @@
             <% pass %>
         %elif input.type == "repeat":
           <div class="repeat-group">
-              <div class="form-title-row"><strong>${input.title_plural}</strong></div>
+              <div class="form-title-row"><strong>${input.title_plural}</strong>
+              %if input.help:
+                  <div class="toolParamHelp" style="clear: both;">
+                      ${input.help}
+                  </div>
+              %endif
+              </div>
               <% repeat_state = tool_state[input.name] %>
               %for i in range( len( repeat_state ) ):
                 <div class="repeat-group-item">
