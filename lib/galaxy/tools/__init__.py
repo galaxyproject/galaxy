@@ -29,6 +29,9 @@ from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
+from galaxy.web import security 
+import socket
+
 
 log = logging.getLogger( __name__ )
 
@@ -104,14 +107,6 @@ class ToolBox( object ):
         try:
             path = elem.get( "file" )
             tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
-            if guid is not None:
-                # Tool was installed from a Galaxy tool shed.
-                tool.tool_shed = elem.find( "tool_shed" ).text
-                tool.repository_name = elem.find( "repository_name" ).text
-                tool.repository_owner = elem.find( "repository_owner" ).text
-                tool.changeset_revision = elem.find( "changeset_revision" ).text
-                tool.old_id = elem.find( "id" ).text
-                tool.version = elem.find( "version" ).text
             if self.app.config.get_bool( 'enable_tool_tags', False ):
                 tag_names = elem.get( "tags", "" ).split( "," )
                 for tag_name in tag_names:
@@ -372,7 +367,9 @@ class ToolParallelismInfo(object):
             # legacy basic mode - provide compatible defaults
             self.attributes['split_size'] = 20
             self.attributes['split_mode'] = 'number_of_parts'
-
+            
+        
+    
 class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
@@ -393,15 +390,9 @@ class Tool:
         # easily ensure that parameter dependencies like index files or
         # tool_data_table_conf.xml entries exist.
         self.input_params = []
-        # Attributes of tools installed from Galaxy tool sheds.
-        self.tool_shed = None
-        self.repository_name = None
-        self.repository_owner = None
-        self.changeset_revision = None
-        self.old_id = None
-        self.version = None
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
+        self.external_runJob_script = app.config.drmaa_external_runjob_script
     
     @property
     def sa_session( self ):
@@ -420,14 +411,14 @@ class Tool:
             raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
         # TODO: can this be generated automatically?
-        if guid is None:
-            self.id = root.get( "id" )
-            self.version = root.get( "version" )
-        else:
+        if guid is not None:
             self.id = guid
+        else:
+            self.id = root.get( "id" )
         if not self.id: 
-            raise Exception, "Missing tool 'id'"
-        if not self.version:
+            raise Exception, "Missing tool 'id'" 
+        self.version = root.get( "version" )
+        if not self.version: 
             # For backward compatibility, some tools may not have versions yet.
             self.version = "1.0.0"
         # Support multi-byte tools
@@ -814,8 +805,7 @@ class Tool:
             if elem.tag == "repeat":
                 group = Repeat()
                 group.name = elem.get( "name" )
-                group.title = elem.get( "title" )
-                group.help = elem.get( "help", None )
+                group.title = elem.get( "title" ) 
                 group.inputs = self.parse_input_elem( elem, enctypes, context )
                 group.default = int( elem.get( "default", 0 ) )
                 group.min = int( elem.get( "min", 0 ) )
@@ -1578,13 +1568,13 @@ class Tool:
                                 DatasetFilenameWrapper( converted_dataset,
                                                         datatypes_registry = self.app.datatypes_registry,
                                                         tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ), 
-                                                        name = conversion_name )
+                                                        name = conversion_name, config_info = self.app.config )
                     # Wrap actual input dataset
                     input_values[ input.name ] = \
-                        DatasetFilenameWrapper( input_values[ input.name ],
+                        DatasetFilenameWrapper( input_values[ input.name ], 
                                                 datatypes_registry = self.app.datatypes_registry,
                                                 tool = self,
-                                                name = input.name )
+                                                name = input.name, config_info = self.app.config )
                 elif isinstance( input, SelectToolParameter ):
                     input_values[ input.name ] = SelectToolParameterWrapper( 
                         input, input_values[ input.name ], self.app, other_values = param_dict )
@@ -1622,28 +1612,28 @@ class Tool:
             param_dict[name] = DatasetFilenameWrapper( data, 
                                                        datatypes_registry = self.app.datatypes_registry, 
                                                        tool = self, 
-                                                       name = name )
+                                                       name = name, config_info = self.app.config )
             if data:
                 for child in data.children:
-                    param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
+                    param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child,config_info = self.app.config )
         for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes) 
             # if desired.
             if self.app.config.outputs_to_working_directory:
                 try:
                     false_path = [ dp.false_path for dp in output_paths if dp.real_path == hda.file_name ][0]
-                    param_dict[name] = DatasetFilenameWrapper( hda, false_path = false_path )
+                    param_dict[name] = DatasetFilenameWrapper( hda, false_path = false_path, config_info = self.app.config )
                     open( false_path, 'w' ).close()
                 except IndexError:
                     log.warning( "Unable to determine alternate path for writing job outputs, outputs will be written to their real paths" )
-                    param_dict[name] = DatasetFilenameWrapper( hda )
+                    param_dict[name] = DatasetFilenameWrapper( hda, config_info = self.app.config )
             else:
-                param_dict[name] = DatasetFilenameWrapper( hda )
+                param_dict[name] = DatasetFilenameWrapper( hda, config_info = self.app.config )
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
             param_dict[name].files_path = os.path.abspath(os.path.join( job_working_directory, "dataset_%s_files" % (hda.dataset.id) ))
             for child in hda.children:
-                param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
+                param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child, config_info = self.app.config )
         for out_name, output in self.outputs.iteritems():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter 
@@ -1702,8 +1692,10 @@ class Tool:
                 fd, config_filename = tempfile.mkstemp( dir=directory )
                 os.close( fd )
             f = open( config_filename, "wt" )
+            os.chmod(config_filename, 0777)
             f.write( fill_template( template_text, context=param_dict ) )
             f.close()
+            os.chmod(config_filename, 0777)
             param_dict[name] = config_filename
             config_filenames.append( config_filename )
         return config_filenames
@@ -1836,13 +1828,15 @@ class Tool:
         """
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
-            try:
-                if len( os.listdir( temp_file_path ) ) > 0:
-                    store_file_path = os.path.join( 
-                        os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), 
+            #try:
+            if os.path.exists(temp_file_path) and len( os.listdir( temp_file_path ) ) > 0:
+                store_file_path = os.path.join( 
+                    os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), 
                         "dataset_%d_files" % hda.dataset.id )
-                    shutil.move( temp_file_path, store_file_path )
-                    # Fix permissions
+                os.mkdir(store_file_path)
+                os.system('mv %s/* %s/' %(temp_file_path ,store_file_path))
+                # Fix permissions
+                if self.external_runJob_script == None:
                     for basedir, dirs, files in os.walk( store_file_path ):
                         util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
                         for file in files:
@@ -1851,8 +1845,8 @@ class Tool:
                             if os.path.islink( path ):
                                 continue 
                             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
-            except:
-                continue
+            #except:
+                #continue
     
     def collect_child_datasets( self, output):
         """
@@ -2243,7 +2237,7 @@ class DatasetFilenameWrapper( object ):
         def items( self ):
             return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
     
-    def __init__( self, dataset, datatypes_registry = None, tool = None, name = None, false_path = None ):
+    def __init__( self, dataset, datatypes_registry = None, tool = None, name = None, false_path = None , config_info=None):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
@@ -2255,6 +2249,14 @@ class DatasetFilenameWrapper( object ):
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
         self.false_path = false_path
+        
+        # create web_display_url attribute
+        sec = security.SecurityHelper( id_secret=config_info.id_secret )
+        try:
+            url = 'http://' + socket.getfqdn() + config_info.cookie_path + '/datasets/' + sec.encode_id(dataset.id) + '/display/?preview=True'
+            self.web_display_url = url 
+        except:
+            self.web_display_url = None      
 
     def __str__( self ):
         if self.false_path is not None:

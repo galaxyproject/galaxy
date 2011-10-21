@@ -279,8 +279,10 @@ def create_paramfile( trans, uploaded_datasets ):
                 is_binary = None
             try:
                 link_data_only = uploaded_dataset.link_data_only
+                chmod_flag = 1
             except:
                 link_data_only = 'copy_files'
+                chmod_flag = 0
             json = dict( file_type = uploaded_dataset.file_type,
                          ext = uploaded_dataset.ext,
                          name = uploaded_dataset.name,
@@ -291,8 +293,12 @@ def create_paramfile( trans, uploaded_datasets ):
                          link_data_only = link_data_only,
                          space_to_tab = uploaded_dataset.space_to_tab,
                          path = uploaded_dataset.path )
+            if chmod_flag == 0 and trans.app.config.drmaa_external_runjob_script:	
+                 os.chmod(uploaded_dataset.path, 0777)
         json_file.write( to_json_string( json ) + '\n' )
     json_file.close()
+    if trans.app.config.drmaa_external_runjob_script:
+        os.chmod(json_file_path, 0777)
     return json_file_path
 def create_job( trans, params, tool, json_file_path, data_list, folder=None, return_job=False ):
     """
@@ -325,12 +331,17 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, ret
             # Create an empty file immediately
             if not dataset.dataset.external_filename:
                 open( dataset.file_name, "w" ).close()
+                if trans.app.config.drmaa_external_runjob_script:
+                    os.chmod(dataset.file_name, 0777)
     else:
         for i, dataset in enumerate( data_list ):
             job.add_output_dataset( 'output%i' % i, dataset )
             # Create an empty file immediately
             if not dataset.dataset.external_filename:
                 open( dataset.file_name, "w" ).close()
+                if trans.app.config.drmaa_external_runjob_script:
+                    os.chmod(dataset.file_name, 0777)
+
     job.state = job.states.NEW
     trans.sa_session.add( job )
     trans.sa_session.flush()

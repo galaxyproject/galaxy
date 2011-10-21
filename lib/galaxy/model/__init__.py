@@ -480,6 +480,23 @@ class History( object, UsesAnnotations ):
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
 
+    def get_api_value( self, view='collection', value_mapper = None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[key] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[key] = value_mapper.get( key )( rval[key] ) 
+            except AttributeError:
+                rval[key] = None
+        return rval
+
 class HistoryUserShareAssociation( object ):
     def __init__( self ):
         self.history = None
@@ -632,7 +649,7 @@ class Dataset( object ):
     permitted_actions = get_permitted_actions( filter='DATASET' )
     file_path = "/tmp/"
     engine = None
-    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
+    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True):
         self.id = id
         self.state = state
         self.deleted = False
@@ -653,6 +670,7 @@ class Dataset( object ):
                 # Create directory if it does not exist
                 if not os.path.exists( dir ):
                     os.makedirs( dir )
+		os.chmod(dir, 0777)
                 # Return filename inside hashed directory
                 return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
         else:
@@ -1131,6 +1149,28 @@ class HistoryDatasetAssociation( DatasetInstance ):
         return hda_name
     def get_access_roles( self, trans ):
         return self.dataset.get_access_roles( trans )
+    def get_api_value( self, view='collection' ):
+        # Since this class is a proxy to rather complex attributes we want to
+        # display in other objects, we can't use the simpler method used by
+        # other model classes.
+        hda = self          
+        rval = dict( name = hda.name,
+                     extension = hda.extension,
+                     deleted = hda.deleted,
+                     visible = hda.visible,
+                     state = hda.state,
+                     file_size = int( hda.get_size() ),
+                     genome_build = hda.dbkey,
+                     misc_info = hda.info,
+                     misc_blurb = hda.blurb )
+        for name, spec in hda.metadata.spec.items():
+            val = hda.metadata.get( name )
+            if isinstance( val, MetadataFile ):
+                val = val.file_name
+            elif isinstance( val, list ):
+                val = ', '.join( [str(v) for v in val] )
+            rval['metadata_' + name] = val
+        return rval
     def quota_amount( self, user ):
         """
         If the user has multiple instances of this dataset, it will not affect their disk usage statistic.
@@ -1794,6 +1834,8 @@ class MetadataFile( object ):
             # File Exists is okay, otherwise reraise
             if e.errno != errno.EEXIST:
                 raise
+
+        os.chmod(path, 0777)
         # Return filename inside hashed directory
         return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 

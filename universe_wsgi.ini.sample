@@ -446,6 +446,14 @@ use_interactive = True
 # large servers.
 #enable_tool_tags = False
 
+# Enable a feature when running workflows. When enabled, default datasets
+# are selected for "Set at Runtime" inputs from the history such that the
+# same input will not be selected twice, unless there are more inputs than
+# compatible datasets in the history.
+# When False, the most recently added compatible item in the history will
+# be used for each "Set at Runtime" input, independent of others in the Workflow
+#enable_unique_workflow_defaults = False
+
 # Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
 # configure an FTP server (we've used ProFTPd since it can use Galaxy's
 # database for authentication) and set the following two options.
@@ -533,6 +541,30 @@ use_interactive = True
 # currently available are 'pbs' and 'drmaa'.
 #start_job_runners = None
 
+# Uncomment drmaa_external_runjob_script , drmaa_external_killjob_script, and external_chown_script pameters and have them point to the
+# absolute path for scripts/drmaa_external_runner.py and scripts/drmaa_external_killer.py.
+# The scripts directory is located in the top level galaxy directory. The parameters when
+# uncommented allow for submission to the drmaa queue with the user name of the user submitting
+# the job and not the galaxy user. In order for this to work the actual user must log into galaxy
+# and the galaxy authentication must be consistent with the authentication on the server in which the
+# drmaa queue is running (i.e. the username must have an account on the server and be allowed to
+# submit jobs to the queue). The galaxy user must also be given sudo permission to execute
+# scripts/drmaa_external_runner.py and scripts/drmaa_external_killer.py in /etc/sudoers
+# Example:
+# galaxy  ALL = (root) NOPASSWD: SETENV: /opt/galaxy/scripts/drmaa_external_runner.py
+# galaxy  ALL = (root) NOPASSWD: SETENV: /opt/galaxy/scripts/drmaa_external_killer.py
+# Also the
+# Defaults    requiretty
+# in /etc/sudoers must be commented out
+#drmaa_external_runjob_script = /opt/galaxy/scripts/drmaa_external_runner.py
+#drmaa_external_killjob_script = /opt/galaxy/scripts/drmaa_external_killer.py
+#external_chown_script = /opt/galaxy/scripts/external_chown_script.py
+
+#important if running as actual user since enviromental variables are not passed
+#will supercede an other definition of TMPDIR if using drmaa
+#TMPDIR = /opt/galaxy/database/tmp
+
+
 # The URL for the default runner to use when a tool doesn't explicitly define a
 # runner below.
 #default_cluster_job_runner = local:///
@@ -554,7 +586,9 @@ use_interactive = True
 # run with the runner defined with default_cluster_job_runner.
 
 [galaxy:tool_runners]
-
+binsort = drmaa://-cwd -V -pe threaded 4/
+bwa_wrapper = drmaa://-cwd -V -pe threaded 4/
+unified_genotyper = drmaa://-cwd -V -pe threaded 2/
 biomart = local:///
 encode_db1 = local:///
 hbvar = local:///

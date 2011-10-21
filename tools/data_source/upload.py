@@ -165,6 +165,7 @@ def add_file( dataset, registry, json_file, output_path ):
                     dataset.path = uncompressed
                 else:
                     shutil.move( uncompressed, dataset.path )
+                os.chmod(dataset.path, 0644)
             dataset.name = dataset.name.rstrip( '.gz' )
             data_type = 'gzip'
         if not data_type and bz2 is not None:
@@ -197,6 +198,7 @@ def add_file( dataset, registry, json_file, output_path ):
                         dataset.path = uncompressed
                     else:
                         shutil.move( uncompressed, dataset.path )
+                    os.chmod(dataset.path, 0644)
                 dataset.name = dataset.name.rstrip( '.bz2' )
                 data_type = 'bz2'
         if not data_type:
@@ -253,6 +255,7 @@ def add_file( dataset, registry, json_file, output_path ):
                             dataset.path = uncompressed
                         else:
                             shutil.move( uncompressed, dataset.path )
+                        os.chmod(dataset.path, 0644)
                         dataset.name = uncompressed_name
                 data_type = 'zip'
         if not data_type:
@@ -312,9 +315,18 @@ def add_file( dataset, registry, json_file, output_path ):
                 pass
         else:
             # This should not happen, but it's here just in case
-            shutil.copy( dataset.path, output_path )
+            shutil.move( dataset.path, output_path )
+            try:
+               os.chmod(output_path,0644)
+            except:
+               pass
     elif link_data_only == 'copy_files':
         shutil.move( dataset.path, output_path )
+        try:
+           os.chmod(output_path,0644)
+        except:
+ 	   pass 
+
     # Write the job info
     stdout = stdout or 'uploaded %s file' % data_type
     info = dict( type = 'dataset',

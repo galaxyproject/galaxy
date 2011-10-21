@@ -33,6 +33,7 @@ def do_split (job_wrapper):
         subdir_index[0] = subdir_index[0] + 1
         if not os.path.exists(dir):
             os.makedirs(dir)
+            os.chmod(dir,0777)
         task_dirs.append(dir)
         return dir
     

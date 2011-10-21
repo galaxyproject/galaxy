@@ -1,5 +1,4 @@
-<tool id="cufflinks" name="Cufflinks" version="0.0.5">
-    <!-- Wrapper supports Cufflinks versions v1.0.0-v1.0.3 -->
+<tool id="cufflinks" name="Cufflinks" version="0.9.1">
     <description>transcript assembly and FPKM (RPKM) estimates for RNA-Seq data</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -15,10 +14,27 @@
             
             ## Include reference annotation?
             #if $reference_annotation.use_ref == "Use reference annotation":
-                -G $reference_annotation.reference_annotation_file
+		#if $reference_annotation.annotationSource.reference_annotation_file == "indexed":
+                    -G "${ filter( lambda x: str( x[0] ) == str( $reference_annotation.annotationSource.indices ), $__app__.tool_data_tables[ 'gtf_index' ].get_fields() )[0][-1] }"
+                #else:
+                     #if $reference_annotation.annotationSource.reference_annotation_file == "attribute":
+                         -G "${ filter( lambda x: str( x[0] ) == str( $input.metadata.dbkey ), $__app__.tool_data_tables[ 'gtf_index' ].get_fields() )[0][-1] }"
+                     #else:
+                         -G "${reference_annotation.annotationSource.ownFile}"
+                     #end if
+                #end if
             #end if
+
             #if $reference_annotation.use_ref == "Use reference annotation guide":
-		        -g $reference_annotation.reference_annotation_guide_file
+		#if $reference_annotation.annotationSource.reference_annotation_file == "indexed":
+                    -g "${ filter( lambda x: str( x[0] ) == str( $reference_annotation.annotationSource.indices ), $__app__.tool_data_tables[ 'gtf_index' ].get_fields() )[0][-1] }"
+                #else:
+                     #if $reference_annotation.annotationSource.reference_annotation_file == "attribute":
+                         -g "${ filter( lambda x: str( x[0] ) == str( $input.metadata.dbkey ), $__app__.tool_data_tables[ 'gtf_index' ].get_fields() )[0][-1] }"
+                     #else:
+                         -g "${reference_annotation.annotationSource.ownFile}"
+                     #end if
+                #end if
             #end if
             
             ## Set paired-end parameters?
@@ -61,10 +77,44 @@
             </param>
             <when value="No"></when>
             <when value="Use reference annotation">
-                <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
-            	</when>
+		<conditional name="annotationSource">
+                	<param name="reference_annotation_file" type="select" label="Please select a reference Aonnotation"> 
+                           <option value="indexed">Use a built-in index</option>
+        		   <option value="history">Use one from the history</option>
+                           <option value="attribute">Use input bam metadata.dbkey attribute</option>
+                        </param>
+                        <when value="indexed">
+                          <param name="indices" type="select" label="Select genome for gtf annotation">
+                            <options from_data_table="gtf_index">
+                              <filter type="sort_by" column="3" />
+                              <validator type="no_options" message="No indexes are available for the selected input dataset" />
+                            </options>
+                          </param>
+                        </when>
+                        <when value="history">
+                          <param name="ownFile" type="data" format="gff3, gtf" label="Select a reference annotation file" />
+                        </when>
+                </conditional>
+            </when>
 	        <when value="Use reference annotation guide">
-                <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
+                <conditional name="annotationSource">
+                        <param name="reference_annotation_file" type="select" label="Please select a reference Aonnotation">
+                           <option value="indexed">Use a built-in index</option>
+                           <option value="history">Use one from the history</option>
+                           <option value="attribute">Use input bam metadata.dbkey attribute</option>
+                        </param>
+                        <when value="indexed">
+                          <param name="indices" type="select" label="Select genome for gtf annotation">
+                            <options from_data_table="gtf_index">
+                              <filter type="sort_by" column="3" />
+                              <validator type="no_options" message="No indexes are available for the selected input dataset" />
+                            </options>
+                          </param>
+                        </when>
+                        <when value="history">
+                          <param name="ownFile" type="data" format="gff3, gtf" label="Select a reference annotation file" />
+                        </when>
+                </conditional>
                 </when>
         </conditional>
         <conditional name="bias_correction">

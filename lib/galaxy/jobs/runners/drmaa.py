@@ -1,4 +1,10 @@
 import os, sys, logging, threading, time
+import pprint, pwd
+from pwd import getpwnam
+import subprocess
+import inspect
+import simplejson as json
+
 from Queue import Queue, Empty
 
 from galaxy import model
@@ -7,6 +13,7 @@ from galaxy.jobs.runners import BaseJobRunner
 from paste.deploy.converters import asbool
 
 import pkg_resources
+
 
 if sys.version_info[:2] == ( 2, 4 ):
     pkg_resources.require( "ctypes" )
@@ -42,9 +49,23 @@ if [ "$GALAXY_LIB" != "None" ]; then
     fi
     export PYTHONPATH
 fi
+%s
 cd %s
 %s
+%s
+%s
+%s
 """
+def __lineno__():
+    """Returns the current line number in our program."""
+    return inspect.currentframe().f_back.f_lineno
+
+def __filename__():
+    """Returns the current filename in our program."""
+    return inspect.currentframe().f_back.f_code.co_filename
+
+DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
+                    'name','email','project' ]
 
 class DRMAAJobState( object ):
     def __init__( self ):
@@ -90,6 +111,10 @@ class DRMAAJobRunner( BaseJobRunner ):
             worker.start()
             self.work_threads.append( worker )
         log.debug( "%d workers ready" % nworkers )
+        # external_runJob_script can be None, in which case it's not used.
+        self.external_runJob_script = app.config.drmaa_external_runjob_script
+        self.external_killJob_script = app.config.drmaa_external_killjob_script
+        self.TMPDIR  =  app.config.TMPDIR
 
     def get_native_spec( self, url ):
         """Get any native DRM arguments specified by the site configuration"""
@@ -118,7 +143,6 @@ class DRMAAJobRunner( BaseJobRunner ):
 
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to the DRM"""
-
         try:
             job_wrapper.prepare()
             command_line = self.build_command_line( job_wrapper, include_metadata=True )
@@ -128,7 +152,7 @@ class DRMAAJobRunner( BaseJobRunner ):
             return
 
         runner_url = job_wrapper.get_job_runner()
-        
+
         # This is silly, why would we queue a job with no command line?
         if not command_line:
             job_wrapper.finish( '', '' )
@@ -144,8 +168,8 @@ class DRMAAJobRunner( BaseJobRunner ):
         job_wrapper.change_state( model.Job.states.QUEUED )
 
         # define job attributes
-        ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
-        efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
+        ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
+        efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
         jt = self.ds.createJobTemplate()
         jt.remoteCommand = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job_wrapper.get_id_tag())
         jt.outputPath = ":%s" % ofile
@@ -153,17 +177,31 @@ class DRMAAJobRunner( BaseJobRunner ):
         native_spec = self.get_native_spec( runner_url )
         if native_spec is not None:
             jt.nativeSpecification = native_spec
-
-        script = drm_template % (job_wrapper.galaxy_lib_dir, os.path.abspath( job_wrapper.working_directory ), command_line)
+        #set and export galaxy user PATH enviroment to actual user if submitting jobs as actual user
         try:
-            fh = file( jt.remoteCommand, "w" )
-            fh.write( script )
-            fh.close()
-            os.chmod( jt.remoteCommand, 0750 )
+            if self.external_runJob_script:
+               export_path = 'export PATH=%s:$PATH' %(os.environ['PATH'])
+            else:
+               export_path = ''
         except:
-            job_wrapper.fail( "failure preparing job script", exception=True )
-            log.exception("failure running job %s" % job_wrapper.get_id_tag())
-            return                          
+            export_path = ''
+        
+        if self.TMPDIR:
+            export_tmp = 'export TMPDIR=%s' %self.TMPDIR
+        else:
+            export_tmp = ''	   
+
+        if self.external_runJob_script == None: 
+            script = drm_template % (job_wrapper.galaxy_lib_dir, export_path, os.path.abspath( job_wrapper.working_directory ),export_tmp, command_line,'','')
+        else:
+	    touchcmd = 'touch ' + os.path.abspath( job_wrapper.working_directory ) + '/just_in_cases.txt'
+            chmodcmd = 'chmod -Rf  a+rwx ' + os.path.abspath( job_wrapper.working_directory ) + '/*'
+            script = drm_template % (job_wrapper.galaxy_lib_dir, export_path, os.path.abspath( job_wrapper.working_directory ), export_tmp, command_line, touchcmd,chmodcmd)
+
+        fh = file( jt.remoteCommand, "w" )
+        fh.write( script )
+        fh.close()
+        os.chmod( jt.remoteCommand, 0755 )
 
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:
@@ -178,7 +216,12 @@ class DRMAAJobRunner( BaseJobRunner ):
         log.debug("(%s) submitting file %s" % ( galaxy_id_tag, jt.remoteCommand ) )
         log.debug("(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
         # runJob will raise if there's a submit problem
-        job_id = self.ds.runJob(jt)
+        if self.external_runJob_script is None:
+            job_id = self.ds.runJob(jt)
+        else:
+            userid = self.get_qsub_user(job_wrapper)
+            filename = self.store_jobtemplate(job_wrapper, jt)
+            job_id = self.external_runjob(filename, userid)
         log.info("(%s) queued as %s" % ( galaxy_id_tag, job_id ) )
 
         # store runner information for tracking if Galaxy restarts
@@ -272,15 +315,23 @@ class DRMAAJobRunner( BaseJobRunner ):
         efile = drm_job_state.efile
         job_file = drm_job_state.job_file
         # collect the output
-        try:
-            ofh = file(ofile, "r")
-            efh = file(efile, "r")
-            stdout = ofh.read( 32768 )
-            stderr = efh.read( 32768 )
-        except:
-            stdout = ''
-            stderr = 'Job output not returned from cluster'
-            log.debug(stderr)
+        # JED - HACK to wait for the files to appear
+        which_try = 0
+        while which_try < 60:
+            try:
+                ofh = file(ofile, "r")
+                efh = file(efile, "r")
+                stdout = ofh.read( 32768 )
+                stderr = efh.read( 32768 )
+                which_try = 60
+            except:
+                if which_try == 60:
+                    stdout = ''
+                    stderr = 'Job output not returned from cluster'
+                    log.debug(stderr)
+                else:
+                    which_try += 1
+                    time.sleep(1)
 
         try:
             drm_job_state.job_wrapper.finish( stdout, stderr )
@@ -320,13 +371,20 @@ class DRMAAJobRunner( BaseJobRunner ):
 
     def stop_job( self, job ):
         """Attempts to delete a job from the DRM queue"""
-        try:
-            self.ds.control( job.job_runner_external_id, drmaa.JobControlAction.TERMINATE )
-            log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.id, job.job_runner_external_id ) )
-        except drmaa.InvalidJobException:
-            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.id, job.job_runner_external_id ) )
-        except Exception, e:
-            log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.id, job.job_runner_external_id, e ) )
+        if self.external_killJob_script is None:
+                try:
+                        self.ds.control( job.job_runner_external_id, drmaa.JobControlAction.TERMINATE )
+                        log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.id, job.job_runner_external_id ) )
+                except drmaa.InvalidJobException:
+                        log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.id, job.job_runner_external_id ) )
+                except Exception, e:
+                        log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.id, job.job_runner_external_id, e ) )
+        else:
+                try:
+                        subprocess.Popen(['/usr/bin/sudo','-E', self.external_killJob_script,  str(job.job_runner_external_id), str(self.job_user_uid[2])],shell=False)
+                        log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.id, job.job_runner_external_id ) )
+                except Exception, e:
+                        log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.id, job.job_runner_external_id, e ) )
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -348,3 +406,52 @@ class DRMAAJobRunner( BaseJobRunner ):
             drm_job_state.old_state = drmaa.JobState.QUEUED_ACTIVE
             drm_job_state.running = False
             self.monitor_queue.put( drm_job_state )
+
+    def get_qsub_user(self, job_wrapper):
+        """ Returns the UserID (or Username) that should be used to execute the job. """
+        #TODO:
+        #add some logic to decide on an SGE user for the given job.
+        job_user_name = job_wrapper.user.split('@')
+        self.job_user_uid = getpwnam(job_user_name[0])
+        log.debug (" (%s) is the uid being passed to the DRM queu\n" % ( self.job_user_uid[2]) )
+        return self.job_user_uid[2]
+
+    def store_jobtemplate(self, job_wrapper, jt):
+        """ Stores the content of a DRMAA JobTemplate object in a file as a JSON string.
+        Path is hard-coded, but it's no worse than other path in this module.
+        Uses Galaxy's JobID, so file is expected to be unique."""
+        filename = "%s/database/pbs/%s.jt_json" % (os.getcwd(), job_wrapper.get_id_tag())
+        data = {}
+        for attr in DRMAA_jobTemplate_attributes:
+            try:
+                data[attr] = getattr(jt, attr)
+            except:
+                pass
+        s = json.dumps(data);
+        f = open(filename,'w')
+        f.write(s)
+        f.close()
+        return filename
+
+    def external_runjob(self, jobtemplate_filename, username):
+        """ runs an external script the will QSUB a new job.
+        The external script will be run with sudo, and will setuid() to the specified user.
+        Effectively, will QSUB as a different user (then the one used by Galaxy).
+        """
+        p = subprocess.Popen([ '/usr/bin/sudo', '-E', self.external_runJob_script, str(username), jobtemplate_filename ],
+                shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdoutdata, stderrdata) = p.communicate()
+        exitcode = p.returncode
+        #os.unlink(jobtemplate_filename)
+        if exitcode != 0:
+            # There was an error in the child process
+            raise RuntimeError("External_runjob failed (exit code %s)\nCalled from %s:%d\nChild process reported error:\n%s" % (str(exitcode), __filename__(), __lineno__(), stderrdata))
+        if not stdoutdata.strip():
+            raise RuntimeError("External_runjob did return the job id: %s" % (stdoutdata))
+        
+        # The expected output is a single line containing a single numeric value:
+        # the DRMAA job-ID. If not the case, will throw an error.
+        jobId = stdoutdata
+        return jobId;
+
+

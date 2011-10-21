@@ -10,7 +10,7 @@ from galaxy.datatypes import metadata
 from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
 from galaxy.jobs.actions.post import ActionBox
-
+import subprocess, pwd
 from sqlalchemy.sql.expression import and_, or_
 
 import pkg_resources
@@ -362,6 +362,9 @@ class JobWrapper( object ):
         self.sa_session.expunge_all() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
+        if self.app.config.drmaa_external_runjob_script:
+            os.chmod(self.working_directory , 0777)
+
         # Restore parameters from the database
         job = self.get_job()
         if job.user is None and job.galaxy_session is None:
@@ -695,6 +698,16 @@ class JobWrapper( object ):
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_output_fnames() ]:
+            #change the ownership of the files in file_path directory back to galaxy user
+            if self.app.config.drmaa_external_runjob_script and self.app.config.external_chown_script:
+                galaxy_user_name = pwd.getpwuid(os.getuid())[0]
+                galaxy_group_id = str(pwd.getpwuid(os.getuid())[3])
+                p = subprocess.Popen([ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, path,galaxy_user_name,galaxy_group_id], shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                (stdoutdata, stderrdata) = p.communicate() 
+                exitcode = p.returncode
+                if exitcode != 0:
+                    ## There was an error in the child process
+                    raise RuntimeError("External_chown_script failed (exit code %s) with error %s" % (str(exitcode), stderrdata))
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
         self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
@@ -765,7 +778,7 @@ class JobWrapper( object ):
         jeha_false_path = None
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
-            self.output_dataset_paths = {}
+            output_dataset_paths = {}
             for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
                 dsp = DatasetPath( data.id, data.file_name, false_path )
@@ -895,7 +908,7 @@ class TaskWrapper(JobWrapper):
         else:
             self.prepare_input_files_cmds = None
         self.status = task.states.NEW
-
+       
     def get_job( self ):
         if self.job_id:
             return self.sa_session.query( model.Job ).get( self.job_id )
@@ -1123,7 +1136,7 @@ class DefaultJobDispatcher( object ):
 
     def __get_runner_name( self, job_wrapper ):
         if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
-            runnner_name = "tasks"
+            runner_name = "tasks"
         else:
             runner_name = ( job_wrapper.get_job_runner().split(":", 1) )[0]
         return runner_name
