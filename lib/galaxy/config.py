@@ -104,6 +104,10 @@ class Configuration( object ):
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "" )
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "" )
+        self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None )
+        self.drmaa_external_killjob_script = kwargs.get('drmaa_external_killjob_script', None)
+        self.external_chown_script = kwargs.get('external_chown_script', None)
+        self.TMPDIR = kwargs.get('TMPDIR', None)
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
         self.use_memdump = string_as_bool( kwargs.get( 'use_memdump', 'False' ) )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
@@ -215,12 +219,21 @@ class Configuration( object ):
                     os.makedirs( path )
                 except Exception, e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
+        if self.drmaa_external_runjob_script:
+            os.chmod(self.new_file_path, 0777)
+            os.chmod(self.job_working_directory, 0777)
+            os.chmod(self.cluster_files_directory, 0777)
+        else:
+            os.chmod(self.new_file_path, 0755)
+            os.chmod(self.job_working_directory, 0755)
+            os.chmod(self.cluster_files_directory, 0755)
+
         # Check that required files exist
         for path in self.tool_configs:
             if not os.path.isfile(path):
                 raise ConfigurationError("File not found: %s" % path )
         if not os.path.isfile( self.datatypes_config ):
-            raise ConfigurationError("File not found: %s" % path )
+            raise ConfigurationError("File not found: %s" % self.datatypes_config )
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
