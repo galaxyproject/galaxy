@@ -10,6 +10,13 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
+%if webapp == 'galaxy':
+    <br/><br/>
+    <ul class="manage-table-actions">
+        <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_repositories', webapp=webapp )}">Browse valid repositories</a></li>
+    </ul>
+%endif
+
 %if message:
     ${render_msg( message, status )}
 %endif
