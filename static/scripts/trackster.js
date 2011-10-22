@@ -608,7 +608,7 @@ extend(Drawable.prototype, {
     request_draw: function() {},
     _draw: function() {},
     to_json: function() {},
-    make_name_popup_menu: function() {},
+    update_track_icons: function() {},
     /**
      * Set drawable name.
      */ 
@@ -750,14 +750,14 @@ var DrawableGroup = function(name, view, container, prefs) {
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
     
-    this.make_name_popup_menu();
+    this.update_track_icons();
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
     /**
      * Make popup menu for group.
      */
-    make_name_popup_menu: function() {
+    update_track_icons: function() {
         var group = this;
         
         var group_dropdown = {};
@@ -2254,18 +2254,133 @@ var Track = function(name, view, container, prefs, data_url, data_query_wait) {
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
+
+    if (!Track.id_counter) { Track.id_counter = 0; }
+    this.id = Track.id_counter++;
     
     //
     // Create HTML element structure for track.
     //
-    if (!Track.id_counter) { Track.id_counter = 0; }
-    this.container_div = $("<div />").addClass('track').attr("id", "track_" + Track.id_counter++).css("position", "relative");
+    this.container_div = $("<div />").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
+    
+    // Create and initialize track header and icons. Only non-hidden tracks have headers.
     if (!this.hidden) {
         this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
         if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(this.header_div); }
-        this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
-        this.name_div.text(this.name);
-        this.name_div.attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
+        this.name_div = $("<div/>").addClass("track-name").appendTo(this.header_div).text(this.name)
+                        .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
+        this.icons_div = $("<div/>").css("float", "left").appendTo(this.header_div).hide();
+    
+        // Track icons.
+        this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
+                                      .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
+                                      .appendTo(this.icons_div);
+        this.filters_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Filters")
+                                     .addClass("icon-button filters-icon").tipsy( {gravity: 's'} )
+                                     .appendTo(this.icons_div).hide();
+        this.tools_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Tools")
+                                   .addClass("icon-button tools-icon").tipsy( {gravity: 's'} )
+                                   .appendTo(this.icons_div).hide();
+        this.remove_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Remove")
+                                    .addClass("icon-button remove-icon").tipsy( {gravity: 's'} )
+                                    .appendTo(this.icons_div);
+        var track = this;
+            
+        // Suppress double clicks in header so that they do not impact viz.
+        this.header_div.dblclick( function(e) { e.stopPropagation(); } );
+        
+        // Clicking on settings icon opens track config.
+        this.settings_icon.click( function() {
+            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+                ok_fn = function() { 
+                    track.config.update_from_form( $(".dialog-box") );
+                    hide_modal(); 
+                    $(window).unbind("keypress.check_enter_esc"); 
+                },
+                check_enter_esc = function(e) {
+                    if ((e.keyCode || e.which) === 27) { // Escape key
+                        cancel_fn();
+                    } else if ((e.keyCode || e.which) === 13) { // Enter key
+                        ok_fn();
+                    }
+                };
+
+            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
+            show_modal("Configure Track", track.config.build_form(), {
+                "Cancel": cancel_fn,
+                "OK": ok_fn
+            });
+        });
+        
+        // FIXME: old code for overview.
+        /*
+        track_dropdown[(this.is_overview ? "Hide overview" : "Set as overview")] = function() {
+            if (track.is_overview) {
+                track.view.reset_overview();
+            }
+            else {
+                track.view.set_overview(track);
+            }
+        };
+        */
+        
+        this.filters_icon.click( function() {
+            // TODO: update tipsy text.            
+            track.filters_div.toggle();
+            track.filters_manager.reset_filters();
+        });
+        
+        this.tools_icon.click( function() {
+            // TODO: update tipsy text.
+            
+            track.dynamic_tool_div.toggle();
+            
+            // Update track name.
+            if (track.dynamic_tool_div.is(":visible")) {
+                track.set_name(track.name + track.tool_region_and_parameters_str());
+            }
+            else {
+                track.revert_name();
+            }
+            // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
+            $(".tipsy").remove();
+        });
+        
+        // Clicking on remove icon removes track.
+        this.remove_icon.click( function() {
+            // Tipsy for remove icon must be deleted when track is deleted.
+            $(".tipsy").remove();
+            track.remove();
+        });
+        
+        // Set up behavior for modes popup.
+        if (track.display_modes !== undefined) {
+            if (track.mode_div === undefined) {
+                track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
+                var init_mode = (track.config && track.config.values['mode'] ? 
+                                 track.config.values['mode'] : track.display_modes[0]);
+                track.mode = init_mode;
+                track.mode_div.text(init_mode);
+
+                var mode_mapping = {};
+                for (var i = 0, len = track.display_modes.length; i < len; i++) {
+                    var mode = track.display_modes[i];
+                    mode_mapping[mode] = function(mode) {
+                        return function() { track.change_mode(mode); };
+                    }(mode);
+                }
+                make_popupmenu(track.mode_div, mode_mapping);
+            } else {
+                track.mode_div.hide();
+            }
+
+            this.header_div.append( $("<div/>").css("clear", "both") );        
+        
+            // Set up config icon.
+        
+            // Show icons when users is hovering over track.
+            this.container_div.hover( function() { track.icons_div.show(); }, function() { track.icons_div.hide(); } );
+        }
     }
     
     //
@@ -2352,7 +2467,7 @@ extend(Track.prototype, Drawable.prototype, {
             } else if (result['status'] === "data") {
                 if (result['valid_chroms']) {
                     track.valid_chroms = result['valid_chroms'];
-                    track.make_name_popup_menu();
+                    track.update_track_icons();
                 }
                 track.content_div.text(DATA_OK);
                 if (track.view.chrom) {
@@ -2367,6 +2482,8 @@ extend(Track.prototype, Drawable.prototype, {
                 }
             }
         });
+        
+        this.update_track_icons();
     },
     /**
      * Additional initialization required before drawing track for the first time.
@@ -2405,33 +2522,7 @@ var TiledTrack = function(filters_list, tool_dict) {
     if (this.tool) {  
         this.dynamic_tool_div = this.tool.parent_div;
         this.header_div.after(this.dynamic_tool_div);
-    }    
-    
-    //
-    // Create modes control.
-    //
-    if (track.display_modes !== undefined) {
-        if (track.mode_div === undefined) {
-            track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
-            var init_mode = (track.config && track.config.values['mode'] ? 
-                             track.config.values['mode'] : track.display_modes[0]);
-            track.mode = init_mode;
-            track.mode_div.text(init_mode);
-        
-            var mode_mapping = {};
-            for (var i = 0, len = track.display_modes.length; i < len; i++) {
-                var mode = track.display_modes[i];
-                mode_mapping[mode] = function(mode) {
-                    return function() { track.change_mode(mode); };
-                }(mode);
-            }
-            make_popupmenu(track.mode_div, mode_mapping);
-        } else {
-            track.mode_div.hide();
-        }
     }
-    
-    this.make_name_popup_menu();
 };
 extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
@@ -2461,87 +2552,31 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         return track;
      },
     /**
-     * Make popup menu for track name.
+     * Update track's buttons.
      */
-    make_name_popup_menu: function() {
+    update_track_icons: function() {
         var track = this;
         
-        var track_dropdown = {};
-        
         //
-        // Make track overview option.
-        //
-        track_dropdown[(this.is_overview ? "Hide overview" : "Set as overview")] = function() {
-            if (track.is_overview) {
-                track.view.reset_overview();
-            }
-            else {
-                track.view.set_overview(track);
-            }
-        };
-        
-        //
-        // Edit config option.
-        //
-        track_dropdown["Edit configuration"] = function() {
-            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
-                ok_fn = function() { 
-                    track.config.update_from_form( $(".dialog-box") );
-                    hide_modal(); 
-                    $(window).unbind("keypress.check_enter_esc"); 
-                },
-                check_enter_esc = function(e) {
-                    if ((e.keyCode || e.which) === 27) { // Escape key
-                        cancel_fn();
-                    } else if ((e.keyCode || e.which) === 13) { // Enter key
-                        ok_fn();
-                    }
-                };
-
-            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-            show_modal("Configure Track", track.config.build_form(), {
-                "Cancel": cancel_fn,
-                "OK": ok_fn
-            });
-        };
-
-        //
-        // Show/hide filters option.
+        // Show/hide filter icon.
         //
         if (track.filters_available > 0) {
-            // Show/hide filters menu item.
-            var text = (track.filters_div.is(":visible") ? "Hide filters" : "Show filters");
-            track_dropdown[text] = function() {
-                // Toggle filtering div, reset filters, and remake menu.
-                track.filters_visible = (track.filters_div.is(":visible"));
-                if (track.filters_visible) {
-                    track.filters_manager.reset_filters();
-                }
-                track.filters_div.toggle();
-                track.make_name_popup_menu();
-            };
+            track.filters_icon.show();
+        }
+        else {
+            track.filters_icon.hide();
         }
         
         //
-        // Show/hide tool option.
+        // Show/hide tool icon.
         //
         if (track.tool) {
-            // Show/hide dynamic tool menu item.
-            var text = (track.dynamic_tool_div.is(":visible") ? "Hide tool" : "Show tool");
-            track_dropdown[text] = function() {
-                // Set track name, toggle tool div, and remake menu.
-                if (!track.dynamic_tool_div.is(":visible")) {
-                    track.set_name(track.name + track.tool_region_and_parameters_str());
-                }
-                else {
-                    menu_option_text = "Show dynamic tool";
-                    track.revert_name();
-                }
-                track.dynamic_tool_div.toggle();
-                track.make_name_popup_menu();
-            };
+            track.tools_icon.show();
         }
-                
+        else {
+            track.tools_icon.hide();
+        }
+                        
         //
         // List chrom/contigs with data option.
         //
@@ -2552,22 +2587,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             };
         }
         */
-        
-        //
-        // Remove option.
-        //
-        track_dropdown.Remove = function() {
-            track.remove();
-        };
-        
-        make_popupmenu(track.name_div, track_dropdown);
     },
     /**
      * Set track's overview status.
      */
     set_is_overview: function(is_overview) {
         this.is_overview = is_overview;
-        this.make_name_popup_menu();
+        this.update_track_icons();
     },
     /**
      * Returns a jQuery Deferred object that resolves to a Tile with track's overview.
@@ -3203,7 +3229,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 if (!track.filters_available) {
                     track.filters_div.hide();
                 }
-                track.make_name_popup_menu();
+                track.update_track_icons();
             }
         }
     },
@@ -3495,7 +3521,7 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.prefs = this.config.values;
     
     this.painter = painters.ReadPainter;
-    this.make_name_popup_menu();
+    this.update_track_icons();
 };
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 

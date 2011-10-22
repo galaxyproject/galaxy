@@ -42,10 +42,9 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic", "jquery.tipsy" )}
 
 <script type="text/javascript">
-
     //
     // Place URLs here so that url_for can be used to generate them.
     // 
@@ -113,6 +112,9 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     };
     
     $(function() {
+        // Manual tipsy config because default gravity is S and cannot be changed.
+        $(".menu-button").tipsy( {gravity: 'n'} );
+        
         // Hide bookmarks by default right now.
         parent.force_right_panel("hide"); 
         
@@ -172,59 +174,61 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             %endif
             
             //
-            // Make actions menu.
+            // Initialize icons.
             //
-            $("#viz-actions-button").css( "position", "relative" );
-            make_popupmenu( $("#viz-actions-button"), {
-                "Add Tracks": add_tracks,
-                "Add Group": function() {
-                    var group = new DrawableGroup("New Group", view, view);
-                    view.add_drawable(group);
-                },
-                "Save": function() {
-                    // Show saving dialog box
-                    show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
-                                        
-                    // Save bookmarks.
-                    var bookmarks = [];
-                    $(".bookmark").each(function() { 
-                        bookmarks[bookmarks.length] = {
-                            position: $(this).children(".position").text(),
-                            annotation: $(this).children(".annotation").text()
-                        };
-                    });
-
-                    var overview_track_name = (view.overview_track ? view.overview_track.name : null);
-                    var payload = { 
-                        'view': view.to_json(), 
-                        'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
-                        'bookmarks': bookmarks
-                    };
-
-                    $.ajax({
-                        url: "${h.url_for( action='save' )}",
-                        type: "POST",
-                        data: {
-                            'vis_id': view.vis_id,
-                            'vis_title': view.title,
-                            'dbkey': view.dbkey,
-                            'payload': JSON.stringify(payload)
-                        },
-                        success: function(vis_id) {
-                            view.vis_id = vis_id;
-                            view.has_changes = false;
-                            hide_modal();
-                        },
-                        error: function() { alert("Could not save visualization"); }
-                    });
-                },
-                "Bookmarks": function() {
-                    // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                    parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show")); 
-                },
-                "Close": function() { window.location = "${h.url_for( controller='visualization', action='list' )}"; }
+            $("#add-tracks-icon").click( function() { add_tracks(); } );
+            
+            $("#add-group-icon").click( function() {
+                view.add_drawable( new DrawableGroup("New Group", view, view) );                
             });
             
+            $("#save-icon").click( function() {                
+                // Show saving dialog box
+                show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
+                                    
+                // Save bookmarks.
+                var bookmarks = [];
+                $(".bookmark").each(function() { 
+                    bookmarks[bookmarks.length] = {
+                        position: $(this).children(".position").text(),
+                        annotation: $(this).children(".annotation").text()
+                    };
+                });
+
+                var overview_track_name = (view.overview_track ? view.overview_track.name : null);
+                var payload = { 
+                    'view': view.to_json(), 
+                    'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
+                    'bookmarks': bookmarks
+                };
+
+                $.ajax({
+                    url: "${h.url_for( action='save' )}",
+                    type: "POST",
+                    data: {
+                        'vis_id': view.vis_id,
+                        'vis_title': view.title,
+                        'dbkey': view.dbkey,
+                        'payload': JSON.stringify(payload)
+                    },
+                    success: function(vis_id) {
+                        view.vis_id = vis_id;
+                        view.has_changes = false;
+                        hide_modal();
+                    },
+                    error: function() { alert("Could not save visualization"); }
+                });
+            });
+            
+            $("#bookmarks-icon").click( function() {
+                // HACK -- use style to determine if panel is hidden and hide/show accordingly.
+                parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));                 
+            });
+
+            $("#close-icon").click( function() {
+                window.location = "${h.url_for( controller='visualization', action='list' )}";
+            });  
+        
             $("#add-bookmark-button").click(function() {
                 // Add new bookmark.
                 var position = view.chrom + ":" + view.low + "-" + view.high,
@@ -245,9 +249,14 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     <div class="unified-panel-header-inner">
         <div style="float:left;" id="title"></div>
         <div style="float: right">
-            <a id="viz-actions-button" class='panel-header-button popup' href="javascript:void(0)" target="galaxy_main">${_('Actions')}</a>
+            <a id="add-tracks-icon" class='icon-button menu-button' href="javascript:void(0);" title="Add tracks"></a>
+            <a id="add-group-icon" class='icon-button menu-button' href="javascript:void(0);" title="Add new group"></a>
+            <a id="bookmarks-icon" class='icon-button menu-button' href="javascript:void(0);" title="Bookmarks"></a>
+            <a id="save-icon" class='icon-button menu-button' href="javascript:void(0);" title="Save"></a>
+            <a id="close-icon" class='icon-button menu-button' href="javascript:void(0);" title="Close"></a>
         </div>
     </div>
+    <div style="clear: both"></div>
 </div>
 <div id="browser-container" class="unified-panel-body"></div>
 

@@ -130,7 +130,7 @@
 .group-handle {
     cursor: move;
     float: left;
-    background: #eee url('/static/images/tracks/block.png');
+    background: #eee url('../images/tracks/block.png');
     width: 12px;
     height: 12px;
 }
@@ -159,8 +159,14 @@
     text-align: center;
     border-top: 1px solid #eee;
     border-bottom: 2px solid #eee;
-    background: #eee url('/static/images/tracks/diag_bg.gif');
+    background: #eee url('../images/tracks/diag_bg.gif');
     min-height: 16px;
+}
+
+.track-name {
+    float: left;
+    margin-top: 2px;
+    height: 16px;
 }
 
 .label-track .track-content {
@@ -288,6 +294,63 @@ input {
     font-weight: bold;
     padding-top: 0.2em;
 }
+.menu-button {
+    padding: 0px 4px 0px 4px;
+}
+.settings-icon {
+    background: transparent url(../images/fugue/gear-bw.png) no-repeat;
+}
+.settings-icon:hover {
+    background: transparent url(../images/fugue/gear.png) no-repeat;
+}
+.tools-icon {
+    background: transparent url(../images/fugue/toolbox-bw.png) no-repeat;
+}
+.tools-icon:hover {
+    background: transparent url(../images/fugue/toolbox.png) no-repeat;
+}
+.filters-icon {
+    background: transparent url(../images/fugue/ui-slider-050-bw.png) no-repeat;
+}
+.filters-icon:hover {
+    background: transparent url(../images/fugue/ui-slider-050.png) no-repeat;
+}
+.remove-icon {
+    background: transparent url(../images/fugue/cross-small-bw.png) no-repeat;
+}
+.remove-icon:hover {
+    background: transparent url(../images/fugue/cross-circle.png) no-repeat;
+}
+#close-icon {
+    background: transparent url(../images/fugue/cross-circle-bw.png) no-repeat;margin-right:0px;
+}
+#close-icon:hover {
+    background: transparent url(../images/fugue/cross-circle.png) no-repeat;
+}
+#add-tracks-icon {
+    background: transparent url(../images/fugue/plus-button-bw.png) no-repeat;
+}
+#add-tracks-icon:hover {
+    background: transparent url(../images/fugue/plus-button.png) no-repeat;
+}
+#add-group-icon {
+    background: transparent url(../images/fugue/block--plus-bw.png) no-repeat;
+}
+#add-group-icon:hover {
+    background: transparent url(../images/fugue/block--plus.png) no-repeat;
+}
+#bookmarks-icon {
+    background: transparent url(../images/fugue/bookmarks-bw.png) no-repeat;
+}
+#bookmarks-icon:hover {
+    background: transparent url(../images/fugue/bookmarks.png) no-repeat;
+}
+#save-icon {
+    background: transparent url(../images/fugue/disk--arrow-bw.png) no-repeat;
+}
+#save-icon:hover {
+    background: transparent url(../images/fugue/disk--arrow.png) no-repeat;
+}
 .child-track-icon {
     background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;
     width: 30px;
@@ -317,7 +380,6 @@ input {
 .delete-icon-container {
     float:right;
 }
-
 .icon {
     display:inline-block;
     width:16px;
