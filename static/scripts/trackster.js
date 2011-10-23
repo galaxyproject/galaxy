@@ -463,7 +463,7 @@ extend(DataManager.prototype, Cache.prototype, {
         // data is ready, it then replaces itself with the actual data
         entry = this.load_data(low, high, mode, resolution, extra_params);
         this.set_data(low, high, mode, entry);
-        return entry
+        return entry;
     },
     /** "Deep" data request; used as a parameter for DataManager.get_more_data() */
     DEEP_DATA_REQ: "deep",
@@ -2935,7 +2935,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             tile_length = DENSITY * resolution;
         
         if (w_scale > this.view.canvas_manager.char_width_px) {
-            if (seq === null) {
+            if (seq.data === null) {
                 track.content_div.css("height", "0px");
                 return;
             }
