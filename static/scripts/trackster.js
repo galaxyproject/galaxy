@@ -589,7 +589,6 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
     this.name = name;
     this.view = view;
     this.container = container;
-    this.drag_handle_class = drag_handle_class;
     this.config = new DrawableConfig({
         track: this,
         params: [ 
@@ -601,6 +600,8 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
         }
     });
     this.prefs = this.config.values;
+    this.drag_handle_class = drag_handle_class;
+    this.is_overview = false;
 };
 
 extend(Drawable.prototype, {
@@ -852,7 +853,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         // Overview (scrollbar and overview plot) at bottom
         this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
-        this.overview_close = $("<a href='javascript:void(0);'>Close Overview</a>").addClass("overview-close").hide().appendTo(this.overview_viewport);
+        this.overview_close = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Close overview").addClass("icon-button overview-close tooltip").hide().appendTo(this.overview_viewport);
         this.overview_highlight = $("<div/>").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
         this.overview_box_background = $("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport);
         this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
@@ -1195,13 +1196,14 @@ extend( View.prototype, DrawableCollection.prototype, {
     /**
      * Request that view redraw some or all tracks. If a track is not specificied, redraw all tracks.
      */
+    // FIXME: change method call so that track is first and additional parameters are optional.
     request_redraw: function(nodraw, force, clear_after, track) {
         var 
             view = this,
-            // Either redrawing a single track or all view's tracks.
+            // Either redrawing a single drawable or all view's drawables.
             track_list = (track ? [track] : view.drawables),
             track_index;
-        
+            
         // Add/update tracks in track list to redraw list.
         var track;
         for (var i = 0; i < track_list.length; i++) {
@@ -1318,42 +1320,44 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.nav_container.width( this.container.width() );
         this.request_redraw();
     },
-    /** Show a track in the overview. */
-    set_overview: function(track) {
-        // Get data and draw tile.
-        $.when(track.get_overview_tile()).then(function(tile) {
-            // Update UI.
-            view.overview_viewport.find(".track-tile").remove();
-            view.overview_close.show();
-            view.overview_viewport.append(tile.canvas);
-            view.overview_highlight.show().height(tile.canvas.height());
-            view.overview_viewport.height(tile.canvas.height() + view.overview_box.outerHeight());
-            view.resize_window();
-            
-            // Update view, track states.
-            if (view.overview_track) {
-                view.overview_track.set_is_overview(false);
+    /** Show a Drawable in the overview. */
+    set_overview: function(drawable) {
+        if (this.overview_drawable) {
+            // If drawable to be set as overview is already in overview, do nothing.
+            // Otherwise, remove overview.
+            if (this.overview_drawable.dataset_id === drawable.dataset_id) {
+                return;
             }
-            view.overview_track = track;
-            track.set_is_overview(true);
-        });
+            this.overview_viewport.find(".track").remove();
+        }
+        
+        // Set new overview.
+        var 
+            overview_drawable = drawable.copy( { content_div: this.overview_viewport } ),
+            view = this;
+        overview_drawable.header_div.hide();
+        overview_drawable.is_overview = true;
+        view.overview_drawable = overview_drawable;
+        this.overview_drawable.postdraw_actions = function() {
+            view.overview_highlight.show().height(view.overview_drawable.content_div.height());
+            view.overview_viewport.height(view.overview_drawable.content_div.height() + view.overview_box.outerHeight());
+            view.overview_close.show();
+            view.resize_window();
+        };
+        this.overview_drawable.init();
         view.has_changes = true;
     },
     /** Close and reset overview. */
     reset_overview: function() {
         // Update UI.
+        $(".tipsy").remove();
         this.overview_viewport.find(".track-tile").remove();
         this.overview_viewport.height(this.default_overview_height);
         this.overview_box.height(this.default_overview_height);
         this.overview_close.hide();
         this.overview_highlight.hide();
         view.resize_window();
-        
-        // Update view, track states.
-        if (view.overview_track) {
-            view.overview_track.set_is_overview(false);
-        }
-        view.overview_track = null;
+        view.overview_drawable = null;
     }
 });
 
@@ -2243,7 +2247,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
  * -------> ToolDataFeatureTrack
  * -------> VcfTrack
  */
-var Track = function(name, view, container, prefs, data_url, data_query_wait) {
+var Track = function(name, view, container, show_header, prefs, data_url, data_query_wait) {
     // For now, track's container is always view.
     Drawable.call(this, name, view, container, {}, "draghandle");
     
@@ -2263,8 +2267,8 @@ var Track = function(name, view, container, prefs, data_url, data_query_wait) {
     //
     this.container_div = $("<div />").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
     
-    // Create and initialize track header and icons. Only non-hidden tracks have headers.
-    if (!this.hidden) {
+    // Create and initialize track header and icons.
+    if (show_header) {
         this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
         if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(this.header_div); }
         this.name_div = $("<div/>").addClass("track-name").appendTo(this.header_div).text(this.name)
@@ -2274,6 +2278,9 @@ var Track = function(name, view, container, prefs, data_url, data_query_wait) {
         // Track icons.
         this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
                                       .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
+                                      .appendTo(this.icons_div);
+        this.overview_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set as overview")
+                                      .addClass("icon-button overview-icon").tipsy( {gravity: 's'} )
                                       .appendTo(this.icons_div);
         this.filters_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Filters")
                                      .addClass("icon-button filters-icon").tipsy( {gravity: 's'} )
@@ -2312,18 +2319,10 @@ var Track = function(name, view, container, prefs, data_url, data_query_wait) {
             });
         });
         
-        // FIXME: old code for overview.
-        /*
-        track_dropdown[(this.is_overview ? "Hide overview" : "Set as overview")] = function() {
-            if (track.is_overview) {
-                track.view.reset_overview();
-            }
-            else {
-                track.view.set_overview(track);
-            }
-        };
-        */
-        
+        this.overview_icon.click( function() {
+            track.view.set_overview(track);
+        });
+                
         this.filters_icon.click( function() {
             // TODO: update tipsy text.            
             track.filters_div.toggle();
@@ -2488,7 +2487,7 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {},
+    predraw_init: function() {}
 });
 
 var TiledTrack = function(filters_list, tool_dict) {
@@ -2504,27 +2503,32 @@ var TiledTrack = function(filters_list, tool_dict) {
     this.filters_available = false;
     this.filters_visible = false;
     this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(this, tool_dict) : undefined);
-    this.is_overview = false;
     
-    if (track.hidden) { return; }
+    if (this.header_div) {
+        //
+        // Create filters div.
+        //
+        if (this.filters_manager) {
+            this.filters_div = this.filters_manager.parent_div
+            this.header_div.after(this.filters_div);
+        }
         
-    //
-    // Create filters div.
-    //
-    if (this.filters_manager) {
-        this.filters_div = this.filters_manager.parent_div
-        this.header_div.after(this.filters_div);
-    }
-        
-    //
-    // Create dynamic tool div.
-    //
-    if (this.tool) {  
-        this.dynamic_tool_div = this.tool.parent_div;
-        this.header_div.after(this.dynamic_tool_div);
+        //
+        // Create dynamic tool div.
+        //
+        if (this.tool) {  
+            this.dynamic_tool_div = this.tool.parent_div;
+            this.header_div.after(this.dynamic_tool_div);
+        }
     }
 };
 extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
+    /**
+     * Returns a copy of the track.
+     */
+    copy: function(container) {        
+        return new this.constructor(this.name, this.view, container, this.hda_ldda, this.dataset_id, this.prefs, this.filters, this.tool);
+    },
     /**
      * Convert track to JSON object.
      */
@@ -2589,52 +2593,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         */
     },
     /**
-     * Set track's overview status.
-     */
-    set_is_overview: function(is_overview) {
-        this.is_overview = is_overview;
-        this.update_track_icons();
-    },
-    /**
-     * Returns a jQuery Deferred object that resolves to a Tile with track's overview.
-     * TODO: this should be the approach used when drawing any tile so that tile drawing is not blocking.
-     */
-    get_overview_tile: function() {
-        var 
-            track = this;
-            view = track.view,
-            resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) )),
-            view_width = view.container.width(),
-            // w_scale units are pixels per base.
-            w_scale =  view_width / (view.max_high - view.max_low),
-            overview_tile = $.Deferred();
-        $.when(track.data_manager.get_data(view.max_low, view.max_high, "Auto", resolution, track.data_url_extra_params)).then(function(overview_data) {
-            var 
-                key = track._gen_tile_cache_key(view_width, w_scale, 0),
-                tile = track.tile_cache.get(key);
-                
-            // Draw tile if necessary.
-            if (!tile) {
-                tile = track.draw_tile(overview_data, "Auto", resolution, 0, w_scale);
-                track.tile_cache.set(key, tile);                
-            }
-            
-            // Always copy tile because it may need to be used in viz.
-            var 
-                src_canvas = $(tile.canvas.find("canvas")),
-                new_canvas = src_canvas.clone(), 
-                src_ctx = src_canvas.get(0).getContext("2d"),
-                tgt_ctx = new_canvas.get(0).getContext("2d"),
-                data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
-            // Need to undo offsets when placing image data.
-            tgt_ctx.putImageData(data, -track.left_offset, (tile.data.dataset_type === "summary_tree" ? SUMMARY_TREE_TOP_PADDING : 0));
-            new_tile = new Tile(track, -1, resolution, new_canvas);
-            overview_tile.resolve(new_tile);
-        });
-        
-        return overview_tile;
-    },
-    /**
      * Generate a key for the tile cache.
      * TODO: create a TileCache object (like DataCache) and generate key internally.
      */
@@ -2667,6 +2625,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             w_scale = width / range,
             resolution = this.view.resolution,
             parent_element = $("<div style='position: relative;'></div>");
+            
+        // For overview, adjust high, low, resolution, and w_scale.
+        if (this.is_overview) {
+            low = this.view.max_low;
+            high = this.view.max_high;
+            resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) ));
+            w_scale = width / (view.max_high - view.max_low);
+        }
         
         if (!clear_after) { this.content_div.children().remove(); }
         this.content_div.append( parent_element );
@@ -2777,7 +2743,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
          
         // Can't draw now, so trigger another redraw when the data is ready
         $.when( tile_data, seq_data ).then( function() {
-            view.request_redraw();
+            view.request_redraw(false, false, false, track);
         });
         
         // Indicate to caller that this tile could not be drawn
@@ -2837,8 +2803,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         tile.predisplay_actions();
       
         // Position tile element, recalculate left position at display time
-        var range = this.view.high - this.view.low,
-            left = (tile.low - this.view.low) * w_scale;
+        var left = ( tile.low - (this.is_overview? this.view.max_low : this.view.low) ) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
         }
@@ -2875,8 +2840,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 });
 
 var LabelTrack = function (view, container) {
-    this.hidden = true;
-    Track.call(this, "label", view, container, {} );
+    Track.call(this, "label", view, container, false, {} );
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
@@ -2906,8 +2870,7 @@ extend(LabelTrack.prototype, Track.prototype, {
 });
 
 var ReferenceTrack = function (view) {
-    this.hidden = true;
-    Track.call(this, "reference", view, { content_div: view.top_labeltrack }, {});
+    Track.call(this, "reference", view, { content_div: view.top_labeltrack }, false, {});
     TiledTrack.call(this);
     
     view.reference_track = this;
@@ -3109,7 +3072,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     //
     
     // FIXME: cleaner init needed; should just be able to call TiledTrack()
-    Track.call(this, name, view, container, prefs);
+    Track.call(this, name, view, container, true, prefs);
     TiledTrack.call(this, filters, tool);
 
     // Define and restore track configuration.
@@ -3371,9 +3334,12 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         if (mode === "Auto") {
             if (result.dataset_type === "summary_tree") {
                 mode = result.dataset_type;
-            } else if (result.extra_info === "no_detail") {
+            } 
+            // HACK: use no_detail mode track is in overview to prevent overview from being too large.
+            else if (result.extra_info === "no_detail" || track.is_overview) {
                 mode = "no_detail";
-            } else {
+            } 
+            else {
                 // Choose b/t Squish and Pack.
                 // Proxy measures for using Squish: 
                 // (a) error message re: limiting number of features shown; 

@@ -7,14 +7,16 @@
 #zoom-in,#zoom-out{display:inline-block;height:16px;width:16px;margin-bottom:-3px;cursor:pointer;}
 #zoom-out{background:transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat;}
 #zoom-in{margin-left:10px;background:transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat;}
+.overview-icon{background:transparent url(../images/fugue/application-dock-270-bw.png) no-repeat;}
+.overview-icon:hover{background:transparent url(../images/fugue/application-dock-270.png) no-repeat;}
 .settings-icon{background:transparent url(../images/fugue/gear-bw.png) no-repeat;}
 .settings-icon:hover{background:transparent url(../images/fugue/gear.png) no-repeat;}
 .tools-icon{background:transparent url(../images/fugue/toolbox-bw.png) no-repeat;}
 .tools-icon:hover{background:transparent url(../images/fugue/toolbox.png) no-repeat;}
 .filters-icon{background:transparent url(../images/fugue/ui-slider-050-bw.png) no-repeat;}
 .filters-icon:hover{background:transparent url(../images/fugue/ui-slider-050.png) no-repeat;}
-.remove-icon{background:transparent url(../images/fugue/cross-small-bw.png) no-repeat;}
-.remove-icon:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
+.remove-icon,.overview-close{background:transparent url(../images/fugue/cross-small-bw.png) no-repeat;}
+.remove-icon:hover,.overview-close:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
 #close-icon{background:transparent url(../images/fugue/cross-circle-bw.png) no-repeat;margin-right:0px;}
 #close-icon:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
 #add-tracks-icon{background:transparent url(../images/fugue/plus-button-bw.png) no-repeat;}
