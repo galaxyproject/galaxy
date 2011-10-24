@@ -159,9 +159,9 @@
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
         </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
-          <!--<options from_data_table="picard_indexes">
-            <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
-          </options>-->
+          <options from_data_table="picard_indexes">
+            <!-- <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/> -->
+          </options>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
