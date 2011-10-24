@@ -37,7 +37,6 @@ var requestAnimationFrame = (function(){
             };
 })();
 
-
 /**
  * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
  * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
@@ -74,12 +73,81 @@ var compute_overlap = function(first_region, second_region) {
     
     return overlap;
 };
+
 /**
  * Returns true if regions overlap.
  */
 var is_overlap = function(first_region, second_region) {
     var overlap = compute_overlap(first_region, second_region);
     return (overlap !== BEFORE && overlap !== AFTER);
+};
+
+/**
+ * Returns a random color in hexadecimal format that is sufficiently different from a single color
+ * or set of colors.
+ * @param colors a color or list of colors in the format '#RRGGBB'
+ */
+var get_random_color = function(colors) {
+    // Default for colors is white.
+    if (!colors) { colors = "#ffffff" };
+    
+    // If needed, create list of colors.
+    if ( typeof(colors) === "string" ) {
+        colors = [ colors ];
+    }
+    
+    // Convert colors to numbers.
+    for (var i = 0; i < colors.length; i++) {
+        colors[i] = parseInt( colors[i].slice(1), 16 );
+    }
+    
+    // -- Perceived brightness and difference formulas are from 
+    // -- http://www.w3.org/WAI/ER/WD-AERT/#color-contrast
+    
+    // Compute perceived color brightness (based on RGB-YIQ transformation):
+    var brightness = function(r, g, b) {
+        return ( (r * 299) + (g * 587) + (b * 114) ) / 1000;
+    };
+    
+    // Compute color difference:
+    var difference = function(r1, g1, b1, r2, g2, b2) {
+        return ( Math.max(r1, r2) - Math.min(r1, r2) ) + 
+               ( Math.max(g1, g2) - Math.min(g1, g2) ) + 
+               ( Math.max(b1, b2) - Math.min(b1, b2) );
+    };
+    
+    // Create new random color.
+    var new_color, nr, ng, nb,
+        other_color, or, og, ob,
+        n_brightness, o_brightness,
+        diff, ok = false;
+    do {
+        // New color is never white b/c random in [0,1)
+        new_color = Math.random() * 0xffffff;
+        nr = new_color | 0xff0000;
+        ng = new_color | 0x00ff00;
+        nb = new_color | 0x0000ff;
+        n_brightness = brightness(nr, ng, nb);
+        ok = true;
+        for (var i = 0; i < colors.length; i++) {
+            other_color = colors[i];
+            or = other_color | 0xff0000;
+            og = other_color | 0x00ff00;
+            ob = other_color | 0x0000ff;
+            o_brightness = brightness(or, og, ob);
+            diff = difference(nr, ng, nb, or, og, ob);
+            // Thresholds for brightness difference and color difference
+            // are from W3C link above.
+            if ( ( Math.abs(n_brightness - o_brightness) < 125 ) ||
+                 ( diff < 500 ) ) {
+                ok = false;
+                break;         
+            }
+        }
+    } while (!ok);
+    
+    // Add 0x1000000 to left pad number with 0s.
+    return '#' + ( 0x1000000 + new_color ).toString(16).substr(1,6);
 };
 
 // Encapsulate -- anything to be availabe outside this block is added to exports
@@ -2941,7 +3009,7 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
-            { key: 'color', label: 'Color', type: 'color', default_value: 'black' },
+            { key: 'color', label: 'Color', type: 'color', default_value: get_random_color() },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -3080,7 +3148,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -3470,7 +3538,7 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
