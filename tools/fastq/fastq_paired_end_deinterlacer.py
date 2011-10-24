@@ -21,11 +21,13 @@ def main():
     i = None
     skip_count = 0
     found = {}
-    for i, mate1 in enumerate( fastqReader( open( input_filename, 'rb' ), format = type ) ):
+    for i, read in enumerate( fastqReader( open( input_filename, 'rb' ), format = type ) ):
      
-        if mate1.identifier in found:
-            del found[mate1.identifier]
+        if read.identifier in found:
+            del found[read.identifier]
             continue
+
+        mate1 = input.get( read.identifier )
 
         mate2 = input.get( joiner.get_paired_identifier( mate1 ) )
 
