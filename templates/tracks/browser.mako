@@ -212,10 +212,14 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                         'dbkey': view.dbkey,
                         'payload': JSON.stringify(payload)
                     },
-                    success: function(vis_id) {
-                        view.vis_id = vis_id;
-                        view.has_changes = false;
+                    dataType: "json",
+                    success: function(vis_info) {
                         hide_modal();
+                        view.vis_id = vis_info.vis_id;
+                        view.has_changes = false;
+                        
+                        // Needed to set URL when first saving a visualization.
+                        window.history.pushState({}, "", vis_info.url);
                     },
                     error: function() { alert("Could not save visualization"); }
                 });
