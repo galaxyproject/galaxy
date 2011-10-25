@@ -152,9 +152,9 @@
           <param name="input_variants" type="data" format="vcf" label="Variant file to recalibrate" />
         </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
-          <!-- <options from_data_table="picard_indexes">
-            <filter type="data_meta" key="dbkey" ref="variants[0].input_variants" column="dbkey"/>
-          </options> -->
+          <options from_data_table="picard_indexes">
+          <!--  <filter type="data_meta" key="dbkey" ref="variants[0].input_variants" column="dbkey"/> -->
+          </options>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
