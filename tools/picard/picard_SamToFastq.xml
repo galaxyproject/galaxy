@@ -1,0 +1,157 @@
+<tool id="picard_SamToFastq" name="SAM to FASTQ" version="0.0.1">
+  <description>creates a FASTQ file</description>
+  <requirements><requirement type="package">picard</requirement></requirements>
+  <command>java -XX:DefaultMaxRAMFraction=1 -XX:+UseParallelGC
+    -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/SamToFastq.jar"
+    INPUT="${input_sam}"
+    RE_REVERSE=${re_reverse}
+    INCLUDE_NON_PF_READS=${include_non_pf_reads}
+    #if str( $clipping_attribute ):
+        CLIPPING_ATTRIBUTE="${clipping_attribute}"
+    #end if
+    #if str( $clipping_action ):
+        CLIPPING_ACTION="${clipping_action}"
+    #end if
+    #if str( $read1_trim ):
+        READ1_TRIM="${read1_trim}"
+    #end if
+    #if str( $read1_max_bases_to_write ):
+        READ1_MAX_BASES_TO_WRITE="${read1_max_bases_to_write}"
+    #end if
+    INCLUDE_NON_PRIMARY_ALIGNMENTS=${include_non_primary_alignments}
+    
+    #if str( $output_per_read_group_selector ) == 'per_sam_file':
+        ##OUTPUT_PER_RG=false
+        FASTQ="${output_fastq1}"
+        
+        #if str( $single_paired_end_type.single_paired_end_type_selector ) == 'paired':
+            SECOND_END_FASTQ="${output_fastq2}"
+            #if str( $single_paired_end_type.read2_trim ): 
+                READ2_TRIM="${single_paired_end_type.read2_trim}"
+            #end if
+            #if str( $single_paired_end_type.read2_max_bases_to_write ):
+                READ2_MAX_BASES_TO_WRITE="${single_paired_end_type.read2_max_bases_to_write}"
+            #end if
+        #end if
+    #else:
+        #raise Exception( 'Per Read Group not yet supported.' )
+        OUTPUT_PER_RG=true
+        OUTPUT_DIR="./picard_sam_to_fastq_tmp_dir/"
+    #end if
+  2&gt;&amp;1 
+  || echo "Error running SamToFastq" >&amp;2
+  </command>
+  <inputs>
+    <param name="input_sam" type="data" format="sam" label="SAM file" />
+    <param name="read1_trim" type="integer" value="" optional="True" label="The number of bases to trim from the beginning of read 1." />
+    <param name="read1_max_bases_to_write" type="integer" optional="True" value="" label="The maximum number of bases to write from read 1 after trimming." />
+    <param name="output_per_read_group_selector" type="select" label="Output per read group">
+      <option value="per_sam_file" selected="True">Per SAM file</option>
+      <!-- <option value="per_read_group">Per Read Group</option> -->
+      <validator type="expression" message="Per Read Group selection is not yet implemented">value == 'per_sam_file'</validator>
+    </param>
+    <conditional name="single_paired_end_type">
+      <param name="single_paired_end_type_selector" type="select" label="Single or Paired end">
+        <option value="single" selected="True">Single</option>
+        <option value="paired">Paired end</option>
+      </param>
+      <when value="single">
+        <!-- nothing yet -->
+      </when>
+      <when value="paired">
+        <param name="read2_trim" type="integer" value="" optional="True" label="The number of bases to trim from the beginning of read 2." />
+        <param name="read2_max_bases_to_write" type="integer" optional="True" value="" label="The maximum number of bases to write from read 2 after trimming." />
+      </when>
+    </conditional>
+    <param name="re_reverse" type="boolean" truevalue="true" falsevalue="false" checked="True" label="Re-reverse bases and qualities of reads on negative strand"/>
+    <param name="include_non_pf_reads" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Include non-PF reads from the SAM file into the output FASTQ files."/>
+    <param name="clipping_attribute" type="text" value="" label="The attribute that stores the position at which the SAM record should be clipped" help="Leave blank for null" />
+    <param name="clipping_action" type="text" value="" label="The action that should be taken with clipped reads" help="'X' means the reads and qualities should be trimmed at the clipped position; 'N' means the bases should be changed to Ns in the clipped region; and any integer means that the base qualities should be set to that value in the clipped region. Leave blank for null" />
+    <param name="include_non_primary_alignments" type="boolean" truevalue="true" falsevalue="false" checked="False" label="If true, include non-primary alignments in the output." help="Support of non-primary alignments in SamToFastq is not comprehensive, so there may be exceptions if this is set to true and there are paired reads with non-primary alignments."/>
+    
+  </inputs>
+  <outputs>
+    <data format="fastqsanger" name="output_fastq1" label="${tool.name} on ${on_string}: FASTQ 1" />
+    <data format="fastqsanger" name="output_fastq2" label="${tool.name} on ${on_string}: FASTQ 2" >
+        <filter>single_paired_end_type['single_paired_end_type_selector'] == 'paired'</filter>
+    </data>
+  </outputs>
+  <tests>
+      <test>
+          <param name="input_sam" value="bfast_out1.sam" ftype="sam" />
+          <param name="output_per_read_group_selector" value="per_sam_file" />
+          <param name="single_paired_end_type_selector" value="single" />
+          <param name="read1_trim" value="" />
+          <param name="read1_max_bases_to_write" value="" />
+          <param name="re_reverse" value="True" />
+          <param name="include_non_pf_reads" value="False" />
+          <param name="clipping_action" value="" />
+          <param name="clipping_attribute" value="" />
+          <param name="include_non_primary_alignments" value="False" />
+          <output name="output_fastq1" file="random_phiX_1.fastqsanger"/> 
+      </test>
+      <test>
+          <param name="input_sam" value="bwa_wrapper_out3.sam" ftype="sam" />
+          <param name="output_per_read_group_selector" value="per_sam_file" />
+          <param name="single_paired_end_type_selector" value="paired" />
+          <param name="read1_trim" value="" />
+          <param name="read1_max_bases_to_write" value="" />
+          <param name="read2_trim" value="" />
+          <param name="read2_max_bases_to_write" value="" />
+          <param name="re_reverse" value="True" />
+          <param name="include_non_pf_reads" value="False" />
+          <param name="clipping_action" value="" />
+          <param name="clipping_attribute" value="" />
+          <param name="include_non_primary_alignments" value="False" />
+          <output name="output_fastq1" file="bwa_wrapper_in2.fastqsanger" lines_diff="64"/> <!-- 16 unaligned fastq blocks not present in original sam file -->
+          <output name="output_fastq2" file="bwa_wrapper_in3.fastqsanger" lines_diff="64"/> <!-- 16 unaligned fastq blocks not present in original sam file -->
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+Picard: SamToFastq converts SAM files to FASTQ files.
+
+Extracts read sequences and qualities from the input SAM/BAM file and writes them into the output file in Sanger fastq format. In the RC mode (default is True), if the read is aligned and the alignment is to the reverse strand on the genome, the read's sequence from input SAM file will be reverse-complemented prior to writing it to fastq in order restore correctly the original read sequence as it was generated by the sequencer.
+
+------
+
+Please cite the website "http://picard.sourceforge.net".
+
+------
+
+
+**Input formats**
+
+FastqToSam accepts SAM input files, see http://samtools.sourceforge.net for more details.
+
+------
+
+**Outputs**
+
+The output is in FASTQ format. If using Paired end data, 2 fastq files are created.
+
+-------
+
+**FastqToSam settings**
+
+This is list of SamToFastq options::
+  
+  INPUT=File	Input SAM/BAM file to extract reads from Required.
+  FASTQ=File	Output fastq file (single-end fastq or, if paired, first end of the pair fastq). Required. Cannot be used in conjuction with option(s) OUTPUT_PER_RG (OPRG)
+  SECOND_END_FASTQ=File	Output fastq file (if paired, second end of the pair fastq). Default value: null. Cannot be used in conjuction with option(s) OUTPUT_PER_RG (OPRG)
+  OUTPUT_PER_RG=Boolean	Output a fastq file per read group (two fastq files per read group if the group is paired). Default value: false. This option can be set to 'null' to clear the default value. Possible values: {true, false} Cannot be used in conjuction with option(s) SECOND_END_FASTQ (F2) FASTQ (F)
+  OUTPUT_DIR=File	Directory in which to output the fastq file(s). Used only when OUTPUT_PER_RG is true. Default value: null.
+  RE_REVERSE=Boolean	Re-reverse bases and qualities of reads with negative strand flag set before writing them to fastq Default value: true. This option can be set to 'null' to clear the default value. Possible values: {true, false}
+  INCLUDE_NON_PF_READS=Boolean	Include non-PF reads from the SAM file into the output FASTQ files. Default value: false. This option can be set to 'null' to clear the default value. Possible values: {true, false}
+  CLIPPING_ATTRIBUTE=String	The attribute that stores the position at which the SAM record should be clipped Default value: null.
+  CLIPPING_ACTION=String	The action that should be taken with clipped reads: 'X' means the reads and qualities should be trimmed at the clipped position; 'N' means the bases should be changed to Ns in the clipped region; and any integer means that the base qualities should be set to that value in the clipped region. Default value: null.
+  READ1_TRIM=Integer	The number of bases to trim from the beginning of read 1. Default value: 0. This option can be set to 'null' to clear the default value.
+  READ1_MAX_BASES_TO_WRITE=Integer	The maximum number of bases to write from read 1 after trimming. If there are fewer than this many bases left after trimming, all will be written. If this value is null then all bases left after trimming will be written. Default value: null.
+  READ2_TRIM=Integer	The number of bases to trim from the beginning of read 2. Default value: 0. This option can be set to 'null' to clear the default value.
+  READ2_MAX_BASES_TO_WRITE=Integer	The maximum number of bases to write from read 2 after trimming. If there are fewer than this many bases left after trimming, all will be written. If this value is null then all bases left after trimming will be written. Default value: null.
+  INCLUDE_NON_PRIMARY_ALIGNMENTS=Boolean	If true, include non-primary alignments in the output. Support of non-primary alignments in SamToFastq is not comprehensive, so there may be exceptions if this is set to true and there are paired reads with non-primary alignments. Default value: false. This option can be set to 'null' to clear the default value. Possible values: {true, false} 
+
+
+  </help>
+</tool>

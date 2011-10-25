@@ -1,8 +1,8 @@
-<tool name="Estimate Library Complexity" id="rgEstLibComp" version="0.01">
+<tool name="Estimate Library Complexity" id="rgEstLibComp" version="0.01.1">
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --minid "$minIDbases"
    --maxdiff "$maxDiff" --minmeanq "$minMeanQ" --readregex "$readRegex" --optdupdist "$optDupeDist"
-   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/EstimateLibraryComplexity.jar" -d "$html_file.files_path" -t "$html_file"
+   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/EstimateLibraryComplexity.jar" -d "$html_file.files_path" -t "$html_file"
   </command>
   <inputs>
     <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset"

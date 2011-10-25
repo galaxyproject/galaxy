@@ -1,4 +1,4 @@
-<tool name="Mark Duplicates" id="picard_MarkDuplicates" version="0.01">
+<tool name="Mark Duplicates" id="picard_MarkDuplicates" version="0.01.1">
   <command interpreter="python">
     picard_wrapper.py
       --input="$input_file"
@@ -20,7 +20,7 @@
           --output-sam=$outFileBamMarked
         #end if
       #end if
-      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/"
+      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/"
       --picard-cmd="MarkDuplicates"
   </command>
   <inputs>

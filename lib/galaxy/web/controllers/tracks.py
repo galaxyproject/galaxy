@@ -646,7 +646,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
 
         # TODO: unpack and validate bookmarks:
         def unpack_bookmarks( bookmarks_json ):
-            return 
+            return bookmarks_json
         
         # Unpack and validate view content.
         view_content = unpack_collection( decoded_payload[ 'view' ] )

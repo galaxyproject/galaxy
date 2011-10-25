@@ -295,6 +295,9 @@
     <tool file="fastx_toolkit/fastx_trimmer.xml" />
   </section>
   <section name="NGS: Picard (beta)" id="picard_beta">
+    <label text="Conversion" id="picard_conversion"/>
+    <tool file="picard/picard_FastqToSam.xml" />
+    <tool file="picard/picard_SamToFastq.xml" />
     
     <label text="QC/Metrics for sam/bam" id="qcsambam"/>
     <tool file="picard/picard_BamIndexStats.xml" />
@@ -389,7 +392,6 @@
     <tool file="gatk/variant_annotator.xml" />
     
     <label text="Filtration" id="gatk_filtration" />
-    <tool file="gatk/variant_filtration.xml" />
     <tool file="gatk/variant_filtration.xml" />
     
     <label text="Variant Quality Score Recalibration" id="gatk_variant_quality_score_recalibration" />

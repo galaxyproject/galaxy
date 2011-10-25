@@ -37,7 +37,6 @@ var requestAnimationFrame = (function(){
             };
 })();
 
-
 /**
  * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
  * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
@@ -74,12 +73,81 @@ var compute_overlap = function(first_region, second_region) {
     
     return overlap;
 };
+
 /**
  * Returns true if regions overlap.
  */
 var is_overlap = function(first_region, second_region) {
     var overlap = compute_overlap(first_region, second_region);
     return (overlap !== BEFORE && overlap !== AFTER);
+};
+
+/**
+ * Returns a random color in hexadecimal format that is sufficiently different from a single color
+ * or set of colors.
+ * @param colors a color or list of colors in the format '#RRGGBB'
+ */
+var get_random_color = function(colors) {
+    // Default for colors is white.
+    if (!colors) { colors = "#ffffff" };
+    
+    // If needed, create list of colors.
+    if ( typeof(colors) === "string" ) {
+        colors = [ colors ];
+    }
+    
+    // Convert colors to numbers.
+    for (var i = 0; i < colors.length; i++) {
+        colors[i] = parseInt( colors[i].slice(1), 16 );
+    }
+    
+    // -- Perceived brightness and difference formulas are from 
+    // -- http://www.w3.org/WAI/ER/WD-AERT/#color-contrast
+    
+    // Compute perceived color brightness (based on RGB-YIQ transformation):
+    var brightness = function(r, g, b) {
+        return ( (r * 299) + (g * 587) + (b * 114) ) / 1000;
+    };
+    
+    // Compute color difference:
+    var difference = function(r1, g1, b1, r2, g2, b2) {
+        return ( Math.max(r1, r2) - Math.min(r1, r2) ) + 
+               ( Math.max(g1, g2) - Math.min(g1, g2) ) + 
+               ( Math.max(b1, b2) - Math.min(b1, b2) );
+    };
+    
+    // Create new random color.
+    var new_color, nr, ng, nb,
+        other_color, or, og, ob,
+        n_brightness, o_brightness,
+        diff, ok = false;
+    do {
+        // New color is never white b/c random in [0,1)
+        new_color = Math.random() * 0xffffff;
+        nr = new_color | 0xff0000;
+        ng = new_color | 0x00ff00;
+        nb = new_color | 0x0000ff;
+        n_brightness = brightness(nr, ng, nb);
+        ok = true;
+        for (var i = 0; i < colors.length; i++) {
+            other_color = colors[i];
+            or = other_color | 0xff0000;
+            og = other_color | 0x00ff00;
+            ob = other_color | 0x0000ff;
+            o_brightness = brightness(or, og, ob);
+            diff = difference(nr, ng, nb, or, og, ob);
+            // Thresholds for brightness difference and color difference
+            // are from W3C link above.
+            if ( ( Math.abs(n_brightness - o_brightness) < 125 ) ||
+                 ( diff < 500 ) ) {
+                ok = false;
+                break;         
+            }
+        }
+    } while (!ok);
+    
+    // Add 0x1000000 to left pad number with 0s.
+    return '#' + ( 0x1000000 + new_color ).toString(16).substr(1,6);
 };
 
 // Encapsulate -- anything to be availabe outside this block is added to exports
@@ -463,7 +531,7 @@ extend(DataManager.prototype, Cache.prototype, {
         // data is ready, it then replaces itself with the actual data
         entry = this.load_data(low, high, mode, resolution, extra_params);
         this.set_data(low, high, mode, entry);
-        return entry
+        return entry;
     },
     /** "Deep" data request; used as a parameter for DataManager.get_more_data() */
     DEEP_DATA_REQ: "deep",
@@ -589,7 +657,6 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
     this.name = name;
     this.view = view;
     this.container = container;
-    this.drag_handle_class = drag_handle_class;
     this.config = new DrawableConfig({
         track: this,
         params: [ 
@@ -601,6 +668,8 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
         }
     });
     this.prefs = this.config.values;
+    this.drag_handle_class = drag_handle_class;
+    this.is_overview = false;
 };
 
 extend(Drawable.prototype, {
@@ -608,7 +677,7 @@ extend(Drawable.prototype, {
     request_draw: function() {},
     _draw: function() {},
     to_json: function() {},
-    make_name_popup_menu: function() {},
+    update_track_icons: function() {},
     /**
      * Set drawable name.
      */ 
@@ -750,14 +819,14 @@ var DrawableGroup = function(name, view, container, prefs) {
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
     
-    this.make_name_popup_menu();
+    this.update_track_icons();
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
     /**
      * Make popup menu for group.
      */
-    make_name_popup_menu: function() {
+    update_track_icons: function() {
         var group = this;
         
         var group_dropdown = {};
@@ -852,7 +921,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         // Overview (scrollbar and overview plot) at bottom
         this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
-        this.overview_close = $("<a href='javascript:void(0);'>Close Overview</a>").addClass("overview-close").hide().appendTo(this.overview_viewport);
+        this.overview_close = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Close overview").addClass("icon-button overview-close tooltip").hide().appendTo(this.overview_viewport);
         this.overview_highlight = $("<div/>").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
         this.overview_box_background = $("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport);
         this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
@@ -1195,13 +1264,14 @@ extend( View.prototype, DrawableCollection.prototype, {
     /**
      * Request that view redraw some or all tracks. If a track is not specificied, redraw all tracks.
      */
+    // FIXME: change method call so that track is first and additional parameters are optional.
     request_redraw: function(nodraw, force, clear_after, track) {
         var 
             view = this,
-            // Either redrawing a single track or all view's tracks.
+            // Either redrawing a single drawable or all view's drawables.
             track_list = (track ? [track] : view.drawables),
             track_index;
-        
+            
         // Add/update tracks in track list to redraw list.
         var track;
         for (var i = 0; i < track_list.length; i++) {
@@ -1318,42 +1388,44 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.nav_container.width( this.container.width() );
         this.request_redraw();
     },
-    /** Show a track in the overview. */
-    set_overview: function(track) {
-        // Get data and draw tile.
-        $.when(track.get_overview_tile()).then(function(tile) {
-            // Update UI.
-            view.overview_viewport.find(".track-tile").remove();
-            view.overview_close.show();
-            view.overview_viewport.append(tile.canvas);
-            view.overview_highlight.show().height(tile.canvas.height());
-            view.overview_viewport.height(tile.canvas.height() + view.overview_box.outerHeight());
-            view.resize_window();
-            
-            // Update view, track states.
-            if (view.overview_track) {
-                view.overview_track.set_is_overview(false);
+    /** Show a Drawable in the overview. */
+    set_overview: function(drawable) {
+        if (this.overview_drawable) {
+            // If drawable to be set as overview is already in overview, do nothing.
+            // Otherwise, remove overview.
+            if (this.overview_drawable.dataset_id === drawable.dataset_id) {
+                return;
             }
-            view.overview_track = track;
-            track.set_is_overview(true);
-        });
+            this.overview_viewport.find(".track").remove();
+        }
+        
+        // Set new overview.
+        var 
+            overview_drawable = drawable.copy( { content_div: this.overview_viewport } ),
+            view = this;
+        overview_drawable.header_div.hide();
+        overview_drawable.is_overview = true;
+        view.overview_drawable = overview_drawable;
+        this.overview_drawable.postdraw_actions = function() {
+            view.overview_highlight.show().height(view.overview_drawable.content_div.height());
+            view.overview_viewport.height(view.overview_drawable.content_div.height() + view.overview_box.outerHeight());
+            view.overview_close.show();
+            view.resize_window();
+        };
+        this.overview_drawable.init();
         view.has_changes = true;
     },
     /** Close and reset overview. */
     reset_overview: function() {
         // Update UI.
+        $(".tipsy").remove();
         this.overview_viewport.find(".track-tile").remove();
         this.overview_viewport.height(this.default_overview_height);
         this.overview_box.height(this.default_overview_height);
         this.overview_close.hide();
         this.overview_highlight.hide();
         view.resize_window();
-        
-        // Update view, track states.
-        if (view.overview_track) {
-            view.overview_track.set_is_overview(false);
-        }
-        view.overview_track = null;
+        view.overview_drawable = null;
     }
 });
 
@@ -2243,7 +2315,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
  * -------> ToolDataFeatureTrack
  * -------> VcfTrack
  */
-var Track = function(name, view, container, prefs, data_url, data_query_wait) {
+var Track = function(name, view, container, show_header, prefs, data_url, data_query_wait) {
     // For now, track's container is always view.
     Drawable.call(this, name, view, container, {}, "draghandle");
     
@@ -2254,18 +2326,128 @@ var Track = function(name, view, container, prefs, data_url, data_query_wait) {
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
+
+    if (!Track.id_counter) { Track.id_counter = 0; }
+    this.id = Track.id_counter++;
     
     //
     // Create HTML element structure for track.
     //
-    if (!Track.id_counter) { Track.id_counter = 0; }
-    this.container_div = $("<div />").addClass('track').attr("id", "track_" + Track.id_counter++).css("position", "relative");
-    if (!this.hidden) {
+    this.container_div = $("<div />").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
+    
+    // Create and initialize track header and icons.
+    if (show_header) {
         this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
         if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(this.header_div); }
-        this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
-        this.name_div.text(this.name);
-        this.name_div.attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
+        this.name_div = $("<div/>").addClass("track-name").appendTo(this.header_div).text(this.name)
+                        .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
+        this.icons_div = $("<div/>").css("float", "left").appendTo(this.header_div).hide();
+    
+        // Track icons.
+        this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
+                                      .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
+                                      .appendTo(this.icons_div);
+        this.overview_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set as overview")
+                                      .addClass("icon-button overview-icon").tipsy( {gravity: 's'} )
+                                      .appendTo(this.icons_div);
+        this.filters_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Filters")
+                                     .addClass("icon-button filters-icon").tipsy( {gravity: 's'} )
+                                     .appendTo(this.icons_div).hide();
+        this.tools_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Tools")
+                                   .addClass("icon-button tools-icon").tipsy( {gravity: 's'} )
+                                   .appendTo(this.icons_div).hide();
+        this.remove_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Remove")
+                                    .addClass("icon-button remove-icon").tipsy( {gravity: 's'} )
+                                    .appendTo(this.icons_div);
+        var track = this;
+            
+        // Suppress double clicks in header so that they do not impact viz.
+        this.header_div.dblclick( function(e) { e.stopPropagation(); } );
+        
+        // Clicking on settings icon opens track config.
+        this.settings_icon.click( function() {
+            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+                ok_fn = function() { 
+                    track.config.update_from_form( $(".dialog-box") );
+                    hide_modal(); 
+                    $(window).unbind("keypress.check_enter_esc"); 
+                },
+                check_enter_esc = function(e) {
+                    if ((e.keyCode || e.which) === 27) { // Escape key
+                        cancel_fn();
+                    } else if ((e.keyCode || e.which) === 13) { // Enter key
+                        ok_fn();
+                    }
+                };
+
+            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
+            show_modal("Configure Track", track.config.build_form(), {
+                "Cancel": cancel_fn,
+                "OK": ok_fn
+            });
+        });
+        
+        this.overview_icon.click( function() {
+            track.view.set_overview(track);
+        });
+                
+        this.filters_icon.click( function() {
+            // TODO: update tipsy text.            
+            track.filters_div.toggle();
+            track.filters_manager.reset_filters();
+        });
+        
+        this.tools_icon.click( function() {
+            // TODO: update tipsy text.
+            
+            track.dynamic_tool_div.toggle();
+            
+            // Update track name.
+            if (track.dynamic_tool_div.is(":visible")) {
+                track.set_name(track.name + track.tool_region_and_parameters_str());
+            }
+            else {
+                track.revert_name();
+            }
+            // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
+            $(".tipsy").remove();
+        });
+        
+        // Clicking on remove icon removes track.
+        this.remove_icon.click( function() {
+            // Tipsy for remove icon must be deleted when track is deleted.
+            $(".tipsy").remove();
+            track.remove();
+        });
+        
+        // Set up behavior for modes popup.
+        if (track.display_modes !== undefined) {
+            if (track.mode_div === undefined) {
+                track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
+                var init_mode = (track.config && track.config.values['mode'] ? 
+                                 track.config.values['mode'] : track.display_modes[0]);
+                track.mode = init_mode;
+                track.mode_div.text(init_mode);
+
+                var mode_mapping = {};
+                for (var i = 0, len = track.display_modes.length; i < len; i++) {
+                    var mode = track.display_modes[i];
+                    mode_mapping[mode] = function(mode) {
+                        return function() { track.change_mode(mode); };
+                    }(mode);
+                }
+                make_popupmenu(track.mode_div, mode_mapping);
+            } else {
+                track.mode_div.hide();
+            }
+
+            this.header_div.append( $("<div/>").css("clear", "both") );        
+        
+            // Set up config icon.
+        
+            // Show icons when users is hovering over track.
+            this.container_div.hover( function() { track.icons_div.show(); }, function() { track.icons_div.hide(); } );
+        }
     }
     
     //
@@ -2352,7 +2534,7 @@ extend(Track.prototype, Drawable.prototype, {
             } else if (result['status'] === "data") {
                 if (result['valid_chroms']) {
                     track.valid_chroms = result['valid_chroms'];
-                    track.make_name_popup_menu();
+                    track.update_track_icons();
                 }
                 track.content_div.text(DATA_OK);
                 if (track.view.chrom) {
@@ -2367,14 +2549,18 @@ extend(Track.prototype, Drawable.prototype, {
                 }
             }
         });
+        
+        this.update_track_icons();
     },
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {},
+    predraw_init: function() {}
 });
 
-var TiledTrack = function(filters_list, tool_dict) {
+var TiledTrack = function(name, view, container, show_header, prefs, filters_list, tool_dict, data_url, data_query_wait) {
+    Track.call(this, name, view, container, show_header, prefs, data_url, data_query_wait);
+
     var track = this,
         view = track.view;
         
@@ -2387,53 +2573,32 @@ var TiledTrack = function(filters_list, tool_dict) {
     this.filters_available = false;
     this.filters_visible = false;
     this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(this, tool_dict) : undefined);
-    this.is_overview = false;
     
-    if (track.hidden) { return; }
+    if (this.header_div) {
+        //
+        // Create filters div.
+        //
+        if (this.filters_manager) {
+            this.filters_div = this.filters_manager.parent_div
+            this.header_div.after(this.filters_div);
+        }
         
-    //
-    // Create filters div.
-    //
-    if (this.filters_manager) {
-        this.filters_div = this.filters_manager.parent_div
-        this.header_div.after(this.filters_div);
-    }
-        
-    //
-    // Create dynamic tool div.
-    //
-    if (this.tool) {  
-        this.dynamic_tool_div = this.tool.parent_div;
-        this.header_div.after(this.dynamic_tool_div);
-    }    
-    
-    //
-    // Create modes control.
-    //
-    if (track.display_modes !== undefined) {
-        if (track.mode_div === undefined) {
-            track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
-            var init_mode = (track.config && track.config.values['mode'] ? 
-                             track.config.values['mode'] : track.display_modes[0]);
-            track.mode = init_mode;
-            track.mode_div.text(init_mode);
-        
-            var mode_mapping = {};
-            for (var i = 0, len = track.display_modes.length; i < len; i++) {
-                var mode = track.display_modes[i];
-                mode_mapping[mode] = function(mode) {
-                    return function() { track.change_mode(mode); };
-                }(mode);
-            }
-            make_popupmenu(track.mode_div, mode_mapping);
-        } else {
-            track.mode_div.hide();
+        //
+        // Create dynamic tool div.
+        //
+        if (this.tool) {  
+            this.dynamic_tool_div = this.tool.parent_div;
+            this.header_div.after(this.dynamic_tool_div);
         }
     }
-    
-    this.make_name_popup_menu();
 };
 extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
+    /**
+     * Returns a copy of the track.
+     */
+    copy: function(container) {        
+        return new this.constructor(this.name, this.view, container, this.hda_ldda, this.dataset_id, this.prefs, this.filters, this.tool);
+    },
     /**
      * Convert track to JSON object.
      */
@@ -2461,87 +2626,31 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         return track;
      },
     /**
-     * Make popup menu for track name.
+     * Update track's buttons.
      */
-    make_name_popup_menu: function() {
+    update_track_icons: function() {
         var track = this;
         
-        var track_dropdown = {};
-        
         //
-        // Make track overview option.
-        //
-        track_dropdown[(this.is_overview ? "Hide overview" : "Set as overview")] = function() {
-            if (track.is_overview) {
-                track.view.reset_overview();
-            }
-            else {
-                track.view.set_overview(track);
-            }
-        };
-        
-        //
-        // Edit config option.
-        //
-        track_dropdown["Edit configuration"] = function() {
-            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
-                ok_fn = function() { 
-                    track.config.update_from_form( $(".dialog-box") );
-                    hide_modal(); 
-                    $(window).unbind("keypress.check_enter_esc"); 
-                },
-                check_enter_esc = function(e) {
-                    if ((e.keyCode || e.which) === 27) { // Escape key
-                        cancel_fn();
-                    } else if ((e.keyCode || e.which) === 13) { // Enter key
-                        ok_fn();
-                    }
-                };
-
-            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-            show_modal("Configure Track", track.config.build_form(), {
-                "Cancel": cancel_fn,
-                "OK": ok_fn
-            });
-        };
-
-        //
-        // Show/hide filters option.
+        // Show/hide filter icon.
         //
         if (track.filters_available > 0) {
-            // Show/hide filters menu item.
-            var text = (track.filters_div.is(":visible") ? "Hide filters" : "Show filters");
-            track_dropdown[text] = function() {
-                // Toggle filtering div, reset filters, and remake menu.
-                track.filters_visible = (track.filters_div.is(":visible"));
-                if (track.filters_visible) {
-                    track.filters_manager.reset_filters();
-                }
-                track.filters_div.toggle();
-                track.make_name_popup_menu();
-            };
+            track.filters_icon.show();
+        }
+        else {
+            track.filters_icon.hide();
         }
         
         //
-        // Show/hide tool option.
+        // Show/hide tool icon.
         //
         if (track.tool) {
-            // Show/hide dynamic tool menu item.
-            var text = (track.dynamic_tool_div.is(":visible") ? "Hide tool" : "Show tool");
-            track_dropdown[text] = function() {
-                // Set track name, toggle tool div, and remake menu.
-                if (!track.dynamic_tool_div.is(":visible")) {
-                    track.set_name(track.name + track.tool_region_and_parameters_str());
-                }
-                else {
-                    menu_option_text = "Show dynamic tool";
-                    track.revert_name();
-                }
-                track.dynamic_tool_div.toggle();
-                track.make_name_popup_menu();
-            };
+            track.tools_icon.show();
         }
-                
+        else {
+            track.tools_icon.hide();
+        }
+                        
         //
         // List chrom/contigs with data option.
         //
@@ -2552,61 +2661,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             };
         }
         */
-        
-        //
-        // Remove option.
-        //
-        track_dropdown.Remove = function() {
-            track.remove();
-        };
-        
-        make_popupmenu(track.name_div, track_dropdown);
-    },
-    /**
-     * Set track's overview status.
-     */
-    set_is_overview: function(is_overview) {
-        this.is_overview = is_overview;
-        this.make_name_popup_menu();
-    },
-    /**
-     * Returns a jQuery Deferred object that resolves to a Tile with track's overview.
-     * TODO: this should be the approach used when drawing any tile so that tile drawing is not blocking.
-     */
-    get_overview_tile: function() {
-        var 
-            track = this;
-            view = track.view,
-            resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) )),
-            view_width = view.container.width(),
-            // w_scale units are pixels per base.
-            w_scale =  view_width / (view.max_high - view.max_low),
-            overview_tile = $.Deferred();
-        $.when(track.data_manager.get_data(view.max_low, view.max_high, "Auto", resolution, track.data_url_extra_params)).then(function(overview_data) {
-            var 
-                key = track._gen_tile_cache_key(view_width, w_scale, 0),
-                tile = track.tile_cache.get(key);
-                
-            // Draw tile if necessary.
-            if (!tile) {
-                tile = track.draw_tile(overview_data, "Auto", resolution, 0, w_scale);
-                track.tile_cache.set(key, tile);                
-            }
-            
-            // Always copy tile because it may need to be used in viz.
-            var 
-                src_canvas = $(tile.canvas.find("canvas")),
-                new_canvas = src_canvas.clone(), 
-                src_ctx = src_canvas.get(0).getContext("2d"),
-                tgt_ctx = new_canvas.get(0).getContext("2d"),
-                data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
-            // Need to undo offsets when placing image data.
-            tgt_ctx.putImageData(data, -track.left_offset, (tile.data.dataset_type === "summary_tree" ? SUMMARY_TREE_TOP_PADDING : 0));
-            new_tile = new Tile(track, -1, resolution, new_canvas);
-            overview_tile.resolve(new_tile);
-        });
-        
-        return overview_tile;
     },
     /**
      * Generate a key for the tile cache.
@@ -2641,6 +2695,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             w_scale = width / range,
             resolution = this.view.resolution,
             parent_element = $("<div style='position: relative;'></div>");
+            
+        // For overview, adjust high, low, resolution, and w_scale.
+        if (this.is_overview) {
+            low = this.view.max_low;
+            high = this.view.max_high;
+            resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) ));
+            w_scale = width / (view.max_high - view.max_low);
+        }
         
         if (!clear_after) { this.content_div.children().remove(); }
         this.content_div.append( parent_element );
@@ -2751,7 +2813,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
          
         // Can't draw now, so trigger another redraw when the data is ready
         $.when( tile_data, seq_data ).then( function() {
-            view.request_redraw();
+            view.request_redraw(false, false, false, track);
         });
         
         // Indicate to caller that this tile could not be drawn
@@ -2811,8 +2873,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         tile.predisplay_actions();
       
         // Position tile element, recalculate left position at display time
-        var range = this.view.high - this.view.low,
-            left = (tile.low - this.view.low) * w_scale;
+        var left = ( tile.low - (this.is_overview? this.view.max_low : this.view.low) ) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
         }
@@ -2849,8 +2910,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 });
 
 var LabelTrack = function (view, container) {
-    this.hidden = true;
-    Track.call(this, "label", view, container, {} );
+    Track.call(this, "label", view, container, false, {} );
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
@@ -2880,9 +2940,7 @@ extend(LabelTrack.prototype, Track.prototype, {
 });
 
 var ReferenceTrack = function (view) {
-    this.hidden = true;
-    Track.call(this, "reference", view, { content_div: view.top_labeltrack }, {});
-    TiledTrack.call(this);
+    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack }, false, {});
     
     view.reference_track = this;
     this.left_offset = 200;
@@ -2909,7 +2967,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             tile_length = DENSITY * resolution;
         
         if (w_scale > this.view.canvas_manager.char_width_px) {
-            if (seq === null) {
+            if (seq.data === null) {
                 track.content_div.css("height", "0px");
                 return;
             }
@@ -2934,8 +2992,7 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
-    Track.call( this, name, view, container, prefs );
-    TiledTrack.call( this );
+    TiledTrack.call( this, name, view, container, true, prefs );
    
     this.min_height_px = 16; 
     this.max_height_px = 400; 
@@ -2952,7 +3009,7 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
-            { key: 'color', label: 'Color', type: 'color', default_value: 'black' },
+            { key: 'color', label: 'Color', type: 'color', default_value: get_random_color() },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -3080,18 +3137,15 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     
     //
     // Initialization.
-    //
-    
-    // FIXME: cleaner init needed; should just be able to call TiledTrack()
-    Track.call(this, name, view, container, prefs);
-    TiledTrack.call(this, filters, tool);
+    //    
+    TiledTrack.call(this, name, view, container, true, prefs, filters, tool);
 
     // Define and restore track configuration.
     this.config = new DrawableConfig( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -3203,7 +3257,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 if (!track.filters_available) {
                     track.filters_div.hide();
                 }
-                track.make_name_popup_menu();
+                track.update_track_icons();
             }
         }
     },
@@ -3345,9 +3399,12 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         if (mode === "Auto") {
             if (result.dataset_type === "summary_tree") {
                 mode = result.dataset_type;
-            } else if (result.extra_info === "no_detail") {
+            } 
+            // HACK: use no_detail mode track is in overview to prevent overview from being too large.
+            else if (result.extra_info === "no_detail" || track.is_overview) {
                 mode = "no_detail";
-            } else {
+            } 
+            else {
                 // Choose b/t Squish and Pack.
                 // Proxy measures for using Squish: 
                 // (a) error message re: limiting number of features shown; 
@@ -3478,7 +3535,7 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
@@ -3495,7 +3552,7 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.prefs = this.config.values;
     
     this.painter = painters.ReadPainter;
-    this.make_name_popup_menu();
+    this.update_track_icons();
 };
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
