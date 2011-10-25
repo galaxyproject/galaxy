@@ -2558,7 +2558,9 @@ extend(Track.prototype, Drawable.prototype, {
     predraw_init: function() {}
 });
 
-var TiledTrack = function(filters_list, tool_dict) {
+var TiledTrack = function(name, view, container, show_header, prefs, filters_list, tool_dict, data_url, data_query_wait) {
+    Track.call(this, name, view, container, show_header, prefs, data_url, data_query_wait);
+
     var track = this,
         view = track.view;
         
@@ -2938,8 +2940,7 @@ extend(LabelTrack.prototype, Track.prototype, {
 });
 
 var ReferenceTrack = function (view) {
-    Track.call(this, "reference", view, { content_div: view.top_labeltrack }, false, {});
-    TiledTrack.call(this);
+    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack }, false, {});
     
     view.reference_track = this;
     this.left_offset = 200;
@@ -2991,8 +2992,7 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
-    Track.call( this, name, view, container, prefs );
-    TiledTrack.call( this );
+    TiledTrack.call( this, name, view, container, true, prefs );
    
     this.min_height_px = 16; 
     this.max_height_px = 400; 
@@ -3137,11 +3137,8 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     
     //
     // Initialization.
-    //
-    
-    // FIXME: cleaner init needed; should just be able to call TiledTrack()
-    Track.call(this, name, view, container, true, prefs);
-    TiledTrack.call(this, filters, tool);
+    //    
+    TiledTrack.call(this, name, view, container, true, prefs, filters, tool);
 
     // Define and restore track configuration.
     this.config = new DrawableConfig( {
