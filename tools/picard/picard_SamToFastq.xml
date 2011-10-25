@@ -39,7 +39,6 @@
     #end if
   2&gt;&amp;1 
   || echo "Error running SamToFastq" >&amp;2
-  ##&amp;&amp; echo "die die die" >&amp;2
   </command>
   <inputs>
     <param name="input_sam" type="data" format="sam" label="SAM file" />
@@ -85,6 +84,7 @@
           <param name="read1_max_bases_to_write" value="" />
           <param name="re_reverse" value="True" />
           <param name="include_non_pf_reads" value="False" />
+          <param name="clipping_action" value="" />
           <param name="clipping_attribute" value="" />
           <param name="include_non_primary_alignments" value="False" />
           <output name="output_fastq1" file="random_phiX_1.fastqsanger"/> 
@@ -99,6 +99,7 @@
           <param name="read2_max_bases_to_write" value="" />
           <param name="re_reverse" value="True" />
           <param name="include_non_pf_reads" value="False" />
+          <param name="clipping_action" value="" />
           <param name="clipping_attribute" value="" />
           <param name="include_non_primary_alignments" value="False" />
           <output name="output_fastq1" file="bwa_wrapper_in2.fastqsanger" lines_diff="64"/> <!-- 16 unaligned fastq blocks not present in original sam file -->
