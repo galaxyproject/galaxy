@@ -1,10 +1,10 @@
-<tool name="Insertion size metrics" id="PicardInsertSize" version="0.3.0">
+<tool name="Insertion size metrics" id="PicardInsertSize" version="0.3.1">
   <description>for PAIRED data</description>
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --taillimit "$tailLimit"
    --histwidth "$histWidth" --minpct "$minPct"
-   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/CollectInsertSizeMetrics.jar" -d "$html_file.files_path" -t "$html_file"
+   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/CollectInsertSizeMetrics.jar" -d "$html_file.files_path" -t "$html_file"
   </command>
   <inputs>
     <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset to generate statistics for"

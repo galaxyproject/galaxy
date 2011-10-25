@@ -1,10 +1,10 @@
-<tool name="SAM/BAM Hybrid Selection Metrics" id="PicardHsMetrics" version="0.02">
+<tool name="SAM/BAM Hybrid Selection Metrics" id="PicardHsMetrics" version="0.02.1">
   <description>for targeted resequencing data</description>
   <command interpreter="python">
 
     picard_wrapper.py -i "$input_file" -d "$html_file.files_path" -t "$html_file" --datatype "$input_file.ext"
     --baitbed "$bait_bed" --targetbed "$target_bed" -n "$out_prefix" --tmpdir "${__new_file_path__}"
-    -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/CalculateHsMetrics.jar"
+    -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/CalculateHsMetrics.jar"
 
   </command>
   <requirements><requirement type="package">picard</requirement></requirements>
