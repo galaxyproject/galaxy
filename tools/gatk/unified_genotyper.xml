@@ -7,8 +7,6 @@
    --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    #for $i, $input_bam in enumerate( $reference_source.input_bams ):
-       ${dir( $input_bam.input_bam )}
-       ${dir( $input_bam.input_bam.dataset )}
        -d "-I" "${input_bam.input_bam}" "${input_bam.input_bam.ext}" "gatk_input_${i}"
        -d "" "${input_bam.input_bam.metadata.bam_index}" "bam_index" "gatk_input_${i}" ##hardcode galaxy ext type as bam_index
    #end for
