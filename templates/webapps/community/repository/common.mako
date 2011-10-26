@@ -83,7 +83,8 @@
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
 
-<%def name="render_repository_tools_and_workflows( metadata, can_set_metadata=False, webapp='community' )">
+<%def name="render_repository_tools_and_workflows( repository_metadata_id, metadata, can_set_metadata=False, webapp='community' )">
+    <% from galaxy.webapps.community.controllers.common import encode, decode %>
     %if metadata or can_set_metadata:
         <p/>
         <div class="toolForm">
@@ -160,14 +161,31 @@
                             <table class="grid">
                                 <tr>
                                     <td><b>name</b></td>
+                                    <td><b>steps</b></td>
                                     <td><b>format-version</b></td>
                                     <td><b>annotation</b></td>
                                 </tr>
                                 %for workflow_dict in workflow_dicts:
+                                    <% 
+                                        workflow_name = workflow_dict[ 'name' ]
+                                        steps = workflow_dict[ 'steps' ]
+                                        format_version = workflow_dict[ 'format-version' ]
+                                        annotation = workflow_dict[ 'annotation' ]
+                                    %>
                                     <tr>
-                                        <td>${workflow_dict[ 'name' ]}</td>
-                                        <td>${workflow_dict[ 'format-version' ]}</td>
-                                        <td>${workflow_dict[ 'annotation' ]}</td>
+                                        <td>
+                                            <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=encode( workflow_name ), webapp=webapp )}">${workflow_name}</a>
+                                        </td>
+                                        <td>
+                                            %if 'steps' in workflow_dict:
+                                                ## Initially steps were not stored in the metadata record.
+                                                ${len( steps )}
+                                            %else:
+                                                unknown
+                                            %endif
+                                        </td>
+                                        <td>${format_version}</td>
+                                        <td>${annotation}</td>
                                     </tr>
                                 %endfor
                             </table>

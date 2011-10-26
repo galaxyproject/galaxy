@@ -4,7 +4,7 @@ import pkg_resources
 pkg_resources.require( "simplejson" )
 pkg_resources.require( "SVGFig" )
 import simplejson
-import base64, httplib, urllib2, sgmllib, svgfig
+import base64, httplib, urllib2, sgmllib, svgfig, urllib, urllib2
 import math
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.tools.parameters import *
@@ -1092,13 +1092,35 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-Workflow-%s.ga" % ( sname )
         trans.response.set_content_type( 'application/galaxy-archive' )
         return stored_dict
-
     @web.expose
     def import_workflow( self, trans, **kwd ):
+        """
+        Import a workflow by reading an url, uploading a file, or receiving the textual
+        representation of a workflow.
+        """
         url = kwd.get( 'url', '' )
+        workflow_text = kwd.get( 'workflow_text', '' )
+        webapp = kwd.get( 'webapp', 'galaxy' )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
-        if kwd.get( 'import_button', False ):
+        import_button = kwd.get( 'import_button', False )
+        tool_shed_url = kwd.get( 'tool_shed_url', '' )
+        repository_metadata_id = kwd.get( 'repository_metadata_id', '' )
+        # The workflow_name parameter is in the request only if the import originated
+        # from a Galaxy tool shed, in which case the value was encoded.
+        workflow_name = kwd.get( 'workflow_name', '' )
+        if workflow_name:
+            workflow_name = tool_shed_decode( workflow_name )
+        if tool_shed_url and not import_button:
+            # Use urllib (send another request to the tool shed) to retrieve the workflow.
+            workflow_url = 'http://%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
+                ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp )
+            response = urllib2.urlopen( workflow_url )
+            workflow_text = response.read()
+            response.close()
+            workflow_text = workflow_text
+            import_button = True
+        if import_button:
             workflow_data = None
             if url:
                 # Load workflow from external URL
@@ -1108,6 +1130,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 except Exception, e:
                     message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( url, str( e ) )
                     status = 'error'
+            elif workflow_text:
+                workflow_data = workflow_text
             else:
                 # Load workflow from browsed file.
                 file_data = kwd.get( 'file_data', '' )
@@ -1175,6 +1199,13 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                         else:
                             # TODO: Figure out what to do here...
                             pass
+                    if tool_shed_url:
+                        # We've received the textual representation of a workflow from a Galaxy tool shed.
+                        message = "This workflow has been successfully imported into your local Galaxy instance."
+                        # TODO: support https in the following url.
+                        url = 'http://%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&message=%s' % \
+                            ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp, message )
+                        return trans.response.send_redirect( url )
                     return self.list( trans )
         return trans.fill_template( "workflow/import.mako",
                                     url=url,

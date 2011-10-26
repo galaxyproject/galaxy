@@ -205,14 +205,14 @@ class ToolModule( WorkflowModule ):
     def from_workflow_step( Class, trans, step ):
         tool_id = step.tool_id
         install_tool_id = None
-        if tool_id not in trans.app.toolbox.tools_by_id:
+        if trans.app.toolbox and tool_id not in trans.app.toolbox.tools_by_id:
             # The id value of tools installed from a Galaxy tool shed is a guid, but
             # these tool's old_id attribute should contain what we're looking for.
             for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
                 if tool_id == available_tool.old_id:
                     install_tool_id = available_tool_id
                     break
-        if tool_id in trans.app.toolbox.tools_by_id or install_tool_id:
+        if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ) or install_tool_id:
             module = Class( trans, tool_id )
             module.state = DefaultToolState()
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
@@ -247,7 +247,9 @@ class ToolModule( WorkflowModule ):
                 action_arguments = None
             n_p = PostJobAction(v['action_type'], step, output_name, action_arguments)
     def get_name( self ):
-        return self.tool.name
+        if self.tool:
+            return self.tool.name
+        return 'unavailable'
     def get_tool_id( self ):
         return self.tool_id
     def get_tool_version( self ):

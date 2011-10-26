@@ -1,7 +1,7 @@
 <%inherit file="/display_base.mako"/>
 <%namespace file="/display_common.mako" import="render_message" />
 
-<%! 
+<%
     from galaxy.tools.parameters import DataToolParameter, RuntimeValue 
     from galaxy.web import form_builder
 %>
@@ -82,7 +82,17 @@
         %for i, step in enumerate( steps ):
             <tr><td>
             %if step.type == 'tool' or step.type is None:
-              <% tool = app.toolbox.tools_by_id[step.tool_id] %>
+              <% 
+                try:
+                    tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
+                except KeyError, e:
+                    # The id value of tools installed from a Galaxy tool shed is a guid, but
+                    # these tool's old_id attribute should contain what we're looking for.
+                    for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
+                        if step.tool_id == available_tool.old_id:
+                            tool = available_tool
+                            break
+              %>
               <div class="toolForm">
                   <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
                   <div class="toolFormBody">

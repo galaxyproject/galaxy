@@ -9,7 +9,6 @@ from galaxy.webapps.community import model
 from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
-from galaxy.util.hash_util import *
 from galaxy.model.orm import *
 from common import *
 from mercurial import hg, ui, patch, commands
@@ -458,7 +457,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         ok = True
         for repository_metadata in trans.sa_session.query( model.RepositoryMetadata ):
             metadata = repository_metadata.metadata
-            tools = metadata[ 'tools' ]
+            if 'tools' in metadata:
+                tools = metadata[ 'tools' ]
+            else:
+                tools = []
             for tool_dict in tools:
                 if tool_ids and not tool_names and not tool_versions:
                     for tool_id in tool_ids:
@@ -588,15 +590,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             changeset_revision = repository_metadata.changeset_revision
             repository_clone_url = generate_clone_url( trans, repository_id )
             repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
-        return self.__encode( repo_info_dict )
-    def __encode( self, val ):
-        if isinstance( val, dict ):
-            value = simplejson.dumps( val )
-        else:
-            value = val
-        a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
-        b = binascii.hexlify( value )
-        return "%s:%s" % ( a, b )
+        return encode( repo_info_dict )
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
@@ -607,8 +601,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
             metadata = repository_metadata.metadata
         else:
+            repository_metadata_id = None
             metadata = None
         revision_label = get_revision_label( trans, repository, changeset_revision )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
@@ -617,6 +613,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  add_id_to_name=False )
         return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
+                                    repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
@@ -636,7 +633,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         repo_info_dict = {}
         repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
-        encoded_repo_info_dict = self.__encode( repo_info_dict )
+        encoded_repo_info_dict = encode( repo_info_dict )
         # Redirect back to local Galaxy to perform install.
         # TODO: support https in the following url.
         url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&repo_info_dict=%s' % \
@@ -1159,8 +1156,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
             metadata = repository_metadata.metadata
         else:
+            repository_metadata_id = None
             metadata = None
         is_malicious = change_set_is_malicious( trans, id, repository.tip )
         if is_malicious:
@@ -1172,6 +1171,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
+                                    repository_metadata_id=repository_metadata_id,
                                     metadata=metadata,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
@@ -1299,9 +1299,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             metadata = repository_metadata.metadata
             is_malicious = repository_metadata.malicious
         else:
+            repository_metadata_id = None
             metadata = None
             is_malicious = False
         if is_malicious:
@@ -1321,6 +1323,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
+                                    repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,

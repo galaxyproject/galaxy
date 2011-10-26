@@ -1,10 +1,11 @@
 """
 Contains functionality needed in every web interface
 """
-import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess
+import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess, binascii
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import config, tools, web, util
+from galaxy.util.hash_util import *
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
@@ -2484,3 +2485,32 @@ def handle_sample_tool_data_table_conf_file( trans, filename ):
             message = "The required file named tool_data_table_conf.xml does not exist in the Galaxy install directory."
             error = True
     return error, message
+def tool_shed_encode( val ):
+    if isinstance( val, dict ):
+        value = simplejson.dumps( val )
+    else:
+        value = val
+    a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+    b = binascii.hexlify( value )
+    return "%s:%s" % ( a, b )
+def tool_shed_decode( value ):
+    # Extract and verify hash
+    a, b = value.split( ":" )
+    value = binascii.unhexlify( b )
+    test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+    assert a == test
+    # Restore from string
+    values = None
+    try:
+        values = simplejson.loads( value )
+    except Exception, e:
+        log.debug( "Decoding json value from tool shed threw exception: %s" % str( e ) )
+    if values is not None:
+        try:
+            return json_fix( values )
+        except Exception, e:
+            log.debug( "Fixing decoded json value from tool shed threw exception: %s" % str( e ) )
+            fixed_values = values
+    if values is None:
+        values = value
+    return values

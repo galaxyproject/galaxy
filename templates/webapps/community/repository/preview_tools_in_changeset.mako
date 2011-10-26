@@ -103,4 +103,4 @@
     </div>
 </div>
 <p/>
-${render_repository_tools_and_workflows( metadata, webapp=webapp )}
+${render_repository_tools_and_workflows( repository_metadata_id, metadata, webapp=webapp )}
