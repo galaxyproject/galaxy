@@ -16,10 +16,10 @@ java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/MergeSamFiles.jar M
     <param name="mergeSD" value="true" type="boolean"  label="Merge all component bam file headers into the merged bam file"
       truevalue="true" falsevalue="false" checked="yes" 
       help="Control the MERGE_SEQUENCE_DICTIONARIES flag for Picard MergeSamFiles. Default (true) correctly propagates read groups and other important metadata" />
-    <param name="input1" label="First file" type="data" format="bam" />
-    <param name="input2" label="with file" type="data" format="bam" help="Need to add more files? Use controls below." />
+    <param name="input1" label="First file" type="data" format="bam,sam" />
+    <param name="input2" label="with file" type="data" format="bam,sam" help="Need to add more files? Use controls below." />
     <repeat name="inputs" title="Input Files">
-      <param name="input" label="Add file" type="data" format="bam" />
+      <param name="input" label="Add file" type="data" format="bam,sam" />
     </repeat>
   </inputs>
   <outputs>
