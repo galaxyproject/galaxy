@@ -9,6 +9,7 @@ java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/MergeSamFiles.jar M
         I=${i.input}
       #end for 
     2&gt; $outlog
+    || echo "Error running Picard MergeSamFiles" >&amp;2
   </command>
   <inputs>
     <param name="title" label="Name for the output merged bam file" type="text" default="Merged.bam"
