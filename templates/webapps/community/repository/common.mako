@@ -168,7 +168,11 @@
                                 %for workflow_dict in workflow_dicts:
                                     <% 
                                         workflow_name = workflow_dict[ 'name' ]
-                                        steps = workflow_dict[ 'steps' ]
+                                        if 'steps' in workflow_dict:
+                                            ## Initially steps were not stored in the metadata record.
+                                            steps = workflow_dict[ 'steps' ]
+                                        else:
+                                            steps = []
                                         format_version = workflow_dict[ 'format-version' ]
                                         annotation = workflow_dict[ 'annotation' ]
                                     %>
@@ -178,7 +182,6 @@
                                         </td>
                                         <td>
                                             %if 'steps' in workflow_dict:
-                                                ## Initially steps were not stored in the metadata record.
                                                 ${len( steps )}
                                             %else:
                                                 unknown
