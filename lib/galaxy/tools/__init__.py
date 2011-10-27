@@ -819,7 +819,7 @@ class Tool:
             if elem.tag == "repeat":
                 group = Repeat()
                 group.name = elem.get( "name" )
-                group.title = elem.get( "title" ) 
+                group.title = elem.get( "title" )
                 group.help = elem.get( "help", None )
                 group.inputs = self.parse_input_elem( elem, enctypes, context )
                 group.default = int( elem.get( "default", 0 ) )

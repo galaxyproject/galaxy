@@ -586,9 +586,6 @@ use_interactive = True
 # run with the runner defined with default_cluster_job_runner.
 
 [galaxy:tool_runners]
-binsort = drmaa://-cwd -V -pe threaded 4/
-bwa_wrapper = drmaa://-cwd -V -pe threaded 4/
-unified_genotyper = drmaa://-cwd -V -pe threaded 2/
 biomart = local:///
 encode_db1 = local:///
 hbvar = local:///

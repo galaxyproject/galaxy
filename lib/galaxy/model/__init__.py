@@ -649,7 +649,7 @@ class Dataset( object ):
     permitted_actions = get_permitted_actions( filter='DATASET' )
     file_path = "/tmp/"
     engine = None
-    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True):
+    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
         self.id = id
         self.state = state
         self.deleted = False

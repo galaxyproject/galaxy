@@ -778,7 +778,7 @@ class JobWrapper( object ):
         jeha_false_path = None
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
-            output_dataset_paths = {}
+            self.output_dataset_paths = {}
             for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
                 dsp = DatasetPath( data.id, data.file_name, false_path )
@@ -908,7 +908,7 @@ class TaskWrapper(JobWrapper):
         else:
             self.prepare_input_files_cmds = None
         self.status = task.states.NEW
-       
+
     def get_job( self ):
         if self.job_id:
             return self.sa_session.query( model.Job ).get( self.job_id )
