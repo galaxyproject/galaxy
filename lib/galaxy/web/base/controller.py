@@ -2443,6 +2443,13 @@ def get_quota( trans, id ):
     id = trans.security.decode_id( id )
     quota = trans.sa_session.query( trans.model.Quota ).get( id )
     return quota
+def get_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision ):
+    return trans.sa_session.query( trans.model.ToolShedRepository ) \
+                           .filter( and_( trans.model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                          trans.model.ToolShedRepository.table.c.name == name,
+                                          trans.model.ToolShedRepository.table.c.owner == owner,
+                                          trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
+                           .first()
 def handle_sample_tool_data_table_conf_file( trans, filename ):
     """
     Parse the incoming filename and add new entries to the in-memory

@@ -766,12 +766,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                         os.chdir( current_working_dir )
                         tmp_stderr.close()
                         if returncode == 0:
-                            # Add a new record to the tool_shed_repository table.
-                            tool_shed_repository = self.__create_tool_shed_repository( trans,
-                                                                                       name,
-                                                                                       description,
-                                                                                       changeset_revision,
-                                                                                       repository_clone_url )
+                            # Add a new record to the tool_shed_repository table if one doesn't
+                            # already exist.  If one exists but is marked deleted, undelete it.
+                            self.__create_or_undelete_tool_shed_repository( trans, name, description, changeset_revision, repository_clone_url )
                             # Update the cloned repository to changeset_revision.
                             repo_files_dir = os.path.join( clone_dir, name )
                             log.debug( 'Updating cloned repository to revision "%s"...' % changeset_revision )
@@ -1055,17 +1052,26 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             # We have an invalid .xml file, so not a tool config.
                             log.debug( "Ignoring invalid tool config (%s). Error: %s" % ( str( relative_path ), str( e ) ) )
         return sample_files, repository_tools_tups
-    def __create_tool_shed_repository( self, trans, name, description, changeset_revision, repository_clone_url ):
+    def __create_or_undelete_tool_shed_repository( self, trans, name, description, changeset_revision, repository_clone_url ):
         tmp_url = self.__clean_repository_clone_url( repository_clone_url )
         tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
         owner = self.__get_repository_owner( tmp_url )
-        tool_shed_repository = trans.model.ToolShedRepository( tool_shed=tool_shed,
-                                                               name=name,
-                                                               description=description,
-                                                               owner=owner,
-                                                               changeset_revision=changeset_revision )
-        trans.sa_session.add( tool_shed_repository )
-        trans.sa_session.flush()
+        flush_needed = False
+        tool_shed_repository = get_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision )
+        if tool_shed_repository:
+            if tool_shed_repository.deleted:
+                tool_shed_repository.deleted = False
+                flush_needed = True
+        else:
+            tool_shed_repository = trans.model.ToolShedRepository( tool_shed=tool_shed,
+                                                                   name=name,
+                                                                   description=description,
+                                                                   owner=owner,
+                                                                   changeset_revision=changeset_revision )
+            flush_needed = True
+        if flush_needed:
+            trans.sa_session.add( tool_shed_repository )
+            trans.sa_session.flush()
     def __add_shed_tool_conf_entry( self, trans, shed_tool_conf, new_tool_section ):
         # Add an entry in the shed_tool_conf file. An entry looks something like:
         # <section name="Filter and Sort" id="filter">
