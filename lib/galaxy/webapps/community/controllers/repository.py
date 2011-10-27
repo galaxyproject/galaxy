@@ -231,7 +231,7 @@ class MatchedRepositoryListGrid( grids.Grid ):
                 return repository_metadata.repository.user.username
             return 'no user'
     # Grid definition
-    title = "Repositories with matching tools"
+    title = "Matching repositories"
     model_class = model.RepositoryMetadata
     template='/webapps/community/repository/grid.mako'
     default_sort_key = "Repository.name"
@@ -375,6 +375,83 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # Render the list view
         return self.valid_repository_list_grid( trans, **kwd )
     @web.expose
+    def find_workflows( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if galaxy_url:
+            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        if 'operation' in kwd:
+            item_id = kwd.get( 'id', '' )
+            if item_id:
+                operation = kwd[ 'operation' ].lower()
+                is_admin = trans.user_is_admin()
+                if operation == "view_or_manage_repository":
+                    # The received id is a RepositoryMetadata id, so we have to get the repository id.
+                    repository_metadata = get_repository_metadata_by_id( trans, item_id )
+                    repository_id = trans.security.encode_id( repository_metadata.repository.id )
+                    repository = get_repository( trans, repository_id )
+                    kwd[ 'id' ] = repository_id
+                    kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
+                    if webapp == 'community' and ( is_admin or repository.user == trans.user ):
+                        a = 'manage_repository'
+                    else:
+                        a = 'view_repository'
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action=a,
+                                                                      **kwd ) )
+                if operation == "install":
+                    galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+                    encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
+                    # TODO: support https in the following url.
+                    url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
+                        ( galaxy_url, trans.request.host, webapp, encoded_repo_info_dict )
+                    return trans.response.send_redirect( url )
+            else:
+                # This can only occur when there is a multi-select grid with check boxes and an operation,
+                # and the user clicked the operation button without checking any of the check boxes.
+                return trans.show_error_message( "No items were selected." )
+        workflow_names = [ item.lower() for item in util.listify( kwd.get( 'workflow_name', '' ) ) ]
+        exact_matches = params.get( 'exact_matches', '' )
+        exact_matches_checked = CheckboxField.is_checked( exact_matches )
+        match_tuples = []
+        ok = True
+        if workflow_names:
+            ok, match_tuples = self.__search_repository_metadata( trans, exact_matches_checked, workflow_names=workflow_names )
+            if ok:
+                kwd[ 'match_tuples' ] = match_tuples
+                # Render the list view
+                if webapp == 'galaxy':
+                    # Our initial request originated from a Galaxy instance.
+                    global_actions = [ grids.GridAction( "Browse valid repositories",
+                                                         dict( controller='repository', action='browse_valid_repositories', webapp=webapp ) ),
+                                       grids.GridAction( "Search for valid tools",
+                                                         dict( controller='repository', action='find_tools', webapp=webapp ) ),
+                                       grids.GridAction( "Search for workflows",
+                                                         dict( controller='repository', action='find_workflows', webapp=webapp ) ) ]
+                    self.install_matched_repository_list_grid.global_actions = global_actions
+                    install_url_args = dict( controller='repository', action='find_workflows', webapp=webapp )
+                    operations = [ grids.GridOperation( "Install", url_args=install_url_args, allow_multiple=True, async_compatible=False ) ]
+                    self.install_matched_repository_list_grid.operations = operations
+                    return self.install_matched_repository_list_grid( trans, **kwd )
+                else:
+                    kwd[ 'message' ] = "workflow name: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
+                        ( self.__stringify( workflow_names ), str( exact_matches_checked ) )
+                    self.matched_repository_list_grid.title = "Repositories with matching workflows"
+                    return self.matched_repository_list_grid( trans, **kwd )
+            else:
+                message = "No search performed - each field must contain the same number of comma-separated items."
+                status = "error"
+        exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
+        return trans.fill_template( '/webapps/community/repository/find_workflows.mako',
+                                    webapp=webapp,
+                                    workflow_name=self.__stringify( workflow_names ),
+                                    exact_matches_check_box=exact_matches_check_box,
+                                    message=message,
+                                    status=status )
+    @web.expose
     def find_tools( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
@@ -421,7 +498,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         match_tuples = []
         ok = True
         if tool_ids or tool_names or tool_versions:
-            ok, match_tuples = self.__search_repository_metadata( trans, tool_ids, tool_names, tool_versions, exact_matches_checked )
+            ok, match_tuples = self.__search_repository_metadata( trans, exact_matches_checked, tool_ids=tool_ids, tool_names=tool_names, tool_versions=tool_versions )
             if ok:
                 kwd[ 'match_tuples' ] = match_tuples
                 # Render the list view
@@ -430,7 +507,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     global_actions = [ grids.GridAction( "Browse valid repositories",
                                                          dict( controller='repository', action='browse_valid_repositories', webapp=webapp ) ),
                                        grids.GridAction( "Search for valid tools",
-                                                         dict( controller='repository', action='find_tools', webapp=webapp ) ) ]
+                                                         dict( controller='repository', action='find_tools', webapp=webapp ) ),
+                                       grids.GridAction( "Search for workflows",
+                                                         dict( controller='repository', action='find_workflows', webapp=webapp ) ) ]
                     self.install_matched_repository_list_grid.global_actions = global_actions
                     install_url_args = dict( controller='repository', action='find_tools', webapp=webapp )
                     operations = [ grids.GridOperation( "Install", url_args=install_url_args, allow_multiple=True, async_compatible=False ) ]
@@ -439,6 +518,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 else:
                     kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
                         ( self.__stringify( tool_ids ), self.__stringify( tool_names ), self.__stringify( tool_versions ), str( exact_matches_checked ) )
+                    self.matched_repository_list_grid.title = "Repositories with matching tools"
                     return self.matched_repository_list_grid( trans, **kwd )
             else:
                 message = "No search performed - each field must contain the same number of comma-separated items."
@@ -452,62 +532,76 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
-    def __search_repository_metadata( self, trans, tool_ids, tool_names, tool_versions, exact_matches_checked ):
+    def __search_repository_metadata( self, trans, exact_matches_checked, tool_ids='', tool_names='', tool_versions='', workflow_names='' ):
         match_tuples = []
         ok = True
         for repository_metadata in trans.sa_session.query( model.RepositoryMetadata ):
             metadata = repository_metadata.metadata
-            if 'tools' in metadata:
-                tools = metadata[ 'tools' ]
-            else:
-                tools = []
-            for tool_dict in tools:
-                if tool_ids and not tool_names and not tool_versions:
-                    for tool_id in tool_ids:
-                        if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id ):
-                            match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
-                elif tool_names and not tool_ids and not tool_versions:
-                    for tool_name in tool_names:
-                        if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name ):
-                            match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
-                elif tool_versions and not tool_ids and not tool_names:
-                    for tool_version in tool_versions:
-                        if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_version=tool_version ):
-                            match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
-                elif tool_ids and tool_names and not tool_versions:
-                    if len( tool_ids ) == len( tool_names ):
-                        match_tuples = self.__search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
-                    elif len( tool_ids ) == 1 or len( tool_names ) == 1:
-                        tool_ids, tool_names = self.__make_same_length( tool_ids, tool_names )
-                        match_tuples = self.__search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
-                    else:
-                        ok = False
-                elif tool_ids and tool_versions and not tool_names:
-                    if len( tool_ids )  == len( tool_versions ):
-                        match_tuples = self.__search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
-                    elif len( tool_ids ) == 1 or len( tool_versions ) == 1:
-                        tool_ids, tool_versions = self.__make_same_length( tool_ids, tool_versions )
-                        match_tuples = self.__search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
-                    else:
-                        ok = False
-                elif tool_versions and tool_names and not tool_ids:
-                    if len( tool_versions ) == len( tool_names ):
-                        match_tuples = self.__search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
-                    elif len( tool_versions ) == 1 or len( tool_names ) == 1:
-                        tool_versions, tool_names = self.__make_same_length( tool_versions, tool_names )
-                        match_tuples = self.__search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
-                    else:
-                        ok = False
-                elif tool_versions and tool_names and tool_ids:
-                    if len( tool_versions ) == len( tool_names ) and len( tool_names ) == len( tool_ids ):
-                        for i, tool_version in enumerate( tool_versions ):
-                            tool_name = tool_names[ i ]
-                            tool_id = tool_ids[ i ]
-                            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name, tool_version=tool_version ):
+            if tool_ids or tool_names or tool_versions:
+                if 'tools' in metadata:
+                    tools = metadata[ 'tools' ]
+                else:
+                    tools = []
+                for tool_dict in tools:
+                    if tool_ids and not tool_names and not tool_versions:
+                        for tool_id in tool_ids:
+                            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id ):
                                 match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
-                    else:
-                        ok = False
+                    elif tool_names and not tool_ids and not tool_versions:
+                        for tool_name in tool_names:
+                            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name ):
+                                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                    elif tool_versions and not tool_ids and not tool_names:
+                        for tool_version in tool_versions:
+                            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_version=tool_version ):
+                                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                    elif tool_ids and tool_names and not tool_versions:
+                        if len( tool_ids ) == len( tool_names ):
+                            match_tuples = self.__search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
+                        elif len( tool_ids ) == 1 or len( tool_names ) == 1:
+                            tool_ids, tool_names = self.__make_same_length( tool_ids, tool_names )
+                            match_tuples = self.__search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
+                        else:
+                            ok = False
+                    elif tool_ids and tool_versions and not tool_names:
+                        if len( tool_ids )  == len( tool_versions ):
+                            match_tuples = self.__search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
+                        elif len( tool_ids ) == 1 or len( tool_versions ) == 1:
+                            tool_ids, tool_versions = self.__make_same_length( tool_ids, tool_versions )
+                            match_tuples = self.__search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
+                        else:
+                            ok = False
+                    elif tool_versions and tool_names and not tool_ids:
+                        if len( tool_versions ) == len( tool_names ):
+                            match_tuples = self.__search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
+                        elif len( tool_versions ) == 1 or len( tool_names ) == 1:
+                            tool_versions, tool_names = self.__make_same_length( tool_versions, tool_names )
+                            match_tuples = self.__search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
+                        else:
+                            ok = False
+                    elif tool_versions and tool_names and tool_ids:
+                        if len( tool_versions ) == len( tool_names ) and len( tool_names ) == len( tool_ids ):
+                            for i, tool_version in enumerate( tool_versions ):
+                                tool_name = tool_names[ i ]
+                                tool_id = tool_ids[ i ]
+                                if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name, tool_version=tool_version ):
+                                    match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                        else:
+                            ok = False
+            if workflow_names:
+                if 'workflows' in metadata:
+                    workflows = metadata[ 'workflows' ]
+                else:
+                    workflows = []
+                for workflow_dict in workflows:
+                    for workflow_name in workflow_names:
+                        if self.__in_workflow_dict( workflow_dict, exact_matches_checked, workflow_name=workflow_name ):
+                            match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
         return ok, match_tuples
+    def __in_workflow_dict( self, workflow_dict, exact_matches_checked, workflow_name=None ):
+        workflow_dict_workflow_name = workflow_dict[ 'name' ].lower()
+        return ( workflow_name == workflow_dict_workflow_name ) or \
+               ( not exact_matches_checked and workflow_dict_workflow_name.find( workflow_name ) >= 0 )
     def __in_tool_dict( self, tool_dict, exact_matches_checked, tool_id=None, tool_name=None, tool_version=None ):
         found = False
         if tool_id and not tool_name and not tool_version:

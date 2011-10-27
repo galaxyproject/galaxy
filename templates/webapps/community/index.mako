@@ -44,6 +44,20 @@
     <div class="page-container" style="padding: 10px;">
         <div class="toolMenu">
             <div class="toolSectionList">
+                %if repository_metadata:
+                    <div class="toolSectionPad"></div>
+                    <div class="toolSectionTitle">
+                        Search
+                    </div>
+                    <div class="toolSectionBody">
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools', webapp='community' )}">Search for valid tools</a>
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows', webapp='community' )}">Search for workflows</a>
+                        </div>
+                    </div>
+                %endif
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
                     Repositories
@@ -59,11 +73,6 @@
                         %if trans.user:
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_repositories', webapp='community' )}">Browse my repositories</a>
-                            </div>
-                        %endif
-                        %if repository_metadata:
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools', webapp='community' )}">Search for valid tools</a>
                             </div>
                         %endif
                     </div>

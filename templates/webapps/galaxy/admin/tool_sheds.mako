@@ -27,6 +27,7 @@
                             <div popupmenu="dataset-${shed_id}-popup">
                                 <a class="action-button" href="${h.url_for( controller='admin', action='browse_tool_shed', tool_shed_url=url )}">Browse valid repositories</a>
                                 <a class="action-button" href="${h.url_for( controller='admin', action='find_tools_in_tool_shed', tool_shed_url=url )}">Search for valid tools</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='find_workflows_in_tool_shed', tool_shed_url=url )}">Search for workflows</a>
                             </div>
                         </td>
                     </tr>

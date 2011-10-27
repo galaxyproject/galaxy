@@ -84,6 +84,7 @@
         <div popupmenu="toolshed-${repository.id}-popup">
             <a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_repositories', webapp=webapp )}">Browse valid repositories</a>
             <a class="action-button" href="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}">Search for valid tools</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}">Search for workflows</a>
         </div>
     %endif
 </ul>
@@ -92,10 +93,12 @@
     ${render_msg( message, status )}
 %endif
 
-<br/>
-<b>Boxes are red when tools are not available in this repository</b>
-<div class="toolParamHelp" style="clear: both;">
-    (this page displays SVG graphics)
+<div class="toolFormTitle">${workflow_name}</div>
+<div class="form-row">
+    <b>Boxes are red when tools are not available in this repository</b>
+    <div class="toolParamHelp" style="clear: both;">
+        (this page displays SVG graphics)
+    </div>
 </div>
 <br clear="left"/>
 
