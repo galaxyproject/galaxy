@@ -73,7 +73,7 @@
                     <div class="toolSectionTitle">Tool sheds</div>
                     <div class="toolSectionBody">
                         <div class="toolSectionBg">                        
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_tool_sheds' )}" target="galaxy_main">Browse tool sheds</a></div>
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_tool_sheds' )}" target="galaxy_main">Search and browse tool sheds</a></div>
                         </div>
                     </div>
                 %endif

@@ -1189,6 +1189,10 @@ extend( View.prototype, DrawableCollection.prototype, {
         }
     },
     go_to: function(str) {
+        // Preprocess str to remove spaces and commas.
+        str = str.replace(/ |,/g, "");
+        
+        // Go to new location.
         var view = this,
             new_low, 
             new_high,
@@ -1199,8 +1203,8 @@ extend( View.prototype, DrawableCollection.prototype, {
         if (pos !== undefined) {
             try {
                 var pos_split = pos.split("-");
-                new_low = parseInt(pos_split[0].replace(/,/g, ""), 10);
-                new_high = parseInt(pos_split[1].replace(/,/g, ""), 10);
+                new_low = parseInt(pos_split[0], 10);
+                new_high = parseInt(pos_split[1], 10);
             } catch (e) {
                 return false;
             }

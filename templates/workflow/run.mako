@@ -363,7 +363,17 @@ if wf_parms:
 %endif
 %for i, step in enumerate( steps ):
     %if step.type == 'tool' or step.type is None:
-      <% tool = app.toolbox.tools_by_id[step.tool_id] %>
+      <%
+        try:
+            tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
+        except KeyError, e:
+            # The id value of tools installed from a Galaxy tool shed is a guid, but
+            # these tool's old_id attribute should contain what we're looking for.
+            for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
+                if step.tool_id == available_tool.old_id:
+                    tool = available_tool
+                    break
+      %>
       <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
       <div class="toolForm">
           <div class="toolFormTitle">

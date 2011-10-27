@@ -184,7 +184,7 @@
         </form>
     </div>
 </div>
-${render_repository_tools_and_workflows( metadata, can_set_metadata=True )}
+${render_repository_tools_and_workflows( repository_metadata_id, metadata, can_set_metadata=True )}
 <p/>
 <div class="toolForm">
     <div class="toolFormTitle">Manage categories</div>

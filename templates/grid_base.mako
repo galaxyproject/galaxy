@@ -744,7 +744,7 @@
     
         %if grid.global_actions:
             <ul class="manage-table-actions">
-                %if len( grid.global_actions ) < 4:
+                %if len( grid.global_actions ) < 3:
                     %for action in grid.global_actions:
                         <li><a class="action-button" href="${h.url_for( **action.url_args )}">${action.label}</a></li>
                     %endfor

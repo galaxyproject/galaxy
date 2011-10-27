@@ -42,11 +42,11 @@
   || echo "Error running SamToFastq" >&amp;2
   </command>
   <inputs>
-    <param name="input_sam" type="data" format="sam" label="SAM file" />
+    <param name="input_sam" type="data" format="sam,bam" label="BAM/SAM file" />
     <param name="read1_trim" type="integer" value="" optional="True" label="The number of bases to trim from the beginning of read 1." />
     <param name="read1_max_bases_to_write" type="integer" optional="True" value="" label="The maximum number of bases to write from read 1 after trimming." />
     <param name="output_per_read_group_selector" type="select" label="Output per read group">
-      <option value="per_sam_file" selected="True">Per SAM file</option>
+      <option value="per_sam_file" selected="True">Per BAM/SAM file</option>
       <!-- <option value="per_read_group">Per Read Group</option> -->
       <validator type="expression" message="Per Read Group selection is not yet implemented">value == 'per_sam_file'</validator>
     </param>

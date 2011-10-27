@@ -7,8 +7,6 @@
    --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    #for $i, $input_bam in enumerate( $reference_source.input_bams ):
-       ${dir( $input_bam.input_bam )}
-       ${dir( $input_bam.input_bam.dataset )}
        -d "-I" "${input_bam.input_bam}" "${input_bam.input_bam.ext}" "gatk_input_${i}"
        -d "" "${input_bam.input_bam.metadata.bam_index}" "bam_index" "gatk_input_${i}" ##hardcode galaxy ext type as bam_index
    #end for
@@ -137,6 +135,7 @@
         <repeat name="input_bams" title="Sample BAM file" min="1">
             <param name="input_bam" type="data" format="bam" label="BAM file">
               <validator type="unspecified_build" />
+              <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
               <validator type="dataset_metadata_in_data_table" table_name="picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
             </param>
         </repeat>
@@ -148,7 +147,9 @@
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
         <repeat name="input_bams" title="Sample BAM file" min="1">
-            <param name="input_bam" type="data" format="bam" label="BAM file" />
+            <param name="input_bam" type="data" format="bam" label="BAM file" >
+              <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+            </param>
         </repeat>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>

@@ -4,8 +4,7 @@ from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tools import json_fix
-from galaxy.util.hash_util import *
-import simplejson, binascii, logging
+import logging
 log = logging.getLogger( __name__ )
 
 from galaxy.actions.admin import AdminActions
@@ -705,6 +704,13 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
+    def find_workflows_in_tool_shed( self, trans, **kwd ):
+        tool_shed_url = kwd[ 'tool_shed_url' ]
+        galaxy_url = trans.request.host
+        url = '%s/repository/find_workflows?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
+        return trans.response.send_redirect( url )
+    @web.expose
+    @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = trans.request.host
@@ -736,7 +742,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                 section_key = 'section_%s' % kwd[ 'tool_panel_section' ]
                 tool_section = trans.app.toolbox.tool_panel[ section_key ]
                 # Decode the encoded repo_info_dict param value.
-                repo_info_dict = self.__decode( repo_info_dict )
+                repo_info_dict = tool_shed_decode( repo_info_dict )
                 # Clone the repository to the configured location.
                 current_working_dir = os.getcwd()
                 for name, repo_info_tuple in repo_info_dict.items():
@@ -1157,15 +1163,6 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             section_str += '        </tool>\n'
         section_str += '    </section>\n'
         return section_str
-    def __decode( self, value ):
-        # Extract and verify hash
-        a, b = value.split( ":" )
-        value = binascii.unhexlify( b )
-        test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
-        assert a == test
-        # Restore from string
-        values = json_fix( simplejson.loads( value ) )
-        return values
 
 ## ---- Utility methods -------------------------------------------------------
 

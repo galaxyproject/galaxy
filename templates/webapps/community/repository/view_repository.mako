@@ -99,6 +99,7 @@
         <div popupmenu="repository-${repository.id}-popup">
             <a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_repositories', webapp=webapp )}">Browse valid repositories</a>
             <a class="action-button" href="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}">Search for valid tools</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}">Search for workflows</a>
         </div>
     %endif
 </ul>
@@ -185,7 +186,7 @@
         %endif
     </div>
 </div>
-${render_repository_tools_and_workflows( metadata, webapp=webapp )}
+${render_repository_tools_and_workflows( repository_metadata_id, metadata, webapp=webapp )}
 %if repository.categories:
     <p/>
     <div class="toolForm">

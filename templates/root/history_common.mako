@@ -96,7 +96,7 @@
                             display_url = h.url_for( controller='dataset', action='display', dataset_id=dataset_id, preview=True, filename='' )
                 %>
                 %if data.purged:
-                    <span class="icon-button display_disabled tooltip" title="Cannoy display datasets removed from disk"></span>
+                    <span class="icon-button display_disabled tooltip" title="Cannot display datasets removed from disk"></span>
                 %else:
                     <a class="icon-button display tooltip" title="Display data in browser" href="${display_url}"
                     %if for_editing:
@@ -150,6 +150,9 @@
                 %endif
             </div>
         %elif data_state == "error":
+            %if not data.purged:
+                <div>${data.get_size( nice_size=True )}</div>
+            %endif
             <div>
                 An error occurred running this job: <i>${data.display_info().strip()}</i>
             </div>

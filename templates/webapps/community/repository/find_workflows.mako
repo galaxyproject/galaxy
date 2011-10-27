@@ -14,7 +14,7 @@
     <br/><br/>
     <ul class="manage-table-actions">
         <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_repositories', webapp=webapp )}">Browse valid repositories</a></li>
-        <li><a class="action-button" href="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}">Search for workflows</a></li>
+        <a class="action-button" href="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}">Search for valid tools</a>
     </ul>
 %endif
 
@@ -23,29 +23,18 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Search repositories for valid tools</div>
+    <div class="toolFormTitle">Search repositories for workflows</div>
     <div class="toolFormBody">
         <div class="form-row">
-            Valid tools are those that properly load in Galaxy.  Enter any combination of the following tool attributes to find repositories that contain 
-            valid tools matching the search criteria.<br/><br/>
-            Comma-separated strings may be entered in each field to expand search criteria.  Each field must contain the same number of comma-separated
-            strings if these types of search strings are entered in more than one field.
+            Enter a workflow name to find repositories that contain workflows matching the search criteria.<br/><br/>
+            Comma-separated strings may be entered to expand search criteria.
         </div>
         <div style="clear: both"></div>
-        <form name="find_tools" id="find_tools" action="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}" method="post" >
-            <div class="form-row">
-                <label>Tool id:</label>
-                <input name="tool_id" type="textfield" value="${tool_id}" size="40"/>
-            </div>
+        <form name="find_workflows" id="find_workflows" action="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}" method="post" >
             <div style="clear: both"></div>
             <div class="form-row">
-                <label>Tool name:</label>
-                <input name="tool_name" type="textfield" value="${tool_name}" size="40"/>
-            </div>
-            <div style="clear: both"></div>
-            <div class="form-row">
-                <label>Tool version:</label>
-                <input name="tool_version" type="textfield" value="${tool_version}" size="40"/>
+                <label>Workflow name:</label>
+                <input name="workflow_name" type="textfield" value="${workflow_name}" size="40"/>
             </div>
             <div style="clear: both"></div>
             <div class="form-row">

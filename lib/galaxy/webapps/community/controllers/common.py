@@ -1,8 +1,9 @@
-import os, string, socket, logging
+import os, string, socket, logging, simplejson, binascii
 from time import strftime
 from datetime import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.hash_util import *
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -126,23 +127,18 @@ def get_latest_repository_metadata( trans, id ):
 def generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict ):
     """
     Update the received metadata_dict with changes that have been applied
-    to the received exported_workflow_dict.  Store everything except the
-    workflow steps in the database.
+    to the received exported_workflow_dict.  Store everything in the database.
     """
-    workflow_dict = { 'a_galaxy_workflow' : exported_workflow_dict[ 'a_galaxy_workflow' ],
-                      'name' :exported_workflow_dict[ 'name' ],
-                      'annotation' : exported_workflow_dict[ 'annotation' ],
-                      'format-version' : exported_workflow_dict[ 'format-version' ] }
     if 'workflows' in metadata_dict:
-        metadata_dict[ 'workflows' ].append( workflow_dict )
+        metadata_dict[ 'workflows' ].append( exported_workflow_dict )
     else:
-        metadata_dict[ 'workflows' ] = [ workflow_dict ]
+        metadata_dict[ 'workflows' ] = [ exported_workflow_dict ]
     return metadata_dict
 def new_workflow_metadata_required( trans, id, metadata_dict ):
     """
-    TODO: Currently everything about an exported workflow except the name is hard-coded, so
-    there's no real way to differentiate versions of exported workflows.  If this changes at
-    some future time, this method should be enhanced accordingly...
+    Currently everything about an exported workflow except the name is hard-coded, so there's
+    no real way to differentiate versions of exported workflows.  If this changes at some future
+    time, this method should be enhanced accordingly.
     """
     if 'workflows' in metadata_dict:
         repository_metadata = get_latest_repository_metadata( trans, id )
@@ -425,18 +421,20 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
         else:
-            message = "Change set revision '%s' includes no tools or exported workflows for which metadata can be set." % str( changeset_revision )
+            message = "Revision '%s' includes no tools or exported workflows for which metadata can be defined " % str( changeset_revision )
+            message += "so this revision cannot be automatically installed into a local Galaxy instance."
             status = "error"
     else:
         # change_set is None
-        message = "Repository does not include change set revision '%s'." % str( changeset_revision )
+        message = "This repository does not include revision '%s'." % str( changeset_revision )
         status = 'error'
     if invalid_files:
         if metadata_dict:
-            message = "Metadata was defined for some items in change set revision '%s'.  " % str( changeset_revision )
+            message = "Metadata was defined for some items in revision '%s'.  " % str( changeset_revision )
             message += "Correct the following problems if necessary and reset metadata.<br/>"
         else:
-            message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( changeset_revision )
+            message = "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( changeset_revision )
+            message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.<br/>"
         for itc_tup in invalid_files:
             tool_file, exception_msg = itc_tup
             if exception_msg.find( 'No such file or directory' ) >= 0:
@@ -619,3 +617,24 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         selected = selected_value and option_tup[1] == selected_value
         select_field.add_option( option_tup[0], option_tup[1], selected=selected )
     return select_field
+def encode( val ):
+    if isinstance( val, dict ):
+        value = simplejson.dumps( val )
+    else:
+        value = val
+    a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+    b = binascii.hexlify( value )
+    return "%s:%s" % ( a, b )
+def decode( value ):
+    # Extract and verify hash
+    a, b = value.split( ":" )
+    value = binascii.unhexlify( b )
+    test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+    assert a == test
+    # Restore from string
+    try:
+        values = json_fix( simplejson.loads( value ) )
+    except Exception, e:
+        # We do not have a json string
+        values = value
+    return values
