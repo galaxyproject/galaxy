@@ -1480,10 +1480,10 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                         trans.sa_session.add( workflow_invocation )
                         invocations.append({'outputs': outputs,
                                             'new_history': new_history})
-                trans.sa_session.flush()
-                return trans.fill_template( "workflow/run_complete.mako",
-                                            workflow=stored,
-                                            invocations=invocations )
+                        trans.sa_session.flush()
+                        return trans.fill_template( "workflow/run_complete.mako",
+                                                    workflow=stored,
+                                                    invocations=invocations )
             else:
                 # Prepare each step
                 missing_tools = []
