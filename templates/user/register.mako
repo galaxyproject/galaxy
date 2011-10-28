@@ -65,7 +65,7 @@
                     ${subscribe_check_box.get_html()}
                 </div>
             %endif
-            %if user_type_fd_id_select_field:
+            %if len( user_type_fd_id_select_field.options ) > 1:
                 <div class="form-row">
                     <label>User type</label>
                     ${user_type_fd_id_select_field.get_html()}
