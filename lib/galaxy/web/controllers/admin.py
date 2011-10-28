@@ -410,7 +410,8 @@ class RepositoryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    attach_popup=True ),
+                    link=( lambda item: dict( operation="manage_repository", id=item.id, webapp="galaxy" ) ),
+                    attach_popup=False ),
         DescriptionColumn( "Description" ),
         OwnerColumn( "Owner" ),
         RevisionColumn( "Revision" ),
@@ -426,17 +427,14 @@ class RepositoryListGrid( grids.Grid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ grids.GridOperation( "Get updates",
-                                        allow_multiple=False,
-                                        condition=( lambda item: not item.deleted ),
-                                        async_compatible=False ) ]
     standard_filters = []
     default_filter = dict( deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class )
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( self.model_class.table.c.deleted == False )
 
 class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamParser ):
     
@@ -678,11 +676,88 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         return quota, params
     @web.expose
     @web.require_admin
-    def browse_repositories( self, trans, **kwd ):
+    def browse_tool_shed_repository( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, kwd[ 'id' ] )
+        relative_install_dir = self.__get_relative_install_dir( trans, repository )
+        repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
+        tool_dicts = []
+        workflow_dicts = []
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                if '.hg' in dirs:
+                    # Don't visit .hg directories.
+                    dirs.remove( '.hg' )
+                if 'hgrc' in files:
+                     # Don't include hgrc files.
+                    files.remove( 'hgrc' )
+                for name in files:
+                    # Find all tool configs.
+                    if name.endswith( '.xml' ):
+                        try:
+                            full_path = os.path.abspath( os.path.join( root, name ) )
+                            tool = trans.app.toolbox.load_tool( full_path )
+                            if tool is not None:
+                                tool_config = os.path.join( root, name )
+                                # Handle tool.requirements.
+                                tool_requirements = []
+                                for tr in tool.requirements:
+                                    name=tr.name
+                                    type=tr.type
+                                    if type == 'fabfile':
+                                        version = None
+                                        fabfile = tr.fabfile
+                                        method = tr.method
+                                    else:
+                                        version = tr.version
+                                        fabfile = None
+                                        method = None
+                                    requirement_dict = dict( name=name,
+                                                             type=type,
+                                                             version=version,
+                                                             fabfile=fabfile,
+                                                             method=method )
+                                    tool_requirements.append( requirement_dict )
+                                tool_dict = dict( id=tool.id,
+                                                  old_id=tool.old_id,
+                                                  name=tool.name,
+                                                  version=tool.version,
+                                                  description=tool.description,
+                                                  requirements=tool_requirements,
+                                                  tool_config=tool_config )
+                                tool_dicts.append( tool_dict )
+                        except Exception, e:
+                            # The file is not a Galaxy tool config.
+                            pass
+                    # Find all exported workflows
+                    elif name.endswith( '.ga' ):
+                        try:
+                            full_path = os.path.abspath( os.path.join( root, name ) )
+                            # Convert workflow data from json
+                            fp = open( full_path, 'rb' )
+                            workflow_text = fp.read()
+                            fp.close()
+                            workflow_dict = from_json_string( workflow_text )
+                            if workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                                workflow_dicts.append( dict( full_path=full_path, workflow_dict=workflow_dict ) )
+                        except Exception, e:
+                            # The file is not a Galaxy workflow.
+                            pass
+        return trans.fill_template( '/admin/tool_shed_repository/browse_repository.mako',
+                                    repository=repository,
+                                    tool_dicts=tool_dicts,
+                                    workflow_dicts=workflow_dicts,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
+    def browse_tool_shed_repositories( self, trans, **kwd ):
         if 'operation' in kwd:
-            operation = kwd.pop('operation').lower()
-            if operation == "get updates":
-                return self.check_for_updates( trans, **kwd )
+            operation = kwd.pop( 'operation' ).lower()
+            if operation == "manage_repository":
+                return self.manage_tool_shed_repository( trans, **kwd )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
     @web.expose
@@ -850,10 +925,35 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                                     status=status )
     @web.expose
     @web.require_admin
-    def check_for_updates( self, trans, **kwd ):
+    def manage_tool_shed_repository( self, trans, **kwd ):
         params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         repository_id = params.get( 'id', None )
         repository = get_repository( trans, repository_id )
+        description = util.restore_text( params.get( 'description', repository.description ) )
+        if params.get( 'edit_repository_button', False ):
+            if description != repository.description:
+                repository.description = description
+                trans.sa_session.add( repository )
+                trans.sa_session.flush()
+            message = "The repository information has been updated."
+        relative_install_dir = self.__get_relative_install_dir( trans, repository )
+        if relative_install_dir:
+            repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
+        else:
+            repo_files_dir = 'unknown'
+        return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
+                                    repository=repository,
+                                    description=description,
+                                    repo_files_dir=repo_files_dir,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
+    def check_for_updates( self, trans, **kwd ):
+        params = util.Params( kwd )
+        repository = get_repository( trans, kwd[ 'id' ] )
         galaxy_url = trans.request.host
         # Send a request to the relevant tool shed to see if there are any updates.
         # TODO: support https in the following url.
@@ -872,26 +972,16 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         latest_changeset_revision = params.get( 'latest_changeset_revision', None )
+        repository = get_repository_by_shed_name_owner_changeset_revision( trans, tool_shed_url, name, owner, changeset_revision )
         if changeset_revision and latest_changeset_revision:
             if changeset_revision == latest_changeset_revision:
                 message = "The cloned tool shed repository named '%s' is current (there are no updates available)." % name
             else:
-                repository = get_repository_by_name_owner_changeset_revision( trans, name, owner, changeset_revision )
                 current_working_dir = os.getcwd()
-                # Get the directory where the repository is cloned.
-                cleaned_tool_shed_url = self.__clean_tool_shed_url( tool_shed_url )
-                partial_cloned_dir = '%s/repos/%s/%s/%s' % ( cleaned_tool_shed_url, owner, name, changeset_revision )
-                # Get the relative tool installation paths from each of the shed tool configs.
-                shed_tool_confs = trans.app.toolbox.shed_tool_confs
-                relative_cloned_dir = None
-                # The shed_tool_confs dictionary contains shed_conf_filename : tool_path pairs.
-                for shed_conf_filename, tool_path in shed_tool_confs.items():
-                    relative_cloned_dir = os.path.join( tool_path, partial_cloned_dir )
-                    if os.path.isdir( relative_cloned_dir ):
-                        break
-                if relative_cloned_dir:
+                relative_install_dir = self.__get_relative_install_dir( trans, repository )
+                if relative_install_dir:
                     # Update the cloned repository to changeset_revision.
-                    repo_files_dir = os.path.join( relative_cloned_dir, name )
+                    repo_files_dir = os.path.join( relative_install_dir, name )
                     log.debug( "Updating cloned repository named '%s' from revision '%s' to revision '%s'..." % \
                         ( name, changeset_revision, latest_changeset_revision ) )
                     cmd = 'hg pull'
@@ -935,9 +1025,23 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             message = "The latest changeset revision could not be retrieved for the repository named '%s'." % name
             status = 'error'
         return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='browse_repositories',
+                                                          action='manage_tool_shed_repository',
+                                                          id=trans.security.encode_id( repository.id ),
                                                           message=message,
                                                           status=status ) )
+    def __get_relative_install_dir( self, trans, repository ):
+        # Get the directory where the repository is install.
+        tool_shed = self.__clean_tool_shed_url( repository.tool_shed )
+        partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.changeset_revision )
+        # Get the relative tool installation paths from each of the shed tool configs.
+        shed_tool_confs = trans.app.toolbox.shed_tool_confs
+        relative_install_dir = None
+        # The shed_tool_confs dictionary contains { shed_conf_filename : tool_path } pairs.
+        for shed_conf_filename, tool_path in shed_tool_confs.items():
+            relative_install_dir = os.path.join( tool_path, partial_install_dir )
+            if os.path.isdir( relative_install_dir ):
+                break
+        return relative_install_dir
     def __handle_missing_data_table_entry( self, trans, tool_path, sample_files, repository_tools_tups ):
         # Inspect each tool to see if any have input parameters that are dynamically
         # generated select lists that require entries in the tool_data_table_conf.xml file.
@@ -1057,7 +1161,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
         owner = self.__get_repository_owner( tmp_url )
         flush_needed = False
-        tool_shed_repository = get_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision )
+        tool_shed_repository = get_repository_by_shed_name_owner_changeset_revision( trans, tool_shed, name, owner, changeset_revision )
         if tool_shed_repository:
             if tool_shed_repository.deleted:
                 tool_shed_repository.deleted = False
@@ -1200,3 +1304,11 @@ def get_repository_by_name_owner_changeset_revision( trans, name, owner, changes
                                             trans.model.ToolShedRepository.table.c.owner == owner,
                                             trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
                              .first()
+def get_repository_by_shed_name_owner_changeset_revision( trans, tool_shed, name, owner, changeset_revision ):
+    return trans.sa_session.query( trans.model.ToolShedRepository ) \
+                           .filter( and_( trans.model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                          trans.model.ToolShedRepository.table.c.name == name,
+                                          trans.model.ToolShedRepository.table.c.owner == owner,
+                                          trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
+                           .first()
+

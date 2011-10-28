@@ -1095,8 +1095,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
     @web.expose
     def import_workflow( self, trans, **kwd ):
         """
-        Import a workflow by reading an url, uploading a file, or receiving the textual
-        representation of a workflow.
+        Import a workflow by reading an url, uploading a file, opening and reading the contents
+        of a local file, or receiving the textual representation of a workflow via http.
         """
         url = kwd.get( 'url', '' )
         workflow_text = kwd.get( 'workflow_text', '' )
@@ -1104,6 +1104,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         import_button = kwd.get( 'import_button', False )
+        # The following parameters will have values only if the workflow
+        # id being imported from a Galaxy tool shed repository.
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         repository_metadata_id = kwd.get( 'repository_metadata_id', '' )
         # The workflow_name parameter is in the request only if the import originated
@@ -1111,6 +1113,15 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         workflow_name = kwd.get( 'workflow_name', '' )
         if workflow_name:
             workflow_name = tool_shed_decode( workflow_name )
+        # The following parameters will have a value only if the import originated
+        # from a tool shed repository installed locally.
+        local_file = kwd.get( 'local_file', '' )
+        repository_id = kwd.get( 'repository_id', '' )
+        if local_file and not import_button:
+            workflow_file = open( local_file, 'rb' )
+            workflow_text = workflow_file.read()
+            workflow_file.close()
+            import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
             workflow_url = 'http://%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
@@ -1118,7 +1129,6 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             response = urllib2.urlopen( workflow_url )
             workflow_text = response.read()
             response.close()
-            workflow_text = workflow_text
             import_button = True
         if import_button:
             workflow_data = None
@@ -1131,6 +1141,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( url, str( e ) )
                     status = 'error'
             elif workflow_text:
+                # This case occurs when the workflow_text was sent via http from the tool shed.
                 workflow_data = workflow_text
             else:
                 # Load workflow from browsed file.
@@ -1170,7 +1181,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                         message += "Imported, but this workflow contains cycles.  "
                         status = "error"
                     else:
-                        message += "Workflow '%s' imported successfully.  " % workflow.name
+                        message += "Workflow <b>%s</b> imported successfully.  " % workflow.name
                     if missing_tool_tups:
                         if trans.user_is_admin():
                             # A required tool is not available in the local Galaxy instance.
@@ -1201,11 +1212,19 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             pass
                     if tool_shed_url:
                         # We've received the textual representation of a workflow from a Galaxy tool shed.
-                        message = "This workflow has been successfully imported into your local Galaxy instance."
+                        message = "Workflow <b>%s</b> imported successfully." % workflow.name
                         # TODO: support https in the following url.
                         url = 'http://%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&message=%s' % \
                             ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp, message )
                         return trans.response.send_redirect( url )
+                    elif local_file:
+                        # The workflow was read from a file included with an installed tool shed repository.
+                        message = "Workflow <b>%s</b> imported successfully." % workflow.name
+                        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                          action='browse_tool_shed_repository',
+                                                                          id=repository_id,
+                                                                          message=message,
+                                                                          status=status ) )
                     return self.list( trans )
         return trans.fill_template( "workflow/import.mako",
                                     url=url,
