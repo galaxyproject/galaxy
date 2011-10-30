@@ -699,7 +699,7 @@ extend(Drawable.prototype, {
     remove: function() {
         this.container.remove_drawable(this);
         
-        this.container_div.fadeOut('slow', function() { 
+        this.container_div.hide(0, function() { 
             $(this).remove();
             // HACK: is there a better way to update the view?
             view.update_intro_div();
@@ -1253,7 +1253,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         DrawableCollection.prototype.remove_drawable.call(this, drawable);
         if (hide) {
             var view = this;
-            drawable.container_div.fadeOut('slow', function() { 
+            drawable.container_div.hide(0, function() { 
                 $(this).remove();
                 view.update_intro_div(); 
             });
@@ -2699,7 +2699,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             w_scale = width / range,
             resolution = this.view.resolution,
             parent_element = $("<div style='position: relative;'></div>");
-            
+
         // For overview, adjust high, low, resolution, and w_scale.
         if (this.is_overview) {
             low = this.view.max_low;
