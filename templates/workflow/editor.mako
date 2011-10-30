@@ -213,7 +213,7 @@
                          show_workflow_parameters();
                      },
                      beforeSubmit: function( data ) {
-                         show_modal( "Loading workflow", "progress" );
+                         show_message( "Loading workflow", "progress" );
                      }
                 });
             }
@@ -650,7 +650,7 @@
     };
 
     var save_current_workflow = function ( eventObj, success_callback ) {
-        show_modal( "Saving workflow", "progress" );
+        show_message( "Saving workflow", "progress" );
         workflow.check_changes_in_active_form();
         if (!workflow.has_changes) {
             hide_modal();

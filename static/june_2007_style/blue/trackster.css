@@ -3,30 +3,9 @@
 .content{font:10px verdana;}
 .nav-controls{text-align:center;padding:1px 0;}
 .nav-controls input{margin:0 5px;}
-.menu-button{padding: 0px 4px 0px 4px;}
 #zoom-in,#zoom-out{display:inline-block;height:16px;width:16px;margin-bottom:-3px;cursor:pointer;}
 #zoom-out{background:transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat;}
 #zoom-in{margin-left:10px;background:transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat;}
-.overview-icon{background:transparent url(../images/fugue/application-dock-270-bw.png) no-repeat;}
-.overview-icon:hover{background:transparent url(../images/fugue/application-dock-270.png) no-repeat;}
-.settings-icon{background:transparent url(../images/fugue/gear-bw.png) no-repeat;}
-.settings-icon:hover{background:transparent url(../images/fugue/gear.png) no-repeat;}
-.tools-icon{background:transparent url(../images/fugue/toolbox-bw.png) no-repeat;}
-.tools-icon:hover{background:transparent url(../images/fugue/toolbox.png) no-repeat;}
-.filters-icon{background:transparent url(../images/fugue/ui-slider-050-bw.png) no-repeat;}
-.filters-icon:hover{background:transparent url(../images/fugue/ui-slider-050.png) no-repeat;}
-.remove-icon,.overview-close{background:transparent url(../images/fugue/cross-small-bw.png) no-repeat;}
-.remove-icon:hover,.overview-close:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
-#close-icon{background:transparent url(../images/fugue/cross-circle-bw.png) no-repeat;margin-right:0px;}
-#close-icon:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
-#add-tracks-icon{background:transparent url(../images/fugue/plus-button-bw.png) no-repeat;}
-#add-tracks-icon:hover{background:transparent url(../images/fugue/plus-button.png) no-repeat;}
-#add-group-icon{background:transparent url(../images/fugue/block--plus-bw.png) no-repeat;}
-#add-group-icon:hover{background:transparent url(../images/fugue/block--plus.png) no-repeat;}
-#bookmarks-icon{background:transparent url(../images/fugue/bookmarks-bw.png) no-repeat;}
-#bookmarks-icon:hover{background:transparent url(../images/fugue/bookmarks.png) no-repeat;}
-#save-icon{background:transparent url(../images/fugue/disk--arrow-bw.png) no-repeat;}
-#save-icon:hover{background:transparent url(../images/fugue/disk--arrow.png) no-repeat;}
 .nav-input{font-size:12px;width:30em;z-index:1000;}
 .location{display:inline-block;width:15em;margin:0 10px;}
 .draghandle{margin-top:2px;cursor:move;float:left;background:transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;width:10px;height:12px;}
@@ -65,16 +44,39 @@
 input{font:10px verdana;}
 .dynamic-tool,.filters{margin-left:0.25em;padding-bottom:0.5em;}
 .dynamic-tool{width:410px;}
-.filters>.sliders,.display-controls{float:left;margin:1em;}
+.filters > .sliders,.display-controls{float:left;margin:1em;}
 .sliders{width:410px;}
-.display-controls{border-left:solid 2px #DDDDDD;padding-left:1em}
-.filter-row{margin-top:0.4em;}
+.display-controls{border-left:solid 2px #DDDDDD;padding-left:1em
+}
+.filter-row {
+    margin-top:0.4em;}
 .slider-row{margin-left:1em;}
 .elt-label{float:left;font-weight:bold;margin-right:1em;}
 .slider{float:right;width:200px;position:relative;}
 .tool-name{font-size:110%;font-weight:bold;}
 .param-row{margin-top:0.2em;margin-left:1em;}
 .param-label{float:left;font-weight:bold;padding-top:0.2em;}
+.menu-button{padding:0px 4px 0px 4px;}
+.settings-icon{background:transparent url(../images/fugue/gear-bw.png) no-repeat;}
+.settings-icon:hover{background:transparent url(../images/fugue/gear.png) no-repeat;}
+.overview-icon{background:transparent url(../images/fugue/application-dock-270-bw.png) no-repeat;}
+.overview-icon:hover{background:transparent url(../images/fugue/application-dock-270.png) no-repeat;}
+.tools-icon{background:transparent url(../images/fugue/toolbox-bw.png) no-repeat;}
+.tools-icon:hover{background:transparent url(../images/fugue/toolbox.png) no-repeat;}
+.filters-icon{background:transparent url(../images/fugue/ui-slider-050-bw.png) no-repeat;}
+.filters-icon:hover{background:transparent url(../images/fugue/ui-slider-050.png) no-repeat;}
+.remove-icon,.overview-close{background:transparent url(../images/fugue/cross-small-bw.png) no-repeat;}
+.remove-icon:hover,.overview-close:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
+#close-icon{background:transparent url(../images/fugue/cross-circle-bw.png) no-repeat;margin-right:0px;}
+#close-icon:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
+#add-tracks-icon{background:transparent url(../images/fugue/plus-button-bw.png) no-repeat;}
+#add-tracks-icon:hover{background:transparent url(../images/fugue/plus-button.png) no-repeat;}
+#add-group-icon{background:transparent url(../images/fugue/block--plus-bw.png) no-repeat;}
+#add-group-icon:hover{background:transparent url(../images/fugue/block--plus.png) no-repeat;}
+#bookmarks-icon{background:transparent url(../images/fugue/bookmarks-bw.png) no-repeat;}
+#bookmarks-icon:hover{background:transparent url(../images/fugue/bookmarks.png) no-repeat;}
+#save-icon{background:transparent url(../images/fugue/disk--arrow-bw.png) no-repeat;}
+#save-icon:hover{background:transparent url(../images/fugue/disk--arrow.png) no-repeat;}
 .child-track-icon{background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;width:30px;cursor:move;}
 .track-resize{background:white url('../images/visualization/draggable_vertical.png') no-repeat top center;position:absolute;right:3px;bottom:-4px;width:14px;height:7px;border:solid #999 1px;z-index:100;}
 .bookmark{background:white;border:solid #999 1px;border-right:none;margin:0.5em;margin-right:0;padding:0.5em;}
@@ -85,4 +87,4 @@ input{font:10px verdana;}
 .icon.more-across{background:url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;}
 .intro{padding:1em;}
 .intro > .action-button{background-color:#CCC;padding:1em;}
-.feature-popup{background-color:#DDD;position:absolute;z-index:1000}
+.feature-popup{background-color:#DDD;position:absolute;z-index:1000;}
