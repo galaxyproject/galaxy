@@ -3526,7 +3526,28 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
 var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
-    this.painter = painters.VariantPainter;
+    
+    this.config = new DrawableConfig( {
+        track: this,
+        params: [
+            { key: 'name', label: 'Name', type: 'text', default_value: name },
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
+            { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
+            { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
+            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        ], 
+        saved_values: prefs,
+        onchange: function() {
+            this.track.set_name(this.track.prefs.name);
+            this.track.tile_cache.clear();
+            this.track.request_draw();
+        }
+    });
+    this.prefs = this.config.values;
+    
+    
+    this.painter = painters.ReadPainter;
 };
 
 extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
@@ -3605,6 +3626,7 @@ exports.DrawableGroup = DrawableGroup;
 exports.LineTrack = LineTrack;
 exports.FeatureTrack = FeatureTrack;
 exports.ReadTrack = ReadTrack;
+exports.VcfTrack = VcfTrack;
 
 // End trackster_module encapsulation
 };
@@ -4173,20 +4195,20 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
      * Height of a single row, depends on mode
      */
     get_row_height: function() {
-        var mode = this.mode, y_scale;
+        var mode = this.mode, height;
            if (mode === "Dense") {
-            y_scale = DENSE_TRACK_HEIGHT;            
+            height = DENSE_TRACK_HEIGHT;            
         }
         else if (mode === "no_detail") {
-            y_scale = NO_DETAIL_TRACK_HEIGHT;
+            height = NO_DETAIL_TRACK_HEIGHT;
         }
         else if (mode === "Squish") {
-            y_scale = SQUISH_TRACK_HEIGHT;
+            height = SQUISH_TRACK_HEIGHT;
         }
         else { // mode === "Pack"
-            y_scale = PACK_TRACK_HEIGHT;
+            height = PACK_TRACK_HEIGHT;
         }
-        return y_scale;
+        return height;
     },
 
     /**
@@ -4212,7 +4234,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         ctx.globalAlpha = this.alpha_scaler.gen_val(feature);
         
         // In dense mode, put all data in top slot.
-        if (mode == "Dense") {
+        if (mode === "Dense") {
             slot = 1;
         }
         
@@ -4375,65 +4397,6 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
     }
 });
 
-
-var VariantPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
-    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
-}
-
-extend(VariantPainter.prototype, FeaturePainter.prototype, {
-    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
-        var feature = data[i],
-            feature_uid = feature[0],
-            feature_start = feature[1],
-            feature_end = feature[2],
-            feature_name = feature[3],
-            // All features need a start, end, and vertical center.
-            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
-            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
-            thickness, y_start, thick_start = null, thick_end = null;
-        
-        if (no_label) {
-            ctx.fillStyle = block_color;
-            ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
-        } 
-        else { // Show blocks, labels, etc.                        
-            // Unpack.
-            var ref_base = feature[4], alt_base = feature[5], qual = feature[6];
-        
-            // Draw block for entry.
-            thickness = 9;
-            y_start = 1;
-            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, thickness);
-        
-            // Add label for entry.
-            if (mode !== "Dense" && feature_name !== undefined && feature_start > tile_low) {
-                // Draw label
-                ctx.fillStyle = label_color;
-                if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
-                    ctx.textAlign = "left";
-                    ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
-                } else {
-                    ctx.textAlign = "right";
-                    ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
-                }
-                ctx.fillStyle = block_color;
-            }
-        
-            // Show additional data on block.
-            var vcf_label = ref_base + " / " + alt_base;
-            if (feature_start > tile_low && ctx.measureText(vcf_label).width < (f_end - f_start)) {
-                ctx.fillStyle = "white";
-                ctx.textAlign = "center";
-                ctx.fillText(vcf_label, left_offset + f_start + (f_end-f_start)/2, y_center + 8);
-                ctx.fillStyle = block_color;
-            }
-        }
-        
-        return [f_start, f_end];
-    }
-});
-
 var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler, ref_seq) {
     FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
     this.ref_seq = (ref_seq ? ref_seq.data : null);
@@ -4443,23 +4406,23 @@ ReadPainter.prototype.default_prefs = extend({}, FeaturePainter.prototype.defaul
 
 extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
-     * Returns y_scale based on mode.
+     * Returns height based on mode.
      */
     get_row_height: function() {
-        var y_scale, mode = this.mode;
+        var height, mode = this.mode;
         if (mode === "Dense") {
-            y_scale = DENSE_TRACK_HEIGHT;            
+            height = DENSE_TRACK_HEIGHT;            
         }
         else if (mode === "Squish") {
-            y_scale = SQUISH_TRACK_HEIGHT;
+            height = SQUISH_TRACK_HEIGHT;
         }
         else { // mode === "Pack"
-            y_scale = PACK_TRACK_HEIGHT;
+            height = PACK_TRACK_HEIGHT;
             if (this.prefs.show_insertions) {
-                y_scale *= 2;
+                height *= 2;
             }
         }
-        return y_scale;
+        return height;
     },
     
     /**
@@ -4585,7 +4548,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                 draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_center + 4, 5]};
                                 ctx.fillStyle = CONNECTOR_COLOR;
                                 // Based on overlap b/t sequence and tile, get sequence to be drawn.
-                                switch(seq_tile_overlap) {
+                                switch( compute_overlap( [seq_start, seq_start + cig_len], tile_region ) ) {
                                     case(OVERLAP_START):
                                         seq = seq.slice(tile_low-seq_start);
                                         break;
@@ -4616,7 +4579,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                         else {
                             if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > char_width_px) {
                                 // Show insertions with a single number at the insertion point.
-                                draw_last[draw_last.length] = {type: "text", data: [seq.length, insert_x_coord, y_center + 9]};
+                                draw_last.push( { type: "text", data: [seq.length, insert_x_coord, y_center + 9] } );
                             }
                             else {
                                 // TODO: probably can merge this case with code above.
@@ -4703,7 +4666,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             ctx.fillStyle = block_color;
             this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center);
         }
-        if (mode === "Pack" && feature_start > tile_low) {
+        if (mode === "Pack" && feature_start > tile_low && feature_name !== ".") {
             // Draw label.
             ctx.fillStyle = this.prefs.label_color;
             // FIXME: eliminate tile_index
@@ -4728,7 +4691,6 @@ exports.SummaryTreePainter = SummaryTreePainter;
 exports.LinePainter = LinePainter;
 exports.LinkedFeaturePainter = LinkedFeaturePainter;
 exports.ReadPainter = ReadPainter;
-exports.VariantPainter = VariantPainter;
 
 // End painters_module encapsulation
 };

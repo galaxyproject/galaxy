@@ -31,7 +31,7 @@ var add_bookmark = function(position, annotation) {
 /**
  * Objects that can be added to a view.
  */
-var addable_objects = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack, "DrawableGroup": DrawableGroup };
+var addable_objects = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "VcfTrack": VcfTrack, "ReadTrack": ReadTrack, "DrawableGroup": DrawableGroup };
 
 /**
  * Decode a track from a dictionary.

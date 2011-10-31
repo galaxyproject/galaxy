@@ -498,4 +498,4 @@ class Vcf( Tabular ):
         return out
         
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
+        return "VcfTrack", {"data": "tabix", "index": "summary_tree"}

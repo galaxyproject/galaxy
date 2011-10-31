@@ -661,36 +661,81 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
                 
 class VcfDataProvider( TabixDataProvider ):
     """
-    VCF data provider for the Galaxy track browser.
-
-    Payload format: 
-    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score ]
+    VCF data provider. Payload format uses the read format.
     """
 
     col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
 
     def process_data( self, iterator, start_val=0, max_vals=sys.maxint, **kwargs ):
+        """
+        Returns a dict with the following attributes:
+            data - a list of variants with the format 
+                [<guid>, <start>, <end>, <name>, cigar, seq] 
+
+            message - error/informative message
+        """
         rval = []
         message = None
         
+        def get_mapping( ref, alt ):
+            """
+            Returns ( offset, new_seq, cigar ) tuple that defines mapping of 
+            alt to ref. Cigar format is an array of [ op_index, length ] pairs 
+            where op_index is the 0-based index into the string "MIDNSHP=X"
+            """
+            
+            cig_ops = "MIDNSHP=X"
+            
+            ref_len = len( ref )
+            alt_len = len( alt )
+            
+            # Substitutions?
+            if ref_len == alt_len:
+                return 0, alt, [ [ cig_ops.find( "M" ), ref_len ] ]
+            
+            # Deletions?
+            alt_in_ref_index = ref.find( alt )
+            if alt_in_ref_index != -1:
+                return alt_in_ref_index, ref[ alt_in_ref_index + 1: ], [ [ cig_ops.find( "D" ), ref_len - alt_len ] ]
+
+            # Insertions?
+            ref_in_alt_index = alt.find( ref )
+            if ref_in_alt_index != -1:
+                return ref_in_alt_index, alt[ ref_in_alt_index + 1: ], [ [ cig_ops.find( "I" ), alt_len - ref_len ] ]
+            
+        # Pack data.
         for count, line in enumerate( iterator ):
             if count < start_val:
                 continue
             if count-start_val >= max_vals:
                 message = ERROR_MAX_VALS % ( "max_vals", "features" )
                 break
-            
+
             feature = line.split()
-            payload = [ hash(line), int(feature[1])-1, int(feature[1]),
-                        # ID: 
-                        feature[2],
-                        # reference base(s):
-                        feature[3],
-                        # alternative base(s)
-                        feature[4],
-                        # phred quality score
-                        float( feature[5] )]
-            rval.append(payload)
+            start = int( feature[1] ) - 1
+            ref = feature[3]
+            alts = feature[4]
+            
+            # HACK? alts == '.' --> monomorphism.
+            if alts == '.':
+                alts = ref
+
+            # Pack variants.
+            for alt in alts.split(","):
+                offset, new_seq, cigar = get_mapping( ref, alt )
+                start += offset
+                end = start + len( new_seq )
+            
+                # Pack line.
+                payload = [ hash( line ), 
+                            start, 
+                            end,
+                            # ID:
+                            feature[2],
+                            cigar,
+                            new_seq,
+                            float( feature[5] )]
+                rval.append(payload)
 
         return { 'data': rval, 'message': message }
 
