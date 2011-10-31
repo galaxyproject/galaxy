@@ -50,7 +50,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         content_id = id
         try:
-            content = self.get_history_dataset_association( trans, content_id, check_ownership=True, check_accessible=True )
+            # get the history just for the access checks
+            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True, deleted=False )
+            content = self.get_history_dataset_association( trans, history, content_id, check_ownership=True, check_accessible=True )
         except Exception, e:
             return str( e )
         try:
