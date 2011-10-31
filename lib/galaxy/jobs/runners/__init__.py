@@ -31,7 +31,7 @@ class BaseJobRunner( object ):
             commands += "; cd %s; " % os.path.abspath( os.getcwd() )
             commands += job_wrapper.setup_external_metadata( 
                             exec_dir = os.path.abspath( os.getcwd() ),
-                            tmp_dir = self.app.config.new_file_path,
+                            tmp_dir = job_wrapper.working_directory,
                             dataset_files_path = self.app.model.Dataset.file_path,
                             output_fnames = job_wrapper.get_output_fnames(),
                             set_extension = False,

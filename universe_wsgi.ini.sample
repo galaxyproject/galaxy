@@ -519,6 +519,13 @@ use_interactive = True
 # Galaxy server after the job completes.
 #outputs_to_working_directory = False
 
+# If your network filesystem's caching prevents the Galaxy server from seeing
+# the job's stdout and stderr files when it completes, you can retry reading
+# these files.  The job runner will retry the number of times specified below,
+# waiting 1 second between tries.  For NFS, you may want to try the -noac mount
+# option (Linux) or -actimeo=0 (Solaris).
+#retry_job_output_collection = 0
+
 # Number of concurrent jobs to run (local job runner)
 #local_job_queue_workers = 5
 
@@ -556,9 +563,9 @@ use_interactive = True
 # Also the
 # Defaults    requiretty
 # in /etc/sudoers must be commented out
-#drmaa_external_runjob_script = /opt/galaxy/scripts/drmaa_external_runner.py
-#drmaa_external_killjob_script = /opt/galaxy/scripts/drmaa_external_killer.py
-#external_chown_script = /opt/galaxy/scripts/external_chown_script.py
+#drmaa_external_runjob_script = scripts/drmaa_external_runner.py
+#drmaa_external_killjob_script = scripts/drmaa_external_killer.py
+#external_chown_script = scripts/external_chown_script.py
 
 #important if running as actual user since enviromental variables are not passed
 #will supercede an other definition of TMPDIR if using drmaa

@@ -81,6 +81,7 @@ class Configuration( object ):
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
+        self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
         self.job_walltime = kwargs.get( 'job_walltime', None )
         self.admin_users = kwargs.get( "admin_users", "" )
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
@@ -219,14 +220,6 @@ class Configuration( object ):
                     os.makedirs( path )
                 except Exception, e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
-        if self.drmaa_external_runjob_script:
-            os.chmod(self.new_file_path, 0777)
-            os.chmod(self.job_working_directory, 0777)
-            os.chmod(self.cluster_files_directory, 0777)
-        else:
-            os.chmod(self.new_file_path, 0755)
-            os.chmod(self.job_working_directory, 0755)
-            os.chmod(self.cluster_files_directory, 0755)
 
         # Check that required files exist
         for path in self.tool_configs:

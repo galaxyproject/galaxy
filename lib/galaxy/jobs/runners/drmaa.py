@@ -53,8 +53,6 @@ fi
 cd %s
 %s
 %s
-%s
-%s
 """
 def __lineno__():
     """Returns the current line number in our program."""
@@ -168,8 +166,8 @@ class DRMAAJobRunner( BaseJobRunner ):
         job_wrapper.change_state( model.Job.states.QUEUED )
 
         # define job attributes
-        ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
-        efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
+        ofile = "%s.drmout" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
+        efile = "%s.drmerr" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         jt = self.ds.createJobTemplate()
         jt.remoteCommand = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job_wrapper.get_id_tag())
         jt.outputPath = ":%s" % ofile
@@ -191,12 +189,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         else:
             export_tmp = ''	   
 
-        if self.external_runJob_script == None: 
-            script = drm_template % (job_wrapper.galaxy_lib_dir, export_path, os.path.abspath( job_wrapper.working_directory ),export_tmp, command_line,'','')
-        else:
-	    touchcmd = 'touch ' + os.path.abspath( job_wrapper.working_directory ) + '/just_in_cases.txt'
-            chmodcmd = 'chmod -Rf  a+rwx ' + os.path.abspath( job_wrapper.working_directory ) + '/*'
-            script = drm_template % (job_wrapper.galaxy_lib_dir, export_path, os.path.abspath( job_wrapper.working_directory ), export_tmp, command_line, touchcmd,chmodcmd)
+        script = drm_template % ( job_wrapper.galaxy_lib_dir, export_path, os.path.abspath( job_wrapper.working_directory ), export_tmp, command_line )
 
         fh = file( jt.remoteCommand, "w" )
         fh.write( script )
@@ -219,9 +212,10 @@ class DRMAAJobRunner( BaseJobRunner ):
         if self.external_runJob_script is None:
             job_id = self.ds.runJob(jt)
         else:
-            userid = self.get_qsub_user(job_wrapper)
+            job_wrapper.change_ownership_for_run()
+            log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
             filename = self.store_jobtemplate(job_wrapper, jt)
-            job_id = self.external_runjob(filename, userid)
+            job_id = self.external_runjob(filename, job_wrapper.user_system_pwent[2]).strip()
         log.info("(%s) queued as %s" % ( galaxy_id_tag, job_id ) )
 
         # store runner information for tracking if Galaxy restarts
@@ -315,23 +309,23 @@ class DRMAAJobRunner( BaseJobRunner ):
         efile = drm_job_state.efile
         job_file = drm_job_state.job_file
         # collect the output
-        # JED - HACK to wait for the files to appear
+        # wait for the files to appear
         which_try = 0
-        while which_try < 60:
+        while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
                 ofh = file(ofile, "r")
                 efh = file(efile, "r")
                 stdout = ofh.read( 32768 )
                 stderr = efh.read( 32768 )
-                which_try = 60
+                which_try = (self.app.config.retry_job_output_collection + 1)
             except:
-                if which_try == 60:
+                if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = 'Job output not returned from cluster'
-                    log.debug(stderr)
+                    log.debug( stderr )
                 else:
-                    which_try += 1
                     time.sleep(1)
+                which_try += 1
 
         try:
             drm_job_state.job_wrapper.finish( stdout, stderr )
@@ -389,9 +383,9 @@ class DRMAAJobRunner( BaseJobRunner ):
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         drm_job_state = DRMAAJobState()
-        drm_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job.id)
-        drm_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.id)
-        drm_job_state.job_file = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job.id)
+        drm_job_state.ofile = "%s.drmout" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
+        drm_job_state.efile = "%s.drmerr" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
+        drm_job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job.id)
         drm_job_state.job_id = str( job.job_runner_external_id )
         drm_job_state.runner_url = job_wrapper.get_job_runner()
         job_wrapper.command_line = job.command_line
@@ -407,30 +401,22 @@ class DRMAAJobRunner( BaseJobRunner ):
             drm_job_state.running = False
             self.monitor_queue.put( drm_job_state )
 
-    def get_qsub_user(self, job_wrapper):
-        """ Returns the UserID (or Username) that should be used to execute the job. """
-        #TODO:
-        #add some logic to decide on an SGE user for the given job.
-        job_user_name = job_wrapper.user.split('@')
-        self.job_user_uid = getpwnam(job_user_name[0])
-        log.debug (" (%s) is the uid being passed to the DRM queu\n" % ( self.job_user_uid[2]) )
-        return self.job_user_uid[2]
-
     def store_jobtemplate(self, job_wrapper, jt):
         """ Stores the content of a DRMAA JobTemplate object in a file as a JSON string.
         Path is hard-coded, but it's no worse than other path in this module.
         Uses Galaxy's JobID, so file is expected to be unique."""
-        filename = "%s/database/pbs/%s.jt_json" % (os.getcwd(), job_wrapper.get_id_tag())
+        filename = "%s/%s.jt_json" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
         data = {}
         for attr in DRMAA_jobTemplate_attributes:
             try:
                 data[attr] = getattr(jt, attr)
             except:
                 pass
-        s = json.dumps(data);
+        s = json.dumps(data)
         f = open(filename,'w')
         f.write(s)
         f.close()
+        log.debug( '(%s) Job script for external submission is: %s' % ( job_wrapper.job_id, filename ) )
         return filename
 
     def external_runjob(self, jobtemplate_filename, username):

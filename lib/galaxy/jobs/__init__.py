@@ -332,6 +332,9 @@ class JobWrapper( object ):
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
 
+        self.__user_system_pwent = None
+        self.__galaxy_system_pwent = None
+
     def get_job_runner( self ):
         return self.tool.job_runner
 
@@ -360,15 +363,15 @@ class JobWrapper( object ):
         config files.
         """
         self.sa_session.expunge_all() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
+
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
-        if self.app.config.drmaa_external_runjob_script:
-            os.chmod(self.working_directory , 0777)
 
         # Restore parameters from the database
         job = self.get_job()
         if job.user is None and job.galaxy_session is None:
             raise Exception( 'Job %s has no user and no session.' % job.id )
+
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
         # Do any validation that could not be done at job creation
@@ -526,6 +529,21 @@ class JobWrapper( object ):
         # default post job setup
         self.sa_session.expunge_all()
         job = self.get_job()
+
+        if self.app.config.drmaa_external_runjob_script and job.user is not None:
+            try:
+                # FIXME: hardcoded path
+                cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, self.working_directory, self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) ]
+                log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
+                p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+                stdout, stderr = p.communicate()
+                assert p.returncode == 0
+            except:
+                # TODO: log stdout/stderr
+                log.exception( '(%s) Failed to change ownership of %s, failing' % ( job.id, self.working_directory ) )
+                self.fail( job.info )
+                return
+
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:
             self.cleanup()
@@ -698,16 +716,6 @@ class JobWrapper( object ):
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_output_fnames() ]:
-            #change the ownership of the files in file_path directory back to galaxy user
-            if self.app.config.drmaa_external_runjob_script and self.app.config.external_chown_script:
-                galaxy_user_name = pwd.getpwuid(os.getuid())[0]
-                galaxy_group_id = str(pwd.getpwuid(os.getuid())[3])
-                p = subprocess.Popen([ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, path,galaxy_user_name,galaxy_group_id], shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                (stdoutdata, stderrdata) = p.communicate() 
-                exitcode = p.returncode
-                if exitcode != 0:
-                    ## There was an error in the child process
-                    raise RuntimeError("External_chown_script failed (exit code %s) with error %s" % (str(exitcode), stderrdata))
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
         self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
@@ -718,10 +726,10 @@ class JobWrapper( object ):
         try:
             for fname in self.extra_filenames:
                 os.remove( fname )
-            if self.working_directory is not None and os.path.isdir( self.working_directory ):
-                shutil.rmtree( self.working_directory )
             if self.app.config.set_metadata_externally:
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
+            if self.working_directory is not None and os.path.isdir( self.working_directory ):
+                shutil.rmtree( self.working_directory )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
         except:
@@ -891,6 +899,33 @@ class JobWrapper( object ):
             return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
         else:
             return 'anonymous@unknown'
+
+    def change_ownership_for_run( self ):
+        job = self.get_job()
+        if self.app.config.external_chown_script and job.user is not None:
+            try:
+                # FIXME: hardcoded path
+                cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, self.working_directory, self.user_system_pwent[0], str( self.user_system_pwent[3] ) ]
+                log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
+                p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+                stdout, stderr = p.communicate()
+                assert p.returncode == 0
+            except:
+                log.exception( '(%s) Failed to change ownership of %s, making world-writable instead' % ( job.id, self.working_directory ) )
+                os.chmod( self.working_directory, 0777 )
+
+    @property
+    def user_system_pwent( self ):
+        if self.__user_system_pwent is None:
+            job = self.get_job()
+            self.__user_system_pwent = pwd.getpwnam( job.user.email.split('@')[0] )
+        return self.__user_system_pwent
+
+    @property
+    def galaxy_system_pwent( self ):
+        if self.__galaxy_system_pwent is None:
+            self.__galaxy_system_pwent = pwd.getpwuid(os.getuid())
+        return self.__galaxy_system_pwent
 
 class TaskWrapper(JobWrapper):
     """
