@@ -112,13 +112,13 @@
         --indelGapOpenPenalty "${analysis_param_type.indelGapOpenPenalty}"
         --indelHaplotypeSize "${analysis_param_type.indelHaplotypeSize}"
         ${analysis_param_type.doContextDependentGapPenalties}
-        #if $analysis_param_type.annotation.value:
-            #for $annotation in $analysis_param_type.annotation.value:
+        #if str( $analysis_param_type.annotation ) != "None":
+            #for $annotation in str( $analysis_param_type.annotation ).split( ','):
                 --annotation "${annotation}"
             #end for
         #end if
-        #if $analysis_param_type.group.value:
-            #for $group in $analysis_param_type.group.value:
+        #if str( $analysis_param_type.group ) != "None":
+            #for $group in str( $analysis_param_type.group ).split( ','):
                 --group "${group}"
             #end for
         #end if

@@ -19,8 +19,8 @@
     #end if
     --recal_file "${output_recal}"
     ${standard_covs}
-    #if $covariates.value:
-        #for $cov in $covariates.value:
+    #if str( $covariates ) != "None":
+        #for $cov in str( $covariates ).split( ',' ):
             -cov "${cov}"
         #end for
     #end if

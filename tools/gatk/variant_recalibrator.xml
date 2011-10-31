@@ -98,7 +98,7 @@
     
     ##start analysis specific options
     -p '
-    #if $annotations.value:
+    #if str( $annotations ) != "None":
         #for $annotation in str( $annotations ).split( ',' ):
             --use_annotation "${annotation}"
         #end for
