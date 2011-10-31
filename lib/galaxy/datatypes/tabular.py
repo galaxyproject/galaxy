@@ -164,64 +164,47 @@ class Tabular( data.Text ):
         dataset.metadata.comment_lines = comment_lines
         dataset.metadata.column_types = column_types
         dataset.metadata.columns = len( column_types )
-    def make_html_table( self, dataset, skipchars=[] ):
+    def make_html_table( self, dataset, **kwargs ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            out.append( '<tr>' )
-            # Generate column header
-            for i in range( 1, dataset.metadata.columns+1 ):
-                out.append( '<th>%s</th>' % str( i ) )
-            out.append( '</tr>' )
-            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
+            out.append( self.make_html_peek_header( dataset, kwargs ) )
+            out.append( self.make_html_peek_rows( dataset, kwargs ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception, exc:
             out = "Can't create peek %s" % str( exc )
         return out
-    def make_html_peek_rows( self, dataset, skipchars=[] ):
-        out = [""]
-        comments = []
-        if not dataset.peek:
-            dataset.set_peek()
-        data = dataset.peek
-        lines =  data.splitlines()
-        for line in lines:
-            line = line.rstrip( '\r\n' )
-            if not line:
-                continue
-            comment = False
-            for skipchar in skipchars:
-                if line.startswith( skipchar ):
-                    comments.append( line )
-                    comment = True
-                    break
-            if comment:
-                continue
-            elems = line.split( '\t' )
-            if len( elems ) != dataset.metadata.columns:
-                # We may have an invalid comment line or invalid data
-                comments.append( line )
-                comment = True
-                continue
-            while len( comments ) > 0: # Keep comments
-                try:
-                    out.append( '<tr><td colspan="100%">' )
-                except:
-                    out.append( '<tr><td>' )
-                out.append( '%s</td></tr>'  % escape( comments.pop(0) ) )
+    def make_html_peek_header( self, dataset, skipchars=[] ):
+        out = []
+        try:
             out.append( '<tr>' )
-            for elem in elems: # valid data
-                elem = escape( elem )
-                out.append( '<td>%s</td>' % elem )
+            for i in range( 1, dataset.metadata.columns+1 ):
+                out.append( '<th>%s</th>' % str( i ) )
             out.append( '</tr>' )
-        # Peek may consist only of comments
-        while len( comments ) > 0:
-            try:
-                out.append( '<tr><td colspan="100%">' )
-            except:
-                out.append( '<tr><td>' )
-            out.append( '%s</td></tr>'  % escape( comments.pop(0) ) )
+        except Exception, exc:
+            raise Exception, "Can't create peek header %s" % str( exc )
+        return "".join( out )
+    def make_html_peek_rows( self, dataset, skipchars=[] ):
+        out = []
+        try:
+            if not dataset.peek:
+                dataset.set_peek()
+            for line in dataset.peek.splitlines():
+                if line.startswith( tuple( skipchars ) ):
+                    out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
+                elif line:
+                    elems = line.split( '\t' )
+                    # we may have an invalid comment line or invalid data
+                    if len( elems ) != dataset.metadata.columns:
+                        out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
+                    else:
+                        out.append( '<tr>' )
+                        for elem in elems:
+                            out.append( '<td>%s</td>' % escape( elem ) )
+                        out.append( '</tr>' )
+        except Exception, exc:
+            raise Exception, "Can't create peek rows %s" % str( exc )
         return "".join( out )
     def set_peek( self, dataset, line_count=None, is_multi_byte=False):
         super(Tabular, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
@@ -498,4 +481,4 @@ class Vcf( Tabular ):
         return out
         
     def get_track_type( self ):
-        return "VcfTrack", {"data": "tabix", "index": "summary_tree"}
+        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
