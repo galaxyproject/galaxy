@@ -2268,8 +2268,8 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
                 // Build popup.
                 
                 var popup = $("<div/>").attr("id", feature_uid).addClass("feature-popup"),
-                    key, value, 
-                    table = $("<table/>").appendTo(popup), row;
+                    table = $("<table/>"),
+                    key, value, row;
                 for (key in feature_dict) {
                     value = feature_dict[key];
                     row = $("<tr/>").appendTo(table);
@@ -2277,6 +2277,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
                     $("<td/>").attr("align", "left").appendTo(row)
                               .text(typeof(value) == 'number' ? round(value, 2) : value);
                 }
+                popup.append( $("<div class='feature-popup-inner'>").append( table ) ); 
                 popups[feature_uid] = popup;
             }
             
@@ -2287,7 +2288,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
             // parseInt strips "px" from left, top measurements. +7 so that mouse pointer does not
             // overlap popup.
             var 
-                popupX = offsetX + parseInt( tile.canvas.css("left") ) + 7,
+                popupX = offsetX + parseInt( tile.canvas.css("left") ) - popup.width() / 2,
                 popupY = offsetY + parseInt( tile.canvas.css("top") ) + 7;
             popup.css("left", popupX + "px").css("top", popupY + "px")
         }
@@ -3080,9 +3081,20 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             track.container_div.addClass( "line-track" );
             var data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
-                track.prefs.min_value = data.min;
-                track.prefs.max_value = data.max;
+                // Compute default minimum and maximum values
+                var min_value = data.min
+                var max_value = data.max
+                // If mean and sd are present, use them to compute a ~95% window
+                // but only if it would shrink the range on one side
+                min_value = Math.floor( Math.min( 0, Math.max( min_value, data.mean - 2 * data.sd ) ) )
+                max_value = Math.ceil( Math.max( 0, Math.min( max_value, data.mean + 2 * data.sd ) ) )
+                // Update the prefs
+                track.prefs.min_value = min_value;
+                track.prefs.max_value = max_value;
                 // Update the config
+                // FIXME: we should probably only save this when the user explicately sets it
+                //        since we lose the ability to compute it on the fly (when changing 
+                //        chromosomes for example).
                 $('#track_' + track.dataset_id + '_minval').val(track.prefs.min_value);
                 $('#track_' + track.dataset_id + '_maxval').val(track.prefs.max_value);
             }

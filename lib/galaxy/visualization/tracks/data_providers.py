@@ -2,8 +2,8 @@
 Data providers for tracks visualizations.
 """
 
-import sys
-from math import ceil, log
+import sys, time
+from math import ceil, log, sqrt
 import pkg_resources
 pkg_resources.require( "bx-python" )
 if sys.version_info[:2] == (2, 4):
@@ -435,9 +435,9 @@ class BBIDataProvider( TracksDataProvider ):
         # original_dataset, or coming from wig->bigwig conversion in which we use converted_dataset
         f, bbi = self._get_dataset()
        
-        # If the stats kwarg was provide, we compute overall summary data for the entire chromosome,
-        # but no reduced data -- currently only providing min/max which is used by trackster to 
-        # determine the default range
+        # If the stats kwarg was provide, we compute overall summary data for
+        # the entire chromosome, but no reduced data -- currently only
+        # providing values used by trackster to determine the default range
         if 'stats' in kwargs:
             # FIXME: use actual chromosome size
             summary = bbi.summarize( chrom, 0, 214783647, 1 )
@@ -445,7 +445,20 @@ class BBIDataProvider( TracksDataProvider ):
             if summary is None:
                 return None
             else:
-                return dict( data=dict( min=summary.min_val[0], max=summary.max_val[0] ) )
+                # Does the summary contain any defined values?
+                valid_count = summary.valid_count[0]
+                if summary.valid_count < 1:
+                    return None
+
+                # Compute $\mu \pm 2\sigma$ to provide an estimate for upper and lower
+                # bounds that contain ~95% of the data.
+                mean = summary.sum_data[0] / valid_count
+                var = summary.sum_squares[0] - mean
+                if valid_count > 1:
+                    var /= valid_count - 1
+                sd = sqrt( var )
+
+                return dict( data=dict( min=summary.min_val[0], max=summary.max_val[0], mean=mean, sd=sd ) )
 
         start = int(start)
         end = int(end)
