@@ -1024,6 +1024,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             // Only act on x axis scrolling if we see if, y will be i
             // handled by the browser when the event bubbles up
             if ( dx ) {
+                dx *= 50;
                 var delta_chrom = Math.round( - dx / view.viewport_container.width() * (view.high - view.low) );
                 view.move_delta( delta_chrom );
             }
