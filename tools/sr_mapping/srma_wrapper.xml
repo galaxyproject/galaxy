@@ -4,9 +4,9 @@
     #if $refGenomeSource.refGenomeSource_type == "history":
       --ref=$refGenomeSource.ownFile
     #else:
-      --ref="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.ref ), $__app__.tool_data_tables[ 'srma_indexes' ].get_fields() )[0][-1] }"
+      --ref="${refGenomeSource.ref.fields.path}"
       --refUID=$refGenomeSource.ref
-      --refLocations=${GALAXY_DATA_INDEX_DIR}/srma_index.loc
+      ##--refLocations=${GALAXY_DATA_INDEX_DIR}/srma_index.loc
     #end if
     --input=$input
     --inputIndex=${input.metadata.bam_index}
