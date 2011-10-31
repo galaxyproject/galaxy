@@ -106,7 +106,7 @@
       <when value="cached">
         <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" />
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
         </param>

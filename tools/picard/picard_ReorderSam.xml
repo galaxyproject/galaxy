@@ -4,7 +4,7 @@
     picard_wrapper.py
       --input=$inputFile
       #if $source.indexSource == "built-in"
-        --ref="${ filter( lambda x: str( x[0] ) == str( $source.ref ), $__app__.tool_data_tables[ 'picard_indexes' ].get_fields() )[0][-1] }"
+        --ref="${source.ref.fields.path}"
       #else
         --ref-file=$refFile
         --species-name=$source.speciesName

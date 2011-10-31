@@ -70,6 +70,11 @@
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/picard_index.loc" />
     </table>
+    <!-- Location of Picard dict files valid for GATK -->
+    <table name="gatk_picard_indexes" comment_char="#">
+        <columns>value, dbkey, name, path, tools_valid_for</columns>
+        <file path="tool-data/picard_index.loc" />
+    </table>
     <!-- Location of SRMA dict file and other files -->
     <table name="srma_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
