@@ -168,24 +168,46 @@ class Tabular( data.Text ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            out.append( self.make_html_peek_header( dataset, kwargs ) )
-            out.append( self.make_html_peek_rows( dataset, kwargs ) )
+            out.append( self.make_html_peek_header( dataset, **kwargs ) )
+            out.append( self.make_html_peek_rows( dataset, **kwargs ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception, exc:
             out = "Can't create peek %s" % str( exc )
         return out
-    def make_html_peek_header( self, dataset, skipchars=[] ):
+    def make_html_peek_header( self, dataset, skipchars=[], column_names=[], column_number_format='%s', column_parameter_alias={}, **kwargs ):
         out = []
         try:
+            column_headers = [None] * dataset.metadata.columns
+
+            # fill in empty headers with data from column_names
+            for i in range( min( dataset.metadata.columns, len( column_names ) ) ):
+                if column_headers[i] is None and column_names[i] is not None:
+                    column_headers[i] = column_names[i]
+
+            # fill in empty headers from ColumnParameters set in the metadata
+            for name, spec in dataset.metadata.spec.items():
+                if isinstance( spec.param, metadata.ColumnParameter ):
+                    try:
+                        i = int( getattr( dataset.metadata, name ) ) - 1
+                    except:
+                        i = -1
+                    if 0 <= i < dataset.metadata.columns and column_headers[i] is None:
+                        column_headers[i] = column_parameter_alias.get(name, name)
+
             out.append( '<tr>' )
-            for i in range( 1, dataset.metadata.columns+1 ):
-                out.append( '<th>%s</th>' % str( i ) )
+            for i, header in enumerate( column_headers ):
+                out.append( '<th>' )
+                if header is None:
+                    out.append( column_number_format % str( i + 1 ) )
+                else:
+                    out.append( '%s.%s' % ( str( i + 1 ), escape( header ) ) )
+                out.append( '</th>' )
             out.append( '</tr>' )
         except Exception, exc:
             raise Exception, "Can't create peek header %s" % str( exc )
         return "".join( out )
-    def make_html_peek_rows( self, dataset, skipchars=[] ):
+    def make_html_peek_rows( self, dataset, skipchars=[], **kwargs ):
         out = []
         try:
             if not dataset.peek:
@@ -235,26 +257,9 @@ class Taxonomy( Tabular ):
                              'Superorder', 'Order', 'Suborder', 'Superfamily', 'Family', 'Subfamily',
                              'Tribe', 'Subtribe', 'Genus', 'Subgenus', 'Species', 'Subspecies'
                              ]
-    def make_html_table( self, dataset, skipchars=[] ):
-        """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
-        comments = []
-        try:
-            # Generate column header
-            out.append( '<tr>' )
-            for i, name in enumerate( self.column_names ):
-                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
-            # This data type requires at least 24 columns in the data
-            if dataset.metadata.columns - len( self.column_names ) > 0:
-                for i in range( len( self.column_names ), dataset.metadata.columns ):
-                    out.append( '<th>%s</th>' % str( i+1 ) )
-                out.append( '</tr>' )
-            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
-            out.append( '</table>' )
-            out = "".join( out )
-        except Exception, exc:
-            out = "Can't create peek %s" % exc
-        return out
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
 class Sam( Tabular ):
     file_ext = 'sam'
@@ -264,25 +269,10 @@ class Sam( Tabular ):
         self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
                              'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'
                              ]
-    def make_html_table( self, dataset, skipchars=[] ):
-        """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
-        try:
-            # Generate column header
-            out.append( '<tr>' )
-            for i, name in enumerate( self.column_names ):
-                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
-            # This data type requires at least 11 columns in the data
-            if dataset.metadata.columns - len( self.column_names ) > 0:
-                for i in range( len( self.column_names ), dataset.metadata.columns ):
-                    out.append( '<th>%s</th>' % str( i+1 ) )
-                out.append( '</tr>' )
-            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
-            out.append( '</table>' )
-            out = "".join( out )
-        except Exception, exc:
-            out = "Can't create peek %s" % exc
-        return out
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
+
     def sniff( self, filename ):
         """
         Determines whether the file is in SAM format
@@ -376,29 +366,9 @@ class Pileup( Tabular ):
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
 
-    def make_html_table( self, dataset, skipchars=[] ):
-        """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
-        comments = []
-        try:
-            # Generate column header
-            out.append('<tr>')
-            for i in range( 1, dataset.metadata.columns+1 ):
-                if i == dataset.metadata.chromCol:
-                    out.append( '<th>%s.Chrom</th>' % i )
-                elif i == dataset.metadata.startCol:
-                    out.append( '<th>%s.Start</th>' % i )
-                elif i == dataset.metadata.baseCol:
-                    out.append( '<th>%s.Base</th>' % i )
-                else:
-                    out.append( '<th>%s</th>' % i )
-            out.append('</tr>')
-            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
-            out.append( '</table>' )
-            out = "".join( out )
-        except Exception, exc:
-            out = "Can't create peek %s" % str( exc )
-        return out
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_parameter_alias={'chromCol':'Chrom', 'startCol':'Start', 'baseCol':'Base'} )
 
     def repair_methods( self, dataset ):
         """Return options for removing errors along with a description"""
@@ -464,21 +434,9 @@ class Vcf( Tabular ):
     def sniff( self, filename ):
         headers = get_headers( filename, '\n', count=1 )
         return headers[0][0].startswith("##fileformat=VCF")
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
             
-    def make_html_table( self, dataset, skipchars=[] ):
-        """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
-        try:
-            # Generate column header
-            out.append( '<tr>' )
-            for i, name in enumerate( self.column_names ):
-                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
-            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
-            out.append( '</table>' )
-            out = "".join( out )
-        except Exception, exc:
-            out = "Can't create peek %s" % exc
-        return out
-        
     def get_track_type( self ):
         return "VcfTrack", {"data": "tabix", "index": "summary_tree"}
