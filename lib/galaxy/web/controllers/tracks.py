@@ -852,7 +852,6 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             
             # Recursive function to set param value.
             def set_value( param_dict, group_name, group_index, param_name, param_value ):
-                print "searching", param_dict
                 if group_name in param_dict:
                     param_dict[ group_name ][ group_index ][ param_name ] = param_value
                     return True
@@ -866,7 +865,6 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                         if isinstance( value, dict ):
                             return_val = set_value( value, group_name, group_index, param_name, param_value)
                             if return_val:
-                                print "setting parameter", param_dict
                                 return return_val
                     return False
             
