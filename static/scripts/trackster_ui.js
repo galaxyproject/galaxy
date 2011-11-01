@@ -154,14 +154,14 @@ var init_keyboard_nav = function(view) {
                 break
             case 38:
                 var change = Math.round(view.viewport_container.height()/15.0);
-                view.viewport_container.scrollTo('-=' + change + 'px');
+                view.viewport_container.scrollTop( view.viewport_container.scrollTop() - 20);
                 break;
             case 39:
                 view.move_fraction(-0.25);
                 break;
             case 40:
                 var change = Math.round(view.viewport_container.height()/15.0);
-                view.viewport_container.scrollTo('+=' + change + 'px');
+                view.viewport_container.scrollTop( view.viewport_container.scrollTop() + 20);
                 break;
         }
     });
