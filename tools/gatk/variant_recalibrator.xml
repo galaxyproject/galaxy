@@ -515,7 +515,7 @@
         <param name="dirichlet" type="float" label="dirichlet parameter in variational Bayes algorithm" value="0.001"/>
         <param name="prior_counts" type="float" label="number of prior counts to use in variational Bayes algorithm" value="20.0"/>
         <conditional name="bad_variant_selector">
-          <param name="bad_variant_selector_type" type="select" label="Basic or Advanced Analysis options">
+          <param name="bad_variant_selector_type" type="select" label="How to specify bad variants">
             <option value="percent" selected="True">Percent</option>
             <option value="min_num">Number</option>
           </param>
