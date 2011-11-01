@@ -10,6 +10,7 @@ if sys.version_info[:2] == (2, 4):
     pkg_resources.require( "ctypes" )
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
+from numpy import *
 from galaxy.datatypes.util.gff_util import *
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
@@ -490,12 +491,17 @@ class BBIDataProvider( TracksDataProvider ):
 
         if summary:
             mean = summary.sum_data / summary.valid_count
+
+            ## Standard deviation by bin, not yet used
+            ## var = summary.sum_squares - mean
+            ## var /= minimum( valid_count - 1, 1 )
+            ## sd = sqrt( var )
         
             pos = start
             step_size = (end - start) / num_points
 
-            for value in mean:
-                result.append( (pos, float_nan(value) ) )
+            for i in range( num_points ):
+                result.append( (pos, float_nan( mean[i] ) ) )
                 pos += step_size
             
         return { 'data': result }

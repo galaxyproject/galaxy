@@ -3512,7 +3512,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null);
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
         var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, ref_seq);
-        var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required));
+        var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required,width));
         var canvas = this.view.canvas_manager.new_canvas();
         var feature_mapper = null;
         
@@ -4078,6 +4078,7 @@ var FeaturePositionMapper = function(slot_height) {
     this.feature_positions = {};
     this.slot_height = slot_height;
     this.translation = 0;
+    this.y_translation = 0;
 };
 
 /**
@@ -4099,7 +4100,7 @@ FeaturePositionMapper.prototype.map_feature_data = function(feature_data, slot, 
  */
 FeaturePositionMapper.prototype.get_feature_data = function(x, y) {
     // Find slot using Y.
-    var slot = Math.floor( y/this.slot_height ),
+    var slot = Math.floor( (y-this.y_translation)/this.slot_height ),
         feature_dict;
 
     // May not be over a slot due to padding, margin, etc.
@@ -4129,15 +4130,23 @@ var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_sca
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
 
 extend(FeaturePainter.prototype, {
-    get_required_height: function(rows_required) {
+    get_required_height: function(rows_required, width) {
         // y_scale is the height per row
         var required_height = y_scale = this.get_row_height(), mode = this.mode;
         // If using a packing mode, need to multiply by the number of slots used
         if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
             required_height = rows_required * y_scale;
         }
+        return required_height + this.get_top_padding(width) + this.get_bottom_padding(width);
+    },
+    /** Extra padding before first row of features */
+    get_top_padding: function(width) {
+        return 0;
+    },
+    /** Extra padding after last row of features */
+    get_bottom_padding: function(width) {
         // Pad bottom by half a row, at least 5 px
-        return required_height + Math.max( Math.round( y_scale / 2 ), 5 );
+        return Math.max( Math.round( this.get_row_height() / 2 ), 5 ) 
     },
     /**
      * Draw data on ctx using slots and within the rectangle defined by width and height. Returns
@@ -4174,6 +4183,7 @@ extend(FeaturePainter.prototype, {
         }
 
         ctx.restore();
+        feature_mapper.y_translation = this.get_top_padding(width);
         return feature_mapper;
     },
     /** 
@@ -4200,6 +4210,10 @@ var DENSE_TRACK_HEIGHT = 10,
 
 var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
     FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
+    // Whether to draw a single connector in the background that spans the entire feature (the intron fishbone)
+    this.draw_background_connector = true;
+    // Whether to call draw_connector for every pair of blocks
+    this.draw_individual_connectors = false;
 };
 
 extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
@@ -4237,7 +4251,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             draw_start = f_start,
             draw_end = f_end,
-            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
+            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale + this.get_top_padding(width),
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
             block_color = this.prefs.block_color,
@@ -4300,38 +4314,51 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 // needed. This ensures that whole feature, regardless of whether it starts with
                 // a block, is visible.
                 //
-                
-                // Draw whole feature as connector/intron.
+               
+                // Compute y axis center position and height
                 var cur_y_center, cur_height;
                 if (mode === "Squish" || mode === "Dense") {
-                    ctx.fillStyle = CONNECTOR_COLOR;
                     cur_y_center = y_center + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
                     cur_height = 1;
                 }
                 else { // mode === "Pack"
                     if (feature_strand) {
-                        var cur_y_center = y_center;
-                        var cur_height = thick_height;
-                        if (feature_strand === "+") {
-                            ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand' );
-                        } else if (feature_strand === "-") {
-                            ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand' );
-                        }
+                        cur_y_center = y_center;
+                        cur_height = thick_height;
                     }
                     else {
-                        ctx.fillStyle = CONNECTOR_COLOR;
                         cur_y_center += (SQUISH_FEATURE_HEIGHT/2) + 1;
                         cur_height = 1;
                     }
                 }
-                ctx.fillRect(f_start, cur_y_center, f_end - f_start, cur_height);
+
+                // Draw whole feature as connector/intron.
+                if ( this.draw_background_connector ) {
+                    if (mode === "Squish" || mode === "Dense") {
+                        ctx.fillStyle = CONNECTOR_COLOR;
+                    }
+                    else { // mode === "Pack"
+                        if (feature_strand) {
+                            if (feature_strand === "+") {
+                                ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand' );
+                            } else if (feature_strand === "-") {
+                                ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand' );
+                            }
+                        }
+                        else {
+                            ctx.fillStyle = CONNECTOR_COLOR;
+                        }
+                    }
+                    ctx.fillRect(f_start, cur_y_center, f_end - f_start, cur_height);
+                }
                 
                 // Draw blocks.
                 var start_and_height;
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
                         block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) );
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) ),
+                        last_block_start, last_block_end;
 
                     // Skip drawing if block not on tile.    
                     if (block_start > block_end) { continue; }
@@ -4362,6 +4389,12 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                             ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
                         }   
                     }
+                    // Draw individual connectors if required
+                    if ( this.draw_individual_connectors && last_block_start ) {
+                        this.draw_connector( ctx, last_block_start, last_block_end, block_start, block_end, y_center );
+                    }
+                    last_block_start = block_start;
+                    last_block_end = block_end;
                 }
                                 
                 // FIXME: Height scaling only works in Pack mode right now.
@@ -4699,11 +4732,54 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
     }
 });
 
+var ArcLinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
+    LinkedFeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
+    // Need to know the longest feature length for adding spacing
+    this.longest_feature_length = this.calculate_longest_feature_length();
+    this.draw_background_connector = false;
+    this.draw_individual_connectors = true;
+};
+
+extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeaturePainter.prototype, {
+
+    calculate_longest_feature_length: function () {
+        var longest_feature_length = 0;
+        for (var i = 0, len = this.data.length; i < len; i++) {
+            var feature = this.data[i], feature_start = feature[1], feature_end = feature[2];
+            longest_feature_length = Math.max( longest_feature_length, feature_end - feature_start );
+        }
+        return longest_feature_length;
+    },
+
+    get_top_padding: function( width ) { 
+        var view_range = this.view_end - this.view_start,
+            w_scale = width / view_range;
+        return Math.min( 128, Math.ceil( ( this.longest_feature_length / 2 ) * w_scale ) );
+    },
+
+    draw_connector: function( ctx, block1_start, block1_end, block2_start, block2_end, y_center ) {
+        // Arc drawing -- from closest endpoints
+        var x_center = ( block1_end + block2_start ) / 2,
+            radius = block2_start - x_center; 
+        // For full half circles
+        var angle1 = Math.PI, angle2 = 0;
+        if ( radius > 0 ) {
+            ctx.beginPath();
+            ctx.arc( x_center, y_center, block2_start - x_center, Math.PI, 0 );
+            ctx.stroke();
+        }
+    }
+});
+
+
+
+
 exports.Scaler = Scaler;
 exports.SummaryTreePainter = SummaryTreePainter;
 exports.LinePainter = LinePainter;
 exports.LinkedFeaturePainter = LinkedFeaturePainter;
 exports.ReadPainter = ReadPainter;
+exports.ArcLinkedFeaturePainter = ArcLinkedFeaturePainter;
 
 // End painters_module encapsulation
 };
