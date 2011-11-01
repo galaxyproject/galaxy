@@ -3031,7 +3031,8 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
    
     this.min_height_px = 16; 
     this.max_height_px = 400; 
-    this.height_px = 80;
+    // Default height for new tracks, should be a defined constant?
+    this.height_px = 32;
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
