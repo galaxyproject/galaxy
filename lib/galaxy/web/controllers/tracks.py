@@ -925,7 +925,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 else:
                     message = 'Attributes updated'
                     new_dataset.set_meta()
-                    new_dataset.datatype.after_setting_metadata( data )
+                    new_dataset.datatype.after_setting_metadata( new_dataset )
                     
                 trans.sa_session.flush()
                 
