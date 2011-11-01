@@ -1577,8 +1577,7 @@ extend(Tool.prototype, {
             // Set name of track to include tool name, parameters, and region used.
             track_name = url_params.tool_id +
                          current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
-            container,
-            new_track;
+            container;
             
         // If track not in a group, create a group for it and add new track to group. If track 
         // already in group, add track to group.
@@ -1595,11 +1594,12 @@ extend(Tool.prototype, {
         else {
             container = current_track.container;
         }
-        if (current_track instanceof FeatureTrack) {
-            new_track = new ToolDataFeatureTrack(track_name, view, container, "hda");
-            new_track.change_mode(current_track.mode);
-            container.add_drawable(new_track);
-        }
+        
+        // Create and init new track.
+        var new_track = new current_track.constructor(track_name, view, container, "hda");
+        new_track.init_for_tool_data();
+        new_track.change_mode(current_track.mode);
+        container.add_drawable(new_track);
         new_track.content_div.text("Starting job.");
         
         // Run tool.
@@ -2316,7 +2316,6 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
  * ----> ReferenceTrack
  * ----> FeatureTrack
  * -------> ReadTrack
- * -------> ToolDataFeatureTrack
  * -------> VcfTrack
  */
 var Track = function(name, view, container, show_header, prefs, data_url, data_query_wait) {
@@ -2476,9 +2475,6 @@ extend(Track.prototype, Drawable.prototype, {
         else if (this instanceof ReadTrack) {
             return "ReadTrack";
         }
-        else if (this instanceof ToolDataFeatureTrack) {
-            return "ToolDataFeatureTrack";
-        }
         else if (this instanceof VcfTrack) {
             return "VcfTrack";
         }
@@ -2562,8 +2558,8 @@ extend(Track.prototype, Drawable.prototype, {
     predraw_init: function() {}
 });
 
-var TiledTrack = function(name, view, container, show_header, prefs, filters_list, tool_dict, data_url, data_query_wait) {
-    Track.call(this, name, view, container, show_header, prefs, data_url, data_query_wait);
+var TiledTrack = function(name, view, container, show_header, prefs, filters_list, tool_dict) {
+    Track.call(this, name, view, container, show_header, prefs);
 
     var track = this,
         view = track.view;
@@ -2910,6 +2906,39 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             region = (chrom !== undefined && low !== undefined && high !== undefined ?
                       chrom + ":" + low + "-" + high : "all");
         return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
+    },
+    /**
+     * Set up track to receive tool data.
+     */
+    init_for_tool_data: function() {
+        // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
+        // is ready.
+        this.data_url = raw_data_url;
+        this.data_query_wait = 1000;
+        this.dataset_check_url = dataset_state_url;
+        
+        /**
+         * Predraw init sets up postdraw init.
+         */
+        this.predraw_init = function() {
+            // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
+            var track = this; 
+            var post_init = function() {
+                if (track.data_manager.size() === 0) {
+                    // Track still drawing initial data, so do nothing.
+                    setTimeout(post_init, 300);
+                }
+                else {
+                    // Track drawing done: reset dataset check, data URL, wait time and get dataset state to start
+                    // indexing.
+                    track.data_url = default_data_url;
+                    track.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+                    track.dataset_state_url = converted_datasets_state_url;
+                    $.getJSON(track.dataset_state_url, {dataset_id : track.dataset_id, hda_ldda: track.hda_ldda}, function(track_data) {});
+                }
+            };
+            post_init();
+        }
     }
 });
 
@@ -3524,8 +3553,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
+var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, tool);
     
     this.config = new DrawableConfig( {
         track: this,
@@ -3546,12 +3575,10 @@ var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filt
     });
     this.prefs = this.config.values;
     
-    
     this.painter = painters.ReadPainter;
 };
 
 extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
-
 
 var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
@@ -3580,44 +3607,6 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.update_track_icons();
 };
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
-
-/**
- * Feature track that displays data generated from tool.
- */
-var ToolDataFeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, {});
-    
-    // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
-    // is ready.
-    this.data_url = raw_data_url;
-    this.data_query_wait = 1000;
-    this.dataset_check_url = dataset_state_url;
-};
-
-extend(ToolDataFeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    /**
-     * For this track type, the predraw init sets up postdraw init. 
-     */
-    predraw_init: function() {        
-        // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
-        var track = this; 
-        var post_init = function() {
-            if (track.data_manager.size() === 0) {
-                // Track still drawing initial data, so do nothing.
-                setTimeout(post_init, 300);
-            }
-            else {
-                // Track drawing done: reset dataset check, data URL, wait time and get dataset state to start
-                // indexing.
-                track.data_url = default_data_url;
-                track.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
-                track.dataset_state_url = converted_datasets_state_url;
-                $.getJSON(track.dataset_state_url, {dataset_id : track.dataset_id, hda_ldda: track.hda_ldda}, function(track_data) {});
-            }
-        };
-        post_init();
-    }
-});
 
 // Exports
 

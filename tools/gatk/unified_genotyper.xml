@@ -396,7 +396,7 @@
     <data format="txt" name="output_metrics" label="${tool.name} on ${on_string} (metrics)" />
     <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
   </outputs>
-  <!-- FIXME! <trackster_conf/> -->
+  <trackster_conf/>
   <tests>
       <test>
           <param name="reference_source_selector" value="history" />
