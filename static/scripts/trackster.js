@@ -2126,7 +2126,7 @@ extend(DrawableConfig.prototype, {
                 } else if ( param.type === 'color' ) {
                     var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
                     // Color picker in tool tip style float
-                    var tip = $( "<div class='tipsy tipsy-north' style='position: absolute;' />" ).hide();
+                    var tip = $( "<div class='tipsy tipsy-west' style='position: absolute;' />" ).hide();
                     // Inner div for padding purposes
                     var tip_inner = $("<div style='background-color: black; padding: 10px;'></div>").appendTo(tip);
                     var farb_container = $("<div/>")
@@ -2136,8 +2136,10 @@ extend(DrawableConfig.prototype, {
                     // Outer div container input and tip for hover to work
                     $("<div />").append( input ).append( tip ).appendTo( row ).bind( "click", function ( e ) { 
                         tip.css( { 
-                            left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                            top: $(this).position().top + $(this.height) 
+                            // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                            // top: $(this).position().top + $(this.height) 
+                            left: $(this).position().left + $(input).width() + 5,
+                            top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(input).height() / 2 )
                             } ).show();
                         $(document).bind( "click.color-picker", function() {
                             tip.hide();
