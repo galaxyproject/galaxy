@@ -1029,6 +1029,27 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                                                           id=trans.security.encode_id( repository.id ),
                                                           message=message,
                                                           status=status ) )
+    @web.expose
+    @web.require_admin
+    def impersonate( self, trans, email=None, **kwd ):
+        if not trans.app.config.allow_user_impersonation:
+            return trans.show_error_message( "User impersonation is not enabled in this instance of Galaxy." )
+        message = ''
+        status = 'done'
+        emails = None
+        if email is not None:
+            user = trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first()
+            if user:
+                trans.set_user( user )
+                message = 'You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % ( email, url_for( controller='root' ) )
+                emails = []
+            else:
+                message = 'Invalid user selected'
+                status = 'error'
+        if emails is None:
+            emails = [ u.email for u in trans.sa_session.query( trans.app.model.User ).enable_eagerloads( False ).all() ]
+        return trans.fill_template( 'admin/impersonate.mako', emails=emails, message=message, status=status )
+
     def __get_relative_install_dir( self, trans, repository ):
         # Get the directory where the repository is install.
         tool_shed = self.__clean_tool_shed_url( repository.tool_shed )
