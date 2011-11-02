@@ -536,7 +536,7 @@ class JobWrapper( object ):
                 cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, self.working_directory, self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) ]
                 log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
                 p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-                stdout, stderr = p.communicate()
+                p.wait()
                 assert p.returncode == 0
             except:
                 # TODO: log stdout/stderr
