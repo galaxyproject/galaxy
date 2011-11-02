@@ -2335,6 +2335,8 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
+    // FIXME: this should be a saved setting
+    this.content_visible = true;
 
     if (!Track.id_counter) { Track.id_counter = 0; }
     this.id = Track.id_counter++;
@@ -2353,6 +2355,9 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
         this.icons_div = $("<div/>").css("float", "left").appendTo(this.header_div).hide();
     
         // Track icons.
+        this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show track content")
+                                      .addClass("icon-button toggle").tipsy( {gravity: 's'} )
+                                      .appendTo(this.icons_div);
         this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
                                       .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
                                       .appendTo(this.icons_div);
@@ -2372,6 +2377,21 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
             
         // Suppress double clicks in header so that they do not impact viz.
         this.header_div.dblclick( function(e) { e.stopPropagation(); } );
+
+        // Toggle icon hides or shows the track content
+        this.toggle_icon.click( function() {
+            if ( track.content_visible ) {
+                track.toggle_icon.addClass("toggle-expand").removeClass("toggle");
+                track.hide_contents();
+                track.mode_div.hide();
+                track.content_visible = false;
+            } else {
+                track.toggle_icon.addClass("toggle").removeClass("toggle-expand");
+                track.content_visible = true;
+                track.mode_div.show();
+                track.show_contents();
+            }
+        });
         
         // Clicking on settings icon opens track config.
         this.settings_icon.click( function() {
@@ -2559,6 +2579,26 @@ extend(Track.prototype, Drawable.prototype, {
         this.update_track_icons();
     },
     /**
+     * Hide any elements that are part of the tracks contents area. Should
+     * remove as approprite, the track will be redrawn by show_contents.
+     */
+    hide_contents : function () {
+        // Clear contents by removing any elements that are contained in
+        // the tracks content_div
+        this.content_div.children().remove();
+        // Hide the content div
+        this.content_div.hide();
+        // And any y axis labels (common to several track types)
+        this.container_div.find(".yaxislabel, .track-resize").hide()
+    },
+    show_contents : function() {
+        // Show the contents div and labels (if present)
+        this.content_div.show();
+        this.container_div.find(".yaxislabel, .track-resize").show()
+        // Request a redraw of the content
+        this.request_draw();
+    },
+    /**
      * Additional initialization required before drawing track for the first time.
      */
     predraw_init: function() {}
@@ -2689,6 +2729,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     _draw: function(force, clear_after) {
         if (!this.enabled) { return; }
+
+        // TODO: There should probably be a general way to disable content drawing 
+        //       for all drawables. However the button to toggle this is currently
+        //       only present for Track instances.
+        if (!this.content_visible) { return; }
         
         // HACK: ReferenceTrack can draw without dataset ID, but other tracks cannot.
         if ( !(this instanceof ReferenceTrack) && (!this.dataset_id) ) { return; }
@@ -3084,8 +3129,10 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var drag_control = $( "<div class='track-resize'>" )
         // Control shows on hover over track, stays while dragging
         $(track.container_div).hover( function() { 
-            in_handle = true;
-            drag_control.show(); 
+            if ( track.content_visible ) {
+                in_handle = true;
+                drag_control.show(); 
+            }
         }, function() { 
             in_handle = false;
             if ( ! in_drag ) { drag_control.hide(); }
