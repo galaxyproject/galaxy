@@ -462,15 +462,16 @@ class Text( Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def split( input_files, subdir_generator_function, split_params): 
+    def split( cls, input_datasets, subdir_generator_function, split_params):
         """
         Split the input files by line.
         """
         if split_params is None:
             return
             
-        if len(input_files) > 1:
+        if len(input_datasets) > 1:
             raise Exception("Text file splitting does not support multiple files")
+        input_files = [ds.file_name for ds in input_datasets]
         
         lines_per_file = None
         chunk_size = None
@@ -534,7 +535,7 @@ class Text( Data ):
                 part_file.close()
             raise
         f.close()
-    split = staticmethod(split)
+    split = classmethod(split)
 
 class LineCount( Text ):
     """
