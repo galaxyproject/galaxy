@@ -1123,7 +1123,7 @@ class DefaultJobDispatcher( object ):
 
     def __get_runner_name( self, job_wrapper ):
         if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
-            runnner_name = "tasks"
+            runner_name = "tasks"
         else:
             runner_name = ( job_wrapper.get_job_runner().split(":", 1) )[0]
         return runner_name
