@@ -654,6 +654,8 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
  * associated with a view and container. They optionally have a drag handle class. 
  */
 var Drawable = function(name, view, container, prefs, drag_handle_class) {
+    if (!Drawable.id_counter) { Drawable.id_counter = 0; }
+    this.id = Drawable.id_counter++;
     this.name = name;
     this.view = view;
     this.container = container;
@@ -804,13 +806,11 @@ var DrawableGroup = function(name, view, container, prefs) {
     DrawableCollection.call(this, "DrawableGroup", name, view, container, prefs, "group-handle");
         
     // HTML elements.
-    if (!DrawableGroup.id_counter) { DrawableGroup.id_counter = 0; }
-    var group_id = DrawableGroup.id_counter++
-    this.container_div = $("<div/>").addClass("group").attr("id", "group_" + group_id).appendTo(this.container.content_div);
+    this.container_div = $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
     this.header_div = $("<div/>").addClass("track-header").appendTo(this.container_div);
     this.header_div.append($("<div/>").addClass(this.drag_handle_class));
     this.name_div = $("<div/>").addClass("group-name menubutton popup").text(this.name).appendTo(this.header_div);    
-    this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + group_id + "_content_div").appendTo(this.container_div);
+    this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + this.id + "_content_div").appendTo(this.container_div);
     
     // Set up containers/moving for group: register both container_div and content div as container
     // because both are used as containers (container div to recognize container, content_div to 
@@ -2329,9 +2329,6 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
-
-    if (!Track.id_counter) { Track.id_counter = 0; }
-    this.id = Track.id_counter++;
     
     //
     // Create HTML element structure for track.
