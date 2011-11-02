@@ -653,7 +653,6 @@ class Dataset( object ):
                 # Create directory if it does not exist
                 if not os.path.exists( dir ):
                     os.makedirs( dir )
-		os.chmod(dir, 0777)
                 # Return filename inside hashed directory
                 return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
         else:
@@ -1795,8 +1794,6 @@ class MetadataFile( object ):
             # File Exists is okay, otherwise reraise
             if e.errno != errno.EEXIST:
                 raise
-
-        os.chmod(path, 0777)
         # Return filename inside hashed directory
         return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 

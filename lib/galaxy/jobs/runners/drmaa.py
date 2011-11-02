@@ -365,20 +365,17 @@ class DRMAAJobRunner( BaseJobRunner ):
 
     def stop_job( self, job ):
         """Attempts to delete a job from the DRM queue"""
-        if self.external_killJob_script is None:
-                try:
-                        self.ds.control( job.job_runner_external_id, drmaa.JobControlAction.TERMINATE )
-                        log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.id, job.job_runner_external_id ) )
-                except drmaa.InvalidJobException:
-                        log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.id, job.job_runner_external_id ) )
-                except Exception, e:
-                        log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.id, job.job_runner_external_id, e ) )
-        else:
-                try:
-                        subprocess.Popen(['/usr/bin/sudo','-E', self.external_killJob_script,  str(job.job_runner_external_id), str(self.job_user_uid[2])],shell=False)
-                        log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.id, job.job_runner_external_id ) )
-                except Exception, e:
-                        log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.id, job.job_runner_external_id, e ) )
+        try:
+            if self.external_killJob_script is None:
+                self.ds.control( job.job_runner_external_id, drmaa.JobControlAction.TERMINATE )
+            else:
+                # FIXME: hardcoded path
+                subprocess.Popen( [ '/usr/bin/sudo', '-E', self.external_killJob_script, str( job.job_runner_external_id ), str( self.job_user_uid[2] ) ], shell=False )
+            log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.id, job.job_runner_external_id ) )
+        except drmaa.InvalidJobException:
+            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.id, job.job_runner_external_id ) )
+        except Exception, e:
+            log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.id, job.job_runner_external_id, e ) )
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""

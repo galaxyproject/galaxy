@@ -282,12 +282,9 @@ class DefaultToolAction( object ):
                     trans.sa_session.flush()
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
                 # Create an empty file immediately
-		self.external_runJob_script = trans.app.config.drmaa_external_runjob_script
-		if self.external_runJob_script == None:
-                	open( data.file_name, "w" ).close()
-                        # Fix permissions
-                        util.umask_fix_perms( data.file_name, trans.app.config.umask, 0666)
-                log.debug('.DAT file name = %s\n' %(data.file_name))
+               	open( data.file_name, "w" ).close()
+                # Fix permissions
+                util.umask_fix_perms( data.file_name, trans.app.config.umask, 0666)
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
                 # Copy metadata from one of the inputs if requested. 

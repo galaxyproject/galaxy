@@ -1707,10 +1707,10 @@ class Tool:
                 fd, config_filename = tempfile.mkstemp( dir=directory )
                 os.close( fd )
             f = open( config_filename, "wt" )
-            os.chmod(config_filename, 0777)
             f.write( fill_template( template_text, context=param_dict ) )
             f.close()
-            os.chmod(config_filename, 0777)
+            # For running jobs as the actual user, ensure the config file is globally readable
+            os.chmod( config_filename, 0644 )
             param_dict[name] = config_filename
             config_filenames.append( config_filename )
         return config_filenames
@@ -1843,25 +1843,23 @@ class Tool:
         """
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
-            #try:
-            if os.path.exists(temp_file_path) and len( os.listdir( temp_file_path ) ) > 0:
-                store_file_path = os.path.join( 
-                    os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), 
+            try:
+                if len( os.listdir( temp_file_path ) ) > 0:
+                    store_file_path = os.path.join(
+                        os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ),
                         "dataset_%d_files" % hda.dataset.id )
-                os.mkdir(store_file_path)
-                os.system('mv %s/* %s/' %(temp_file_path ,store_file_path))
-                # Fix permissions
-                if self.external_runJob_script == None:
+                    shutil.move( temp_file_path, store_file_path )
+                    # Fix permissions
                     for basedir, dirs, files in os.walk( store_file_path ):
                         util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
                         for file in files:
                             path = os.path.join( basedir, file )
                             # Ignore symlinks
                             if os.path.islink( path ):
-                                continue 
+                                continue
                             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
-            #except:
-                #continue
+            except:
+                continue
     
     def collect_child_datasets( self, output):
         """
