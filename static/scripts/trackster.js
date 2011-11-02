@@ -679,7 +679,7 @@ extend(Drawable.prototype, {
     request_draw: function() {},
     _draw: function() {},
     to_json: function() {},
-    update_track_icons: function() {},
+    update_icons: function() {},
     /**
      * Set drawable name.
      */ 
@@ -819,14 +819,14 @@ var DrawableGroup = function(name, view, container, prefs) {
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
     
-    this.update_track_icons();
+    this.update_icons();
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
     /**
      * Make popup menu for group.
      */
-    update_track_icons: function() {
+    update_icons: function() {
         var group = this;
         
         var group_dropdown = {};
@@ -1073,7 +1073,7 @@ extend( View.prototype, DrawableCollection.prototype, {
     },
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
-        if (this.num_tracks === 0) {
+        if (this.drawables.length === 0) {
             this.intro_div.appendTo(this.viewport_container);
         }
         else {
@@ -2531,7 +2531,7 @@ extend(Track.prototype, Drawable.prototype, {
             } else if (result['status'] === "data") {
                 if (result['valid_chroms']) {
                     track.valid_chroms = result['valid_chroms'];
-                    track.update_track_icons();
+                    track.update_icons();
                 }
                 track.content_div.text(DATA_OK);
                 if (track.view.chrom) {
@@ -2547,7 +2547,7 @@ extend(Track.prototype, Drawable.prototype, {
             }
         });
         
-        this.update_track_icons();
+        this.update_icons();
     },
     /**
      * Additional initialization required before drawing track for the first time.
@@ -2625,7 +2625,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Update track's buttons.
      */
-    update_track_icons: function() {
+    update_icons: function() {
         var track = this;
         
         //
@@ -3287,7 +3287,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 if (!track.filters_available) {
                     track.filters_div.hide();
                 }
-                track.update_track_icons();
+                track.update_icons();
             }
         }
     },
@@ -3601,7 +3601,7 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.prefs = this.config.values;
     
     this.painter = painters.ReadPainter;
-    this.update_track_icons();
+    this.update_icons();
 };
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
