@@ -10,7 +10,7 @@ if sys.version_info[:2] == (2, 4):
     pkg_resources.require( "ctypes" )
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
-from numpy import *
+import numpy
 from galaxy.datatypes.util.gff_util import *
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
@@ -743,7 +743,7 @@ class BBIDataProvider( TracksDataProvider ):
                 var = summary.sum_squares[0] - mean
                 if valid_count > 1:
                     var /= valid_count - 1
-                sd = sqrt( var )
+                sd = numpy.sqrt( var )
 
                 return dict( data=dict( min=summary.min_val[0], max=summary.max_val[0], mean=mean, sd=sd ) )
 
