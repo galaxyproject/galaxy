@@ -2149,6 +2149,10 @@ extend(DrawableConfig.prototype, {
                 else {
                     row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) ); 
                 }
+                // Help text
+                if ( param.help ) {
+                    row.append( $("<div class='help'/>").text( param.help ) );
+                }
             }
         });
         return container;
@@ -3194,7 +3198,8 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
             { key: 'name', label: 'Name', type: 'text', default_value: name },
             { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
-            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
+              help: 'Show the number of items in each bin when drawing summary histogram' },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         ], 
         saved_values: prefs,
