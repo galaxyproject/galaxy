@@ -29,10 +29,11 @@ def __main__():
                         help='The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read.' )
     parser.add_option( '-F', '--junction_filter', dest='junction_filter', help='Filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)' )
     parser.add_option( '-g', '--max_multihits', dest='max_multihits', help='Maximum number of alignments to be allowed' )
+    parser.add_option( '', '--initial-read-mismatches', dest='initial_read_mismatches', help='Number of mismatches allowed in the initial read mapping' )
     parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
     parser.add_option( '', '--seg-length', dest='seg_length', help='Minimum length of read segments' )
     parser.add_option( '', '--library-type', dest='library_type', help='TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.' )
-    parser.add_option( '', '--allow-indels', action="store_true", help='Allow indel search. Indel search is disabled by default.' )
+    parser.add_option( '', '--allow-indels', action="store_true", help='Allow indel search. Indel search is disabled by default.(Not used since version 1.3.0)' )
     parser.add_option( '', '--max-insertion-length', dest='max_insertion_length', help='The maximum insertion length. The default is 3.' )
     parser.add_option( '', '--max-deletion-length', dest='max_deletion_length', help='The maximum deletion length. The default is 3.' )
 
@@ -50,6 +51,7 @@ def __main__():
                                                                     sequence, inclusive.')
     parser.add_option( '', '--no-novel-juncs', action="store_true", dest='no_novel_juncs', help="Only look for junctions indicated in the \
                                                                                             supplied GFF file. (ignored without -G)")
+    parser.add_option( '', '--no-novel-indels', action="store_true", dest='no_novel_indels', help="Skip indel search. Indel search is enabled by default.")
     # Types of search.
     parser.add_option( '', '--microexon-search', action="store_true", dest='microexon_search', help='With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.')
     parser.add_option( '', '--closure-search', action="store_true", dest='closure_search', help='Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (<= 50bp)')
@@ -160,12 +162,16 @@ def __main__():
                 opts += ' --no-novel-juncs'
             if options.library_type:
                 opts += ' --library-type %s' % options.library_type
-            if options.allow_indels:
-                # Max options do not work for Tophat v1.2.0, despite documentation to the contrary.
-                opts += ' --allow-indels'
-                #opts += ' --max-insertion-length %i --max-deletion-length %i' % ( int( options.max_insertion_length ), int( options.max_deletion_length ) )
+            if options.no_novel_indels:
+                opts += ' --no-novel-indels'
+            else:
+                if options.max_insertion_length:
+                    opts += ' --max-insertion-length %i' % int( options.max_insertion_length )
+                if options..max_deletion_length:
+                    opts += ' --max-deletion-length %i' % int( options.max_deletion_length )
+                # Max options do not work for Tophat v1.2.0, despite documentation to the contrary. (Fixed in version 1.3.1)
                 # need to warn user of this fact
-                sys.stdout.write( "Max insertion length and max deletion length options don't work in Tophat v1.2.0\n" )
+                #sys.stdout.write( "Max insertion length and max deletion length options don't work in Tophat v1.2.0\n" )
 
             # Search type options.
             if options.coverage_search:
@@ -180,6 +186,8 @@ def __main__():
                 opts += ' --microexon-search'
             if options.single_paired == 'paired':
                 opts += ' --mate-std-dev %s' % options.mate_std_dev
+            if options.initial_read_mismatches:
+                opts += ' --initial-read-mismatches %d' % int( options.initial_read_mismatches )
             if options.seg_mismatches:
                 opts += ' --segment-mismatches %d' % int( options.seg_mismatches )
             if options.seg_length:
