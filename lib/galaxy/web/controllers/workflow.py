@@ -1193,20 +1193,31 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             # the Galaxy panels displayed whenever in Galaxy.
                             message += "The workflow requires the following tools that are not available in this Galaxy instance."
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/><br/>"
-                            for tool_shed_name, tool_shed_url in trans.app.tool_shed_registry.tool_sheds.items():
-                                if tool_shed_url.endswith( '/' ):
-                                    tool_shed_url = tool_shed_url.rstrip( '/' )
-                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, trans.request.host )
+                            for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
+                                if shed_url.endswith( '/' ):
+                                    shed_url = shed_url.rstrip( '/' )
+                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, trans.request.host, webapp )
                                     for missing_tool_tup in missing_tool_tups:
                                         missing_tool_id = missing_tool_tup[0]
                                         url += '&tool_id=%s' % missing_tool_id
-                                message += '<a href="%s">%s</a><br/>' % ( url, tool_shed_name )
+                                message += '<a href="%s">%s</a><br/>' % ( url, shed_name )
                                 status = 'error'
-                            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                              action='index',
-                                                                              webapp='galaxy',
-                                                                              message=message,
-                                                                              status=status ) )
+                            if local_file or tool_shed_url:
+                                # Another Galaxy panels Hack: The request did not originate from the Galaxy 
+                                # workflow view, so we don't need to render the Galaxy panels.
+                                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                                  action='center',
+                                                                                  webapp='galaxy',
+                                                                                  message=message,
+                                                                                  status=status ) )
+                            else:
+                                # Another Galaxy panels hack: The request originated from the Galaxy
+                                # workflow view, so we need to render the Galaxy panels.
+                                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                                  action='index',
+                                                                                  webapp='galaxy',
+                                                                                  message=message,
+                                                                                  status=status ) )
                         else:
                             # TODO: Figure out what to do here...
                             pass
