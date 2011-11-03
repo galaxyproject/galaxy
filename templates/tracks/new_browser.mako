@@ -19,7 +19,7 @@
     </div>
     <div class="form-row">
         Is the build not listed here? 
-        <a href="${h.url_for( controller='user', action='dbkeys', panels=True )}">Add a Custom Build</a>
+        <a href="${h.url_for( controller='user', action='dbkeys', use_panels=True )}">Add a Custom Build</a>
     </div>
     %if default_dbkey is not None:
         <script type="text/javascript">
