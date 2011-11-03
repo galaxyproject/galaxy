@@ -13,7 +13,7 @@ ${render_user_info()}
     <div class="toolForm">
         <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='edit_info', cntrller=cntrller, user_id=trans.security.encode_id( user.id ) )}" method="post" >
             <div class="toolFormTitle">User information</div>
-            %if len( user_type_fd_id_select_field.options ) > 1:
+            %if user_type_fd_id_select_field and len( user_type_fd_id_select_field.options ) > 1:
                 <div class="form-row">
                     <label>User type:</label>
                     ${user_type_fd_id_select_field.get_html()}
