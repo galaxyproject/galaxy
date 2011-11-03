@@ -1,0 +1,74 @@
+<tool id="LogisticRegression" name="Perform Logistic Regression with vif" version="1.0.1">
+  <description> </description>
+  <command interpreter="python">
+    logistic_regression_vif.py 
+      $input1
+      $response_col
+      $predictor_cols
+      $out_file1
+      1>/dev/null
+  </command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Dataset missing? See TIP below."/>
+    <param name="response_col" label="Response column (Y)" type="data_column" data_ref="input1" numerical="True"/>
+    <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" numerical="True" multiple="true" >
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+
+  </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
+  <tests>
+    <test>
+        <param name="input1" value="logreg_inp.tabular"/>
+        <param name="response_col" value="4"/>
+        <param name="predictor_cols" value="1,2,3"/>
+        <output name="out_file1" file="logreg_out2.tabular"/>
+
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Datasets-&gt;Convert characters*
+
+-----
+
+.. class:: infomark
+
+**What it does**
+
+This tool uses the **'glm'** function from R statistical package to perform logistic regression on the input data. It outputs one file containing the summary statistics of the performed regression. Also, it calculates VIF(Variance Inflation Factor) with **'vif'** function from library (car) in R.
+
+
+*R Development Core Team (2010). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. ISBN 3-900051-07-0, URL http://www.R-project.org.*
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+- This tool currently treats all predictor variables as continuous numeric variables and response variable as categorical variable. Currently, the response variable can have only two classes, namely 0 and 1. The program will take 0 as base class.
+
+- Rows containing non-numeric (or missing) data in any of the chosen columns will be skipped from the analysis.
+
+- The summary statistics in the output are described below:
+
+- Pseudo R-squared: the proportion of model improvement from null model
+- p-value: p-value for the z-test of the null hypothesis that the corresponding slope is equal to zero against the two-sided alternative.
+- Coefficient indicates log ratio of (probability to be class 1 / probability to be class 0)
+
+- This tool also provides **Variance Inflation Factor or VIF** which quantifies the level of multicollinearity. The tool will automatic generate VIF if the model has more than one predictor. The higher the VIF, the higher is the multicollinearity. Multicollinearity will inflate  standard error and reduce level of significance of the predictor. In the worst case, it can reverse direction of slope for highly correlated predictors if one of them is significant. A general thumb-rule is to use those predictors having VIF lower than 10 or 5.
+- **vif** is calculated by 
+    - First, regressing each predictor over all other predictors, and recording R-squared for each regression.
+    - Second, computing vif as 1/(1- R_squared)
+
+  </help>
+</tool>
