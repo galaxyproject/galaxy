@@ -196,8 +196,8 @@
                   <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
                   <conditional name="indel_search">
                       <param name="allow_indel_search" type="select" label="Allow indel search">
-                          <option value="No">No</option>
                           <option value="Yes">Yes</option>
+                          <option value="No">No</option>
                       </param>
                       <when value="No"/>
                       <when value="Yes">
@@ -303,8 +303,8 @@
                   <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
                   <conditional name="indel_search">
                       <param name="allow_indel_search" type="select" label="Allow indel search">
-                          <option value="No">No</option>
                           <option value="Yes">Yes</option>
+                          <option value="No">No</option>
                       </param>
                       <when value="No"/>
                       <when value="Yes">
