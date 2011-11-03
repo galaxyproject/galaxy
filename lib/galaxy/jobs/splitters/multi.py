@@ -33,7 +33,6 @@ def do_split (job_wrapper):
         subdir_index[0] = subdir_index[0] + 1
         if not os.path.exists(dir):
             os.makedirs(dir)
-            os.chmod(dir,0777)
         task_dirs.append(dir)
         return dir
     
@@ -118,7 +117,7 @@ def do_merge( job_wrapper,  task_wrappers):
         working_directory = job_wrapper.working_directory
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
         # TODO: Output datasets can be very complex. This doesn't handle metadata files
-        outputs = job_wrapper.get_output_datasets_and_fnames()
+        outputs = job_wrapper.get_output_hdas_and_fnames()
         pickone_done = []
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
         for output in outputs:
@@ -143,6 +142,7 @@ def do_merge( job_wrapper,  task_wrappers):
                 raise Exception(log_error)
     except Exception, e:
         stdout = 'Error merging files';
+        log.exception( stdout )
         stderr = str(e)
         
 

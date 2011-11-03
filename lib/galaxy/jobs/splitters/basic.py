@@ -6,7 +6,7 @@ log = logging.getLogger( __name__ )
 def set_basic_defaults(job_wrapper):
     parent_job = job_wrapper.get_job()
     job_wrapper.tool.parallelism.attributes['split_inputs'] = parent_job.input_datasets[0].name
-    job_wrapper.tool.parallelism.attributes['merge_outputs'] = job_wrapper.get_output_datasets_and_fnames().keys()[0]
+    job_wrapper.tool.parallelism.attributes['merge_outputs'] = job_wrapper.get_output_hdas_and_fnames().keys()[0]
 
 def do_split (job_wrapper):
     if len(job_wrapper.get_input_fnames()) > 1 or len(job_wrapper.get_output_fnames()) > 1:

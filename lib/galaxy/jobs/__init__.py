@@ -327,7 +327,7 @@ class JobWrapper( object ):
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         self.output_paths = None
-        self.output_dataset_paths = None
+        self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
@@ -764,10 +764,10 @@ class JobWrapper( object ):
             self.compute_outputs()
         return self.output_paths
 
-    def get_output_datasets_and_fnames( self ):
-        if self.output_dataset_paths is None:
+    def get_output_hdas_and_fnames( self ):
+        if self.output_hdas_and_paths is None:
             self.compute_outputs()
-        return self.output_dataset_paths
+        return self.output_hdas_and_paths
 
     def compute_outputs( self ) :
         class DatasetPath( object ):
@@ -786,18 +786,18 @@ class JobWrapper( object ):
         jeha_false_path = None
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
-            self.output_dataset_paths = {}
-            for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
-                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
-                dsp = DatasetPath( data.id, data.file_name, false_path )
+            self.output_hdas_and_paths = {}
+            for name, hda in [ ( da.name, da.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
+                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % hda.dataset.id ) )
+                dsp = DatasetPath( hda.dataset.id, hda.dataset.file_name, false_path )
                 self.output_paths.append( dsp )
-                self.output_dataset_paths[name] = data,  dsp
+                self.output_hdas_and_paths[name] = hda, dsp
             if jeha:
                 jeha_false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % jeha.dataset.id ) )
         else:
-            results = [ (da.name,  da.dataset,  DatasetPath( da.dataset.dataset.id, da.dataset.file_name )) for da in job.output_datasets + job.output_library_datasets ]
+            results = [ ( da.name, da.dataset, DatasetPath( da.dataset.dataset.id, da.dataset.file_name ) ) for da in job.output_datasets + job.output_library_datasets ]
             self.output_paths = [t[2] for t in results]
-            self.output_dataset_paths = dict([(t[0],  t[1:]) for t in results])
+            self.output_hdas_and_paths = dict([(t[0],  t[1:]) for t in results])
         if jeha:
             dsp = DatasetPath( jeha.dataset.id, jeha.dataset.file_name, jeha_false_path )
             self.output_paths.append( dsp )
