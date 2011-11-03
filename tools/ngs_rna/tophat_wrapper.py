@@ -167,7 +167,7 @@ def __main__():
             else:
                 if options.max_insertion_length:
                     opts += ' --max-insertion-length %i' % int( options.max_insertion_length )
-                if options..max_deletion_length:
+                if options.max_deletion_length:
                     opts += ' --max-deletion-length %i' % int( options.max_deletion_length )
                 # Max options do not work for Tophat v1.2.0, despite documentation to the contrary. (Fixed in version 1.3.1)
                 # need to warn user of this fact
