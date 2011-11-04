@@ -95,7 +95,7 @@ def convert_newlines( fname, in_place=True ):
         fp.write( "%s\n" % line.rstrip( "\r\n" ) )
     fp.close()
     if in_place:
-        shutil.move( temp_name, fname )
+        shutil.copyfile( temp_name, fname )
         # Return number of lines in file.
         return ( i + 1, None )
     else:
