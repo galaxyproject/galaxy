@@ -113,6 +113,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         self.external_runJob_script = app.config.drmaa_external_runjob_script
         self.external_killJob_script = app.config.drmaa_external_killjob_script
         self.TMPDIR  =  app.config.TMPDIR
+        self.userid = []
 
     def get_native_spec( self, url ):
         """Get any native DRM arguments specified by the site configuration"""
@@ -215,6 +216,7 @@ class DRMAAJobRunner( BaseJobRunner ):
             job_wrapper.change_ownership_for_run()
             log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
             filename = self.store_jobtemplate(job_wrapper, jt)
+            self.userid =  job_wrapper.user_system_pwent[2]
             job_id = self.external_runjob(filename, job_wrapper.user_system_pwent[2]).strip()
         log.info("(%s) queued as %s" % ( galaxy_id_tag, job_id ) )
 
@@ -370,7 +372,7 @@ class DRMAAJobRunner( BaseJobRunner ):
                 self.ds.control( job.job_runner_external_id, drmaa.JobControlAction.TERMINATE )
             else:
                 # FIXME: hardcoded path
-                subprocess.Popen( [ '/usr/bin/sudo', '-E', self.external_killJob_script, str( job.job_runner_external_id ), str( self.job_user_uid[2] ) ], shell=False )
+                subprocess.Popen( [ '/usr/bin/sudo', '-E', self.external_killJob_script, str( job.job_runner_external_id ), str( self.userid ) ], shell=False )
             log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.id, job.job_runner_external_id ) )
         except drmaa.InvalidJobException:
             log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.id, job.job_runner_external_id ) )
