@@ -941,7 +941,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             }
         };
         this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.nav_controls);
-        this.location_span = $("<span/>").addClass("location").appendTo(this.nav_controls);
+        this.location_span = $("<span/>").addClass("location").attr('original-title', 'Click to change location').tipsy( { gravity: 'n' } ).appendTo(this.nav_controls);
         this.location_span.click(function() {
             view.location_span.hide();
             view.chrom_select.hide();
@@ -953,8 +953,11 @@ extend( View.prototype, DrawableCollection.prototype, {
         if (this.vis_id !== undefined) {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.nav_controls);
         }
-        this.zo_link = $("<a id='zoom-out' />").click(function() { view.zoom_out(); view.request_redraw(); }).appendTo(this.nav_controls);
-        this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.request_redraw(); }).appendTo(this.nav_controls);        
+        
+        this.zo_link = $("<a/>").attr("id", "zoom-out").attr("title", "Zoom out").tipsy( {gravity: 'n'} )
+                                .click(function() { view.zoom_out(); view.request_redraw(); }).appendTo(this.nav_controls);
+        this.zi_link = $("<a/>").attr("id", "zoom-in").attr("title", "Zoom in").tipsy( {gravity: 'n'} )
+                                .click(function() { view.zoom_in(); view.request_redraw(); }).appendTo(this.nav_controls);      
         
         // Get initial set of chroms.
         this.load_chroms_deferred = this.load_chroms({low: 0});
@@ -1069,7 +1072,6 @@ extend( View.prototype, DrawableCollection.prototype, {
         
         this.reset();
         $(window).trigger("resize");
-        this.update_intro_div();
     },
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
