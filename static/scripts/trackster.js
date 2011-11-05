@@ -2113,8 +2113,14 @@ extend(DrawableConfig.prototype, {
     build_form: function() {
         var track_config = this;
         var container = $("<div />");
-        $.each( this.params, function( index, param ) {
-            if ( ! param.hidden ) {
+        var param;
+        // Function to process parameters recursively
+        function handle_params( params, container ) {
+            for ( var index = 0; index < params.length; index++ ) {
+                param = params[index];
+                // Hidden params have no representation in the form
+                if ( param.hidden ) { continue; }
+                // Build row for param
                 var id = 'param_' + index;
                 var value = track_config.values[ param.key ];
                 var row = $("<div class='form-row' />").appendTo( container );
@@ -2132,7 +2138,6 @@ extend(DrawableConfig.prototype, {
                     var farb_container = $("<div/>")
                             .appendTo(tip_inner)
                             .farbtastic( { width: 100, height: 100, callback: input, color: value });
-                            
                     // Outer div container input and tip for hover to work
                     $("<div />").append( input ).append( tip ).appendTo( row ).bind( "click", function ( e ) { 
                         tip.css( { 
@@ -2156,7 +2161,10 @@ extend(DrawableConfig.prototype, {
                     row.append( $("<div class='help'/>").text( param.help ) );
                 }
             }
-        });
+        }
+        // Handle top level parameters in order
+        handle_params( this.params, container );
+        // Return element containing constructed form
         return container;
     },
     update_from_form: function( container ) {
