@@ -462,8 +462,10 @@ class VcfDataProvider( TracksDataProvider ):
                             # ID:
                             feature[2],
                             cigar,
+                            # TODO? VCF does not have strand, so default to positive.
+                            "+",
                             new_seq,
-                            float( feature[5] )]
+                            float( feature[5] ) ]
                 rval.append(payload)
 
         return { 'data': rval, 'message': message }
@@ -609,11 +611,11 @@ class BamDataProvider( TracksDataProvider ):
             data - a list of reads with the format 
                     [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
                 where <read_1> has the format
-                    [<start>, <end>, <cigar>, ?<read_seq>?]
+                    [<start>, <end>, <cigar>, <strand>, ?<read_seq>?]
                 and <read_2> has the format
-                    [<start>, <end>, <cigar>, ?<read_seq>?]
+                    [<start>, <end>, <cigar>, <strand>, ?<read_seq>?]
                 For single-end reads, read has format:
-                    [<guid>, <start>, <end>, <name>, cigar, seq] 
+                    [<guid>, <start>, <end>, <name>, <cigar>, <strand>, <seq>] 
                 NOTE: read end and sequence data are not valid for reads outside of
                 requested region and should not be used.
             
@@ -641,17 +643,34 @@ class BamDataProvider( TracksDataProvider ):
             else:
                 return None
                 
+        # Decode strand from read flag.
+        def decode_strand( read_flag, mask ):
+            strand_flag = ( read_flag & mask == 0 )
+            if strand_flag:
+                return "+"
+            else:
+                return "-"
+                
         # Encode reads as list of lists.
         results = []
         paired_pending = {}
+        unmapped = 0
         for count, read in enumerate( data ):
             if count < start_val:
                 continue
-            if count-start_val >= max_vals:
+            if ( count - start_val - unmapped ) >= max_vals:
                 message = ERROR_MAX_VALS % ( max_vals, "reads" )
                 break
+                
+            # If not mapped, skip read.
+            is_mapped = ( read.flag & 0x0004 == 0 )
+            if not is_mapped:
+                unmapped += 1
+                continue
+                            
             qname = read.qname
             seq = read.seq
+            strand = decode_strand( read.flag, 0x0010 )
             if read.cigar is not None:
                 read_len = sum( [cig[1] for cig in read.cigar] ) # Use cigar to determine length
             else:
@@ -664,14 +683,15 @@ class BamDataProvider( TracksDataProvider ):
                                       pair['start'], 
                                       read.pos + read_len, 
                                       qname, 
-                                      [ pair['start'], pair['end'], pair['cigar'], pair['seq'] ], 
-                                      [ read.pos, read.pos + read_len, read.cigar, seq ] 
+                                      [ pair['start'], pair['end'], pair['cigar'], pair['strand'], pair['seq'] ], 
+                                      [ read.pos, read.pos + read_len, read.cigar, strand, seq ] 
                                      ] )
                     del paired_pending[qname]
                 else:
-                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos, 'rlen': read_len, 'cigar': read.cigar }
+                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos,
+                                              'rlen': read_len, 'strand': strand, 'cigar': read.cigar }
             else:
-                results.append( [ "%i_%s" % ( read.pos, qname ), read.pos, read.pos + read_len, qname, read.cigar, read.seq] )
+                results.append( [ "%i_%s" % ( read.pos, qname ), read.pos, read.pos + read_len, qname, read.cigar, strand, read.seq] )
                 
         # Take care of reads whose mates are out of range.
         # TODO: count paired reads when adhering to max_vals?
@@ -683,14 +703,14 @@ class BamDataProvider( TracksDataProvider ):
                 # Make read_1 start=end so that length is 0 b/c we don't know
                 # read length.
                 r1 = [ read['mate_start'], read['mate_start'] ]
-                r2 = [ read['start'], read['end'], read['cigar'], read['seq'] ]
+                r2 = [ read['start'], read['end'], read['cigar'], read['strand'], read['seq'] ]
             else:
                 # Mate is after read.
                 read_start = read['start']
                 # Make read_2 start=end so that length is 0 b/c we don't know
                 # read length. Hence, end of read is start of read_2.
                 read_end = read['mate_start']
-                r1 = [ read['start'], read['end'], read['cigar'], read['seq'] ]
+                r1 = [ read['start'], read['end'], read['cigar'], read['strand'], read['seq'] ]
                 r2 = [ read['mate_start'], read['mate_start'] ]
 
             results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2 ] )

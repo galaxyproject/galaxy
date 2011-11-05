@@ -3580,11 +3580,15 @@ extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrac
 var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
     
+    var 
+        block_color = get_random_color(),
+        reverse_strand_color = get_random_color( [ block_color, "#ffffff" ] );
     this.config = new DrawableConfig( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
+            { key: 'block_color', label: 'Block and sense strand color', type: 'color', default_value: block_color },
+            { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: reverse_strand_color },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
@@ -4388,8 +4392,6 @@ var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler
     this.ref_seq = (ref_seq ? ref_seq.data : null);
 };
 
-ReadPainter.prototype.default_prefs = extend({}, FeaturePainter.prototype.default_prefs, { show_insertions: false });
-
 extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
      * Returns height based on mode.
@@ -4414,14 +4416,15 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
      * Draw a single read.
      */
-    draw_read: function(ctx, mode, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center) {
+    draw_read: function(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, cigar, strand, orig_seq) {
         ctx.textAlign = "center";
         var track = this,
             tile_region = [tile_low, tile_high],
             base_offset = 0,
             seq_offset = 0,
             gap = 0,
-            char_width_px = ctx.canvas.manager.char_width_px;
+            char_width_px = ctx.canvas.manager.char_width_px,
+            block_color = (strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color);
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
@@ -4468,7 +4471,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                         // Draw.
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                         if (gap > 0) {
-                            ctx.fillStyle = this.prefs.block_color;
+                            ctx.fillStyle = block_color;
                             ctx.fillRect(s_start - gap, y_center + 1, s_end - s_start, 9);
                             ctx.fillStyle = CONNECTOR_COLOR;
                             // TODO: this can be made much more efficient by computing the complete sequence
@@ -4486,7 +4489,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                 }
                             }
                         } else {
-                            ctx.fillStyle = this.prefs.block_color;
+                            ctx.fillStyle = block_color;
                             // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
                             ctx.fillRect(s_start, y_center + 4, s_end - s_start, SQUISH_FEATURE_HEIGHT);
                         }
@@ -4615,7 +4618,6 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
-            block_color = this.prefs.block_color,
             label_color = this.prefs.label_color,
             // Left-gap for label text since we align chrom text to the position tick.
             gap = 0;
@@ -4626,7 +4628,6 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
         }
         
         // Draw read.
-        ctx.fillStyle = block_color;
         if (feature[5] instanceof Array) {
             // Read is paired.
             var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
@@ -4635,12 +4636,12 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
 
             // Draw left/forward read.
-            if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {
-                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center);
+            if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {                
+                this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], feature[4][4]);
             }
             // Draw right/reverse read.
             if (feature[5][1] >= tile_low && feature[5][0] <= tile_high && feature[5][2]) {
-                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], y_center);
+                this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], feature[5][4]);
             }
             // Draw connector.
             if (b2_start > b1_end) {
@@ -4649,8 +4650,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             }
         } else {
             // Read is single.
-            ctx.fillStyle = block_color;
-            this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center);
+            this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, feature[4], feature[5], feature[6]);
         }
         if (mode === "Pack" && feature_start > tile_low && feature_name !== ".") {
             // Draw label.
@@ -4664,7 +4664,6 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 ctx.textAlign = "right";
                 ctx.fillText(feature_name, f_start - LABEL_SPACING - gap, y_center + 8);
             }
-            ctx.fillStyle = block_color;
         }
         
         // FIXME: provide actual coordinates for drawn read.
