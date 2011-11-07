@@ -3308,7 +3308,8 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     this.data_manager = new DataManager(20, this);
     this.left_offset = 200;
 
-    this.painter = painters.LinkedFeaturePainter;
+    // this.painter = painters.LinkedFeaturePainter;
+    this.set_painter_from_config();
 };
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     set_painter_from_config: function() {
