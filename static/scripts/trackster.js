@@ -4385,17 +4385,17 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             // Draw feature/feature blocks + connectors.
             if (!feature_blocks) {
                 // If there are no blocks, treat the feature as one big exon.
-                if ( feature.strand ) {
-                    if (feature.strand === "+") {
+                ctx.fillStyle = block_color;
+                ctx.fillRect(f_start, y_center + 1, f_end - f_start, thick_height);
+                // If strand is specified, draw arrows over feature
+                if ( feature_strand ) {
+                    if (feature_strand === "+") {
                         ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
-                    } else if (feature.strand === "-") {
+                    } else if (feature_strand === "-") {
                         ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
                     }
+                    ctx.fillRect(f_start, y_center + 1, f_end - f_start, thick_height);
                 }
-                else { // No strand.
-                    ctx.fillStyle = block_color;
-                }                            
-                ctx.fillRect(f_start, y_center, f_end - f_start, thick_height);
             } else { 
                 //
                 // There are feature blocks and mode is either Squish or Pack.
