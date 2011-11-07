@@ -2127,10 +2127,21 @@ extend(DrawableConfig.prototype, {
                 var value = track_config.values[ param.key ];
                 var row = $("<div class='form-row' />").appendTo( container );
                 row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
+                // Draw parameter as checkbox
                 if ( param.type === 'bool' ) {
                     row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', value ) );
+                // Draw parameter as textbox
                 } else if ( param.type === 'text' ) {
                     row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select() }));
+                // Draw paramter as select area
+                } else if ( param.type == 'select' ) {
+                    var select = $('<select />').attr("id", id);
+                    for ( var i = 0; i < param.options.length; i++ ) {
+                        $("<option/>").text( param.options[i].label ).attr( "value", param.options[i].value ).appendTo( select );
+                    }
+                    select.val( value );
+                    row.append( select );
+                // Draw parameter as color picker
                 } else if ( param.type === 'color' ) {
                     var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
                     // Color picker in tool tip style float
@@ -3269,12 +3280,15 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
               help: 'Show the number of items in each bin when drawing summary histogram' },
+            { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
+                options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         ], 
         saved_values: prefs,
         onchange: function() {
             track.set_name(track.prefs.name);
             track.tile_cache.clear();
+            track.set_painter_from_config();
             track.request_draw();
         }
     });
@@ -3297,6 +3311,14 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     this.painter = painters.LinkedFeaturePainter;
 };
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    set_painter_from_config: function() {
+        console.log( this, this.config );
+        if ( this.config.values['connector_style'] == 'arcs' ) {
+            this.painter = painters.ArcLinkedFeaturePainter;
+        } else {
+            this.painter = painters.LinkedFeaturePainter;
+        }
+    },
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
