@@ -163,13 +163,23 @@ function make_right_panel( panel_el, center_el, border_el ) {
 // Modal dialog boxes
 
 function hide_modal() {
-    $(".dialog-box-container" ).fadeOut( function() {
+    $(".dialog-box-container" ).hide( 0, function() {
         $("#overlay").hide();
+		$("#overlay").removeClass( "modal" );
         $( ".dialog-box" ).find( ".body" ).children().remove();
     } );
 };
 
-function show_modal( title, body, buttons, extra_buttons, init_fn ) {
+function show_modal() {
+	$("#overlay").addClass( "modal" );
+	_show_modal.apply( this, arguments );
+}
+
+function show_message() {
+	_show_modal.apply( this, arguments );
+}
+
+function _show_modal( title, body, buttons, extra_buttons, init_fn ) {
     if ( title ) {
         $( ".dialog-box" ).find( ".title" ).html( title );
         $( ".dialog-box" ).find( ".unified-panel-header" ).show(); 
@@ -205,7 +215,7 @@ function show_modal( title, body, buttons, extra_buttons, init_fn ) {
     $( ".dialog-box" ).find( ".body" ).html( body );
     if ( ! $(".dialog-box-container").is( ":visible" ) ) {
         $("#overlay").show();
-        $(".dialog-box-container").fadeIn();
+        $(".dialog-box-container").show();
     }
     // Fix min-width so that modal cannot shrink considerably if 
     // new content is loaded.
