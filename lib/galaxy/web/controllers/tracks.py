@@ -13,7 +13,7 @@ from galaxy.web.controllers.library import LibraryListGrid
 from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
-from galaxy.datatypes.interval import Gff
+from galaxy.datatypes.interval import Gff, Bed
 from galaxy.model import NoConverterException, ConverterDependencyException
 from galaxy.visualization.tracks.data_providers import *
 from galaxy.visualization.tracks.visual_analytics import get_tool_def, get_dataset_job
@@ -246,6 +246,27 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             "tool": get_tool_def( trans, dataset )
         }
         return track
+
+    @web.json
+    def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):
+        if hda_id:
+            hda_ldda = "hda"
+            dataset = self.get_dataset( trans, hda_id, check_ownership=False, check_accessible=True )
+        elif ldda_id:
+            hda_ldda = "ldda"
+            dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+        rows = []
+        if isinstance( dataset.datatype, Bed ):
+            data = RawBedDataProvider( original_dataset=dataset ).get_iterator()
+            for i, line in enumerate( data ):
+                if ( i > 500 ): break
+                fields = line.split()
+                location = name = "%s:%s-%s" % ( fields[0], fields[1], fields[2] )
+                if len( fields ) > 3:
+                    name = fields[4]
+                rows.append( [location, name] )
+        return { 'data': rows }
+
         
     @web.expose
     @web.require_login()

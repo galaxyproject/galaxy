@@ -363,14 +363,18 @@ class RawBedDataProvider( BedDataProvider ):
     for large datasets.
     """
 
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom=None, start=None, end=None ):
         def line_filter_iter():
             for line in open( self.original_dataset.file_name ):
+                if line.startswith( "track" ) or line.startswith( "browser" ):
+                    continue
                 feature = line.split()
                 feature_chrom = feature[0]
                 feature_start = int( feature[1] )
                 feature_end = int( feature[2] )
-                if feature_chrom != chrom or feature_start > int( end ) or feature_end < int( start ):
+                if ( chrom is not None and feature_chrom != chrom ) \
+                    or ( start is not None and feature_start > int( end ) ) \
+                    or ( end is not None and feature_end < int( start ) ):
                     continue
                 yield line
         return line_filter_iter()

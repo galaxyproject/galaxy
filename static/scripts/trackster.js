@@ -3313,7 +3313,6 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
 };
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     set_painter_from_config: function() {
-        console.log( this, this.config );
         if ( this.config.values['connector_style'] == 'arcs' ) {
             this.painter = painters.ArcLinkedFeaturePainter;
         } else {
