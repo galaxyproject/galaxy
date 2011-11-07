@@ -94,13 +94,11 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
             if target_ext and not converted_dataset:
                 if isinstance( data, DisplayDataValueWrapper ):
                     data = data.value
-                assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, metadata_safe = False )
                 new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
                 new_data.hid = data.hid
                 new_data.name = data.name
                 trans.sa_session.add( new_data )
-                trans.sa_session.flush()
-                assoc.dataset = new_data
+                assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, dataset = new_data, metadata_safe = False )
                 trans.sa_session.add( assoc )
                 trans.sa_session.flush()
             elif converted_dataset and converted_dataset.state == converted_dataset.states.ERROR:
