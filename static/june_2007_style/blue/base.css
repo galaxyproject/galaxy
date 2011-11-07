@@ -43,6 +43,7 @@ div.form-row label.inline{display:inline;}
 div.form-row-input{float:left;}
 div.form-row-input label{font-weight:normal;display:inline;}
 div.form-row-error-message{width:300px;float:left;color:red;font-weight:bold;padding:3px 0 0 1em;}
+.form-row .help{color:#666;}
 select,input,textarea{font:inherit;}
 select,textarea,input[type="text"],input[type="file"],input[type="password"]{-webkit-box-sizing:border-box;max-width:300px;}
 .errormessagelarge,.warningmessagelarge,.donemessagelarge,.infomessagelarge{padding:10px;padding-left:52px;min-height:32px;border:1px solid #AA6666;background-color:#FFCCCC;background-image:url(error_message_icon.png);background-repeat:no-repeat;background-position:10px 10px;}

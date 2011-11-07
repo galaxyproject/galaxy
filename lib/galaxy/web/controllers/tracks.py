@@ -528,6 +528,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             if not standalone_provider.has_data( chrom ):
                 return messages.NO_DATA
             valid_chroms = standalone_provider.valid_chroms()
+
             
         # Have data if we get here
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
