@@ -2242,7 +2242,16 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     // Only show popups in Pack mode.
     if (tile.mode !== "Pack") { return; }
     
-    $(this.canvas).mousemove(function (e) {
+    $(this.canvas).hover( function() { 
+        this.hovered = true; 
+        $(this).mousemove();
+    }, function() { 
+        this.hovered = false; 
+        // Clear popup if it is still hanging around (this is probably not needed) 
+        $(this).siblings(".feature-popup").remove();
+    } ).mousemove(function (e) {
+        // Use the hover plugin to get a delay before showing popup
+        if ( !this.hovered ) { return; }
         // Get feature data for position.
         var 
             this_offset = $(this).offset(),
