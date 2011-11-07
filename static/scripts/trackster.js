@@ -654,6 +654,8 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
  * associated with a view and container. They optionally have a drag handle class. 
  */
 var Drawable = function(name, view, container, prefs, drag_handle_class) {
+    if (!Drawable.id_counter) { Drawable.id_counter = 0; }
+    this.id = Drawable.id_counter++;
     this.name = name;
     this.view = view;
     this.container = container;
@@ -677,7 +679,7 @@ extend(Drawable.prototype, {
     request_draw: function() {},
     _draw: function() {},
     to_json: function() {},
-    update_track_icons: function() {},
+    update_icons: function() {},
     /**
      * Set drawable name.
      */ 
@@ -804,13 +806,11 @@ var DrawableGroup = function(name, view, container, prefs) {
     DrawableCollection.call(this, "DrawableGroup", name, view, container, prefs, "group-handle");
         
     // HTML elements.
-    if (!DrawableGroup.id_counter) { DrawableGroup.id_counter = 0; }
-    var group_id = DrawableGroup.id_counter++
-    this.container_div = $("<div/>").addClass("group").attr("id", "group_" + group_id).appendTo(this.container.content_div);
+    this.container_div = $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
     this.header_div = $("<div/>").addClass("track-header").appendTo(this.container_div);
     this.header_div.append($("<div/>").addClass(this.drag_handle_class));
     this.name_div = $("<div/>").addClass("group-name menubutton popup").text(this.name).appendTo(this.header_div);    
-    this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + group_id + "_content_div").appendTo(this.container_div);
+    this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + this.id + "_content_div").appendTo(this.container_div);
     
     // Set up containers/moving for group: register both container_div and content div as container
     // because both are used as containers (container div to recognize container, content_div to 
@@ -819,14 +819,14 @@ var DrawableGroup = function(name, view, container, prefs) {
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
     
-    this.update_track_icons();
+    this.update_icons();
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
     /**
      * Make popup menu for group.
      */
-    update_track_icons: function() {
+    update_icons: function() {
         var group = this;
         
         var group_dropdown = {};
@@ -941,7 +941,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             }
         };
         this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.nav_controls);
-        this.location_span = $("<span/>").addClass("location").appendTo(this.nav_controls);
+        this.location_span = $("<span/>").addClass("location").attr('original-title', 'Click to change location').tipsy( { gravity: 'n' } ).appendTo(this.nav_controls);
         this.location_span.click(function() {
             view.location_span.hide();
             view.chrom_select.hide();
@@ -953,8 +953,11 @@ extend( View.prototype, DrawableCollection.prototype, {
         if (this.vis_id !== undefined) {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.nav_controls);
         }
-        this.zo_link = $("<a id='zoom-out' />").click(function() { view.zoom_out(); view.request_redraw(); }).appendTo(this.nav_controls);
-        this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.request_redraw(); }).appendTo(this.nav_controls);        
+        
+        this.zo_link = $("<a/>").attr("id", "zoom-out").attr("title", "Zoom out").tipsy( {gravity: 'n'} )
+                                .click(function() { view.zoom_out(); view.request_redraw(); }).appendTo(this.nav_controls);
+        this.zi_link = $("<a/>").attr("id", "zoom-in").attr("title", "Zoom in").tipsy( {gravity: 'n'} )
+                                .click(function() { view.zoom_in(); view.request_redraw(); }).appendTo(this.nav_controls);      
         
         // Get initial set of chroms.
         this.load_chroms_deferred = this.load_chroms({low: 0});
@@ -1069,11 +1072,10 @@ extend( View.prototype, DrawableCollection.prototype, {
         
         this.reset();
         $(window).trigger("resize");
-        this.update_intro_div();
     },
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
-        if (this.num_tracks === 0) {
+        if (this.drawables.length === 0) {
             this.intro_div.appendTo(this.viewport_container);
         }
         else {
@@ -1577,8 +1579,7 @@ extend(Tool.prototype, {
             // Set name of track to include tool name, parameters, and region used.
             track_name = url_params.tool_id +
                          current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
-            container,
-            new_track;
+            container;
             
         // If track not in a group, create a group for it and add new track to group. If track 
         // already in group, add track to group.
@@ -1595,11 +1596,12 @@ extend(Tool.prototype, {
         else {
             container = current_track.container;
         }
-        if (current_track instanceof FeatureTrack) {
-            new_track = new ToolDataFeatureTrack(track_name, view, container, "hda");
-            new_track.change_mode(current_track.mode);
-            container.add_drawable(new_track);
-        }
+        
+        // Create and init new track.
+        var new_track = new current_track.constructor(track_name, view, container, "hda");
+        new_track.init_for_tool_data();
+        new_track.change_mode(current_track.mode);
+        container.add_drawable(new_track);
         new_track.content_div.text("Starting job.");
         
         // Run tool.
@@ -2316,7 +2318,6 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
  * ----> ReferenceTrack
  * ----> FeatureTrack
  * -------> ReadTrack
- * -------> ToolDataFeatureTrack
  * -------> VcfTrack
  */
 var Track = function(name, view, container, show_header, prefs, data_url, data_query_wait) {
@@ -2330,9 +2331,6 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
-
-    if (!Track.id_counter) { Track.id_counter = 0; }
-    this.id = Track.id_counter++;
     
     //
     // Create HTML element structure for track.
@@ -2476,9 +2474,6 @@ extend(Track.prototype, Drawable.prototype, {
         else if (this instanceof ReadTrack) {
             return "ReadTrack";
         }
-        else if (this instanceof ToolDataFeatureTrack) {
-            return "ToolDataFeatureTrack";
-        }
         else if (this instanceof VcfTrack) {
             return "VcfTrack";
         }
@@ -2538,7 +2533,7 @@ extend(Track.prototype, Drawable.prototype, {
             } else if (result['status'] === "data") {
                 if (result['valid_chroms']) {
                     track.valid_chroms = result['valid_chroms'];
-                    track.update_track_icons();
+                    track.update_icons();
                 }
                 track.content_div.text(DATA_OK);
                 if (track.view.chrom) {
@@ -2554,7 +2549,7 @@ extend(Track.prototype, Drawable.prototype, {
             }
         });
         
-        this.update_track_icons();
+        this.update_icons();
     },
     /**
      * Additional initialization required before drawing track for the first time.
@@ -2562,8 +2557,8 @@ extend(Track.prototype, Drawable.prototype, {
     predraw_init: function() {}
 });
 
-var TiledTrack = function(name, view, container, show_header, prefs, filters_list, tool_dict, data_url, data_query_wait) {
-    Track.call(this, name, view, container, show_header, prefs, data_url, data_query_wait);
+var TiledTrack = function(name, view, container, show_header, prefs, filters_list, tool_dict) {
+    Track.call(this, name, view, container, show_header, prefs);
 
     var track = this,
         view = track.view;
@@ -2632,7 +2627,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Update track's buttons.
      */
-    update_track_icons: function() {
+    update_icons: function() {
         var track = this;
         
         //
@@ -2910,6 +2905,39 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             region = (chrom !== undefined && low !== undefined && high !== undefined ?
                       chrom + ":" + low + "-" + high : "all");
         return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
+    },
+    /**
+     * Set up track to receive tool data.
+     */
+    init_for_tool_data: function() {
+        // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
+        // is ready.
+        this.data_url = raw_data_url;
+        this.data_query_wait = 1000;
+        this.dataset_check_url = dataset_state_url;
+        
+        /**
+         * Predraw init sets up postdraw init.
+         */
+        this.predraw_init = function() {
+            // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
+            var track = this; 
+            var post_init = function() {
+                if (track.data_manager.size() === 0) {
+                    // Track still drawing initial data, so do nothing.
+                    setTimeout(post_init, 300);
+                }
+                else {
+                    // Track drawing done: reset dataset check, data URL, wait time and get dataset state to start
+                    // indexing.
+                    track.data_url = default_data_url;
+                    track.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+                    track.dataset_state_url = converted_datasets_state_url;
+                    $.getJSON(track.dataset_state_url, {dataset_id : track.dataset_id, hda_ldda: track.hda_ldda}, function(track_data) {});
+                }
+            };
+            post_init();
+        }
     }
 });
 
@@ -3261,7 +3289,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 if (!track.filters_available) {
                     track.filters_div.hide();
                 }
-                track.update_track_icons();
+                track.update_icons();
             }
         }
     },
@@ -3524,22 +3552,45 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
-    this.painter = painters.VariantPainter;
-};
-
-extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
-
-
-var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
+var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, tool);
     
     this.config = new DrawableConfig( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: name },
             { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
+            { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
+            { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
+            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        ], 
+        saved_values: prefs,
+        onchange: function() {
+            this.track.set_name(this.track.prefs.name);
+            this.track.tile_cache.clear();
+            this.track.request_draw();
+        }
+    });
+    this.prefs = this.config.values;
+    
+    this.painter = painters.ReadPainter;
+};
+
+extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
+
+var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
+    
+    var 
+        block_color = get_random_color(),
+        reverse_strand_color = get_random_color( [ block_color, "#ffffff" ] );
+    this.config = new DrawableConfig( {
+        track: this,
+        params: [
+            { key: 'name', label: 'Name', type: 'text', default_value: name },
+            { key: 'block_color', label: 'Block and sense strand color', type: 'color', default_value: block_color },
+            { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: reverse_strand_color },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
@@ -3556,47 +3607,9 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.prefs = this.config.values;
     
     this.painter = painters.ReadPainter;
-    this.update_track_icons();
+    this.update_icons();
 };
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
-
-/**
- * Feature track that displays data generated from tool.
- */
-var ToolDataFeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, {});
-    
-    // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
-    // is ready.
-    this.data_url = raw_data_url;
-    this.data_query_wait = 1000;
-    this.dataset_check_url = dataset_state_url;
-};
-
-extend(ToolDataFeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    /**
-     * For this track type, the predraw init sets up postdraw init. 
-     */
-    predraw_init: function() {        
-        // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
-        var track = this; 
-        var post_init = function() {
-            if (track.data_manager.size() === 0) {
-                // Track still drawing initial data, so do nothing.
-                setTimeout(post_init, 300);
-            }
-            else {
-                // Track drawing done: reset dataset check, data URL, wait time and get dataset state to start
-                // indexing.
-                track.data_url = default_data_url;
-                track.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
-                track.dataset_state_url = converted_datasets_state_url;
-                $.getJSON(track.dataset_state_url, {dataset_id : track.dataset_id, hda_ldda: track.hda_ldda}, function(track_data) {});
-            }
-        };
-        post_init();
-    }
-});
 
 // Exports
 
@@ -3605,6 +3618,7 @@ exports.DrawableGroup = DrawableGroup;
 exports.LineTrack = LineTrack;
 exports.FeatureTrack = FeatureTrack;
 exports.ReadTrack = ReadTrack;
+exports.VcfTrack = VcfTrack;
 
 // End trackster_module encapsulation
 };
@@ -4173,20 +4187,20 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
      * Height of a single row, depends on mode
      */
     get_row_height: function() {
-        var mode = this.mode, y_scale;
+        var mode = this.mode, height;
            if (mode === "Dense") {
-            y_scale = DENSE_TRACK_HEIGHT;            
+            height = DENSE_TRACK_HEIGHT;            
         }
         else if (mode === "no_detail") {
-            y_scale = NO_DETAIL_TRACK_HEIGHT;
+            height = NO_DETAIL_TRACK_HEIGHT;
         }
         else if (mode === "Squish") {
-            y_scale = SQUISH_TRACK_HEIGHT;
+            height = SQUISH_TRACK_HEIGHT;
         }
         else { // mode === "Pack"
-            y_scale = PACK_TRACK_HEIGHT;
+            height = PACK_TRACK_HEIGHT;
         }
-        return y_scale;
+        return height;
     },
 
     /**
@@ -4212,7 +4226,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         ctx.globalAlpha = this.alpha_scaler.gen_val(feature);
         
         // In dense mode, put all data in top slot.
-        if (mode == "Dense") {
+        if (mode === "Dense") {
             slot = 1;
         }
         
@@ -4375,104 +4389,44 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
     }
 });
 
-
-var VariantPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
-    FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
-}
-
-extend(VariantPainter.prototype, FeaturePainter.prototype, {
-    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
-        var feature = data[i],
-            feature_uid = feature[0],
-            feature_start = feature[1],
-            feature_end = feature[2],
-            feature_name = feature[3],
-            // All features need a start, end, and vertical center.
-            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
-            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
-            thickness, y_start, thick_start = null, thick_end = null;
-        
-        if (no_label) {
-            ctx.fillStyle = block_color;
-            ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
-        } 
-        else { // Show blocks, labels, etc.                        
-            // Unpack.
-            var ref_base = feature[4], alt_base = feature[5], qual = feature[6];
-        
-            // Draw block for entry.
-            thickness = 9;
-            y_start = 1;
-            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, thickness);
-        
-            // Add label for entry.
-            if (mode !== "Dense" && feature_name !== undefined && feature_start > tile_low) {
-                // Draw label
-                ctx.fillStyle = label_color;
-                if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
-                    ctx.textAlign = "left";
-                    ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
-                } else {
-                    ctx.textAlign = "right";
-                    ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
-                }
-                ctx.fillStyle = block_color;
-            }
-        
-            // Show additional data on block.
-            var vcf_label = ref_base + " / " + alt_base;
-            if (feature_start > tile_low && ctx.measureText(vcf_label).width < (f_end - f_start)) {
-                ctx.fillStyle = "white";
-                ctx.textAlign = "center";
-                ctx.fillText(vcf_label, left_offset + f_start + (f_end-f_start)/2, y_center + 8);
-                ctx.fillStyle = block_color;
-            }
-        }
-        
-        return [f_start, f_end];
-    }
-});
-
 var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler, ref_seq) {
     FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
     this.ref_seq = (ref_seq ? ref_seq.data : null);
 };
 
-ReadPainter.prototype.default_prefs = extend({}, FeaturePainter.prototype.default_prefs, { show_insertions: false });
-
 extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
-     * Returns y_scale based on mode.
+     * Returns height based on mode.
      */
     get_row_height: function() {
-        var y_scale, mode = this.mode;
+        var height, mode = this.mode;
         if (mode === "Dense") {
-            y_scale = DENSE_TRACK_HEIGHT;            
+            height = DENSE_TRACK_HEIGHT;            
         }
         else if (mode === "Squish") {
-            y_scale = SQUISH_TRACK_HEIGHT;
+            height = SQUISH_TRACK_HEIGHT;
         }
         else { // mode === "Pack"
-            y_scale = PACK_TRACK_HEIGHT;
+            height = PACK_TRACK_HEIGHT;
             if (this.prefs.show_insertions) {
-                y_scale *= 2;
+                height *= 2;
             }
         }
-        return y_scale;
+        return height;
     },
     
     /**
      * Draw a single read.
      */
-    draw_read: function(ctx, mode, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center) {
+    draw_read: function(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, cigar, strand, orig_seq) {
         ctx.textAlign = "center";
         var track = this,
             tile_region = [tile_low, tile_high],
             base_offset = 0,
             seq_offset = 0,
             gap = 0,
-            char_width_px = ctx.canvas.manager.char_width_px;
+            char_width_px = ctx.canvas.manager.char_width_px,
+            block_color = (strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color);
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
@@ -4519,7 +4473,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                         // Draw.
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                         if (gap > 0) {
-                            ctx.fillStyle = this.prefs.block_color;
+                            ctx.fillStyle = block_color;
                             ctx.fillRect(s_start - gap, y_center + 1, s_end - s_start, 9);
                             ctx.fillStyle = CONNECTOR_COLOR;
                             // TODO: this can be made much more efficient by computing the complete sequence
@@ -4537,7 +4491,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                 }
                             }
                         } else {
-                            ctx.fillStyle = this.prefs.block_color;
+                            ctx.fillStyle = block_color;
                             // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
                             ctx.fillRect(s_start, y_center + 4, s_end - s_start, SQUISH_FEATURE_HEIGHT);
                         }
@@ -4585,7 +4539,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                 draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_center + 4, 5]};
                                 ctx.fillStyle = CONNECTOR_COLOR;
                                 // Based on overlap b/t sequence and tile, get sequence to be drawn.
-                                switch(seq_tile_overlap) {
+                                switch( compute_overlap( [seq_start, seq_start + cig_len], tile_region ) ) {
                                     case(OVERLAP_START):
                                         seq = seq.slice(tile_low-seq_start);
                                         break;
@@ -4616,7 +4570,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                         else {
                             if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > char_width_px) {
                                 // Show insertions with a single number at the insertion point.
-                                draw_last[draw_last.length] = {type: "text", data: [seq.length, insert_x_coord, y_center + 9]};
+                                draw_last.push( { type: "text", data: [seq.length, insert_x_coord, y_center + 9] } );
                             }
                             else {
                                 // TODO: probably can merge this case with code above.
@@ -4666,7 +4620,6 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
-            block_color = this.prefs.block_color,
             label_color = this.prefs.label_color,
             // Left-gap for label text since we align chrom text to the position tick.
             gap = 0;
@@ -4677,7 +4630,6 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
         }
         
         // Draw read.
-        ctx.fillStyle = block_color;
         if (feature[5] instanceof Array) {
             // Read is paired.
             var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
@@ -4686,12 +4638,12 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
 
             // Draw left/forward read.
-            if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {
-                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center);
+            if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {                
+                this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], feature[4][4]);
             }
             // Draw right/reverse read.
             if (feature[5][1] >= tile_low && feature[5][0] <= tile_high && feature[5][2]) {
-                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], y_center);
+                this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], feature[5][4]);
             }
             // Draw connector.
             if (b2_start > b1_end) {
@@ -4700,10 +4652,9 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             }
         } else {
             // Read is single.
-            ctx.fillStyle = block_color;
-            this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center);
+            this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, feature[4], feature[5], feature[6]);
         }
-        if (mode === "Pack" && feature_start > tile_low) {
+        if (mode === "Pack" && feature_start > tile_low && feature_name !== ".") {
             // Draw label.
             ctx.fillStyle = this.prefs.label_color;
             // FIXME: eliminate tile_index
@@ -4715,7 +4666,6 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 ctx.textAlign = "right";
                 ctx.fillText(feature_name, f_start - LABEL_SPACING - gap, y_center + 8);
             }
-            ctx.fillStyle = block_color;
         }
         
         // FIXME: provide actual coordinates for drawn read.
@@ -4728,7 +4678,6 @@ exports.SummaryTreePainter = SummaryTreePainter;
 exports.LinePainter = LinePainter;
 exports.LinkedFeaturePainter = LinkedFeaturePainter;
 exports.ReadPainter = ReadPainter;
-exports.VariantPainter = VariantPainter;
 
 // End painters_module encapsulation
 };

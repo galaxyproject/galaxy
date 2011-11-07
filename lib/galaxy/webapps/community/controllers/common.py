@@ -361,8 +361,9 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                                 workflow_text = fp.read()
                                 fp.close()
                                 exported_workflow_dict = from_json_string( workflow_text )
-                                # Update the list of metadata dictionaries for workflows in metadata_dict.
-                                metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
+                                if exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                                    # Update the list of metadata dictionaries for workflows in metadata_dict.
+                                    metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
                             except Exception, e:
                                 invalid_files.append( ( name, str( e ) ) )
         else:

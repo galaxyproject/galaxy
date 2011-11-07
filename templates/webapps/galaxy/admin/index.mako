@@ -46,6 +46,9 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users', webapp=webapp )}" target="galaxy_main">Manage users</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups', webapp=webapp )}" target="galaxy_main">Manage groups</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles', webapp=webapp )}" target="galaxy_main">Manage roles</a></div>
+                        %if trans.app.config.allow_user_impersonation:
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='impersonate', webapp=webapp )}" target="galaxy_main">Impersonate a user</a></div>
+                        %endif
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -64,7 +67,7 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='memdump' )}" target="galaxy_main">Profile memory usage</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='jobs' )}" target="galaxy_main">Manage jobs</a></div>
                         %if cloned_repositories:
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_repositories' )}" target="galaxy_main">Manage installed tool shed repositories</a></div>
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_tool_shed_repositories' )}" target="galaxy_main">Manage installed tool shed repositories</a></div>
                         %endif
                     </div>
                 </div>

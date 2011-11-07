@@ -13,6 +13,7 @@
     -T "IndelRealigner"
     -o "${output_bam}"
     -et "NO_ET" ##ET no phone home
+    ##--num_threads 4 ##hard coded, for now
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"
@@ -50,13 +51,16 @@
             #end for
             '
         #end for
-        #if str( $gatk_param_type.input_intervals ) != "None":
-            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
-        #end if
-        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
-            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
-        #end if
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
+        
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
         -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
             -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
@@ -68,10 +72,16 @@
         --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
         --validation_strictness "${gatk_param_type.validation_strictness}"
         --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
         '
-        #if str( $gatk_param_type.read_group_black_list ) != "None":
-            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
-        #end if
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
     #end if
     #if $reference_source.reference_source_selector == "history":
         -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
@@ -108,10 +118,10 @@
         <param name="input_bam" type="data" format="bam" label="BAM file">
           <validator type="unspecified_build" />
           <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
-          <validator type="dataset_metadata_in_data_table" table_name="picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+          <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
           </options>
         </param>

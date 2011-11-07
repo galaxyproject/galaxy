@@ -11,6 +11,7 @@
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/AnalyzeCovariates.jar"
     -recalFile "${input_recal}"
     -outputDir "${output_html.files_path}"
+    ##--num_threads 4 ##hard coded, for now
     ##-log "${output_log}"
     ##-Rscript,--path_to_Rscript path_to_Rscript; on path is good enough
     -resources "${GALAXY_DATA_INDEX_DIR}/gatk/R"         

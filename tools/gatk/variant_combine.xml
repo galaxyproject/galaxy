@@ -114,7 +114,7 @@
           </param>
         </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_variants.input_variant" column="dbkey"/> -->
           </options>
         </param>

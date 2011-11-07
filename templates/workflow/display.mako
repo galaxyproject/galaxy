@@ -1,8 +1,8 @@
 <%inherit file="/display_base.mako"/>
 <%namespace file="/display_common.mako" import="render_message" />
 
-<%
-    from galaxy.tools.parameters import DataToolParameter, RuntimeValue 
+<%!
+    from galaxy.tools.parameters import DataToolParameter, RuntimeValue
     from galaxy.web import form_builder
 %>
 

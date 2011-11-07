@@ -135,10 +135,137 @@ class TracksDataProvider( object ):
                     { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index], \
                     'index' : attrs[ 'index' ] } )
         return filters
+        
+#
+# -- Base mixins and providers --
+#
+
+class FilterableMixin:
+    def get_filters( self ):
+        """ Returns a dataset's filters. """
+        
+        # is_ functions taken from Tabular.set_meta
+        def is_int( column_text ):
+            try:
+                int( column_text )
+                return True
+            except: 
+                return False
+        def is_float( column_text ):
+            try:
+                float( column_text )
+                return True
+            except: 
+                if column_text.strip().lower() == 'na':
+                    return True #na is special cased to be a float
+                return False
+        
+        #
+        # Get filters.
+        # TODOs: 
+        # (a) might be useful to move this into each datatype's set_meta method;
+        # (b) could look at first N lines to ensure GTF attribute types are consistent.
+        #
+        filters = []
+        # HACK: first 8 fields are for drawing, so start filter column index at 9.
+        filter_col = 8
+        if isinstance( self.original_dataset.datatype, Gff ):
+            # Can filter by score and GTF attributes.
+            filters = [ { 'name': 'Score', 
+                          'type': 'int', 
+                          'index': filter_col, 
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c6' } ]
+            filter_col += 1
+            if isinstance( self.original_dataset.datatype, Gtf ):
+                # Create filters based on dataset metadata.
+                for name, a_type in self.original_dataset.metadata.attribute_types.items():
+                    if a_type in [ 'int', 'float' ]:
+                        filters.append( 
+                            { 'name': name,
+                              'type': a_type, 
+                              'index': filter_col, 
+                              'tool_id': 'gff_filter_by_attribute',
+                              'tool_exp_name': name } )
+                        filter_col += 1
+
+                '''
+                # Old code: use first line in dataset to find attributes.
+                for i, line in enumerate( open(self.original_dataset.file_name) ):
+                    if not line.startswith('#'):
+                        # Look at first line for attributes and types.
+                        attributes = parse_gff_attributes( line.split('\t')[8] )
+                        for attr, value in attributes.items():
+                            # Get attribute type.
+                            if is_int( value ):
+                                attr_type = 'int'
+                            elif is_float( value ):
+                                attr_type = 'float'
+                            else:
+                                attr_type = 'str'
+                            # Add to filters.
+                            if attr_type is not 'str':
+                                filters.append( { 'name': attr, 'type': attr_type, 'index': filter_col } )
+                                filter_col += 1
+                        break
+                '''
+        elif isinstance( self.original_dataset.datatype, Bed ):
+            # Can filter by score column only.
+            filters = [ { 'name': 'Score', 
+                          'type': 'int', 
+                          'index': filter_col, 
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c5'
+                           } ]
+
+        return filters
+
+
+class TabixDataProvider( FilterableMixin, TracksDataProvider ):
+    """
+    Tabix index data provider for the Galaxy track browser.
+    """
+    
+    col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
+        
+    def get_iterator( self, chrom, start, end ):
+        start, end = int(start), int(end)
+        if end >= (2<<29):
+            end = (2<<29 - 1) # Tabix-enforced maximum
+                    
+        bgzip_fname = self.dependencies['bgzip'].file_name
+        
+        # if os.path.getsize(self.converted_dataset.file_name) == 0:
+            # return { 'kind': messages.ERROR, 'message': "Tabix converted size was 0, meaning the input file had invalid values." }
+        tabix = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
+        
+        # If chrom is not found in indexes, try removing the first three 
+        # characters (e.g. 'chr') and see if that works. This enables the
+        # provider to handle chrome names defined as chrXXX and as XXX.
+        chrom = str(chrom)
+        if chrom not in tabix.contigs and chrom.startswith("chr") and (chrom[3:] in tabix.contigs):
+            chrom = chrom[3:]
+        
+        return tabix.fetch(reference=chrom, start=start, end=end)
+        
+    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
+        iterator = self.get_iterator( chrom, start, end )
+        return self.process_data( iterator, start_val, max_vals, **kwargs )
+        
+    def write_data_to_file( self, chrom, start, end, filename ):
+        iterator = self.get_iterator( chrom, start, end )
+        out = open( filename, "w" )
+        for line in iterator:
+            out.write( "%s\n" % line )
+        out.close()
+
+#
+# -- BED data providers --
+#
 
 class BedDataProvider( TracksDataProvider ):
     """
-    Abstract class that processes BED data from text format to payload format.
+    Abstract class that processes BED data from native format to payload format.
     
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
@@ -220,7 +347,168 @@ class BedDataProvider( TracksDataProvider ):
         for line in iterator:
             out.write( "%s\n" % line )
         out.close()
-            
+        
+class BedTabixDataProvider( TabixDataProvider, BedDataProvider ):
+    """
+    Provides data from a BED file indexed via tabix.
+    """
+    pass
+
+class RawBedDataProvider( BedDataProvider ):
+    """
+    Provide data from BED file.
+
+    NOTE: this data provider does not use indices, and hence will be very slow
+    for large datasets.
+    """
+
+    def get_iterator( self, chrom, start, end ):
+        def line_filter_iter():
+            for line in open( self.original_dataset.file_name ):
+                feature = line.split()
+                feature_chrom = feature[0]
+                feature_start = int( feature[1] )
+                feature_end = int( feature[2] )
+                if feature_chrom != chrom or feature_start > int( end ) or feature_end < int( start ):
+                    continue
+                yield line
+        return line_filter_iter()
+
+#
+# -- VCF data providers --
+#
+
+class VcfDataProvider( TracksDataProvider ):
+    """
+    Abstract class that processes VCF data from native format to payload format.
+
+    Payload format: TODO
+    """
+    
+    col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
+    
+
+    def get_iterator( self, chrom, start, end ):
+        raise "Unimplemented Method"
+
+    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
+        iterator = self.get_iterator( chrom, start, end )
+        return self.process_data( iterator, start_val, max_vals, **kwargs )
+
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
+        Returns a dict with the following attributes:
+            data - a list of variants with the format 
+                [<guid>, <start>, <end>, <name>, cigar, seq] 
+
+            message - error/informative message
+        """
+        rval = []
+        message = None
+
+        def get_mapping( ref, alt ):
+            """
+            Returns ( offset, new_seq, cigar ) tuple that defines mapping of 
+            alt to ref. Cigar format is an array of [ op_index, length ] pairs 
+            where op_index is the 0-based index into the string "MIDNSHP=X"
+            """
+
+            cig_ops = "MIDNSHP=X"
+
+            ref_len = len( ref )
+            alt_len = len( alt )
+
+            # Substitutions?
+            if ref_len == alt_len:
+                return 0, alt, [ [ cig_ops.find( "M" ), ref_len ] ]
+
+            # Deletions?
+            alt_in_ref_index = ref.find( alt )
+            if alt_in_ref_index != -1:
+                return alt_in_ref_index, ref[ alt_in_ref_index + 1: ], [ [ cig_ops.find( "D" ), ref_len - alt_len ] ]
+
+            # Insertions?
+            ref_in_alt_index = alt.find( ref )
+            if ref_in_alt_index != -1:
+                return ref_in_alt_index, alt[ ref_in_alt_index + 1: ], [ [ cig_ops.find( "I" ), alt_len - ref_len ] ]
+
+        # Pack data.
+        for count, line in enumerate( iterator ):
+            if count < start_val:
+                continue
+            if max_vals and count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                break
+
+            feature = line.split()
+            start = int( feature[1] ) - 1
+            ref = feature[3]
+            alts = feature[4]
+
+            # HACK? alts == '.' --> monomorphism.
+            if alts == '.':
+                alts = ref
+
+            # Pack variants.
+            for alt in alts.split(","):
+                offset, new_seq, cigar = get_mapping( ref, alt )
+                start += offset
+                end = start + len( new_seq )
+
+                # Pack line.
+                payload = [ hash( line ), 
+                            start, 
+                            end,
+                            # ID:
+                            feature[2],
+                            cigar,
+                            # TODO? VCF does not have strand, so default to positive.
+                            "+",
+                            new_seq,
+                            float( feature[5] ) ]
+                rval.append(payload)
+
+        return { 'data': rval, 'message': message }
+
+    def write_data_to_file( self, chrom, start, end, filename ):
+        iterator = self.get_iterator( chrom, start, end )
+        out = open( filename, "w" )
+        for line in iterator:
+            out.write( "%s\n" % line )
+        out.close()
+
+class VcfTabixDataProvider( TabixDataProvider, VcfDataProvider ):
+    """
+    Provides data from a VCF file indexed via tabix.
+    """
+    pass
+
+class RawVcfDataProvider( VcfDataProvider ):
+    """
+    Provide data from VCF file.
+
+    NOTE: this data provider does not use indices, and hence will be very slow
+    for large datasets.
+    """
+
+    def get_iterator( self, chrom, start, end ):
+        def line_filter_iter():
+            for line in open( self.original_dataset.file_name ):
+                if line.startswith("#"):
+                    continue
+                variant = line.split()
+                variant_chrom, variant_start, id, ref, alts = variant[ 0:5 ]
+                variant_start = int( variant_start )
+                longest_alt = -1
+                for alt in alts:
+                    if len( alt ) > longest_alt:
+                        longest_alt = len( alt )
+                variant_end = variant_start + abs( len( ref ) - longest_alt )
+                if variant_chrom != chrom or variant_start > int( end ) or variant_end < int( start ):
+                    continue
+                yield line
+        return line_filter_iter()
+
 class SummaryTreeDataProvider( TracksDataProvider ):
     """
     Summary tree data provider for the Galaxy track browser. 
@@ -323,11 +611,11 @@ class BamDataProvider( TracksDataProvider ):
             data - a list of reads with the format 
                     [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
                 where <read_1> has the format
-                    [<start>, <end>, <cigar>, ?<read_seq>?]
+                    [<start>, <end>, <cigar>, <strand>, ?<read_seq>?]
                 and <read_2> has the format
-                    [<start>, <end>, <cigar>, ?<read_seq>?]
+                    [<start>, <end>, <cigar>, <strand>, ?<read_seq>?]
                 For single-end reads, read has format:
-                    [<guid>, <start>, <end>, <name>, cigar, seq] 
+                    [<guid>, <start>, <end>, <name>, <cigar>, <strand>, <seq>] 
                 NOTE: read end and sequence data are not valid for reads outside of
                 requested region and should not be used.
             
@@ -355,17 +643,34 @@ class BamDataProvider( TracksDataProvider ):
             else:
                 return None
                 
+        # Decode strand from read flag.
+        def decode_strand( read_flag, mask ):
+            strand_flag = ( read_flag & mask == 0 )
+            if strand_flag:
+                return "+"
+            else:
+                return "-"
+                
         # Encode reads as list of lists.
         results = []
         paired_pending = {}
+        unmapped = 0
         for count, read in enumerate( data ):
             if count < start_val:
                 continue
-            if count-start_val >= max_vals:
+            if ( count - start_val - unmapped ) >= max_vals:
                 message = ERROR_MAX_VALS % ( max_vals, "reads" )
                 break
+                
+            # If not mapped, skip read.
+            is_mapped = ( read.flag & 0x0004 == 0 )
+            if not is_mapped:
+                unmapped += 1
+                continue
+                            
             qname = read.qname
             seq = read.seq
+            strand = decode_strand( read.flag, 0x0010 )
             if read.cigar is not None:
                 read_len = sum( [cig[1] for cig in read.cigar] ) # Use cigar to determine length
             else:
@@ -378,14 +683,15 @@ class BamDataProvider( TracksDataProvider ):
                                       pair['start'], 
                                       read.pos + read_len, 
                                       qname, 
-                                      [ pair['start'], pair['end'], pair['cigar'], pair['seq'] ], 
-                                      [ read.pos, read.pos + read_len, read.cigar, seq ] 
+                                      [ pair['start'], pair['end'], pair['cigar'], pair['strand'], pair['seq'] ], 
+                                      [ read.pos, read.pos + read_len, read.cigar, strand, seq ] 
                                      ] )
                     del paired_pending[qname]
                 else:
-                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos, 'rlen': read_len, 'cigar': read.cigar }
+                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos,
+                                              'rlen': read_len, 'strand': strand, 'cigar': read.cigar }
             else:
-                results.append( [ "%i_%s" % ( read.pos, qname ), read.pos, read.pos + read_len, qname, read.cigar, read.seq] )
+                results.append( [ "%i_%s" % ( read.pos, qname ), read.pos, read.pos + read_len, qname, read.cigar, strand, read.seq] )
                 
         # Take care of reads whose mates are out of range.
         # TODO: count paired reads when adhering to max_vals?
@@ -397,14 +703,14 @@ class BamDataProvider( TracksDataProvider ):
                 # Make read_1 start=end so that length is 0 b/c we don't know
                 # read length.
                 r1 = [ read['mate_start'], read['mate_start'] ]
-                r2 = [ read['start'], read['end'], read['cigar'], read['seq'] ]
+                r2 = [ read['start'], read['end'], read['cigar'], read['strand'], read['seq'] ]
             else:
                 # Mate is after read.
                 read_start = read['start']
                 # Make read_2 start=end so that length is 0 b/c we don't know
                 # read length. Hence, end of read is start of read_2.
                 read_end = read['mate_start']
-                r1 = [ read['start'], read['end'], read['cigar'], read['seq'] ]
+                r1 = [ read['start'], read['end'], read['cigar'], read['strand'], read['seq'] ]
                 r2 = [ read['mate_start'], read['mate_start'] ]
 
             results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2 ] )
@@ -485,118 +791,7 @@ class BigWigDataProvider (BBIDataProvider ):
         else:
             f = open( self.original_dataset.file_name )
         return f, BigWigFile(file=f)
-
-class FilterableMixin:
-    def get_filters( self ):
-        """ Returns a dataset's filters. """
-        
-        # is_ functions taken from Tabular.set_meta
-        def is_int( column_text ):
-            try:
-                int( column_text )
-                return True
-            except: 
-                return False
-        def is_float( column_text ):
-            try:
-                float( column_text )
-                return True
-            except: 
-                if column_text.strip().lower() == 'na':
-                    return True #na is special cased to be a float
-                return False
-        
-        #
-        # Get filters.
-        # TODOs: 
-        # (a) might be useful to move this into each datatype's set_meta method;
-        # (b) could look at first N lines to ensure GTF attribute types are consistent.
-        #
-        filters = []
-        # HACK: first 8 fields are for drawing, so start filter column index at 9.
-        filter_col = 8
-        if isinstance( self.original_dataset.datatype, Gff ):
-            # Can filter by score and GTF attributes.
-            filters = [ { 'name': 'Score', 
-                          'type': 'int', 
-                          'index': filter_col, 
-                          'tool_id': 'Filter1',
-                          'tool_exp_name': 'c6' } ]
-            filter_col += 1
-            if isinstance( self.original_dataset.datatype, Gtf ):
-                # Create filters based on dataset metadata.
-                for name, a_type in self.original_dataset.metadata.attribute_types.items():
-                    if a_type in [ 'int', 'float' ]:
-                        filters.append( 
-                            { 'name': name,
-                              'type': a_type, 
-                              'index': filter_col, 
-                              'tool_id': 'gff_filter_by_attribute',
-                              'tool_exp_name': name } )
-                        filter_col += 1
-
-                '''
-                # Old code: use first line in dataset to find attributes.
-                for i, line in enumerate( open(self.original_dataset.file_name) ):
-                    if not line.startswith('#'):
-                        # Look at first line for attributes and types.
-                        attributes = parse_gff_attributes( line.split('\t')[8] )
-                        for attr, value in attributes.items():
-                            # Get attribute type.
-                            if is_int( value ):
-                                attr_type = 'int'
-                            elif is_float( value ):
-                                attr_type = 'float'
-                            else:
-                                attr_type = 'str'
-                            # Add to filters.
-                            if attr_type is not 'str':
-                                filters.append( { 'name': attr, 'type': attr_type, 'index': filter_col } )
-                                filter_col += 1
-                        break
-                '''
-        elif isinstance( self.original_dataset.datatype, Bed ):
-            # Can filter by score column only.
-            filters = [ { 'name': 'Score', 
-                          'type': 'int', 
-                          'index': filter_col, 
-                          'tool_id': 'Filter1',
-                          'tool_exp_name': 'c5'
-                           } ]
-
-        return filters
-    
-class TabixDataProvider( FilterableMixin, TracksDataProvider ):
-    """
-    Tabix index data provider for the Galaxy track browser.
-    """
-    
-    col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
-        
-    def get_iterator( self, chrom, start, end ):
-        start, end = int(start), int(end)
-        if end >= (2<<29):
-            end = (2<<29 - 1) # Tabix-enforced maximum
-                    
-        bgzip_fname = self.dependencies['bgzip'].file_name
-        
-        # if os.path.getsize(self.converted_dataset.file_name) == 0:
-            # return { 'kind': messages.ERROR, 'message': "Tabix converted size was 0, meaning the input file had invalid values." }
-        tabix = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
-        
-        # If chrom is not found in indexes, try removing the first three 
-        # characters (e.g. 'chr') and see if that works. This enables the
-        # provider to handle chrome names defined as chrXXX and as XXX.
-        chrom = str(chrom)
-        if chrom not in tabix.contigs and chrom.startswith("chr") and (chrom[3:] in tabix.contigs):
-            chrom = chrom[3:]
-        
-        return tabix.fetch(reference=chrom, start=start, end=end)
-        
-    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
-        iterator = self.get_iterator( chrom, start, end )
-        return self.process_data( iterator, start_val, max_vals, **kwargs )
-    
+            
 class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
     """
     Interval index files used only for GFF files.
@@ -658,41 +853,6 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
             results.append( payload )
 
         return { 'data': results, 'message': message }
-                
-class VcfDataProvider( TabixDataProvider ):
-    """
-    VCF data provider for the Galaxy track browser.
-
-    Payload format: 
-    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score ]
-    """
-
-    col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
-
-    def process_data( self, iterator, start_val=0, max_vals=sys.maxint, **kwargs ):
-        rval = []
-        message = None
-        
-        for count, line in enumerate( iterator ):
-            if count < start_val:
-                continue
-            if count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( "max_vals", "features" )
-                break
-            
-            feature = line.split()
-            payload = [ hash(line), int(feature[1])-1, int(feature[1]),
-                        # ID: 
-                        feature[2],
-                        # reference base(s):
-                        feature[3],
-                        # alternative base(s)
-                        feature[4],
-                        # phred quality score
-                        float( feature[5] )]
-            rval.append(payload)
-
-        return { 'data': rval, 'message': message }
 
 class GFFDataProvider( TracksDataProvider ):
     """
@@ -724,40 +884,16 @@ class GFFDataProvider( TracksDataProvider ):
             offset += feature.raw_size
             
         return { 'data': results, 'message': message }
-        
-class BedTabixDataProvider( TabixDataProvider, BedDataProvider ):
-    """
-    Provides data from a BED file indexed via tabix.
-    """
-    pass
-    
-class RawBedDataProvider( BedDataProvider ):
-    """
-    Provide data from BED file.
-
-    NOTE: this data provider does not use indices, and hence will be very slow
-    for large datasets.
-    """
-    
-    def get_iterator( self, chrom, start, end ):
-        def line_filter_iter():
-            for line in open( self.original_dataset.file_name ):
-                feature = line.split()
-                feature_chrom, feature_start, feature_end = feature[ 0:3 ]
-                if feature_chrom != chrom or feature_start > end or feature_end < start:
-                    continue
-                yield line
-        return line_filter_iter()
-       
+               
 #        
-# Helper methods.
+# -- Helper methods. --
 #
 
 # Mapping from dataset type name to a class that can fetch data from a file of that
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
-    "tabix": { Vcf: VcfDataProvider, Bed: BedTabixDataProvider, "default" : TabixDataProvider },
+    "tabix": { Vcf: VcfTabixDataProvider, Bed: BedTabixDataProvider, "default" : TabixDataProvider },
     "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider,

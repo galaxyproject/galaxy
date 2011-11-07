@@ -42,7 +42,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic", "jquery.tipsy" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic", "jquery.tipsy" )}
 
 <script type="text/javascript">
     //
@@ -125,7 +125,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             view = create_visualization( $("#browser-container"), "${config.get('title') | h}", 
                                          "${config.get('vis_id')}", "${config.get('dbkey')}", 
                                          JSON.parse('${ h.to_json_string( config.get( 'viewport', dict() ) ) }'),
-                                         JSON.parse('${ h.to_json_string( config['tracks'] ) }'),
+                                         JSON.parse('${ h.to_json_string( config['tracks'] ).replace("'", "\\'") }'),
                                          JSON.parse('${ h.to_json_string( config['bookmarks'] ) }')
                                          );
             init_editor();

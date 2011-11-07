@@ -102,7 +102,7 @@
         <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" />
         <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" />
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="variants[0].input_variants" column="dbkey"/> -->
           </options>
         </param>

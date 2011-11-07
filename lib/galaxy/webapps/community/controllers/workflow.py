@@ -339,12 +339,6 @@ class WorkflowController( BaseUIController ):
                 workflow.has_errors = True
             # Stick this in the step temporarily.
             step.temp_input_connections = step_dict[ 'input_connections' ]
-            # Unpack and add post-job actions.
-            post_job_actions = step_dict.get( 'post_job_actions', {} )
-            for name, pja_dict in post_job_actions.items():
-                pja = PostJobAction( pja_dict[ 'action_type' ], 
-                                     step, pja_dict[ 'output_name' ], 
-                                     pja_dict[ 'action_arguments' ] )
             steps.append( step )
             steps_by_external_id[ step_dict[ 'id' ] ] = step
         # Second pass to deal with connections between steps.

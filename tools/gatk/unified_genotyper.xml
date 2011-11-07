@@ -112,13 +112,13 @@
         --indelGapOpenPenalty "${analysis_param_type.indelGapOpenPenalty}"
         --indelHaplotypeSize "${analysis_param_type.indelHaplotypeSize}"
         ${analysis_param_type.doContextDependentGapPenalties}
-        #if $analysis_param_type.annotation.value:
-            #for $annotation in $analysis_param_type.annotation.value:
+        #if str( $analysis_param_type.annotation ) != "None":
+            #for $annotation in str( $analysis_param_type.annotation ).split( ','):
                 --annotation "${annotation}"
             #end for
         #end if
-        #if $analysis_param_type.group.value:
-            #for $group in $analysis_param_type.group.value:
+        #if str( $analysis_param_type.group ) != "None":
+            #for $group in str( $analysis_param_type.group ).split( ','):
                 --group "${group}"
             #end for
         #end if
@@ -136,11 +136,11 @@
             <param name="input_bam" type="data" format="bam" label="BAM file">
               <validator type="unspecified_build" />
               <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
-              <validator type="dataset_metadata_in_data_table" table_name="picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+              <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
             </param>
         </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/> does not yet work in a repeat...--> 
           </options>
         </param>
@@ -396,7 +396,7 @@
     <data format="txt" name="output_metrics" label="${tool.name} on ${on_string} (metrics)" />
     <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
   </outputs>
-  <!-- FIXME! <trackster_conf/> -->
+  <trackster_conf/>
   <tests>
       <test>
           <param name="reference_source_selector" value="history" />

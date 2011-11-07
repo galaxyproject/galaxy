@@ -24,7 +24,7 @@
     #if str( $annotations_type.annotations_type_selector ) == "use_all_annotations":
         --useAllAnnotations
     #else:
-        #if $annotations_type.annotations.value:
+        #if str( $annotations_type.annotations ) != "None":
             #for $annotation in str( $annotations_type.annotations ).split( ',' ):
                 --annotation "${annotation}"
             #end for
@@ -127,7 +127,7 @@
     ##end standard gatk options
     
     -p '
-    #if $annotation_group.value:
+    #if str( $annotation_group ) != "None":
         #for $group in str( $annotation_group ).split( ',' ):
             --group "${group}"
         #end for
@@ -146,10 +146,10 @@
         <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" help="Not needed for all annotations." >
           <validator type="unspecified_build" />
           <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
-          <validator type="dataset_metadata_in_data_table" table_name="picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+          <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
         </param>

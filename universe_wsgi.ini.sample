@@ -405,6 +405,9 @@ use_interactive = True
 # Allow administrators to delete accounts.
 #allow_user_deletion = False
 
+# Allow administrators to log in as other users (useful for debugging)
+#allow_user_impersonation = False
+
 # Allow users to remove their datasets from disk immediately (otherwise,
 # datasets will be removed after a time period specified by an administrator in
 # the cleanup scripts run via cron)

@@ -465,9 +465,13 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             data = GFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
             data[ 'extra_info' ] = None
-        if isinstance( dataset.datatype, Bed ):
+        elif isinstance( dataset.datatype, Bed ):
             data = RawBedDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
+            data[ 'extra_info' ] = None
+        elif isinstance( dataset.datatype, Vcf ):
+            data = RawVcfDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
+            data[ 'dataset_type' ] = 'tabix'
             data[ 'extra_info' ] = None
         return data
         
@@ -586,7 +590,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
-        result = data_provider.get_data( chrom, low, high, int(start_val), int(max_vals), **kwargs )
+        result = data_provider.get_data( chrom, low, high, int( start_val ), int( max_vals ), **kwargs )
         result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
         return result
         
@@ -840,6 +844,43 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         # Set input datasets for tool. If running on region, extract and use subset
         # when possible.
         #
+        
+        def set_param_value( param_dict, param_name, param_value ):
+            """
+            Set new parameter value in a parameter dictionary.
+            """
+            
+            # Recursive function to set param value.
+            def set_value( param_dict, group_name, group_index, param_name, param_value ):
+                if group_name in param_dict:
+                    param_dict[ group_name ][ group_index ][ param_name ] = param_value
+                    return True
+                elif param_name in param_dict:
+                    param_dict[ param_name ] = param_value
+                    return True
+                else:
+                    # Recursive search.
+                    return_val = False
+                    for name, value in param_dict.items():
+                        if isinstance( value, dict ):
+                            return_val = set_value( value, group_name, group_index, param_name, param_value)
+                            if return_val:
+                                return return_val
+                    return False
+            
+            # Parse parameter name if necessary.
+            if param_name.find( "|" ) == -1:
+                # Non-grouping parameter.
+                group_name = group_index = None
+            else:
+                # Grouping parameter.
+                group, param_name = param_name.split( "|" )
+                index = group.rfind( "_" )
+                group_name = group[ :index ]
+                group_index = int( group[ index + 1: ] )
+            
+            return set_value( param_dict, group_name, group_index, param_name, param_value )
+            
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
             if input_dataset is None: #optional dataset and dataset wasn't selected
@@ -875,10 +916,20 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 new_dataset.set_size()
                 new_dataset.info = "Data subset for trackster"
                 new_dataset.set_dataset_state( trans.app.model.Dataset.states.OK )
+                
+                # Set metadata.
+                if trans.app.config.set_metadata_externally:
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':new_dataset } )
+                else:
+                    message = 'Attributes updated'
+                    new_dataset.set_meta()
+                    new_dataset.datatype.after_setting_metadata( new_dataset )
+                    
                 trans.sa_session.flush()
-            
+                
                 # Add dataset to tool's parameters.
-                tool_params[ jida.name ] = new_dataset
+                if not set_param_value( tool_params, jida.name, new_dataset ):
+                    return to_json_string( { "error" : True, "message" : "error setting parameter %s" % jida.name } )
         
         #        
         # Execute tool and handle outputs.

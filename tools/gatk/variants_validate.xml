@@ -12,6 +12,7 @@
     -T "ValidateVariants"
     
     -et "NO_ET" ##ET no phone home
+    --num_threads 4 ##hard coded, for now
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"
@@ -91,7 +92,7 @@
       <when value="cached">
         <param name="input_variant" type="data" format="vcf" label="Input variant file" />
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
         </param>

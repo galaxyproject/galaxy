@@ -219,33 +219,9 @@ class Interval( Tabular ):
                 os.write(fd, '%s\n' % '\t'.join(tmp) )    
         os.close(fd)
         return open(temp_name)
-    def make_html_table( self, dataset, skipchars=[] ):
-        """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
-        comments = []
-        try:
-            # Generate column header
-            out.append('<tr>')
-            for i in range( 1, dataset.metadata.columns+1 ):
-                if i == dataset.metadata.chromCol:
-                    out.append( '<th>%s.Chrom</th>' % i )
-                elif i == dataset.metadata.startCol:
-                    out.append( '<th>%s.Start</th>' % i )
-                elif i == dataset.metadata.endCol:
-                    out.append( '<th>%s.End</th>' % i )
-                elif dataset.metadata.strandCol and i == dataset.metadata.strandCol:
-                    out.append( '<th>%s.Strand</th>' % i )
-                elif dataset.metadata.nameCol and i == dataset.metadata.nameCol:
-                    out.append( '<th>%s.Name</th>' % i )
-                else:
-                    out.append( '<th>%s</th>' % i )
-            out.append('</tr>')
-            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
-            out.append( '</table>' )
-            out = "".join( out )
-        except Exception, exc:
-            out = "Can't create peek %s" % str( exc )
-        return out
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_parameter_alias={'chromCol':'Chrom', 'startCol':'Start', 'endCol':'End', 'strandCol':'Strand', 'nameCol':'Name'} )
     def ucsc_links( self, dataset, type, app, base_url ):
         """
         Generate links to UCSC genome browser sites based on the dbkey
@@ -617,21 +593,9 @@ class Gff( Tabular, _RemoteCallMixin ):
                     except:
                         pass
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
-    def make_html_table( self, dataset, skipchars=[] ):
-        """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
-        comments = []
-        try:
-            # Generate column header
-            out.append( '<tr>' )
-            for i, name in enumerate( self.column_names ):
-                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
-            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
-            out.append( '</table>' )
-            out = "".join( out )
-        except Exception, exc:
-            out = "Can't create peek %s" % exc
-        return out
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
     def get_estimated_display_viewport( self, dataset ):
         """
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
@@ -1081,7 +1045,8 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
-    def make_html_table( self, dataset ):
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
     def set_meta( self, dataset, overwrite = True, **kwd ):
         max_data_lines = None

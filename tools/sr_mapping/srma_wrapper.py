@@ -29,7 +29,7 @@ def __main__():
     parser = optparse.OptionParser()
     parser.add_option( '-r', '--ref', dest='ref', help='The reference genome to index and use' )
     parser.add_option( '-u', '--refUID', dest='refUID', help='The pre-index reference genome unique Identifier' )
-    parser.add_option( '-L', '--refLocations', dest='refLocations', help='The filepath to the srma indices location file' )
+    #parser.add_option( '-L', '--refLocations', dest='refLocations', help='The filepath to the srma indices location file' )
     parser.add_option( '-i', '--input', dest='input', help='The SAM/BAM input file' )
     parser.add_option( '-I', '--inputIndex', dest='inputIndex', help='The SAM/BAM input index file' )
     parser.add_option( '-o', '--output', dest='output', help='The SAM/BAM output file' )
