@@ -4292,7 +4292,7 @@ var DENSE_TRACK_HEIGHT = 10,
     SQUISH_TRACK_HEIGHT = 5,
     PACK_TRACK_HEIGHT = 10,
     NO_DETAIL_FEATURE_HEIGHT = 1,
-    DENSE_FEATURE_HEIGHT = 3,
+    DENSE_FEATURE_HEIGHT = 9,
     SQUISH_FEATURE_HEIGHT = 3,
     PACK_FEATURE_HEIGHT = 9,
     LABEL_SPACING = 2,
@@ -4365,7 +4365,9 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             var feature_strand = feature[4],
                 feature_ts = feature[5],
                 feature_te = feature[6],
-                feature_blocks = feature[7];
+                feature_blocks = feature[7],
+                // Whether we are drawing full height or squished features
+                full_height = true;
             
             if (feature_ts && feature_te) {
                 thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
@@ -4374,9 +4376,13 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             
             // Set vars that depend on mode.
             var thin_height, thick_height;
-            if (mode === "Squish" || mode === "Dense" ) {
+            if (mode === "Squish" ) {
                 thin_height = 1;
                 thick_height = SQUISH_FEATURE_HEIGHT;
+                full_height = false;
+            } else if ( mode === "Dense" ) {
+                thin_height = 5;
+                thick_height = DENSE_FEATURE_HEIGHT;
             } else { // mode === "Pack"
                 thin_height = 5;
                 thick_height = PACK_FEATURE_HEIGHT;
@@ -4388,7 +4394,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 ctx.fillStyle = block_color;
                 ctx.fillRect(f_start, y_center + 1, f_end - f_start, thick_height);
                 // If strand is specified, draw arrows over feature
-                if ( feature_strand ) {
+                if ( feature_strand && full_height ) {
                     if (feature_strand === "+") {
                         ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
                     } else if (feature_strand === "-") {
