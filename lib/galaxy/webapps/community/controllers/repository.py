@@ -236,7 +236,7 @@ class MatchedRepositoryListGrid( grids.Grid ):
     template='/webapps/community/repository/grid.mako'
     default_sort_key = "Repository.name"
     columns = [
-        NameColumn( "Name",
+        NameColumn( "Repository name",
                     link=( lambda item: dict( operation="view_or_manage_repository",
                                               id=item.id,
                                               webapp="community" ) ),
@@ -588,17 +588,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
                         else:
                             ok = False
-            if workflow_names:
+            elif workflow_names:
                 if 'workflows' in metadata:
                     workflows = metadata[ 'workflows' ]
                 else:
                     workflows = []
                 for workflow_dict in workflows:
                     for workflow_name in workflow_names:
-                        if self.__in_workflow_dict( workflow_dict, exact_matches_checked, workflow_name=workflow_name ):
+                        if self.__in_workflow_dict( workflow_dict, exact_matches_checked, workflow_name ):
                             match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
         return ok, match_tuples
-    def __in_workflow_dict( self, workflow_dict, exact_matches_checked, workflow_name=None ):
+    def __in_workflow_dict( self, workflow_dict, exact_matches_checked, workflow_name ):
         workflow_dict_workflow_name = workflow_dict[ 'name' ].lower()
         return ( workflow_name == workflow_dict_workflow_name ) or \
                ( not exact_matches_checked and workflow_dict_workflow_name.find( workflow_name ) >= 0 )
