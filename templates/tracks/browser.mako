@@ -42,7 +42,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic", "jquery.tipsy" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic", "jquery.tipsy" )}
 
 <script type="text/javascript">
     //
@@ -102,6 +102,52 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                  for (var i= 0; i < track_defs.length; i++) {
                                      view.add_drawable( track_from_dict(track_defs[i], view) ); 
                                  }
+                            });
+                            hide_modal();
+                        }
+                    }
+                );
+            }
+        });
+    };
+
+    /**
+     * Use a popup grid to bookmarks from a dataset.
+     */
+    var add_bookmarks = function() {
+        show_modal( "Select dataset for new bookmarks", "progress" );
+        $.ajax({
+            url: "${h.url_for( action='list_histories' )}",
+            data: { "f-dbkey": view.dbkey },
+            error: function() { alert( "Grid failed" ); },
+            success: function(table_html) {
+                show_modal(
+                    "Select dataset for new bookmarks",
+                    table_html, {
+                        "Cancel": function() {
+                            hide_modal();
+                        },
+                        "Insert": function() {
+                            // Just use the first selected
+                            $('input[name=id]:checked,input[name=ldda_ids]:checked').first().each(function(){
+                                var data, id = $(this).val();
+                                    if ($(this).attr("name") === "id") {
+                                        data = { hda_id: id };
+                                    } else {
+                                        data = { ldda_id: id};
+                                    }
+
+                                    $.ajax({
+                                        url: "${h.url_for( action='bookmarks_from_dataset' )}",
+                                        data: data,
+                                        dataType: "json",
+                                    }).then( function(data) {
+                                        for( i = 0; i < data.data.length; i++ ) {
+                                            var row = data.data[i];
+                                            console.log( row[0], row[1] );
+                                            add_bookmark( row[0], row[1] );
+                                        }
+                                    });
                             });
                             hide_modal();
                         }
@@ -240,7 +286,13 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     annotation = "Bookmark description";
                 return add_bookmark(position, annotation);
             });
-            
+
+            // make_popupmenu( $("#bookmarks-more-button"), {
+            //     "Add from BED dataset": function() {
+            //         add_bookmarks();    
+            //     }
+            // });
+
             init_keyboard_nav(view);
         };
         
@@ -271,14 +323,15 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 
 <div class="unified-panel-header" unselectable="on">
     <div class="unified-panel-header-inner">
+        <div style="float: right">
+            <a id="add-bookmark-button" class='icon-button menu-button plus-button' href="javascript:void(0);" title="Add bookmark"></a>
+            ## <a id="bookmarks-more-button" class='icon-button menu-button gear popup' href="javascript:void(0);" title="More actions"></a>
+        </div>
         Bookmarks
     </div>
 </div>
 <div class="unified-panel-body" style="overflow: auto;">
     <div id="bookmarks-container"></div>
-    <div>
-        <a class="icon-button import" style="margin-left: .5em; width: 100%" original-title="Add Bookmark" id="add-bookmark-button" href="javascript:void(0);">Add Bookmark</a>
-    </div>
 </div>
 
 </%def>

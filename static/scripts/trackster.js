@@ -701,7 +701,7 @@ extend(Drawable.prototype, {
     remove: function() {
         this.container.remove_drawable(this);
         
-        this.container_div.fadeOut('slow', function() { 
+        this.container_div.hide(0, function() { 
             $(this).remove();
             // HACK: is there a better way to update the view?
             view.update_intro_div();
@@ -1027,6 +1027,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             // Only act on x axis scrolling if we see if, y will be i
             // handled by the browser when the event bubbles up
             if ( dx ) {
+                dx *= 50;
                 var delta_chrom = Math.round( - dx / view.viewport_container.width() * (view.high - view.low) );
                 view.move_delta( delta_chrom );
             }
@@ -1255,7 +1256,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         DrawableCollection.prototype.remove_drawable.call(this, drawable);
         if (hide) {
             var view = this;
-            drawable.container_div.fadeOut('slow', function() { 
+            drawable.container_div.hide(0, function() { 
                 $(this).remove();
                 view.update_intro_div(); 
             });
@@ -2114,31 +2115,49 @@ extend(DrawableConfig.prototype, {
     build_form: function() {
         var track_config = this;
         var container = $("<div />");
-        $.each( this.params, function( index, param ) {
-            if ( ! param.hidden ) {
+        var param;
+        // Function to process parameters recursively
+        function handle_params( params, container ) {
+            for ( var index = 0; index < params.length; index++ ) {
+                param = params[index];
+                // Hidden params have no representation in the form
+                if ( param.hidden ) { continue; }
+                // Build row for param
                 var id = 'param_' + index;
                 var value = track_config.values[ param.key ];
                 var row = $("<div class='form-row' />").appendTo( container );
                 row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
+                // Draw parameter as checkbox
                 if ( param.type === 'bool' ) {
                     row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', value ) );
+                // Draw parameter as textbox
                 } else if ( param.type === 'text' ) {
                     row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select() }));
+                // Draw paramter as select area
+                } else if ( param.type == 'select' ) {
+                    var select = $('<select />').attr("id", id);
+                    for ( var i = 0; i < param.options.length; i++ ) {
+                        $("<option/>").text( param.options[i].label ).attr( "value", param.options[i].value ).appendTo( select );
+                    }
+                    select.val( value );
+                    row.append( select );
+                // Draw parameter as color picker
                 } else if ( param.type === 'color' ) {
                     var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
                     // Color picker in tool tip style float
-                    var tip = $( "<div class='tipsy tipsy-north' style='position: absolute;' />" ).hide();
+                    var tip = $( "<div class='tipsy tipsy-west' style='position: absolute;' />" ).hide();
                     // Inner div for padding purposes
                     var tip_inner = $("<div style='background-color: black; padding: 10px;'></div>").appendTo(tip);
                     var farb_container = $("<div/>")
                             .appendTo(tip_inner)
                             .farbtastic( { width: 100, height: 100, callback: input, color: value });
-                            
                     // Outer div container input and tip for hover to work
                     $("<div />").append( input ).append( tip ).appendTo( row ).bind( "click", function ( e ) { 
                         tip.css( { 
-                            left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                            top: $(this).position().top + $(this.height) 
+                            // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                            // top: $(this).position().top + $(this.height) 
+                            left: $(this).position().left + $(input).width() + 5,
+                            top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(input).height() / 2 )
                             } ).show();
                         $(document).bind( "click.color-picker", function() {
                             tip.hide();
@@ -2150,8 +2169,15 @@ extend(DrawableConfig.prototype, {
                 else {
                     row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) ); 
                 }
+                // Help text
+                if ( param.help ) {
+                    row.append( $("<div class='help'/>").text( param.help ) );
+                }
             }
-        });
+        }
+        // Handle top level parameters in order
+        handle_params( this.params, container );
+        // Return element containing constructed form
         return container;
     },
     update_from_form: function( container ) {
@@ -2229,7 +2255,16 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     // Only show popups in Pack mode.
     if (tile.mode !== "Pack") { return; }
     
-    $(this.canvas).mousemove(function (e) {
+    $(this.canvas).hover( function() { 
+        this.hovered = true; 
+        $(this).mousemove();
+    }, function() { 
+        this.hovered = false; 
+        // Clear popup if it is still hanging around (this is probably not needed) 
+        $(this).siblings(".feature-popup").remove();
+    } ).mousemove(function (e) {
+        // Use the hover plugin to get a delay before showing popup
+        if ( !this.hovered ) { return; }
         // Get feature data for position.
         var 
             this_offset = $(this).offset(),
@@ -2270,8 +2305,8 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
                 // Build popup.
                 
                 var popup = $("<div/>").attr("id", feature_uid).addClass("feature-popup"),
-                    key, value, 
-                    table = $("<table/>").appendTo(popup), row;
+                    table = $("<table/>"),
+                    key, value, row;
                 for (key in feature_dict) {
                     value = feature_dict[key];
                     row = $("<tr/>").appendTo(table);
@@ -2279,6 +2314,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
                     $("<td/>").attr("align", "left").appendTo(row)
                               .text(typeof(value) == 'number' ? round(value, 2) : value);
                 }
+                popup.append( $("<div class='feature-popup-inner'>").append( table ) ); 
                 popups[feature_uid] = popup;
             }
             
@@ -2289,7 +2325,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
             // parseInt strips "px" from left, top measurements. +7 so that mouse pointer does not
             // overlap popup.
             var 
-                popupX = offsetX + parseInt( tile.canvas.css("left") ) + 7,
+                popupX = offsetX + parseInt( tile.canvas.css("left") ) - popup.width() / 2,
                 popupY = offsetY + parseInt( tile.canvas.css("top") ) + 7;
             popup.css("left", popupX + "px").css("top", popupY + "px")
         }
@@ -2331,6 +2367,12 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
+
+    // FIXME: this should be a saved setting
+    this.content_visible = true;
+
+    if (!Track.id_counter) { Track.id_counter = 0; }
+    this.id = Track.id_counter++;
     
     //
     // Create HTML element structure for track.
@@ -2346,6 +2388,9 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
         this.icons_div = $("<div/>").css("float", "left").appendTo(this.header_div).hide();
     
         // Track icons.
+        this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show track content")
+                                      .addClass("icon-button toggle").tipsy( {gravity: 's'} )
+                                      .appendTo(this.icons_div);
         this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
                                       .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
                                       .appendTo(this.icons_div);
@@ -2365,6 +2410,21 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
             
         // Suppress double clicks in header so that they do not impact viz.
         this.header_div.dblclick( function(e) { e.stopPropagation(); } );
+
+        // Toggle icon hides or shows the track content
+        this.toggle_icon.click( function() {
+            if ( track.content_visible ) {
+                track.toggle_icon.addClass("toggle-expand").removeClass("toggle");
+                track.hide_contents();
+                track.mode_div.hide();
+                track.content_visible = false;
+            } else {
+                track.toggle_icon.addClass("toggle").removeClass("toggle-expand");
+                track.content_visible = true;
+                track.mode_div.show();
+                track.show_contents();
+            }
+        });
         
         // Clicking on settings icon opens track config.
         this.settings_icon.click( function() {
@@ -2552,6 +2612,26 @@ extend(Track.prototype, Drawable.prototype, {
         this.update_icons();
     },
     /**
+     * Hide any elements that are part of the tracks contents area. Should
+     * remove as approprite, the track will be redrawn by show_contents.
+     */
+    hide_contents : function () {
+        // Clear contents by removing any elements that are contained in
+        // the tracks content_div
+        this.content_div.children().remove();
+        // Hide the content div
+        this.content_div.hide();
+        // And any y axis labels (common to several track types)
+        this.container_div.find(".yaxislabel, .track-resize").hide()
+    },
+    show_contents : function() {
+        // Show the contents div and labels (if present)
+        this.content_div.show();
+        this.container_div.find(".yaxislabel, .track-resize").show()
+        // Request a redraw of the content
+        this.request_draw();
+    },
+    /**
      * Additional initialization required before drawing track for the first time.
      */
     predraw_init: function() {}
@@ -2682,6 +2762,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     _draw: function(force, clear_after) {
         if (!this.enabled) { return; }
+
+        // TODO: There should probably be a general way to disable content drawing 
+        //       for all drawables. However the button to toggle this is currently
+        //       only present for Track instances.
+        if (!this.content_visible) { return; }
         
         // HACK: ReferenceTrack can draw without dataset ID, but other tracks cannot.
         if ( !(this instanceof ReferenceTrack) && (!this.dataset_id) ) { return; }
@@ -2694,7 +2779,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             w_scale = width / range,
             resolution = this.view.resolution,
             parent_element = $("<div style='position: relative;'></div>");
-            
+
         // For overview, adjust high, low, resolution, and w_scale.
         if (this.is_overview) {
             low = this.view.max_low;
@@ -3028,7 +3113,8 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
    
     this.min_height_px = 16; 
     this.max_height_px = 400; 
-    this.height_px = 80;
+    // Default height for new tracks, should be a defined constant?
+    this.height_px = 32;
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
@@ -3076,8 +3162,10 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var drag_control = $( "<div class='track-resize'>" )
         // Control shows on hover over track, stays while dragging
         $(track.container_div).hover( function() { 
-            in_handle = true;
-            drag_control.show(); 
+            if ( track.content_visible ) {
+                in_handle = true;
+                drag_control.show(); 
+            }
         }, function() { 
             in_handle = false;
             if ( ! in_drag ) { drag_control.hide(); }
@@ -3108,9 +3196,20 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             track.container_div.addClass( "line-track" );
             var data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
-                track.prefs.min_value = data.min;
-                track.prefs.max_value = data.max;
+                // Compute default minimum and maximum values
+                var min_value = data.min
+                var max_value = data.max
+                // If mean and sd are present, use them to compute a ~95% window
+                // but only if it would shrink the range on one side
+                min_value = Math.floor( Math.min( 0, Math.max( min_value, data.mean - 2 * data.sd ) ) )
+                max_value = Math.ceil( Math.max( 0, Math.min( max_value, data.mean + 2 * data.sd ) ) )
+                // Update the prefs
+                track.prefs.min_value = min_value;
+                track.prefs.max_value = max_value;
                 // Update the config
+                // FIXME: we should probably only save this when the user explicately sets it
+                //        since we lose the ability to compute it on the fly (when changing 
+                //        chromosomes for example).
                 $('#track_' + track.dataset_id + '_minval').val(track.prefs.min_value);
                 $('#track_' + track.dataset_id + '_maxval').val(track.prefs.max_value);
             }
@@ -3179,13 +3278,17 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
             { key: 'name', label: 'Name', type: 'text', default_value: name },
             { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
-            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
+              help: 'Show the number of items in each bin when drawing summary histogram' },
+            { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
+                options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         ], 
         saved_values: prefs,
         onchange: function() {
             track.set_name(track.prefs.name);
             track.tile_cache.clear();
+            track.set_painter_from_config();
             track.request_draw();
         }
     });
@@ -3205,9 +3308,17 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     this.data_manager = new DataManager(20, this);
     this.left_offset = 200;
 
-    this.painter = painters.LinkedFeaturePainter;
+    // this.painter = painters.LinkedFeaturePainter;
+    this.set_painter_from_config();
 };
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    set_painter_from_config: function() {
+        if ( this.config.values['connector_style'] == 'arcs' ) {
+            this.painter = painters.ArcLinkedFeaturePainter;
+        } else {
+            this.painter = painters.LinkedFeaturePainter;
+        }
+    },
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
@@ -3527,7 +3638,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null);
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
         var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, ref_seq);
-        var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required));
+        var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required,width));
         var canvas = this.view.canvas_manager.new_canvas();
         var feature_mapper = null;
         
@@ -4057,6 +4168,7 @@ var FeaturePositionMapper = function(slot_height) {
     this.feature_positions = {};
     this.slot_height = slot_height;
     this.translation = 0;
+    this.y_translation = 0;
 };
 
 /**
@@ -4078,7 +4190,7 @@ FeaturePositionMapper.prototype.map_feature_data = function(feature_data, slot, 
  */
 FeaturePositionMapper.prototype.get_feature_data = function(x, y) {
     // Find slot using Y.
-    var slot = Math.floor( y/this.slot_height ),
+    var slot = Math.floor( (y-this.y_translation)/this.slot_height ),
         feature_dict;
 
     // May not be over a slot due to padding, margin, etc.
@@ -4108,15 +4220,23 @@ var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_sca
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
 
 extend(FeaturePainter.prototype, {
-    get_required_height: function(rows_required) {
+    get_required_height: function(rows_required, width) {
         // y_scale is the height per row
         var required_height = y_scale = this.get_row_height(), mode = this.mode;
         // If using a packing mode, need to multiply by the number of slots used
         if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
             required_height = rows_required * y_scale;
         }
+        return required_height + this.get_top_padding(width) + this.get_bottom_padding(width);
+    },
+    /** Extra padding before first row of features */
+    get_top_padding: function(width) {
+        return 0;
+    },
+    /** Extra padding after last row of features */
+    get_bottom_padding: function(width) {
         // Pad bottom by half a row, at least 5 px
-        return required_height + Math.max( Math.round( y_scale / 2 ), 5 );
+        return Math.max( Math.round( this.get_row_height() / 2 ), 5 ) 
     },
     /**
      * Draw data on ctx using slots and within the rectangle defined by width and height. Returns
@@ -4153,6 +4273,7 @@ extend(FeaturePainter.prototype, {
         }
 
         ctx.restore();
+        feature_mapper.y_translation = this.get_top_padding(width);
         return feature_mapper;
     },
     /** 
@@ -4179,6 +4300,10 @@ var DENSE_TRACK_HEIGHT = 10,
 
 var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
     FeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
+    // Whether to draw a single connector in the background that spans the entire feature (the intron fishbone)
+    this.draw_background_connector = true;
+    // Whether to call draw_connector for every pair of blocks
+    this.draw_individual_connectors = false;
 };
 
 extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
@@ -4216,7 +4341,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             draw_start = f_start,
             draw_end = f_end,
-            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
+            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale + this.get_top_padding(width),
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
             block_color = this.prefs.block_color,
@@ -4260,17 +4385,17 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             // Draw feature/feature blocks + connectors.
             if (!feature_blocks) {
                 // If there are no blocks, treat the feature as one big exon.
-                if ( feature.strand ) {
-                    if (feature.strand === "+") {
+                ctx.fillStyle = block_color;
+                ctx.fillRect(f_start, y_center + 1, f_end - f_start, thick_height);
+                // If strand is specified, draw arrows over feature
+                if ( feature_strand ) {
+                    if (feature_strand === "+") {
                         ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
-                    } else if (feature.strand === "-") {
+                    } else if (feature_strand === "-") {
                         ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
                     }
+                    ctx.fillRect(f_start, y_center + 1, f_end - f_start, thick_height);
                 }
-                else { // No strand.
-                    ctx.fillStyle = block_color;
-                }                            
-                ctx.fillRect(f_start, y_center, f_end - f_start, thick_height);
             } else { 
                 //
                 // There are feature blocks and mode is either Squish or Pack.
@@ -4279,38 +4404,51 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 // needed. This ensures that whole feature, regardless of whether it starts with
                 // a block, is visible.
                 //
-                
-                // Draw whole feature as connector/intron.
+               
+                // Compute y axis center position and height
                 var cur_y_center, cur_height;
                 if (mode === "Squish" || mode === "Dense") {
-                    ctx.fillStyle = CONNECTOR_COLOR;
                     cur_y_center = y_center + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
                     cur_height = 1;
                 }
                 else { // mode === "Pack"
                     if (feature_strand) {
-                        var cur_y_center = y_center;
-                        var cur_height = thick_height;
-                        if (feature_strand === "+") {
-                            ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand' );
-                        } else if (feature_strand === "-") {
-                            ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand' );
-                        }
+                        cur_y_center = y_center;
+                        cur_height = thick_height;
                     }
                     else {
-                        ctx.fillStyle = CONNECTOR_COLOR;
                         cur_y_center += (SQUISH_FEATURE_HEIGHT/2) + 1;
                         cur_height = 1;
                     }
                 }
-                ctx.fillRect(f_start, cur_y_center, f_end - f_start, cur_height);
+
+                // Draw whole feature as connector/intron.
+                if ( this.draw_background_connector ) {
+                    if (mode === "Squish" || mode === "Dense") {
+                        ctx.fillStyle = CONNECTOR_COLOR;
+                    }
+                    else { // mode === "Pack"
+                        if (feature_strand) {
+                            if (feature_strand === "+") {
+                                ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand' );
+                            } else if (feature_strand === "-") {
+                                ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand' );
+                            }
+                        }
+                        else {
+                            ctx.fillStyle = CONNECTOR_COLOR;
+                        }
+                    }
+                    ctx.fillRect(f_start, cur_y_center, f_end - f_start, cur_height);
+                }
                 
                 // Draw blocks.
                 var start_and_height;
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
                         block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) );
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) ),
+                        last_block_start, last_block_end;
 
                     // Skip drawing if block not on tile.    
                     if (block_start > block_end) { continue; }
@@ -4341,6 +4479,12 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                             ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
                         }   
                     }
+                    // Draw individual connectors if required
+                    if ( this.draw_individual_connectors && last_block_start ) {
+                        this.draw_connector( ctx, last_block_start, last_block_end, block_start, block_end, y_center );
+                    }
+                    last_block_start = block_start;
+                    last_block_end = block_end;
                 }
                                 
                 // FIXME: Height scaling only works in Pack mode right now.
@@ -4673,11 +4817,54 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
     }
 });
 
+var ArcLinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
+    LinkedFeaturePainter.call(this, data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler);
+    // Need to know the longest feature length for adding spacing
+    this.longest_feature_length = this.calculate_longest_feature_length();
+    this.draw_background_connector = false;
+    this.draw_individual_connectors = true;
+};
+
+extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeaturePainter.prototype, {
+
+    calculate_longest_feature_length: function () {
+        var longest_feature_length = 0;
+        for (var i = 0, len = this.data.length; i < len; i++) {
+            var feature = this.data[i], feature_start = feature[1], feature_end = feature[2];
+            longest_feature_length = Math.max( longest_feature_length, feature_end - feature_start );
+        }
+        return longest_feature_length;
+    },
+
+    get_top_padding: function( width ) { 
+        var view_range = this.view_end - this.view_start,
+            w_scale = width / view_range;
+        return Math.min( 128, Math.ceil( ( this.longest_feature_length / 2 ) * w_scale ) );
+    },
+
+    draw_connector: function( ctx, block1_start, block1_end, block2_start, block2_end, y_center ) {
+        // Arc drawing -- from closest endpoints
+        var x_center = ( block1_end + block2_start ) / 2,
+            radius = block2_start - x_center; 
+        // For full half circles
+        var angle1 = Math.PI, angle2 = 0;
+        if ( radius > 0 ) {
+            ctx.beginPath();
+            ctx.arc( x_center, y_center, block2_start - x_center, Math.PI, 0 );
+            ctx.stroke();
+        }
+    }
+});
+
+
+
+
 exports.Scaler = Scaler;
 exports.SummaryTreePainter = SummaryTreePainter;
 exports.LinePainter = LinePainter;
 exports.LinkedFeaturePainter = LinkedFeaturePainter;
 exports.ReadPainter = ReadPainter;
+exports.ArcLinkedFeaturePainter = ArcLinkedFeaturePainter;
 
 // End painters_module encapsulation
 };

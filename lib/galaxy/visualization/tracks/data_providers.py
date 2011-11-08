@@ -2,14 +2,15 @@
 Data providers for tracks visualizations.
 """
 
-import sys
-from math import ceil, log
+import sys, time
+from math import ceil, log, sqrt
 import pkg_resources
 pkg_resources.require( "bx-python" )
 if sys.version_info[:2] == (2, 4):
     pkg_resources.require( "ctypes" )
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
+import numpy
 from galaxy.datatypes.util.gff_util import *
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
@@ -362,14 +363,18 @@ class RawBedDataProvider( BedDataProvider ):
     for large datasets.
     """
 
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom=None, start=None, end=None ):
         def line_filter_iter():
             for line in open( self.original_dataset.file_name ):
+                if line.startswith( "track" ) or line.startswith( "browser" ):
+                    continue
                 feature = line.split()
                 feature_chrom = feature[0]
                 feature_start = int( feature[1] )
                 feature_end = int( feature[2] )
-                if feature_chrom != chrom or feature_start > int( end ) or feature_end < int( start ):
+                if ( chrom is not None and feature_chrom != chrom ) \
+                    or ( start is not None and feature_start > int( end ) ) \
+                    or ( end is not None and feature_end < int( start ) ):
                     continue
                 yield line
         return line_filter_iter()
@@ -740,40 +745,73 @@ class BBIDataProvider( TracksDataProvider ):
         # Bigwig has the possibility of it being a standalone bigwig file, in which case we use
         # original_dataset, or coming from wig->bigwig conversion in which we use converted_dataset
         f, bbi = self._get_dataset()
-        
+       
+        # If the stats kwarg was provide, we compute overall summary data for
+        # the entire chromosome, but no reduced data -- currently only
+        # providing values used by trackster to determine the default range
         if 'stats' in kwargs:
-            all_dat = bbi.query(chrom, 0, 2147483647, 1)
+            # FIXME: use actual chromosome size
+            summary = bbi.summarize( chrom, 0, 214783647, 1 )
             f.close()
-            if all_dat is None:
+            if summary is None:
                 return None
-            
-            all_dat = all_dat[0] # only 1 summary
-            return { 'data' : { 'max': float( all_dat['max'] ), \
-                                'min': float( all_dat['min'] ), \
-                                'total_frequency': float( all_dat['coverage'] ) } \
-                    }
-                     
+            else:
+                # Does the summary contain any defined values?
+                valid_count = summary.valid_count[0]
+                if summary.valid_count < 1:
+                    return None
+
+                # Compute $\mu \pm 2\sigma$ to provide an estimate for upper and lower
+                # bounds that contain ~95% of the data.
+                mean = summary.sum_data[0] / valid_count
+                var = summary.sum_squares[0] - mean
+                if valid_count > 1:
+                    var /= valid_count - 1
+                sd = numpy.sqrt( var )
+
+                return dict( data=dict( min=summary.min_val[0], max=summary.max_val[0], mean=mean, sd=sd ) )
+
         start = int(start)
         end = int(end)
+
+        # The following seems not to work very well, for example it will only return one
+        # data point if the tile is 1280px wide. Not sure what the intent is.
+
         # The first zoom level for BBI files is 640. If too much is requested, it will look at each block instead
         # of summaries. The calculation done is: zoom <> (end-start)/num_points/2.
         # Thus, the optimal number of points is (end-start)/num_points/2 = 640
         # num_points = (end-start) / 1280
-        num_points = (end-start) / 1280
-        if num_points < 1:
-            num_points = end - start
-        else:
-            num_points = min(num_points, 500)
+        #num_points = (end-start) / 1280
+        #if num_points < 1:
+        #    num_points = end - start
+        #else:
+        #    num_points = min(num_points, 500)
 
-        data = bbi.query(chrom, start, end, num_points)
+        # For now, we'll do 1000 data points by default However, the summaries
+        # don't seem to work when a summary pixel corresponds to less than one
+        # datapoint, so we prevent that. 
+        # FIXME: need to switch over to using the full data at high levels of
+        # detail.
+        num_points = min( 1000, end - start )
+
+        summary = bbi.summarize( chrom, start, end, num_points )
         f.close()
-        
-        pos = start
-        step_size = (end - start) / num_points
+
         result = []
-        if data:
-            for dat_dict in data:
-                result.append( (pos, float_nan(dat_dict['mean']) ) )
+
+        if summary:
+            mean = summary.sum_data / summary.valid_count
+
+            ## Standard deviation by bin, not yet used
+            ## var = summary.sum_squares - mean
+            ## var /= minimum( valid_count - 1, 1 )
+            ## sd = sqrt( var )
+        
+            pos = start
+            step_size = (end - start) / num_points
+
+            for i in range( num_points ):
+                result.append( (pos, float_nan( mean[i] ) ) )
                 pos += step_size
             
         return { 'data': result }
