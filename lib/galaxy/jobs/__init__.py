@@ -530,19 +530,11 @@ class JobWrapper( object ):
         self.sa_session.expunge_all()
         job = self.get_job()
 
-        if self.app.config.drmaa_external_runjob_script and job.user is not None:
-            try:
-                # FIXME: hardcoded path
-                cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, self.working_directory, self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) ]
-                log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
-                p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-                p.wait()
-                assert p.returncode == 0
-            except:
-                # TODO: log stdout/stderr
-                log.exception( '(%s) Failed to change ownership of %s, failing' % ( job.id, self.working_directory ) )
-                self.fail( job.info )
-                return
+        try:
+            self.reclaim_ownership()
+        except:
+            self.fail( job.info )
+            log.exception( '(%s) Failed to change ownership of %s, failing' % ( job.id, self.working_directory ) )
 
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:
@@ -900,25 +892,38 @@ class JobWrapper( object ):
         else:
             return 'anonymous@unknown'
 
+    def _change_ownership( self, username, gid ):
+        job = self.get_job()
+        # FIXME: hardcoded path
+        cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, self.working_directory, username, str( gid ) ]
+        log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
+        p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+        # TODO: log stdout/stderr
+        stdout, stderr = p.communicate()
+        assert p.returncode == 0
+
     def change_ownership_for_run( self ):
         job = self.get_job()
         if self.app.config.external_chown_script and job.user is not None:
             try:
-                # FIXME: hardcoded path
-                cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, self.working_directory, self.user_system_pwent[0], str( self.user_system_pwent[3] ) ]
-                log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
-                p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-                stdout, stderr = p.communicate()
-                assert p.returncode == 0
+                self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
             except:
                 log.exception( '(%s) Failed to change ownership of %s, making world-writable instead' % ( job.id, self.working_directory ) )
                 os.chmod( self.working_directory, 0777 )
+
+    def reclaim_ownership( self ):
+        job = self.get_job()
+        if self.app.config.external_chown_script and job.user is not None:
+            self._change_ownership( self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) )
 
     @property
     def user_system_pwent( self ):
         if self.__user_system_pwent is None:
             job = self.get_job()
-            self.__user_system_pwent = pwd.getpwnam( job.user.email.split('@')[0] )
+            try:
+                self.__user_system_pwent = pwd.getpwnam( job.user.email.split('@')[0] )
+            except:
+                pass
         return self.__user_system_pwent
 
     @property

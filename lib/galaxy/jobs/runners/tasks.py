@@ -109,6 +109,10 @@ class TaskedJobRunner( object ):
                         if sleep_time < 8:
                             sleep_time *= 2
                 
+                import time
+
+                job_wrapper.reclaim_ownership()      # if running as the actual user, change ownership before merging.
+
                 log.debug('execution finished - beginning merge: %s' % command_line)
                 stdout,  stderr = splitter.do_merge(job_wrapper,  task_wrappers)
                 

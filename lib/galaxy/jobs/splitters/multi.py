@@ -46,7 +46,7 @@ def do_split (job_wrapper):
             pass # pass original file name
         else:
             log_error = "The input '%s' does not define a method for implementing parallelism" % str(input.name)
-            log.error(log_error)
+            log.exception(log_error)
             raise Exception(log_error)
 
     if len(type_to_input_map) > 1:
@@ -138,7 +138,7 @@ def do_merge( job_wrapper,  task_wrappers):
                     pickone_done.append(output)
             else:
                 log_error = "The output '%s' does not define a method for implementing parallelism" % output
-                log.error(log_error)
+                log.exception(log_error)
                 raise Exception(log_error)
     except Exception, e:
         stdout = 'Error merging files';
