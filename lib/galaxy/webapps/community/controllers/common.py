@@ -214,7 +214,8 @@ def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
                             copy_sample_loc_file( trans, sample_file )
                             options.index_file = index_tail
                             options.missing_index_file = None
-                            options.tool_data_table.missing_index_file = None
+                            if options.tool_data_table:
+                                options.tool_data_table.missing_index_file = None
                             sample_found = True
                             break
                     if not sample_found:
@@ -325,8 +326,14 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     if ctx is not None:
         metadata_dict = {}
         if changeset_revision == repository.tip:
+            # Find all special .sample files first.
             for root, dirs, files in os.walk( repo_dir ):
-                if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                if root.find( '.hg' ) < 0:
+                    for name in files:
+                        if name.endswith( '.sample' ):
+                            sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
+            for root, dirs, files in os.walk( repo_dir ):
+                if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
                     if '.hg' in dirs:
                         # Don't visit .hg directories - should be impossible since we don't
                         # allow uploaded archives that contain .hg dirs, but just in case...
@@ -334,10 +341,6 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                     if 'hgrc' in files:
                          # Don't include hgrc files in commit.
                         files.remove( 'hgrc' )
-                    # Find all special .sample files first.
-                    for name in files:
-                        if name.endswith( '.sample' ):
-                            sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
                     for name in files:
                         # Find all tool configs.
                         if name.endswith( '.xml' ):

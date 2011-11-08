@@ -1147,21 +1147,20 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     def __get_repository_tools_and_sample_files( self, trans, tool_path, repo_files_dir ):
         # The sample_files list contains all files whose name ends in .sample
         sample_files = []
-        # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
-        repository_tools_tups = []
+        # Find all special .sample files first.
         for root, dirs, files in os.walk( repo_files_dir ):
-            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                if '.hg' in dirs:
-                    # Don't visit .hg directories - should be impossible since we don't
-                    # allow uploaded archives that contain .hg dirs, but just in case...
-                    dirs.remove( '.hg' )
-                if 'hgrc' in files:
-                     # Don't include hgrc files in commit.
-                    files.remove( 'hgrc' )
-                # Find all special .sample files first.
+            if root.find( '.hg' ) < 0:
                 for name in files:
                     if name.endswith( '.sample' ):
                         sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
+        # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
+        repository_tools_tups = []
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
+                if '.hg' in dirs:
+                    dirs.remove( '.hg' )
+                if 'hgrc' in files:
+                    files.remove( 'hgrc' )
                 for name in files:
                     # Find all tool configs.
                     if name.endswith( '.xml' ):
