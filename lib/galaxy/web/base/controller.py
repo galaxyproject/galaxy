@@ -233,16 +233,18 @@ class UsesHistoryDatasetAssociation:
             else:
                 error( "You are not allowed to access this dataset" )
         return data
-    def get_history_dataset_association( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
+    def get_history_dataset_association( self, trans, history, dataset_id, check_ownership=True, check_accessible=False ):
         """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
-        hda = self.get_object( trans, id, 'HistoryDatasetAssociation', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=False ) # check accessibility here
+        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
+        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
+        
         if check_accessible:
             if trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
                 if hda.state == trans.model.Dataset.states.UPLOAD:
                     error( "Please wait until this dataset finishes uploading before attempting to view it." )
             else:
                 error( "You are not allowed to access this dataset" )
+        return hda
     def get_data( self, dataset, preview=True ):
         """ Gets a dataset's data. """
         # Get data from file, truncating if necessary.
