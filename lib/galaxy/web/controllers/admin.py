@@ -3,7 +3,7 @@ from galaxy import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.tools.search import ToolBoxSearch
-from galaxy.tools import json_fix
+from galaxy.tools import ToolSection, json_fix
 import logging
 log = logging.getLogger( __name__ )
 
@@ -403,7 +403,7 @@ class RepositoryListGrid( grids.Grid ):
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.tool_shed
     # Grid definition
-    title = "Tool shed repositories"
+    title = "Installed tool shed repositories"
     model_class = model.ToolShedRepository
     template='/admin/tool_shed_repository/grid.mako'
     default_sort_key = "name"
@@ -807,28 +807,45 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         status = kwd.get( 'status', 'done' )
         tool_shed_url = kwd[ 'tool_shed_url' ]
         repo_info_dict = kwd[ 'repo_info_dict' ]
+        new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
+        tool_panel_section = kwd.get( 'tool_panel_section', '' )
         if kwd.get( 'select_tool_panel_section_button', False ):
             shed_tool_conf = kwd[ 'shed_tool_conf' ]
             # Get the tool path.
             for k, tool_path in trans.app.toolbox.shed_tool_confs.items():
                 if k == shed_tool_conf:
                     break
-            if 'tool_panel_section' in kwd:
-                section_key = 'section_%s' % kwd[ 'tool_panel_section' ]
-                tool_section = trans.app.toolbox.tool_panel[ section_key ]
+            if new_tool_panel_section or tool_panel_section:
+                if new_tool_panel_section:
+                    section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+                    new_section_key = 'section_%s' % str( section_id )
+                    if new_section_key in trans.app.toolbox.tool_panel:
+                        # Appending a tool to an existing section in trans.app.toolbox.tool_panel
+                        log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
+                        tool_section = trans.app.toolbox.tool_panel[ new_section_key ]
+                    else:
+                        # Appending a new section to trans.app.toolbox.tool_panel
+                        log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
+                        elem = Element( 'section' )
+                        elem.attrib[ 'name' ] = new_tool_panel_section
+                        elem.attrib[ 'id' ] = section_id
+                        tool_section = ToolSection( elem )
+                        trans.app.toolbox.tool_panel[ new_section_key ] = tool_section
+                else:
+                    section_key = 'section_%s' % tool_panel_section
+                    tool_section = trans.app.toolbox.tool_panel[ section_key ]
                 # Decode the encoded repo_info_dict param value.
                 repo_info_dict = tool_shed_decode( repo_info_dict )
                 # Clone the repository to the configured location.
                 current_working_dir = os.getcwd()
+                installed_repository_names = []
                 for name, repo_info_tuple in repo_info_dict.items():
                     description, repository_clone_url, changeset_revision = repo_info_tuple
                     clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, changeset_revision ) )
                     if os.path.exists( clone_dir ):
                         # Repository and revision has already been cloned.
                         # TODO: implement the ability to re-install or revert an existing repository.
-                        message += 'Revision <b>%s</b> of repository <b>%s</b> has already been installed.  Updating an existing repository is not yet supported.<br/>' % \
-                        ( changeset_revision, name )
-                        status = 'error'
+                        message += 'Revision <b>%s</b> of repository <b>%s</b> was previously installed.<br/>' % ( changeset_revision, name )
                     else:
                         os.makedirs( clone_dir )
                         log.debug( 'Cloning %s...' % repository_clone_url )
@@ -892,9 +909,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                                     if trans.app.toolbox_search.enabled:
                                         # If search support for tools is enabled, index the new installed tools.
                                         trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
-                                message += 'Revision <b>%s</b> of repository <b>%s</b> has been loaded into tool panel section <b>%s</b>.<br/>' % \
-                                    ( changeset_revision, name, tool_section.name )
-                                #return trans.show_ok_message( message )
+                                installed_repository_names.append( name )
                             else:
                                 tmp_stderr = open( tmp_name, 'rb' )
                                 message += '%s<br/>' % tmp_stderr.read()
@@ -905,6 +920,19 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             message += '%s<br/>' % tmp_stderr.read()
                             tmp_stderr.close()
                             status = 'error'
+                if installed_repository_names:
+                    installed_repository_names.sort()
+                    message += 'These %d repositories were installed and all tools were loaded into tool panel section <b>%s</b>:<br/>' % \
+                        ( len( installed_repository_names ), tool_section.name )
+                    for i, repo_name in enumerate( installed_repository_names ):
+                        if i == len( installed_repository_names ) -1:
+                            message += '%s.<br/>' % repo_name
+                        else:
+                            message += '%s, ' % repo_name
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='browse_tool_shed_repositories',
+                                                                  message=message,
+                                                                  status=status ) )
             else:
                 message = 'Choose the section in your tool panel to contain the installed tools.'
                 status = 'error'
@@ -921,6 +949,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                                     shed_tool_conf=shed_tool_conf,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
+                                    new_tool_panel_section=new_tool_panel_section,
                                     message=message,
                                     status=status )
     @web.expose

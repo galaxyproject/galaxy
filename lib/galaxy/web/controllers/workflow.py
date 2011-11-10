@@ -1115,10 +1115,10 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             workflow_name = tool_shed_decode( workflow_name )
         # The following parameters will have a value only if the import originated
         # from a tool shed repository installed locally.
-        local_file = kwd.get( 'local_file', '' )
+        installed_repository_file = kwd.get( 'installed_repository_file', '' )
         repository_id = kwd.get( 'repository_id', '' )
-        if local_file and not import_button:
-            workflow_file = open( local_file, 'rb' )
+        if installed_repository_file and not import_button:
+            workflow_file = open( installed_repository_file, 'rb' )
             workflow_text = workflow_file.read()
             workflow_file.close()
             import_button = True
@@ -1197,27 +1197,26 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                 if shed_url.endswith( '/' ):
                                     shed_url = shed_url.rstrip( '/' )
                                     url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, trans.request.host, webapp )
+                                    if missing_tool_tups:
+                                        url += '&tool_id='
                                     for missing_tool_tup in missing_tool_tups:
                                         missing_tool_id = missing_tool_tup[0]
-                                        url += '&tool_id=%s' % missing_tool_id
+                                        url += '%s,' % missing_tool_id
                                 message += '<a href="%s">%s</a><br/>' % ( url, shed_name )
                                 status = 'error'
-                            if local_file or tool_shed_url:
+                            if installed_repository_file or tool_shed_url:
                                 # Another Galaxy panels Hack: The request did not originate from the Galaxy 
                                 # workflow view, so we don't need to render the Galaxy panels.
-                                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                                  action='center',
-                                                                                  webapp='galaxy',
-                                                                                  message=message,
-                                                                                  status=status ) )
+                                action = 'center'
                             else:
                                 # Another Galaxy panels hack: The request originated from the Galaxy
                                 # workflow view, so we need to render the Galaxy panels.
-                                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                                  action='index',
-                                                                                  webapp='galaxy',
-                                                                                  message=message,
-                                                                                  status=status ) )
+                                action = 'index'
+                            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                              action=action,
+                                                                              webapp='galaxy',
+                                                                              message=message,
+                                                                              status=status ) )
                         else:
                             # TODO: Figure out what to do here...
                             pass
@@ -1228,7 +1227,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                         url = 'http://%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&message=%s' % \
                             ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp, message )
                         return trans.response.send_redirect( url )
-                    elif local_file:
+                    elif installed_repository_file:
                         # The workflow was read from a file included with an installed tool shed repository.
                         message = "Workflow <b>%s</b> imported successfully." % workflow.name
                         return trans.response.send_redirect( web.url_for( controller='admin',

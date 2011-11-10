@@ -23,7 +23,7 @@
 <br/>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Load tools into tool panel</div>
+    <div class="toolFormTitle">Choose section to load tools into tool panel</div>
     <div class="toolFormBody">
     <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin', action='install_tool_shed_repository', tool_shed_url=tool_shed_url, repo_info_dict=repo_info_dict )}" method="post" >
         %if shed_tool_conf_select_field:
@@ -40,10 +40,17 @@
             <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf}"/>
         %endif
         <div class="form-row">
-            <label>Tool panel section:</label>
+            <label>Add new tool panel section:</label>
+            <input name="new_tool_panel_section" type="textfield" value="${new_tool_panel_section}" size="40"/>
+            <div class="toolParamHelp" style="clear: both;">
+                Add a new tool panel section or choose an existing section in your tool panel below to contain the installed tools.
+            </div>
+        </div>
+        <div class="form-row">
+            <label>Select existing tool panel section:</label>
             ${tool_panel_section_select_field.get_html()}
             <div class="toolParamHelp" style="clear: both;">
-                Choose the section in your tool panel to contain the installed tools.
+                Choose an existing section in your tool panel to contain the installed tools.
             </div>
         </div>
         <div class="form-row">
