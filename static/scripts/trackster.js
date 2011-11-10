@@ -2389,7 +2389,7 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
     
         // Track icons.
         this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show track content")
-                                      .addClass("icon-button toggle").tipsy( {gravity: 's'} )
+                                      .addClass("icon-button toggle-contract").tipsy( {gravity: 's'} )
                                       .appendTo(this.icons_div);
         this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
                                       .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
@@ -2414,12 +2414,12 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
         // Toggle icon hides or shows the track content
         this.toggle_icon.click( function() {
             if ( track.content_visible ) {
-                track.toggle_icon.addClass("toggle-expand").removeClass("toggle");
+                track.toggle_icon.addClass("toggle-expand").removeClass("toggle-contract");
                 track.hide_contents();
                 track.mode_div.hide();
                 track.content_visible = false;
             } else {
-                track.toggle_icon.addClass("toggle").removeClass("toggle-expand");
+                track.toggle_icon.addClass("toggle-contract").removeClass("toggle-expand");
                 track.content_visible = true;
                 track.mode_div.show();
                 track.show_contents();

@@ -151,9 +151,10 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.tag{background:url(fugue.png) no-repeat 0px -0px;}
 .icon-button.tags{background:url(fugue.png) no-repeat 0px -26px;}
 .icon-button.tag--plus{background:url(fugue.png) no-repeat 0px -52px;}
-.icon-button.toggle-expand{background:url(fugue.png) no-repeat 0px -78px;}
-.icon-button.toggle{background:url(fugue.png) no-repeat 0px -104px;}
-.icon-button.toggle-contract{background:url(fugue.png) no-repeat 0px -104px;}
+.icon-button.toggle-expand{background:transparent url(../images/fugue/toggle-expand-bw.png) no-repeat;}
+.icon-button.toggle-expand:hover{background:url(fugue.png) no-repeat 0px -78px;}
+.icon-button.toggle-contract{background:transparent url(../images/fugue/toggle-bw.png) no-repeat;}
+.icon-button.toggle-contract:hover{background:url(fugue.png) no-repeat 0px -104px;}
 .icon-button.arrow-circle{background:url(fugue.png) no-repeat 0px -130px;}
 .icon-button.chevron{background:url(fugue.png) no-repeat 0px -156px;}
 .icon-button.bug{background:url(fugue.png) no-repeat 0px -182px;}
