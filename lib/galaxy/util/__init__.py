@@ -607,7 +607,7 @@ def send_mail( frm, to, subject, body, config ):
             log.error( "The server didn't accept the username/password combination: %s" % e )
             s.close()
             raise
-        except smtplib.SMTPError, e:
+        except smtplib.SMTPException, e:
             log.error( "No suitable authentication method was found: %s" % e )
             s.close()
             raise
