@@ -149,7 +149,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # Legacy issue: all shared workflows must have slugs.
         slug_set = False
         for workflow_assoc in shared_by_others:
-            slug_set = self.create_item_slug( trans.sa_session, workflow_assoc.stored_workflow )
+            if self.create_item_slug( trans.sa_session, workflow_assoc.stored_workflow ):
+                slug_set = True
         if slug_set:
             trans.sa_session.flush()
 
