@@ -379,11 +379,11 @@ def __main__():
     op.add_option('', '--taillimit', default="0")
     op.add_option('', '--histwidth', default="0")
     op.add_option('', '--minpct', default="0.01")
-    op.add_option('', '--malevel', action='append', type="string")
+    op.add_option('', '--malevel', default='')
     op.add_option('', '--deviations', default="0.0")
     # CollectAlignmentSummaryMetrics
     op.add_option('', '--maxinsert', default="20")
-    op.add_option('', '--adaptors', action='append', type="string")
+    op.add_option('', '--adaptors', default='')
     # FixMateInformation and validate
     # CollectGcBiasMetrics
     op.add_option('', '--windowsize', default='100')
@@ -533,8 +533,9 @@ def __main__():
             shutil.copy(ref_file_name,fakefasta)
         pic.delme.append(fakefasta)
         cl.append('ASSUME_SORTED=true')
-        adaptorseqs = ''.join([' ADAPTER_SEQUENCE=%s' % x for x in opts.adaptors])
-        cl.append(adaptorseqs)
+        adaptlist = opts.adaptors.split(',')
+        adaptorseqs = ['ADAPTER_SEQUENCE=%s' % x for x in adaptlist]
+        cl += adaptorseqs
         cl.append('IS_BISULFITE_SEQUENCED=%s' % opts.bisulphite)
         cl.append('MAX_INSERT_SIZE=%s' % opts.maxinsert)
         cl.append('OUTPUT=%s' % pic.metricsOut)
@@ -619,8 +620,9 @@ def __main__():
         if float(opts.deviations) > 0.0:
             cl.append('DEVIATIONS=%s' % opts.deviations)
         if opts.malevel:
-            malevels = ['METRIC_ACCUMULATION_LEVEL=%s' % x for x in opts.malevel]
-            cl.append(' '.join(malevels))
+            malists = opts.malevel.split(',')
+            malist = ['METRIC_ACCUMULATION_LEVEL=%s' % x for x in malists]
+            cl += malist
         stdouts,rval = pic.runPic(opts.jar, cl)
         if os.path.exists(pdfpath): # automake thumbnail - will be added to html 
             cl2 = ['mogrify', '-format jpg -resize x400 %s' % pdfpath]

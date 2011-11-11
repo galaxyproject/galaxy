@@ -2381,16 +2381,18 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
     
     // Create and initialize track header and icons.
     if (show_header) {
-        this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
+        this.header_div = $("<div class='track-header'/>").appendTo(this.container_div);
         if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(this.header_div); }
         this.name_div = $("<div/>").addClass("track-name").appendTo(this.header_div).text(this.name)
                         .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         this.icons_div = $("<div/>").css("float", "left").appendTo(this.header_div).hide();
     
         // Track icons.
+        this.mode_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set display mode")
+                                  .addClass("icon-button chevron-expand").tipsy( {gravity: 's'} ).appendTo(this.icons_div);
         this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show track content")
-                                      .addClass("icon-button toggle").tipsy( {gravity: 's'} )
-                                      .appendTo(this.icons_div);
+                                    .addClass("icon-button toggle-contract").tipsy( {gravity: 's'} )
+                                    .appendTo(this.icons_div);
         this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
                                       .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
                                       .appendTo(this.icons_div);
@@ -2407,21 +2409,42 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
                                     .addClass("icon-button remove-icon").tipsy( {gravity: 's'} )
                                     .appendTo(this.icons_div);
         var track = this;
-            
+                    
         // Suppress double clicks in header so that they do not impact viz.
         this.header_div.dblclick( function(e) { e.stopPropagation(); } );
+        
+        // Set up behavior for modes popup.
+        if (track.display_modes !== undefined) {
+            var init_mode = (track.config && track.config.values['mode'] ? 
+                             track.config.values['mode'] : track.display_modes[0]);
+            track.mode = init_mode;
+            this.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
+            
+            var mode_mapping = {};
+            for (var i = 0, len = track.display_modes.length; i < len; i++) {
+                var mode = track.display_modes[i];
+                mode_mapping[mode] = function(mode) {
+                    return function() { 
+                        track.change_mode(mode);
+                        // HACK: the popup menu messes with the track's hover event, so manually show/hide
+                        // icons div for now.
+                        track.icons_div.show(); 
+                        track.container_div.mouseleave(function() { track.icons_div.hide(); } ); };
+                }(mode);
+            }
+            
+            make_popupmenu(this.mode_icon, mode_mapping);
+        }
 
-        // Toggle icon hides or shows the track content
+        // Toggle icon hides or shows the track content.
         this.toggle_icon.click( function() {
             if ( track.content_visible ) {
-                track.toggle_icon.addClass("toggle-expand").removeClass("toggle");
+                track.toggle_icon.addClass("toggle-expand").removeClass("toggle-contract");
                 track.hide_contents();
-                track.mode_div.hide();
                 track.content_visible = false;
             } else {
-                track.toggle_icon.addClass("toggle").removeClass("toggle-expand");
+                track.toggle_icon.addClass("toggle-contract").removeClass("toggle-expand");
                 track.content_visible = true;
-                track.mode_div.show();
                 track.show_contents();
             }
         });
@@ -2481,35 +2504,12 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
             $(".tipsy").remove();
             track.remove();
         });
+                
+        // Show icons when users is hovering over track.
+        this.container_div.hover( function() { track.icons_div.show(); }, function() { track.icons_div.hide(); } );
         
-        // Set up behavior for modes popup.
-        if (track.display_modes !== undefined) {
-            if (track.mode_div === undefined) {
-                track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
-                var init_mode = (track.config && track.config.values['mode'] ? 
-                                 track.config.values['mode'] : track.display_modes[0]);
-                track.mode = init_mode;
-                track.mode_div.text(init_mode);
-
-                var mode_mapping = {};
-                for (var i = 0, len = track.display_modes.length; i < len; i++) {
-                    var mode = track.display_modes[i];
-                    mode_mapping[mode] = function(mode) {
-                        return function() { track.change_mode(mode); };
-                    }(mode);
-                }
-                make_popupmenu(track.mode_div, mode_mapping);
-            } else {
-                track.mode_div.hide();
-            }
-
-            this.header_div.append( $("<div/>").css("clear", "both") );        
-        
-            // Set up config icon.
-        
-            // Show icons when users is hovering over track.
-            this.container_div.hover( function() { track.icons_div.show(); }, function() { track.icons_div.hide(); } );
-        }
+        // Needed for floating elts in header.
+        $("<div style='clear: both'/>").appendTo(this.container_div);
     }
     
     //
@@ -2696,12 +2696,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     change_mode: function(name) {
         var track = this;
-        track.mode_div.text(name);
         // TODO: is it necessary to store the mode in two places (.mode and track_config)?
         track.mode = name;
         track.config.values['mode'] = name;
         track.tile_cache.clear();
         track.request_draw();
+        this.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
         return track;
      },
     /**
@@ -3405,13 +3405,14 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
     },
     update_auto_mode: function( mode ) {
+        var mode;
         if ( this.mode == "Auto" ) {
             if ( mode == "no_detail" ) {
                 mode = "feature spans";
             } else if ( mode == "summary_tree" ) {
                 mode = "coverage histogram";
             }
-            this.mode_div.text( "Auto (" + mode + ")" );
+            this.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
         }
     },
     /**
