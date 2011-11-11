@@ -57,6 +57,8 @@ input{font:10px verdana;}
 .param-row{margin-top:0.2em;margin-left:1em;}
 .param-label{float:left;font-weight:bold;padding-top:0.2em;}
 .menu-button{margin:0px 4px 0px 4px;}
+.chevron-expand{background:transparent url(../images/fugue/chevron-expand-bw.png) no-repeat;}
+.chevron-expand:hover{background:transparent url(../images/fugue/chevron-expand.png) no-repeat;}
 .settings-icon{background:transparent url(../images/fugue/gear-bw.png) no-repeat;}
 .settings-icon:hover{background:transparent url(../images/fugue/gear.png) no-repeat;}
 .overview-icon{background:transparent url(../images/fugue/application-dock-270-bw.png) no-repeat;}
