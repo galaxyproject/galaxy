@@ -1,4 +1,4 @@
-<tool name="BAM Index Statistics" id="picard_BamIndexStats" version="0.2.1">
+<tool name="BAM Index Statistics" id="picard_BamIndexStats" version="1.56.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
     picard_wrapper.py

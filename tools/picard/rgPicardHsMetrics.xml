@@ -1,4 +1,4 @@
-<tool name="SAM/BAM Hybrid Selection Metrics" id="PicardHsMetrics" version="0.02.1">
+<tool name="SAM/BAM Hybrid Selection Metrics" id="PicardHsMetrics" version="1.56.0">
   <description>for targeted resequencing data</description>
   <command interpreter="python">
 
