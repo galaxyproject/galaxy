@@ -102,7 +102,7 @@ class PicardBase():
                 pass
             tmp.close()
         except Exception, e:
-            stop_err( 'Error : %s' % str( e ) )   
+            stop_err( 'Read Large Exception : %s' % str( e ) )   
         return s
     
     def runCL(self,cl=None,output_dir=None):
@@ -153,15 +153,6 @@ class PicardBase():
         cl = ['samtools view -h -b -S -o ',tempbam,infile]
         tlog,stdouts,rval = self.runCL(cl,outdir)
         return tlog,tempbam,rval
-
-    #def bamToSam(self,infile=None,outdir=None):
-    #    """
-    #    use samtools view to convert bam to sam
-    #    """
-    #    fd,tempsam = tempfile.mkstemp(dir=outdir,suffix='rgutilsTemp.sam')
-    #    cl = ['samtools view -h -o ',tempsam,infile]
-    #    tlog,stdouts = self.runCL(cl,outdir)
-    #    return tlog,tempsam
 
     def sortSam(self, infile=None,outfile=None,outdir=None):
         """
@@ -243,10 +234,11 @@ class PicardBase():
         pdflist = [x for x in flist if os.path.splitext(x)[-1].lower() == '.pdf']
         if len(pdflist) > 0: # assumes all pdfs come with thumbnail .jpgs
             for p in pdflist:
-                imghref = '%s.jpg' % os.path.splitext(p)[0] # removes .pdf
-                mimghref = '%s-0.jpg' % os.path.splitext(p)[0] # multiple pages pdf -> multiple thumbnails without asking!
+                pbase = os.path.splitext(p)[0] # removes .pdf
+                imghref = '%s.jpg' % pbase
+                mimghref = '%s-0.jpg' % pbase # multiple pages pdf -> multiple thumbnails without asking!
                 if mimghref in flist:
-                    imghref=mimghref
+                    imghref=mimghref # only one for thumbnail...it's a multi page pdf
                 res.append('<table cellpadding="10"><tr><td>\n')
                 res.append('<a href="%s"><img src="%s" title="Click image preview for a print quality PDF version" hspace="10" align="middle"></a>\n' % (p,imghref)) 
                 res.append('</tr></td></table>\n')   
@@ -387,7 +379,7 @@ def __main__():
     op.add_option('', '--taillimit', default="0")
     op.add_option('', '--histwidth', default="0")
     op.add_option('', '--minpct', default="0.01")
-    op.add_option('', '--malevel', default="")
+    op.add_option('', '--malevel', action='append', type="string")
     op.add_option('', '--deviations', default="0.0")
     # CollectAlignmentSummaryMetrics
     op.add_option('', '--maxinsert', default="20")
@@ -529,13 +521,14 @@ def __main__():
         stdouts,rval = pic.runPic(opts.jar, cl)
 
     elif pic.picname == 'CollectAlignmentSummaryMetrics':
-        # Why do we do this fakefasta thing? Because we need NO fai to be available or picard barfs unless it has the same length as the input data.
+        # Why do we do this fakefasta thing? 
+        # Because we need NO fai to be available or picard barfs unless it matches the input data.
         # why? Dunno Seems to work without complaining if the .bai file is AWOL....
         fakefasta = os.path.join(opts.outdir,'%s_fake.fasta' % os.path.basename(ref_file_name))
         try:
             os.symlink(ref_file_name,fakefasta)
         except:
-            s = '## unable to symlink %s to %s - different devices? May need to replace with shutil.copy'
+            s = '## unable to symlink %s to %s - different devices? Will shutil.copy'
             info = s
             shutil.copy(ref_file_name,fakefasta)
         pic.delme.append(fakefasta)
@@ -550,7 +543,7 @@ def __main__():
         if not opts.assumesorted.lower() == 'true': # we need to sort input
             sortedfile = '%s.sorted' % os.path.basename(opts.input)
             if opts.datatype == 'sam': # need to work with a bam 
-                tlog,tempbam,rval = pic.samToBam(opts.input,opts.outdir)
+                tlog,tempbam,trval = pic.samToBam(opts.input,opts.outdir)
                 pic.delme.append(tempbam)
                 try:
                     tlog = pic.sortSam(tempbam,sortedfile,opts.outdir)
@@ -559,8 +552,8 @@ def __main__():
             else: # is already bam
                 try:
                     tlog = pic.sortSam(opts.input,sortedfile,opts.outdir)
-                except: # bug - [bam_sort_core] not being ignored - TODO fixme
-                    print '## exception on sorting bam file %s' % opts.input
+                except : # bug - [bam_sort_core] not being ignored - TODO fixme
+                    print '## exception %s on sorting bam file %s' % (sys.exc_info()[0],opts.input)
             cl.append('INPUT=%s.bam' % os.path.abspath(os.path.join(opts.outdir,sortedfile)))
             pic.delme.append(os.path.join(opts.outdir,sortedfile))
         else:
@@ -625,8 +618,8 @@ def __main__():
             cl.append('MINIMUM_PCT=%s' % opts.minpct)
         if float(opts.deviations) > 0.0:
             cl.append('DEVIATIONS=%s' % opts.deviations)
-        if opts.malevel.strip():
-            malevels = ['METRIC_ACCUMULATION_LEVEL=%s' % x for x in opts.malevel.split(',')]
+        if opts.malevel:
+            malevels = ['METRIC_ACCUMULATION_LEVEL=%s' % x for x in opts.malevel]
             cl.append(' '.join(malevels))
         stdouts,rval = pic.runPic(opts.jar, cl)
         if os.path.exists(pdfpath): # automake thumbnail - will be added to html 
