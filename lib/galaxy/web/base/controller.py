@@ -19,7 +19,6 @@ from galaxy.exceptions import *
 
 from Cheetah.Template import Template
 
-
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
 from elementtree.ElementTree import Element
@@ -1298,6 +1297,9 @@ class Admin( object ):
     group_list_grid = None
     quota_list_grid = None
     repository_list_grid = None
+    delete_operation = None
+    undelete_operation = None
+    purge_operation = None
 
     @web.expose
     @web.require_admin
@@ -2217,6 +2219,13 @@ class Admin( object ):
                                                                       **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
+        if trans.app.config.allow_user_deletion:
+            if self.delete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.delete_operation )
+            if self.undelete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.undelete_operation )
+            if self.purge_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.purge_operation )
         # Render the list view
         return self.user_list_grid( trans, **kwd )
     @web.expose

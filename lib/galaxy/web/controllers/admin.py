@@ -93,11 +93,6 @@ class UserListGrid( grids.Grid ):
                              allow_popup=False,
                              url_args=dict( webapp="galaxy", action="reset_user_password" ) )
     ]
-    #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
-    # the setting is False
-    #operations.append( grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
-    #operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
-    #operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True, purged=False ) ),
@@ -443,6 +438,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
     repository_list_grid = RepositoryListGrid()
+    delete_operation = grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True )
+    undelete_operation = grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
+    purge_operation = grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
 
     @web.expose
     @web.require_admin
