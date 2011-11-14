@@ -101,32 +101,34 @@ class UploadController( BaseUIController ):
                         full_path = os.path.abspath( os.path.join( repo_dir, upload_point, uploaded_file_filename ) )
                     else:
                         full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
-                    ok, message = self.__check_file_content( uploaded_file_name )
-                    if ok:
-                        # Move the uploaded file to the load_point within the repository hierarchy.
-                        shutil.move( uploaded_file_name, full_path )
-                        commands.add( repo.ui, repo, full_path )
-                        try:
-                            commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
-                        except Exception, e:
-                            # I never have a problem with commands.commit on a Mac, but in the test/production
-                            # tool shed environment, it occasionally throws a "TypeError: array item must be char"
-                            # exception.  If this happens, we'll try the following.
-                            repo.dirstate.write()
-                            repo.commit( user=trans.user.username, text=commit_message )
-                        if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
-                            # Handle the special case where a tool_data_table_conf.xml.sample
-                            # file is being uploaded by parsing the file and adding new entries
-                            # to the in-memory trans.app.tool_data_tables dictionary as well as
-                            # appending them to the shed's tool_data_table_conf.xml file on disk.
-                            error, error_message = handle_sample_tool_data_table_conf_file( trans, full_path )
-                            if error:
-                                message = '%s<br/>%s' % ( message, error_message )
-                        if full_path.endswith( '.loc.sample' ):
-                            # Handle the special case where a xxx.loc.sample file is
-                            # being uploaded by copying it to ~/tool-data/xxx.loc.
-                            copy_sample_loc_file( trans, full_path )
-                        handle_email_alerts( trans, repository )
+                    # TODO: enhance this method to set a flag and alert an admin to review content since
+                    # the hard checks are too restrictive.
+                    #ok, message = self.__check_file_content( uploaded_file_name )
+                    #if ok:
+                    # Move the uploaded file to the load_point within the repository hierarchy.
+                    shutil.move( uploaded_file_name, full_path )
+                    commands.add( repo.ui, repo, full_path )
+                    try:
+                        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                    except Exception, e:
+                        # I never have a problem with commands.commit on a Mac, but in the test/production
+                        # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                        # exception.  If this happens, we'll try the following.
+                        repo.dirstate.write()
+                        repo.commit( user=trans.user.username, text=commit_message )
+                    if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
+                        # Handle the special case where a tool_data_table_conf.xml.sample
+                        # file is being uploaded by parsing the file and adding new entries
+                        # to the in-memory trans.app.tool_data_tables dictionary as well as
+                        # appending them to the shed's tool_data_table_conf.xml file on disk.
+                        error, error_message = handle_sample_tool_data_table_conf_file( trans, full_path )
+                        if error:
+                            message = '%s<br/>%s' % ( message, error_message )
+                    if full_path.endswith( '.loc.sample' ):
+                        # Handle the special case where a xxx.loc.sample file is
+                        # being uploaded by copying it to ~/tool-data/xxx.loc.
+                        copy_sample_loc_file( trans, full_path )
+                    handle_email_alerts( trans, repository )
                 if ok:
                     # Update the repository files for browsing.
                     update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
@@ -192,6 +194,9 @@ class UploadController( BaseUIController ):
             tar.extractall( path=full_path )
             tar.close()
             uploaded_file.close()
+            """
+            # TODO: enhance this method to set a flag and alert an admin to review content since
+            # the hard checks are too restrictive.
             for filename_in_archive in filenames_in_archive:
                 if os.path.isfile( filename_in_archive ):
                     ok, message = self.__check_file_content( filename_in_archive )
@@ -200,6 +205,7 @@ class UploadController( BaseUIController ):
                         current_working_dir = os.getcwd()
                         update_for_browsing( trans, repository, current_working_dir )
                         return False, message, []
+            """
             if remove_repo_files_not_in_tar and not repository.is_new:
                 # We have a repository that is not new (it contains files), so discover
                 # those files that are in the repository, but not in the uploaded archive.
@@ -343,13 +349,15 @@ class UploadController( BaseUIController ):
                 return False, message
         return True, ''
     def __check_file_content( self, file_path ):
+        return True, ''
         message = ''
         ok = True
+        head, tail = os.path.split( file_path )
         if check_html( file_path ):
-            message = 'Files containing HTML content cannot be uploaded to a Galaxy tool shed.'
+            message = 'The file <b>%s</b> contains HTML content which cannot be uploaded to a Galaxy tool shed.' % str( tail )
             ok = False
         elif check_image( file_path ):
             # For now we won't allow images to be uploaded.
-            message = 'Files containing images cannot be uploaded to a Galaxy tool shed.'
+            message = 'The file <b>%s</b> contains image content that cannot be uploaded to a Galaxy tool shed.' % str( tail )
             ok = False
         return ok, message
