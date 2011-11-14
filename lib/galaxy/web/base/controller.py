@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import config, tools, web, util
 from galaxy.util.hash_util import *
+from galaxy.util.json import json_fix
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *

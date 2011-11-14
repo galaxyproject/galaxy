@@ -164,9 +164,14 @@ class ToolParameter( object ):
     @classmethod
     def build( cls, tool, param ):
         """Factory method to create parameter of correct type"""
+        param_name = param.get( "name" )
+        if not param_name:
+            raise ValueError( "Tool parameters require a 'name'" )
         param_type = param.get("type")
-        if not param_type or param_type not in parameter_types:
-            raise ValueError( "Unknown tool parameter type '%s'" % param_type )
+        if not param_type:
+            raise ValueError( "Tool parameter '%s' requires a 'type'" % ( param_name ) )
+        elif param_type not in parameter_types:
+            raise ValueError( "Tool parameter '%s' uses an unknown type '%s'" % ( param_name, param_type ) )
         else:
             return parameter_types[param_type]( tool, param )
         

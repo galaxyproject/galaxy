@@ -73,7 +73,16 @@
                 </div>
                 <div style="clear: both"></div>
             </div>
-        
+            <div class="form-row">
+                <label>Url:</label>
+                <div class="form-row-input">
+                    <input name="url" type="textfield" value="${url}" size="40"/>
+                </div>
+                <div class="toolParamHelp" style="clear: both;">
+                     Enter a URL to upload your files via http.
+                </div>
+                <div style="clear: both"></div>
+            </div>
             <div class="form-row">
                 <%
                     if uncompress_file:

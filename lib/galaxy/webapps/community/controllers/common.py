@@ -124,34 +124,6 @@ def get_latest_repository_metadata( trans, id ):
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
                            .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
                            .first()
-def generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict ):
-    """
-    Update the received metadata_dict with changes that have been applied
-    to the received exported_workflow_dict.  Store everything in the database.
-    """
-    if 'workflows' in metadata_dict:
-        metadata_dict[ 'workflows' ].append( exported_workflow_dict )
-    else:
-        metadata_dict[ 'workflows' ] = [ exported_workflow_dict ]
-    return metadata_dict
-def new_workflow_metadata_required( trans, id, metadata_dict ):
-    """
-    Currently everything about an exported workflow except the name is hard-coded, so there's
-    no real way to differentiate versions of exported workflows.  If this changes at some future
-    time, this method should be enhanced accordingly.
-    """
-    if 'workflows' in metadata_dict:
-        repository_metadata = get_latest_repository_metadata( trans, id )
-        if repository_metadata:
-            if repository_metadata.metadata:
-                # The repository has metadata, so update the workflows value - no new record is needed.
-                return False
-        else:
-            # There is no saved repository metadata, so we need to create a new repository_metadata table record.
-            return True
-    # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
-    # record is not needed.
-    return False
 def generate_clone_url( trans, repository_id ):
     repository = get_repository( trans, repository_id )
     protocol, base = trans.request.base.split( '://' )
@@ -313,6 +285,62 @@ def new_tool_metadata_required( trans, id, metadata_dict ):
     # The received metadata_dict includes no metadata for tools, so a new repository_metadata table
     # record is not needed.
     return False
+def generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict ):
+    """
+    Update the received metadata_dict with changes that have been applied
+    to the received exported_workflow_dict.  Store everything in the database.
+    """
+    if 'workflows' in metadata_dict:
+        metadata_dict[ 'workflows' ].append( exported_workflow_dict )
+    else:
+        metadata_dict[ 'workflows' ] = [ exported_workflow_dict ]
+    return metadata_dict
+def new_workflow_metadata_required( trans, id, metadata_dict ):
+    """
+    Currently everything about an exported workflow except the name is hard-coded, so there's
+    no real way to differentiate versions of exported workflows.  If this changes at some future
+    time, this method should be enhanced accordingly.
+    """
+    if 'workflows' in metadata_dict:
+        repository_metadata = get_latest_repository_metadata( trans, id )
+        if repository_metadata:
+            if repository_metadata.metadata:
+                # The repository has metadata, so update the workflows value - no new record is needed.
+                return False
+        else:
+            # There is no saved repository metadata, so we need to create a new repository_metadata table record.
+            return True
+    # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
+    # record is not needed.
+    return False
+def generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config, metadata_dict ):
+    """
+    Update the received metadata_dict with changes that have been applied
+    to the received datatypes_config.
+    """
+    # Parse datatypes_config.
+    tree = ElementTree.parse( datatypes_config )
+    root = tree.getroot()
+    ElementInclude.include( root )
+    repository_datatype_code_files = []
+    datatype_files = root.find( 'datatype_files' )
+    if datatype_files:
+        for elem in datatype_files.findall( 'datatype_file' ):
+            name = elem.get( 'name', None )
+            repository_datatype_code_files.append( name )
+        metadata_dict[ 'datatype_files' ] = repository_datatype_code_files
+    datatypes = []
+    registration = root.find( 'registration' )
+    if registration:
+        for elem in registration.findall( 'datatype' ):
+            extension = elem.get( 'extension', None ) 
+            dtype = elem.get( 'type', None )
+            mimetype = elem.get( 'mimetype', None )
+            datatypes.append( dict( extension=extension,
+                                    dtype=dtype,
+                                    mimetype=mimetype ) )
+        metadata_dict[ 'datatypes' ] = datatypes
+    return metadata_dict
 def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     """Set repository metadata"""
     message = ''
@@ -322,28 +350,34 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     repo = hg.repository( get_configured_ui(), repo_dir )
     invalid_files = []
     sample_files = []
+    datatypes_config = None
     ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
     if ctx is not None:
         metadata_dict = {}
         if changeset_revision == repository.tip:
-            # Find all special .sample files first.
+            # Find datatypes_conf.xml if it exists.
+            for root, dirs, files in os.walk( repo_dir ):
+                if root.find( '.hg' ) < 0:
+                    for name in files:
+                        if name == 'datatypes_conf.xml':
+                            datatypes_config = os.path.abspath( os.path.join( root, name ) )
+                            break
+            if datatypes_config:
+                metadata_dict = generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config, metadata_dict )
+            # Find all special .sample files.
             for root, dirs, files in os.walk( repo_dir ):
                 if root.find( '.hg' ) < 0:
                     for name in files:
                         if name.endswith( '.sample' ):
                             sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
+            # Find all tool configs and exported workflows.
             for root, dirs, files in os.walk( repo_dir ):
                 if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
                     if '.hg' in dirs:
-                        # Don't visit .hg directories - should be impossible since we don't
-                        # allow uploaded archives that contain .hg dirs, but just in case...
                         dirs.remove( '.hg' )
-                    if 'hgrc' in files:
-                         # Don't include hgrc files in commit.
-                        files.remove( 'hgrc' )
                     for name in files:
                         # Find all tool configs.
-                        if name.endswith( '.xml' ):
+                        if name != 'datatypes_conf.xml' and name.endswith( '.xml' ):
                             try:
                                 full_path = os.path.abspath( os.path.join( root, name ) )
                                 tool = load_tool( trans, full_path )
@@ -373,11 +407,13 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
             # Find all special .sample files first.
             for filename in ctx:
                 if filename.endswith( '.sample' ):
-                    sample_files.append( os.path.abspath( os.path.join( root, filename ) ) )
+                    sample_files.append( os.path.abspath( filename ) )
             # Get all tool config file names from the hgweb url, something like:
             # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
             for filename in ctx:
-                # Find all tool configs - should not have to update metadata for workflows for now.
+                # Find all tool configs - we do not have to update metadata for workflows or datatypes in anything
+                # but repository tips (handled above) since at the time this code was written, no workflows or
+                # dataytpes_conf.xml files exist in tool shed repositories, so they can only be added in future tips.
                 if filename.endswith( '.xml' ):
                     fctx = ctx[ filename ]
                     # Write the contents of the old tool config to a temporary file.
@@ -532,25 +568,41 @@ def update_for_browsing( trans, repository, current_working_dir, commit_message=
     # The following will delete the disk copy of only the files in the repository.
     #os.system( 'hg update -r null > /dev/null 2>&1' )
     repo.ui.pushbuffer()
-    commands.status( repo.ui, repo, all=True )
-    status_and_file_names = repo.ui.popbuffer().strip().split( "\n" )
-    # status_and_file_names looks something like:
-    # ['? README', '? tmap_tool/tmap-0.0.9.tar.gz', '? dna_filtering.py', 'C filtering.py', 'C filtering.xml']
-    # The codes used to show the status of files are:
-    # M = modified
-    # A = added
-    # R = removed
-    # C = clean
-    # ! = deleted, but still tracked
-    # ? = not tracked
-    # I = ignored
     files_to_remove_from_disk = []
     files_to_commit = []
-    for status_and_file_name in status_and_file_names:
-        if status_and_file_name.startswith( '?' ) or status_and_file_name.startswith( 'I' ):
-            files_to_remove_from_disk.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
-        elif status_and_file_name.startswith( 'M' ) or status_and_file_name.startswith( 'A' ) or status_and_file_name.startswith( 'R' ):
-            files_to_commit.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
+    commands.status( repo.ui, repo, all=True )
+    status_and_file_names = repo.ui.popbuffer().strip().split( "\n" )
+    if status_and_file_names and status_and_file_names[ 0 ] not in [ '' ]:
+        # status_and_file_names looks something like:
+        # ['? README', '? tmap_tool/tmap-0.0.9.tar.gz', '? dna_filtering.py', 'C filtering.py', 'C filtering.xml']
+        # The codes used to show the status of files are:
+        # M = modified
+        # A = added
+        # R = removed
+        # C = clean
+        # ! = deleted, but still tracked
+        # ? = not tracked
+        # I = ignored
+        for status_and_file_name in status_and_file_names:
+            if status_and_file_name.startswith( '?' ) or status_and_file_name.startswith( 'I' ):
+                files_to_remove_from_disk.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
+            elif status_and_file_name.startswith( 'M' ) or status_and_file_name.startswith( 'A' ) or status_and_file_name.startswith( 'R' ):
+                files_to_commit.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
+    # We may have files on disk in the repo directory that aren't being tracked, so they must be removed.
+    cmd = 'hg status'
+    tmp_name = tempfile.NamedTemporaryFile().name
+    tmp_stdout = open( tmp_name, 'wb' )
+    os.chdir( repo_dir )
+    proc = subprocess.Popen( args=cmd, shell=True, stdout=tmp_stdout.fileno() )
+    returncode = proc.wait()
+    os.chdir( current_working_dir )
+    tmp_stdout.close()
+    if returncode == 0:
+        for i, line in enumerate( open( tmp_name ) ):
+            if line.startswith( '?' ) or line.startswith( 'I' ):
+                files_to_remove_from_disk.append( os.path.abspath( os.path.join( repo_dir, line.split()[1] ) ) )
+            elif line.startswith( 'M' ) or line.startswith( 'A' ) or line.startswith( 'R' ):
+                files_to_commit.append( os.path.abspath( os.path.join( repo_dir, line.split()[1] ) ) )
     for full_path in files_to_remove_from_disk:
         # We'll remove all files that are not tracked or ignored.
         if os.path.isdir( full_path ):

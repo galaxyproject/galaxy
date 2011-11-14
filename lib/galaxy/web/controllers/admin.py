@@ -4,12 +4,14 @@ from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tools import ToolSection, json_fix
+from galaxy.util import inflector
 import logging
 log = logging.getLogger( __name__ )
 
 from galaxy.actions.admin import AdminActions
 from galaxy.web.params import QuotaParamParser
 from galaxy.exceptions import *
+import galaxy.datatypes.registry
 
 class UserListGrid( grids.Grid ):
     class EmailColumn( grids.TextColumn ):
@@ -871,6 +873,10 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             os.chdir( current_working_dir )
                             tmp_stderr.close()
                             if returncode == 0:
+                                # Load data types required by tools.
+                                # TODO: uncomment the following when we're ready...
+                                #self.__load_datatypes( trans, repo_files_dir )
+                                # Load tools and tool data files required by them.
                                 sample_files, repository_tools_tups = self.__get_repository_tools_and_sample_files( trans, tool_path, repo_files_dir )
                                 if repository_tools_tups:
                                     # Handle missing data table entries for tool parameters that are dynamically generated select lists.
@@ -920,8 +926,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             status = 'error'
                 if installed_repository_names:
                     installed_repository_names.sort()
-                    message += 'These %d repositories were installed and all tools were loaded into tool panel section <b>%s</b>:<br/>' % \
-                        ( len( installed_repository_names ), tool_section.name )
+                    num_repositories_installed = len( installed_repository_names )
+                    message += 'Installed %d %s and all tools were loaded into tool panel section <b>%s</b>:<br/>Installed repositories: ' % \
+                        ( num_repositories_installed, inflector.cond_plural( num_repositories_installed, 'repository' ), tool_section.name )
                     for i, repo_name in enumerate( installed_repository_names ):
                         if i == len( installed_repository_names ) -1:
                             message += '%s.<br/>' % repo_name
@@ -1171,6 +1178,45 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             error = tmp_stderr.read()
                             tmp_stderr.close()
                             log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
+    def __load_datatypes( self, trans, repo_files_dir ):
+        # Find datatypes_conf.xml if it exists.
+        datatypes_config = None
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if root.find( '.hg' ) < 0:
+                for name in files:
+                    if name == 'datatypes_conf.xml':
+                        datatypes_config = os.path.abspath( os.path.join( root, name ) )
+                        break
+        if datatypes_config:
+            # Parse datatypes_config.
+            tree = ElementTree.parse( datatypes_config )
+            root = tree.getroot()
+            ElementInclude.include( root )
+            datatype_files = root.find( 'datatype_files' )
+            for elem in datatype_files.findall( 'datatype_file' ):
+                datatype_file_name = elem.get( 'name', None )
+                if datatype_file_name:
+                    # Find the file in the installed repository.
+                    relative_path = None
+                    for root, dirs, files in os.walk( repo_files_dir ):
+                        if root.find( '.hg' ) < 0:
+                            for name in files:
+                                if name == datatype_file_name:
+                                    relative_path = os.path.join( root, name )
+                                    break
+                    relative_head, relative_tail = os.path.split( relative_path )
+                    # TODO: get the import_module by parsing the <registration><datatype> tags
+                    if datatype_file_name.find( '.' ) > 0:
+                        import_module = datatype_file_name.split( '.' )[ 0 ]
+                    else:
+                        import_module = datatype_file_name
+                    try:
+                        sys.path.insert( 0, relative_head )
+                        module = __import__( import_module )
+                        sys.path.pop( 0 )
+                    except Exception, e:
+                        log.debug( "Execption importing datatypes code file included in installed repository: %s" % str( e ) )
+                    trans.app.datatypes_registry = galaxy.datatypes.registry.Registry( trans.app.config.root, datatypes_config )
     def __get_repository_tools_and_sample_files( self, trans, tool_path, repo_files_dir ):
         # The sample_files list contains all files whose name ends in .sample
         sample_files = []

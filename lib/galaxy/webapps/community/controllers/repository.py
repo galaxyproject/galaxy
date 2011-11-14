@@ -1007,17 +1007,19 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if repository_path.startswith( './' ):
             repository_path = repository_path.replace( './', '', 1 )
         entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
+        tmp_fd, tmp_fname = tempfile.mkstemp()
         if os.path.exists( hgweb_config ):
             # Make a backup of the hgweb.config file since we're going to be changing it.
             self.__make_hgweb_config_copy( trans, hgweb_config )
-            tmp_fname = tempfile.NamedTemporaryFile()
+            new_hgweb_config = open( tmp_fname, 'wb' )
             for i, line in enumerate( open( hgweb_config ) ):
-                tmp_fname.write( line )
+                new_hgweb_config.write( line )
         else:
-            tmp_fname.write( '[paths]\n' )
-        tmp_fname.write( "%s\n" % entry )
-        tmp_fname.flush()
-        shutil.move( tmp_fname.name, os.path.abspath( hgweb_config ) )
+            new_hgweb_config = open( tmp_fname, 'wb' )
+            new_hgweb_config.write( '[paths]\n' )
+        new_hgweb_config.write( "%s\n" % entry )
+        new_hgweb_config.flush()
+        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     def __change_hgweb_config_entry( self, trans, repository, old_repository_name, new_repository_name ):
         # Change an entry in the hgweb.config file for a repository.  This only happens when
         # the owner changes the name of the repository.  An entry looks something like:
@@ -1028,14 +1030,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo_dir = repository.repo_path
         old_lhs = "repos/%s/%s" % ( repository.user.username, old_repository_name )
         new_entry = "repos/%s/%s = %s\n" % ( repository.user.username, new_repository_name, repo_dir )
-        tmp_fname = tempfile.NamedTemporaryFile()
+        tmp_fd, tmp_fname = tempfile.mkstemp()
+        new_hgweb_config = open( tmp_fname, 'wb' )
         for i, line in enumerate( open( hgweb_config ) ):
             if line.startswith( old_lhs ):
-                tmp_fname.write( new_entry )
+                new_hgweb_config.write( new_entry )
             else:
-                tmp_fname.write( line )
-        tmp_fname.flush()
-        shutil.move( tmp_fname.name, os.path.abspath( hgweb_config ) )
+                new_hgweb_config.write( line )
+        new_hgweb_config.flush()
+        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     def __create_hgrc_file( self, repository ):
         # At this point, an entry for the repository is required to be in the hgweb.config
         # file so we can call repository.repo_path.

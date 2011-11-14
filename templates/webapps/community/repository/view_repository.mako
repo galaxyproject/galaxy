@@ -186,7 +186,7 @@
         %endif
     </div>
 </div>
-${render_repository_tools_and_workflows( repository_metadata_id, metadata, webapp=webapp )}
+${render_repository_items( repository_metadata_id, metadata, webapp=webapp )}
 %if repository.categories:
     <p/>
     <div class="toolForm">

@@ -83,7 +83,7 @@
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
 
-<%def name="render_repository_tools_and_workflows( repository_metadata_id, metadata, can_set_metadata=False, webapp='community' )">
+<%def name="render_repository_items( repository_metadata_id, metadata, can_set_metadata=False, webapp='community' )">
     <% from galaxy.webapps.community.controllers.common import encode, decode %>
     %if metadata or can_set_metadata:
         <p/>
@@ -189,6 +189,45 @@
                                         </td>
                                         <td>${format_version}</td>
                                         <td>${annotation}</td>
+                                    </tr>
+                                %endfor
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                    %endif
+                    %if 'datatypes' in metadata:
+                        <div class="form-row">
+                            <table width="100%">
+                                <tr bgcolor="#D8D8D8" width="100%">
+                                    <td><b>Data types</b></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <% datatypes_dicts = metadata[ 'datatypes' ] %>
+                            <table class="grid">
+                                <tr>
+                                    <td><b>extension</b></td>
+                                    <td><b>dtype</b></td>
+                                    <td><b>mimetype</b></td>
+                                </tr>
+                                %for datatypes_dict in datatypes_dicts:
+                                    <% 
+                                        extension = datatypes_dict[ 'extension' ]
+                                        dtype = datatypes_dict[ 'dtype' ]
+                                        mimetype = datatypes_dict[ 'mimetype' ]
+                                    %>
+                                    <tr>
+                                        <td>${extension}</td>
+                                        <td>${dtype}</td>
+                                        <td>
+                                            %if mimetype:
+                                                ${mimetype}
+                                            %else:
+                                                &nbsp;
+                                            %endif
+                                        </td>
                                     </tr>
                                 %endfor
                             </table>
