@@ -1,4 +1,4 @@
-import os, logging, urllib, ConfigParser, tempfile, shutil
+import os, logging, tempfile, shutil
 from time import strftime
 from datetime import date, datetime
 from galaxy import util
@@ -1001,20 +1001,23 @@ class RepositoryController( BaseUIController, ItemRatings ):
         hgweb_config_copy = '%s/hgweb.config_%s_backup' % ( trans.app.config.root, backup_date )
         shutil.copy( os.path.abspath( hgweb_config ), os.path.abspath( hgweb_config_copy ) )
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
-        # Add an entry in the hgweb.config file for a new repository.
-        # An entry looks something like:
+        # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
         # repos/test/mira_assembler = database/community_files/000/repo_123.
         hgweb_config = "%s/hgweb.config" %  trans.app.config.root
-        # Make a backup of the hgweb.config file since we're going to be changing it.
-        self.__make_hgweb_config_copy( trans, hgweb_config )
+        if repository_path.startswith( './' ):
+            repository_path = repository_path.replace( './', '', 1 )
         entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
         if os.path.exists( hgweb_config ):
-            output = open( hgweb_config, 'a' )
+            # Make a backup of the hgweb.config file since we're going to be changing it.
+            self.__make_hgweb_config_copy( trans, hgweb_config )
+            tmp_fname = tempfile.NamedTemporaryFile()
+            for i, line in enumerate( open( hgweb_config ) ):
+                tmp_fname.write( line )
         else:
-            output = open( hgweb_config, 'w' )
-            output.write( '[paths]\n' )
-        output.write( "%s\n" % entry )
-        output.close()
+            tmp_fname.write( '[paths]\n' )
+        tmp_fname.write( "%s\n" % entry )
+        tmp_fname.flush()
+        shutil.move( tmp_fname.name, os.path.abspath( hgweb_config ) )
     def __change_hgweb_config_entry( self, trans, repository, old_repository_name, new_repository_name ):
         # Change an entry in the hgweb.config file for a repository.  This only happens when
         # the owner changes the name of the repository.  An entry looks something like:
@@ -1024,16 +1027,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
         self.__make_hgweb_config_copy( trans, hgweb_config )
         repo_dir = repository.repo_path
         old_lhs = "repos/%s/%s" % ( repository.user.username, old_repository_name )
-        old_entry = "%s = %s" % ( old_lhs, repo_dir )
         new_entry = "repos/%s/%s = %s\n" % ( repository.user.username, new_repository_name, repo_dir )
-        tmp_fd, tmp_fname = tempfile.mkstemp()
-        new_hgweb_config = open( tmp_fname, 'wb' )
+        tmp_fname = tempfile.NamedTemporaryFile()
         for i, line in enumerate( open( hgweb_config ) ):
             if line.startswith( old_lhs ):
-                new_hgweb_config.write( new_entry )
+                tmp_fname.write( new_entry )
             else:
-                new_hgweb_config.write( line )
-        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
+                tmp_fname.write( line )
+        tmp_fname.flush()
+        shutil.move( tmp_fname.name, os.path.abspath( hgweb_config ) )
     def __create_hgrc_file( self, repository ):
         # At this point, an entry for the repository is required to be in the hgweb.config
         # file so we can call repository.repo_path.
@@ -1306,7 +1308,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if params.get( 'edit_repository_button', False ):
             flush_needed = False
             # TODO: add a can_manage in the security agent.
-            if user != repository.user:
+            if user != repository.user or not trans.user_is_admin():
                 message = "You are not the owner of this repository, so you cannot manage it."
                 status = error
                 return trans.response.send_redirect( web.url_for( controller='repository',
@@ -1315,6 +1317,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                   webapp='community',
                                                                   message=message,
                                                                   status=status ) )
+            if description != repository.description:
+                repository.description = description
+                flush_needed = True
+            if long_description != repository.long_description:
+                repository.long_description = long_description
+                flush_needed = True
             if repo_name != repository.name:
                 message = self.__validate_repository_name( repo_name, user )
                 if message:
@@ -1323,12 +1331,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     self.__change_hgweb_config_entry( trans, repository, repository.name, repo_name )
                     repository.name = repo_name
                     flush_needed = True
-            if description != repository.description:
-                repository.description = description
-                flush_needed = True
-            if long_description != repository.long_description:
-                repository.long_description = long_description
-                flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
