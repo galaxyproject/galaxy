@@ -589,36 +589,36 @@ def update_for_browsing( trans, repository, current_working_dir, commit_message=
             elif status_and_file_name.startswith( 'M' ) or status_and_file_name.startswith( 'A' ) or status_and_file_name.startswith( 'R' ):
                 files_to_commit.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
     # We may have files on disk in the repo directory that aren't being tracked, so they must be removed.
-    cmd = 'hg status'
-    tmp_name = tempfile.NamedTemporaryFile().name
-    tmp_stdout = open( tmp_name, 'wb' )
+    # We'll use mercurial's purge extension to do this.  Using this extension requires the following entry 
+    # in the repository's hgrc file which was not required for some time, so we'll add it if it's missing.
+    # [extensions]
+    # hgext.purge=
+    lines = repo.opener( 'hgrc', 'rb' ).readlines()
+    if not '[extensions]\n' in lines:
+        # No extensions have been added at all, so just append to the file.
+        fp = repo.opener( 'hgrc', 'a' )
+        fp.write( '[extensions]\n' )
+        fp.write( 'hgext.purge=\n' )
+        fp.close()
+    elif not 'hgext.purge=\n' in lines:
+        # The file includes and [extensions] section, but we need to add the
+        # purge extension.
+        fp = repo.opener( 'hgrc', 'wb' )
+        for line in lines:
+            if line.startswith( '[extensions]' ):
+                fp.write( line )
+                fp.write( 'hgext.purge=\n' )
+            else:
+                fp.write( line )
+        fp.close()
+    cmd = 'hg purge'
     os.chdir( repo_dir )
-    proc = subprocess.Popen( args=cmd, shell=True, stdout=tmp_stdout.fileno() )
-    returncode = proc.wait()
+    proc = subprocess.Popen( args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
+    return_code = proc.wait()
     os.chdir( current_working_dir )
-    tmp_stdout.close()
-    if returncode == 0:
-        for i, line in enumerate( open( tmp_name ) ):
-            if line.startswith( '?' ) or line.startswith( 'I' ):
-                files_to_remove_from_disk.append( os.path.abspath( os.path.join( repo_dir, line.split()[1] ) ) )
-            elif line.startswith( 'M' ) or line.startswith( 'A' ) or line.startswith( 'R' ):
-                files_to_commit.append( os.path.abspath( os.path.join( repo_dir, line.split()[1] ) ) )
-    for full_path in files_to_remove_from_disk:
-        # We'll remove all files that are not tracked or ignored.
-        if os.path.isdir( full_path ):
-            try:
-                os.rmdir( full_path )
-            except OSError, e:
-                # The directory is not empty
-                pass
-        elif os.path.isfile( full_path ):
-            os.remove( full_path )
-            dir = os.path.split( full_path )[0]
-            try:
-                os.rmdir( dir )
-            except OSError, e:
-                # The directory is not empty
-                pass
+    if return_code != 0:
+        output = proc.stdout.read( 32768 )
+        log.debug( 'hg purge failed in repository directory %s, reason: %s' % ( repo_dir, output ) )
     if files_to_commit:
         if not commit_message:
             commit_message = 'Committed changes to: %s' % ', '.join( files_to_commit )

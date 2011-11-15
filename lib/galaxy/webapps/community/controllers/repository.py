@@ -1042,13 +1042,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
     def __create_hgrc_file( self, repository ):
         # At this point, an entry for the repository is required to be in the hgweb.config
         # file so we can call repository.repo_path.
-        # Create a .hg/hgrc file that looks something like this:
-        # [web]
-        # allow_push = test
-        # name = convert_characters1
-        # push_ssl = False
         # Since we support both http and https, we set push_ssl to False to override
         # the default (which is True) in the mercurial api.
+        # The hg purge extension purges all files and directories not being tracked by
+        # mercurial in the current repository.  It'll remove unknown files and empty
+        # directories.  This is used in the update_for_browsing() method.
         repo = hg.repository( get_configured_ui(), path=repository.repo_path )
         fp = repo.opener( 'hgrc', 'wb' )
         fp.write( '[paths]\n' )
@@ -1058,6 +1056,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         fp.write( 'allow_push = %s\n' % repository.user.username )
         fp.write( 'name = %s\n' % repository.name )
         fp.write( 'push_ssl = false\n' )
+        fp.write( '[extensions]\n' )
+        fp.write( 'hgext.purge=' )
         fp.close()
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
@@ -1150,7 +1150,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 tip = repository.tip
                 for selected_file in selected_files_to_delete:
                     try:
-                        commands.remove( repo.ui, repo, repo_file, force=True )
+                        commands.remove( repo.ui, repo, selected_file, force=True )
                     except Exception, e:
                         # I never have a problem with commands.remove on a Mac, but in the test/production
                         # tool shed environment, it throws an exception whenever I delete all files from a
