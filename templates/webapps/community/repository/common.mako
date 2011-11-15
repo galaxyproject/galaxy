@@ -83,7 +83,8 @@
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
 
-<%def name="render_repository_tools_and_workflows( metadata, can_set_metadata=False, display_for_install=False )">
+<%def name="render_repository_items( repository_metadata_id, metadata, can_set_metadata=False, webapp='community' )">
+    <% from galaxy.webapps.community.controllers.common import encode, decode %>
     %if metadata or can_set_metadata:
         <p/>
         <div class="toolForm">
@@ -111,12 +112,12 @@
                                     <tr>
                                         <td>
                                             <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, display_for_install=display_for_install )}">
+                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, webapp=webapp )}">
                                                     ${tool_dict[ 'name' ]}
                                                 </a>
                                             </div>
                                             <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                                <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ], display_for_install=display_for_install )}">View tool metadata</a>
+                                                <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ], webapp=webapp )}">View tool metadata</a>
                                             </div>
                                         </td>
                                         <td>${tool_dict[ 'description' ]}</td>
@@ -160,14 +161,73 @@
                             <table class="grid">
                                 <tr>
                                     <td><b>name</b></td>
+                                    <td><b>steps</b></td>
                                     <td><b>format-version</b></td>
                                     <td><b>annotation</b></td>
                                 </tr>
                                 %for workflow_dict in workflow_dicts:
+                                    <% 
+                                        workflow_name = workflow_dict[ 'name' ]
+                                        if 'steps' in workflow_dict:
+                                            ## Initially steps were not stored in the metadata record.
+                                            steps = workflow_dict[ 'steps' ]
+                                        else:
+                                            steps = []
+                                        format_version = workflow_dict[ 'format-version' ]
+                                        annotation = workflow_dict[ 'annotation' ]
+                                    %>
                                     <tr>
-                                        <td>${workflow_dict[ 'name' ]}</td>
-                                        <td>${workflow_dict[ 'format-version' ]}</td>
-                                        <td>${workflow_dict[ 'annotation' ]}</td>
+                                        <td>
+                                            <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=encode( workflow_name ), webapp=webapp )}">${workflow_name}</a>
+                                        </td>
+                                        <td>
+                                            %if 'steps' in workflow_dict:
+                                                ${len( steps )}
+                                            %else:
+                                                unknown
+                                            %endif
+                                        </td>
+                                        <td>${format_version}</td>
+                                        <td>${annotation}</td>
+                                    </tr>
+                                %endfor
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                    %endif
+                    %if 'datatypes' in metadata:
+                        <div class="form-row">
+                            <table width="100%">
+                                <tr bgcolor="#D8D8D8" width="100%">
+                                    <td><b>Data types</b></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <% datatypes_dicts = metadata[ 'datatypes' ] %>
+                            <table class="grid">
+                                <tr>
+                                    <td><b>extension</b></td>
+                                    <td><b>dtype</b></td>
+                                    <td><b>mimetype</b></td>
+                                </tr>
+                                %for datatypes_dict in datatypes_dicts:
+                                    <% 
+                                        extension = datatypes_dict[ 'extension' ]
+                                        dtype = datatypes_dict[ 'dtype' ]
+                                        mimetype = datatypes_dict[ 'mimetype' ]
+                                    %>
+                                    <tr>
+                                        <td>${extension}</td>
+                                        <td>${dtype}</td>
+                                        <td>
+                                            %if mimetype:
+                                                ${mimetype}
+                                            %else:
+                                                &nbsp;
+                                            %endif
+                                        </td>
                                     </tr>
                                 %endfor
                             </table>

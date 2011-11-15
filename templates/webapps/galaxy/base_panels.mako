@@ -114,7 +114,7 @@
                             ['Support', app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
                             ['Galaxy Wiki', app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
                             ['Video tutorials (screencasts)', app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
-                            ['How to Cite Galaxy', app.config.get( "screencasts_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
+                            ['How to Cite Galaxy', app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
                         ]
         tab( "help", "Help", None, menu_options=menu_options)
     %>

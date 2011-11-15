@@ -1,6 +1,12 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
+
 
 <%def name="title()">Galaxy Administration</%def>
+
+%if message:
+    ${render_msg( message, status )}
+%endif
 
 <h2>Administration</h2>
 

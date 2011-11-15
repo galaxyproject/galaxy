@@ -59,7 +59,7 @@ class ToolTestCase( TwillTestCase ):
         # See if we have a grouping.Repeat element
         repeat_name = None
         for input_name, input_value in testdef.tool.inputs_by_page[0].items():
-            if isinstance( input_value, grouping.Repeat ):
+            if isinstance( input_value, grouping.Repeat ) and all_inputs.get( input_name, 1 ) not in [ 0, "0" ]: #default behavior is to test 1 repeat, for backwards compatibility
                 repeat_name = input_name
                 break
         #check if we need to verify number of outputs created dynamically by tool

@@ -6,8 +6,12 @@
     <script type="text/javascript">
         $( function() {
             function show_tool_body(title){
-                title.parent().css('border-bottom-width', '1px');
+                title.parent().show().css('border-bottom-width', '1px');
                 title.next().show('fast');
+                if ('${hide_fixed_params}'.toLowerCase() == 'true') {
+                    // show previously hidden parameters
+                    title.next().children(".form-row").show();
+                }
             }
             function hide_tool_body(title){
                 title.parent().css('border-bottom-width', '0px');
@@ -46,8 +50,15 @@
             $("div.toolFormTitle").click(function(){
                 toggle_tool_body($(this));
             });
-            // Collapse non-interactive run-workflow panels by default.
-            $("div.toolFormBody:not(:has(select, textarea, input[type!=hidden], .wfpspan))").hide().parent().css('border-bottom-width', '0px');
+            if ('${hide_fixed_params}'.toLowerCase() == 'true') {
+                // hide parameters that are not runtime inputs
+                $("div.form-row:not(:has(select, textarea, input[type!=hidden], .wfpspan))").hide();
+                $("div.toolForm:not(:has(select, textarea, input[type!=hidden], .wfpspan))").hide();
+            }
+            else {
+                // Collapse non-interactive run-workflow panels by default.
+                $("div.toolFormBody:not(:has(select, textarea, input[type!=hidden], .wfpspan))").hide().parent().css('border-bottom-width', '0px');
+            }
             $("#show_all_tool_body").click(function(){
                 $("div.toolFormTitle").each(function(){
                     show_tool_body($(this));
@@ -163,6 +174,8 @@ import re
 import colorsys
 import random
 
+used_accumulator = []
+
 wf_parms = {}
 for step in steps:
     for v in [ActionBox.get_short_str(pja) for pja in step.post_job_actions] + step.state.inputs.values():
@@ -178,7 +191,7 @@ if wf_parms:
         hue += hue_offset
 %>
 
-<%def name="do_inputs( inputs, values, errors, prefix, step, other_values = None )">
+<%def name="do_inputs( inputs, values, errors, prefix, step, other_values = None, already_used = None )">
   %if other_values is None:
       <% other_values = values %>
   %endif
@@ -196,7 +209,7 @@ if wf_parms:
             <div class="repeat-group-item">
             <% index = repeat_values[i]['__index__'] %>
             <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
-            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(index) + "|", step, other_values )}
+            ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(index) + "|", step, other_values, already_used )}
             ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}" /></div>
             </div>
           %endfor
@@ -207,15 +220,15 @@ if wf_parms:
       <% current_case = group_values['__current_case__'] %>
       <% new_prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
-      ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step )}
-      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values )}
+      ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step, already_used )}
+      ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values, already_used )}
     %else:
-      ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step )}
+      ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step, already_used )}
     %endif
   %endfor
 </%def>
 
-<%def name="row_for_param( param, value, other_values, error_dict, prefix, step )">
+<%def name="row_for_param( param, value, other_values, error_dict, prefix, step, already_used )">
     ## -- ${param.name} -- ${step.state.inputs} --
     %if error_dict.has_key( param.name ):
         <% cls = "form-row form-row-error" %>
@@ -235,7 +248,9 @@ if wf_parms:
                     ## FIXME: Initialize in the controller
                     <%
                     if value is None:
-                        value = other_values[ param.name ] = param.get_initial_value( t, other_values )
+                        value = other_values[ param.name ] = param.get_initial_value_from_history_prevent_repeats( t, other_values, already_used )
+                        if not enable_unique_defaults:
+                            del already_used[:]
                     %>
                     ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                     <input type="hidden" name="${step.id}|__force_update__${prefix}${param.name}" value="true" />
@@ -250,7 +265,11 @@ if wf_parms:
                 ## controller should go through the inputs on the first
                 ## load, fill in initial values where needed, and mark
                 ## all that are runtime modifiable in some way.
-                <% value = other_values[ param.name ] = param.get_initial_value( t, other_values ) %>
+                <%
+                    value = other_values[ param.name ] = param.get_initial_value_from_history_prevent_repeats( t, other_values, already_used )
+                    if not enable_unique_defaults:
+                        del already_used[:]
+                %>
                 ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                 <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
             %else:
@@ -342,10 +361,19 @@ if wf_parms:
     });
     </script>
 %endif
-
 %for i, step in enumerate( steps ):
     %if step.type == 'tool' or step.type is None:
-      <% tool = app.toolbox.tools_by_id[step.tool_id] %>
+      <%
+        try:
+            tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
+        except KeyError, e:
+            # The id value of tools installed from a Galaxy tool shed is a guid, but
+            # these tool's old_id attribute should contain what we're looking for.
+            for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
+                if step.tool_id == available_tool.old_id:
+                    tool = available_tool
+                    break
+      %>
       <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
       <div class="toolForm">
           <div class="toolFormTitle">
@@ -355,36 +383,36 @@ if wf_parms:
               % endif
           </div>
           <div class="toolFormBody">
-            ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
-            % if step.post_job_actions:
-                <hr/>
-                <div class='form-row'>
-                % if len(step.post_job_actions) > 1:
-                    <label>Actions:</label>
-                % else:
-                    <label>Action:</label>
+                ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step, None, used_accumulator )}
+                % if step.post_job_actions:
+                    <hr/>
+                    <div class='form-row'>
+                    % if len(step.post_job_actions) > 1:
+                        <label>Actions:</label>
+                    % else:
+                        <label>Action:</label>
+                    % endif
+                    <%
+                    pja_ss_all = []
+                    for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
+                        for rematch in re.findall('\$\{.+?\}', pja_ss):
+                            pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
+                        pja_ss_all.append(pja_ss)
+                    %>
+                    ${'<br/>'.join(pja_ss_all)}
+                    </div>
                 % endif
-                <%
-                pja_ss_all = []
-                for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
-                    for rematch in re.findall('\$\{.+?\}', pja_ss):
-                        pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
-                    pja_ss_all.append(pja_ss)
-                %>
-                ${'<br/>'.join(pja_ss_all)}
-                </div>
-            % endif
+              </div>
           </div>
-      </div>
-    %else:
-    <% module = step.module %>
-      <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
-      <div class="toolForm">
-          <div class="toolFormTitle">
-              <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name}</span>
-              % if step.annotations:
-                <div class="step-annotation">${step.annotations[0].annotation}</div>
-              % endif
+        %else:
+        <% module = step.module %>
+          <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
+          <div class="toolForm">
+              <div class="toolFormTitle">
+                  <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name}</span>
+                  % if step.annotations:
+                    <div class="step-annotation">${step.annotations[0].annotation}</div>
+                  % endif
           </div>
           <div class="toolFormBody">
               <%
@@ -397,7 +425,7 @@ if wf_parms:
               if not type_filter:
                   type_filter = ['data']
               %>
-              ${do_inputs( module.get_runtime_inputs(type_filter), step.state.inputs, errors.get( step.id, dict() ), "", step )}
+              ${do_inputs( module.get_runtime_inputs(type_filter), step.state.inputs, errors.get( step.id, dict() ), "", step, None, used_accumulator )}
           </div>
       </div>
     %endif
@@ -411,10 +439,12 @@ if wf_parms:
     %endfor
     </ul>
 %else:
+    %if history_id is None:
 <p id='new_history_p'>
     <input type="checkbox" name='new_history' value="true" id='new_history_cbx'/><label for='new_history_cbx'>Send results to a new history </label>
     <span id="new_history_input">named: <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/></span>
 </p>
+    %endif
 <input type="submit" name="run_workflow" value="Run workflow" />
 </form>
 %endif

@@ -189,7 +189,7 @@ class MetadataValidator( Validator ):
 
 class UnspecifiedBuildValidator( Validator ):
     """
-    Validator that checks for missing metadata
+    Validator that checks for dbkey not equal to '?'
     """
     def __init__( self, message=None ):
         if message is None:
@@ -268,6 +268,45 @@ class MetadataInFileColumnValidator( Validator ):
                 return
         raise ValueError( self.message )
 
+class MetadataInDataTableColumnValidator( Validator ):
+    """
+    Validator that checks if the value for a dataset's metadata item exists in a file.
+    """
+    @classmethod
+    def from_element( cls, param, elem ):
+        table_name = elem.get( "table_name", None )
+        assert table_name, 'You must specify a table_name.'
+        tool_data_table = param.tool.app.tool_data_tables[ table_name ]
+        metadata_name = elem.get( "metadata_name", None )
+        if metadata_name:
+            metadata_name = metadata_name.strip()
+        metadata_column = elem.get( "metadata_column", 0 )
+        try:
+            metadata_column = int( metadata_column )
+        except:
+            pass
+        message = elem.get( "message", "Value for metadata %s was not found in %s." % ( metadata_name, table_name ) )
+        line_startswith = elem.get( "line_startswith", None  )
+        if line_startswith:
+            line_startswith = line_startswith.strip()
+        return cls( tool_data_table, metadata_name, metadata_column, message, line_startswith )
+    def __init__( self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None ):
+        self.metadata_name = metadata_name
+        self.message = message
+        self.valid_values = []
+        if isinstance( metadata_column, basestring ):
+            metadata_column = tool_data_table.columns[ metadata_column ]
+        for fields in tool_data_table.get_fields():
+            if metadata_column < len( fields ):
+                self.valid_values.append( fields[ metadata_column ] )
+    def validate( self, value, history = None ):
+        if not value: return
+        if hasattr( value, "metadata" ):
+            if value.metadata.spec[self.metadata_name].param.to_string( value.metadata.get( self.metadata_name ) ) in self.valid_values:
+                return
+        raise ValueError( self.message )
+
+
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,
                         in_range=InRangeValidator,
@@ -277,6 +316,7 @@ validator_types = dict( expression=ExpressionValidator,
                         no_options=NoOptionsValidator,
                         empty_field=EmptyTextfieldValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator,
+                        dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
                         dataset_ok_validator=DatasetOkValidator )
                         
 def get_suite():

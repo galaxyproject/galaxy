@@ -1,4 +1,4 @@
-import sys, os, shutil, logging, tarfile, tempfile
+import sys, os, shutil, logging, tarfile, tempfile, urllib
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
@@ -10,9 +10,6 @@ log = logging.getLogger( __name__ )
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 CHUNK_SIZE = 2**20 # 1Mb
-
-class UploadError( Exception ):
-    pass
 
 class UploadController( BaseUIController ):
     @web.expose
@@ -32,20 +29,40 @@ class UploadController( BaseUIController ):
         remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
         upload_point = self.__get_upload_point( repository, **kwd )
-        # Get the current repository tip.
         tip = repository.tip
+        file_data = params.get( 'file_data', '' )
+        url = params.get( 'url', '' )
         if params.get( 'upload_button', False ):
             current_working_dir = os.getcwd()
-            file_data = params.get( 'file_data', '' )
-            if file_data == '':
+            if file_data == '' and url == '':
                 message = 'No files were entered on the upload form.'
                 status = 'error'
                 uploaded_file = None
+            elif url:
+                valid_url = True
+                try:
+                    stream = urllib.urlopen( url )
+                except Exception, e:
+                    valid_url = False
+                    message = 'Error uploading file via http: %s' % str( e )
+                    status = 'error'
+                    uploaded_file = None
+                if valid_url:
+                    fd, uploaded_file_name = tempfile.mkstemp()
+                    uploaded_file = open( uploaded_file_name, 'wb' )
+                    while 1:
+                        chunk = stream.read( CHUNK_SIZE )
+                        if not chunk:
+                            break
+                        uploaded_file.write( chunk )
+                    uploaded_file.flush()
+                    uploaded_file_filename = url.split( '/' )[ -1 ]
+                    isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             elif file_data not in ( '', None ):
                 uploaded_file = file_data.file
                 uploaded_file_name = uploaded_file.name
                 uploaded_file_filename = file_data.filename
-            isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
+                isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             if uploaded_file:
                 isgzip = False
                 isbz2 = False
@@ -84,6 +101,10 @@ class UploadController( BaseUIController ):
                         full_path = os.path.abspath( os.path.join( repo_dir, upload_point, uploaded_file_filename ) )
                     else:
                         full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
+                    # TODO: enhance this method to set a flag and alert an admin to review content since
+                    # the hard checks are too restrictive.
+                    #ok, message = self.__check_file_content( uploaded_file_name )
+                    #if ok:
                     # Move the uploaded file to the load_point within the repository hierarchy.
                     shutil.move( uploaded_file_name, full_path )
                     commands.add( repo.ui, repo, full_path )
@@ -138,6 +159,7 @@ class UploadController( BaseUIController ):
                                                                action='browse_repository',
                                                                id=repository_id,
                                                                commit_message='Deleted selected files',
+                                                               webapp='community',
                                                                message=message,
                                                                status=status ) )
                 else:
@@ -145,6 +167,7 @@ class UploadController( BaseUIController ):
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/community/repository/upload.mako',
                                     repository=repository,
+                                    url=url,
                                     commit_message=commit_message,
                                     uncompress_file=uncompress_file,
                                     remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
@@ -171,6 +194,18 @@ class UploadController( BaseUIController ):
             tar.extractall( path=full_path )
             tar.close()
             uploaded_file.close()
+            """
+            # TODO: enhance this method to set a flag and alert an admin to review content since
+            # the hard checks are too restrictive.
+            for filename_in_archive in filenames_in_archive:
+                if os.path.isfile( filename_in_archive ):
+                    ok, message = self.__check_file_content( filename_in_archive )
+                    if not ok:
+                        # Refresh the repository files for browsing.
+                        current_working_dir = os.getcwd()
+                        update_for_browsing( trans, repository, current_working_dir )
+                        return False, message, []
+            """
             if remove_repo_files_not_in_tar and not repository.is_new:
                 # We have a repository that is not new (it contains files), so discover
                 # those files that are in the repository, but not in the uploaded archive.
@@ -313,4 +348,16 @@ class UploadController( BaseUIController ):
                 message = "Uploaded archives cannot contain hgrc files."
                 return False, message
         return True, ''
-                            
+    def __check_file_content( self, file_path ):
+        return True, ''
+        message = ''
+        ok = True
+        head, tail = os.path.split( file_path )
+        if check_html( file_path ):
+            message = 'The file <b>%s</b> contains HTML content which cannot be uploaded to a Galaxy tool shed.' % str( tail )
+            ok = False
+        elif check_image( file_path ):
+            # For now we won't allow images to be uploaded.
+            message = 'The file <b>%s</b> contains image content that cannot be uploaded to a Galaxy tool shed.' % str( tail )
+            ok = False
+        return ok, message

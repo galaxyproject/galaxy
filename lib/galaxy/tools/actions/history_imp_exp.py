@@ -28,7 +28,10 @@ class ImportHistoryToolAction( ToolAction ):
         #
         
         # Add association for keeping track of job, history relationship.
-        archive_dir = tempfile.mkdtemp()
+        
+        # Use abspath because mkdtemp() does not, contrary to the documentation, 
+        # always return an absolute path.
+        archive_dir = os.path.abspath( tempfile.mkdtemp() )
         jiha = trans.app.model.JobImportHistoryArchive( job=job, archive_dir=archive_dir )
         trans.sa_session.add( jiha )
         job_wrapper = JobImportHistoryArchiveWrapper( job )

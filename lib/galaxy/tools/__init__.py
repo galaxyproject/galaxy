@@ -104,6 +104,14 @@ class ToolBox( object ):
         try:
             path = elem.get( "file" )
             tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+            if guid is not None:
+                # Tool was installed from a Galaxy tool shed.
+                tool.tool_shed = elem.find( "tool_shed" ).text
+                tool.repository_name = elem.find( "repository_name" ).text
+                tool.repository_owner = elem.find( "repository_owner" ).text
+                tool.changeset_revision = elem.find( "changeset_revision" ).text
+                tool.old_id = elem.find( "id" ).text
+                tool.version = elem.find( "version" ).text
             if self.app.config.get_bool( 'enable_tool_tags', False ):
                 tag_names = elem.get( "tags", "" ).split( "," )
                 for tag_name in tag_names:
@@ -352,6 +360,19 @@ class ToolRequirement( object ):
         self.fabfile = fabfile
         self.method = method
 
+class ToolParallelismInfo(object):
+    """
+    Stores the information (if any) for running multiple instances of the tool in parallel
+    on the same set of inputs.
+    """
+    def __init__(self, tag):
+        self.method = tag.get('method')
+        self.attributes = dict([item for item in tag.attrib.items() if item[0] != 'method' ])
+        if len(self.attributes) == 0:
+            # legacy basic mode - provide compatible defaults
+            self.attributes['split_size'] = 20
+            self.attributes['split_mode'] = 'number_of_parts'
+
 class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
@@ -372,6 +393,13 @@ class Tool:
         # easily ensure that parameter dependencies like index files or
         # tool_data_table_conf.xml entries exist.
         self.input_params = []
+        # Attributes of tools installed from Galaxy tool sheds.
+        self.tool_shed = None
+        self.repository_name = None
+        self.repository_owner = None
+        self.changeset_revision = None
+        self.old_id = None
+        self.version = None
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
     
@@ -392,14 +420,14 @@ class Tool:
             raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
         # TODO: can this be generated automatically?
-        if guid is not None:
-            self.id = guid
-        else:
+        if guid is None:
             self.id = root.get( "id" )
+            self.version = root.get( "version" )
+        else:
+            self.id = guid
         if not self.id: 
-            raise Exception, "Missing tool 'id'" 
-        self.version = root.get( "version" )
-        if not self.version: 
+            raise Exception, "Missing tool 'id'"
+        if not self.version:
             # For backward compatibility, some tools may not have versions yet.
             self.version = "1.0.0"
         # Support multi-byte tools
@@ -442,7 +470,7 @@ class Tool:
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
-            self.parallelism = parallelism.get("method")
+            self.parallelism = ToolParallelismInfo(parallelism)
         else:
             self.parallelism = None
         if self.app.config.start_job_runners is None:
@@ -786,7 +814,8 @@ class Tool:
             if elem.tag == "repeat":
                 group = Repeat()
                 group.name = elem.get( "name" )
-                group.title = elem.get( "title" ) 
+                group.title = elem.get( "title" )
+                group.help = elem.get( "help", None )
                 group.inputs = self.parse_input_elem( elem, enctypes, context )
                 group.default = int( elem.get( "default", 0 ) )
                 group.min = int( elem.get( "min", 0 ) )
@@ -2043,6 +2072,7 @@ class DataSourceTool( Tool ):
             data_dict = dict( out_data_name = out_name,
                               ext = data.ext,
                               dataset_id = data.dataset.id,
+                              hda_id = data.id,
                               file_name = file_name,
                               extra_files_path = extra_files_path )
             

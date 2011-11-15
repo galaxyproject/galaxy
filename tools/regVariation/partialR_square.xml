@@ -1,0 +1,68 @@
+<tool id="partialRsq" name="Compute partial R square" version="1.0.0">
+  <description> </description>
+  <command interpreter="python">
+    partialR_square.py 
+      $input1
+      $response_col
+      $predictor_cols
+      $out_file1
+      1>/dev/null
+  </command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Dataset missing? See TIP below."/>
+    <param name="response_col" label="Response column (Y)" type="data_column" data_ref="input1" />
+    <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" multiple="true">
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+  </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
+  <tests>
+    <!-- Test data with vlid values -->
+  	<test>
+      <param name="input1" value="regr_inp.tabular"/>
+      <param name="response_col" value="3"/>
+      <param name="predictor_cols" value="1,2"/>
+      <output name="out_file1" file="partialR_result.tabular"/>
+    </test>
+    
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Datasets-&gt;Convert characters*
+
+-----
+
+.. class:: infomark
+
+**What it does**
+
+This tool computes the Partial R squared for all possible variable subsets using the following formula:
+
+**Partial R squared = [SSE(without i: 1,2,...,p-1) - SSE (full: 1,2,..,i..,p-1) / SSE(without i: 1,2,...,p-1)]**, which denotes the case where the 'i'th predictor is dropped. 
+
+
+
+In general, **Partial R squared = [SSE(without i: 1,2,...,p-1) - SSE (full: 1,2,..,i..,p-1) / SSE(without i: 1,2,...,p-1)]**, where,
+
+- SSE (full: 1,2,..,i..,p-1) = Sum of Squares left out by the full set of predictors SSE(X1, X2 … Xp)
+- SSE (full: 1,2,..,i..,p-1) = Sum of Squares left out by the set of predictors excluding; for example, if we omit the first predictor, it will be SSE(X2 … Xp).
+
+
+The 4 columns in the output are described below:
+
+- Column 1 (Model): denotes the variables present in the model
+- Column 2 (R-sq): denotes the R-squared value corresponding to the model in Column 1
+- Column 3 (Partial R squared_Terms): denotes the variable/s for which Partial R squared is computed. These are the variables that are absent in the reduced model in Column 1. A '-' in this column indicates that the model in Column 1 is the Full model.
+- Column 4 (Partial R squared): denotes the Partial R squared value corresponding to the variable/s in Column 3. A '-' in this column indicates that the model in Column 1 is the Full model.
+
+*R Development Core Team (2010). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. ISBN 3-900051-07-0, URL http://www.R-project.org.*  
+  
+  </help>
+</tool>

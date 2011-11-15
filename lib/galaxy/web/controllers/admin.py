@@ -2,12 +2,16 @@ from galaxy.web.base.controller import *
 from galaxy import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.tools.search import ToolBoxSearch
+from galaxy.tools import ToolSection, json_fix
+from galaxy.util import inflector
 import logging
 log = logging.getLogger( __name__ )
 
 from galaxy.actions.admin import AdminActions
 from galaxy.web.params import QuotaParamParser
 from galaxy.exceptions import *
+import galaxy.datatypes.registry
 
 class UserListGrid( grids.Grid ):
     class EmailColumn( grids.TextColumn ):
@@ -91,11 +95,6 @@ class UserListGrid( grids.Grid ):
                              allow_popup=False,
                              url_args=dict( webapp="galaxy", action="reset_user_password" ) )
     ]
-    #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
-    # the setting is False
-    #operations.append( grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
-    #operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
-    #operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True, purged=False ) ),
@@ -401,14 +400,15 @@ class RepositoryListGrid( grids.Grid ):
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.tool_shed
     # Grid definition
-    title = "Tool shed repositories"
+    title = "Installed tool shed repositories"
     model_class = model.ToolShedRepository
     template='/admin/tool_shed_repository/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
                     key="name",
-                    attach_popup=True ),
+                    link=( lambda item: dict( operation="manage_repository", id=item.id, webapp="galaxy" ) ),
+                    attach_popup=False ),
         DescriptionColumn( "Description" ),
         OwnerColumn( "Owner" ),
         RevisionColumn( "Revision" ),
@@ -424,17 +424,14 @@ class RepositoryListGrid( grids.Grid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ grids.GridOperation( "Get updates",
-                                        allow_multiple=False,
-                                        condition=( lambda item: not item.deleted ),
-                                        async_compatible=False ) ]
     standard_filters = []
     default_filter = dict( deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class )
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( self.model_class.table.c.deleted == False )
 
 class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamParser ):
     
@@ -443,6 +440,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
     repository_list_grid = RepositoryListGrid()
+    delete_operation = grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True )
+    undelete_operation = grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
+    purge_operation = grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
 
     @web.expose
     @web.require_admin
@@ -676,125 +676,268 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         return quota, params
     @web.expose
     @web.require_admin
-    def browse_repositories( self, trans, **kwd ):
+    def browse_tool_shed_repository( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, kwd[ 'id' ] )
+        relative_install_dir = self.__get_relative_install_dir( trans, repository )
+        repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
+        tool_dicts = []
+        workflow_dicts = []
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                if '.hg' in dirs:
+                    # Don't visit .hg directories.
+                    dirs.remove( '.hg' )
+                if 'hgrc' in files:
+                     # Don't include hgrc files.
+                    files.remove( 'hgrc' )
+                for name in files:
+                    # Find all tool configs.
+                    if name.endswith( '.xml' ):
+                        try:
+                            full_path = os.path.abspath( os.path.join( root, name ) )
+                            tool = trans.app.toolbox.load_tool( full_path )
+                            if tool is not None:
+                                tool_config = os.path.join( root, name )
+                                # Handle tool.requirements.
+                                tool_requirements = []
+                                for tr in tool.requirements:
+                                    name=tr.name
+                                    type=tr.type
+                                    if type == 'fabfile':
+                                        version = None
+                                        fabfile = tr.fabfile
+                                        method = tr.method
+                                    else:
+                                        version = tr.version
+                                        fabfile = None
+                                        method = None
+                                    requirement_dict = dict( name=name,
+                                                             type=type,
+                                                             version=version,
+                                                             fabfile=fabfile,
+                                                             method=method )
+                                    tool_requirements.append( requirement_dict )
+                                tool_dict = dict( id=tool.id,
+                                                  old_id=tool.old_id,
+                                                  name=tool.name,
+                                                  version=tool.version,
+                                                  description=tool.description,
+                                                  requirements=tool_requirements,
+                                                  tool_config=tool_config )
+                                tool_dicts.append( tool_dict )
+                        except Exception, e:
+                            # The file is not a Galaxy tool config.
+                            pass
+                    # Find all exported workflows
+                    elif name.endswith( '.ga' ):
+                        try:
+                            full_path = os.path.abspath( os.path.join( root, name ) )
+                            # Convert workflow data from json
+                            fp = open( full_path, 'rb' )
+                            workflow_text = fp.read()
+                            fp.close()
+                            workflow_dict = from_json_string( workflow_text )
+                            if workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                                workflow_dicts.append( dict( full_path=full_path, workflow_dict=workflow_dict ) )
+                        except Exception, e:
+                            # The file is not a Galaxy workflow.
+                            pass
+        return trans.fill_template( '/admin/tool_shed_repository/browse_repository.mako',
+                                    repository=repository,
+                                    tool_dicts=tool_dicts,
+                                    workflow_dicts=workflow_dicts,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
+    def browse_tool_shed_repositories( self, trans, **kwd ):
         if 'operation' in kwd:
-            operation = kwd.pop('operation').lower()
-            if operation == "get updates":
-                return self.check_for_updates( trans, **kwd )
+            operation = kwd.pop( 'operation' ).lower()
+            if operation == "manage_repository":
+                return self.manage_tool_shed_repository( trans, **kwd )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def browse_tool_sheds( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        return trans.fill_template( '/webapps/galaxy/admin/tool_sheds.mako',
+                                    webapp='galaxy',
+                                    message=message,
+                                    status='error' )
+    @web.expose
+    @web.require_admin
+    def find_tools_in_tool_shed( self, trans, **kwd ):
+        tool_shed_url = kwd[ 'tool_shed_url' ]
+        galaxy_url = trans.request.host
+        url = '%s/repository/find_tools?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
+        return trans.response.send_redirect( url )
+    @web.expose
+    @web.require_admin
+    def find_workflows_in_tool_shed( self, trans, **kwd ):
+        tool_shed_url = kwd[ 'tool_shed_url' ]
+        galaxy_url = trans.request.host
+        url = '%s/repository/find_workflows?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
+        return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = trans.request.host
-        url = '%s/repository/browse_downloadable_repositories?galaxy_url=%s&webapp=community' % ( tool_shed_url, galaxy_url )
+        url = '%s/repository/browse_valid_repositories?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
     def install_tool_shed_repository( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        if not trans.app.toolbox.shed_tool_confs:
+            message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one shed tool configuration file name with a '
+            message += '<b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> attribute value which is a directory relative to the Galaxy installation '
+            message += 'directory in order to automatically install tools from a Galaxy tool shed (e.g., the file name <b>shed_tool_conf.xml</b> whose '
+            message += '<b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
+            message += '<a href="http://wiki.g2.bx.psu.edu/Tool%20Shed#Automatic_installation_of_Galaxy_tool_shed_repository_tools_into_a_local_Galaxy_instance" '
+            message += 'target="_blank">Automatic installation of Galaxy tool shed repository tools into a local Galaxy instance</a> section of the '
+            message += '<a href="http://wiki.g2.bx.psu.edu/Tool%20Shed" target="_blank">Galaxy tool shed wiki</a> for all of the details.'
+            return trans.show_error_message( message )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        name = kwd[ 'name' ]
-        description = kwd[ 'description' ]
-        changeset_revision = kwd[ 'changeset_revision' ]
-        repository_clone_url = kwd[ 'repository_clone_url' ]
+        repo_info_dict = kwd[ 'repo_info_dict' ]
+        new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
+        tool_panel_section = kwd.get( 'tool_panel_section', '' )
         if kwd.get( 'select_tool_panel_section_button', False ):
             shed_tool_conf = kwd[ 'shed_tool_conf' ]
             # Get the tool path.
             for k, tool_path in trans.app.toolbox.shed_tool_confs.items():
                 if k == shed_tool_conf:
                     break
-            if 'tool_panel_section' in kwd:
-                section_key = 'section_%s' % kwd[ 'tool_panel_section' ]
-                tool_section = trans.app.toolbox.tool_panel[ section_key ]
+            if new_tool_panel_section or tool_panel_section:
+                if new_tool_panel_section:
+                    section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+                    new_section_key = 'section_%s' % str( section_id )
+                    if new_section_key in trans.app.toolbox.tool_panel:
+                        # Appending a tool to an existing section in trans.app.toolbox.tool_panel
+                        log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
+                        tool_section = trans.app.toolbox.tool_panel[ new_section_key ]
+                    else:
+                        # Appending a new section to trans.app.toolbox.tool_panel
+                        log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
+                        elem = Element( 'section' )
+                        elem.attrib[ 'name' ] = new_tool_panel_section
+                        elem.attrib[ 'id' ] = section_id
+                        tool_section = ToolSection( elem )
+                        trans.app.toolbox.tool_panel[ new_section_key ] = tool_section
+                else:
+                    section_key = 'section_%s' % tool_panel_section
+                    tool_section = trans.app.toolbox.tool_panel[ section_key ]
+                # Decode the encoded repo_info_dict param value.
+                repo_info_dict = tool_shed_decode( repo_info_dict )
                 # Clone the repository to the configured location.
                 current_working_dir = os.getcwd()
-                clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, changeset_revision ) )
-                if os.path.exists( clone_dir ):
-                    # Repository and revision has already been cloned.
-                    # TODO: implement the ability to re-install or revert an existing repository.
-                    message = 'Revision <b>%s</b> of repository <b>%s</b> has already been installed.  Updating an existing repository is not yet supported.' % \
-                    ( changeset_revision, name )
-                    status = 'error'
-                else:
-                    os.makedirs( clone_dir )
-                    log.debug( 'Cloning %s...' % repository_clone_url )
-                    cmd = 'hg clone %s' % repository_clone_url
-                    tmp_name = tempfile.NamedTemporaryFile().name
-                    tmp_stderr = open( tmp_name, 'wb' )
-                    os.chdir( clone_dir )
-                    proc = subprocess.Popen( args=cmd, shell=True, stderr=tmp_stderr.fileno() )
-                    returncode = proc.wait()
-                    os.chdir( current_working_dir )
-                    tmp_stderr.close()
-                    if returncode == 0:
-                        # Add a new record to the tool_shed_repository table.
-                        tool_shed_repository = self.__create_tool_shed_repository( trans,
-                                                                                   name,
-                                                                                   description,
-                                                                                   changeset_revision,
-                                                                                   repository_clone_url )
-                        # Update the cloned repository to changeset_revision.
-                        repo_files_dir = os.path.join( clone_dir, name )
-                        log.debug( 'Updating cloned repository to revision "%s"...' % changeset_revision )
-                        cmd = 'hg update -r %s' % changeset_revision
+                installed_repository_names = []
+                for name, repo_info_tuple in repo_info_dict.items():
+                    description, repository_clone_url, changeset_revision = repo_info_tuple
+                    clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, changeset_revision ) )
+                    if os.path.exists( clone_dir ):
+                        # Repository and revision has already been cloned.
+                        # TODO: implement the ability to re-install or revert an existing repository.
+                        message += 'Revision <b>%s</b> of repository <b>%s</b> was previously installed.<br/>' % ( changeset_revision, name )
+                    else:
+                        os.makedirs( clone_dir )
+                        log.debug( 'Cloning %s...' % repository_clone_url )
+                        cmd = 'hg clone %s' % repository_clone_url
                         tmp_name = tempfile.NamedTemporaryFile().name
                         tmp_stderr = open( tmp_name, 'wb' )
-                        os.chdir( repo_files_dir )
-                        proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
+                        os.chdir( clone_dir )
+                        proc = subprocess.Popen( args=cmd, shell=True, stderr=tmp_stderr.fileno() )
                         returncode = proc.wait()
                         os.chdir( current_working_dir )
                         tmp_stderr.close()
                         if returncode == 0:
-                            sample_files, repository_tools_tups = self.__get_repository_tools_and_sample_files( trans, tool_path, repo_files_dir )
-                            if repository_tools_tups:
-                                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                                repository_tools_tups = self.__handle_missing_data_table_entry( trans, tool_path, sample_files, repository_tools_tups )
-                                # Handle missing index files for tool parameters that are dynamically generated select lists.
-                                repository_tools_tups = self.__handle_missing_index_file( trans, tool_path, sample_files, repository_tools_tups )
-                                # Handle tools that use fabric scripts to install dependencies.
-                                self.__handle_tool_dependencies( current_working_dir, repo_files_dir, repository_tools_tups )
-                                # Generate an in-memory tool conf section that includes the new tools.
-                                new_tool_section = self.__generate_tool_panel_section( name,
-                                                                                       repository_clone_url,
-                                                                                       changeset_revision,
-                                                                                       tool_section,
-                                                                                       repository_tools_tups )
-                                # Create a temporary file to persist the in-memory tool section
-                                # TODO: Figure out how to do this in-memory using xml.etree.
-                                tmp_name = tempfile.NamedTemporaryFile().name
-                                persisted_new_tool_section = open( tmp_name, 'wb' )
-                                persisted_new_tool_section.write( new_tool_section )
-                                persisted_new_tool_section.close()
-                                # Parse the persisted tool panel section
-                                tree = ElementTree.parse( tmp_name )
-                                root = tree.getroot()
-                                ElementInclude.include( root )
-                                # Load the tools in the section into the tool panel.
-                                trans.app.toolbox.load_section_tag_set( root, trans.app.toolbox.tool_panel, tool_path )
-                                # Remove the temporary file
-                                try:
-                                    os.unlink( tmp_name )
-                                except:
-                                    pass
-                                # Append the new section to the shed_tool_config file.
-                                self.__add_shed_tool_conf_entry( trans, shed_tool_conf, new_tool_section )
-                            message = 'Revision <b>%s</b> of repository <b>%s</b> has been installed in tool panel section <b>%s</b>.' % \
-                                ( changeset_revision, name, tool_section.name )
-                            return trans.show_ok_message( message )
+                            # Add a new record to the tool_shed_repository table if one doesn't
+                            # already exist.  If one exists but is marked deleted, undelete it.
+                            self.__create_or_undelete_tool_shed_repository( trans, name, description, changeset_revision, repository_clone_url )
+                            # Update the cloned repository to changeset_revision.
+                            repo_files_dir = os.path.join( clone_dir, name )
+                            log.debug( 'Updating cloned repository to revision "%s"...' % changeset_revision )
+                            cmd = 'hg update -r %s' % changeset_revision
+                            tmp_name = tempfile.NamedTemporaryFile().name
+                            tmp_stderr = open( tmp_name, 'wb' )
+                            os.chdir( repo_files_dir )
+                            proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
+                            returncode = proc.wait()
+                            os.chdir( current_working_dir )
+                            tmp_stderr.close()
+                            if returncode == 0:
+                                # Load data types required by tools.
+                                # TODO: uncomment the following when we're ready...
+                                #self.__load_datatypes( trans, repo_files_dir )
+                                # Load tools and tool data files required by them.
+                                sample_files, repository_tools_tups = self.__get_repository_tools_and_sample_files( trans, tool_path, repo_files_dir )
+                                if repository_tools_tups:
+                                    # Handle missing data table entries for tool parameters that are dynamically generated select lists.
+                                    repository_tools_tups = self.__handle_missing_data_table_entry( trans, tool_path, sample_files, repository_tools_tups )
+                                    # Handle missing index files for tool parameters that are dynamically generated select lists.
+                                    repository_tools_tups = self.__handle_missing_index_file( trans, tool_path, sample_files, repository_tools_tups )
+                                    # Handle tools that use fabric scripts to install dependencies.
+                                    self.__handle_tool_dependencies( current_working_dir, repo_files_dir, repository_tools_tups )
+                                    # Generate an in-memory tool conf section that includes the new tools.
+                                    new_tool_section = self.__generate_tool_panel_section( name,
+                                                                                           repository_clone_url,
+                                                                                           changeset_revision,
+                                                                                           tool_section,
+                                                                                           repository_tools_tups )
+                                    # Create a temporary file to persist the in-memory tool section
+                                    # TODO: Figure out how to do this in-memory using xml.etree.
+                                    tmp_name = tempfile.NamedTemporaryFile().name
+                                    persisted_new_tool_section = open( tmp_name, 'wb' )
+                                    persisted_new_tool_section.write( new_tool_section )
+                                    persisted_new_tool_section.close()
+                                    # Parse the persisted tool panel section
+                                    tree = ElementTree.parse( tmp_name )
+                                    root = tree.getroot()
+                                    ElementInclude.include( root )
+                                    # Load the tools in the section into the tool panel.
+                                    trans.app.toolbox.load_section_tag_set( root, trans.app.toolbox.tool_panel, tool_path )
+                                    # Remove the temporary file
+                                    try:
+                                        os.unlink( tmp_name )
+                                    except:
+                                        pass
+                                    # Append the new section to the shed_tool_config file.
+                                    self.__add_shed_tool_conf_entry( trans, shed_tool_conf, new_tool_section )
+                                    if trans.app.toolbox_search.enabled:
+                                        # If search support for tools is enabled, index the new installed tools.
+                                        trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
+                                installed_repository_names.append( name )
+                            else:
+                                tmp_stderr = open( tmp_name, 'rb' )
+                                message += '%s<br/>' % tmp_stderr.read()
+                                tmp_stderr.close()
+                                status = 'error'
                         else:
                             tmp_stderr = open( tmp_name, 'rb' )
-                            message = tmp_stderr.read()
+                            message += '%s<br/>' % tmp_stderr.read()
                             tmp_stderr.close()
                             status = 'error'
-                    else:
-                        tmp_stderr = open( tmp_name, 'rb' )
-                        message = tmp_stderr.read()
-                        tmp_stderr.close()
-                        status = 'error'
+                if installed_repository_names:
+                    installed_repository_names.sort()
+                    num_repositories_installed = len( installed_repository_names )
+                    message += 'Installed %d %s and all tools were loaded into tool panel section <b>%s</b>:<br/>Installed repositories: ' % \
+                        ( num_repositories_installed, inflector.cond_plural( num_repositories_installed, 'repository' ), tool_section.name )
+                    for i, repo_name in enumerate( installed_repository_names ):
+                        if i == len( installed_repository_names ) -1:
+                            message += '%s.<br/>' % repo_name
+                        else:
+                            message += '%s, ' % repo_name
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='browse_tool_shed_repositories',
+                                                                  message=message,
+                                                                  status=status ) )
             else:
                 message = 'Choose the section in your tool panel to contain the installed tools.'
                 status = 'error'
@@ -807,25 +950,48 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
         return trans.fill_template( '/admin/select_tool_panel_section.mako',
                                     tool_shed_url=tool_shed_url,
-                                    name=name,
-                                    description=description,
-                                    changeset_revision=changeset_revision,
-                                    repository_clone_url=repository_clone_url,
+                                    repo_info_dict=repo_info_dict,
                                     shed_tool_conf=shed_tool_conf,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
+                                    new_tool_panel_section=new_tool_panel_section,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
+    def manage_tool_shed_repository( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository_id = params.get( 'id', None )
+        repository = get_repository( trans, repository_id )
+        description = util.restore_text( params.get( 'description', repository.description ) )
+        if params.get( 'edit_repository_button', False ):
+            if description != repository.description:
+                repository.description = description
+                trans.sa_session.add( repository )
+                trans.sa_session.flush()
+            message = "The repository information has been updated."
+        relative_install_dir = self.__get_relative_install_dir( trans, repository )
+        if relative_install_dir:
+            repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
+        else:
+            repo_files_dir = 'unknown'
+        return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
+                                    repository=repository,
+                                    description=description,
+                                    repo_files_dir=repo_files_dir,
                                     message=message,
                                     status=status )
     @web.expose
     @web.require_admin
     def check_for_updates( self, trans, **kwd ):
         params = util.Params( kwd )
-        repository_id = params.get( 'id', None )
-        repository = get_repository( trans, repository_id )
+        repository = get_repository( trans, kwd[ 'id' ] )
         galaxy_url = trans.request.host
         # Send a request to the relevant tool shed to see if there are any updates.
         # TODO: support https in the following url.
-        url = 'http://%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=community' % \
+        url = 'http://%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
             ( repository.tool_shed, galaxy_url, repository.name, repository.owner, repository.changeset_revision )
         return trans.response.send_redirect( url )
     @web.expose
@@ -840,26 +1006,16 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         latest_changeset_revision = params.get( 'latest_changeset_revision', None )
+        repository = get_repository_by_shed_name_owner_changeset_revision( trans, tool_shed_url, name, owner, changeset_revision )
         if changeset_revision and latest_changeset_revision:
             if changeset_revision == latest_changeset_revision:
                 message = "The cloned tool shed repository named '%s' is current (there are no updates available)." % name
             else:
-                repository = get_repository_by_name_owner_changeset_revision( trans, name, owner, changeset_revision )
                 current_working_dir = os.getcwd()
-                # Get the directory where the repository is cloned.
-                cleaned_tool_shed_url = self.__clean_tool_shed_url( tool_shed_url )
-                partial_cloned_dir = '%s/repos/%s/%s/%s' % ( cleaned_tool_shed_url, owner, name, changeset_revision )
-                # Get the relative tool installation paths from each of the shed tool configs.
-                shed_tool_confs = trans.app.toolbox.shed_tool_confs
-                relative_cloned_dir = None
-                # The shed_tool_confs dictionary contains shed_conf_filename : tool_path pairs.
-                for shed_conf_filename, tool_path in shed_tool_confs.items():
-                    relative_cloned_dir = os.path.join( tool_path, partial_cloned_dir )
-                    if os.path.isdir( relative_cloned_dir ):
-                        break
-                if relative_cloned_dir:
+                relative_install_dir = self.__get_relative_install_dir( trans, repository )
+                if relative_install_dir:
                     # Update the cloned repository to changeset_revision.
-                    repo_files_dir = os.path.join( relative_cloned_dir, name )
+                    repo_files_dir = os.path.join( relative_install_dir, name )
                     log.debug( "Updating cloned repository named '%s' from revision '%s' to revision '%s'..." % \
                         ( name, changeset_revision, latest_changeset_revision ) )
                     cmd = 'hg pull'
@@ -903,9 +1059,44 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             message = "The latest changeset revision could not be retrieved for the repository named '%s'." % name
             status = 'error'
         return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='browse_repositories',
+                                                          action='manage_tool_shed_repository',
+                                                          id=trans.security.encode_id( repository.id ),
                                                           message=message,
                                                           status=status ) )
+    @web.expose
+    @web.require_admin
+    def impersonate( self, trans, email=None, **kwd ):
+        if not trans.app.config.allow_user_impersonation:
+            return trans.show_error_message( "User impersonation is not enabled in this instance of Galaxy." )
+        message = ''
+        status = 'done'
+        emails = None
+        if email is not None:
+            user = trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first()
+            if user:
+                trans.set_user( user )
+                message = 'You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % ( email, url_for( controller='root' ) )
+                emails = []
+            else:
+                message = 'Invalid user selected'
+                status = 'error'
+        if emails is None:
+            emails = [ u.email for u in trans.sa_session.query( trans.app.model.User ).enable_eagerloads( False ).all() ]
+        return trans.fill_template( 'admin/impersonate.mako', emails=emails, message=message, status=status )
+
+    def __get_relative_install_dir( self, trans, repository ):
+        # Get the directory where the repository is install.
+        tool_shed = self.__clean_tool_shed_url( repository.tool_shed )
+        partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.changeset_revision )
+        # Get the relative tool installation paths from each of the shed tool configs.
+        shed_tool_confs = trans.app.toolbox.shed_tool_confs
+        relative_install_dir = None
+        # The shed_tool_confs dictionary contains { shed_conf_filename : tool_path } pairs.
+        for shed_conf_filename, tool_path in shed_tool_confs.items():
+            relative_install_dir = os.path.join( tool_path, partial_install_dir )
+            if os.path.isdir( relative_install_dir ):
+                break
+        return relative_install_dir
     def __handle_missing_data_table_entry( self, trans, tool_path, sample_files, repository_tools_tups ):
         # Inspect each tool to see if any have input parameters that are dynamically
         # generated select lists that require entries in the tool_data_table_conf.xml file.
@@ -987,24 +1178,62 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             error = tmp_stderr.read()
                             tmp_stderr.close()
                             log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
+    def __load_datatypes( self, trans, repo_files_dir ):
+        # Find datatypes_conf.xml if it exists.
+        datatypes_config = None
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if root.find( '.hg' ) < 0:
+                for name in files:
+                    if name == 'datatypes_conf.xml':
+                        datatypes_config = os.path.abspath( os.path.join( root, name ) )
+                        break
+        if datatypes_config:
+            # Parse datatypes_config.
+            tree = ElementTree.parse( datatypes_config )
+            root = tree.getroot()
+            ElementInclude.include( root )
+            datatype_files = root.find( 'datatype_files' )
+            for elem in datatype_files.findall( 'datatype_file' ):
+                datatype_file_name = elem.get( 'name', None )
+                if datatype_file_name:
+                    # Find the file in the installed repository.
+                    relative_path = None
+                    for root, dirs, files in os.walk( repo_files_dir ):
+                        if root.find( '.hg' ) < 0:
+                            for name in files:
+                                if name == datatype_file_name:
+                                    relative_path = os.path.join( root, name )
+                                    break
+                    relative_head, relative_tail = os.path.split( relative_path )
+                    # TODO: get the import_module by parsing the <registration><datatype> tags
+                    if datatype_file_name.find( '.' ) > 0:
+                        import_module = datatype_file_name.split( '.' )[ 0 ]
+                    else:
+                        import_module = datatype_file_name
+                    try:
+                        sys.path.insert( 0, relative_head )
+                        module = __import__( import_module )
+                        sys.path.pop( 0 )
+                    except Exception, e:
+                        log.debug( "Execption importing datatypes code file included in installed repository: %s" % str( e ) )
+                    trans.app.datatypes_registry = galaxy.datatypes.registry.Registry( trans.app.config.root, datatypes_config )
     def __get_repository_tools_and_sample_files( self, trans, tool_path, repo_files_dir ):
         # The sample_files list contains all files whose name ends in .sample
         sample_files = []
-        # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
-        repository_tools_tups = []
+        # Find all special .sample files first.
         for root, dirs, files in os.walk( repo_files_dir ):
-            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                if '.hg' in dirs:
-                    # Don't visit .hg directories - should be impossible since we don't
-                    # allow uploaded archives that contain .hg dirs, but just in case...
-                    dirs.remove( '.hg' )
-                if 'hgrc' in files:
-                     # Don't include hgrc files in commit.
-                    files.remove( 'hgrc' )
-                # Find all special .sample files first.
+            if root.find( '.hg' ) < 0:
                 for name in files:
                     if name.endswith( '.sample' ):
                         sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
+        # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
+        repository_tools_tups = []
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
+                if '.hg' in dirs:
+                    dirs.remove( '.hg' )
+                if 'hgrc' in files:
+                    files.remove( 'hgrc' )
                 for name in files:
                     # Find all tool configs.
                     if name.endswith( '.xml' ):
@@ -1020,17 +1249,26 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             # We have an invalid .xml file, so not a tool config.
                             log.debug( "Ignoring invalid tool config (%s). Error: %s" % ( str( relative_path ), str( e ) ) )
         return sample_files, repository_tools_tups
-    def __create_tool_shed_repository( self, trans, name, description, changeset_revision, repository_clone_url ):
+    def __create_or_undelete_tool_shed_repository( self, trans, name, description, changeset_revision, repository_clone_url ):
         tmp_url = self.__clean_repository_clone_url( repository_clone_url )
         tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
         owner = self.__get_repository_owner( tmp_url )
-        tool_shed_repository = trans.model.ToolShedRepository( tool_shed=tool_shed,
-                                                               name=name,
-                                                               description=description,
-                                                               owner=owner,
-                                                               changeset_revision=changeset_revision )
-        trans.sa_session.add( tool_shed_repository )
-        trans.sa_session.flush()
+        flush_needed = False
+        tool_shed_repository = get_repository_by_shed_name_owner_changeset_revision( trans, tool_shed, name, owner, changeset_revision )
+        if tool_shed_repository:
+            if tool_shed_repository.deleted:
+                tool_shed_repository.deleted = False
+                flush_needed = True
+        else:
+            tool_shed_repository = trans.model.ToolShedRepository( tool_shed=tool_shed,
+                                                                   name=name,
+                                                                   description=description,
+                                                                   owner=owner,
+                                                                   changeset_revision=changeset_revision )
+            flush_needed = True
+        if flush_needed:
+            trans.sa_session.add( tool_shed_repository )
+            trans.sa_session.flush()
     def __add_shed_tool_conf_entry( self, trans, shed_tool_conf, new_tool_section ):
         # Add an entry in the shed_tool_conf file. An entry looks something like:
         # <section name="Filter and Sort" id="filter">
@@ -1072,10 +1310,10 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
             # http://test@bx.psu.edu:9009/repos/some_username/column
             items = repository_clone_url.split( '@' )
             tmp_url = items[ 1 ]
-        elif repository_clone_url.find( '\/\/' ) > 0:
+        elif repository_clone_url.find( '//' ) > 0:
             # We have an url that includes only a protocol, something like:
             # http://bx.psu.edu:9009/repos/some_username/column
-            items = repository_clone_url.split( '\/\/' )
+            items = repository_clone_url.split( '//' )
             tmp_url = items[ 1 ]
         else:
             tmp_url = repository_clone_url
@@ -1159,3 +1397,11 @@ def get_repository_by_name_owner_changeset_revision( trans, name, owner, changes
                                             trans.model.ToolShedRepository.table.c.owner == owner,
                                             trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
                              .first()
+def get_repository_by_shed_name_owner_changeset_revision( trans, tool_shed, name, owner, changeset_revision ):
+    return trans.sa_session.query( trans.model.ToolShedRepository ) \
+                           .filter( and_( trans.model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                          trans.model.ToolShedRepository.table.c.name == name,
+                                          trans.model.ToolShedRepository.table.c.owner == owner,
+                                          trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
+                           .first()
+

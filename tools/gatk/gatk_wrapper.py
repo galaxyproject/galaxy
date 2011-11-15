@@ -8,7 +8,7 @@ A wrapper script for running the GenomeAnalysisTK.jar commands.
 import sys, optparse, os, tempfile, subprocess, shutil
 from string import Template
 
-GALAXY_EXT_TO_GATK_EXT = { 'gatk_interval':'intervals', 'bam_index':'bam.bai', 'gatk_dbsnp':'dbsnp', 'picard_interval_list':'interval_list' } #items not listed here, will use the galaxy extension as-is
+GALAXY_EXT_TO_GATK_EXT = { 'gatk_interval':'intervals', 'bam_index':'bam.bai', 'gatk_dbsnp':'dbSNP', 'picard_interval_list':'interval_list' } #items not listed here will use the galaxy extension as-is
 GALAXY_EXT_TO_GATK_FILE_TYPE = GALAXY_EXT_TO_GATK_EXT #for now, these are the same, but could be different if needed
 DEFAULT_GATK_PREFIX = "gatk_file"
 CHUNK_SIZE = 2**20 #1mb
@@ -48,21 +48,21 @@ def __main__():
     parser.add_option( '-p', '--pass_through', dest='pass_through_options', action='append', type="string", help='These options are passed through directly to GATK, without any modification.' )
     parser.add_option( '-d', '--dataset', dest='datasets', action='append', type="string", nargs=4, help='"-argument" "original_filename" "galaxy_filetype" "name_prefix"' )
     parser.add_option( '', '--max_jvm_heap', dest='max_jvm_heap', action='store', type="string", default=None, help='If specified, the maximum java virtual machine heap size will be set to the provide value.' )
-    parser.add_option( '', '--max_jvm_heap_fraction', dest='max_jvm_heap_fraction', action='store', type="int", default=0, help='If specified, the maximum java virtual machine heap size will be set to the provide value as a fraction of total physical memory.' )
+    parser.add_option( '', '--max_jvm_heap_fraction', dest='max_jvm_heap_fraction', action='store', type="int", default=None, help='If specified, the maximum java virtual machine heap size will be set to the provide value as a fraction of total physical memory.' )
     parser.add_option( '', '--stdout', dest='stdout', action='store', type="string", default=None, help='If specified, the output of stdout will be written to this file.' )
     parser.add_option( '', '--stderr', dest='stderr', action='store', type="string", default=None, help='If specified, the output of stderr will be written to this file.' )
     parser.add_option( '', '--html_report_from_directory', dest='html_report_from_directory', action='append', type="string", nargs=2, help='"Target HTML File" "Directory"')
     (options, args) = parser.parse_args()
     
-    tmp_dir = tempfile.mkdtemp()
+    tmp_dir = tempfile.mkdtemp( prefix='tmp-gatk-' )
     if options.pass_through_options:
         cmd = ' '.join( options.pass_through_options )
     else:
         cmd = ''
-    if options.max_jvm_heap:
-        cmd.replace( 'java ', 'java -Xmx%s ' % ( options.max_jvm_heap ), 1 )
-    elif options.max_jvm_heap_fraction:
-        cmd.replace( 'java ', 'java -XX:DefaultMaxRAMFraction=%s  -XX:+UseParallelGC ' % ( options.max_jvm_heap_fraction ), 1 )
+    if options.max_jvm_heap is not None:
+        cmd = cmd.replace( 'java ', 'java -Xmx%s ' % ( options.max_jvm_heap ), 1 )
+    elif options.max_jvm_heap_fraction is not None:
+        cmd = cmd.replace( 'java ', 'java -XX:DefaultMaxRAMFraction=%s  -XX:+UseParallelGC ' % ( options.max_jvm_heap_fraction ), 1 )
     if options.datasets:
         for ( dataset_arg, filename, galaxy_ext, prefix ) in options.datasets:
             gatk_filename = gatk_filename_from_galaxy( filename, galaxy_ext, target_dir = tmp_dir, prefix = prefix )
@@ -73,9 +73,7 @@ def __main__():
     stderr = open_file_from_option( options.stderr, mode = 'wb' )
     #if no stderr file is specified, we'll use our own
     if stderr is None:
-        stderr = tempfile.NamedTemporaryFile( dir=tmp_dir )
-        stderr.close()
-        stderr = open( stderr.name, 'w+b' )
+        stderr = tempfile.NamedTemporaryFile( prefix="gatk-stderr-", dir=tmp_dir )
     
     proc = subprocess.Popen( args=cmd, stdout=stdout, stderr=stderr, shell=True, cwd=tmp_dir )
     return_code = proc.wait()

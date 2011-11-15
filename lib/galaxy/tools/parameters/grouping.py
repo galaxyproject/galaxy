@@ -45,6 +45,7 @@ class Repeat( Group ):
         Group.__init__( self )
         self.title = None
         self.inputs = None
+        self.help = None
         self.default = 0
         self.min = None
         self.max = None

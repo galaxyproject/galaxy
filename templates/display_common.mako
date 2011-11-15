@@ -138,7 +138,7 @@
     %if history.slug and history.user.username:
         <% return h.url_for( controller='/history', action='display_by_username_and_slug', username=history.user.username, slug=history.slug, qualified=qualify ) %>
     %else:
-        <% return h.url_for( controller='/history', action='view', id=trans.security.encode_id( history.id ), qualified=qualify ) %>
+        <% return h.url_for( controller='/history', action='view', id=trans.security.encode_id( history.id ), qualified=qualify, use_panels=context.get('use_panels', True) ) %>
     %endif
 </%def>
 

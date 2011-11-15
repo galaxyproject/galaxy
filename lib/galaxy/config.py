@@ -47,11 +47,18 @@ class Configuration( object ):
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
         self.tool_sheds_config = kwargs.get( 'tool_sheds_config_file', 'tool_sheds_conf.xml' )
+        self.enable_unique_workflow_defaults = string_as_bool ( kwargs.get ('enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.len_file_path = kwargs.get( "len_file_path", resolve_path(os.path.join(self.tool_data_path, 'shared','ucsc','chrom'), self.root) )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
-        self.tool_configs = [ resolve_path( p, self.root ) for p in listify( kwargs.get( 'tool_config_file', 'tool_conf.xml' ) ) ]    
+        if 'tool_config_file' in kwargs:
+            tcf = kwargs[ 'tool_config_file' ]
+        elif 'tool_config_files' in kwargs:
+            tcf = kwargs[ 'tool_config_files' ]
+        else:
+            tcf = 'tool_conf.xml'
+        self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ] 
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
@@ -64,6 +71,7 @@ class Configuration( object ):
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
         self.allow_user_dataset_purge = string_as_bool( kwargs.get( "allow_user_dataset_purge", "False" ) )
+        self.allow_user_impersonation = string_as_bool( kwargs.get( "allow_user_impersonation", "False" ) )
         self.new_user_dataset_access_role_default_private = string_as_bool( kwargs.get( "new_user_dataset_access_role_default_private", "False" ) )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )

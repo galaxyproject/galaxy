@@ -96,7 +96,7 @@
                             display_url = h.url_for( controller='dataset', action='display', dataset_id=dataset_id, preview=True, filename='' )
                 %>
                 %if data.purged:
-                    <span class="icon-button display_disabled tooltip" title="Cannoy display datasets removed from disk"></span>
+                    <span class="icon-button display_disabled tooltip" title="Cannot display datasets removed from disk"></span>
                 %else:
                     <a class="icon-button display tooltip" dataset_id="${dataset_id}" title="Display data in browser" href="${display_url}"
                     %if for_editing:
@@ -150,6 +150,9 @@
                 %endif
             </div>
         %elif data_state == "error":
+            %if not data.purged:
+                <div>${data.get_size( nice_size=True )}</div>
+            %endif
             <div>
                 An error occurred running this job: <i>${data.display_info().strip()}</i>
             </div>
@@ -263,6 +266,7 @@
                         <br />
                     %endfor
                 %elif for_editing:
+                    <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
                     <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
                 %endif
     

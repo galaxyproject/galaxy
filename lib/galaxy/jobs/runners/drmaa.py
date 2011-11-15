@@ -33,7 +33,6 @@ drmaa_state = {
 }
 
 drm_template = """#!/bin/sh
-#$ -S /bin/sh
 GALAXY_LIB="%s"
 if [ "$GALAXY_LIB" != "None" ]; then
     if [ -n "$PYTHONPATH" ]; then
@@ -128,7 +127,7 @@ class DRMAAJobRunner( BaseJobRunner ):
             log.exception("failure running job %s" % job_wrapper.get_id_tag())
             return
 
-        runner_url = job_wrapper.tool.job_runner
+        runner_url = job_wrapper.get_job_runner()
         
         # This is silly, why would we queue a job with no command line?
         if not command_line:
@@ -336,7 +335,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         drm_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.id)
         drm_job_state.job_file = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job.id)
         drm_job_state.job_id = str( job.job_runner_external_id )
-        drm_job_state.runner_url = job_wrapper.tool.job_runner
+        drm_job_state.runner_url = job_wrapper.get_job_runner()
         job_wrapper.command_line = job.command_line
         drm_job_state.job_wrapper = job_wrapper
         if job.state == model.Job.states.RUNNING:

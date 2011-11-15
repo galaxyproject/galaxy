@@ -26,6 +26,7 @@
     <tool file="data_source/epigraph_import.xml" />
     <tool file="data_source/epigraph_import_test.xml" />
     <tool file="data_source/hbvar.xml" />
+    <tool file="data_source/genomespace_file_browser_dev.xml" />
     <tool file="validation/fix_errors.xml" />
   </section>
   <section name="Send Data" id="send">
@@ -174,6 +175,7 @@
   <section name="Regional Variation" id="regVar">
     <tool file="regVariation/windowSplitter.xml" />
     <tool file="regVariation/featureCounter.xml" />
+    <tool file="regVariation/WeightedAverage.xml" />
     <tool file="regVariation/quality_filter.xml" />
     <tool file="regVariation/maf_cpg_filter.xml" />
     <tool file="regVariation/getIndels_2way.xml" />
@@ -193,8 +195,10 @@
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />
+    <tool file="regVariation/logistic_regression_vif.xml" />
     <tool file="regVariation/best_regression_subsets.xml" />
     <tool file="regVariation/rcve.xml" />
+    <tool file="regVariation/partialR_square.xml" />
   </section>
   <section name="Multivariate Analysis" id="multVar">
     <tool file="multivariate_stats/pca.xml" />
@@ -294,6 +298,9 @@
     <tool file="fastx_toolkit/fastx_trimmer.xml" />
   </section>
   <section name="NGS: Picard (beta)" id="picard_beta">
+    <label text="Conversion" id="picard_conversion"/>
+    <tool file="picard/picard_FastqToSam.xml" />
+    <tool file="picard/picard_SamToFastq.xml" />
     
     <label text="QC/Metrics for sam/bam" id="qcsambam"/>
     <tool file="picard/picard_BamIndexStats.xml" />
@@ -389,7 +396,6 @@
     
     <label text="Filtration" id="gatk_filtration" />
     <tool file="gatk/variant_filtration.xml" />
-    <tool file="gatk/variant_filtration.xml" />
     
     <label text="Variant Quality Score Recalibration" id="gatk_variant_quality_score_recalibration" />
     <tool file="gatk/variant_recalibrator.xml" />
@@ -470,17 +476,6 @@
     <tool file="vcf_tools/annotate.xml" />
     <tool file="vcf_tools/filter.xml" />
     <tool file="vcf_tools/extract.xml" />
-  </section>
-  <section name="PacBio/Illumina Assembly" id="hybrid">
-    <tool file="ilmn_pacbio/quake.xml"/>
-    <tool file="ilmn_pacbio/quake_pe.xml"/>
-    <tool file="ilmn_pacbio/soap_denovo.xml"/>
-    <!--
-    Uncomment this tool when we support the HDF5 format
-    <tool file="ilmn_pacbio/smrtpipe_filter.xml"/>
-    -->
-    <tool file="ilmn_pacbio/smrtpipe_hybrid.xml"/>
-    <tool file="ilmn_pacbio/assembly_stats.xml"/>
   </section>
   <!--
   TODO: uncomment the following EMBOSS section whenever

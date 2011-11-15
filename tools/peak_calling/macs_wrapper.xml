@@ -231,6 +231,8 @@ View the original MACS documentation: http://liulab.dfci.harvard.edu/MACS/00READ
 
 **Citation**
 
+For the underlying tool, please cite `Zhang Y, Liu T, Meyer CA, Eeckhoute J, Johnson DS, Bernstein BE, Nusbaum C, Myers RM, Brown M, Li W, Liu XS. Model-based analysis of ChIP-Seq (MACS). Genome Biol. 2008;9(9):R137. &lt;http://www.ncbi.nlm.nih.gov/pubmed/18798982&gt;`_
+
 If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 
   </help>

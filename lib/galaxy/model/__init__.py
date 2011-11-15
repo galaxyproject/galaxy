@@ -17,6 +17,7 @@ from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
+from sqlalchemy.sql.expression import func
 import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
 
 if sys.version_info[:2] < ( 2, 5 ):
@@ -203,18 +204,19 @@ class Task( object ):
                     ERROR = 'error',
                     DELETED = 'deleted' )
 
-    def __init__( self, job, part_file = None ):
+    def __init__( self, job, working_directory, prepare_files_cmd ):
         self.command_line = None
         self.parameters = []
         self.state = Task.states.NEW
         self.info = None
-        self.part_file = part_file
+        self.working_directory = working_directory
         self.task_runner_name = None
         self.task_runner_external_id = None
         self.job = job
         self.stdout = None
         self.stderr = None
-
+        self.prepare_input_files_cmd = prepare_files_cmd
+    
     def set_state( self, state ):
         self.state = state
 
@@ -468,7 +470,12 @@ class History( object, UsesAnnotations ):
         return self.get_disk_size( nice_size=False )
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
-        rval = sum( [ d.get_total_size() for d in list( set( [ hda.dataset for hda in self.datasets if not hda.purged ] ) ) if not d.purged ] )
+        db_session = object_session( self )
+        rval = db_session.query( func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
+                                                     .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                                                     .distinct().subquery().c.total_size ) ).first()[0]
+        if rval is None:
+            rval = 0
         if nice_size:
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
@@ -874,7 +881,9 @@ class DatasetInstance( object ):
     def get_converted_files_by_type( self, file_type ):
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
-                return assoc.dataset
+                if assoc.dataset:
+                    return assoc.dataset
+                return assoc.dataset_ldda
         return None
     def get_converted_dataset_deps(self, trans, target_ext):
         """
@@ -923,12 +932,11 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass # No deps
-        assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, metadata_safe=False )
         new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=False ).values()[0]
         new_dataset.name = self.name
+        assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
         session = trans.sa_session
         session.add( new_dataset )
-        assoc.dataset = new_dataset
         session.add( assoc )
         session.flush()
         return None
@@ -1566,7 +1574,12 @@ class DatasetToValidationErrorAssociation( object ):
 class ImplicitlyConvertedDatasetAssociation( object ):
     def __init__( self, id = None, parent = None, dataset = None, file_type = None, deleted = False, purged = False, metadata_safe = True ):
         self.id = id
-        self.dataset = dataset
+        if isinstance(dataset, HistoryDatasetAssociation):
+            self.dataset = dataset
+        elif isinstance(dataset, LibraryDatasetDatasetAssociation):
+            self.dataset_ldda = dataset
+        else:
+            raise AttributeError, 'Unknown dataset type provided for dataset: %s' % type( dataset )
         if isinstance(parent, HistoryDatasetAssociation):
             self.parent_hda = parent
         elif isinstance(parent, LibraryDatasetDatasetAssociation):

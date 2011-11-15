@@ -1,4 +1,4 @@
-<tool id="Sff_extractor" name="SFF converter" version="1.0.0">
+<tool id="Sff_extractor" name="SFF converter" version="1.0.1">
     <description></description>
     <command interpreter="python">
         #if   str($fastq_output) == "fastq_false"  #sff_extract.py $clip --seq_file=$out_file3 --qual_file=$out_file4 --xml_file=$out_file2 $input

@@ -59,6 +59,21 @@ class HistoryListGrid( grids.Grid ):
             if not history.deleted:
                 link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
             return link
+    class DeletedColumn( grids.DeletedColumn ):
+        def get_value( self, trans, grid, history ):
+            if history == trans.history:
+                return "<strong>current history</strong>"
+            if history.purged:
+                return "deleted permanently"
+            elif history.deleted:
+                return "deleted"
+            return ""
+        def sort( self, trans, query, ascending, column_name=None ):
+            if ascending:
+                query = query.order_by( self.model_class.table.c.purged.asc(), self.model_class.table.c.update_time.desc() )
+            else:
+                query = query.order_by( self.model_class.table.c.purged.desc(), self.model_class.table.c.update_time.desc() )
+            return query
 
     # Grid definition
     title = "Saved Histories"
@@ -74,8 +89,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridColumn( "Size on Disk", key="get_disk_size_bytes", format=nice_size, sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Status", key="deleted", visible=False, filterable="advanced" )
+        DeletedColumn( "Status", key="deleted", filterable="advanced" )
     ]
     columns.append(
         grids.MulticolFilterColumn(
@@ -85,11 +99,12 @@ class HistoryListGrid( grids.Grid ):
                 )
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "View", allow_multiple=False ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
-        grids.GridOperation( "Delete and remove datasets from disk", condition=( lambda item: not item.deleted ), async_compatible=True ),
-        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -104,7 +119,7 @@ class HistoryListGrid( grids.Grid ):
     def get_current_item( self, trans, **kwargs ):
         return trans.get_history()
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter_by( user=trans.user, purged=False, importing=False )
+        return query.filter_by( user=trans.user, importing=False )
 
 class SharedHistoryListGrid( grids.Grid ):
     # Custom column types
@@ -212,6 +227,15 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                 if 'name' in kwargs:
                     del kwargs['name'] # Remove ajax name param that rename method uses
                 return self.rename( trans, **kwargs )
+            if operation == "view":
+                history = self.get_history( trans, kwargs.get( 'id', None ) )
+                if history:
+                    return trans.response.send_redirect( url_for( controller='history',
+                                                                  action='view',
+                                                                  id=kwargs['id'],
+                                                                  show_deleted=history.deleted,
+                                                                  use_panels=False ) )
+                    #return self.view( trans, id=kwargs['id'], show_deleted=history.deleted, use_panels=False )
             history_ids = util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
             status, message = None, None
@@ -240,8 +264,8 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                         return trans.response.send_redirect( url_for( "/" ) )
                     else:
                         trans.template_context['refresh_frames'] = ['history']
-                elif operation in ( "delete", "delete and remove datasets from disk" ):
-                    if operation == "delete and remove datasets from disk":
+                elif operation in ( "delete", "delete permanently" ):
+                    if operation == "delete permanently":
                         status, message = self._list_delete( trans, histories, purge=True )
                     else:
                         status, message = self._list_delete( trans, histories )
@@ -303,6 +327,9 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                             trans.sa_session.add( hda.dataset )
                         except:
                             log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+                history.purged = True
+                self.sa_session.add( history )
+                self.sa_session.flush()
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
@@ -467,7 +494,30 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
         return trans.fill_template( "history/display_structured.mako", items=items )
 
     @web.expose
-    def delete_current( self, trans ):
+    def purge_deleted_datasets( self, trans ):
+        count = 0
+        if trans.app.config.allow_user_dataset_purge:
+            for hda in trans.history.datasets:
+                if not hda.deleted or hda.purged:
+                    continue
+                if trans.user:
+                    trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.log_event( "HDA id %s has been purged" % hda.id )
+                trans.sa_session.flush()
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) ) 
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+                count += 1
+        return trans.show_ok_message( "%d datasets have been deleted permanently" % count, refresh_frames=['history'] )
+
+    @web.expose
+    def delete_current( self, trans, purge=False ):
         """Delete just the active history -- this does not require a logged in user."""
         history = trans.get_history()
         if history.users_shared_with:
@@ -477,6 +527,24 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
             trans.sa_session.add( history )
             trans.sa_session.flush()
             trans.log_event( "History id %d marked as deleted" % history.id )
+        if purge and trans.app.config.allow_user_dataset_purge:
+            for hda in history.datasets:
+                if trans.user:
+                    trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.log_event( "HDA id %s has been purged" % hda.id )
+                trans.sa_session.flush()
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+            history.purged = True
+            self.sa_session.add( history )
+            self.sa_session.flush()
         # Regardless of whether it was previously deleted, we make a new history active
         trans.new_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
@@ -749,7 +817,7 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
             """ % ( web.url_for( id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
 
     @web.expose
-    def view( self, trans, id=None, show_deleted=False ):
+    def view( self, trans, id=None, show_deleted=False, use_panels=True ):
         """View a history. If a history is importable, then it is viewable by any user."""
         # Get history to view.
         if not id:
@@ -764,10 +832,15 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
         # View history.
         show_deleted = util.string_as_bool( show_deleted )
         datasets = self.get_history_datasets( trans, history_to_view, show_deleted=show_deleted )
+        try:
+            use_panels = util.string_as_bool( use_panels )
+        except:
+            pass # already a bool
         return trans.stream_template_mako( "history/view.mako",
                                            history = history_to_view,
                                            datasets = datasets,
-                                           show_deleted = show_deleted )
+                                           show_deleted = show_deleted,
+                                           use_panels = use_panels )
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
@@ -1214,7 +1287,7 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                 name += " (active items only)"
                 new_history = history.copy( name=name, target_user=user )
         if len( histories ) == 1:
-            msg = 'Clone with name "%s" is now included in your previously stored histories.' % new_history.name
+            msg = 'Clone with name "<a href="%s" target="_top">%s</a>" is now included in your previously stored histories.' % ( url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) ) , new_history.name )
         else:
             msg = '%d cloned histories are now included in your previously stored histories.' % len( histories )
         return trans.show_ok_message( msg )

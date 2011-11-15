@@ -555,7 +555,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
         });
         
         // Generate 'collapse all' link
-        $("#top-links > a.toggle").click( function() {
+        $("#top-links > a.toggle-contract").click( function() {
             var prefs = $.jStorage.get("history_expand_state");
             if (!prefs) { prefs = {}; }
             $( "div.historyItemBody:visible" ).each( function() {
@@ -698,6 +698,8 @@ $(document).ready( function() {
     });
     // Tooltips
     if ( $.fn.tipsy ) {
+        // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
+        // initialize each separately.
         $(".tooltip").tipsy( { gravity: 's' } );
     }
     // Make popup menus.

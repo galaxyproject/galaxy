@@ -42,10 +42,9 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic", "jquery.tipsy" )}
 
 <script type="text/javascript">
-
     //
     // Place URLs here so that url_for can be used to generate them.
     // 
@@ -111,8 +110,57 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             }
         });
     };
+
+    /**
+     * Use a popup grid to bookmarks from a dataset.
+     */
+    var add_bookmarks = function() {
+        show_modal( "Select dataset for new bookmarks", "progress" );
+        $.ajax({
+            url: "${h.url_for( action='list_histories' )}",
+            data: { "f-dbkey": view.dbkey },
+            error: function() { alert( "Grid failed" ); },
+            success: function(table_html) {
+                show_modal(
+                    "Select dataset for new bookmarks",
+                    table_html, {
+                        "Cancel": function() {
+                            hide_modal();
+                        },
+                        "Insert": function() {
+                            // Just use the first selected
+                            $('input[name=id]:checked,input[name=ldda_ids]:checked').first().each(function(){
+                                var data, id = $(this).val();
+                                    if ($(this).attr("name") === "id") {
+                                        data = { hda_id: id };
+                                    } else {
+                                        data = { ldda_id: id};
+                                    }
+
+                                    $.ajax({
+                                        url: "${h.url_for( action='bookmarks_from_dataset' )}",
+                                        data: data,
+                                        dataType: "json",
+                                    }).then( function(data) {
+                                        for( i = 0; i < data.data.length; i++ ) {
+                                            var row = data.data[i];
+                                            console.log( row[0], row[1] );
+                                            add_bookmark( row[0], row[1] );
+                                        }
+                                    });
+                            });
+                            hide_modal();
+                        }
+                    }
+                );
+            }
+        });
+    };
     
     $(function() {
+        // Manual tipsy config because default gravity is S and cannot be changed.
+        $(".menu-button").tipsy( {gravity: 'n'} );
+        
         // Hide bookmarks by default right now.
         parent.force_right_panel("hide"); 
         
@@ -123,7 +171,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             view = create_visualization( $("#browser-container"), "${config.get('title') | h}", 
                                          "${config.get('vis_id')}", "${config.get('dbkey')}", 
                                          JSON.parse('${ h.to_json_string( config.get( 'viewport', dict() ) ) }'),
-                                         JSON.parse('${ h.to_json_string( config['tracks'] ) }'),
+                                         JSON.parse('${ h.to_json_string( config['tracks'] ).replace("'", "\\'") }'),
                                          JSON.parse('${ h.to_json_string( config['bookmarks'] ) }')
                                          );
             init_editor();
@@ -172,66 +220,79 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             %endif
             
             //
-            // Make actions menu.
+            // Initialize icons.
             //
-            $("#viz-actions-button").css( "position", "relative" );
-            make_popupmenu( $("#viz-actions-button"), {
-                "Add Tracks": add_tracks,
-                "Add Group": function() {
-                    var group = new DrawableGroup("New Group", view, view);
-                    view.add_drawable(group);
-                },
-                "Save": function() {
-                    // Show saving dialog box
-                    show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
-                                        
-                    // Save bookmarks.
-                    var bookmarks = [];
-                    $(".bookmark").each(function() { 
-                        bookmarks[bookmarks.length] = {
-                            position: $(this).children(".position").text(),
-                            annotation: $(this).children(".annotation").text()
-                        };
-                    });
-
-                    var overview_track_name = (view.overview_track ? view.overview_track.name : null);
-                    var payload = { 
-                        'view': view.to_json(), 
-                        'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
-                        'bookmarks': bookmarks
-                    };
-
-                    $.ajax({
-                        url: "${h.url_for( action='save' )}",
-                        type: "POST",
-                        data: {
-                            'vis_id': view.vis_id,
-                            'vis_title': view.title,
-                            'dbkey': view.dbkey,
-                            'payload': JSON.stringify(payload)
-                        },
-                        success: function(vis_id) {
-                            view.vis_id = vis_id;
-                            view.has_changes = false;
-                            hide_modal();
-                        },
-                        error: function() { alert("Could not save visualization"); }
-                    });
-                },
-                "Bookmarks": function() {
-                    // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                    parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show")); 
-                },
-                "Close": function() { window.location = "${h.url_for( controller='visualization', action='list' )}"; }
+            $("#add-tracks-icon").click( function() { add_tracks(); } );
+            
+            $("#add-group-icon").click( function() {
+                view.add_drawable( new DrawableGroup("New Group", view, view) );                
             });
             
+            $("#save-icon").click( function() {                
+                // Show saving dialog box
+                show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
+                                    
+                // Save bookmarks.
+                var bookmarks = [];
+                $(".bookmark").each(function() { 
+                    bookmarks[bookmarks.length] = {
+                        position: $(this).children(".position").text(),
+                        annotation: $(this).children(".annotation").text()
+                    };
+                });
+
+                // FIXME: give unique IDs to Drawables and save overview as ID.
+                var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null);
+                var payload = { 
+                    'view': view.to_json(), 
+                    'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
+                    'bookmarks': bookmarks
+                };
+
+                $.ajax({
+                    url: "${h.url_for( action='save' )}",
+                    type: "POST",
+                    data: {
+                        'vis_id': view.vis_id,
+                        'vis_title': view.title,
+                        'dbkey': view.dbkey,
+                        'payload': JSON.stringify(payload)
+                    },
+                    dataType: "json",
+                    success: function(vis_info) {
+                        hide_modal();
+                        view.vis_id = vis_info.vis_id;
+                        view.has_changes = false;
+                        
+                        // Needed to set URL when first saving a visualization.
+                        window.history.pushState({}, "", vis_info.url);
+                    },
+                    error: function() { alert("Could not save visualization"); }
+                });
+            });
+            
+            $("#bookmarks-icon").click( function() {
+                // HACK -- use style to determine if panel is hidden and hide/show accordingly.
+                parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));                 
+            });
+
+            $("#close-icon").click( function() {
+                window.location = "${h.url_for( controller='visualization', action='list' )}";
+            });  
+        
             $("#add-bookmark-button").click(function() {
                 // Add new bookmark.
                 var position = view.chrom + ":" + view.low + "-" + view.high,
                     annotation = "Bookmark description";
                 return add_bookmark(position, annotation);
             });
-            
+
+            // make_popupmenu( $("#bookmarks-more-button"), {
+            //     "Add from BED dataset": function() {
+            //         add_bookmarks();    
+            //     }
+            // });
+
             init_keyboard_nav(view);
         };
         
@@ -245,9 +306,14 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     <div class="unified-panel-header-inner">
         <div style="float:left;" id="title"></div>
         <div style="float: right">
-            <a id="viz-actions-button" class='panel-header-button popup' href="javascript:void(0)" target="galaxy_main">${_('Actions')}</a>
+            <a id="add-tracks-icon" class='icon-button menu-button' href="javascript:void(0);" title="Add tracks"></a>
+            <a id="add-group-icon" class='icon-button menu-button' href="javascript:void(0);" title="Add new group"></a>
+            <a id="bookmarks-icon" class='icon-button menu-button' href="javascript:void(0);" title="Bookmarks"></a>
+            <a id="save-icon" class='icon-button menu-button' href="javascript:void(0);" title="Save"></a>
+            <a id="close-icon" class='icon-button menu-button' href="javascript:void(0);" title="Close"></a>
         </div>
     </div>
+    <div style="clear: both"></div>
 </div>
 <div id="browser-container" class="unified-panel-body"></div>
 
@@ -257,14 +323,15 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 
 <div class="unified-panel-header" unselectable="on">
     <div class="unified-panel-header-inner">
+        <div style="float: right">
+            <a id="add-bookmark-button" class='icon-button menu-button plus-button' href="javascript:void(0);" title="Add bookmark"></a>
+            ## <a id="bookmarks-more-button" class='icon-button menu-button gear popup' href="javascript:void(0);" title="More actions"></a>
+        </div>
         Bookmarks
     </div>
 </div>
 <div class="unified-panel-body" style="overflow: auto;">
     <div id="bookmarks-container"></div>
-    <div>
-        <a class="icon-button import" style="margin-left: .5em; width: 100%" original-title="Add Bookmark" id="add-bookmark-button" href="javascript:void(0);">Add Bookmark</a>
-    </div>
 </div>
 
 </%def>

@@ -1,9 +1,14 @@
-<tool id="gatk_variant_recalibrator" name="Variant Recalibrator" version="0.0.1">
+<tool id="gatk_variant_recalibrator" name="Variant Recalibrator" version="0.0.2">
   <description></description>
+  <requirements>
+      <requirement type="package" version="1.2">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
-   -d "-B:input,%(file_type)s" "${reference_source.input_variants}" "${reference_source.input_variants.ext}" "input_variants"
+   #for $var_count, $variant in enumerate( $reference_source.variants ):
+      -d "--input:input_${var_count},%(file_type)s" "${variant.input_variants}" "${variant.input_variants.ext}" "input_variants_${var_count}"
+   #end for
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "VariantRecalibrator"
@@ -29,9 +34,9 @@
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
         #if $rod_binding.rod_bind_type.rod_training_type.rod_training_type_selector == "not_training_truth_known":
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+        -d "--resource:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #else:
-        -d "-B:${rod_bind_name},%(file_type)s,known=${rod_binding.rod_bind_type.rod_training_type.known},training=${rod_binding.rod_bind_type.rod_training_type.training},truth=${rod_binding.rod_bind_type.rod_training_type.truth},bad=${rod_binding.rod_bind_type.rod_training_type.bad},prior=${rod_binding.rod_bind_type.rod_training_type.prior}" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+        -d "--resource:${rod_bind_name},%(file_type)s,known=${rod_binding.rod_bind_type.rod_training_type.known},training=${rod_binding.rod_bind_type.rod_training_type.training},truth=${rod_binding.rod_bind_type.rod_training_type.truth},bad=${rod_binding.rod_bind_type.rod_training_type.bad},prior=${rod_binding.rod_bind_type.rod_training_type.prior}" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #end if
         #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
             -p '--rodToIntervalTrackName "${rod_bind_name}"'
@@ -53,14 +58,16 @@
             #end for
             '
         #end for
-        #if str( $gatk_param_type.input_intervals ) != "None":
-            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
-        #end if
-        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
-            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
-        #end if
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
         
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
         -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
             -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
@@ -72,11 +79,18 @@
         --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
         --validation_strictness "${gatk_param_type.validation_strictness}"
         --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
         '
-        #if str( $gatk_param_type.read_group_black_list ) != "None":
-            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
-        #end if
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
     #end if
+    
     #if str( $reference_source.reference_source_selector ) == "history":
         -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
     #end if
@@ -84,16 +98,16 @@
     
     ##start analysis specific options
     -p '
-    #if $annotations.value:
+    #if str( $annotations ) != "None":
         #for $annotation in str( $annotations ).split( ',' ):
             --use_annotation "${annotation}"
         #end for
     #end if
+    --mode "${mode}"
     '
     
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         -p '
-        --mode "${analysis_param_type.mode}"
         --maxGaussians "${analysis_param_type.max_gaussians}"
         --maxIterations "${analysis_param_type.max_iterations}"
         --numKMeans "${analysis_param_type.num_k_means}"
@@ -102,8 +116,11 @@
         --shrinkage "${analysis_param_type.shrinkage}"
         --dirichlet "${analysis_param_type.dirichlet}"
         --priorCounts "${analysis_param_type.prior_counts}"
-        --percentBadVariants "${analysis_param_type.percent_bad_variants}"
-        --minNumBadVariants "${analysis_param_type.min_num_bad_variants}"
+        #if str( $analysis_param_type.bad_variant_selector.bad_variant_selector_type ) == 'percent':
+            --percentBadVariants "${analysis_param_type.bad_variant_selector.percent_bad_variants}"
+        #else:
+            --minNumBadVariants "${analysis_param_type.bad_variant_selector.min_num_bad_variants}"
+        #end if
         --target_titv "${analysis_param_type.target_titv}"
         #for $tranche in [ $tranche.strip() for $tranche in str( $analysis_param_type.ts_tranche ).split( ',' ) if $tranche.strip() ]
             --TStranche "${tranche}"
@@ -131,15 +148,19 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variants" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <repeat name="variants" title="Variant" min="1">
+          <param name="input_variants" type="data" format="vcf" label="Variant file to recalibrate" />
+        </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
-            <filter type="data_meta" key="dbkey" ref="input_variants" column="dbkey"/>
+          <options from_data_table="gatk_picard_indexes">
+          <!--  <filter type="data_meta" key="dbkey" ref="variants[0].input_variants" column="dbkey"/> -->
           </options>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variants" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
+        <repeat name="variants" title="Variant" min="1">
+          <param name="input_variants" type="data" format="vcf" label="Variant file to recalibrate" />
+        </repeat>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
@@ -323,37 +344,42 @@
     
     <param name="annotations" type="select" multiple="True" display="checkboxes" label="annotations which should used for calculations">
       <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
-      <option value="AlleleBalance" />
-      <option value="BaseQualityRankSumTest" />
-      <option value="DepthOfCoverage" />
-      <option value="HomopolymerRun" />
-      <option value="MappingQualityRankSumTest" />
-      <option value="MappingQualityZero" />
-      <option value="QualByDepth" />
-      <option value="RMSMappingQuality" />
-      <option value="SpanningDeletions" />
-      <option value="HaplotypeScore" />
-      <!-- annotations below were pulled from list option -->
-      <option value="ChromosomeCounts" />
-      <option value="IndelType" />
-      <option value="HardyWeinberg" />
-      <option value="BaseCounts" />
-      <option value="LowMQ" />
-      <option value="FisherStrand" />
-      <option value="GenomicAnnotation" />
-      <option value="GCContent" />
-      <option value="ReadPosRankSumTest" />
-      <option value="SBByDepth" />
-      <option value="ReadDepthAndAllelicFractionBySample" />
-      <option value="AlleleBalanceBySample" />
-      <option value="DepthPerAlleleBySample" />
-      <option value="MappingQualityZeroBySample" />
-      <option value="NBaseCount" />
-      <option value="GLstats" />
-      <option value="SampleList" />
-      <option value="MappingQualityZeroFraction" />
+      <option value="ChromosomeCounts"/>
+      <option value="IndelType"/>
+      <option value="SpanningDeletions"/>
+      <option value="HardyWeinberg"/>
+      <option value="NBaseCount"/>
+      <option value="MappingQualityZero"/>
+      <option value="AlleleBalance"/>
+      <option value="BaseCounts"/>
+      <option value="LowMQ"/>
+      <option value="InbreedingCoeff"/>
+      <option value="RMSMappingQuality"/>
+      <option value="HaplotypeScore"/>
+      <option value="TechnologyComposition"/>
+      <option value="SampleList"/>
+      <option value="FisherStrand"/>
+      <option value="HomopolymerRun"/>
+      <option value="DepthOfCoverage"/>
+      <option value="SnpEff"/>
+      <option value="MappingQualityZeroFraction"/>
+      <option value="GCContent"/>
+      <option value="MappingQualityRankSumTest"/>
+      <option value="ReadPosRankSumTest"/>
+      <option value="BaseQualityRankSumTest"/>
+      <option value="QualByDepth"/>
+      <option value="SBByDepth"/>
+      <option value="ReadDepthAndAllelicFractionBySample"/>
+      <option value="AlleleBalanceBySample"/>
+      <option value="DepthPerAlleleBySample"/>
+      <option value="MappingQualityZeroBySample"/>
     </param>
     
+        <param name="mode" type="select" label="Recalibration mode">
+          <option value="SNP" selected="True">SNP</option>
+          <option value="INDEL">INDEL</option>
+          <option value="BOTH">BOTH</option>
+        </param>
     
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
@@ -365,28 +391,34 @@
       </when>
       <when value="advanced">
         <repeat name="sample_metadata" title="Sample Metadata">
-            <param name="sample_metadata_file" type="data" format="txt" label="Sample file(s) in JSON format" />
+            <param name="sample_metadata_file" type="data" format="txt" label="Sample file in JSON format" />
         </repeat>
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
-              <param name="read_filter_type_selector" type="select" label="Read Filter Type">
-                <option value="MaxReadLength" selected="True">MaxReadLength</option>
-                <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
-              </param>
-              <when value="ZeroMappingQualityRead">
-                  <!-- no extra options -->
-              </when>
-              <when value="MaxReadLength">
-                  <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
-              </when>
+		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+		        <option value="MaxReadLength" selected="True">MaxReadLength</option>
+		        <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+		      </param>
+	          <when value="ZeroMappingQualityRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MaxReadLength">
+	              <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+	          </when>
             </conditional>
         </repeat>
-        <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
-        <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
+        <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        
         <param name="BTI_merge_rule" type="select" label="BTI merge rule">
           <option value="UNION" selected="True">UNION</option>
           <option value="INTERSECTION">INTERSECTION</option>
         </param>
+        
         <conditional name="downsampling_type">
           <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
             <option value="NONE" selected="True">NONE</option>
@@ -394,55 +426,74 @@
             <option value="BY_SAMPLE">BY_SAMPLE</option>
           </param>
           <when value="NONE">
-              <!-- no more options here -->
-          </when>
+	          <!-- no more options here -->
+	      </when>
           <when value="ALL_READS">
-              <conditional name="downsample_to_type">
-                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
-                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
-                      <option value="downsample_to_coverage">Downsample by Coverage</option>
-                  </param>
-                  <when value="downsample_to_fraction">
-                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
-                  </when>
-                  <when value="downsample_to_coverage">
-                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
-                  </when>
-              </conditional>
-          </when>
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
           <when value="BY_SAMPLE">
-              <conditional name="downsample_to_type">
-                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
-                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
-                      <option value="downsample_to_coverage">Downsample by Coverage</option>
-                  </param>
-                  <when value="downsample_to_fraction">
-                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
-                  </when>
-                  <when value="downsample_to_coverage">
-                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
-                  </when>
-              </conditional>
-          </when>
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
         </conditional>
         <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
           <option value="OFF" selected="True">OFF</option>
           <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
           <option value="RECALCULATE">RECALCULATE</option>
         </param>
-        <param name="baq_gap_open_penalty" type="integer" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
         <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
         <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
         <param name="validation_strictness" type="select" label="How strict should we be with validation">
           <option value="STRICT" selected="True">STRICT</option>
           <option value="LENIENT">LENIENT</option>
           <option value="SILENT">SILENT</option>
+          <!-- <option value="DEFAULT_STRINGENCY">DEFAULT_STRINGENCY</option> listed in docs, but not valid value...-->
         </param>
         <param name="interval_merging" type="select" label="Interval merging rule">
           <option value="ALL" selected="True">ALL</option>
           <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
         </param>
-        <param name="read_group_black_list" type="data" format="txt" optional="True" label="Read group black list" />
+        
+        <repeat name="read_group_black_list_repeat" title="Read group black list">
+          <conditional name="read_group_black_list_type">
+            <param name="read_group_black_list_type_selector" type="select" label="Type of reads read group black list">
+              <option value="file" selected="True">Filters in file</option>
+              <option value="text">Specify filters as a string</option>
+            </param>
+            <when value="file">
+	          <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
+	        </when>
+            <when value="text">
+	          <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
+	        </when>
+          </conditional>
+        </repeat>
+        
+        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality." checked="False"/>
+        <param name="non_deterministic_random_seed" type="boolean" truevalue="--nonDeterministicRandomSeed" falsevalue="" label="Makes the GATK behave non deterministically, that is, the random numbers generated will be different in every run" checked="False" />
+        
       </when>
     </conditional>
     
@@ -455,11 +506,6 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="mode" type="select" label="Recalibration mode">
-          <option value="SNP" selected="True">SNP</option>
-          <option value="INDEL">INDEL</option>
-          <option value="BOTH">BOTH</option>
-        </param>
         <param name="max_gaussians" type="integer" label="maximum number of Gaussians to try during variational Bayes Algorithm" value="10"/>
         <param name="max_iterations" type="integer" label="maximum number of maximum number of VBEM iterations to be performed in variational Bayes Algorithm" value="100"/>
         <param name="num_k_means" type="integer" label="number of k-means iterations to perform in order to initialize the means of the Gaussians in the Gaussian mixture model" value="30"/>
@@ -468,8 +514,18 @@
         <param name="shrinkage" type="float" label="shrinkage parameter in variational Bayes algorithm" value="1.0"/>
         <param name="dirichlet" type="float" label="dirichlet parameter in variational Bayes algorithm" value="0.001"/>
         <param name="prior_counts" type="float" label="number of prior counts to use in variational Bayes algorithm" value="20.0"/>
-        <param name="percent_bad_variants" type="float" label="percentage of the worst scoring variants to use when building the Gaussian mixture model of bad variants. 0.07 means bottom 7 percent." value="0.03"/>
-        <param name="min_num_bad_variants" type="integer" label="minimum amount of worst scoring variants to use when building the Gaussian mixture model of bad variants. Will override -percentBad arugment if necessary" value="2000"/>
+        <conditional name="bad_variant_selector">
+          <param name="bad_variant_selector_type" type="select" label="How to specify bad variants">
+            <option value="percent" selected="True">Percent</option>
+            <option value="min_num">Number</option>
+          </param>
+          <when value="percent">
+            <param name="percent_bad_variants" type="float" label="percentage of the worst scoring variants to use when building the Gaussian mixture model of bad variants. 0.07 means bottom 7 percent." value="0.03"/>
+          </when>
+          <when value="min_num">
+            <param name="min_num_bad_variants" type="integer" label="minimum amount of worst scoring variants to use when building the Gaussian mixture model of bad variants. Will override -percentBad arugment if necessary" value="2000"/>
+          </when>
+        </conditional>
         <param name="target_titv" type="float" label="expected novel Ti/Tv ratio to use when calculating FDR tranches and for display on optimization curve output figures. (approx 2.15 for whole genome experiments). ONLY USED FOR PLOTTING PURPOSES!" value="2.15"/>
         <param name="ts_tranche" type="text" label="levels of novel false discovery rate (FDR, implied by ti/tv) at which to slice the data. (in percent, that is 1.0 for 1 percent)" value="100.0, 99.9, 99.0, 90.0"/>
         <repeat name="ignore_filters" title="Ignore Filter">

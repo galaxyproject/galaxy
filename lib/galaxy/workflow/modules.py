@@ -8,6 +8,9 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
+import logging
+
+log = logging.getLogger( __name__ )
 
 class WorkflowModule( object ):
     
@@ -163,35 +166,53 @@ class ToolModule( WorkflowModule ):
     def __init__( self, trans, tool_id ):
         self.trans = trans
         self.tool_id = tool_id
-        self.tool = trans.app.toolbox.tools_by_id[ tool_id ]
+        try:
+            self.tool = trans.app.toolbox.tools_by_id[ tool_id ]
+        except KeyError, e:
+            # Handle the case where the workflow requires a tool not available in the local Galaxy instance.
+            self.tool = None
+            # The id value of tools installed from a Galaxy tool shed is a guid, but
+            # these tool's old_id attribute should contain what we're looking for.
+            for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
+                if tool_id == available_tool.old_id:
+                    self.tool = available_tool
+                    break
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
-        self.errors = None
-
+        if self.tool:
+            self.errors = None
+        else:
+            self.errors = {}
+            self.errors[ tool_id ] = 'Tool unavailable'
     @classmethod
     def new( Class, trans, tool_id=None ):
         module = Class( trans, tool_id )
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
-        
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
-        tool_id = d['tool_id']
+        tool_id = d[ 'tool_id' ]
         module = Class( trans, tool_id )
         module.state = DefaultToolState()
-        module.state.decode( d["tool_state"], module.tool, module.trans.app, secure=secure )
+        if module.tool is not None:
+            module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
-        module.post_job_actions = d.get("post_job_actions", {})
-        module.workflow_outputs = d.get("workflow_outputs", [])
+        module.post_job_actions = d.get( "post_job_actions", {} )
+        module.workflow_outputs = d.get( "workflow_outputs", [] )
         return module
-        
     @classmethod
     def from_workflow_step( Class, trans, step ):
         tool_id = step.tool_id
-        if tool_id not in trans.app.toolbox.tools_by_id:
-            return None
-        else:
+        install_tool_id = None
+        if trans.app.toolbox and tool_id not in trans.app.toolbox.tools_by_id:
+            # The id value of tools installed from a Galaxy tool shed is a guid, but
+            # these tool's old_id attribute should contain what we're looking for.
+            for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
+                if tool_id == available_tool.old_id:
+                    install_tool_id = available_tool_id
+                    break
+        if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ) or install_tool_id:
             module = Class( trans, tool_id )
             module.state = DefaultToolState()
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
@@ -203,12 +224,16 @@ class ToolModule( WorkflowModule ):
                 pjadict[pja.action_type] = pja
             module.post_job_actions = pjadict
             return module
-
+        return None
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = self.tool_id
-        step.tool_version = self.get_tool_version()
-        step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
+        if self.tool:
+            step.tool_version = self.get_tool_version()
+            step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
+        else:
+            step.tool_version = None
+            step.tool_inputs = None
         step.tool_errors = self.errors
         for k, v in self.post_job_actions.iteritems():
             # Must have action_type, step.  output and a_args are optional.
@@ -221,9 +246,10 @@ class ToolModule( WorkflowModule ):
             else:
                 action_arguments = None
             n_p = PostJobAction(v['action_type'], step, output_name, action_arguments)
-
     def get_name( self ):
-        return self.tool.name
+        if self.tool:
+            return self.tool.name
+        return 'unavailable'
     def get_tool_id( self ):
         return self.tool_id
     def get_tool_version( self ):
@@ -234,7 +260,6 @@ class ToolModule( WorkflowModule ):
         return self.errors
     def get_tooltip( self ):
         return self.tool.help
-        
     def get_data_inputs( self ):
         data_inputs = []
         def callback( input, value, prefixed_name, prefixed_label ):
@@ -268,15 +293,12 @@ class ToolModule( WorkflowModule ):
                         formats.append( format )
             data_outputs.append( dict( name=name, extensions=formats ) )
         return data_outputs
-    
     def get_post_job_actions( self ):
         return self.post_job_actions
-        
     def get_config_form( self ):
         self.add_dummy_datasets()
         return self.trans.fill_template( "workflow/editor_tool_form.mako", 
             tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
-
     def update_state( self, incoming ):       
         # Build a callback that handles setting an input to be required at
         # runtime. We still process all other parameters the user might have
@@ -306,10 +328,8 @@ class ToolModule( WorkflowModule ):
         # Update state using incoming values
         errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming, item_callback=item_callback )
         self.errors = errors or None
-        
     def check_and_update_state( self ):
         return self.tool.check_and_update_param_values( self.state.inputs, self.trans )
-        
     def add_dummy_datasets( self, connections=None):
         if connections:
             # Store onnections by input name
@@ -324,8 +344,7 @@ class ToolModule( WorkflowModule ):
                 if connections is None or prefixed_name in input_connections_by_name:
                     return DummyDataset()
         visit_input_values( self.tool.inputs, self.state.inputs, callback ) 
-    
-    
+
 class WorkflowModuleFactory( object ):
     def __init__( self, module_types ):
         self.module_types = module_types

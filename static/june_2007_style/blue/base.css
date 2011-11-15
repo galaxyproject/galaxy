@@ -43,6 +43,7 @@ div.form-row label.inline{display:inline;}
 div.form-row-input{float:left;}
 div.form-row-input label{font-weight:normal;display:inline;}
 div.form-row-error-message{width:300px;float:left;color:red;font-weight:bold;padding:3px 0 0 1em;}
+.form-row .help{color:#666;}
 select,input,textarea{font:inherit;}
 select,textarea,input[type="text"],input[type="file"],input[type="password"]{-webkit-box-sizing:border-box;max-width:300px;}
 .errormessagelarge,.warningmessagelarge,.donemessagelarge,.infomessagelarge{padding:10px;padding-left:52px;min-height:32px;border:1px solid #AA6666;background-color:#FFCCCC;background-image:url(error_message_icon.png);background-repeat:no-repeat;background-position:10px 10px;}
@@ -150,9 +151,10 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.tag{background:url(fugue.png) no-repeat 0px -0px;}
 .icon-button.tags{background:url(fugue.png) no-repeat 0px -26px;}
 .icon-button.tag--plus{background:url(fugue.png) no-repeat 0px -52px;}
-.icon-button.toggle-expand{background:url(fugue.png) no-repeat 0px -78px;}
-.icon-button.toggle{background:url(fugue.png) no-repeat 0px -104px;}
-.icon-button.toggle-contract{background:url(fugue.png) no-repeat 0px -104px;}
+.icon-button.toggle-expand{background:transparent url(../images/fugue/toggle-expand-bw.png) no-repeat;}
+.icon-button.toggle-expand:hover{background:url(fugue.png) no-repeat 0px -78px;}
+.icon-button.toggle-contract{background:transparent url(../images/fugue/toggle-bw.png) no-repeat;}
+.icon-button.toggle-contract:hover{background:url(fugue.png) no-repeat 0px -104px;}
 .icon-button.arrow-circle{background:url(fugue.png) no-repeat 0px -130px;}
 .icon-button.chevron{background:url(fugue.png) no-repeat 0px -156px;}
 .icon-button.bug{background:url(fugue.png) no-repeat 0px -182px;}
@@ -162,6 +164,8 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.vis-chart{background:url(fugue.png) no-repeat 0px -286px;}
 .icon-button.go-to-full-screen{background:url(fugue.png) no-repeat 0px -312px;}
 .icon-button.import{background:url(fugue.png) no-repeat 0px -338px;}
+.icon-button.plus-button{background:url(fugue.png) no-repeat 0px -364px;}
+.icon-button.gear{background:url(fugue.png) no-repeat 0px -390px;}
 .tipsy{padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);}
 .tipsy-inner{padding:5px 8px 4px 8px;background-color:black;color:white;max-width:200px;text-align:center;}
 .tipsy-north{background-position:top center;}
@@ -170,7 +174,7 @@ div.permissionContainer{padding-left:20px;}
 .tipsy-west{background-position:left center;}
 .editable-text{cursor:pointer;}
 .editable-text:hover{cursor:text;border:dotted #999999 1px;}
-.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -364px;}
+.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -416px;}
 .icon-button.multiinput{background:url(../images/documents-stack.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
 .icon-button.multiinput.disabled{background:url(../images/documents-stack-faded.png) no-repeat;cursor:auto;}
 .workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px;}

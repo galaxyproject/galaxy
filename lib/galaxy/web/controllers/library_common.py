@@ -1855,7 +1855,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                                         status=status )
             
     @web.expose
-    def import_datasets_to_histories( self, trans, cntrller, library_id='', folder_id='', ldda_ids='', target_history_ids='', new_history_name='', **kwd ):
+    def import_datasets_to_histories( self, trans, cntrller, library_id='', folder_id='', ldda_ids='', target_history_id='', target_history_ids='', new_history_name='', **kwd ):
         # This method is called from one of the following places:
         # - a menu option for a library dataset ( ldda_ids is a single ldda id )
         # - a menu option for a library folder ( folder_id has a value )
@@ -1870,7 +1870,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         action = params.get( 'do_action', None )
         user = trans.get_user()
         current_history = trans.get_history()
-        selected_history_id = params.get( 'selected_history_id', trans.security.encode_id( current_history.id ) )
         if library_id:
             library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( library_id ) )
         else:
@@ -1882,9 +1881,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         ldda_ids = util.listify( ldda_ids )
         if ldda_ids:
             ldda_ids = map( trans.security.decode_id, ldda_ids )
-        target_history_ids = util.listify( target_history_ids )
         if target_history_ids:
-            target_history_ids = [ trans.security.decode_id( target_history_id ) for target_history_id in target_history_ids if target_history_id ]
+            target_history_ids = util.listify( target_history_ids )
+            target_history_ids = set( [ trans.security.decode_id( target_history_id ) for target_history_id in target_history_ids if target_history_id ] )
+        elif target_history_id:
+            target_history_ids = [ trans.security.decode_id( target_history_id ) ]
         if params.get( 'import_datasets_to_histories_button', False ):
             invalid_datasets = 0
             if not ldda_ids or not ( target_history_ids or new_history_name ):
@@ -1965,7 +1966,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                                     library=library,
                                     current_history=current_history,
                                     ldda_ids=ldda_ids,
-                                    selected_history_id=selected_history_id,
+                                    target_history_id=target_history_id,
                                     target_history_ids=target_history_ids,
                                     source_lddas=source_lddas,
                                     target_histories=target_histories,

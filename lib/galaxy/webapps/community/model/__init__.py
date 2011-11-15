@@ -204,6 +204,34 @@ class ItemTagAssociation ( object ):
         self.value = None
         self.user_value = None
 
+class Workflow( object ):
+    def __init__( self ):
+        self.user = None
+        self.name = None
+        self.has_cycles = None
+        self.has_errors = None
+        self.steps = []
+
+class WorkflowStep( object ):
+    def __init__( self ):
+        self.id = None
+        self.type = None
+        self.name = None
+        self.tool_id = None
+        self.tool_inputs = None
+        self.tool_errors = None
+        self.position = None
+        self.input_connections = []
+        #self.output_connections = []
+        self.config = None
+
+class WorkflowStepConnection( object ):
+    def __init__( self ):
+        self.output_step = None
+        self.output_name = None
+        self.input_step = None
+        self.input_name = None
+
 ## ---- Utility methods -------------------------------------------------------
 def sort_by_attr( seq, attr ):
     """

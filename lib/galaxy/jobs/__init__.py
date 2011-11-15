@@ -327,9 +327,13 @@ class JobWrapper( object ):
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         self.output_paths = None
+        self.output_dataset_paths = None
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
+
+    def get_job_runner( self ):
+        return self.tool.job_runner
 
     def get_job( self ):
         return self.sa_session.query( model.Job ).get( self.job_id )
@@ -591,7 +595,7 @@ class JobWrapper( object ):
 
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info  = context['stdout'] + context['stderr']
+                dataset.info = ( dataset.info  or '' ) + context['stdout'] + context['stderr']
                 dataset.tool_version = self.version_string
                 dataset.set_size()
                 # Update (non-library) job output datasets through the object store
@@ -724,23 +728,35 @@ class JobWrapper( object ):
     def get_session_id( self ):
         return self.session_id
 
+    def get_input_dataset_fnames( self,  ds ):
+        filenames = []
+        filenames = [ ds.file_name ]
+        #we will need to stage in metadata file names also
+        #TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
+        for key, value in ds.metadata.items():
+            if isinstance( value, model.MetadataFile ):
+                filenames.append( value.file_name )
+        return filenames
+
     def get_input_fnames( self ):
         job = self.get_job()
         filenames = []
         for da in job.input_datasets + job.input_library_datasets: #da is JobToInputDatasetAssociation object
             if da.dataset:
-                filenames.append( da.dataset.file_name )
-                #we will need to stage in metadata file names also
-                #TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
-                for key, value in da.dataset.metadata.items():
-                    if isinstance( value, model.MetadataFile ):
-                        filenames.append( value.file_name )
+                filenames.extend(self.get_input_dataset_fnames(da.dataset))
         return filenames
 
     def get_output_fnames( self ):
-        if self.output_paths is not None:
-            return self.output_paths
+        if self.output_paths is None:
+            self.compute_outputs()
+        return self.output_paths
 
+    def get_output_datasets_and_fnames( self ):
+        if self.output_dataset_paths is None:
+            self.compute_outputs()
+        return self.output_dataset_paths
+
+    def compute_outputs( self ) :
         class DatasetPath( object ):
             def __init__( self, dataset_id, real_path, false_path = None ):
                 self.dataset_id = dataset_id
@@ -751,23 +767,27 @@ class JobWrapper( object ):
                     return self.real_path
                 else:
                     return self.false_path
-
         job = self.get_job()
         # Job output datasets are combination of output datasets, library datasets, and jeha datasets.
         jeha = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
+        jeha_false_path = None
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
+            self.output_dataset_paths = {}
             for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
-                self.output_paths.append( DatasetPath( data.id, data.file_name, false_path ) )
+                dsp = DatasetPath( data.id, data.file_name, false_path )
+                self.output_paths.append( dsp )
+                self.output_dataset_paths[name] = data,  dsp
             if jeha:
-                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % jeha.dataset.id ) )
-                self.output_paths.append( DatasetPath( jeha.dataset.id, jeha.dataset.file_name, false_path ) )
+                jeha_false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % jeha.dataset.id ) )
         else:
-            self.output_paths = [ DatasetPath( da.dataset.dataset.id, da.dataset.file_name ) for da in job.output_datasets + job.output_library_datasets ]
-            if jeha:
-                self.output_paths.append( DatasetPath( jeha.dataset.id, jeha.dataset.file_name ) )
-
+            results = [ (da.name,  da.dataset,  DatasetPath( da.dataset.dataset.id, da.dataset.file_name )) for da in job.output_datasets + job.output_library_datasets ]
+            self.output_paths = [t[2] for t in results]
+            self.output_dataset_paths = dict([(t[0],  t[1:]) for t in results])
+        if jeha:
+            dsp = DatasetPath( jeha.dataset.id, jeha.dataset.file_name, jeha_false_path )
+            self.output_paths.append( dsp )
         return self.output_paths
 
     def get_output_file_id( self, file ):
@@ -877,12 +897,11 @@ class TaskWrapper(JobWrapper):
     def __init__(self, task, queue):
         super(TaskWrapper, self).__init__(task.job, queue)
         self.task_id = task.id
-        self.parallelism = None
-        if task.part_file:
-            #do this better
-            self.working_directory = os.path.dirname(task.part_file)
+        self.working_directory = task.working_directory
+        if task.prepare_input_files_cmd is not None:
+            self.prepare_input_files_cmds = [ task.prepare_input_files_cmd ]
         else:
-            self.working_directory = None
+            self.prepare_input_files_cmds = None
         self.status = task.states.NEW
 
     def get_job( self ):
@@ -1110,22 +1129,22 @@ class DefaultJobDispatcher( object ):
             self.job_runners[name] = runner( self.app )
             log.debug( 'Loaded job runner: %s' % display_name )
 
+    def __get_runner_name( self, job_wrapper ):
+        if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
+            runner_name = "tasks"
+        else:
+            runner_name = ( job_wrapper.get_job_runner().split(":", 1) )[0]
+        return runner_name
+
     def put( self, job_wrapper ):
         try:
-            if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None:
-                if isinstance(job_wrapper, TaskWrapper):
-                    #DBTODO Refactor
-                    runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
-                    log.debug( "dispatching task %s, of job %d, to %s runner" %( job_wrapper.task_id, job_wrapper.job_id, runner_name ) )
-                    self.job_runners[runner_name].put( job_wrapper )
-                else:
-                    runner_name = "tasks"
-                    log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
-                    self.job_runners[runner_name].put( job_wrapper )
+            runner_name = self.__get_runner_name( job_wrapper )
+            if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and isinstance(job_wrapper, TaskWrapper):
+                #DBTODO Refactor
+                log.debug( "dispatching task %s, of job %d, to %s runner" %( job_wrapper.task_id, job_wrapper.job_id, runner_name ) )
             else:
-                runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
                 log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
-                self.job_runners[runner_name].put( job_wrapper )
+            self.job_runners[runner_name].put( job_wrapper )
         except KeyError:
             log.error( 'put(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
             job_wrapper.fail( 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.' )
@@ -1257,4 +1276,3 @@ class NoopQueue( object ):
         return
     def shutdown( self ):
         return
-

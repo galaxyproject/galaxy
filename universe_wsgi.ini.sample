@@ -124,8 +124,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #new_file_path = database/tmp
 
 # Tool config files, defines what tools are available in Galaxy.
-# Tools can be locally developed or installed from tool sheds.
-#tool_config_file = tool_conf.xml
+# Tools can be locally developed or installed from Galaxy tool sheds.
+#tool_config_file = tool_conf.xml,shed_tool_conf.xml
 
 # Default path to the directory containing the tools defined in tool_conf.xml.
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
@@ -405,6 +405,9 @@ use_interactive = True
 # Allow administrators to delete accounts.
 #allow_user_deletion = False
 
+# Allow administrators to log in as other users (useful for debugging)
+#allow_user_impersonation = False
+
 # Allow users to remove their datasets from disk immediately (otherwise,
 # datasets will be removed after a time period specified by an administrator in
 # the cleanup scripts run via cron)
@@ -471,6 +474,15 @@ use_interactive = True
 
 # Enable enforcement of quotas.  Quotas can be set from the Admin interface.
 #enable_quotas = False
+
+# Enable a feature when running workflows. When enabled, default datasets
+# are selected for "Set at Runtime" inputs from the history such that the
+# same input will not be selected twice, unless there are more inputs than
+# compatible datasets in the history.
+# When False, the most recently added compatible item in the history will
+# be used for each "Set at Runtime" input, independent of others in the Workflow
+#enable_unique_workflow_defaults = False
+
 
 # -- Job Execution
 

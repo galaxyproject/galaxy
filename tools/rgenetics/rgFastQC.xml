@@ -1,4 +1,4 @@
-<tool name="Fastqc: Fastqc QC" id="fastqc" version="0.1">
+<tool name="Fastqc: Fastqc QC" id="fastqc" version="0.2">
   <description>using FastQC from Babraham</description>
   <command interpreter="python">
     rgFastQC.py -i $input_file -d $html_file.files_path -o $html_file -n "$out_prefix" -f $input_file.ext -e ${GALAXY_DATA_INDEX_DIR}/shared/jars/FastQC/fastqc

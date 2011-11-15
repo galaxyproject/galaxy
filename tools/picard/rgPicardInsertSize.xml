@@ -1,25 +1,32 @@
-<tool name="Insertion size metrics" id="PicardInsertSize" version="0.3.0">
+<tool name="Insertion size metrics" id="PicardInsertSize" version="1.56.0">
   <description>for PAIRED data</description>
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
-   picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --taillimit "$tailLimit"
-   --histwidth "$histWidth" --minpct "$minPct"
-   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/CollectInsertSizeMetrics.jar" -d "$html_file.files_path" -t "$html_file"
+   picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --deviations "$deviations"
+   --histwidth "$histWidth" --minpct "$minPct" --malevel "$malevel"
+   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/CollectInsertSizeMetrics.jar" -d "$html_file.files_path" -t "$html_file"
   </command>
   <inputs>
     <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset to generate statistics for"
       help="If empty, upload or import a SAM/BAM dataset."/>
     <param name="out_prefix" value="Insertion size metrics" type="text"
       label="Title for the output file" help="Use this remind you what the job was for" size="120" />
-    <param name="tailLimit" value="10000" type="integer"
-      label="Tail limit" size="5" 
-      help="When calculating mean and stdev stop when the bins in the tail of the distribution contain fewer than mode/TAIL_LIMIT items" />
+    <param name="deviations" value="10.0" type="float"
+      label="Deviations" size="5" 
+      help="See Picard documentation: Generate mean, sd and plots by trimming the data down to MEDIAN + DEVIATIONS*MEDIAN_ABSOLUTE_DEVIATION" />
      <param name="histWidth" value="0" type="integer"
       label="Histogram width" size="5" 
-      help="Explicitly sets the histogram width, overriding the TAIL_LIMIT option - leave 0 to ignore" />
-     <param name="minPct" value="0.01" type="float"
+      help="Explicitly sets the histogram width option - leave 0 to ignore" />
+     <param name="minPct" value="0.05" type="float"
       label="Minimum percentage" size="5" 
       help="Discard any data categories (out of FR, TANDEM, RF) that have fewer than this percentage of overall reads" />
+     <param name="malevel" value="0" type="select" multiple="true"  label="Metric Accumulation Level"
+      help="Level(s) at which metrics will be accumulated">
+      <option value="ALL_READS" selected="true">All reads (default)</option>
+      <option value="SAMPLE" default="true">Sample</option>
+      <option value="LIBRARY" default="true">Library</option>
+      <option value="READ_GROUP" default="true">Read group</option>
+     </param>
   </inputs>
   <outputs>
     <data format="html" name="html_file" label="InsertSize_${out_prefix}.html"/>
@@ -28,9 +35,10 @@
     <test>
       <param name="input_file" value="picard_input_tiny.sam" />
       <param name="out_prefix" value="Insertion size metrics" />
-      <param name="tailLimit" value="10000" />
+      <param name="deviations" value="10.0" />
       <param name="histWidth" value="0" />
       <param name="minPct" value="0.01" />
+      <param name="malevel" value="ALL_READS" />
       <output name="html_file" file="picard_output_insertsize_tinysam.html" ftype="html" compare="contains" lines_diff="40" />
     </test>
   </tests>

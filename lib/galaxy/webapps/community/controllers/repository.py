@@ -1,4 +1,4 @@
-import os, logging, urllib, ConfigParser, tempfile, shutil
+import os, logging, tempfile, shutil
 from time import strftime
 from datetime import date, datetime
 from galaxy import util
@@ -182,20 +182,20 @@ class RepositoryListGrid( grids.Grid ):
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
 
-class DownloadableRepositoryListGrid( RepositoryListGrid ):
+class ValidRepositoryListGrid( RepositoryListGrid ):
     class RevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
             """
             Display a SelectField whose options are the changeset_revision
-            strings of all downloadable_revisions of this repository.
+            strings of all download-able revisions of this repository.
             """
             select_field = build_changeset_revision_select_field( trans, repository )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
             return repository.revision
-    title = "Downloadable repositories"
+    title = "Valid repositories"
     columns = [
         RepositoryListGrid.NameColumn( "Name",
                                        key="name",
@@ -209,20 +209,86 @@ class DownloadableRepositoryListGrid( RepositoryListGrid ):
                                        attach_popup=False,
                                        key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
-                                                cols_to_filter=[ columns[0], columns[1] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
     operations = []
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ) \
                                .join( model.RepositoryMetadata.table ) \
                                .join( model.User.table )
 
+class MatchedRepositoryListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.repository.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.repository.description
+    class RevisionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.changeset_revision
+    class UserColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.repository.user:
+                return repository_metadata.repository.user.username
+            return 'no user'
+    # Grid definition
+    title = "Matching repositories"
+    model_class = model.RepositoryMetadata
+    template='/webapps/community/repository/grid.mako'
+    default_sort_key = "Repository.name"
+    columns = [
+        NameColumn( "Repository name",
+                    link=( lambda item: dict( operation="view_or_manage_repository",
+                                              id=item.id,
+                                              webapp="community" ) ),
+                    attach_popup=True ),
+        DescriptionColumn( "Synopsis",
+                           attach_popup=False ),
+        RevisionColumn( "Revision" ),
+        UserColumn( "Owner",
+                     model_class=model.User,
+                     attach_popup=False )
+    ]
+    operations = []
+    standard_filters = []
+    default_filter = {}
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, trans, **kwd ):
+        match_tuples = kwd.get( 'match_tuples', [] )
+        clause_list = []
+        if match_tuples:
+            for match_tuple in match_tuples:
+                repository_id, changeset_revision = match_tuple
+                clause_list.append( "%s=%d and %s='%s'" % ( self.model_class.table.c.repository_id,
+                                                            int( repository_id ),
+                                                            self.model_class.table.c.changeset_revision,
+                                                            changeset_revision ) )
+            return trans.sa_session.query( self.model_class ) \
+                                   .join( model.Repository ) \
+                                   .join( model.User.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .order_by( model.Repository.name )
+        # Return an empty query
+        return trans.sa_session.query( self.model_class ) \
+                               .join( model.Repository ) \
+                               .join( model.User.table ) \
+                               .filter( self.model_class.table.c.repository_id == 0 )
+
+class InstallMatchedRepositoryListGrid( MatchedRepositoryListGrid ):
+    columns = [ col for col in MatchedRepositoryListGrid.columns ]
+    # Override the NameColumn
+    columns[ 0 ] = MatchedRepositoryListGrid.NameColumn( "Name",
+                                                         link=( lambda item: dict( operation="view_or_manage_repository",
+                                                                                   id=item.id,
+                                                                                   webapp="galaxy" ) ),
+                                                         attach_popup=False )
+
 class RepositoryController( BaseUIController, ItemRatings ):
 
-    downloadable_repository_list_grid = DownloadableRepositoryListGrid()
+    install_matched_repository_list_grid = InstallMatchedRepositoryListGrid()
+    matched_repository_list_grid = MatchedRepositoryListGrid()
+    valid_repository_list_grid = ValidRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
     category_list_grid = CategoryListGrid()
 
@@ -231,7 +297,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        return trans.fill_template( '/webapps/community/index.mako', message=message, status=status )
+        # See if there are any RepositoryMetadata records since menu items require them.
+        repository_metadata = trans.sa_session.query( model.RepositoryMetadata ).first()
+        return trans.fill_template( '/webapps/community/index.mako',
+                                    repository_metadata=repository_metadata,
+                                    message=message,
+                                    status=status )
     @web.expose
     def browse_categories( self, trans, **kwd ):
         if 'f-free-text-search' in kwd:
@@ -261,9 +332,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # Render the list view
         return self.category_list_grid( trans, **kwd )
     @web.expose
-    def browse_downloadable_repositories( self, trans, **kwd ):
-        # Set the toolshedgalaxyurl cookie so we can get back
-        # to the calling local Galaxy instance.
+    def browse_valid_repositories( self, trans, **kwd ):
+        webapp = kwd.get( 'webapp', 'community' )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
@@ -274,9 +344,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 repository = get_repository( trans, repository_id )
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
+                                                                  webapp=webapp,
                                                                   repository_id=repository_id,
                                                                   changeset_revision=repository.tip ) )
-
         # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
         # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
         # of the many select fields on the grid performed the refresh_on_change, so we loop through 
@@ -291,29 +361,344 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if repository.tip != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='preview_tools_in_changeset',
+                                                                      webapp=webapp,
                                                                       repository_id=trans.security.encode_id( repository.id ),
                                                                       changeset_revision=v ) )
-        url_args = dict( action='browse_downloadable_repositories',
+        url_args = dict( action='browse_valid_repositories',
                          operation='preview_tools_in_changeset',
+                         webapp=webapp,
                          repository_id=repository_id )
-        self.downloadable_repository_list_grid.operations = [ grids.GridOperation( "Preview and install tools",
-                                                                                   url_args=url_args,
-                                                                                   allow_multiple=False,
-                                                                                   async_compatible=False ) ]
-
+        self.valid_repository_list_grid.operations = [ grids.GridOperation( "Preview and install",
+                                                                            url_args=url_args,
+                                                                            allow_multiple=False,
+                                                                            async_compatible=False ) ]
         # Render the list view
-        return self.downloadable_repository_list_grid( trans, **kwd )
+        return self.valid_repository_list_grid( trans, **kwd )
+    @web.expose
+    def find_workflows( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if galaxy_url:
+            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        if 'operation' in kwd:
+            item_id = kwd.get( 'id', '' )
+            if item_id:
+                operation = kwd[ 'operation' ].lower()
+                is_admin = trans.user_is_admin()
+                if operation == "view_or_manage_repository":
+                    # The received id is a RepositoryMetadata id, so we have to get the repository id.
+                    repository_metadata = get_repository_metadata_by_id( trans, item_id )
+                    repository_id = trans.security.encode_id( repository_metadata.repository.id )
+                    repository = get_repository( trans, repository_id )
+                    kwd[ 'id' ] = repository_id
+                    kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
+                    if webapp == 'community' and ( is_admin or repository.user == trans.user ):
+                        a = 'manage_repository'
+                    else:
+                        a = 'view_repository'
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action=a,
+                                                                      **kwd ) )
+                if operation == "install":
+                    galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+                    encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
+                    # TODO: support https in the following url.
+                    url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
+                        ( galaxy_url, trans.request.host, webapp, encoded_repo_info_dict )
+                    return trans.response.send_redirect( url )
+            else:
+                # This can only occur when there is a multi-select grid with check boxes and an operation,
+                # and the user clicked the operation button without checking any of the check boxes.
+                return trans.show_error_message( "No items were selected." )
+        workflow_names = [ item.lower() for item in util.listify( kwd.get( 'workflow_name', '' ) ) ]
+        exact_matches = params.get( 'exact_matches', '' )
+        exact_matches_checked = CheckboxField.is_checked( exact_matches )
+        match_tuples = []
+        ok = True
+        if workflow_names:
+            ok, match_tuples = self.__search_repository_metadata( trans, exact_matches_checked, workflow_names=workflow_names )
+            if ok:
+                kwd[ 'match_tuples' ] = match_tuples
+                # Render the list view
+                if webapp == 'galaxy':
+                    # Our initial request originated from a Galaxy instance.
+                    global_actions = [ grids.GridAction( "Browse valid repositories",
+                                                         dict( controller='repository', action='browse_valid_repositories', webapp=webapp ) ),
+                                       grids.GridAction( "Search for valid tools",
+                                                         dict( controller='repository', action='find_tools', webapp=webapp ) ),
+                                       grids.GridAction( "Search for workflows",
+                                                         dict( controller='repository', action='find_workflows', webapp=webapp ) ) ]
+                    self.install_matched_repository_list_grid.global_actions = global_actions
+                    install_url_args = dict( controller='repository', action='find_workflows', webapp=webapp )
+                    operations = [ grids.GridOperation( "Install", url_args=install_url_args, allow_multiple=True, async_compatible=False ) ]
+                    self.install_matched_repository_list_grid.operations = operations
+                    return self.install_matched_repository_list_grid( trans, **kwd )
+                else:
+                    kwd[ 'message' ] = "workflow name: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
+                        ( self.__stringify( workflow_names ), str( exact_matches_checked ) )
+                    self.matched_repository_list_grid.title = "Repositories with matching workflows"
+                    return self.matched_repository_list_grid( trans, **kwd )
+            else:
+                message = "No search performed - each field must contain the same number of comma-separated items."
+                status = "error"
+        exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
+        return trans.fill_template( '/webapps/community/repository/find_workflows.mako',
+                                    webapp=webapp,
+                                    workflow_name=self.__stringify( workflow_names ),
+                                    exact_matches_check_box=exact_matches_check_box,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    def find_tools( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if galaxy_url:
+            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        if 'operation' in kwd:
+            item_id = kwd.get( 'id', '' )
+            if item_id:
+                operation = kwd[ 'operation' ].lower()
+                is_admin = trans.user_is_admin()
+                if operation == "view_or_manage_repository":
+                    # The received id is a RepositoryMetadata id, so we have to get the repository id.
+                    repository_metadata = get_repository_metadata_by_id( trans, item_id )
+                    repository_id = trans.security.encode_id( repository_metadata.repository.id )
+                    repository = get_repository( trans, repository_id )
+                    kwd[ 'id' ] = repository_id
+                    kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
+                    if webapp == 'community' and ( is_admin or repository.user == trans.user ):
+                        a = 'manage_repository'
+                    else:
+                        a = 'view_repository'
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action=a,
+                                                                      **kwd ) )
+                if operation == "install":
+                    galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+                    encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
+                    # TODO: support https in the following url.
+                    url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
+                        ( galaxy_url, trans.request.host, webapp, encoded_repo_info_dict )
+                    return trans.response.send_redirect( url )
+            else:
+                # This can only occur when there is a multi-select grid with check boxes and an operation,
+                # and the user clicked the operation button without checking any of the check boxes.
+                return trans.show_error_message( "No items were selected." )
+        tool_ids = [ item.lower() for item in util.listify( kwd.get( 'tool_id', '' ) ) ]
+        tool_names = [ item.lower() for item in util.listify( kwd.get( 'tool_name', '' ) ) ]
+        tool_versions = [ item.lower() for item in util.listify( kwd.get( 'tool_version', '' ) ) ]
+        exact_matches = params.get( 'exact_matches', '' )
+        exact_matches_checked = CheckboxField.is_checked( exact_matches )
+        match_tuples = []
+        ok = True
+        if tool_ids or tool_names or tool_versions:
+            ok, match_tuples = self.__search_repository_metadata( trans, exact_matches_checked, tool_ids=tool_ids, tool_names=tool_names, tool_versions=tool_versions )
+            if ok:
+                kwd[ 'match_tuples' ] = match_tuples
+                # Render the list view
+                if webapp == 'galaxy':
+                    # Our initial request originated from a Galaxy instance.
+                    global_actions = [ grids.GridAction( "Browse valid repositories",
+                                                         dict( controller='repository', action='browse_valid_repositories', webapp=webapp ) ),
+                                       grids.GridAction( "Search for valid tools",
+                                                         dict( controller='repository', action='find_tools', webapp=webapp ) ),
+                                       grids.GridAction( "Search for workflows",
+                                                         dict( controller='repository', action='find_workflows', webapp=webapp ) ) ]
+                    self.install_matched_repository_list_grid.global_actions = global_actions
+                    install_url_args = dict( controller='repository', action='find_tools', webapp=webapp )
+                    operations = [ grids.GridOperation( "Install", url_args=install_url_args, allow_multiple=True, async_compatible=False ) ]
+                    self.install_matched_repository_list_grid.operations = operations
+                    return self.install_matched_repository_list_grid( trans, **kwd )
+                else:
+                    kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
+                        ( self.__stringify( tool_ids ), self.__stringify( tool_names ), self.__stringify( tool_versions ), str( exact_matches_checked ) )
+                    self.matched_repository_list_grid.title = "Repositories with matching tools"
+                    return self.matched_repository_list_grid( trans, **kwd )
+            else:
+                message = "No search performed - each field must contain the same number of comma-separated items."
+                status = "error"
+        exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
+        return trans.fill_template( '/webapps/community/repository/find_tools.mako',
+                                    webapp=webapp,
+                                    tool_id=self.__stringify( tool_ids ),
+                                    tool_name=self.__stringify( tool_names ),
+                                    tool_version=self.__stringify( tool_versions ),
+                                    exact_matches_check_box=exact_matches_check_box,
+                                    message=message,
+                                    status=status )
+    def __search_repository_metadata( self, trans, exact_matches_checked, tool_ids='', tool_names='', tool_versions='', workflow_names='' ):
+        match_tuples = []
+        ok = True
+        for repository_metadata in trans.sa_session.query( model.RepositoryMetadata ):
+            metadata = repository_metadata.metadata
+            if tool_ids or tool_names or tool_versions:
+                if 'tools' in metadata:
+                    tools = metadata[ 'tools' ]
+                else:
+                    tools = []
+                for tool_dict in tools:
+                    if tool_ids and not tool_names and not tool_versions:
+                        for tool_id in tool_ids:
+                            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id ):
+                                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                    elif tool_names and not tool_ids and not tool_versions:
+                        for tool_name in tool_names:
+                            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name ):
+                                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                    elif tool_versions and not tool_ids and not tool_names:
+                        for tool_version in tool_versions:
+                            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_version=tool_version ):
+                                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                    elif tool_ids and tool_names and not tool_versions:
+                        if len( tool_ids ) == len( tool_names ):
+                            match_tuples = self.__search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
+                        elif len( tool_ids ) == 1 or len( tool_names ) == 1:
+                            tool_ids, tool_names = self.__make_same_length( tool_ids, tool_names )
+                            match_tuples = self.__search_ids_names( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names )
+                        else:
+                            ok = False
+                    elif tool_ids and tool_versions and not tool_names:
+                        if len( tool_ids )  == len( tool_versions ):
+                            match_tuples = self.__search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
+                        elif len( tool_ids ) == 1 or len( tool_versions ) == 1:
+                            tool_ids, tool_versions = self.__make_same_length( tool_ids, tool_versions )
+                            match_tuples = self.__search_ids_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions )
+                        else:
+                            ok = False
+                    elif tool_versions and tool_names and not tool_ids:
+                        if len( tool_versions ) == len( tool_names ):
+                            match_tuples = self.__search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
+                        elif len( tool_versions ) == 1 or len( tool_names ) == 1:
+                            tool_versions, tool_names = self.__make_same_length( tool_versions, tool_names )
+                            match_tuples = self.__search_names_versions( tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions )
+                        else:
+                            ok = False
+                    elif tool_versions and tool_names and tool_ids:
+                        if len( tool_versions ) == len( tool_names ) and len( tool_names ) == len( tool_ids ):
+                            for i, tool_version in enumerate( tool_versions ):
+                                tool_name = tool_names[ i ]
+                                tool_id = tool_ids[ i ]
+                                if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name, tool_version=tool_version ):
+                                    match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+                        else:
+                            ok = False
+            elif workflow_names:
+                if 'workflows' in metadata:
+                    workflows = metadata[ 'workflows' ]
+                else:
+                    workflows = []
+                for workflow_dict in workflows:
+                    for workflow_name in workflow_names:
+                        if self.__in_workflow_dict( workflow_dict, exact_matches_checked, workflow_name ):
+                            match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+        return ok, match_tuples
+    def __in_workflow_dict( self, workflow_dict, exact_matches_checked, workflow_name ):
+        workflow_dict_workflow_name = workflow_dict[ 'name' ].lower()
+        return ( workflow_name == workflow_dict_workflow_name ) or \
+               ( not exact_matches_checked and workflow_dict_workflow_name.find( workflow_name ) >= 0 )
+    def __in_tool_dict( self, tool_dict, exact_matches_checked, tool_id=None, tool_name=None, tool_version=None ):
+        found = False
+        if tool_id and not tool_name and not tool_version:
+            tool_dict_tool_id = tool_dict[ 'id' ].lower()
+            found = ( tool_id == tool_dict_tool_id ) or \
+                    ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 )
+        elif tool_name and not tool_id and not tool_version:
+            tool_dict_tool_name = tool_dict[ 'name' ].lower()
+            found = ( tool_name == tool_dict_tool_name ) or \
+                    ( not exact_matches_checked and tool_dict_tool_name.find( tool_name ) >= 0 )
+        elif tool_version and not tool_id and not tool_name:
+            tool_dict_tool_version = tool_dict[ 'version' ].lower()
+            found = ( tool_version == tool_dict_tool_version ) or \
+                    ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 )
+        elif tool_id and tool_name and not tool_version:
+            tool_dict_tool_id = tool_dict[ 'id' ].lower()
+            tool_dict_tool_name = tool_dict[ 'name' ].lower()
+            found = ( tool_id == tool_dict_tool_id and tool_name == tool_dict_tool_name ) or \
+                    ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
+        elif tool_id and tool_version and not tool_name:
+            tool_dict_tool_id = tool_dict[ 'id' ].lower()
+            tool_dict_tool_version = tool_dict[ 'version' ].lower()
+            found = ( tool_id == tool_dict_tool_id and tool_version == tool_dict_tool_version ) or \
+                    ( not exact_matches_checked and tool_dict_tool_id.find( tool_id ) >= 0 and tool_dict_tool_version.find( tool_version ) >= 0 )
+        elif tool_version and tool_name and not tool_id:
+            tool_dict_tool_version = tool_dict[ 'version' ].lower()
+            tool_dict_tool_name = tool_dict[ 'name' ].lower()
+            found = ( tool_version == tool_dict_tool_version and tool_name == tool_dict_tool_name ) or \
+                    ( not exact_matches_checked and tool_dict_tool_version.find( tool_version ) >= 0 and tool_dict_tool_name.find( tool_name ) >= 0 )
+        elif tool_version and tool_name and tool_id:
+            tool_dict_tool_version = tool_dict[ 'version' ].lower()
+            tool_dict_tool_name = tool_dict[ 'name' ].lower()
+            tool_dict_tool_id = tool_dict[ 'id' ].lower()
+            found = ( tool_version == tool_dict_tool_version and \
+                      tool_name == tool_dict_tool_name and \
+                      tool_id == tool_dict_tool_id ) or \
+                    ( not exact_matches_checked and \
+                      tool_dict_tool_version.find( tool_version ) >= 0 and \
+                      tool_dict_tool_name.find( tool_name ) >= 0 and \
+                      tool_dict_tool_id.find( tool_id ) >= 0 )
+        return found
+    def __stringify( self, list ):
+        if list:
+            return ','.join( list )
+        return ''
+    def __make_same_length( self, list1, list2 ):
+        # If either list is 1 item, we'll append to it until its 
+        # length is the same as the other.
+        if len( list1 ) == 1:
+            for i in range( 1, len( list2 ) ):
+                list1.append( list1[ 0 ] )
+        elif len( list2 ) == 1:
+            for i in range( 1, len( list1 ) ):
+                list2.append( list2[ 0 ] )
+        return list1, list2
+    def __search_ids_names( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names ):
+        for i, tool_id in enumerate( tool_ids ):
+            tool_name = tool_names[ i ]
+            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_name=tool_name ):
+                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+        return match_tuples
+    def __search_ids_versions( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_versions ):
+        for i, tool_id in enumerate( tool_ids ):
+            tool_version = tool_versions[ i ]
+            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_id=tool_id, tool_version=tool_version ):
+                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+        return match_tuples
+    def __search_names_versions( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_names, tool_versions ):
+        for i, tool_name in enumerate( tool_names ):
+            tool_version = tool_versions[ i ]
+            if self.__in_tool_dict( tool_dict, exact_matches_checked, tool_name=tool_name, tool_version=tool_version ):
+                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+        return match_tuples
+    def __encode_repo_info_dict( self, trans, webapp, repository_metadata_ids ):
+        repo_info_dict = {}
+        for repository_metadata_id in repository_metadata_ids:
+            repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+            repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
+            repository_id = trans.security.encode_id( repository.id )
+            changeset_revision = repository_metadata.changeset_revision
+            repository_clone_url = generate_clone_url( trans, repository_id )
+            repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
+        return encode( repo_info_dict )
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
             metadata = repository_metadata.metadata
         else:
+            repository_metadata_id = None
             metadata = None
         revision_label = get_revision_label( trans, repository, changeset_revision )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
@@ -322,11 +707,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  add_id_to_name=False )
         return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
+                                    repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     metadata=metadata,
-                                    display_for_install=True,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -334,36 +720,33 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+        repository_clone_url = generate_clone_url( trans, repository_id )        
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        repo_info_dict = {}
+        repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
+        encoded_repo_info_dict = encode( repo_info_dict )
         # Redirect back to local Galaxy to perform install.
-        tool_shed_url = trans.request.host
-        repository_clone_url = generate_clone_url( trans, repository_id )
         # TODO: support https in the following url.
-        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&name=%s&description=%s&repository_clone_url=%s&changeset_revision=%s' % \
-            ( galaxy_url, tool_shed_url, repository.name, repository.description, repository_clone_url, changeset_revision )
+        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&repo_info_dict=%s' % \
+            ( galaxy_url, trans.request.host, encoded_repo_info_dict )
         return trans.response.send_redirect( url )
     @web.expose
     def check_for_updates( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        # The sender didn't store galaxy_url in a cookie since
-        # this method immediately redirects back to the caller.
         galaxy_url = kwd[ 'galaxy_url' ]
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        webapp = params.get( 'webapp', None )
-        tool_shed_url = trans.request.host
+        webapp = params.get( 'webapp', 'community' )
         # Start building up the url to redirect back to the calling Galaxy instance.
         # TODO: support https in the following url.
-        url = 'http://%s/admin/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, tool_shed_url )
+        url = 'http://%s/admin/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, trans.request.host )
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        #if error:
-        #    url += '&message=%s&status=error' % message
-        #else:
         url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
             ( repository.name, repository.user.username, changeset_revision )
         if changeset_revision == repository.tip:
@@ -441,6 +824,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
         # to take this approach because the "-" character is illegal in HTTP requests.
+        if 'webapp' not in kwd:
+            kwd[ 'webapp' ] = 'community'
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
@@ -583,6 +968,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 message = "Repository '%s' has been created." % repository.name
                 trans.response.send_redirect( web.url_for( controller='repository',
                                                            action='view_repository',
+                                                           webapp='community',
                                                            message=message,
                                                            id=trans.security.encode_id( repository.id ) ) )
         return trans.fill_template( '/webapps/community/repository/create_repository.mako',
@@ -615,20 +1001,25 @@ class RepositoryController( BaseUIController, ItemRatings ):
         hgweb_config_copy = '%s/hgweb.config_%s_backup' % ( trans.app.config.root, backup_date )
         shutil.copy( os.path.abspath( hgweb_config ), os.path.abspath( hgweb_config_copy ) )
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
-        # Add an entry in the hgweb.config file for a new repository.
-        # An entry looks something like:
+        # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
         # repos/test/mira_assembler = database/community_files/000/repo_123.
         hgweb_config = "%s/hgweb.config" %  trans.app.config.root
-        # Make a backup of the hgweb.config file since we're going to be changing it.
-        self.__make_hgweb_config_copy( trans, hgweb_config )
+        if repository_path.startswith( './' ):
+            repository_path = repository_path.replace( './', '', 1 )
         entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
+        tmp_fd, tmp_fname = tempfile.mkstemp()
         if os.path.exists( hgweb_config ):
-            output = open( hgweb_config, 'a' )
+            # Make a backup of the hgweb.config file since we're going to be changing it.
+            self.__make_hgweb_config_copy( trans, hgweb_config )
+            new_hgweb_config = open( tmp_fname, 'wb' )
+            for i, line in enumerate( open( hgweb_config ) ):
+                new_hgweb_config.write( line )
         else:
-            output = open( hgweb_config, 'w' )
-            output.write( '[paths]\n' )
-        output.write( "%s\n" % entry )
-        output.close()
+            new_hgweb_config = open( tmp_fname, 'wb' )
+            new_hgweb_config.write( '[paths]\n' )
+        new_hgweb_config.write( "%s\n" % entry )
+        new_hgweb_config.flush()
+        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     def __change_hgweb_config_entry( self, trans, repository, old_repository_name, new_repository_name ):
         # Change an entry in the hgweb.config file for a repository.  This only happens when
         # the owner changes the name of the repository.  An entry looks something like:
@@ -638,7 +1029,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         self.__make_hgweb_config_copy( trans, hgweb_config )
         repo_dir = repository.repo_path
         old_lhs = "repos/%s/%s" % ( repository.user.username, old_repository_name )
-        old_entry = "%s = %s" % ( old_lhs, repo_dir )
         new_entry = "repos/%s/%s = %s\n" % ( repository.user.username, new_repository_name, repo_dir )
         tmp_fd, tmp_fname = tempfile.mkstemp()
         new_hgweb_config = open( tmp_fname, 'wb' )
@@ -647,17 +1037,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 new_hgweb_config.write( new_entry )
             else:
                 new_hgweb_config.write( line )
+        new_hgweb_config.flush()
         shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     def __create_hgrc_file( self, repository ):
         # At this point, an entry for the repository is required to be in the hgweb.config
         # file so we can call repository.repo_path.
-        # Create a .hg/hgrc file that looks something like this:
-        # [web]
-        # allow_push = test
-        # name = convert_characters1
-        # push_ssl = False
         # Since we support both http and https, we set push_ssl to False to override
         # the default (which is True) in the mercurial api.
+        # The hg purge extension purges all files and directories not being tracked by
+        # mercurial in the current repository.  It'll remove unknown files and empty
+        # directories.  This is used in the update_for_browsing() method.
         repo = hg.repository( get_configured_ui(), path=repository.repo_path )
         fp = repo.opener( 'hgrc', 'wb' )
         fp.write( '[paths]\n' )
@@ -667,12 +1056,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
         fp.write( 'allow_push = %s\n' % repository.user.username )
         fp.write( 'name = %s\n' % repository.name )
         fp.write( 'push_ssl = false\n' )
+        fp.write( '[extensions]\n' )
+        fp.write( 'hgext.purge=' )
         fp.close()
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
@@ -685,6 +1077,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     repository=repository,
                                     commit_message=commit_message,
                                     is_malicious=is_malicious,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -757,7 +1150,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 tip = repository.tip
                 for selected_file in selected_files_to_delete:
                     try:
-                        commands.remove( repo.ui, repo, repo_file, force=True )
+                        commands.remove( repo.ui, repo, selected_file, force=True )
                     except Exception, e:
                         # I never have a problem with commands.remove on a Mac, but in the test/production
                         # tool shed environment, it throws an exception whenever I delete all files from a
@@ -826,6 +1219,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
+        webapp = params.get( 'webapp', 'community' )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
@@ -861,8 +1255,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
             metadata = repository_metadata.metadata
         else:
+            repository_metadata_id = None
             metadata = None
         is_malicious = change_set_is_malicious( trans, id, repository.tip )
         if is_malicious:
@@ -874,6 +1270,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
+                                    repository_metadata_id=repository_metadata_id,
                                     metadata=metadata,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
@@ -883,6 +1280,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     is_malicious=is_malicious,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -913,14 +1311,21 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if params.get( 'edit_repository_button', False ):
             flush_needed = False
             # TODO: add a can_manage in the security agent.
-            if user != repository.user:
+            if user != repository.user or not trans.user_is_admin():
                 message = "You are not the owner of this repository, so you cannot manage it."
                 status = error
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_repository',
                                                                   id=id,
+                                                                  webapp='community',
                                                                   message=message,
                                                                   status=status ) )
+            if description != repository.description:
+                repository.description = description
+                flush_needed = True
+            if long_description != repository.long_description:
+                repository.long_description = long_description
+                flush_needed = True
             if repo_name != repository.name:
                 message = self.__validate_repository_name( repo_name, user )
                 if message:
@@ -929,12 +1334,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     self.__change_hgweb_config_entry( trans, repository, repository.name, repo_name )
                     repository.name = repo_name
                     flush_needed = True
-            if description != repository.description:
-                repository.description = description
-                flush_needed = True
-            if long_description != repository.long_description:
-                repository.long_description = long_description
-                flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
@@ -999,9 +1398,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             metadata = repository_metadata.metadata
             is_malicious = repository_metadata.malicious
         else:
+            repository_metadata_id = None
             metadata = None
             is_malicious = False
         if is_malicious:
@@ -1021,6 +1422,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
+                                    repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
@@ -1210,7 +1612,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
+        webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )          
         try:
@@ -1251,12 +1653,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                         tool=tool,
                                         tool_state=tool_state,
                                         is_malicious=is_malicious,
-                                        display_for_install=display_for_install,
+                                        webapp=webapp,
                                         message=message,
                                         status=status )
         except Exception, e:
             message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % str( e )
-        if display_for_install:
+        if webapp == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',
                                                               repository_id=repository_id,
@@ -1286,7 +1688,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        display_for_install = util.string_as_bool( params.get( 'display_for_install', False ) )
+        webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None
@@ -1315,7 +1717,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     is_malicious=is_malicious,
-                                    display_for_install=display_for_install,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
