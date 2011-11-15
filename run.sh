@@ -15,6 +15,7 @@ SAMPLES="
     tool_sheds_conf.xml.sample
     universe_wsgi.ini.sample
     tool-data/shared/ucsc/builds.txt.sample
+    tool-data/shared/igv/igv_build_sites.txt.sample
     tool-data/*.sample
     static/welcome.html.sample
 "

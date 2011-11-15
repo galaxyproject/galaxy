@@ -9,7 +9,7 @@
       <converter file="bam_to_summary_tree_converter.xml" target_datatype="summary_tree" depends_on="bai"/>
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
-      <!-- <display file="igv/bam.xml" /> -->
+      <display file="igv/bam.xml" />
     </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
@@ -154,8 +154,10 @@
     <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
       <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="vcf_to_vcf_bgzip_converter.xml" target_datatype="vcf_bgzip"/>
       <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <display file="igv/vcf.xml" />
     </datatype>
     <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
@@ -168,6 +170,10 @@
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="True" />
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="True" />
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="True" />
+    <datatype extension="vcf_bgzip" type_extension="bgzip" subclass="True" >
+      <display file="igv/vcf.xml" />
+      <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
+    </datatype>
     <!-- Start EMBOSS tools -->
     <datatype extension="acedb" type="galaxy.datatypes.data:Text"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:Text"/>
