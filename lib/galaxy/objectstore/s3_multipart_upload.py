@@ -12,6 +12,9 @@ import functools
 import multiprocessing
 from multiprocessing.pool import IMapIterator
 
+from galaxy import eggs
+eggs.require('boto')
+
 import boto
 
 def map_wrap(f):
