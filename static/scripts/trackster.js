@@ -909,7 +909,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.content_div = this.viewport_container;
         is_container(this.viewport_container, view);
         // Introduction div shown when there are no tracks.
-        this.intro_div = $("<div/>").addClass("intro");
+        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
             add_tracks();
         });
@@ -1077,10 +1077,10 @@ extend( View.prototype, DrawableCollection.prototype, {
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
         if (this.drawables.length === 0) {
-            this.intro_div.appendTo(this.viewport_container);
+            this.intro_div.show();
         }
         else {
-            this.intro_div.remove();
+            this.intro_div.hide();
         }
     },
     update_location: function(low, high) {
