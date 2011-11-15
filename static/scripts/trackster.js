@@ -650,8 +650,13 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
  */
 
 /**
- * Base interface for all drawable objects. Drawable objects have a name and are
- * associated with a view and container. They optionally have a drag handle class. 
+ * Base class for all drawable objects. Drawable objects are associated with a view and live in a 
+ * container. They have the following HTML elements and structure:
+ *  <container_div>
+ *      <header_div>
+ *      <content_div>
+ *
+ * They optionally have a drag handle class. 
  */
 var Drawable = function(name, view, container, prefs, drag_handle_class) {
     if (!Drawable.id_counter) { Drawable.id_counter = 0; }
@@ -672,6 +677,33 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
     this.prefs = this.config.values;
     this.drag_handle_class = drag_handle_class;
     this.is_overview = false;
+    
+    // FIXME: this should be a saved setting
+    this.content_visible = true;
+    
+    // Build Drawable HTML and behaviors.
+    this.container_div = this.build_container_div();
+    this.header_div = this.build_header_div();
+    
+    if (this.header_div) { 
+        this.container_div.append(this.header_div);
+        
+        this.icons_div = this.build_icons_div().hide();
+        this.header_div.append(this.icons_div);
+        
+        // Suppress double clicks in header so that they do not impact viz.
+        this.header_div.dblclick( function(e) { e.stopPropagation(); } );
+        
+        // Show icons when users is hovering over track.
+        var drawable = this;
+        this.container_div.hover(
+            function() { drawable.icons_div.show(); }, 
+            function() { drawable.icons_div.hide(); }
+        );
+        
+        // Needed for floating elts in header.
+        $("<div style='clear: both'/>").appendTo(this.container_div);
+    }
 };
 
 extend(Drawable.prototype, {
@@ -707,7 +739,31 @@ extend(Drawable.prototype, {
             view.update_intro_div();
             view.has_changes = true;
         });
-    }
+    },
+    /**
+     * Build drawable's container div; this is the parent div for all drawable's elements.
+     */ 
+    build_container_div: function() {},
+    /**
+     * Build drawable's header div.
+     */
+    build_header_div: function() {},
+    /**
+     * Build drawable's icons div.
+     */
+    build_icons_div: function() {},
+    /**
+     * Update icons.
+     */
+    update_icons: function() {},
+    /**
+     * Hide drawable's contents.
+     */
+    hide_contents: function () {},
+    /**
+     * Show drawable's contents.
+     */
+    show_contents: function() {}
 });
 
 /**
@@ -805,36 +861,54 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
 var DrawableGroup = function(name, view, container, prefs) {
     DrawableCollection.call(this, "DrawableGroup", name, view, container, prefs, "group-handle");
         
-    // HTML elements.
-    this.container_div = $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
-    this.header_div = $("<div/>").addClass("track-header").appendTo(this.container_div);
-    this.header_div.append($("<div/>").addClass(this.drag_handle_class));
-    this.name_div = $("<div/>").addClass("group-name menubutton popup").text(this.name).appendTo(this.header_div);    
-    this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + this.id + "_content_div").appendTo(this.container_div);
-    
     // Set up containers/moving for group: register both container_div and content div as container
     // because both are used as containers (container div to recognize container, content_div to 
     // store elements). Group can be moved.
+    this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + this.id + "_content_div").appendTo(this.container_div);
     is_container(this.container_div, this);
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
-    
-    this.update_icons();
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
-    /**
-     * Make popup menu for group.
-     */
-    update_icons: function() {
+    build_container_div: function() {
+        return $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
+    },
+    build_header_div: function() {
+        var header_div = $("<div/>").addClass("track-header");
+        header_div.append($("<div/>").addClass(this.drag_handle_class));
+        this.name_div = $("<div/>").addClass("track-name").text(this.name).appendTo(header_div);
+        return header_div;
+    },
+    build_icons_div: function() {
+        var icons_div = $("<div/>").css("float", "left");
+
+        this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show group content")
+                                    .addClass("icon-button toggle").tipsy( {gravity: 's'} )
+                                    .appendTo(icons_div);
+        this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
+                                      .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
+                                      .appendTo(icons_div);
+        this.remove_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Remove")
+                                    .addClass("icon-button remove-icon").tipsy( {gravity: 's'} )
+                                    .appendTo(icons_div);
         var group = this;
-        
-        var group_dropdown = {};
-                
-        //
-        // Edit config option.
-        //
-        group_dropdown["Edit configuration"] = function() {
+
+        // Toggle icon hides or shows the group content.
+        this.toggle_icon.click( function() {
+            if ( group.content_visible ) {
+                group.toggle_icon.addClass("toggle-expand").removeClass("toggle");
+                group.hide_contents();
+                group.content_visible = false;
+            } else {
+                group.toggle_icon.addClass("toggle").removeClass("toggle-expand");
+                group.content_visible = true;
+                group.show_contents();
+            }
+        });
+
+        // Clicking on settings icon opens group config.
+        this.settings_icon.click( function() {
             var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
                 ok_fn = function() { 
                     group.config.update_from_form( $(".dialog-box") );
@@ -854,16 +928,25 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 "Cancel": cancel_fn,
                 "OK": ok_fn
             });
-        };
+        });
         
-        //
-        // Remove option.
-        //
-        group_dropdown.Remove = function() {
+        // Clicking on remove icon removes group.
+        this.remove_icon.click( function() {
+            // Tipsy for remove icon must be deleted when group is deleted.
+            $(".tipsy").remove();
             group.remove();
-        };
+        });
         
-        make_popupmenu(group.name_div, group_dropdown);
+        return icons_div;        
+    },
+    hide_contents : function () {
+        this.content_div.hide();
+    },
+    show_contents : function() {
+        // Show the contents div and labels (if present)
+        this.content_div.show();
+        // Request a redraw of the content
+        this.request_draw();
     }
 });
 
@@ -2356,7 +2439,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
  * -------> ReadTrack
  * -------> VcfTrack
  */
-var Track = function(name, view, container, show_header, prefs, data_url, data_query_wait) {
+var Track = function(name, view, container, prefs, data_url, data_query_wait) {
     // For now, track's container is always view.
     Drawable.call(this, name, view, container, {}, "draghandle");
     
@@ -2368,58 +2451,59 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
 
-    // FIXME: this should be a saved setting
-    this.content_visible = true;
-
     if (!Track.id_counter) { Track.id_counter = 0; }
     this.id = Track.id_counter++;
-    
+        
     //
-    // Create HTML element structure for track.
+    // Create content div, which is where track is displayed.
     //
-    this.container_div = $("<div />").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
-    
-    // Create and initialize track header and icons.
-    if (show_header) {
-        this.header_div = $("<div class='track-header'/>").appendTo(this.container_div);
-        if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(this.header_div); }
-        this.name_div = $("<div/>").addClass("track-name").appendTo(this.header_div).text(this.name)
+    this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
+    this.container.content_div.append(this.container_div);
+};
+extend(Track.prototype, Drawable.prototype, {
+    build_container_div: function () {
+        return $("<div/>").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
+    },
+    build_header_div: function() {
+        var header_div = $("<div class='track-header'/>");
+        if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(header_div); }
+        this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.name)
                         .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
-        this.icons_div = $("<div/>").css("float", "left").appendTo(this.header_div).hide();
-    
+        return header_div;
+    },
+    build_icons_div: function() {
+        var icons_div = $("<div/>").css("float", "left");
+
         // Track icons.
         this.mode_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set display mode")
-                                  .addClass("icon-button chevron-expand").tipsy( {gravity: 's'} ).appendTo(this.icons_div);
+                                  .addClass("icon-button chevron-expand").tipsy( {gravity: 's'} ).appendTo(icons_div);
         this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show track content")
                                     .addClass("icon-button toggle").tipsy( {gravity: 's'} )
-                                    .appendTo(this.icons_div);
+                                    .appendTo(icons_div);
         this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
                                       .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
-                                      .appendTo(this.icons_div);
+                                      .appendTo(icons_div);
         this.overview_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set as overview")
                                       .addClass("icon-button overview-icon").tipsy( {gravity: 's'} )
-                                      .appendTo(this.icons_div);
+                                      .appendTo(icons_div);
         this.filters_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Filters")
                                      .addClass("icon-button filters-icon").tipsy( {gravity: 's'} )
-                                     .appendTo(this.icons_div).hide();
+                                     .appendTo(icons_div).hide();
         this.tools_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Tools")
                                    .addClass("icon-button tools-icon").tipsy( {gravity: 's'} )
-                                   .appendTo(this.icons_div).hide();
+                                   .appendTo(icons_div).hide();
         this.remove_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Remove")
                                     .addClass("icon-button remove-icon").tipsy( {gravity: 's'} )
-                                    .appendTo(this.icons_div);
+                                    .appendTo(icons_div);
         var track = this;
-                    
-        // Suppress double clicks in header so that they do not impact viz.
-        this.header_div.dblclick( function(e) { e.stopPropagation(); } );
-        
+
         // Set up behavior for modes popup.
         if (track.display_modes !== undefined) {
             var init_mode = (track.config && track.config.values['mode'] ? 
                              track.config.values['mode'] : track.display_modes[0]);
             track.mode = init_mode;
             this.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
-            
+
             var mode_mapping = {};
             for (var i = 0, len = track.display_modes.length; i < len; i++) {
                 var mode = track.display_modes[i];
@@ -2432,7 +2516,7 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
                         track.container_div.mouseleave(function() { track.icons_div.hide(); } ); };
                 }(mode);
             }
-            
+
             make_popupmenu(this.mode_icon, mode_mapping);
         }
 
@@ -2448,7 +2532,7 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
                 track.show_contents();
             }
         });
-        
+
         // Clicking on settings icon opens track config.
         this.settings_icon.click( function() {
             var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
@@ -2471,22 +2555,22 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
                 "OK": ok_fn
             });
         });
-        
+
         this.overview_icon.click( function() {
             track.view.set_overview(track);
         });
-                
+
         this.filters_icon.click( function() {
             // TODO: update tipsy text.            
             track.filters_div.toggle();
             track.filters_manager.reset_filters();
         });
-        
+
         this.tools_icon.click( function() {
             // TODO: update tipsy text.
-            
+
             track.dynamic_tool_div.toggle();
-            
+
             // Update track name.
             if (track.dynamic_tool_div.is(":visible")) {
                 track.set_name(track.name + track.tool_region_and_parameters_str());
@@ -2497,29 +2581,39 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
             // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
             $(".tipsy").remove();
         });
-        
+
         // Clicking on remove icon removes track.
         this.remove_icon.click( function() {
             // Tipsy for remove icon must be deleted when track is deleted.
             $(".tipsy").remove();
             track.remove();
         });
-                
-        // Show icons when users is hovering over track.
-        this.container_div.hover( function() { track.icons_div.show(); }, function() { track.icons_div.hide(); } );
         
-        // Needed for floating elts in header.
-        $("<div style='clear: both'/>").appendTo(this.container_div);
-    }
-    
-    //
-    // Create content div, which is where track is displayed.
-    //
-    this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
-    this.container.content_div.append(this.container_div);
-};
-extend(Track.prototype, Drawable.prototype, {
-    /** Returns track type. */
+        return icons_div;  
+    },
+    /**
+     * Hide any elements that are part of the tracks contents area. Should
+     * remove as approprite, the track will be redrawn by show_contents.
+     */
+    hide_contents : function () {
+        // Clear contents by removing any elements that are contained in
+        // the tracks content_div
+        this.content_div.children().remove();
+        // Hide the content div
+        this.content_div.hide();
+        // And any y axis labels (common to several track types)
+        this.container_div.find(".yaxislabel, .track-resize").hide()
+    },
+    show_contents : function() {
+        // Show the contents div and labels (if present)
+        this.content_div.show();
+        this.container_div.find(".yaxislabel, .track-resize").show()
+        // Request a redraw of the content
+        this.request_draw();
+    },
+    /** 
+     * Returns track type. 
+     */
     get_type: function() {
         // Order is important: start with most-specific classes and go up the track hierarchy.
         if (this instanceof LabelTrack) {
@@ -2612,33 +2706,13 @@ extend(Track.prototype, Drawable.prototype, {
         this.update_icons();
     },
     /**
-     * Hide any elements that are part of the tracks contents area. Should
-     * remove as approprite, the track will be redrawn by show_contents.
-     */
-    hide_contents : function () {
-        // Clear contents by removing any elements that are contained in
-        // the tracks content_div
-        this.content_div.children().remove();
-        // Hide the content div
-        this.content_div.hide();
-        // And any y axis labels (common to several track types)
-        this.container_div.find(".yaxislabel, .track-resize").hide()
-    },
-    show_contents : function() {
-        // Show the contents div and labels (if present)
-        this.content_div.show();
-        this.container_div.find(".yaxislabel, .track-resize").show()
-        // Request a redraw of the content
-        this.request_draw();
-    },
-    /**
      * Additional initialization required before drawing track for the first time.
      */
     predraw_init: function() {}
 });
 
-var TiledTrack = function(name, view, container, show_header, prefs, filters_list, tool_dict) {
-    Track.call(this, name, view, container, show_header, prefs);
+var TiledTrack = function(name, view, container, prefs, filters_list, tool_dict) {
+    Track.call(this, name, view, container, prefs);
 
     var track = this,
         view = track.view;
@@ -3031,6 +3105,7 @@ var LabelTrack = function (view, container) {
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
+    build_header_div: function() {},
     init: function() {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;  
@@ -3057,7 +3132,7 @@ extend(LabelTrack.prototype, Track.prototype, {
 });
 
 var ReferenceTrack = function (view) {
-    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack }, false, {});
+    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack }, {});
     
     view.reference_track = this;
     this.left_offset = 200;
@@ -3072,6 +3147,7 @@ var ReferenceTrack = function (view) {
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    build_header_div: function() {},
     init: function() {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;  
@@ -3109,7 +3185,7 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
-    TiledTrack.call( this, name, view, container, true, prefs );
+    TiledTrack.call( this, name, view, container, prefs );
    
     this.min_height_px = 16; 
     this.max_height_px = 400; 
@@ -3269,7 +3345,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     //
     // Initialization.
     //    
-    TiledTrack.call(this, name, view, container, true, prefs, filters, tool);
+    TiledTrack.call(this, name, view, container, prefs, filters, tool);
 
     // Define and restore track configuration.
     this.config = new DrawableConfig( {
