@@ -26,7 +26,7 @@
                                 container.find(".summary-content").hide("fast");
                                 container.find(".item-content").html(item_content).show("fast");
                                 container.find(".toggle-expand").hide();
-                                container.find(".toggle-contract").show();
+                                container.find(".toggle").show();
 
                                 // Init needed for history items.
                                 init_history_items( container.find("div.historyItemWrapper"), "noinit", "nochanges" ); 
@@ -43,7 +43,7 @@
                         container.find(".summary-content").hide("fast");
                         container.find(".item-content").show("fast");
                         container.find(".toggle-expand").hide();
-                        container.find(".toggle-contract").show();
+                        container.find(".toggle").show();
                     }
                 };
             
@@ -51,7 +51,7 @@
                 var hide_embedded_item = function() {
                     container.find(".item-content").hide("fast");
                     container.find(".summary-content").show("fast");
-                    container.find(".toggle-contract").hide();
+                    container.find(".toggle").hide();
                     container.find(".toggle-expand").show();
                 };
             
@@ -63,7 +63,7 @@
                 });
             
                 // Setup toggle contract.
-                var toggle_contract = $(this).find('.toggle-contract');
+                var toggle_contract = $(this).find('.toggle');
                 toggle_contract.click( function() {
                     hide_embedded_item();
                     return false;
@@ -89,7 +89,7 @@
     ${parent.stylesheets()}
     ${h.css( "base", "history", "autocomplete_tagging" )}
     <style type="text/css">
-        .toggle-contract { display: none; }
+        .toggle { display: none; }
         .embedded-item h4 {
             margin: 0px;
         }

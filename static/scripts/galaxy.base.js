@@ -555,7 +555,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
         });
         
         // Generate 'collapse all' link
-        $("#top-links > a.toggle-contract").click( function() {
+        $("#top-links > a.toggle").click( function() {
             var prefs = $.jStorage.get("history_expand_state");
             if (!prefs) { prefs = {}; }
             $( "div.historyItemBody:visible" ).each( function() {
