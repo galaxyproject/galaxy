@@ -64,7 +64,13 @@
 <div class="toolForm">
     <div class="toolFormTitle">Upload a single file or a tarball</div>
     <div class="toolFormBody">
-        ## TODO: nginx
+        <div class="form-row">
+            <div class="warningmessage">
+                Uploading may take a while, depending upon the size of the file.  Wait until a message is displayed in your 
+                browser after clicking the <b>Upload</b> button below.
+            </div>
+            <div style="clear: both"></div>
+        </div>
         <form id="upload_form" name="upload_form" action="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}" enctype="multipart/form-data" method="post">
             <div class="form-row">
                 <label>File:</label>

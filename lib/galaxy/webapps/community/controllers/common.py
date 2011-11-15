@@ -26,6 +26,8 @@ Revision: ${revision}
 Change description:
 ${description}
 
+${content_alert_str}
+
 -----------------------------------------------------------------------------
 This change alert was sent from the Galaxy tool shed hosted on the server
 "${host}"
@@ -520,7 +522,7 @@ def get_configured_ui():
 def get_user( trans, id ):
     """Get a user from the database by id"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
-def handle_email_alerts( trans, repository ):
+def handle_email_alerts( trans, repository, content_alert_str='' ):
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
     smtp_server = trans.app.config.smtp_server
@@ -541,14 +543,25 @@ def handle_email_alerts( trans, repository ):
             username = ctx.user().split()[0]
         except:
             username = ctx.user()
-        # Build the email message
+        # We'll use 2 template bodies because we only want to send content
+        # alerts to tool shed admin users.
+        admin_body = string.Template( email_alert_template ) \
+            .safe_substitute( host=trans.request.host,
+                              repository_name=repository.name,
+                              revision='%s:%s' %( str( ctx.rev() ), ctx ),
+                              display_date=display_date,
+                              description=ctx.description(),
+                              username=username,
+                              content_alert_str=content_alert_str )
         body = string.Template( email_alert_template ) \
             .safe_substitute( host=trans.request.host,
                               repository_name=repository.name,
                               revision='%s:%s' %( str( ctx.rev() ), ctx ),
                               display_date=display_date,
                               description=ctx.description(),
-                              username=username )
+                              username=username,
+                              content_alert_str='' )
+        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
         frm = email_from
         subject = "Galaxy tool shed repository update alert"
         email_alerts = from_json_string( repository.email_alerts )
@@ -556,7 +569,10 @@ def handle_email_alerts( trans, repository ):
             to = email.strip()
             # Send it
             try:
-                util.send_mail( frm, to, subject, body, trans.app.config )
+                if to in admin_users:
+                    util.send_mail( frm, to, subject, admin_body, trans.app.config )
+                else:
+                    util.send_mail( frm, to, subject, body, trans.app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
 def update_for_browsing( trans, repository, current_working_dir, commit_message='' ):
@@ -567,30 +583,20 @@ def update_for_browsing( trans, repository, current_working_dir, commit_message=
     repo = hg.repository( get_configured_ui(), repo_dir )
     # The following will delete the disk copy of only the files in the repository.
     #os.system( 'hg update -r null > /dev/null 2>&1' )
-    repo.ui.pushbuffer()
     files_to_remove_from_disk = []
     files_to_commit = []
-    commands.status( repo.ui, repo, all=True )
-    status_and_file_names = repo.ui.popbuffer().strip().split( "\n" )
-    if status_and_file_names and status_and_file_names[ 0 ] not in [ '' ]:
-        # status_and_file_names looks something like:
-        # ['? README', '? tmap_tool/tmap-0.0.9.tar.gz', '? dna_filtering.py', 'C filtering.py', 'C filtering.xml']
-        # The codes used to show the status of files are:
-        # M = modified
-        # A = added
-        # R = removed
-        # C = clean
-        # ! = deleted, but still tracked
-        # ? = not tracked
-        # I = ignored
-        for status_and_file_name in status_and_file_names:
-            if status_and_file_name.startswith( '?' ) or status_and_file_name.startswith( 'I' ):
-                files_to_remove_from_disk.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
-            elif status_and_file_name.startswith( 'M' ) or status_and_file_name.startswith( 'A' ) or status_and_file_name.startswith( 'R' ):
-                files_to_commit.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
     # We may have files on disk in the repo directory that aren't being tracked, so they must be removed.
-    # We'll use mercurial's purge extension to do this.  Using this extension requires the following entry 
-    # in the repository's hgrc file which was not required for some time, so we'll add it if it's missing.
+    # The codes used to show the status of files are as follows.
+    # M = modified
+    # A = added
+    # R = removed
+    # C = clean
+    # ! = deleted, but still tracked
+    # ? = not tracked
+    # I = ignored
+    # We'll use mercurial's purge extension to remove untracked file.  Using this extension requires the
+    # following entry in the repository's hgrc file which was not required for some time, so we'll add it
+    # if it's missing.
     # [extensions]
     # hgext.purge=
     lines = repo.opener( 'hgrc', 'rb' ).readlines()
@@ -624,9 +630,14 @@ def update_for_browsing( trans, repository, current_working_dir, commit_message=
             commit_message = 'Committed changes to: %s' % ', '.join( files_to_commit )
         repo.dirstate.write()
         repo.commit( user=trans.user.username, text=commit_message )
+    cmd = 'hg update > /dev/null 2>&1'
     os.chdir( repo_dir )
-    os.system( 'hg update > /dev/null 2>&1' )
+    proc = subprocess.Popen( args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
+    return_code = proc.wait()
     os.chdir( current_working_dir )
+    if return_code != 0:
+        output = proc.stdout.read( 32768 )
+        log.debug( 'hg update > /dev/null 2>&1 failed in repository directory %s, reason: %s' % ( repo_dir, output ) )
 def load_tool( trans, config_file ):
     """
     Load a single tool from the file named by `config_file` and return 
