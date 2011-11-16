@@ -6,6 +6,7 @@ tools
 
 import os
 import time
+import random
 import shutil
 import logging
 import threading
@@ -138,16 +139,16 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
     
-    def update_from_file(self, dataset_id, extra_dir=None, extra_dir_at_root=False, alt_name=None, filename=None, create=False):
+    def update_from_file(self, dataset_id, extra_dir=None, extra_dir_at_root=False, alt_name=None, file_name=None, create=False):
         """
         Inform the store that the file associated with the object has been
-        updated. If `filename` is provided, update from that file instead
+        updated. If `file_name` is provided, update from that file instead
         of the default.
         If the object does not exist raises `ObjectNotFound`.
         See `exists` method for the description of other fields.
         
-        :type filename: string
-        :param filename: Use file pointed to by `filename` as the source for 
+        :type file_name: string
+        :param file_name: Use file pointed to by `file_name` as the source for 
                          updating the dataset identified by `dataset_id`
         
         :type create: bool
@@ -179,9 +180,9 @@ class DiskObjectStore(ObjectStore):
     Standard Galaxy object store, stores objects in files under a specific
     directory on disk.
     """
-    def __init__(self, config):
+    def __init__(self, config, file_path=None):
         super(DiskObjectStore, self).__init__()
-        self.file_path = config.file_path
+        self.file_path = file_path or config.file_path
     
     def _get_filename(self, dataset_id, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """Class method that returns the absolute path for the file corresponding
@@ -819,13 +820,107 @@ class S3ObjectStore(ObjectStore):
 class HierarchicalObjectStore(ObjectStore):
     """
     ObjectStore that defers to a list of backends, for getting objects the
-    first store where the object exists is used, objects are always created
-    in the first store.
+    first store where the object exists is used, objects are created in a
+    store selected randomly, but with weighting.
     """
     
-    def __init__(self, backends=[]):
+    def __init__(self, config):
         super(HierarchicalObjectStore, self).__init__()
-    
+        assert config is not None, "hierarchical object store ('object_store = hierarchical') " \
+                                   "requires a config file, please set one in " \
+                                   "'hierarchical_object_store_config_file')"
+        self.hierarchical_config = config
+        self.backends = {}
+        self.weighted_backend_names = []
+
+        random.seed()
+
+        self.__parse_hierarchical_config(config)
+
+    def __parse_hierarchical_config(self, config):
+        tree = util.parse_xml(self.hierarchical_config)
+        root = tree.getroot()
+        log.debug('Loading backends for hierarchical object store from %s' % self.hierarchical_config)
+        for elem in [ e for e in root if e.tag == 'backend' ]:
+            name = elem.get('name')
+            weight = int(elem.get('weight', 1))
+            if elem.get('type', 'disk'):
+                path = None
+                for sub in elem:
+                    if sub.tag == 'path':
+                        path = sub.get('value')
+                self.backends[name] = DiskObjectStore(config, file_path=path)
+                log.debug("Loaded disk backend '%s' with weight %s and disk path '%s'" % (name, weight, path))
+            for i in range(0, weight):
+                # The simplest way to do weighting: add backend names to a
+                # sequence the number of times equalling weight, then randomly
+                # choose a backend from that sequence at creation
+                self.weighted_backend_names.append(name)
+
+    def exists(self, dataset_id, **kwargs):
+        store = self.__get_store_for(dataset_id, **kwargs)
+        return store is not None
+
+    def file_ready(self, dataset_id, **kwargs):
+        store = self.__get_store_for(dataset_id, **kwargs)
+        if store is not None:
+            return store.file_ready(dataset_id, **kwargs)
+        return False
+
+    def create(self, dataset_id, **kwargs):
+        if not self.exists(dataset_id, **kwargs):
+            store_name = random.choice(self.weighted_backend_names)
+            log.debug("Selected backend '%s' for creation of dataset %s" % (store_name, dataset_id))
+            return self.backends[store_name].create(dataset_id, **kwargs)
+
+    def empty(self, dataset_id, **kwargs):
+        store = self.__get_store_for(dataset_id, **kwargs):
+        if store is not None:
+            return store.empty(dataset_id, **kwargs)
+        return True
+
+    def size(self, dataset_id, **kwargs):
+        store = self.__get_store_for(dataset_id, **kwargs):
+        if store is not None:
+            return store.size(dataset_id, **kwargs)
+        return 0
+
+    def delete(self, dataset_id, entire_dir=False, **kwargs):
+        store = self.__get_store_for(dataset_id, **kwargs):
+        if store is not None:
+            return store.delete(dataset_id, entire_dir=entire_dir, **kwargs)
+        return False
+
+    def get_data(self, dataset_id, start=0, count=-1, **kwargs):
+        store = self.__get_store_for(dataset_id, **kwargs):
+        if store is not None:
+            return store.get_data(dataset_id, start=0, count=-1, **kwargs)
+        raise ObjectNotFound()
+
+    def get_filename(self, dataset_id, **kwargs):
+        store = self.__get_store_for(dataset_id, **kwargs):
+        if store is not None:
+            return store.get_filename(dataset_id, **kwargs)
+        raise ObjectNotFound()
+
+    def update_from_file(self, dataset_id, file_name=None, create=False, **kwargs):
+        store = self.__get_store_for(dataset_id, **kwargs):
+        if store is not None:
+            return store.update_from_file(dataset_id, file_name=file_name, create=create, **kwargs)
+        raise ObjectNotFound()
+
+    def get_object_url(self, dataset_id, **kwargs):
+        # FIXME: dir_only
+        store = self.__get_store_for(dataset_id, **kwargs):
+        if store is not None:
+            return store.get_object_url(dataset_id, **kwargs)
+        return None
+
+    def __get_store_for(self, dataset_id, **kwargs):
+        for store in self.backends.values():
+            if store.exists(dataset_id, **kwargs):
+                return store
+        return None
 
 def build_object_store_from_config(config):
     """ Depending on the configuration setting, invoke the appropriate object store
@@ -838,7 +933,7 @@ def build_object_store_from_config(config):
         os.environ['AWS_SECRET_ACCESS_KEY'] = config.aws_secret_key
         return S3ObjectStore(config=config)
     elif store == 'hierarchical':
-        return HierarchicalObjectStore()
+        return HierarchicalObjectStore(config.hierarchical_object_store_config_file)
 
 def convert_bytes(bytes):
     """ A helper function used for pretty printing disk usage """

@@ -58,8 +58,8 @@ class LocalJobRunner( BaseJobRunner ):
             job_wrapper.prepare()
             command_line = self.build_command_line( job_wrapper )
         except:
-            job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
+            job_wrapper.fail( "failure preparing job", exception=True )
             return
         # If we were able to get a command line, run the job
         if command_line:

@@ -152,6 +152,7 @@ class Configuration( object ):
         self.s3_bucket = kwargs.get( 's3_bucket', None)
         self.use_reduced_redundancy = kwargs.get( 'use_reduced_redundancy', False )
         self.object_store_cache_size = float(kwargs.get( 'object_store_cache_size', -1 ))
+        self.hierarchical_object_store_config_file = kwargs.get( 'hierarchical_object_store_config_file', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
