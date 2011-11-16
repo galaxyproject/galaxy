@@ -1,4 +1,4 @@
-import os, logging, urllib, ConfigParser, tempfile, shutil
+import os, logging, tempfile, shutil
 from time import strftime
 from datetime import date, datetime
 from galaxy import util
@@ -236,7 +236,7 @@ class MatchedRepositoryListGrid( grids.Grid ):
     template='/webapps/community/repository/grid.mako'
     default_sort_key = "Repository.name"
     columns = [
-        NameColumn( "Name",
+        NameColumn( "Repository name",
                     link=( lambda item: dict( operation="view_or_manage_repository",
                                               id=item.id,
                                               webapp="community" ) ),
@@ -588,17 +588,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
                         else:
                             ok = False
-            if workflow_names:
+            elif workflow_names:
                 if 'workflows' in metadata:
                     workflows = metadata[ 'workflows' ]
                 else:
                     workflows = []
                 for workflow_dict in workflows:
                     for workflow_name in workflow_names:
-                        if self.__in_workflow_dict( workflow_dict, exact_matches_checked, workflow_name=workflow_name ):
+                        if self.__in_workflow_dict( workflow_dict, exact_matches_checked, workflow_name ):
                             match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
         return ok, match_tuples
-    def __in_workflow_dict( self, workflow_dict, exact_matches_checked, workflow_name=None ):
+    def __in_workflow_dict( self, workflow_dict, exact_matches_checked, workflow_name ):
         workflow_dict_workflow_name = workflow_dict[ 'name' ].lower()
         return ( workflow_name == workflow_dict_workflow_name ) or \
                ( not exact_matches_checked and workflow_dict_workflow_name.find( workflow_name ) >= 0 )
@@ -773,7 +773,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     tool_guids = []
                     for filename in ctx:
                         # Find all tool configs in this repository changeset_revision.
-                        if filename.endswith( '.xml' ):
+                        if filename != 'datatypes_conf.xml' and filename.endswith( '.xml' ):
                             fctx = ctx[ filename ]
                             # Write the contents of the old tool config to a temporary file.
                             fh = tempfile.NamedTemporaryFile( 'w' )
@@ -784,11 +784,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             fh.close()
                             try:
                                 tool = load_tool( trans, tmp_filename )
-                                if tool is not None:
-                                    tool_guids.append( generate_tool_guid( trans, repository, tool ) )
+                                valid = True
                             except:
-                                # File must not be a valid tool config even though it has a .xml extension.
-                                pass
+                                valid = False
+                            if valid and tool is not None:
+                                tool_guids.append( generate_tool_guid( trans, repository, tool ) )
                             try:
                                 os.unlink( tmp_filename )
                             except:
@@ -1001,20 +1001,25 @@ class RepositoryController( BaseUIController, ItemRatings ):
         hgweb_config_copy = '%s/hgweb.config_%s_backup' % ( trans.app.config.root, backup_date )
         shutil.copy( os.path.abspath( hgweb_config ), os.path.abspath( hgweb_config_copy ) )
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
-        # Add an entry in the hgweb.config file for a new repository.
-        # An entry looks something like:
+        # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
         # repos/test/mira_assembler = database/community_files/000/repo_123.
         hgweb_config = "%s/hgweb.config" %  trans.app.config.root
-        # Make a backup of the hgweb.config file since we're going to be changing it.
-        self.__make_hgweb_config_copy( trans, hgweb_config )
+        if repository_path.startswith( './' ):
+            repository_path = repository_path.replace( './', '', 1 )
         entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
+        tmp_fd, tmp_fname = tempfile.mkstemp()
         if os.path.exists( hgweb_config ):
-            output = open( hgweb_config, 'a' )
+            # Make a backup of the hgweb.config file since we're going to be changing it.
+            self.__make_hgweb_config_copy( trans, hgweb_config )
+            new_hgweb_config = open( tmp_fname, 'wb' )
+            for i, line in enumerate( open( hgweb_config ) ):
+                new_hgweb_config.write( line )
         else:
-            output = open( hgweb_config, 'w' )
-            output.write( '[paths]\n' )
-        output.write( "%s\n" % entry )
-        output.close()
+            new_hgweb_config = open( tmp_fname, 'wb' )
+            new_hgweb_config.write( '[paths]\n' )
+        new_hgweb_config.write( "%s\n" % entry )
+        new_hgweb_config.flush()
+        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     def __change_hgweb_config_entry( self, trans, repository, old_repository_name, new_repository_name ):
         # Change an entry in the hgweb.config file for a repository.  This only happens when
         # the owner changes the name of the repository.  An entry looks something like:
@@ -1024,7 +1029,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         self.__make_hgweb_config_copy( trans, hgweb_config )
         repo_dir = repository.repo_path
         old_lhs = "repos/%s/%s" % ( repository.user.username, old_repository_name )
-        old_entry = "%s = %s" % ( old_lhs, repo_dir )
         new_entry = "repos/%s/%s = %s\n" % ( repository.user.username, new_repository_name, repo_dir )
         tmp_fd, tmp_fname = tempfile.mkstemp()
         new_hgweb_config = open( tmp_fname, 'wb' )
@@ -1033,17 +1037,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 new_hgweb_config.write( new_entry )
             else:
                 new_hgweb_config.write( line )
+        new_hgweb_config.flush()
         shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     def __create_hgrc_file( self, repository ):
         # At this point, an entry for the repository is required to be in the hgweb.config
         # file so we can call repository.repo_path.
-        # Create a .hg/hgrc file that looks something like this:
-        # [web]
-        # allow_push = test
-        # name = convert_characters1
-        # push_ssl = False
         # Since we support both http and https, we set push_ssl to False to override
         # the default (which is True) in the mercurial api.
+        # The hg purge extension purges all files and directories not being tracked by
+        # mercurial in the current repository.  It'll remove unknown files and empty
+        # directories.  This is used in the update_for_browsing() method.
         repo = hg.repository( get_configured_ui(), path=repository.repo_path )
         fp = repo.opener( 'hgrc', 'wb' )
         fp.write( '[paths]\n' )
@@ -1053,6 +1056,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         fp.write( 'allow_push = %s\n' % repository.user.username )
         fp.write( 'name = %s\n' % repository.name )
         fp.write( 'push_ssl = false\n' )
+        fp.write( '[extensions]\n' )
+        fp.write( 'hgext.purge=' )
         fp.close()
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
@@ -1145,7 +1150,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 tip = repository.tip
                 for selected_file in selected_files_to_delete:
                     try:
-                        commands.remove( repo.ui, repo, repo_file, force=True )
+                        commands.remove( repo.ui, repo, selected_file, force=True )
                     except Exception, e:
                         # I never have a problem with commands.remove on a Mac, but in the test/production
                         # tool shed environment, it throws an exception whenever I delete all files from a
@@ -1306,7 +1311,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if params.get( 'edit_repository_button', False ):
             flush_needed = False
             # TODO: add a can_manage in the security agent.
-            if user != repository.user:
+            if user != repository.user or not trans.user_is_admin():
                 message = "You are not the owner of this repository, so you cannot manage it."
                 status = error
                 return trans.response.send_redirect( web.url_for( controller='repository',
@@ -1315,6 +1320,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                   webapp='community',
                                                                   message=message,
                                                                   status=status ) )
+            if description != repository.description:
+                repository.description = description
+                flush_needed = True
+            if long_description != repository.long_description:
+                repository.long_description = long_description
+                flush_needed = True
             if repo_name != repository.name:
                 message = self.__validate_repository_name( repo_name, user )
                 if message:
@@ -1323,12 +1334,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     self.__change_hgweb_config_entry( trans, repository, repository.name, repo_name )
                     repository.name = repo_name
                     flush_needed = True
-            if description != repository.description:
-                repository.description = description
-                flush_needed = True
-            if long_description != repository.long_description:
-                repository.long_description = long_description
-                flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
@@ -1609,39 +1614,49 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )          
-        try:
-            if changeset_revision == repository.tip:
-                # Get the tool config from the file system we use for browsing.
+        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        valid = True
+        if changeset_revision == repository.tip:
+            try:
                 tool = load_tool( trans, os.path.abspath( tool_config ) )
-            else:
-                # Get the tool config file name from the hgweb url, something like:
-                # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
-                old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
-                ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
-                fctx = None
-                for filename in ctx:
-                    filename_head, filename_tail = os.path.split( filename )
-                    if filename_tail == old_tool_config_file_name:
-                        fctx = ctx[ filename ]
-                        break
-                if fctx:
-                    # Write the contents of the old tool config to a temporary file.
-                    fh = tempfile.NamedTemporaryFile( 'w' )
-                    tmp_filename = fh.name
-                    fh.close()
-                    fh = open( tmp_filename, 'w' )
-                    fh.write( fctx.data() )
-                    fh.close()
+            except Exception, e:
+                tool = None
+                valid = False
+                message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
+        else:
+            # Get the tool config file name from the hgweb url, something like:
+            # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
+            old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
+            ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+            fctx = None
+            for filename in ctx:
+                filename_head, filename_tail = os.path.split( filename )
+                if filename_tail == old_tool_config_file_name:
+                    fctx = ctx[ filename ]
+                    break
+            if fctx:
+                # Write the contents of the old tool config to a temporary file.
+                fh = tempfile.NamedTemporaryFile( 'w' )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'w' )
+                fh.write( fctx.data() )
+                fh.close()
+                try:
                     tool = load_tool( trans, tmp_filename )
-                    try:
-                        os.unlink( tmp_filename )
-                    except:
-                        pass
-                else:
+                except Exception, e:
                     tool = None
-            tool_state = self.__new_state( trans )
-            is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+                    valid = False
+                    message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
+                try:
+                    os.unlink( tmp_filename )
+                except:
+                    pass
+            else:
+                tool = None
+        tool_state = self.__new_state( trans )
+        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+        try:
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
                                         repository=repository,
                                         changeset_revision=changeset_revision,
@@ -1652,7 +1667,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                         message=message,
                                         status=status )
         except Exception, e:
-            message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % str( e )
+            message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str( e )
         if webapp == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',

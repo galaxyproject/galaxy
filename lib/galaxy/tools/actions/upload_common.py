@@ -300,7 +300,7 @@ def create_paramfile( trans, uploaded_datasets ):
     if trans.app.config.drmaa_external_runjob_script:
         os.chmod(json_file_path, 0777)
     return json_file_path
-def create_job( trans, params, tool, json_file_path, data_list, folder=None, return_job=False ):
+def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     """
     Create the upload job.
     """
@@ -352,10 +352,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, ret
     output = odict()
     for i, v in enumerate( data_list ):
         output[ 'output%i' % i ] = v
-    if return_job:
-        return job, output
-    else:
-        return output
+    return job, output
 def active_folders( trans, folder ):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the

@@ -1,4 +1,4 @@
-<tool name="Mark Duplicates" id="picard_MarkDuplicates" version="0.01.1">
+<tool name="Mark Duplicates" id="picard_MarkDuplicates" version="1.56.0">
   <command interpreter="python">
     picard_wrapper.py
       --input="$input_file"

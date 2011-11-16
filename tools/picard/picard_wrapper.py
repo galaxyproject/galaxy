@@ -102,7 +102,7 @@ class PicardBase():
                 pass
             tmp.close()
         except Exception, e:
-            stop_err( 'Error : %s' % str( e ) )   
+            stop_err( 'Read Large Exception : %s' % str( e ) )   
         return s
     
     def runCL(self,cl=None,output_dir=None):
@@ -125,14 +125,15 @@ class PicardBase():
         tef.close()
         stderrs = self.readLarge(temperr)
         stdouts = self.readLarge(templog)        
-        if len(stderrs) > 0:
+        if rval > 0:
             s = '## executing %s returned status %d and stderr: \n%s\n' % (cl,rval,stderrs)
+            stdouts = '%s\n%s' % (stdouts,stderrs)
         else:
             s = '## executing %s returned status %d and nothing on stderr\n' % (cl,rval)
         logging.info(s)
         os.unlink(templog) # always
         os.unlink(temperr) # always
-        return s, stdouts # sometimes this is an output
+        return s, stdouts, rval  # sometimes s is an output
     
     def runPic(self, jar, cl):
         """
@@ -141,8 +142,8 @@ class PicardBase():
         runme = ['java -Xmx%s' % self.opts.maxjheap]
         runme.append('-jar %s' % jar)
         runme += cl
-        s,stdout = self.runCL(cl=runme, output_dir=self.opts.outdir)
-        return stdout
+        s,stdouts,rval = self.runCL(cl=runme, output_dir=self.opts.outdir)
+        return stdouts,rval
 
     def samToBam(self,infile=None,outdir=None):
         """
@@ -150,24 +151,15 @@ class PicardBase():
         """
         fd,tempbam = tempfile.mkstemp(dir=outdir,suffix='rgutilsTemp.bam')
         cl = ['samtools view -h -b -S -o ',tempbam,infile]
-        tlog,stdouts = self.runCL(cl,outdir)
-        return tlog,tempbam
-
-    #def bamToSam(self,infile=None,outdir=None):
-    #    """
-    #    use samtools view to convert bam to sam
-    #    """
-    #    fd,tempsam = tempfile.mkstemp(dir=outdir,suffix='rgutilsTemp.sam')
-    #    cl = ['samtools view -h -o ',tempsam,infile]
-    #    tlog,stdouts = self.runCL(cl,outdir)
-    #    return tlog,tempsam
+        tlog,stdouts,rval = self.runCL(cl,outdir)
+        return tlog,tempbam,rval
 
     def sortSam(self, infile=None,outfile=None,outdir=None):
         """
         """
         print '## sortSam got infile=%s,outfile=%s,outdir=%s' % (infile,outfile,outdir)
         cl = ['samtools sort',infile,outfile]
-        tlog,stdouts = self.runCL(cl,outdir)
+        tlog,stdouts,rval = self.runCL(cl,outdir)
         return tlog
 
     def cleanup(self):
@@ -242,7 +234,11 @@ class PicardBase():
         pdflist = [x for x in flist if os.path.splitext(x)[-1].lower() == '.pdf']
         if len(pdflist) > 0: # assumes all pdfs come with thumbnail .jpgs
             for p in pdflist:
-                imghref = '%s.jpg' % os.path.splitext(p)[0] # removes .pdf
+                pbase = os.path.splitext(p)[0] # removes .pdf
+                imghref = '%s.jpg' % pbase
+                mimghref = '%s-0.jpg' % pbase # multiple pages pdf -> multiple thumbnails without asking!
+                if mimghref in flist:
+                    imghref=mimghref # only one for thumbnail...it's a multi page pdf
                 res.append('<table cellpadding="10"><tr><td>\n')
                 res.append('<a href="%s"><img src="%s" title="Click image preview for a print quality PDF version" hspace="10" align="middle"></a>\n' % (p,imghref)) 
                 res.append('</tr></td></table>\n')   
@@ -383,9 +379,11 @@ def __main__():
     op.add_option('', '--taillimit', default="0")
     op.add_option('', '--histwidth', default="0")
     op.add_option('', '--minpct', default="0.01")
+    op.add_option('', '--malevel', default='')
+    op.add_option('', '--deviations', default="0.0")
     # CollectAlignmentSummaryMetrics
     op.add_option('', '--maxinsert', default="20")
-    op.add_option('', '--adaptors', action='append', type="string")
+    op.add_option('', '--adaptors', default='')
     # FixMateInformation and validate
     # CollectGcBiasMetrics
     op.add_option('', '--windowsize', default='100')
@@ -430,7 +428,8 @@ def __main__():
 
     tmp_dir = opts.outdir
     haveTempout = False # we use this where sam output is an option
-
+    rval = 0
+    stdouts = 'Not run yet'
     # set ref and dict files to use (create if necessary)
     ref_file_name = opts.ref
     if opts.ref_file <> None:
@@ -453,7 +452,7 @@ def __main__():
         pic.delme.append(dict_file_name)
         pic.delme.append(ref_file_name)
         pic.delme.append(tmp_ref_name)
-        s = pic.runPic(jarpath, cl)
+        stdouts,rval = pic.runPic(jarpath, cl)
         # run relevant command(s)
 
     # define temporary output
@@ -486,7 +485,7 @@ def __main__():
             cl.append('RGCN="%s"' % opts.rg_seq_center)
         if opts.rg_desc:
             cl.append('RGDS="%s"' % opts.rg_desc)
-        pic.runPic(opts.jar, cl)
+        stdouts,rval = pic.runPic(opts.jar, cl)
         haveTempout = True
 
     elif pic.picname == 'BamIndexStats':
@@ -499,9 +498,9 @@ def __main__():
         pic.delme.append(tmp_bam_name)
         pic.delme.append(tmp_bai_name)
         pic.delme.append(tmp_name)
-        s = pic.runPic( opts.jar, cl )
+        stdouts,rval = pic.runPic( opts.jar, cl )
         f = open(pic.metricsOut,'a')
-        f.write(s) # got this on stdout from runCl
+        f.write(stdouts) # got this on stdout from runCl
         f.write('\n')
         f.close()
         doTranspose = False # but not transposed
@@ -519,35 +518,48 @@ def __main__():
             cl.append('READ_NAME_REGEX="%s"' % opts.readregex)
         if float(opts.optdupdist) > 0:
             cl.append('OPTICAL_DUPLICATE_PIXEL_DISTANCE=%s' % opts.optdupdist)
-        pic.runPic(opts.jar,cl)
+        stdouts,rval = pic.runPic(opts.jar, cl)
 
     elif pic.picname == 'CollectAlignmentSummaryMetrics':
-        # Why do we do this fakefasta thing? Because we need NO fai to be available or picard barfs unless it has the same length as the input data.
+        # Why do we do this fakefasta thing? 
+        # Because we need NO fai to be available or picard barfs unless it matches the input data.
         # why? Dunno Seems to work without complaining if the .bai file is AWOL....
         fakefasta = os.path.join(opts.outdir,'%s_fake.fasta' % os.path.basename(ref_file_name))
         try:
             os.symlink(ref_file_name,fakefasta)
         except:
-            s = '## unable to symlink %s to %s - different devices? May need to replace with shutil.copy'
+            s = '## unable to symlink %s to %s - different devices? Will shutil.copy'
             info = s
             shutil.copy(ref_file_name,fakefasta)
         pic.delme.append(fakefasta)
-        cl.append('ASSUME_SORTED=%s' % opts.assumesorted)
-        adaptorseqs = ''.join([' ADAPTER_SEQUENCE=%s' % x for x in opts.adaptors])
-        cl.append(adaptorseqs)
+        cl.append('ASSUME_SORTED=true')
+        adaptlist = opts.adaptors.split(',')
+        adaptorseqs = ['ADAPTER_SEQUENCE=%s' % x for x in adaptlist]
+        cl += adaptorseqs
         cl.append('IS_BISULFITE_SEQUENCED=%s' % opts.bisulphite)
         cl.append('MAX_INSERT_SIZE=%s' % opts.maxinsert)
         cl.append('OUTPUT=%s' % pic.metricsOut)
         cl.append('R=%s' % fakefasta)
         cl.append('TMP_DIR=%s' % opts.tmpdir)
         if not opts.assumesorted.lower() == 'true': # we need to sort input
-            fakeinput = '%s.sorted' % opts.input
-            s = pic.sortSam(opts.input, fakeinput, opts.outdir)
-            pic.delme.append(fakeinput)
-            cl.append('INPUT=%s' % fakeinput)
+            sortedfile = '%s.sorted' % os.path.basename(opts.input)
+            if opts.datatype == 'sam': # need to work with a bam 
+                tlog,tempbam,trval = pic.samToBam(opts.input,opts.outdir)
+                pic.delme.append(tempbam)
+                try:
+                    tlog = pic.sortSam(tempbam,sortedfile,opts.outdir)
+                except:
+                    print '## exception on sorting sam file %s' % opts.input
+            else: # is already bam
+                try:
+                    tlog = pic.sortSam(opts.input,sortedfile,opts.outdir)
+                except : # bug - [bam_sort_core] not being ignored - TODO fixme
+                    print '## exception %s on sorting bam file %s' % (sys.exc_info()[0],opts.input)
+            cl.append('INPUT=%s.bam' % os.path.abspath(os.path.join(opts.outdir,sortedfile)))
+            pic.delme.append(os.path.join(opts.outdir,sortedfile))
         else:
             cl.append('INPUT=%s' % os.path.abspath(opts.input)) 
-        pic.runPic(opts.jar,cl)
+        stdouts,rval = pic.runPic(opts.jar, cl)
        
         
     elif pic.picname == 'CollectGcBiasMetrics':
@@ -575,10 +587,10 @@ def __main__():
         cl.append('TMP_DIR=%s' % opts.tmpdir)
         cl.append('CHART_OUTPUT=%s' % temppdf)
         cl.append('SUMMARY_OUTPUT=%s' % pic.metricsOut)
-        pic.runPic(opts.jar,cl)
+        stdouts,rval = pic.runPic(opts.jar, cl)
         if os.path.isfile(temppdf):
             cl2 = ['convert','-resize x400',temppdf,os.path.join(opts.outdir,jpgname)] # make the jpg for fixPicardOutputs to find
-            s,stdouts = pic.runCL(cl=cl2,output_dir=opts.outdir)
+            s,stdouts,rval = pic.runCL(cl=cl2,output_dir=opts.outdir)
         else:
             s='### runGC: Unable to find pdf %s - please check the log for the causal problem\n' % temppdf
         lf = open(pic.log_filename,'a')
@@ -587,29 +599,40 @@ def __main__():
         lf.close()
         
     elif pic.picname == 'CollectInsertSizeMetrics':
+        """ <command interpreter="python">
+   picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --deviations "$deviations"
+   --histwidth "$histWidth" --minpct "$minPct" --malevel "$malevel"
+   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/CollectInsertSizeMetrics.jar" -d "$html_file.files_path" -t "$html_file"
+  </command>
+        """
         isPDF = 'InsertSizeHist.pdf'
         pdfpath = os.path.join(opts.outdir,isPDF)
         histpdf = 'InsertSizeHist.pdf'
         cl.append('I=%s' % opts.input)
         cl.append('O=%s' % pic.metricsOut)
         cl.append('HISTOGRAM_FILE=%s' % histpdf)
-        if opts.taillimit <> '0':
-            cl.append('TAIL_LIMIT=%s' % opts.taillimit)
+        #if opts.taillimit <> '0': # this was deprecated although still mentioned in the docs at 1.56
+        #    cl.append('TAIL_LIMIT=%s' % opts.taillimit)
         if  opts.histwidth <> '0':
             cl.append('HISTOGRAM_WIDTH=%s' % opts.histwidth)
         if float( opts.minpct) > 0.0:
             cl.append('MINIMUM_PCT=%s' % opts.minpct)
-        pic.runPic(opts.jar,cl)   
+        if float(opts.deviations) > 0.0:
+            cl.append('DEVIATIONS=%s' % opts.deviations)
+        if opts.malevel:
+            malists = opts.malevel.split(',')
+            malist = ['METRIC_ACCUMULATION_LEVEL=%s' % x for x in malists]
+            cl += malist
+        stdouts,rval = pic.runPic(opts.jar, cl)
         if os.path.exists(pdfpath): # automake thumbnail - will be added to html 
             cl2 = ['mogrify', '-format jpg -resize x400 %s' % pdfpath]
-            s,stdouts = pic.runCL(cl=cl2,output_dir=opts.outdir)
+            pic.runCL(cl=cl2,output_dir=opts.outdir)
         else:
             s = 'Unable to find expected pdf file %s<br/>\n' % pdfpath
             s += 'This <b>always happens if single ended data was provided</b> to this tool,\n'
             s += 'so please double check that your input data really is paired-end NGS data.<br/>\n'
             s += 'If your input was paired data this may be a bug worth reporting to the galaxy-bugs list\n<br/>'
-            stdouts = ''
-        logging.info(s)
+            logging.info(s)
         if len(stdouts) > 0:
            logging.info(stdouts)
         
@@ -627,13 +650,13 @@ def __main__():
         cl.append('READ_NAME_REGEX="%s"' % opts.readregex)
         # maximum offset between two duplicate clusters
         cl.append('OPTICAL_DUPLICATE_PIXEL_DISTANCE=%s' % opts.optdupdist)
-        pic.runPic(opts.jar, cl)
+        stdouts,rval = pic.runPic(opts.jar, cl)
 
     elif pic.picname == 'FixMateInformation':
         cl.append('I=%s' % opts.input)
         cl.append('O=%s' % tempout)
         cl.append('SORT_ORDER=%s' % opts.sortorder)
-        pic.runPic(opts.jar,cl)
+        stdouts,rval = pic.runPic(opts.jar,cl)
         haveTempout = True
         
     elif pic.picname == 'ReorderSam':
@@ -649,14 +672,14 @@ def __main__():
         # contig length discordance
         if opts.allow_contig_len_discord == 'true':
             cl.append('ALLOW_CONTIG_LENGTH_DISCORDANCE=true')
-        pic.runPic(opts.jar, cl)
+        stdouts,rval = pic.runPic(opts.jar, cl)
         haveTempout = True
 
     elif pic.picname == 'ReplaceSamHeader':
         cl.append('INPUT=%s' % opts.input)
         cl.append('OUTPUT=%s' % tempout)
         cl.append('HEADER=%s' % opts.header_file)
-        pic.runPic(opts.jar, cl)
+        stdouts,rval = pic.runPic(opts.jar, cl)
         haveTempout = True
 
     elif pic.picname == 'CalculateHsMetrics':
@@ -673,7 +696,7 @@ def __main__():
         cl.append('INPUT=%s' % os.path.abspath(opts.input))
         cl.append('OUTPUT=%s' % pic.metricsOut)
         cl.append('TMP_DIR=%s' % opts.tmpdir)
-        pic.runPic(opts.jar,cl)
+        stdouts,rval = pic.runPic(opts.jar,cl)
            
     elif pic.picname == 'ValidateSamFile':
         import pysam
@@ -682,7 +705,7 @@ def __main__():
         stf = open(pic.log_filename,'w')
         tlog = None
         if opts.datatype == 'sam': # need to work with a bam 
-            tlog,tempbam = pic.samToBam(opts.input,opts.outdir)
+            tlog,tempbam,rval = pic.samToBam(opts.input,opts.outdir)
             try:
                 tlog = pic.sortSam(tempbam,sortedfile,opts.outdir)
             except:
@@ -709,7 +732,7 @@ def __main__():
             cl.append('IS_BISULFITE_SEQUENCED=true')
         if opts.ref <> None or opts.ref_file <> None:
             cl.append('R=%s' %  ref_file_name)
-        pic.runPic(opts.jar,cl)
+        stdouts,rval = pic.runPic(opts.jar,cl)
         if opts.datatype == 'sam':
             pic.delme.append(tempbam)
         newsam = opts.output
@@ -725,10 +748,12 @@ def __main__():
     if haveTempout:
         # Some Picard tools produced a potentially intermediate bam file. 
         # Either just move to final location or create sam
-        shutil.move(tempout, os.path.abspath(opts.output))
-
+        if os.path.exists(tempout):
+            shutil.move(tempout, os.path.abspath(opts.output))
     if opts.htmlout <> None or doFix: # return a pretty html page
         pic.fixPicardOutputs(transpose=doTranspose,maxloglines=maxloglines)
-
+    if rval <> 0:
+        print >> sys.stderr, '## exit code=%d; stdout=%s' % (rval,stdouts)
+        # signal failure
 if __name__=="__main__": __main__()
 

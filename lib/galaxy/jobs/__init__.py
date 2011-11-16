@@ -554,7 +554,7 @@ class JobWrapper( object ):
                 self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
 
-        if self.app.config.outputs_to_working_directory:
+        if self.app.config.outputs_to_working_directory and not self.__link_file_check():
             for dataset_path in self.get_output_fnames():
                 try:
                     shutil.move( dataset_path.false_path, dataset_path.real_path )
@@ -604,7 +604,7 @@ class JobWrapper( object ):
 
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info  = context['stdout'] + context['stderr']
+                dataset.info = ( dataset.info  or '' ) + context['stdout'] + context['stderr']
                 dataset.tool_version = self.version_string
                 dataset.set_size()
                 if context['stderr']:
@@ -891,6 +891,15 @@ class JobWrapper( object ):
             return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
         else:
             return 'anonymous@unknown'
+
+    def __link_file_check( self ):
+        """ outputs_to_working_directory breaks library uploads where data is
+        linked.  This method is a hack that solves that problem, but is
+        specific to the upload tool and relies on an injected job param.  This
+        method should be removed ASAP and replaced with some properly generic
+        and stateful way of determining link-only datasets. -nate
+        """
+        return self.tool.id == 'upload1' and self.param_dict.get( 'link_data_only', None ) == 'link_to_files'
 
     def _change_ownership( self, username, gid ):
         job = self.get_job()

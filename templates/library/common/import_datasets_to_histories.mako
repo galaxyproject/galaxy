@@ -49,12 +49,12 @@
         <div class="toolFormTitle">Destination Histories:</div>
         <div class="toolFormBody">
             <div class="form-row" id="single-destination">
-                <select id="single-dest-select" name="target_history_ids">
+                <select id="single-dest-select" name="target_history_id">
                     %for i, target_history in enumerate( target_histories ):
                         <%
                             encoded_id = trans.security.encode_id( target_history.id )
-                            if encoded_id == selected_history_id:
-                                selected_text = " selected"
+                            if encoded_id == target_history_id:
+                                selected_text = " selected='selected'"
                             else:
                                 selected_text = ""
                             if target_history == current_history:

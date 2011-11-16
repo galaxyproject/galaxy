@@ -20,9 +20,9 @@
     can_rate = in_tool_shed and not is_new and trans.user and repository.user != trans.user
     can_view_change_log = in_tool_shed and not is_new
     if can_push:
-        browse_label = 'Browse or delete repository files'
+        browse_label = 'Browse or delete repository tip files'
     else:
-        browse_label = 'Browse repository files'
+        browse_label = 'Browse repository tip files'
 %>
 
 <%!

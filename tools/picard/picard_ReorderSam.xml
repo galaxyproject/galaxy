@@ -1,4 +1,4 @@
-<tool name="Reorder SAM/BAM" id="picard_ReorderSam" version="0.3.1">
+<tool name="Reorder SAM/BAM" id="picard_ReorderSam" version="1.56.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
     picard_wrapper.py

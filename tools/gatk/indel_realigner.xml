@@ -1,4 +1,4 @@
-<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.3">
+<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.4">
   <description>- perform local realignment</description>
   <requirements>
       <requirement type="package" version="1.2">gatk</requirement>
@@ -90,7 +90,6 @@
     ##start analysis specific options
     -d "-targetIntervals" "${target_intervals}" "${target_intervals.ext}" "gatk_target_intervals"
     -p '
-    -targetNotSorted ##always resort input intervals
     --disable_bam_indexing
     '
     #if $analysis_param_type.analysis_param_type_selector == "advanced":

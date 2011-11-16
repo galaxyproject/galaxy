@@ -3,13 +3,15 @@ from galaxy import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.tools.search import ToolBoxSearch
-from galaxy.tools import json_fix
+from galaxy.tools import ToolSection, json_fix
+from galaxy.util import inflector
 import logging
 log = logging.getLogger( __name__ )
 
 from galaxy.actions.admin import AdminActions
 from galaxy.web.params import QuotaParamParser
 from galaxy.exceptions import *
+import galaxy.datatypes.registry
 
 class UserListGrid( grids.Grid ):
     class EmailColumn( grids.TextColumn ):
@@ -93,11 +95,6 @@ class UserListGrid( grids.Grid ):
                              allow_popup=False,
                              url_args=dict( webapp="galaxy", action="reset_user_password" ) )
     ]
-    #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
-    # the setting is False
-    #operations.append( grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
-    #operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
-    #operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True, purged=False ) ),
@@ -403,7 +400,7 @@ class RepositoryListGrid( grids.Grid ):
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.tool_shed
     # Grid definition
-    title = "Tool shed repositories"
+    title = "Installed tool shed repositories"
     model_class = model.ToolShedRepository
     template='/admin/tool_shed_repository/grid.mako'
     default_sort_key = "name"
@@ -443,6 +440,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
     repository_list_grid = RepositoryListGrid()
+    delete_operation = grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True )
+    undelete_operation = grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
+    purge_operation = grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
 
     @web.expose
     @web.require_admin
@@ -807,28 +807,45 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
         status = kwd.get( 'status', 'done' )
         tool_shed_url = kwd[ 'tool_shed_url' ]
         repo_info_dict = kwd[ 'repo_info_dict' ]
+        new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
+        tool_panel_section = kwd.get( 'tool_panel_section', '' )
         if kwd.get( 'select_tool_panel_section_button', False ):
             shed_tool_conf = kwd[ 'shed_tool_conf' ]
             # Get the tool path.
             for k, tool_path in trans.app.toolbox.shed_tool_confs.items():
                 if k == shed_tool_conf:
                     break
-            if 'tool_panel_section' in kwd:
-                section_key = 'section_%s' % kwd[ 'tool_panel_section' ]
-                tool_section = trans.app.toolbox.tool_panel[ section_key ]
+            if new_tool_panel_section or tool_panel_section:
+                if new_tool_panel_section:
+                    section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+                    new_section_key = 'section_%s' % str( section_id )
+                    if new_section_key in trans.app.toolbox.tool_panel:
+                        # Appending a tool to an existing section in trans.app.toolbox.tool_panel
+                        log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
+                        tool_section = trans.app.toolbox.tool_panel[ new_section_key ]
+                    else:
+                        # Appending a new section to trans.app.toolbox.tool_panel
+                        log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
+                        elem = Element( 'section' )
+                        elem.attrib[ 'name' ] = new_tool_panel_section
+                        elem.attrib[ 'id' ] = section_id
+                        tool_section = ToolSection( elem )
+                        trans.app.toolbox.tool_panel[ new_section_key ] = tool_section
+                else:
+                    section_key = 'section_%s' % tool_panel_section
+                    tool_section = trans.app.toolbox.tool_panel[ section_key ]
                 # Decode the encoded repo_info_dict param value.
                 repo_info_dict = tool_shed_decode( repo_info_dict )
                 # Clone the repository to the configured location.
                 current_working_dir = os.getcwd()
+                installed_repository_names = []
                 for name, repo_info_tuple in repo_info_dict.items():
                     description, repository_clone_url, changeset_revision = repo_info_tuple
                     clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, changeset_revision ) )
                     if os.path.exists( clone_dir ):
                         # Repository and revision has already been cloned.
                         # TODO: implement the ability to re-install or revert an existing repository.
-                        message += 'Revision <b>%s</b> of repository <b>%s</b> has already been installed.  Updating an existing repository is not yet supported.<br/>' % \
-                        ( changeset_revision, name )
-                        status = 'error'
+                        message += 'Revision <b>%s</b> of repository <b>%s</b> was previously installed.<br/>' % ( changeset_revision, name )
                     else:
                         os.makedirs( clone_dir )
                         log.debug( 'Cloning %s...' % repository_clone_url )
@@ -856,6 +873,10 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             os.chdir( current_working_dir )
                             tmp_stderr.close()
                             if returncode == 0:
+                                # Load data types required by tools.
+                                # TODO: uncomment the following when we're ready...
+                                #self.__load_datatypes( trans, repo_files_dir )
+                                # Load tools and tool data files required by them.
                                 sample_files, repository_tools_tups = self.__get_repository_tools_and_sample_files( trans, tool_path, repo_files_dir )
                                 if repository_tools_tups:
                                     # Handle missing data table entries for tool parameters that are dynamically generated select lists.
@@ -892,9 +913,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                                     if trans.app.toolbox_search.enabled:
                                         # If search support for tools is enabled, index the new installed tools.
                                         trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
-                                message += 'Revision <b>%s</b> of repository <b>%s</b> has been loaded into tool panel section <b>%s</b>.<br/>' % \
-                                    ( changeset_revision, name, tool_section.name )
-                                #return trans.show_ok_message( message )
+                                installed_repository_names.append( name )
                             else:
                                 tmp_stderr = open( tmp_name, 'rb' )
                                 message += '%s<br/>' % tmp_stderr.read()
@@ -905,6 +924,20 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             message += '%s<br/>' % tmp_stderr.read()
                             tmp_stderr.close()
                             status = 'error'
+                if installed_repository_names:
+                    installed_repository_names.sort()
+                    num_repositories_installed = len( installed_repository_names )
+                    message += 'Installed %d %s and all tools were loaded into tool panel section <b>%s</b>:<br/>Installed repositories: ' % \
+                        ( num_repositories_installed, inflector.cond_plural( num_repositories_installed, 'repository' ), tool_section.name )
+                    for i, repo_name in enumerate( installed_repository_names ):
+                        if i == len( installed_repository_names ) -1:
+                            message += '%s.<br/>' % repo_name
+                        else:
+                            message += '%s, ' % repo_name
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='browse_tool_shed_repositories',
+                                                                  message=message,
+                                                                  status=status ) )
             else:
                 message = 'Choose the section in your tool panel to contain the installed tools.'
                 status = 'error'
@@ -921,6 +954,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                                     shed_tool_conf=shed_tool_conf,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
+                                    new_tool_panel_section=new_tool_panel_section,
                                     message=message,
                                     status=status )
     @web.expose
@@ -1144,24 +1178,62 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             error = tmp_stderr.read()
                             tmp_stderr.close()
                             log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
+    def __load_datatypes( self, trans, repo_files_dir ):
+        # Find datatypes_conf.xml if it exists.
+        datatypes_config = None
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if root.find( '.hg' ) < 0:
+                for name in files:
+                    if name == 'datatypes_conf.xml':
+                        datatypes_config = os.path.abspath( os.path.join( root, name ) )
+                        break
+        if datatypes_config:
+            # Parse datatypes_config.
+            tree = ElementTree.parse( datatypes_config )
+            root = tree.getroot()
+            ElementInclude.include( root )
+            datatype_files = root.find( 'datatype_files' )
+            for elem in datatype_files.findall( 'datatype_file' ):
+                datatype_file_name = elem.get( 'name', None )
+                if datatype_file_name:
+                    # Find the file in the installed repository.
+                    relative_path = None
+                    for root, dirs, files in os.walk( repo_files_dir ):
+                        if root.find( '.hg' ) < 0:
+                            for name in files:
+                                if name == datatype_file_name:
+                                    relative_path = os.path.join( root, name )
+                                    break
+                    relative_head, relative_tail = os.path.split( relative_path )
+                    # TODO: get the import_module by parsing the <registration><datatype> tags
+                    if datatype_file_name.find( '.' ) > 0:
+                        import_module = datatype_file_name.split( '.' )[ 0 ]
+                    else:
+                        import_module = datatype_file_name
+                    try:
+                        sys.path.insert( 0, relative_head )
+                        module = __import__( import_module )
+                        sys.path.pop( 0 )
+                    except Exception, e:
+                        log.debug( "Execption importing datatypes code file included in installed repository: %s" % str( e ) )
+                    trans.app.datatypes_registry = galaxy.datatypes.registry.Registry( trans.app.config.root, datatypes_config )
     def __get_repository_tools_and_sample_files( self, trans, tool_path, repo_files_dir ):
         # The sample_files list contains all files whose name ends in .sample
         sample_files = []
-        # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
-        repository_tools_tups = []
+        # Find all special .sample files first.
         for root, dirs, files in os.walk( repo_files_dir ):
-            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                if '.hg' in dirs:
-                    # Don't visit .hg directories - should be impossible since we don't
-                    # allow uploaded archives that contain .hg dirs, but just in case...
-                    dirs.remove( '.hg' )
-                if 'hgrc' in files:
-                     # Don't include hgrc files in commit.
-                    files.remove( 'hgrc' )
-                # Find all special .sample files first.
+            if root.find( '.hg' ) < 0:
                 for name in files:
                     if name.endswith( '.sample' ):
                         sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
+        # The repository_tools_tups list contains tuples of ( relative_path_to_tool_config, tool ) pairs
+        repository_tools_tups = []
+        for root, dirs, files in os.walk( repo_files_dir ):
+            if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
+                if '.hg' in dirs:
+                    dirs.remove( '.hg' )
+                if 'hgrc' in files:
+                    files.remove( 'hgrc' )
                 for name in files:
                     # Find all tool configs.
                     if name.endswith( '.xml' ):

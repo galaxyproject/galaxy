@@ -13,9 +13,9 @@
     can_browse_contents = not is_new
     can_view_change_log = not is_new
     if can_push:
-        browse_label = 'Browse or delete repository files'
+        browse_label = 'Browse or delete repository tip files'
     else:
-        browse_label = 'Browse repository files'
+        browse_label = 'Browse repository tip files'
 %>
 
 <%!
@@ -104,4 +104,4 @@
     </div>
 </div>
 <p/>
-${render_repository_tools_and_workflows( repository_metadata_id, metadata, webapp=webapp )}
+${render_repository_items( repository_metadata_id, metadata, webapp=webapp )}

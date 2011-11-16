@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<display id="igv_vcf" version="1.0.0" name="display with IGV">
+    
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links from_file="tool-data/shared/igv/igv_build_sites.txt" skip_startswith="#" id="0" name="1">
+        
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="site_name" value="1"/>
+        <dynamic_param name="site_link" value="2"/>
+        <dynamic_param name="site_dbkeys" value="3" split="True" separator="," />
+        <dynamic_param name="site_organisms" value="4" split="True" separator="," />
+        
+        <!-- Filter out some of the links based upon matching site_dbkeys to dataset dbkey -->
+        <filter>${dataset.dbkey in $site_dbkeys}</filter>
+        
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${redirect_url}</url>
+        
+        <param type="data" name="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz" format="vcf_bgzip" />
+        <param type="data" name="tabix_file" dataset="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" format="tabix" />
+        <param type="template" name="site_organism" strip="True" >
+            $site_organisms[ $site_dbkeys.index( $bgzip_file.dbkey ) ]
+        </param>
+        
+        <param type="template" name="jnlp" url="galaxy_${DATASET_HASH}.jnlp" viewable="True" mimetype="application/x-java-jnlp-file">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;jnlp
+  spec=&quot;1.0+&quot;
+  codebase=&quot;${site_link}&quot;&gt;
+  &lt;information&gt;
+    &lt;title&gt;IGV 1.5&lt;/title&gt;
+    &lt;vendor&gt;The Broad Institute&lt;/vendor&gt;
+    &lt;homepage href=&quot;http://www.broadinstitute.org/igv&quot;/&gt;
+    &lt;description&gt;IGV Software&lt;/description&gt;
+    &lt;description kind=&quot;short&quot;&gt;IGV&lt;/description&gt;
+  &lt;/information&gt;
+  &lt;security&gt;
+      &lt;all-permissions/&gt;
+  &lt;/security&gt;
+  &lt;resources&gt;
+  
+&lt;j2se version=&quot;1.5+&quot; initial-heap-size=&quot;256m&quot; max-heap-size=&quot;1100m&quot;/&gt;    
+	&lt;jar href=&quot;igv.jar&quot; download=&quot;eager&quot; main=&quot;true&quot;/&gt;
+    &lt;jar href=&quot;batik-codec.jar&quot; download=&quot;eager&quot;/&gt; 
+    &lt;property name=&quot;apple.laf.useScreenMenuBar&quot; value=&quot;true&quot;/&gt;
+    &lt;property name=&quot;com.apple.mrj.application.growbox.intrudes&quot; value=&quot;false&quot;/&gt;
+    &lt;property name=&quot;com.apple.mrj.application.live-resize&quot; value=&quot;true&quot;/&gt;
+    &lt;property name=&quot;com.apple.macos.smallTabs&quot; value=&quot;true&quot;/&gt;
+  &lt;/resources&gt;
+	
+    &lt;resources os=&quot;Mac&quot; arch=&quot;i386&quot;&gt;
+        &lt;property name=&quot;apple.awt.graphics.UseQuartz&quot; value=&quot;false&quot;/&gt;
+        &lt;nativelib href=&quot;hdfnative-macintel.jar&quot;/&gt; 
+    &lt;/resources&gt;
+
+    &lt;resources os=&quot;Mac&quot; arch=&quot;ppc&quot;&gt;
+        &lt;property name=&quot;apple.awt.graphics.UseQuartz&quot; value=&quot;false&quot;/&gt;
+        &lt;nativelib href=&quot;hdfnative-macppc.jar&quot;/&gt; 
+    &lt;/resources&gt;
+    
+    &lt;resources os=&quot;Mac&quot; arch=&quot;PowerPC&quot;&gt;
+        &lt;property name=&quot;apple.awt.graphics.UseQuartz&quot; value=&quot;false&quot;/&gt;
+        &lt;nativelib href=&quot;hdfnative-macppc.jar&quot;/&gt; 
+    &lt;/resources&gt;
+
+    &lt;resources os=&quot;Windows&quot;&gt;
+        &lt;property name=&quot;sun.java2d.noddraw&quot; value=&quot;true&quot;/&gt;
+        &lt;nativelib href=&quot;hdfnative-win.jar&quot;/&gt; 
+    &lt;/resources&gt;
+
+    &lt;resources os=&quot;Linux&quot;&gt;
+        &lt;nativelib href=&quot;hdfnative-linux64.jar&quot;/&gt; 
+    &lt;/resources&gt;
+
+  &lt;application-desc main-class=&quot;org.broad.igv.ui.IGVMainFrame&quot;&gt;
+     &lt;argument&gt;-g&lt;/argument&gt;
+     &lt;argument&gt;${site_organism}&lt;/argument&gt;
+     &lt;argument&gt;${bgzip_file.url}&lt;/argument&gt;
+  &lt;/application-desc&gt;
+&lt;/jnlp&gt;
+		</param>
+        <param type="template" name="redirect_url" strip="True" >
+            #if $site_id.startswith( 'local_' )
+                ${site_link}?file=${bgzip_file.qp}&amp;genome=${site_organism}&amp;merge=true
+            #elif $site_id.startswith( 'web_link_' ):
+                ${site_link}?sessionURL=${bgzip_file.qp}&amp;genome=${site_organism}&amp;merge=true
+            #else:
+                ${jnlp.url}
+            #end if
+        </param>
+    </dynamic_links>
+    
+    
+</display>
+<!-- Dan Blankenberg -->

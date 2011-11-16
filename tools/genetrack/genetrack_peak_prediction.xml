@@ -54,9 +54,13 @@ This tool will generate genome wide peak prediction from an index file.
 
 - **Prediction method** the function used to average nearby values
 
+See http://genetrack.bx.psu.edu/ for more information on GeneTrack.
+
 ------
 
 **Citation**
+
+For the underlying tool, please cite `Albert I, Wachi S, Jiang C, Pugh BF. GeneTrack--a genomic data processing and visualization framework. Bioinformatics. 2008 May 15;24(10):1305-6. &lt;http://www.ncbi.nlm.nih.gov/pubmed/18388141&gt;`_
 
 If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 

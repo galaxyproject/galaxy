@@ -46,18 +46,22 @@ class Registry( object ):
                 try:
                     extension = elem.get( 'extension', None ) 
                     dtype = elem.get( 'type', None )
+                    type_extension = elem.get( 'type_extension', None )
                     mimetype = elem.get( 'mimetype', None )
                     display_in_upload = elem.get( 'display_in_upload', False )
                     make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
-                    if extension and dtype:
-                        fields = dtype.split( ':' )
-                        datatype_module = fields[0]
-                        datatype_class_name = fields[1]
-                        fields = datatype_module.split( '.' )
-                        module = __import__( fields.pop(0) )
-                        for mod in fields:
-                            module = getattr( module, mod )
-                        datatype_class = getattr( module, datatype_class_name )
+                    if extension and ( dtype or type_extension ):
+                        if dtype:
+                            fields = dtype.split( ':' )
+                            datatype_module = fields[0]
+                            datatype_class_name = fields[1]
+                            fields = datatype_module.split( '.' )
+                            module = __import__( fields.pop(0) )
+                            for mod in fields:
+                                module = getattr( module, mod )
+                            datatype_class = getattr( module, datatype_class_name )
+                        elif type_extension:
+                            datatype_class = self.datatypes_by_extension[type_extension].__class__
                         if make_subclass:
                             datatype_class = type( datatype_class_name, (datatype_class,), {} )
                         self.datatypes_by_extension[extension] = datatype_class()

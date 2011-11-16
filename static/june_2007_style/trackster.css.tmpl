@@ -295,7 +295,13 @@ input {
     padding-top: 0.2em;
 }
 .menu-button {
-    padding: 0px 4px 0px 4px;
+    margin: 0px 4px 0px 4px;
+}
+.chevron-expand {
+    background: transparent url(../images/fugue/chevron-expand-bw.png) no-repeat;
+}
+.chevron-expand:hover {
+    background:transparent url(../images/fugue/chevron-expand.png) no-repeat;
 }
 .settings-icon {
     background: transparent url(../images/fugue/gear-bw.png) no-repeat;
@@ -405,8 +411,19 @@ input {
     background-color: #CCC;
     padding: 1em;
 }
-.feature-popup{ 
-    background-color: #DDD;
+
+.feature-popup {
     position: absolute;
-    z-index: 1000
+    z-index: 1000;
+    padding: 5px;
+    font-size: 10px;
+    filter: alpha(opacity=80);
+    background-repeat: no-repeat;
+    background-image: url(../images/tipsy.gif);
+    background-position: top center;
+}
+.feature-popup-inner {
+    padding: 5px 8px 4px 8px;
+    background-color: black;
+    color: white;
 }

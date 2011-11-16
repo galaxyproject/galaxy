@@ -753,7 +753,7 @@ class User( BaseUIController, UsesFormDefinitions ):
             password = kwd.get( 'password', '' )
             confirm = kwd.get( 'confirm', '' )
             ok = True
-            if not webapp == 'galaxy' and not is_admin:
+            if not is_admin:
                 # If the current user is changing their own password, validate their current password
                 current = kwd.get( 'current', '' )
                 if not trans.user.check_password( current ):
@@ -768,10 +768,17 @@ class User( BaseUIController, UsesFormDefinitions ):
                 else:
                     # Save new password
                     user.set_password_cleartext( password )
+                    # Invalidate all other sessions
+                    for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
+                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id==trans.user.id,
+                                                                    trans.app.model.GalaxySession.table.c.is_valid==True,
+                                                                    trans.app.model.GalaxySession.table.c.id!=trans.galaxy_session.id ) ):
+                        other_galaxy_session.is_valid = False
+                        trans.sa_session.add( other_galaxy_session )
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
                     trans.log_event( "User change password" )
-                    message = 'The password has been changed.'
+                    message = 'The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).'
         elif user and params.get( 'edit_user_info_button', False ):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )

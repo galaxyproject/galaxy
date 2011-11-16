@@ -806,7 +806,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                         #in case some display app wants all files to be in the same 'directory', 
                         #data can be forced to param, but not the other way (no filename for other direction)
                         #get param name from url param name
-                        action_param = display_link.get_param_name_by_url( action_param )
+                        try:
+                            action_param = display_link.get_param_name_by_url( action_param )
+                        except ValueError, e:
+                            log.debug( e )
+                            return paste.httpexceptions.HTTPNotFound( str( e ) )
                         value = display_link.get_param_value( action_param )
                         assert value, "An invalid parameter name was provided: %s" % action_param
                         assert value.parameter.viewable, "This parameter is not viewable."

@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import config, tools, web, util
 from galaxy.util.hash_util import *
+from galaxy.util.json import json_fix
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
@@ -19,9 +20,9 @@ from galaxy.exceptions import *
 
 from Cheetah.Template import Template
 
-
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
+from elementtree.ElementTree import Element
 
 log = logging.getLogger( __name__ )
 
@@ -233,16 +234,18 @@ class UsesHistoryDatasetAssociation:
             else:
                 error( "You are not allowed to access this dataset" )
         return data
-    def get_history_dataset_association( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
+    def get_history_dataset_association( self, trans, history, dataset_id, check_ownership=True, check_accessible=False ):
         """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
-        hda = self.get_object( trans, id, 'HistoryDatasetAssociation', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=False ) # check accessibility here
+        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
+        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
+        
         if check_accessible:
             if trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
                 if hda.state == trans.model.Dataset.states.UPLOAD:
                     error( "Please wait until this dataset finishes uploading before attempting to view it." )
             else:
                 error( "You are not allowed to access this dataset" )
+        return hda
     def get_data( self, dataset, preview=True ):
         """ Gets a dataset's data. """
         # Get data from file, truncating if necessary.
@@ -1295,6 +1298,9 @@ class Admin( object ):
     group_list_grid = None
     quota_list_grid = None
     repository_list_grid = None
+    delete_operation = None
+    undelete_operation = None
+    purge_operation = None
 
     @web.expose
     @web.require_admin
@@ -2214,6 +2220,13 @@ class Admin( object ):
                                                                       **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
+        if trans.app.config.allow_user_deletion:
+            if self.delete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.delete_operation )
+            if self.undelete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.undelete_operation )
+            if self.purge_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.purge_operation )
         # Render the list view
         return self.user_list_grid( trans, **kwd )
     @web.expose

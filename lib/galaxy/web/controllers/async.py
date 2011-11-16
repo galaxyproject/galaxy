@@ -67,7 +67,7 @@ class ASync( BaseUIController ):
                 trans.log_event( 'Async executing tool %s' % tool.id, tool_id=tool.id )
                 galaxy_url  = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 galaxy_url = params.get("GALAXY_URL",galaxy_url)
-                params = dict( url=URL, GALAXY_URL=galaxy_url )
+                params = dict( URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext )
                 # Assume there is exactly one output file possible
                 params[tool.outputs.keys()[0]] = data.id
                 tool.execute( trans, incoming=params )
@@ -80,20 +80,20 @@ class ASync( BaseUIController ):
             trans.sa_session.flush()
             
             return "Data %s with status %s received. OK" % (data_id, STATUS)
-   
-        #            
-        # no data_id must be parameter submission
-        #
-        if not data_id and len(params)>3:
-            
-            if params.galaxyFileFormat == 'wig':
+        else:
+            #            
+            # no data_id must be parameter submission
+            #
+            if params.data_type:
+                GALAXY_TYPE = params.data_type
+            elif params.galaxyFileFormat == 'wig': #this is an undocumented legacy special case
                 GALAXY_TYPE = 'wig'
             else:
-                GALAXY_TYPE = params.GALAXY_TYPE  or 'interval'
+                GALAXY_TYPE = params.GALAXY_TYPE  or  tool.outputs.values()[0].format
                 
-            GALAXY_NAME  = params.GALAXY_NAME  or '%s query' % tool.name
-            GALAXY_INFO  = params.GALAXY_INFO  or params.galaxyDescription or ''
-            GALAXY_BUILD = params.GALAXY_BUILD or params.galaxyFreeze or 'hg17'
+            GALAXY_NAME = params.name or params.GALAXY_NAME or '%s query' % tool.name
+            GALAXY_INFO = params.info or params.GALAXY_INFO or params.galaxyDescription or ''
+            GALAXY_BUILD = params.dbkey or params.GALAXY_BUILD or params.galaxyFreeze or '?'
             
             #data = datatypes.factory(ext=GALAXY_TYPE)()
             #data.ext   = GALAXY_TYPE

@@ -1,4 +1,4 @@
-import sys, os, shutil, logging, tarfile, tempfile
+import sys, os, shutil, logging, tarfile, tempfile, urllib
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
@@ -10,9 +10,6 @@ log = logging.getLogger( __name__ )
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 CHUNK_SIZE = 2**20 # 1Mb
-
-class UploadError( Exception ):
-    pass
 
 class UploadController( BaseUIController ):
     @web.expose
@@ -32,20 +29,40 @@ class UploadController( BaseUIController ):
         remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
         upload_point = self.__get_upload_point( repository, **kwd )
-        # Get the current repository tip.
         tip = repository.tip
+        file_data = params.get( 'file_data', '' )
+        url = params.get( 'url', '' )
         if params.get( 'upload_button', False ):
             current_working_dir = os.getcwd()
-            file_data = params.get( 'file_data', '' )
-            if file_data == '':
+            if file_data == '' and url == '':
                 message = 'No files were entered on the upload form.'
                 status = 'error'
                 uploaded_file = None
+            elif url:
+                valid_url = True
+                try:
+                    stream = urllib.urlopen( url )
+                except Exception, e:
+                    valid_url = False
+                    message = 'Error uploading file via http: %s' % str( e )
+                    status = 'error'
+                    uploaded_file = None
+                if valid_url:
+                    fd, uploaded_file_name = tempfile.mkstemp()
+                    uploaded_file = open( uploaded_file_name, 'wb' )
+                    while 1:
+                        chunk = stream.read( CHUNK_SIZE )
+                        if not chunk:
+                            break
+                        uploaded_file.write( chunk )
+                    uploaded_file.flush()
+                    uploaded_file_filename = url.split( '/' )[ -1 ]
+                    isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             elif file_data not in ( '', None ):
                 uploaded_file = file_data.file
                 uploaded_file_name = uploaded_file.name
                 uploaded_file_filename = file_data.filename
-            isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
+                isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             if uploaded_file:
                 isgzip = False
                 isbz2 = False
@@ -86,6 +103,13 @@ class UploadController( BaseUIController ):
                         full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
                     # Move the uploaded file to the load_point within the repository hierarchy.
                     shutil.move( uploaded_file_name, full_path )
+                    # See if any admin users have chosen to receive email alerts when a repository is
+                    # updated.  If so, check every uploaded file to ensure content is appropriate.
+                    check_contents = check_file_contents( trans )
+                    if check_contents and os.path.isfile( full_path ):
+                        content_alert_str = self.__check_file_content( full_path )
+                    else:
+                        content_alert_str = ''
                     commands.add( repo.ui, repo, full_path )
                     try:
                         commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
@@ -107,7 +131,7 @@ class UploadController( BaseUIController ):
                         # Handle the special case where a xxx.loc.sample file is
                         # being uploaded by copying it to ~/tool-data/xxx.loc.
                         copy_sample_loc_file( trans, full_path )
-                    handle_email_alerts( trans, repository )
+                    handle_email_alerts( trans, repository, content_alert_str=content_alert_str )
                 if ok:
                     # Update the repository files for browsing.
                     update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
@@ -146,6 +170,7 @@ class UploadController( BaseUIController ):
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/community/repository/upload.mako',
                                     repository=repository,
+                                    url=url,
                                     commit_message=commit_message,
                                     uncompress_file=uncompress_file,
                                     remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
@@ -172,6 +197,7 @@ class UploadController( BaseUIController ):
             tar.extractall( path=full_path )
             tar.close()
             uploaded_file.close()
+            content_alert_str = ''
             if remove_repo_files_not_in_tar and not repository.is_new:
                 # We have a repository that is not new (it contains files), so discover
                 # those files that are in the repository, but not in the uploaded archive.
@@ -215,7 +241,13 @@ class UploadController( BaseUIController ):
                             except OSError, e:
                                 # The directory is not empty
                                 pass
+            # See if any admin users have chosen to receive email alerts when a repository is
+            # updated.  If so, check every uploaded file to ensure content is appropriate.
+            check_contents = check_file_contents( trans )
             for filename_in_archive in filenames_in_archive:
+                # Check file content to ensure it is appropriate.
+                if check_contents and os.path.isfile( filename_in_archive ):
+                    content_alert_str += self.__check_file_content( filename_in_archive )
                 commands.add( repo.ui, repo, filename_in_archive )
                 if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
                     # Handle the special case where a tool_data_table_conf.xml.sample
@@ -237,7 +269,7 @@ class UploadController( BaseUIController ):
                 # exception.  If this happens, we'll try the following.
                 repo.dirstate.write()
                 repo.commit( user=trans.user.username, text=commit_message )
-            handle_email_alerts( trans, repository )
+            handle_email_alerts( trans, repository, content_alert_str )
             return True, '', files_to_remove
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
         if isgzip:
@@ -314,4 +346,10 @@ class UploadController( BaseUIController ):
                 message = "Uploaded archives cannot contain hgrc files."
                 return False, message
         return True, ''
-                            
+    def __check_file_content( self, file_path ):
+        message = ''
+        if check_html( file_path ):
+            message = 'The file "%s" contains HTML content.\n' % str( file_path )
+        elif check_image( file_path ):
+            message = 'The file "%s" contains image content.\n' % str( file_path )
+        return message

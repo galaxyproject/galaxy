@@ -112,7 +112,7 @@ bootstrapPass	${options_type[ 'bootstrap_pass' ]}
       <output name="output_top_file" file="peakcalling_ccat/3.0/ccat_test_top_out_1.interval.sorted.re_match" compare="re_match" sort="true" />
       <output name="output_log_file" file="peakcalling_ccat/3.0/ccat_test_log_out_1.txt" />
     </test>
-    <!-- Test below gives different results on different architectures, 
+    <!-- Test below gives different answers on different architectures, 
     e.g.: x86_64 GNU/Linux gave an extra line (additional peak called) when compared to the version running on 10.6.0 Darwin i386 
     slidingWinSize was fixed to be 1000, default as per readme.txt
     -->
@@ -139,6 +139,8 @@ View the original CCAT documentation: http://cmb.gis.a-star.edu.sg/ChIPSeq/paper
 ------
 
 **Citation**
+
+For the underlying tool, please cite `Xu H, Handoko L, Wei X, Ye C, Sheng J, Wei CL, Lin F, Sung WK. A signal-noise model for significance analysis of ChIP-seq with negative control. Bioinformatics. 2010 May 1;26(9):1199-204. &lt;http://www.ncbi.nlm.nih.gov/pubmed/20371496&gt;`_
 
 If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 

@@ -103,7 +103,7 @@
                                 <div class="menubutton" style="float: left;" id="workflow-${index}-popup">
                                     ${workflow_name}
                                     <div popupmenu="workflow-${index}-popup">
-                                        <a class="action-button" href="${h.url_for( controller='workflow', action='import_workflow', local_file=full_path, repository_id=trans.security.encode_id( repository.id ) )}">Import to Galaxy</a>
+                                        <a class="action-button" href="${h.url_for( controller='workflow', action='import_workflow', installed_repository_file=full_path, repository_id=trans.security.encode_id( repository.id ) )}">Import to Galaxy</a>
                                     </div>
                                 </div>
                             </td>

@@ -432,7 +432,7 @@ div.form-row {
 <div id="top-links" class="historyLinks">
     
     <a title="${_('refresh')}" class="icon-button arrow-circle tooltip" href="${h.url_for('history', show_deleted=show_deleted)}"></a>
-    <a title='${_('collapse all')}' class='icon-button toggle tooltip' href='#' style="display: none;"></a>
+    <a title='${_('collapse all')}' class='icon-button toggle tooltip' href='#' style="display: none"></a>
     
     %if trans.get_user():
     <div style="width: 40px; float: right; white-space: nowrap;">

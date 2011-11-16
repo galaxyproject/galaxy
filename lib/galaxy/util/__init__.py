@@ -574,11 +574,9 @@ def send_mail( frm, to, subject, body, config ):
     """
     Sends an email.
     """
-    header_to = to
-    if isinstance( to, list ):
-        header_to = ', '.join( to )
+    to = listify( to )
     msg = MIMEText( body )
-    msg[ 'To' ] = header_to
+    msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
     if config.smtp_server is None:
@@ -609,12 +607,10 @@ def send_mail( frm, to, subject, body, config ):
             log.error( "The server didn't accept the username/password combination: %s" % e )
             s.close()
             raise
-        except smtplib.SMTPError, e:
+        except smtplib.SMTPException, e:
             log.error( "No suitable authentication method was found: %s" % e )
             s.close()
             raise
-    if isinstance( to, basestring ):
-        to = [ to ]
     s.sendmail( frm, to, msg.as_string() )
     s.quit()
 

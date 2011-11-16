@@ -1,4 +1,4 @@
-<tool name="Add or Replace Groups" id="picard_ARRG" version="0.2.1">
+<tool name="Add or Replace Groups" id="picard_ARRG" version="1.56.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
     picard_wrapper.py
