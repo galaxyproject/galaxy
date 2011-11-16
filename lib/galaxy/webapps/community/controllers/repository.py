@@ -773,7 +773,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     tool_guids = []
                     for filename in ctx:
                         # Find all tool configs in this repository changeset_revision.
-                        if filename.endswith( '.xml' ):
+                        if filename != 'datatypes_conf.xml' and filename.endswith( '.xml' ):
                             fctx = ctx[ filename ]
                             # Write the contents of the old tool config to a temporary file.
                             fh = tempfile.NamedTemporaryFile( 'w' )
@@ -784,11 +784,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             fh.close()
                             try:
                                 tool = load_tool( trans, tmp_filename )
-                                if tool is not None:
-                                    tool_guids.append( generate_tool_guid( trans, repository, tool ) )
+                                valid = True
                             except:
-                                # File must not be a valid tool config even though it has a .xml extension.
-                                pass
+                                valid = False
+                            if valid and tool is not None:
+                                tool_guids.append( generate_tool_guid( trans, repository, tool ) )
                             try:
                                 os.unlink( tmp_filename )
                             except:
@@ -1614,39 +1614,49 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )          
-        try:
-            if changeset_revision == repository.tip:
-                # Get the tool config from the file system we use for browsing.
+        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        valid = True
+        if changeset_revision == repository.tip:
+            try:
                 tool = load_tool( trans, os.path.abspath( tool_config ) )
-            else:
-                # Get the tool config file name from the hgweb url, something like:
-                # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
-                old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
-                ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
-                fctx = None
-                for filename in ctx:
-                    filename_head, filename_tail = os.path.split( filename )
-                    if filename_tail == old_tool_config_file_name:
-                        fctx = ctx[ filename ]
-                        break
-                if fctx:
-                    # Write the contents of the old tool config to a temporary file.
-                    fh = tempfile.NamedTemporaryFile( 'w' )
-                    tmp_filename = fh.name
-                    fh.close()
-                    fh = open( tmp_filename, 'w' )
-                    fh.write( fctx.data() )
-                    fh.close()
+            except Exception, e:
+                tool = None
+                valid = False
+                message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
+        else:
+            # Get the tool config file name from the hgweb url, something like:
+            # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
+            old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
+            ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+            fctx = None
+            for filename in ctx:
+                filename_head, filename_tail = os.path.split( filename )
+                if filename_tail == old_tool_config_file_name:
+                    fctx = ctx[ filename ]
+                    break
+            if fctx:
+                # Write the contents of the old tool config to a temporary file.
+                fh = tempfile.NamedTemporaryFile( 'w' )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'w' )
+                fh.write( fctx.data() )
+                fh.close()
+                try:
                     tool = load_tool( trans, tmp_filename )
-                    try:
-                        os.unlink( tmp_filename )
-                    except:
-                        pass
-                else:
+                except Exception, e:
                     tool = None
-            tool_state = self.__new_state( trans )
-            is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+                    valid = False
+                    message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
+                try:
+                    os.unlink( tmp_filename )
+                except:
+                    pass
+            else:
+                tool = None
+        tool_state = self.__new_state( trans )
+        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+        try:
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
                                         repository=repository,
                                         changeset_revision=changeset_revision,
@@ -1657,7 +1667,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                         message=message,
                                         status=status )
         except Exception, e:
-            message = "Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error." % str( e )
+            message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str( e )
         if webapp == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',

@@ -97,7 +97,7 @@
 
 %if can_browse_contents:
     <div class="toolForm">
-        <div class="toolFormTitle">Browse ${repository.name}</div>
+        <div class="toolFormTitle">Browse ${repository.name} revision ${repository.tip} (repository tip)</div>
         %if can_download:
             <div class="form-row">
                 <label>Clone this repository:</label>

@@ -103,7 +103,10 @@ class UploadController( BaseUIController ):
                         full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
                     # Move the uploaded file to the load_point within the repository hierarchy.
                     shutil.move( uploaded_file_name, full_path )
-                    if os.path.isfile( full_path ):
+                    # See if any admin users have chosen to receive email alerts when a repository is
+                    # updated.  If so, check every uploaded file to ensure content is appropriate.
+                    check_contents = check_file_contents( trans )
+                    if check_contents and os.path.isfile( full_path ):
                         content_alert_str = self.__check_file_content( full_path )
                     else:
                         content_alert_str = ''
@@ -238,9 +241,12 @@ class UploadController( BaseUIController ):
                             except OSError, e:
                                 # The directory is not empty
                                 pass
+            # See if any admin users have chosen to receive email alerts when a repository is
+            # updated.  If so, check every uploaded file to ensure content is appropriate.
+            check_contents = check_file_contents( trans )
             for filename_in_archive in filenames_in_archive:
                 # Check file content to ensure it is appropriate.
-                if os.path.isfile( filename_in_archive ):
+                if check_contents and os.path.isfile( filename_in_archive ):
                     content_alert_str += self.__check_file_content( filename_in_archive )
                 commands.add( repo.ui, repo, filename_in_archive )
                 if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):

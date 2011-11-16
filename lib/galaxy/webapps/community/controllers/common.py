@@ -380,17 +380,19 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                     for name in files:
                         # Find all tool configs.
                         if name != 'datatypes_conf.xml' and name.endswith( '.xml' ):
+                            full_path = os.path.abspath( os.path.join( root, name ) )
                             try:
-                                full_path = os.path.abspath( os.path.join( root, name ) )
                                 tool = load_tool( trans, full_path )
-                                if tool is not None:
-                                    can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
-                                    if can_set_metadata:
-                                        # Update the list of metadata dictionaries for tools in metadata_dict.
-                                        tool_config = os.path.join( root, name )
-                                        metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
+                                valid = True
                             except Exception, e:
+                                valid = False
                                 invalid_files.append( ( name, str( e ) ) )
+                            if valid and tool is not None:
+                                can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
+                                if can_set_metadata:
+                                    # Update the list of metadata dictionaries for tools in metadata_dict.
+                                    tool_config = os.path.join( root, name )
+                                    metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
                         # Find all exported workflows
                         elif name.endswith( '.ga' ):
                             try:
@@ -427,17 +429,19 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                     fh.close()
                     try:
                         tool = load_tool( trans, tmp_filename )
-                        if tool is not None:
-                            can_set_metadata, invalid_files = check_tool_input_params( trans, filename, tool, sample_files, invalid_files )
-                            if can_set_metadata:
-                                # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
-                                # here is the relative path to the config file within the change set context, something
-                                # like filtering.xml, but when the change set was the repository tip, the value was
-                                # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
-                                # anything, but may result in a bit of confusion when maintaining the code / data over time.
-                                metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
+                        valid = True
                     except Exception, e:
-                        invalid_files.append( ( name, str( e ) ) )
+                        invalid_files.append( ( filename, str( e ) ) )
+                        valid = False
+                    if valid and tool is not None:
+                        can_set_metadata, invalid_files = check_tool_input_params( trans, filename, tool, sample_files, invalid_files )
+                        if can_set_metadata:
+                            # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
+                            # here is the relative path to the config file within the change set context, something
+                            # like filtering.xml, but when the change set was the repository tip, the value was
+                            # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
+                            # anything, but may result in a bit of confusion when maintaining the code / data over time.
+                            metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
                     try:
                         os.unlink( tmp_filename )
                     except:
@@ -575,6 +579,17 @@ def handle_email_alerts( trans, repository, content_alert_str='' ):
                     util.send_mail( frm, to, subject, body, trans.app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
+def check_file_contents( trans ):
+    # See if any admin users have chosen to receive email alerts when a repository is updated.
+    # If so, the file contents of the update must be checked for inappropriate content.
+    admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+    for repository in trans.sa_session.query( trans.model.Repository ) \
+                                      .filter( trans.model.Repository.table.c.email_alerts != None ):
+        email_alerts = from_json_string( repository.email_alerts )
+        for user_email in email_alerts:
+            if user_email in admin_users:
+                return True
+    return False
 def update_for_browsing( trans, repository, current_working_dir, commit_message='' ):
     # Make a copy of a repository's files for browsing, remove from disk all files that
     # are not tracked, and commit all added, modified or removed files that have not yet

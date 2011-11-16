@@ -15,9 +15,9 @@
     can_upload = can_push
     can_download = not is_new and ( not is_malicious or can_push )
     if can_push:
-        browse_label = 'Browse or delete repository files'
+        browse_label = 'Browse or delete repository tip files'
     else:
-        browse_label = 'Browse repository files'
+        browse_label = 'Browse repository tip files'
 %>
 
 <%!

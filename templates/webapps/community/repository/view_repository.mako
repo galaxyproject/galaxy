@@ -14,9 +14,9 @@
     can_browse_contents = webapp == 'community' and not is_new
     can_view_change_log = webapp == 'community' and not is_new
     if can_push:
-        browse_label = 'Browse or delete repository files'
+        browse_label = 'Browse or delete repository tip files'
     else:
-        browse_label = 'Browse repository files'
+        browse_label = 'Browse repository tip files'
 %>
 
 <%!
