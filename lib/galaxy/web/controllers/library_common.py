@@ -1045,7 +1045,12 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                                                        status='error' ) )
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
-        return upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
+        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
+        # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
+        job.add_parameter( 'link_data_only', to_json_string( kwd.get( 'link_data_only', 'copy_files' ) ) )
+        trans.sa_session.add( job )
+        trans.sa_session.flush()
+        return output
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
