@@ -886,7 +886,9 @@ class JobWrapper( object ):
         method should be removed ASAP and replaced with some properly generic
         and stateful way of determining link-only datasets. -nate
         """
-        return self.tool.id == 'upload1' and self.param_dict.get( 'link_data_only', None ) == 'link_to_files'
+        job = self.get_job()
+        param_dict = job.get_param_values( self.app )
+        return self.tool.id == 'upload1' and param_dict.get( 'link_data_only', None ) == 'link_to_files'
 
 class TaskWrapper(JobWrapper):
     """
