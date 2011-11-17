@@ -607,8 +607,16 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         else:
             tracks_dataset_type = data_sources['data']['name']
             data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
-            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-            deps = dataset.get_converted_dataset_deps( trans, tracks_dataset_type )
+            # HACK: Use bai from bam HDA's metadata if available. This saves 
+            # the client from waiting a long time to generate a duplicate
+            # bam via a converted dataset.
+            if dataset.ext == "bam" and dataset.metadata.get( "bam_index", None ) is not None:
+                converted_dataset = dataset.metadata.bam_index
+                deps = None
+            else:
+                # Default behavior.    
+                converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
+                deps = dataset.get_converted_dataset_deps( trans, tracks_dataset_type )
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
