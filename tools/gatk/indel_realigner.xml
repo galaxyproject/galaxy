@@ -1,7 +1,7 @@
-<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.4">
+<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.5">
   <description>- perform local realignment</description>
   <requirements>
-      <requirement type="package" version="1.2">gatk</requirement>
+      <requirement type="package" version="1.3">gatk</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "1"

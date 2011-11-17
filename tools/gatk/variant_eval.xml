@@ -1,7 +1,7 @@
-<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.2">
+<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.3">
   <description></description>
   <requirements>
-      <requirement type="package" version="1.2">gatk</requirement>
+      <requirement type="package" version="1.3">gatk</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "1"

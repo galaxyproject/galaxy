@@ -1,7 +1,7 @@
-<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.3">
+<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.4">
   <description>SNP and indel caller</description>
   <requirements>
-      <requirement type="package" version="1.2">gatk</requirement>
+      <requirement type="package" version="1.3">gatk</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "1"
@@ -104,7 +104,6 @@
         --output_mode "${analysis_param_type.output_mode}"
         ${analysis_param_type.compute_SLOD}
         --min_base_quality_score "${analysis_param_type.min_base_quality_score}"
-        --min_mapping_quality_score "${analysis_param_type.min_mapping_quality_score}"
         --max_deletion_fraction "${analysis_param_type.max_deletion_fraction}"
         --min_indel_count_for_genotyping "${analysis_param_type.min_indel_count_for_genotyping}"
         --indel_heterozygosity "${analysis_param_type.indel_heterozygosity}"
@@ -343,7 +342,6 @@
         </param>
         <param name="compute_SLOD" type="boolean" truevalue="--computeSLOD" falsevalue="" label="Compute the SLOD" />
         <param name="min_base_quality_score" type="integer" value="17" label="Minimum base quality required to consider a base for calling" />
-        <param name="min_mapping_quality_score" type="integer" value="20" label="Minimum read mapping quality required to consider a read for calling" />
         <param name="max_deletion_fraction" type="float" value="0.05" label="Maximum fraction of reads with deletions spanning this locus for it to be callable" help="to disable, set to &lt; 0 or &gt; 1" />
         <param name="min_indel_count_for_genotyping" type="integer" value="5" label="Minimum number of consensus indels required to trigger genotyping run" />
         <param name="indel_heterozygosity" type="float" value="0.000125" label="Heterozygosity for indel calling" help="1.0/8000==0.000125"/>
@@ -417,7 +415,6 @@
           <param name="output_mode" value="EMIT_ALL_CONFIDENT_SITES" />
           <param name="compute_SLOD" />
           <param name="min_base_quality_score" value="17" />
-          <param name="min_mapping_quality_score" value="20" />
           <param name="max_deletion_fraction" value="-1" />
           <param name="min_indel_count_for_genotyping" value="2" />
           <param name="indel_heterozygosity" value="0.000125" />
@@ -471,7 +468,6 @@ Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_th
  standard_min_confidence_threshold_for_emitting    The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be emitted (and filtered if less than the calling threshold)
  noSLOD                                            If provided, we will not calculate the SLOD
  min_base_quality_score                            Minimum base quality required to consider a base for calling
- min_mapping_quality_score                         Minimum read mapping quality required to consider a read for calling
  max_deletion_fraction                             Maximum fraction of reads with deletions spanning this locus for it to be callable [to disable, set to &lt; 0 or &gt; 1; default:0.05]
  min_indel_count_for_genotyping                    Minimum number of consensus indels required to trigger genotyping run
  indel_heterozygosity                              Heterozygosity for indel calling
