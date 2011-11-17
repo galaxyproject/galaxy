@@ -1,0 +1,923 @@
+<tool id="gatk_depth_of_coverage" name="Depth of Coverage" version="0.0.1">
+  <description>on BAM files</description>
+  <requirements>
+      <requirement type="package" version="1.3">gatk</requirement>
+  </requirements>
+  <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "1"
+   --stdout "${output_log}"
+   #for $i, $input_bam in enumerate( $reference_source.input_bams ):
+       -d "-I" "${input_bam.input_bam}" "${input_bam.input_bam.ext}" "gatk_input_${i}"
+       -d "" "${input_bam.input_bam.metadata.bam_index}" "bam_index" "gatk_input_${i}" ##hardcode galaxy ext type as bam_index
+   #end for
+   -p 'java 
+    -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
+    -T "DepthOfCoverage"
+    ##--num_threads 4 ##hard coded, for now
+    
+    -et "NO_ET" ##ET no phone home
+    #if $reference_source.reference_source_selector != "history":
+        -R "${reference_source.ref_file.fields.path}"
+    #end if
+    #if str( $input_calculate_coverage_over_genes ) != "None":
+        --calculateCoverageOverGenes "${input_calculate_coverage_over_genes}"
+    #end if
+    #if str( $partition_type ) != "None":
+        #for $pt in str( $partition_type ).split( ',' ):
+            --partitionType "${pt}"
+        #end for
+    #end if
+    --out "${output_per_locus_coverage}"
+    
+    #for $ct_group in $summary_coverage_threshold_group:
+        --summaryCoverageThreshold "${ct_group.summary_coverage_threshold}"
+    #end for
+    --outputFormat "${output_format}"
+   '
+   
+    ##start standard gatk options
+    #if $gatk_param_type.gatk_param_type_selector == "advanced":
+        #for $sample_metadata in $gatk_param_type.sample_metadata:
+            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #end for
+        #for $read_filter in $gatk_param_type.read_filter:
+            -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
+            ###raise Exception( str( dir( $read_filter ) ) )
+            #for $name, $param in $read_filter.read_filter_type.iteritems():
+                #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
+                    --${name} "${param}"
+                #end if
+            #end for
+            '
+        #end for
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
+        
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
+        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        
+        -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
+        #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
+            -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
+        #end if
+        -p '
+        --baq "${gatk_param_type.baq}"
+        --baqGapOpenPenalty "${gatk_param_type.baq_gap_open_penalty}"
+        ${gatk_param_type.use_original_qualities}
+        --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
+        --validation_strictness "${gatk_param_type.validation_strictness}"
+        --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
+        '
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
+    #end if
+    
+    #if $reference_source.reference_source_selector == "history":
+        -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
+    #end if
+    ##end standard gatk options
+    ##start analysis specific options
+    #if $analysis_param_type.analysis_param_type_selector == "advanced":
+        -p '
+        ${analysis_param_type.ignore_deletion_sites}
+        ${analysis_param_type.include_deletions}
+        --maxBaseQuality "${analysis_param_type.max_base_quality}"
+        --maxMappingQuality "${analysis_param_type.max_mapping_quality}"
+        --minBaseQuality "${analysis_param_type.min_base_quality}"
+        --minMappingQuality "${analysis_param_type.min_mapping_quality}"
+        --nBins "${analysis_param_type.n_bins}"
+        ${analysis_param_type.omit_depth_output_at_each_base}
+        ${analysis_param_type.omit_interval_statistics}
+        ${analysis_param_type.omit_locus_table}
+        ${analysis_param_type.omit_per_sample_stats}
+        ${analysis_param_type.print_base_counts}
+        ${analysis_param_type.print_bin_endpoints_and_exit}
+        --start "${analysis_param_type.start}"
+        --stop "${analysis_param_type.stop}"
+        '
+    #end if
+    ##Move additional files to final location
+    #if str( $partition_type ) != "None":
+       #set $partition_types = str( $partition_type ).split( ',' )
+    #else:
+        #set $partition_types = [ 'sample' ]
+    #end if
+    #if 'sample' in $partition_types and ( str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.print_bin_endpoints_and_exit ) == "" ):
+        #if str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_per_sample_stats ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.sample_summary ${output_summary_sample}
+            &amp;&amp; mv ${output_per_locus_coverage}.sample_statistics ${output_statistics_sample}
+        #end if
+        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and str( $gatk_param_type.omit_interval_statistics ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.sample_interval_summary ${output_interval_summary_sample}
+            &amp;&amp; mv ${output_per_locus_coverage}.sample_interval_statistics ${output_interval_statistics_sample}
+        #end if
+        #if str( $input_calculate_coverage_over_genes ) != "None":
+            &amp;&amp; mv ${output_per_locus_coverage}.sample_gene_summary ${output_gene_summary_sample}
+            &amp;&amp; mv ${output_per_locus_coverage}.sample_gene_statistics ${output_gene_statistics_sample}
+        #end if
+        #if str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_depth_output_at_each_base ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.sample_cumulative_coverage_counts ${output_cumulative_coverage_counts_sample}
+            &amp;&amp; mv ${output_per_locus_coverage}.sample_cumulative_coverage_proportions ${output_cumulative_coverage_proportions_sample}
+        #end if
+    #end if
+    
+    #if 'readgroup' in $partition_types and ( str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.print_bin_endpoints_and_exit ) == "" ):
+        #if str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_per_sample_stats ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.read_group_summary ${output_summary_readgroup}
+            &amp;&amp; mv ${output_per_locus_coverage}.read_group_statistics ${output_statistics_readgroup}
+        #end if
+        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and str( $gatk_param_type.omit_interval_statistics ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.read_group_interval_summary ${output_interval_summary_readgroup}
+            &amp;&amp; mv ${output_per_locus_coverage}.read_group_interval_statistics ${output_interval_statistics_readgroup}
+        #end if
+        #if str( $input_calculate_coverage_over_genes ) != "None":
+            &amp;&amp; mv ${output_per_locus_coverage}.read_group_gene_summary ${output_gene_summary_readgroup}
+            &amp;&amp; mv ${output_per_locus_coverage}.read_group_gene_statistics ${output_gene_statistics_readgroup}
+        #end if
+        #if str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_depth_output_at_each_base ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.read_group_cumulative_coverage_counts ${output_cumulative_coverage_counts_readgroup}
+            &amp;&amp; mv ${output_per_locus_coverage}.read_group_cumulative_coverage_proportions ${output_cumulative_coverage_proportions_readgroup}
+        #end if
+    #end if
+    
+    #if 'library' in $partition_types and ( str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.print_bin_endpoints_and_exit ) == "" ):
+        #if str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_per_sample_stats ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.library_summary ${output_summary_library}
+            &amp;&amp; mv ${output_per_locus_coverage}.library_statistics ${output_statistics_library}
+        #end if
+        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and str( $gatk_param_type.omit_interval_statistics ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.library_interval_summary ${output_interval_summary_library}
+            &amp;&amp; mv ${output_per_locus_coverage}.library_interval_statistics ${output_interval_statistics_library}
+        #end if
+        #if str( $input_calculate_coverage_over_genes ) != "None":
+            &amp;&amp; mv ${output_per_locus_coverage}.library_gene_summary ${output_gene_summary_library}
+            &amp;&amp; mv ${output_per_locus_coverage}.library_gene_statistics ${output_gene_statistics_library}
+        #end if
+        #if str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_depth_output_at_each_base ) == "":
+            &amp;&amp; mv ${output_per_locus_coverage}.library_cumulative_coverage_counts ${output_cumulative_coverage_counts_library}
+            &amp;&amp; mv ${output_per_locus_coverage}.library_cumulative_coverage_proportions ${output_cumulative_coverage_proportions_library}
+        #end if
+    #end if
+    
+
+  </command>
+  <inputs>
+    <conditional name="reference_source">
+      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <repeat name="input_bams" title="BAM file" min="1">
+            <param name="input_bam" type="data" format="bam" label="BAM file">
+              <validator type="unspecified_build" />
+              <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+              <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+            </param>
+        </repeat>
+        <param name="ref_file" type="select" label="Using reference genome">
+          <options from_data_table="gatk_picard_indexes">
+            <!-- <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/> does not yet work in a repeat...--> 
+          </options>
+        </param>
+      </when>
+      <when value="history"> <!-- FIX ME!!!! -->
+        <repeat name="input_bams" title="BAM file" min="1">
+            <param name="input_bam" type="data" format="bam" label="BAM file" >
+              <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+            </param>
+        </repeat>
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+      </when>
+    </conditional>
+    
+    <param name="input_calculate_coverage_over_genes" type="data" format="data" label="RefSeq Rod" optional="True" />
+    
+    <param name="partition_type" type="select" label="Partition type for depth of coverage" multiple="True" display="checkboxes">
+      <option value="sample" selected="True">sample</option>
+      <option value="readgroup">readgroup</option>
+      <option value="library">library</option>
+    </param>
+    
+    <repeat name="summary_coverage_threshold_group" title="Summary coverage threshold">
+        <param name="summary_coverage_threshold" type="integer" value="15" label="for summary file outputs, report the % of bases covered to &gt;= this number" />
+    </repeat>
+    
+    <param name="output_format" type="select" label="Output format" >
+      <option value="csv">csv</option>
+      <option value="table">table</option>
+      <option value="rtable" selected="True">rtable</option>
+    </param>
+    
+    <conditional name="gatk_param_type">
+      <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <repeat name="sample_metadata" title="Sample Metadata">
+            <param name="sample_metadata_file" type="data" format="txt" label="Sample file in JSON format" />
+        </repeat>
+        <repeat name="read_filter" title="Read Filter">
+            <conditional name="read_filter_type">
+		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+		        <option value="MaxReadLength" selected="True">MaxReadLength</option>
+		        <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+		      </param>
+	          <when value="ZeroMappingQualityRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MaxReadLength">
+	              <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+	          </when>
+            </conditional>
+        </repeat>
+        <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        
+        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+          <option value="UNION" selected="True">UNION</option>
+          <option value="INTERSECTION">INTERSECTION</option>
+        </param>
+        
+        <conditional name="downsampling_type">
+          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+            <option value="NONE" selected="True">NONE</option>
+            <option value="ALL_READS">ALL_READS</option>
+            <option value="BY_SAMPLE">BY_SAMPLE</option>
+          </param>
+          <when value="NONE">
+	          <!-- no more options here -->
+	      </when>
+          <when value="ALL_READS">
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
+          <when value="BY_SAMPLE">
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
+        </conditional>
+        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
+          <option value="OFF" selected="True">OFF</option>
+          <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
+          <option value="RECALCULATE">RECALCULATE</option>
+        </param>
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
+        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
+        <param name="validation_strictness" type="select" label="How strict should we be with validation">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="LENIENT">LENIENT</option>
+          <option value="SILENT">SILENT</option>
+          <!-- <option value="DEFAULT_STRINGENCY">DEFAULT_STRINGENCY</option> listed in docs, but not valid value...-->
+        </param>
+        <param name="interval_merging" type="select" label="Interval merging rule">
+          <option value="ALL" selected="True">ALL</option>
+          <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
+        </param>
+        
+        <repeat name="read_group_black_list_repeat" title="Read group black list">
+          <conditional name="read_group_black_list_type">
+            <param name="read_group_black_list_type_selector" type="select" label="Type of reads read group black list">
+              <option value="file" selected="True">Filters in file</option>
+              <option value="text">Specify filters as a string</option>
+            </param>
+            <when value="file">
+	          <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
+	        </when>
+            <when value="text">
+	          <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
+	        </when>
+          </conditional>
+        </repeat>
+        
+        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality." checked="False"/>
+        <param name="non_deterministic_random_seed" type="boolean" truevalue="--nonDeterministicRandomSeed" falsevalue="" label="Makes the GATK behave non deterministically, that is, the random numbers generated will be different in every run" checked="False" />
+        
+      </when>
+    </conditional>
+    
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <param name="ignore_deletion_sites" type="boolean" truevalue="--ignoreDeletionSites" falsevalue="" checked="False" label="Ignore sites consisting only of deletions" />
+        <param name="include_deletions" type="boolean" truevalue="--includeDeletions" falsevalue="" checked="False" label="Include information on deletions" />
+        <param name="max_base_quality" type="integer" value="127" label="Maximum quality of bases to count towards depth" />
+        <param name="min_base_quality" type="integer" value="-1" label="Minimum quality of bases to count towards depth" />
+        <param name="max_mapping_quality" type="integer" value="2147483647" label="Maximum mapping quality of reads to count towards depth." />
+        <param name="min_mapping_quality" type="integer" value="127" label="Minimum mapping quality of reads to count towards depth" />
+        <param name="n_bins" type="integer" value="499" label="Number of bins to use for granular binning" />
+        <param name="omit_depth_output_at_each_base" type="boolean" truevalue="--omitDepthOutputAtEachBase" falsevalue="" checked="False" label="Omit the output of the depth of coverage at each base" />
+        <param name="omit_interval_statistics" type="boolean" truevalue="--omitIntervalStatistics" falsevalue="" checked="False" label="Omit the per-interval statistics section" />
+        <param name="omit_locus_table" type="boolean" truevalue="--omitLocusTable" falsevalue="" checked="False" label="Do not calculate the per-sample per-depth counts of loci" />
+        <param name="omit_per_sample_stats" type="boolean" truevalue="--omitPerSampleStats" falsevalue="" checked="False" label="Omit the summary files per-sample." />
+        <param name="print_base_counts" type="boolean" truevalue="--printBaseCounts" falsevalue="" checked="False" label="Add base counts to per-locus output" />
+        <param name="print_bin_endpoints_and_exit" type="boolean" truevalue="--printBinEndpointsAndExit" falsevalue="" checked="False" label="Print the bin values and exits immediately" />
+        <param name="start" type="integer" value="1" label="Starting (left endpoint) for granular binning" />
+        <param name="stop" type="integer" value="500" label="Ending (right endpoint) for granular binning" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="output_per_locus_coverage" label="${tool.name} on ${on_string} (per locus coverage)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_summary_sample" label="${tool.name} on ${on_string} (output summary sample)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_per_sample_stats'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'sample' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_statistics_sample" label="${tool.name} on ${on_string} (output statistics sample)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_per_sample_stats'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'sample' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_interval_summary_sample" label="${tool.name} on ${on_string} (output interval summary sample)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'sample' in partition_type or not partition_type</filter>
+        <filter>gatk_param_type['gatk_param_type_selector'] == "advanced" and len( gatk_param_type['input_interval_repeat'] )</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_interval_statistics'] == False</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_interval_statistics_sample" label="${tool.name} on ${on_string} (output interval statistics sample)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'sample' in partition_type or not partition_type</filter>
+        <filter>gatk_param_type['gatk_param_type_selector'] == "advanced" and len( gatk_param_type['input_interval_repeat'] )</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_interval_statistics'] == False</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_gene_summary_sample" label="${tool.name} on ${on_string} (output gene summary sample)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>input_calculate_coverage_over_genes is not None and 'sample' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_gene_statistics_sample" label="${tool.name} on ${on_string} (output gene statistics sample)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>input_calculate_coverage_over_genes is not None and 'sample' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_cumulative_coverage_counts_sample" label="${tool.name} on ${on_string} (output cumulative coverage counts sample)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_depth_output_at_each_base'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'sample' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_cumulative_coverage_proportions_sample" label="${tool.name} on ${on_string} (output cumulative coverage proportions sample)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_depth_output_at_each_base'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'sample' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    
+    <data format="tabular" name="output_summary_readgroup" label="${tool.name} on ${on_string} (output summary readgroup)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_per_sample_stats'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'readgroup' in partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_statistics_readgroup" label="${tool.name} on ${on_string} (output statistics readgroup)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_per_sample_stats'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'readgroup' in partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_interval_summary_readgroup" label="${tool.name} on ${on_string} (output interval summary readgroup)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'readgroup' in partition_type</filter>
+        <filter>gatk_param_type['gatk_param_type_selector'] == "advanced" and len( gatk_param_type['input_interval_repeat'] )</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_interval_statistics'] == False</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_interval_statistics_readgroup" label="${tool.name} on ${on_string} (output interval statistics readgroup)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'readgroup' in partition_type</filter>
+        <filter>gatk_param_type['gatk_param_type_selector'] == "advanced" and len( gatk_param_type['input_interval_repeat'] )</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_interval_statistics'] == False</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_gene_summary_readgroup" label="${tool.name} on ${on_string} (output gene summary readgroup)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>input_calculate_coverage_over_genes is not None and 'readgroup' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_gene_statistics_readgroup" label="${tool.name} on ${on_string} (output gene statistics readgroup)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>input_calculate_coverage_over_genes is not None and 'readgroup' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_cumulative_coverage_counts_readgroup" label="${tool.name} on ${on_string} (output cumulative coverage counts readgroup)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_depth_output_at_each_base'] == False</filter>
+        <filter>'readgroup' in partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_cumulative_coverage_proportions_readgroup" label="${tool.name} on ${on_string} (output cumulative coverage proportions readgroup)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_depth_output_at_each_base'] == False</filter>
+        <filter>'readgroup' in partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    
+    <data format="tabular" name="output_summary_library" label="${tool.name} on ${on_string} (output summary library)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_per_sample_stats'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'library' in partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_statistics_library" label="${tool.name} on ${on_string} (output statistics library)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_per_sample_stats'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'library' in partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_interval_summary_library" label="${tool.name} on ${on_string} (output interval summary library)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'library' in partition_type</filter>
+        <filter>gatk_param_type['gatk_param_type_selector'] == "advanced" and len( gatk_param_type['input_interval_repeat'] )</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_interval_statistics'] == False</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_interval_statistics_library" label="${tool.name} on ${on_string} (output interval statistics library)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'library' in partition_type</filter>
+        <filter>gatk_param_type['gatk_param_type_selector'] == "advanced" and len( gatk_param_type['input_interval_repeat'] )</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_interval_statistics'] == False</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_gene_summary_library" label="${tool.name} on ${on_string} (output gene summary library)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>input_calculate_coverage_over_genes is not None and 'library' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_gene_statistics_library" label="${tool.name} on ${on_string} (output gene statistics library)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>input_calculate_coverage_over_genes is not None and 'library' in partition_type or not partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_cumulative_coverage_counts_library" label="${tool.name} on ${on_string} (output cumulative coverage counts library)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_depth_output_at_each_base'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'library' in partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    <data format="tabular" name="output_cumulative_coverage_proportions_library" label="${tool.name} on ${on_string} (output cumulative coverage proportions library)" >
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['omit_depth_output_at_each_base'] == False</filter>
+        <filter>analysis_param_type['analysis_param_type_selector'] == "basic" or analysis_param_type['print_bin_endpoints_and_exit'] == False</filter>
+        <filter>'library' in partition_type</filter>
+        <actions>
+            <conditional name="output_format">
+                <when value="rtable">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+                <when value="csv">
+                    <action type="format">
+                        <option type="from_param" name="output_format" />
+                    </action>
+                </when>
+            </conditional>
+        </actions>
+    </data>
+    
+    <data format="tabular" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <trackster_conf/>
+  <tests>
+      <test>
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
+          <param name="input_calculate_coverage_over_genes" />
+          <param name="partition_type" value="sample" />
+          <param name="summary_coverage_threshold_group" value="0" />
+          <param name="output_format" value="rtable" />
+          <param name="gatk_param_type_selector" value="basic" />
+          <param name="analysis_param_type_selector" value="basic" />
+          <output name="output_per_locus_coverage" file="gatk/gatk_depth_of_coverage/gatk_depth_of_coverage_out_1_output_per_locus_coverage.tabular" />
+          <output name="output_summary_sample" file="gatk/gatk_depth_of_coverage/gatk_depth_of_coverage_out_1_output_summary_sample.tabular" />
+          <output name="output_statistics_sample" file="gatk/gatk_depth_of_coverage/gatk_depth_of_coverage_out_1_output_statistics_sample.tabular" />
+          <output name="output_cumulative_coverage_counts_sample" file="gatk/gatk_depth_of_coverage/gatk_depth_of_coverage_out_1_output_cumulative_coverage_counts_sample.tabular" />
+          <output name="output_cumulative_coverage_proportions_sample" file="gatk/gatk_depth_of_coverage/gatk_depth_of_coverage_out_1_output_output_cumulative_coverage_proportions_sample.tabular" />
+          <output name="output_log" file="gatk/gatk_depth_of_coverage/gatk_depth_of_coverage_out_1.log.contains" compare="contains" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+DepthOfCoverage processes a set of bam files to determine coverage at different levels of partitioning and aggregation. Coverage can be analyzed per locus, per interval, per gene, or in total; can be partitioned by sample, by read group, by technology, by center, or by library; and can be summarized by mean, median, quartiles, and/or percentage of bases covered to or beyond a threshold. Additionally, reads and bases can be filtered by mapping or base quality score. 
+
+For more information on the GATK Depth of Coverage, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Depth_of_Coverage&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
+
+------
+
+**Inputs**
+
+GenomeAnalysisTK: DepthOfCoverage accepts aligned BAM input files.
+
+
+**Outputs**
+
+The output is in various table formats.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
+
+-------
+
+**Settings**::
+
+ calculateCoverageOverGenes 	File 	NA 	Calculate the coverage statistics over this list of genes. Currently accepts RefSeq.
+ ignoreDeletionSites 	boolean 	false 	Ignore sites consisting only of deletions
+ includeDeletions 	boolean 	false 	Include information on deletions
+ maxBaseQuality 	byte 	127 	Maximum quality of bases to count towards depth. Defaults to 127 (Byte.MAX_VALUE).
+ maxMappingQuality 	int 	2147483647 	Maximum mapping quality of reads to count towards depth. Defaults to 2^31-1 (Integer.MAX_VALUE).
+ minBaseQuality 	byte 	-1 	Minimum quality of bases to count towards depth. Defaults to -1.
+ minMappingQuality 	int 	-1 	Minimum mapping quality of reads to count towards depth. Defaults to -1.
+ nBins 	int 	499 	Number of bins to use for granular binning
+ omitDepthOutputAtEachBase 	boolean 	false 	Will omit the output of the depth of coverage at each base, which should result in speedup
+ omitIntervalStatistics 	boolean 	false 	Will omit the per-interval statistics section, which should result in speedup
+ omitLocusTable 	boolean 	false 	Will not calculate the per-sample per-depth counts of loci, which should result in speedup
+ omitPerSampleStats 	boolean 	false 	Omits the summary files per-sample. These statistics are still calculated, so this argument will not improve runtime.
+ outputFormat 	String 	rtable 	the format of the output file (e.g. csv, table, rtable); defaults to r-readable table
+ partitionType 	Set[Partition] 	[sample] 	Partition type for depth of coverage. Defaults to sample. Can be any combination of sample, readgroup, library.
+ printBaseCounts 	boolean 	false 	Will add base counts to per-locus output.
+ printBinEndpointsAndExit 	boolean 	false 	Prints the bin values and exits immediately. Use to calibrate what bins you want before running on data.
+ start 	int 	1 	Starting (left endpoint) for granular binning
+ stop 	int 	500 	Ending (right endpoint) for granular binning
+ summaryCoverageThreshold 	int[] 	[15] 	for summary file outputs, report the % of bases coverd to >= this number. Defaults to 15; can take multiple arguments.
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>
