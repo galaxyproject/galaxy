@@ -2318,10 +2318,43 @@ var SummaryTreeTile = function(track, index, resolution, canvas, data, max_val) 
 extend(SummaryTreeTile.prototype, Tile.prototype);
 
 var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, message, feature_mapper) {
+    // Attribute init.
     Tile.call(this, track, index, resolution, canvas, data);
     this.mode = mode;
     this.message = message;
     this.feature_mapper = feature_mapper;
+    
+    // Add message + action icons to tile's "canvas" TODO: rename canvas to element/html or something similar.
+    if (this.message) {
+        var 
+            canvas = this.canvas.children()[0],
+            message_div = $("<div/>").addClass("tile-message").text(this.message).
+                            // -1 to account for border.
+                            css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.canvas),
+            more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
+            more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
+
+        // Set up actions for icons.
+        more_down_icon.click(function() {
+            // Mark tile as stale, request more data, and redraw track.
+            tile.stale = true;
+            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+            track.request_draw();
+        }).dblclick(function(e) {
+            // Do not propogate as this would normally zoom in.
+            e.stopPropagation();
+        });
+
+        more_across_icon.click(function() {
+            // Mark tile as stale, request more data, and redraw track.
+            tile.stale = true;
+            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+            track.request_draw();
+        }).dblclick(function(e) {
+            // Do not propogate as this would normally zoom in.
+            e.stopPropagation();
+        });
+    }
 };
 extend(FeatureTrackTile.prototype, Tile.prototype);
 
@@ -2852,7 +2885,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // w_scale units are pixels per base.
             w_scale = width / range,
             resolution = this.view.resolution,
-            parent_element = $("<div style='position: relative;'></div>");
+            // FIXME: parent element is not currently needed, but it may be useful for multitrack drawing.
+            parent_element = this.content_div;
 
         // For overview, adjust high, low, resolution, and w_scale.
         if (this.is_overview) {
@@ -2861,9 +2895,19 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) ));
             w_scale = width / (view.max_high - view.max_low);
         }
+
+        //
+        // Method for moving and/or removing tiles:
+        // (a) mark all elements for removal using class 'remove'
+        // (b) during tile drawing/placement, remove class for elements that are moved; 
+        //     this occurs in show_tile()
+        // (c) after drawing all tiles, remove elements still marked for removal 
+        //     (i.e. that still have class 'remove').
+        //
         
-        if (!clear_after) { this.content_div.children().remove(); }
-        this.content_div.append( parent_element );
+        // Step (a) for (re)moving tiles.
+        if (!clear_after) { this.content_div.children().addClass("remove"); }
+
         this.max_height = 0;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
@@ -2882,6 +2926,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             tile_index += 1;
             tile_count++;
         }
+        
+        // Step (c) for (re)moving tiles.
+        if (!clear_after) { this.content_div.children(".remove").remove(); }
                 
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         var track = this;
@@ -2978,65 +3025,36 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         return null;
     }, 
     /**
-     * Show track tile and perform associated actions.
+     * Show track tile and perform associated actions. Showing tile may actually move
+     * an existing tile rather than reshowing it.
      */
     show_tile: function(tile, parent_element, w_scale) {
-        // Readability.
         var 
             track = this,
-            canvas = tile.canvas,
-            tile_element = canvas;
+            tile_element = tile.canvas;
         
         //
-        // If tile has message, display message and button to show more data.
-        // TODO: need to handle other messages, not assume message === show more data.
-        //
-        if (tile.message) {
-            var 
-                container_div = $("<div/>"),
-                message_div = $("<div/>").addClass("tile-message").text(tile.message).
-                                // -1 to account for border.
-                                css({'height': ERROR_PADDING-1, 'width': tile.canvas.width}).appendTo(container_div),
-                more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
-                more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
-            container_div.append(canvas);
-            tile_element = container_div;
-            
-            // Set up actions for icons.
-            more_down_icon.click(function() {
-                // Mark tile as stale, request more data, and redraw track.
-                tile.stale = true;
-                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
-                track.request_draw();
-            }).dblclick(function(e) {
-                // Do not propogate as this would normally zoom in.
-                e.stopPropagation();
-            });
-            
-            more_across_icon.click(function() {
-                // Mark tile as stale, request more data, and redraw track.
-                tile.stale = true;
-                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
-                track.request_draw();
-            }).dblclick(function(e) {
-                // Do not propogate as this would normally zoom in.
-                e.stopPropagation();
-            });
-        }
-        
-        //
-        // Show tile element.
+        // Show/move tile element.
         //
         
         tile.predisplay_actions();
       
-        // Position tile element, recalculate left position at display time
+        // Position tile element based on current viewport.
         var left = ( tile.low - (this.is_overview? this.view.max_low : this.view.low) ) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
         }
         tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
-        parent_element.append(tile_element);
+        
+        if ( tile_element.hasClass("remove") ) {
+            // Step (b) for (re)moving tiles. See _draw() function for description of algorithm
+            // for removing tiles.
+            tile_element.removeClass("remove");
+        }
+        else {
+            // Showing new tile.
+            parent_element.append(tile_element);
+        }
         
         // Set track height.
         track.max_height = Math.max(track.max_height, tile_element.height());
