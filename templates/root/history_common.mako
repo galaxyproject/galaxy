@@ -13,7 +13,7 @@
                     to_ext=data.ext )}">Download Dataset</a>
                 <a>Additional Files</a>
             %for file_type in meta_files:
-                <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', \
+                <a class="action-button" href="${h.url_for( controller='/dataset', action='get_metadata_file', \
                     hda_id=dataset_id, metadata_name=file_type )}">Download ${file_type}</a>
             %endfor
             </div>
