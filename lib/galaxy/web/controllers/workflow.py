@@ -1094,7 +1094,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         trans.response.set_content_type( 'application/galaxy-archive' )
         return stored_dict
     @web.expose
-    def import_workflow( self, trans, **kwd ):
+    def import_workflow( self, trans, cntrller='workflow', **kwd ):
         """
         Import a workflow by reading an url, uploading a file, opening and reading the contents
         of a local file, or receiving the textual representation of a workflow via http.
@@ -1115,7 +1115,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         if workflow_name:
             workflow_name = tool_shed_decode( workflow_name )
         # The following parameters will have a value only if the import originated
-        # from a tool shed repository installed locally.
+        # from a tool shed repository installed locally or from the API.
         installed_repository_file = kwd.get( 'installed_repository_file', '' )
         repository_id = kwd.get( 'repository_id', '' )
         if installed_repository_file and not import_button:
@@ -1172,8 +1172,13 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 if data:
                     # Create workflow if possible.  If a required tool is not available in the local
                     # Galaxy instance, the tool information will be available in the step_dict.
-                    workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source="uploaded file" )
+                    src = None
+                    if cntrller != 'api':
+                        src="uploaded file"
+                    workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source=src )
                     workflow = workflow.latest_workflow
+                    if workflow_name:
+                        workflow.name = workflow_name
                     # Provide user feedback and show workflow list.
                     if workflow.has_errors:
                         message += "Imported, but some steps in this workflow have validation errors. "
@@ -1231,12 +1236,16 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     elif installed_repository_file:
                         # The workflow was read from a file included with an installed tool shed repository.
                         message = "Workflow <b>%s</b> imported successfully." % workflow.name
+                        if cntrller == 'api':
+                            return status, message
                         return trans.response.send_redirect( web.url_for( controller='admin',
                                                                           action='browse_tool_shed_repository',
                                                                           id=repository_id,
                                                                           message=message,
                                                                           status=status ) )
                     return self.list( trans )
+        if cntrller == 'api':
+            return status, message
         return trans.fill_template( "workflow/import.mako",
                                     url=url,
                                     message=message,
