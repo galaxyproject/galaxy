@@ -26,6 +26,14 @@ class User( object ):
     def check_password( self, cleartext ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == new_secure_hash( text_type=cleartext )
+    def get_disk_usage( self, nice_size=False ):
+        return 0
+    def set_disk_usage( self, bytes ):
+        pass
+    total_disk_usage = property( get_disk_usage, set_disk_usage )
+    @property
+    def nice_total_disk_usage( self ):
+        return 0
 
 class Group( object ):
     def __init__( self, name = None ):
