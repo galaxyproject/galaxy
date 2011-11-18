@@ -343,6 +343,127 @@ def generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config
                                     mimetype=mimetype ) )
         metadata_dict[ 'datatypes' ] = datatypes
     return metadata_dict
+def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo_dir ):
+    # Browse the repository tip files on disk to generate metadata.  This is faster than
+    # the generate_metadata_for_changeset_revision() method below because fctx.data() does
+    # not have to be written to disk to load tools.  also, since changeset_revision is the
+    # repository tip, we handle things like .loc.sample files here.
+    metadata_dict = {}
+    invalid_files = []
+    sample_files = []
+    datatypes_config = None
+    # Find datatypes_conf.xml if it exists.
+    for root, dirs, files in os.walk( repo_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name == 'datatypes_conf.xml':
+                    datatypes_config = os.path.abspath( os.path.join( root, name ) )
+                    break
+    if datatypes_config:
+        metadata_dict = generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config, metadata_dict )
+    # Find all special .sample files.
+    for root, dirs, files in os.walk( repo_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name.endswith( '.sample' ):
+                    sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
+    # Find all tool configs and exported workflows.
+    for root, dirs, files in os.walk( repo_dir ):
+        if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
+            if '.hg' in dirs:
+                dirs.remove( '.hg' )
+            for name in files:
+                # Find all tool configs.
+                if name != 'datatypes_conf.xml' and name.endswith( '.xml' ):
+                    full_path = os.path.abspath( os.path.join( root, name ) )
+                    try:
+                        tool = load_tool( trans, full_path )
+                        valid = True
+                    except Exception, e:
+                        valid = False
+                        invalid_files.append( ( name, str( e ) ) )
+                    if valid and tool is not None:
+                        can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
+                        if can_set_metadata:
+                            # Update the list of metadata dictionaries for tools in metadata_dict.
+                            tool_config = os.path.join( root, name )
+                            metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
+                # Find all exported workflows
+                elif name.endswith( '.ga' ):
+                    try:
+                        full_path = os.path.abspath( os.path.join( root, name ) )
+                        # Convert workflow data from json
+                        fp = open( full_path, 'rb' )
+                        workflow_text = fp.read()
+                        fp.close()
+                        exported_workflow_dict = from_json_string( workflow_text )
+                        if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                            # Update the list of metadata dictionaries for workflows in metadata_dict.
+                            metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
+                    except Exception, e:
+                        invalid_files.append( ( name, str( e ) ) )
+    return metadata_dict, invalid_files
+def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision, repo_dir ):
+    # Browse repository files within a change set to generate metadata.
+    metadata_dict = {}
+    invalid_files = []
+    sample_files = []
+    datatypes_config = None
+    # Find datatypes_conf.xml if it exists.
+    for filename in ctx:
+        if filename == 'datatypes_conf.xml':
+            fctx = ctx[ filename ]
+            datatypes_config = fctx.data()
+            break
+    if datatypes_config:
+        metadata_dict = generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config, metadata_dict )
+    # Get all tool config file names from the hgweb url, something like:
+    # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
+    for filename in ctx:
+        # Find all tool configs.
+        if filename != 'datatypes_conf.xml' and filename.endswith( '.xml' ):
+            fctx = ctx[ filename ]
+            # Write the contents of the old tool config to a temporary file.
+            # TODO: figure out how to enhance the load_tool method so that a
+            # temporary disk file is not necessary in order to pass the tool
+            # config.
+            fh = tempfile.NamedTemporaryFile( 'w' )
+            tmp_filename = fh.name
+            fh.close()
+            fh = open( tmp_filename, 'w' )
+            fh.write( fctx.data() )
+            fh.close()
+            try:
+                tool = load_tool( trans, tmp_filename )
+                valid = True
+            except Exception, e:
+                invalid_files.append( ( filename, str( e ) ) )
+                valid = False
+            if valid and tool is not None:
+                # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
+                # here is the relative path to the config file within the change set context, something
+                # like filtering.xml, but when the change set was the repository tip, the value was
+                # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
+                # anything, but may result in a bit of confusion when maintaining the code / data over time.
+                # IMPORTANT NOTE:  Here we are assuming that since the current change set is not the repository
+                # tip, we do not have to handle any .loc.sample files since they would have been handled previously.
+                metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
+            try:
+                os.unlink( tmp_filename )
+            except:
+                pass
+        # Find all exported workflows.
+        elif filename.endswith( '.ga' ):
+            try:
+                fctx = ctx[ filename ]
+                workflow_text = fctx.data()
+                exported_workflow_dict = from_json_string( workflow_text )
+                if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                    # Update the list of metadata dictionaries for workflows in metadata_dict.
+                    metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
+            except Exception, e:
+                invalid_files.append( ( name, str( e ) ) )
+    return metadata_dict, invalid_files
 def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     """Set repository metadata"""
     message = ''
@@ -350,102 +471,12 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
     repository = get_repository( trans, id )
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
-    invalid_files = []
-    sample_files = []
-    datatypes_config = None
     ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
     if ctx is not None:
-        metadata_dict = {}
         if changeset_revision == repository.tip:
-            # Find datatypes_conf.xml if it exists.
-            for root, dirs, files in os.walk( repo_dir ):
-                if root.find( '.hg' ) < 0:
-                    for name in files:
-                        if name == 'datatypes_conf.xml':
-                            datatypes_config = os.path.abspath( os.path.join( root, name ) )
-                            break
-            if datatypes_config:
-                metadata_dict = generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config, metadata_dict )
-            # Find all special .sample files.
-            for root, dirs, files in os.walk( repo_dir ):
-                if root.find( '.hg' ) < 0:
-                    for name in files:
-                        if name.endswith( '.sample' ):
-                            sample_files.append( os.path.abspath( os.path.join( root, name ) ) )
-            # Find all tool configs and exported workflows.
-            for root, dirs, files in os.walk( repo_dir ):
-                if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
-                    if '.hg' in dirs:
-                        dirs.remove( '.hg' )
-                    for name in files:
-                        # Find all tool configs.
-                        if name != 'datatypes_conf.xml' and name.endswith( '.xml' ):
-                            full_path = os.path.abspath( os.path.join( root, name ) )
-                            try:
-                                tool = load_tool( trans, full_path )
-                                valid = True
-                            except Exception, e:
-                                valid = False
-                                invalid_files.append( ( name, str( e ) ) )
-                            if valid and tool is not None:
-                                can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
-                                if can_set_metadata:
-                                    # Update the list of metadata dictionaries for tools in metadata_dict.
-                                    tool_config = os.path.join( root, name )
-                                    metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
-                        # Find all exported workflows
-                        elif name.endswith( '.ga' ):
-                            try:
-                                full_path = os.path.abspath( os.path.join( root, name ) )
-                                # Convert workflow data from json
-                                fp = open( full_path, 'rb' )
-                                workflow_text = fp.read()
-                                fp.close()
-                                exported_workflow_dict = from_json_string( workflow_text )
-                                if exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
-                                    # Update the list of metadata dictionaries for workflows in metadata_dict.
-                                    metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
-                            except Exception, e:
-                                invalid_files.append( ( name, str( e ) ) )
+            metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo_dir )
         else:
-            # Find all special .sample files first.
-            for filename in ctx:
-                if filename.endswith( '.sample' ):
-                    sample_files.append( os.path.abspath( filename ) )
-            # Get all tool config file names from the hgweb url, something like:
-            # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
-            for filename in ctx:
-                # Find all tool configs - we do not have to update metadata for workflows or datatypes in anything
-                # but repository tips (handled above) since at the time this code was written, no workflows or
-                # dataytpes_conf.xml files exist in tool shed repositories, so they can only be added in future tips.
-                if filename.endswith( '.xml' ):
-                    fctx = ctx[ filename ]
-                    # Write the contents of the old tool config to a temporary file.
-                    fh = tempfile.NamedTemporaryFile( 'w' )
-                    tmp_filename = fh.name
-                    fh.close()
-                    fh = open( tmp_filename, 'w' )
-                    fh.write( fctx.data() )
-                    fh.close()
-                    try:
-                        tool = load_tool( trans, tmp_filename )
-                        valid = True
-                    except Exception, e:
-                        invalid_files.append( ( filename, str( e ) ) )
-                        valid = False
-                    if valid and tool is not None:
-                        can_set_metadata, invalid_files = check_tool_input_params( trans, filename, tool, sample_files, invalid_files )
-                        if can_set_metadata:
-                            # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
-                            # here is the relative path to the config file within the change set context, something
-                            # like filtering.xml, but when the change set was the repository tip, the value was
-                            # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
-                            # anything, but may result in a bit of confusion when maintaining the code / data over time.
-                            metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
-                    try:
-                        os.unlink( tmp_filename )
-                    except:
-                        pass
+            metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision, repo_dir )
         if metadata_dict:
             if changeset_revision == repository.tip:
                 if new_tool_metadata_required( trans, id, metadata_dict ) or new_workflow_metadata_required( trans, id, metadata_dict ):
@@ -467,8 +498,8 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
         else:
-            message = "Revision '%s' includes no tools or exported workflows for which metadata can be defined " % str( changeset_revision )
-            message += "so this revision cannot be automatically installed into a local Galaxy instance."
+            message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( changeset_revision )
+            message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             status = "error"
     else:
         # change_set is None

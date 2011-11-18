@@ -20,6 +20,7 @@
     else:
         browse_label = 'Browse repository tip files'
     can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip
+    can_reset_all_metadata = is_admin and len( repo ) > 0
 %>
 
 <%!
@@ -87,6 +88,9 @@
             %endif
             %if can_contact_owner:
                 <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
+            %endif
+            %if can_reset_all_metadata:
+                <a class="action-button" href="${h.url_for( controller='repository', action='reset_all_metadata', id=trans.security.encode_id( repository.id ), webapp='community' )}">Reset all repository metadata</a>
             %endif
             %if can_download:
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>

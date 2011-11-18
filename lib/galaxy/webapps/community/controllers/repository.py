@@ -1311,15 +1311,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if params.get( 'edit_repository_button', False ):
             flush_needed = False
             # TODO: add a can_manage in the security agent.
-            if user != repository.user or not trans.user_is_admin():
+            if not ( user.email == repository.user.email or trans.user_is_admin() ):
                 message = "You are not the owner of this repository, so you cannot manage it."
-                status = error
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_repository',
                                                                   id=id,
                                                                   webapp='community',
                                                                   message=message,
-                                                                  status=status ) )
+                                                                  status='error' ) )
             if description != repository.description:
                 repository.description = description
                 flush_needed = True
@@ -1447,6 +1446,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changesets = []
         for changeset in repo.changelog:
             ctx = repo.changectx( changeset )
+            if get_repository_metadata_by_changeset_revision( trans, id, str( ctx ) ):
+                has_metadata = True
+            else:
+                has_metadata = False
             t, tz = ctx.date()
             date = datetime( *time.gmtime( float( t ) - tz )[:6] )
             display_date = date.strftime( "%Y-%m-%d" )
@@ -1457,7 +1460,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             'description' : ctx.description(),
                             'files' : ctx.files(),
                             'user' : ctx.user(),
-                            'parent' : ctx.parents()[0] }
+                            'parent' : ctx.parents()[0],
+                            'has_metadata' : has_metadata }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
         is_malicious = change_set_is_malicious( trans, id, repository.tip )
@@ -1607,6 +1611,190 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                           malicious=malicious,
                                                           message=message,
                                                           status=status ) )
+    @web.expose
+    def reset_all_metadata( self, trans, id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, id )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        if len( repo ) == 1:
+            message, status = set_repository_metadata( trans, id, repository.tip, **kwd )
+        else:
+            # The following will be a list of changeset_revisions that have been created or updated.
+            # When the following loop completes, we'll delete all repository_metadata records for
+            # this repository that do not have a changeset_revision value in this list.
+            changeset_revisions = []
+            repository_metadata_tup_for_comparison = ()
+            for changeset in repo.changelog:
+                ctx = repo.changectx( changeset )
+                current_changeset_revision = str( ctx )
+                ctx = get_changectx_for_changeset( trans, repo, current_changeset_revision )
+                current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, current_changeset_revision, repo_dir )
+                if current_metadata_dict:
+                    if repository_metadata_tup_for_comparison:
+                        ancestor_changeset_revision, ancestor_metadata_dict = repository_metadata_tup_for_comparison
+                        comparison = self.__compare_changeset_revisions( ancestor_changeset_revision,
+                                                                         ancestor_metadata_dict,
+                                                                         current_changeset_revision,
+                                                                         current_metadata_dict )
+                        # The value of comparsion will be one of:
+                        # 'no metadata' - no metadata for either ancestor or current, so continue from current
+                        # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
+                        # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
+                        # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current
+                        #                              metadata, so persist ancestor metadata.
+                        if comparison in [ 'no metadata', 'equal', 'subset' ]:
+                            repository_metadata_tup_for_comparison = ( current_changeset_revision, current_metadata_dict )
+                        elif comparison == 'not equal and not subset':
+                            self.__create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
+                            # keep track of the changeset_revisions that we've persisted.
+                            changeset_revisions.append( ancestor_changeset_revision )
+                            repository_metadata_tup_for_comparison = ()
+                    else:
+                        # We're at the first change set in the change log.
+                        repository_metadata_tup_for_comparison = ( current_changeset_revision, current_metadata_dict )
+                    if not ctx.children():
+                        # We're at the end of the change log.
+                        self.__create_or_update_repository_metadata( trans, id, repository, current_changeset_revision, current_metadata_dict )
+                        changeset_revisions.append( current_changeset_revision )
+                elif ancestor_metadata_dict:
+                    # Our current change set has no metadata, but our ancestor change set has metadata, so save it.
+                    self.__create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
+                    # keep track of the changeset_revisions that we've persisted.
+                    changeset_revisions.append( ancestor_changeset_revision )
+                    repository_metadata_tup_for_comparison = ()
+                    ancestor_changeset_revision = current_changeset_revision
+                    ancestor_metadata_dict = current_metadata_dict
+            self.__clean_repository_metadata( trans, id, changeset_revisions )
+        if not message:                     
+            message = "Repository metadata has been reset."
+            status = 'done'
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='manage_repository',
+                                                          id=id,
+                                                          message=message,
+                                                          status=status ) )
+    def __clean_repository_metadata( self, trans, id, changeset_revisions ):
+        # Delete all repository_metadata reecords associated with the repository
+        # that have a changeset_revision that is not in changeset_revisions.
+        for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                                   .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ):
+            if repository_metadata.changeset_revision not in changeset_revisions:
+                trans.sa_session.delete( repository_metadata )
+                trans.sa_session.flush()
+    def __create_or_update_repository_metadata( self, trans, id, repository, changeset_revision, metadata_dict ):
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        if repository_metadata:
+            # Update RepositoryMetadata.metadata.
+            repository_metadata.metadata = metadata_dict
+            trans.sa_session.add( repository_metadata )
+            trans.sa_session.flush()
+        else:
+            # Create a new repository_metadata table row.
+            repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
+            trans.sa_session.add( repository_metadata )
+            trans.sa_session.flush()
+    def __compare_changeset_revisions( self, ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
+        # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision
+        # is an ancestor of current_changeset_revision which is associated with current_metadata_dict.
+        # Get information about tools.
+        if 'tools' in ancestor_metadata_dict:
+            ancestor_tools = ancestor_metadata_dict[ 'tools' ]
+        else:
+            ancestor_tools = []
+        if 'tools' in current_metadata_dict:
+            current_tools = current_metadata_dict[ 'tools' ]
+        else:
+            current_tools = []
+        ancestor_guids = []
+        for tool_dict in ancestor_tools:
+            ancestor_guids.append( tool_dict[ 'guid' ] )
+        ancestor_guids.sort()
+        current_guids = []
+        for tool_dict in current_tools:
+            current_guids.append( tool_dict[ 'guid' ] )
+        current_guids.sort()
+        # Get information about workflows.
+        if 'workflows' in ancestor_metadata_dict:
+            ancestor_workflows = ancestor_metadata_dict[ 'workflows' ]
+        else:
+            ancestor_workflows = []
+        if 'workflows' in current_metadata_dict:
+            current_workflows = current_metadata_dict[ 'workflows' ]
+        else:
+            current_workflows = []
+        # Get information about datatypes.
+        if 'datatypes' in ancestor_metadata_dict:
+            ancestor_datatypes = ancestor_metadata_dict[ 'datatypes' ]
+        else:
+            ancestor_datatypes = []
+        if 'datatypes' in current_metadata_dict:
+            current_datatypes = current_metadata_dict[ 'datatypes' ]
+        else:
+            current_datatypes = []
+        # Handle case where no metadata exists for either changeset.
+        if not ( ancestor_guids or current_guids or ancestor_workflows or current_workflows or ancestor_datatypes or current_datatypes ):
+            return 'no metadata'
+        workflow_comparison = self.__compare_workflows( ancestor_workflows, current_workflows )
+        datatype_comparison = self.__compare_datatypes( ancestor_datatypes, current_datatypes )
+        # Handle case where all metadata is the same.
+        if ancestor_guids == current_guids and workflow_comparison == 'equal' and datatype_comparison == 'equal':
+            return 'equal'
+        if workflow_comparison == 'subset' and datatype_comparison == 'subset':
+            is_subset = True
+            for guid in ancestor_guids:
+                if guid not in current_guids:
+                    is_subset = False
+                    break
+            if is_subset:
+                return 'subset'
+        return 'not equal and not subset'
+    def __compare_workflows( self, ancestor_workflows, current_workflows ):
+        # Determine if ancestor_workflows is the same as current_workflows
+        # or if ancestor_workflows is a subset of current_workflows.
+        if len( ancestor_workflows ) <= len( current_workflows ):
+            for ancestor_workflow in ancestor_workflows:
+                # Currently the only way to differentiate workflows is by name.
+                ancestor_workflow_name = ancestor_workflow[ 'name' ]
+                found_in_current = False
+                for current_workflow in current_workflows:
+                    if current_workflow[ 'name' ] == ancestor_workflow_name:
+                        found_in_current = True
+                        break
+                if not found_in_current:
+                    return 'not equal and not subset'
+            if len( ancestor_workflows ) == len( current_workflows ):
+                return 'equal'
+            else:
+                return 'subset'
+        return 'not equal and not subset'
+    def __compare_datatypes( self, ancestor_datatypes, current_datatypes ):
+        # Determine if ancestor_datatypes is the same as current_datatypes
+        # or if ancestor_datatypes is a subset of current_datatypes.  Each
+        # datatype dict looks something like:
+        # {"dtype": "galaxy.datatypes.images:Image", "extension": "pdf", "mimetype": "application/pdf"}
+        if len( ancestor_datatypes ) <= len( current_datatypes ):
+            for ancestor_datatype in ancestor_datatypes:
+                # Currently the only way to differentiate datatypes is by name.
+                ancestor_datatype_dtype = ancestor_datatype[ 'dtype' ]
+                ancestor_datatype_extension = ancestor_datatype[ 'extension' ]
+                ancestor_datatype_mimetype = ancestor_datatype[ 'mimetype' ]
+                found_in_current = False
+                for current_datatype in current_datatypes:
+                    if current_datatype[ 'dtype' ] == ancestor_datatype_dtype and \
+                        current_datatype[ 'extension' ] == ancestor_datatype_extension and \
+                        current_datatype[ 'mimetype' ] == ancestor_datatype_mimetype:
+                        found_in_current = True
+                        break
+                if not found_in_current:
+                    return 'not equal and not subset'
+            if len( ancestor_datatypes ) == len( current_datatypes ):
+                return 'equal'
+            else:
+                return 'subset'
+        return 'not equal and not subset'
     @web.expose
     def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         params = util.Params( kwd )
