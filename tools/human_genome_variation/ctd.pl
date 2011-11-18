@@ -38,8 +38,8 @@ while (<FH>) {
 }
 close FH or die "Couldn't close $in, $!\n";
 
-my $url = 'http://ctd.mdibl.org/tools/batchQuery.go';
-#my $url = 'http://globin.bx.psu.edu/cgi-bin/print-query';
+my $url = 'http://ctdbase.org/tools/batchQuery.go';
+#my $url = 'http://ctd.mdibl.org/tools/batchQuery.go';
 my $d = join("\n", @data);
 #list maintains order, where hash doesn't
 #order matters at ctd
