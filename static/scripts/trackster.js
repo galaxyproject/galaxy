@@ -2301,7 +2301,7 @@ var Tile = function(track, index, resolution, canvas, data) {
     this.high = (index + 1) * DENSITY * resolution;
     this.resolution = resolution;
     // Wrap element in div for background.
-    this.canvas = $("<div class='track-tile'/>").append(canvas);
+    this.html_elt = $("<div class='track-tile'/>").append(canvas);
     this.data = data;
     this.stale = false;
 };
@@ -2324,13 +2324,13 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, me
     this.message = message;
     this.feature_mapper = feature_mapper;
     
-    // Add message + action icons to tile's "canvas" TODO: rename canvas to element/html or something similar.
+    // Add message + action icons to tile's html.
     if (this.message) {
         var 
-            canvas = this.canvas.children()[0],
+            canvas = this.html_elt.children()[0],
             message_div = $("<div/>").addClass("tile-message").text(this.message).
                             // -1 to account for border.
-                            css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.canvas),
+                            css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt),
             more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
             more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
 
@@ -2371,7 +2371,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     // Only show popups in Pack mode.
     if (tile.mode !== "Pack") { return; }
     
-    $(this.canvas).hover( function() { 
+    $(this.html_elt).hover( function() { 
         this.hovered = true; 
         $(this).mousemove();
     }, function() { 
@@ -2435,14 +2435,14 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
             }
             
             // Attach popup to canvas's parent.
-            popup.appendTo($(tile.canvas).parent());
+            popup.appendTo($(tile.html_elt).parent());
             
             // Offsets are within canvas, but popup must be positioned relative to parent element.
             // parseInt strips "px" from left, top measurements. +7 so that mouse pointer does not
             // overlap popup.
             var 
-                popupX = offsetX + parseInt( tile.canvas.css("left") ) - popup.width() / 2,
-                popupY = offsetY + parseInt( tile.canvas.css("top") ) + 7;
+                popupX = offsetX + parseInt( tile.html_elt.css("left") ) - popup.width() / 2,
+                popupY = offsetY + parseInt( tile.html_elt.css("top") ) + 7;
             popup.css("left", popupX + "px").css("top", popupY + "px")
         }
         else if (!e.isPropagationStopped()) {
@@ -2959,7 +2959,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 tile = tiles[tile_index];
                 if (!tile.message) {
                     // Need to align with other tile(s) that have message(s).
-                    tile.canvas.css("padding-top", ERROR_PADDING);
+                    tile.html_elt.css("padding-top", ERROR_PADDING);
                 }
             }
         }        
@@ -3031,7 +3031,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     show_tile: function(tile, parent_element, w_scale) {
         var 
             track = this,
-            tile_element = tile.canvas;
+            tile_element = tile.html_elt;
         
         //
         // Show/move tile element.
@@ -3456,8 +3456,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             for (var i = 0; i < tiles.length; i++) {
                 var tile = tiles[i];
                 if (tile.max_val !== global_max) {
-                    tile.canvas.remove();
-                    track.draw_helper(true, width, tile.index, tile.resolution, tile.canvas.parent(), w_scale, [], { max: global_max });
+                    tile.html_elt.remove();
+                    track.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, [], { max: global_max });
                 }
             }
         }                
