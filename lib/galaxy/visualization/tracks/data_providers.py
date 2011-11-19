@@ -99,7 +99,7 @@ class TracksDataProvider( object ):
         pass
         
         
-    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
+    def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
         """ 
         Returns data in region defined by chrom, start, and end. start_val and
         max_vals are used to denote the data to return: start_val is the first element to 
@@ -914,7 +914,15 @@ class GFFDataProvider( TracksDataProvider ):
         """
         start, end = int( start ), int( end )
         source = open( self.original_dataset.file_name )
-        return GFFReaderWrapper( source, fix_strand=True )
+        
+        def features_in_region_iter():
+            for feature in GFFReaderWrapper( source, fix_strand=True ):
+                # Only provide features that are in region.
+                feature_start, feature_end = convert_gff_coords_to_bed( [ feature.start, feature.end ] )
+                if feature.chrom != chrom or feature_start < start or feature_end > end:
+                    continue                
+                yield feature
+        return features_in_region_iter()
         
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
@@ -931,9 +939,6 @@ class GFFDataProvider( TracksDataProvider ):
                 message = ERROR_MAX_VALS % ( max_vals, "reads" )
                 break
                 
-            feature_start, feature_end = convert_gff_coords_to_bed( [ feature.start, feature.end ] )
-            if feature.chrom != chrom or feature_start < start or feature_end > end:
-                continue
             payload = package_gff_feature( feature )
             payload.insert( 0, offset )
             results.append( payload )
