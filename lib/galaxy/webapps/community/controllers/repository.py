@@ -1622,51 +1622,56 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if len( repo ) == 1:
             message, status = set_repository_metadata( trans, id, repository.tip, **kwd )
         else:
-            # The following will be a list of changeset_revisions that have been created or updated.
-            # When the following loop completes, we'll delete all repository_metadata records for
-            # this repository that do not have a changeset_revision value in this list.
+            # The list of changeset_revisions refers to repository_metadata records that have been
+            # created or updated.  When the following loop completes, we'll delete all repository_metadata
+            # records for this repository that do not have a changeset_revision value in this list.
             changeset_revisions = []
-            repository_metadata_tup_for_comparison = ()
+            ancestor_changeset_revision = None
+            ancestor_metadata_dict = None
             for changeset in repo.changelog:
-                ctx = repo.changectx( changeset )
-                current_changeset_revision = str( ctx )
+                current_changeset_revision = str( repo.changectx( changeset ) )
                 ctx = get_changectx_for_changeset( trans, repo, current_changeset_revision )
                 current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, current_changeset_revision, repo_dir )
                 if current_metadata_dict:
-                    if repository_metadata_tup_for_comparison:
-                        ancestor_changeset_revision, ancestor_metadata_dict = repository_metadata_tup_for_comparison
-                        comparison = self.__compare_changeset_revisions( ancestor_changeset_revision,
-                                                                         ancestor_metadata_dict,
-                                                                         current_changeset_revision,
-                                                                         current_metadata_dict )
-                        # The value of comparsion will be one of:
+                    if ancestor_changeset_revision:
+                        # Compare metadata from ancestor and current.  The value of comparsion will be one of:
                         # 'no metadata' - no metadata for either ancestor or current, so continue from current
                         # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
                         # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
                         # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current
                         #                              metadata, so persist ancestor metadata.
+                        comparison = self.__compare_changeset_revisions( ancestor_changeset_revision,
+                                                                         ancestor_metadata_dict,
+                                                                         current_changeset_revision,
+                                                                         current_metadata_dict )
                         if comparison in [ 'no metadata', 'equal', 'subset' ]:
-                            repository_metadata_tup_for_comparison = ( current_changeset_revision, current_metadata_dict )
+                            ancestor_changeset_revision = current_changeset_revision
+                            ancestor_metadata_dict = current_metadata_dict
                         elif comparison == 'not equal and not subset':
                             self.__create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
-                            # keep track of the changeset_revisions that we've persisted.
+                            # Keep track of the changeset_revisions that we've persisted.
                             changeset_revisions.append( ancestor_changeset_revision )
-                            repository_metadata_tup_for_comparison = ()
+                            ancestor_changeset_revision = None
+                            ancestor_metadata_dict = None
                     else:
-                        # We're at the first change set in the change log.
-                        repository_metadata_tup_for_comparison = ( current_changeset_revision, current_metadata_dict )
+                        # We're either at the first change set in the change log or we have just created or updated
+                        # a repository_metadata record.  At this point we set the ancestor changeset to the current
+                        # changeset for comparison in the next iteration.
+                        ancestor_changeset_revision = current_changeset_revision
+                        ancestor_metadata_dict = current_metadata_dict
                     if not ctx.children():
                         # We're at the end of the change log.
                         self.__create_or_update_repository_metadata( trans, id, repository, current_changeset_revision, current_metadata_dict )
                         changeset_revisions.append( current_changeset_revision )
+                        ancestor_changeset_revision = None
+                        ancestor_metadata_dict = None
                 elif ancestor_metadata_dict:
                     # Our current change set has no metadata, but our ancestor change set has metadata, so save it.
                     self.__create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
-                    # keep track of the changeset_revisions that we've persisted.
+                    # Keep track of the changeset_revisions that we've persisted.
                     changeset_revisions.append( ancestor_changeset_revision )
-                    repository_metadata_tup_for_comparison = ()
-                    ancestor_changeset_revision = current_changeset_revision
-                    ancestor_metadata_dict = current_metadata_dict
+                    ancestor_changeset_revision = None
+                    ancestor_metadata_dict = None
             self.__clean_repository_metadata( trans, id, changeset_revisions )
         if not message:                     
             message = "Repository metadata has been reset."
@@ -1699,6 +1704,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
     def __compare_changeset_revisions( self, ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
         # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision
         # is an ancestor of current_changeset_revision which is associated with current_metadata_dict.
+        #
+        # TODO: a new repository_metadata record will be created only when this method returns the string
+        # 'not equal and not subset'.  However, we're currently also returning the strings 'no metadata',
+        # 'equal' and 'subset', depending upon how the 2 change sets compare.  We'll leave things this way
+        # for the current time in case we discover a use for these additional result strings.
+        #
         # Get information about tools.
         if 'tools' in ancestor_metadata_dict:
             ancestor_tools = ancestor_metadata_dict[ 'tools' ]
@@ -1735,7 +1746,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         else:
             current_datatypes = []
         # Handle case where no metadata exists for either changeset.
-        if not ( ancestor_guids or current_guids or ancestor_workflows or current_workflows or ancestor_datatypes or current_datatypes ):
+        if not ancestor_guids and not current_guids and not ancestor_workflows and not current_workflows and not ancestor_datatypes and not current_datatypes:
             return 'no metadata'
         workflow_comparison = self.__compare_workflows( ancestor_workflows, current_workflows )
         datatype_comparison = self.__compare_datatypes( ancestor_datatypes, current_datatypes )
@@ -1758,9 +1769,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
             for ancestor_workflow in ancestor_workflows:
                 # Currently the only way to differentiate workflows is by name.
                 ancestor_workflow_name = ancestor_workflow[ 'name' ]
+                num_ancestor_workflow_steps = len( ancestor_workflow[ 'steps' ] )
                 found_in_current = False
                 for current_workflow in current_workflows:
-                    if current_workflow[ 'name' ] == ancestor_workflow_name:
+                    # Assume that if the name and number of steps are euqal,
+                    # then the workflows are the same.  Of course, this may
+                    # not be true...
+                    if current_workflow[ 'name' ] == ancestor_workflow_name and len( current_workflow[ 'steps' ] ) == num_ancestor_workflow_steps:
                         found_in_current = True
                         break
                 if not found_in_current:

@@ -107,7 +107,7 @@
                     else:
                         ctx_parent_str = "%s:%s" % ( ctx_parent_rev, ctx_parent )
                     if changeset[ 'has_metadata' ]:
-                        has_metadata_str = 'Repository metadata is associated with this change set.'
+                        has_metadata_str = '<table border="0" bgcolor="#D8D8D8"><tr><td>Repository metadata is associated with this change set.</td></tr></table>'
                     else:
                         has_metadata_str = ''
                 %>
