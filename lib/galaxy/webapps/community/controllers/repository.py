@@ -1631,7 +1631,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
             for changeset in repo.changelog:
                 current_changeset_revision = str( repo.changectx( changeset ) )
                 ctx = get_changectx_for_changeset( trans, repo, current_changeset_revision )
-                current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, current_changeset_revision, repo_dir )
+                if current_changeset_revision == repository.tip:
+                    current_metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, current_changeset_revision, repo_dir )
+                else:
+                    current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, current_changeset_revision, repo_dir )
                 if current_metadata_dict:
                     if ancestor_changeset_revision:
                         # Compare metadata from ancestor and current.  The value of comparsion will be one of:
