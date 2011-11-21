@@ -43,31 +43,19 @@
     
     #for $rod_binding in $comp_rod_bind:
         -d "--comp:${rod_binding.comp_rod_name},%(file_type)s" "${rod_binding.comp_input_rod}" "${rod_binding.comp_input_rod.ext}" "input_comp_${rod_binding.comp_rod_name}"
-        #if str( $rod_binding.comp_rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_binding.comp_rod_name}"'
-        #end if
     #end for
     
     #if str( $dbsnp_rod_bind_type.dbsnp_rod_bind_type_selector ) == 'set_dbsnp':
         -d "--dbsnp:${dbsnp_rod_bind_type.dbsnp_rod_name},%(file_type)s" "${dbsnp_rod_bind_type.dbsnp_input_rod}" "${dbsnp_rod_bind_type.dbsnp_input_rod.ext}" "input_dbsnp_${dbsnp_rod_bind_type.dbsnp_rod_name}"
-        #if str( $dbsnp_rod_bind_type.dbsnp_rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${dbsnp_rod_bind_type.dbsnp_rod_name}"'
-        #end if
     #end if
     
     
     #for $rod_binding in $resource_rod_bind:
         -d "--resource:${rod_binding.resource_rod_name},%(file_type)s" "${rod_binding.resource_input_rod}" "${rod_binding.resource_input_rod.ext}" "input_resource_${rod_binding.resource_rod_name}"
-        #if str( $rod_binding.resource_rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_binding.resource_rod_name}"'
-        #end if
     #end for
     
     #if str( $snpEff_rod_bind_type.snpEff_rod_bind_type_selector ) == 'set_snpEff':
         -d "--snpEff:${snpEff_rod_bind_type.snpEff_rod_name},%(file_type)s" "${snpEff_rod_bind_type.snpEff_input_rod}" "${snpEff_rod_bind_type.snpEff_input_rod.ext}" "input_snpEff_${snpEff_rod_bind_type.snpEff_rod_name}"
-        #if str( $snpEff_rod_bind_type.snpEff_rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${snpEff_rod_bind_type.snpEff_rod_name}"'
-        #end if
     #end if
     
     #for $expression in $expressions:
@@ -214,7 +202,6 @@
     <repeat name="comp_rod_bind" title="Binding for reference-ordered comparison data">
       <param name="comp_input_rod" type="data" format="vcf" label="ROD file" />
       <param name="comp_rod_name" type="text" value="Unnamed" label="ROD Name"/>
-      <param name="comp_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
     </repeat>
     
     <conditional name="dbsnp_rod_bind_type">
@@ -227,7 +214,6 @@
       </when>
       <when value="set_dbsnp">
         <param name="dbsnp_input_rod" type="data" format="vcf" label="ROD file" />
-        <param name="dbsnp_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
         <param name="dbsnp_rod_name" type="hidden" value="dbsnp" label="ROD Name"/>
       </when>
     </conditional>
@@ -235,7 +221,6 @@
     <repeat name="resource_rod_bind" title="Binding for reference-ordered resource data">
       <param name="resource_input_rod" type="data" format="vcf" label="ROD file" />
       <param name="resource_rod_name" type="text" value="Unnamed" label="ROD Name"/>
-      <param name="resource_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
     </repeat>
     
     <conditional name="snpEff_rod_bind_type">
@@ -248,7 +233,6 @@
       </when>
       <when value="set_snpEff">
         <param name="snpEff_input_rod" type="data" format="vcf" label="ROD file" />
-        <param name="snpEff_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
         <param name="snpEff_rod_name" type="hidden" value="snpEff" label="ROD Name"/>
       </when>
     </conditional>
@@ -403,7 +387,6 @@
           <param name="annotations_type_selector" value="choose" />
           <param name="annotations" value="AlleleBalance,BaseQualityRankSumTest,DepthOfCoverage,HomopolymerRun,MappingQualityRankSumTest,MappingQualityZero,QualByDepth,RMSMappingQuality,SpanningDeletions,HaplotypeScore" />
           <param name="dbsnp_rod_bind_type_selector" value="set_dbsnp" />
-          <param name="dbsnp_rodToIntervalTrackName" />
           <param name="dbsnp_input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
           <param name="snpEff_rod_bind_type_selector" value="exclude_snpEff" />
           <param name="gatk_param_type_selector" value="basic" />

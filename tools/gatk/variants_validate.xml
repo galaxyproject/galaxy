@@ -23,9 +23,6 @@
    
     #if str( $dbsnp_rod_bind_type.dbsnp_rod_bind_type_selector ) == 'set_dbsnp':
         -d "--dbsnp:${dbsnp_rod_bind_type.dbsnp_rod_name},%(file_type)s" "${dbsnp_rod_bind_type.dbsnp_input_rod}" "${dbsnp_rod_bind_type.dbsnp_input_rod.ext}" "input_dbsnp_${dbsnp_rod_bind_type.dbsnp_rod_name}"
-        #if str( $dbsnp_rod_bind_type.dbsnp_rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${dbsnp_rod_bind_type.dbsnp_rod_name}"'
-        #end if
     #end if
    
     ##start standard gatk options
@@ -117,7 +114,6 @@
       </when>
       <when value="set_dbsnp">
         <param name="dbsnp_input_rod" type="data" format="vcf" label="ROD file" />
-        <param name="dbsnp_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
         <param name="dbsnp_rod_name" type="hidden" value="dbsnp" label="ROD Name"/>
       </when>
     </conditional>
@@ -258,7 +254,6 @@
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
           <param name="dbsnp_rod_bind_type_selector" value="set_dbsnp" />
-          <param name="dbsnp_rodToIntervalTrackName" />
           <param name="dbsnp_input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
           <param name="warn_on_errors" value="True"/>
           <param name="do_not_validate_filtered_records" />

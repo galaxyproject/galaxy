@@ -38,9 +38,6 @@
         #else:
         -d "--resource:${rod_bind_name},%(file_type)s,known=${rod_binding.rod_bind_type.rod_training_type.known},training=${rod_binding.rod_bind_type.rod_training_type.training},truth=${rod_binding.rod_bind_type.rod_training_type.truth},bad=${rod_binding.rod_bind_type.rod_training_type.bad},prior=${rod_binding.rod_bind_type.rod_training_type.prior}" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #end if
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
-        #end if
     #end for
     
     ##start standard gatk options
@@ -183,7 +180,6 @@
           </param>
           <when value="variant">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="Variant ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -204,7 +200,6 @@
           <when value="comp">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp" label="ROD file" />
               <param name="custom_rod_name" type="text" value="Unnamed" label="ROD Name"/>
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -224,7 +219,6 @@
           </when>
           <when value="dbsnp">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -244,7 +238,6 @@
           </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -264,7 +257,6 @@
           </when>
           <when value="hapmap">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -284,7 +276,6 @@
           </when>
           <when value="omni">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -304,7 +295,6 @@
           </when>
           <when value="indels">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -325,7 +315,6 @@
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>

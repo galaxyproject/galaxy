@@ -34,9 +34,6 @@
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
         -d "--dbsnp:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
-        #end if
     #end for
    
     ##start standard gatk options
@@ -168,20 +165,16 @@
 	      </param>
           <when value="dbsnp">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="indels">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
         </conditional>
     </repeat>
@@ -413,7 +406,6 @@
           <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
           <param name="rod_bind_type_selector" value="dbsnp" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
-          <param name="rodToIntervalTrackName" />
           <param name="standard_min_confidence_threshold_for_calling" value="0" />
           <param name="standard_min_confidence_threshold_for_emitting" value="4" />
           <param name="gatk_param_type_selector" value="basic" />

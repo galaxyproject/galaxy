@@ -30,9 +30,6 @@
         --maskExtension "${mask_rod_bind_type.mask_extension}"
         --maskName "${mask_rod_bind_type.mask_rod_name}"
         '
-        #if str( $mask_rod_bind_type.mask_rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${mask_rod_bind_type.mask_rod_name}"'
-        #end if
     #end if
     
     ##start standard gatk options
@@ -150,7 +147,6 @@
         <param name="input_mask_rod" type="data" format="bed,gatk_dbsnp,vcf" label="Mask ROD file" />
         <param name="mask_rod_name" type="text" value="Mask" label="Mask Name"/>
         <param name="mask_extension" type="integer" value="0" label="Mask Extension"/>
-        <param name="mask_rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use Mask ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
       </when>
     </conditional>    
     
@@ -308,7 +304,6 @@
           <param name="filter_name" value="Galaxy_filter" />
           <param name="is_genotype_filter" />
           <param name="mask_rod_bind_type_selector" value="set_mask" />
-          <param name="mask_rodToIntervalTrackName" />
           <param name="input_mask_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
           <param name="mask_rod_name" value="." />
           <param name="mask_extension" value="0" />
