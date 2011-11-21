@@ -159,6 +159,7 @@
       <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
       <display file="igv/vcf.xml" />
     </datatype>
+    <datatype extension="bcf" type="galaxy.datatypes.binary:Binary" subclass="True"/>
     <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">

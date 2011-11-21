@@ -65,6 +65,11 @@
         <columns>value, name, path</columns>
         <file path="tool-data/perm_color_index.loc" />
     </table>
+    <!-- Location of SAMTools indexes and other files -->
+    <table name="sam_fa_indexes" comment_char="#">
+        <columns>line_type, value, path</columns>
+        <file path="tool-data/sam_fa_indices.loc" />
+    </table>
     <!-- Location of Picard dict file and other files -->
     <table name="picard_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
