@@ -147,17 +147,17 @@
 	        <option value="custom">Custom</option>
 	      </param>
           <when value="dbsnp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
           </when>
           <when value="snps">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
           </when>
           <when value="indels">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
           </when>
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
           </when>
         </conditional>
     </repeat>

@@ -179,7 +179,7 @@
             <option value="custom">Custom</option>
           </param>
           <when value="variant">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="Variant ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="Variant ROD file" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -198,7 +198,7 @@
               </conditional>
           </when>
           <when value="comp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <param name="custom_rod_name" type="text" value="Unnamed" label="ROD Name"/>
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
@@ -218,7 +218,7 @@
               </conditional>
           </when>
           <when value="dbsnp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -237,7 +237,7 @@
               </conditional>
           </when>
           <when value="snps">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -256,7 +256,7 @@
               </conditional>
           </when>
           <when value="hapmap">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -275,7 +275,7 @@
               </conditional>
           </when>
           <when value="omni">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -294,7 +294,7 @@
               </conditional>
           </when>
           <when value="indels">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
@@ -314,7 +314,7 @@
           </when>
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <conditional name="rod_training_type">
                   <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
                       <option value="is_training_truth_known">Set training/truth/known sites</option>
