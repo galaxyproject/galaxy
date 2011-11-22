@@ -104,10 +104,10 @@
     <xs:complexContent>
       <xs:extension base="InputType">
 	<xs:sequence>
-	  <xs:element name="label" type="xs:string" />
-	  <xs:element name="help" type="xs:string" />
 	  <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded" />
 	</xs:sequence>
+    <xs:attribute name="label" type="xs:string" />
+    <xs:attribute name="help" type="xs:string" />
 	<xs:attribute name="type" type="ParamType" use="required" />
 	<xs:attribute name="value" type="xs:string" />
 	<xs:attribute name="optional" type="xs:string" default="false" />
