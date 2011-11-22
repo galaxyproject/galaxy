@@ -127,8 +127,11 @@
                   </div>
               %endif
               </div>
-              <% repeat_state = tool_state[input.name] %>
-              %for i in range( len( repeat_state ) ):
+              <%
+              repeat_state = tool_state[input.name]
+              num_repeats = len( repeat_state )
+              %>
+              %for i in range( num_repeats ):
                 <div class="repeat-group-item">
                     <%
                     if input.name in errors:
@@ -139,7 +142,7 @@
                     %>
                     <div class="form-title-row"><strong>${input.title} ${i + 1}</strong></div>
                     ${do_inputs( input.inputs, repeat_state[i], rep_errors, prefix + input.name + "_" + str(index) + "|", other_values )}
-                    %if input.min < len( repeat_state ):
+                    %if input.min < num_repeats:
                         <div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
                     %endif
                 </div>
@@ -147,7 +150,7 @@
                     <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${rep_errors['__index__']}</span></div>
                 %endif
               %endfor
-              %if input.max > len( repeat_state ):
+              %if input.max > num_repeats:
                   <div class="form-row"><input type="submit" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
               %endif
           </div>
