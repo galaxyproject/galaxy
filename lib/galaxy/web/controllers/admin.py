@@ -774,21 +774,21 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     @web.require_admin
     def find_tools_in_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = trans.request.host
+        galaxy_url = url_for( '', qualified=True )
         url = '%s/repository/find_tools?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
     def find_workflows_in_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = trans.request.host
+        galaxy_url = url_for( '', qualified=True )
         url = '%s/repository/find_workflows?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = trans.request.host
+        galaxy_url = url_for( '', qualified=True )
         url = '%s/repository/browse_valid_repositories?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
@@ -986,11 +986,10 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     @web.expose
     @web.require_admin
     def check_for_updates( self, trans, **kwd ):
-        params = util.Params( kwd )
         repository = get_repository( trans, kwd[ 'id' ] )
-        galaxy_url = trans.request.host
+        galaxy_url = url_for( '', qualified=True )
         # Send a request to the relevant tool shed to see if there are any updates.
-        # TODO: support https in the following url.
+        # TODO: Fix this to use url_for to support locally hosted tool sheds.
         url = 'http://%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
             ( repository.tool_shed, galaxy_url, repository.name, repository.owner, repository.changeset_revision )
         return trans.response.send_redirect( url )
@@ -1215,7 +1214,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                         module = __import__( import_module )
                         sys.path.pop( 0 )
                     except Exception, e:
-                        log.debug( "Execption importing datatypes code file included in installed repository: %s" % str( e ) )
+                        log.debug( "Exception importing datatypes code file included in installed repository: %s" % str( e ) )
                     trans.app.datatypes_registry = galaxy.datatypes.registry.Registry( trans.app.config.root, datatypes_config )
     def __get_repository_tools_and_sample_files( self, trans, tool_path, repo_files_dir ):
         # The sample_files list contains all files whose name ends in .sample
@@ -1398,10 +1397,11 @@ def get_repository_by_name_owner_changeset_revision( trans, name, owner, changes
                                             trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
                              .first()
 def get_repository_by_shed_name_owner_changeset_revision( trans, tool_shed, name, owner, changeset_revision ):
+    if tool_shed.find( '//' ) > 0:
+        tool_shed = tool_shed.split( '//' )[1]
     return trans.sa_session.query( trans.model.ToolShedRepository ) \
                            .filter( and_( trans.model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                           trans.model.ToolShedRepository.table.c.name == name,
                                           trans.model.ToolShedRepository.table.c.owner == owner,
                                           trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
                            .first()
-
