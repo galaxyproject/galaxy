@@ -12,6 +12,28 @@ from mercurial import hg, ui, commands
 
 log = logging.getLogger( __name__ )
 
+new_repo_email_alert_template = """
+GALAXY TOOL SHED NEW REPOSITORY ALERT
+-----------------------------------------------------------------------------
+You received this alert because you registered to receive email when
+new repositories were created in the Galaxy tool shed named "${host}".
+-----------------------------------------------------------------------------
+
+Repository name:       ${repository_name}
+Date content uploaded: ${display_date}
+Uploaded by:           ${username}
+
+Revision: ${revision}
+Change description:
+${description}
+
+${content_alert_str}
+
+-----------------------------------------------------------------------------
+This change alert was sent from the Galaxy tool shed hosted on the server
+"${host}"
+"""
+
 email_alert_template = """
 GALAXY TOOL SHED REPOSITORY UPDATE ALERT
 -----------------------------------------------------------------------------
@@ -464,7 +486,7 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
             except Exception, e:
                 invalid_files.append( ( name, str( e ) ) )
     return metadata_dict, invalid_files
-def set_repository_metadata( trans, id, changeset_revision, **kwd ):
+def set_repository_metadata( trans, id, changeset_revision, content_alert_str='', **kwd ):
     """Set repository metadata"""
     message = ''
     status = 'done'
@@ -484,6 +506,9 @@ def set_repository_metadata( trans, id, changeset_revision, **kwd ):
                     repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
                     trans.sa_session.add( repository_metadata )
                     trans.sa_session.flush()
+                    # If this is the first record stored for this repository, see if we need to send any email alerts.
+                    if len( repository.downloadable_revisions ) == 1:
+                        handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
                 else:
                     # Update the last saved repository_metadata table row.
                     repository_metadata = get_latest_repository_metadata( trans, id )
@@ -557,11 +582,31 @@ def get_configured_ui():
 def get_user( trans, id ):
     """Get a user from the database by id"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
-def handle_email_alerts( trans, repository, content_alert_str='' ):
+def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=False, admin_only=False ):
+    # There are 2 complementary features that enable a tool shed user to receive email notification:
+    # 1. Within User Preferences, they can elect to receive email when the first (or first valid)
+    #    change set is produced for a new repository.
+    # 2. When viewing or managing a repository, they can check the box labeled "Receive email alerts"
+    #    which caused them to receive email alerts when updates to the repository occur.  This same feature
+    #    is available on a per-repository basis on the repository grid within the tool shed.
+    #
+    # There are currently 4 scenarios for sending email notification when a change is made to a repository:
+    # 1. An admin user elects to receive email when the first change set is produced for a new repository
+    #    from User Preferences.  The change set does not have to include any valid content.  This allows for
+    #    the capture of inappropriate content being uploaded to new repositories.
+    # 2. A regular user elects to receive email when the first valid change set is produced for a new repository
+    #    from User Preferences.  This differs from 1 above in that the user will not receive email until a
+    #    change set tha tincludes valid content is produced.
+    # 3. An admin user checks the "Receive email alerts" check box on the manage repository page.  Since the
+    #    user is an admin user, the email will include information about both HTML and image content that was
+    #    included in the change set.
+    # 4. A regular user checks the "Receive email alerts" check box on the manage repository page.  Since the
+    #    user is not an admin user, the email will not include any information about both HTML and image content
+    #    that was included in the change set.
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
     smtp_server = trans.app.config.smtp_server
-    if smtp_server and repository.email_alerts:
+    if smtp_server and ( new_repo_alert or repository.email_alerts ):
         # Send email alert to users that want them.
         if trans.app.config.email_from is not None:
             email_from = trans.app.config.email_from
@@ -580,26 +625,40 @@ def handle_email_alerts( trans, repository, content_alert_str='' ):
             username = ctx.user()
         # We'll use 2 template bodies because we only want to send content
         # alerts to tool shed admin users.
-        admin_body = string.Template( email_alert_template ) \
-            .safe_substitute( host=trans.request.host,
-                              repository_name=repository.name,
-                              revision='%s:%s' %( str( ctx.rev() ), ctx ),
-                              display_date=display_date,
-                              description=ctx.description(),
-                              username=username,
-                              content_alert_str=content_alert_str )
-        body = string.Template( email_alert_template ) \
-            .safe_substitute( host=trans.request.host,
-                              repository_name=repository.name,
-                              revision='%s:%s' %( str( ctx.rev() ), ctx ),
-                              display_date=display_date,
-                              description=ctx.description(),
-                              username=username,
-                              content_alert_str='' )
+        if new_repo_alert:
+            template = new_repo_email_alert_template
+        else:
+            template = email_alert_template
+        admin_body = string.Template( template ).safe_substitute( host=trans.request.host,
+                                                                  repository_name=repository.name,
+                                                                  revision='%s:%s' %( str( ctx.rev() ), ctx ),
+                                                                  display_date=display_date,
+                                                                  description=ctx.description(),
+                                                                  username=username,
+                                                                  content_alert_str=content_alert_str )
+        body = string.Template( template ).safe_substitute( host=trans.request.host,
+                                                            repository_name=repository.name,
+                                                            revision='%s:%s' %( str( ctx.rev() ), ctx ),
+                                                            display_date=display_date,
+                                                            description=ctx.description(),
+                                                            username=username,
+                                                            content_alert_str='' )
         admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
         frm = email_from
-        subject = "Galaxy tool shed repository update alert"
-        email_alerts = from_json_string( repository.email_alerts )
+        if new_repo_alert:
+            subject = "New Galaxy tool shed repository alert"
+            email_alerts = []
+            for user in trans.sa_session.query( trans.model.User ) \
+                                        .filter( and_( trans.model.User.table.c.deleted == False,
+                                                       trans.model.User.table.c.new_repo_alert == True ) ):
+                if admin_only:
+                    if user.email in admin_users:
+                        email_alerts.append( user.email )
+                else:
+                    email_alerts.append( user.email )
+        else:
+            subject = "Galaxy tool shed repository update alert"
+            email_alerts = from_json_string( repository.email_alerts )
         for email in email_alerts:
             to = email.strip()
             # Send it

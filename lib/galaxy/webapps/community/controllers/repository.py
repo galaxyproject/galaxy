@@ -182,6 +182,37 @@ class RepositoryListGrid( grids.Grid ):
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
 
+class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
+    columns = [
+        RepositoryListGrid.NameColumn( "Name",
+                                       key="name",
+                                       link=( lambda item: dict( operation="view_or_manage_repository",
+                                                                 id=item.id,
+                                                                 webapp="community" ) ),
+                                       attach_popup=False ),
+        RepositoryListGrid.DescriptionColumn( "Synopsis",
+                                              key="description",
+                                              attach_popup=False ),
+        RepositoryListGrid.UserColumn( "Owner",
+                                       model_class=model.User,
+                                       link=( lambda item: dict( operation="repositories_by_user", id=item.id, webapp="community" ) ),
+                                       attach_popup=False,
+                                       key="User.username" ),
+        RepositoryListGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
+        # Columns that are valid for filtering but are not visible.
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
+    ]
+    operations = [ grids.GridOperation( "Receive email alerts",
+                                        allow_multiple=True,
+                                        condition=( lambda item: not item.deleted ),
+                                        async_compatible=False ) ]
+    global_actions = [
+            grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository', webapp='community' ) )
+        ]
+
 class ValidRepositoryListGrid( RepositoryListGrid ):
     class RevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
@@ -290,6 +321,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
     matched_repository_list_grid = MatchedRepositoryListGrid()
     valid_repository_list_grid = ValidRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
+    email_alerts_repository_list_grid = EmailAlertsRepositoryListGrid()
     category_list_grid = CategoryListGrid()
 
     @web.expose
@@ -876,6 +908,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             elif operation == "receive email alerts":
                 if trans.user:
                     if kwd[ 'id' ]:
+                        kwd[ 'caller' ] = 'browse_repositories'
                         return trans.response.send_redirect( web.url_for( controller='repository',
                                                                           action='set_email_alerts',
                                                                           **kwd ) )
@@ -1550,7 +1583,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
     @web.require_login( "set email alerts" )
     def set_email_alerts( self, trans, **kwd ):
         # Set email alerts for selected repositories
-        params = util.Params( kwd )
+        # This method is called from multiple grids, so
+        # the caller must be passed.
+        caller = kwd[ 'caller' ]
         user = trans.user
         if user:
             repository_ids = util.listify( kwd.get( 'id', '' ) )
@@ -1582,8 +1617,62 @@ class RepositoryController( BaseUIController, ItemRatings ):
             kwd[ 'status' ] = 'done'
         del kwd[ 'operation' ]
         return trans.response.send_redirect( web.url_for( controller='repository',
-                                                          action='browse_repositories',
+                                                          action=caller,
                                                           **kwd ) )
+    @web.expose
+    @web.require_login( "manage email alerts" )
+    def manage_email_alerts( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        new_repo_alert = params.get( 'new_repo_alert', '' )
+        new_repo_alert_checked = CheckboxField.is_checked( new_repo_alert )
+        user = trans.user
+        if params.get( 'new_repo_alert_button', False ):
+            user.new_repo_alert = new_repo_alert_checked
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
+            if new_repo_alert_checked:
+                message = 'You will receive email alerts for all new valid tool shed repositories.'
+            else:
+                message = 'You will not receive any email alerts for new valid tool shed repositories.'
+        checked = new_repo_alert_checked or ( user and user.new_repo_alert )
+        new_repo_alert_check_box = CheckboxField( 'new_repo_alert', checked=checked )
+        email_alert_repositories = []
+        for repository in trans.sa_session.query( trans.model.Repository ) \
+                                          .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                         trans.model.Repository.table.c.email_alerts != None ) ) \
+                                          .order_by( trans.model.Repository.table.c.name ):
+            if user.email in repository.email_alerts:
+                email_alert_repositories.append( repository )
+        return trans.fill_template( "/webapps/community/user/manage_email_alerts.mako",
+                                    webapp='community',
+                                    new_repo_alert_check_box=new_repo_alert_check_box,
+                                    email_alert_repositories=email_alert_repositories,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_login( "manage email alerts" )
+    def multi_select_email_alerts( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if 'webapp' not in kwd:
+            kwd[ 'webapp' ] = 'community'
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "receive email alerts":
+                if trans.user:
+                    if kwd[ 'id' ]:
+                        kwd[ 'caller' ] = 'multi_select_email_alerts'
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='set_email_alerts',
+                                                                          **kwd ) )
+                else:
+                    kwd[ 'message' ] = 'You must be logged in to set email alerts.'
+                    kwd[ 'status' ] = 'error'
+                    del kwd[ 'operation' ]
+        return self.email_alerts_repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_login( "set repository metadata" )
     def set_metadata( self, trans, id, ctx_str, **kwd ):

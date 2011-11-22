@@ -20,6 +20,7 @@ class User( object ):
         self.deleted = False
         self.purged = False
         self.username = None
+        self.new_repo_alert = False
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash( text_type=cleartext )

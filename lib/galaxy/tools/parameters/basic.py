@@ -166,7 +166,7 @@ class ToolParameter( object ):
         """Factory method to create parameter of correct type"""
         param_name = param.get( "name" )
         if not param_name:
-            raise ValueError( "Tool parameters require a 'name'" )
+            raise ValueError( "Tool parameter '%s' requires a 'name'" % (param_name ) )
         param_type = param.get("type")
         if not param_type:
             raise ValueError( "Tool parameter '%s' requires a 'type'" % ( param_name ) )
