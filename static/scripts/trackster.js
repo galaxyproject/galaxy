@@ -677,6 +677,7 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
     this.prefs = this.config.values;
     this.drag_handle_class = drag_handle_class;
     this.is_overview = false;
+    this.action_icons = {};
     
     // FIXME: this should be a saved setting
     this.content_visible = true;
@@ -688,8 +689,10 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
     if (this.header_div) { 
         this.container_div.append(this.header_div);
         
-        this.icons_div = this.build_icons_div().hide();
-        this.header_div.append(this.icons_div);
+        this.icons_div = $("<div/>").css("float", "left").hide().appendTo(this.header_div);
+        this.build_action_icons(this.action_icons_def);
+        this.header_div.append( $("<div style='clear: both'/>") );
+        
         
         // Suppress double clicks in header so that they do not impact viz.
         this.header_div.dblclick( function(e) { e.stopPropagation(); } );
@@ -705,6 +708,64 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
         $("<div style='clear: both'/>").appendTo(this.container_div);
     }
 };
+
+Drawable.prototype.action_icons_def = [
+    // Hide/show drawable content.
+    {
+        name: "toggle_icon",
+        title: "Hide/show content",
+        css_class: "toggle",
+        on_click_fn: function(drawable) {
+            if ( drawable.content_visible ) {
+                drawable.action_icons.toggle_icon.addClass("toggle-expand").removeClass("toggle");
+                drawable.hide_contents();
+                drawable.content_visible = false;
+            } else {
+                drawable.action_icons.toggle_icon.addClass("toggle").removeClass("toggle-expand");
+                drawable.content_visible = true;
+                drawable.show_contents();
+            }
+        }
+    },
+    // Edit settings.
+    {
+        name: "settings_icon",
+        title: "Edit settings",
+        css_class: "settings-icon",
+        on_click_fn: function(drawable) {
+            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+                ok_fn = function() { 
+                    drawable.config.update_from_form( $(".dialog-box") );
+                    hide_modal(); 
+                    $(window).unbind("keypress.check_enter_esc"); 
+                },
+                check_enter_esc = function(e) {
+                    if ((e.keyCode || e.which) === 27) { // Escape key
+                        cancel_fn();
+                    } else if ((e.keyCode || e.which) === 13) { // Enter key
+                        ok_fn();
+                    }
+                };
+
+            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
+            show_modal("Configure", drawable.config.build_form(), {
+                "Cancel": cancel_fn,
+                "OK": ok_fn
+            });
+        }
+    },
+    // Remove.
+    {
+        name: "remove_icon",
+        title: "Remove",
+        css_class: "remove-icon",
+        on_click_fn: function(drawable) {
+            // Tipsy for remove icon must be deleted when drawable is deleted.
+            $(".tipsy").remove();
+            drawable.remove();
+        }
+    }
+];
 
 extend(Drawable.prototype, {
     init: function() {},
@@ -749,9 +810,27 @@ extend(Drawable.prototype, {
      */
     build_header_div: function() {},
     /**
-     * Build drawable's icons div.
+     * Add an action icon to this object. Appends icon unless prepend flag is specified.
      */
-    build_icons_div: function() {},
+    add_action_icon: function(name, title, css_class, on_click_fn, prepend) {
+        var drawable = this;
+        this.action_icons[name] = $("<a/>").attr("href", "javascript:void(0);").attr("title", title)
+                                           .addClass("icon-button").addClass(css_class).tipsy( {gravity: 's'} )
+                                           .click( function() { on_click_fn(drawable); } )
+                                           .appendTo(this.icons_div);
+    },
+    /**
+     * Build drawable's icons div from object's icons_dict.
+     */
+    build_action_icons: function(action_icons_def) {        
+        // Create icons.
+        var icon_dict;
+        for (var i = 0; i < action_icons_def.length; i++) {
+            icon_dict = action_icons_def[i];
+            this.add_action_icon(icon_dict.name, icon_dict.title, icon_dict.css_class, 
+                                 icon_dict.on_click_fn, icon_dict.prepend);
+        }
+    },
     /**
      * Update icons.
      */
@@ -879,65 +958,6 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         header_div.append($("<div/>").addClass(this.drag_handle_class));
         this.name_div = $("<div/>").addClass("track-name").text(this.name).appendTo(header_div);
         return header_div;
-    },
-    build_icons_div: function() {
-        var icons_div = $("<div/>").css("float", "left");
-
-        this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show group content")
-                                    .addClass("icon-button toggle").tipsy( {gravity: 's'} )
-                                    .appendTo(icons_div);
-        this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
-                                      .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
-                                      .appendTo(icons_div);
-        this.remove_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Remove")
-                                    .addClass("icon-button remove-icon").tipsy( {gravity: 's'} )
-                                    .appendTo(icons_div);
-        var group = this;
-
-        // Toggle icon hides or shows the group content.
-        this.toggle_icon.click( function() {
-            if ( group.content_visible ) {
-                group.toggle_icon.addClass("toggle-expand").removeClass("toggle");
-                group.hide_contents();
-                group.content_visible = false;
-            } else {
-                group.toggle_icon.addClass("toggle").removeClass("toggle-expand");
-                group.content_visible = true;
-                group.show_contents();
-            }
-        });
-
-        // Clicking on settings icon opens group config.
-        this.settings_icon.click( function() {
-            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
-                ok_fn = function() { 
-                    group.config.update_from_form( $(".dialog-box") );
-                    hide_modal(); 
-                    $(window).unbind("keypress.check_enter_esc"); 
-                },
-                check_enter_esc = function(e) {
-                    if ((e.keyCode || e.which) === 27) { // Escape key
-                        cancel_fn();
-                    } else if ((e.keyCode || e.which) === 13) { // Enter key
-                        ok_fn();
-                    }
-                };
-
-            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-            show_modal("Configure Group", group.config.build_form(), {
-                "Cancel": cancel_fn,
-                "OK": ok_fn
-            });
-        });
-        
-        // Clicking on remove icon removes group.
-        this.remove_icon.click( function() {
-            // Tipsy for remove icon must be deleted when group is deleted.
-            $(".tipsy").remove();
-            group.remove();
-        });
-        
-        return icons_div;        
     },
     hide_contents : function () {
         this.content_div.hide();
@@ -2493,7 +2513,64 @@ var Track = function(name, view, container, prefs, data_url, data_query_wait) {
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
     this.container.content_div.append(this.container_div);
 };
+
 extend(Track.prototype, Drawable.prototype, {
+    action_icons_def: [
+        // Change track mode.
+        {
+            name: "mode_icon",
+            title: "Set display mode",
+            css_class: "chevron-expand",
+            on_click_fn: function() {}
+        },
+        // Hide/show content.
+        Drawable.prototype.action_icons_def[0],
+        // Set track as overview.
+        {
+            name: "overview_icon",
+            title: "Set as overview",
+            css_class: "overview-icon",
+            on_click_fn: function() {
+                track.view.set_overview(track);
+            }
+        },
+        // Edit config.
+        Drawable.prototype.action_icons_def[1],
+        // Toggle track filters.
+        {
+            name: "filters_icon",
+            title: "Filters",
+            css_class: "filters-icon",
+            on_click_fn: function(track) {
+                // TODO: update tipsy text.            
+                track.filters_div.toggle();
+                track.filters_manager.reset_filters();
+            }
+        },
+        // Toggle track tool.
+        {
+            name: "tools_icon",
+            title: "Tools",
+            css_class: "tools-icon",
+            on_click_fn: function(track) {
+                // TODO: update tipsy text.
+
+                track.dynamic_tool_div.toggle();
+
+                // Update track name.
+                if (track.dynamic_tool_div.is(":visible")) {
+                    track.set_name(track.name + track.tool_region_and_parameters_str());
+                }
+                else {
+                    track.revert_name();
+                }
+                // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
+                $(".tipsy").remove();
+            }
+        },
+        // Remove track.
+        Drawable.prototype.action_icons_def[2]
+    ],
     build_container_div: function () {
         return $("<div/>").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
     },
@@ -2504,38 +2581,17 @@ extend(Track.prototype, Drawable.prototype, {
                         .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         return header_div;
     },
-    build_icons_div: function() {
-        var icons_div = $("<div/>").css("float", "left");
-
-        // Track icons.
-        this.mode_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set display mode")
-                                  .addClass("icon-button chevron-expand").tipsy( {gravity: 's'} ).appendTo(icons_div);
-        this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show track content")
-                                    .addClass("icon-button toggle").tipsy( {gravity: 's'} )
-                                    .appendTo(icons_div);
-        this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
-                                      .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
-                                      .appendTo(icons_div);
-        this.overview_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set as overview")
-                                      .addClass("icon-button overview-icon").tipsy( {gravity: 's'} )
-                                      .appendTo(icons_div);
-        this.filters_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Filters")
-                                     .addClass("icon-button filters-icon").tipsy( {gravity: 's'} )
-                                     .appendTo(icons_div).hide();
-        this.tools_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Tools")
-                                   .addClass("icon-button tools-icon").tipsy( {gravity: 's'} )
-                                   .appendTo(icons_div).hide();
-        this.remove_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Remove")
-                                    .addClass("icon-button remove-icon").tipsy( {gravity: 's'} )
-                                    .appendTo(icons_div);
-        var track = this;
-
+    build_action_icons: function() {
+        Drawable.prototype.build_action_icons.call(this, this.action_icons_def);
+        
         // Set up behavior for modes popup.
+        var track = this;
         if (track.display_modes !== undefined) {
             var init_mode = (track.config && track.config.values['mode'] ? 
                              track.config.values['mode'] : track.display_modes[0]);
             track.mode = init_mode;
-            this.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
+            
+            this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
 
             var mode_mapping = {};
             for (var i = 0, len = track.display_modes.length; i < len; i++) {
@@ -2550,79 +2606,8 @@ extend(Track.prototype, Drawable.prototype, {
                 }(mode);
             }
 
-            make_popupmenu(this.mode_icon, mode_mapping);
+            make_popupmenu(this.action_icons.mode_icon, mode_mapping);
         }
-
-        // Toggle icon hides or shows the track content.
-        this.toggle_icon.click( function() {
-            if ( track.content_visible ) {
-                track.toggle_icon.addClass("toggle-expand").removeClass("toggle");
-                track.hide_contents();
-                track.content_visible = false;
-            } else {
-                track.toggle_icon.addClass("toggle").removeClass("toggle-expand");
-                track.content_visible = true;
-                track.show_contents();
-            }
-        });
-
-        // Clicking on settings icon opens track config.
-        this.settings_icon.click( function() {
-            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
-                ok_fn = function() { 
-                    track.config.update_from_form( $(".dialog-box") );
-                    hide_modal(); 
-                    $(window).unbind("keypress.check_enter_esc"); 
-                },
-                check_enter_esc = function(e) {
-                    if ((e.keyCode || e.which) === 27) { // Escape key
-                        cancel_fn();
-                    } else if ((e.keyCode || e.which) === 13) { // Enter key
-                        ok_fn();
-                    }
-                };
-
-            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-            show_modal("Configure Track", track.config.build_form(), {
-                "Cancel": cancel_fn,
-                "OK": ok_fn
-            });
-        });
-
-        this.overview_icon.click( function() {
-            track.view.set_overview(track);
-        });
-
-        this.filters_icon.click( function() {
-            // TODO: update tipsy text.            
-            track.filters_div.toggle();
-            track.filters_manager.reset_filters();
-        });
-
-        this.tools_icon.click( function() {
-            // TODO: update tipsy text.
-
-            track.dynamic_tool_div.toggle();
-
-            // Update track name.
-            if (track.dynamic_tool_div.is(":visible")) {
-                track.set_name(track.name + track.tool_region_and_parameters_str());
-            }
-            else {
-                track.revert_name();
-            }
-            // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
-            $(".tipsy").remove();
-        });
-
-        // Clicking on remove icon removes track.
-        this.remove_icon.click( function() {
-            // Tipsy for remove icon must be deleted when track is deleted.
-            $(".tipsy").remove();
-            track.remove();
-        });
-        
-        return icons_div;  
     },
     /**
      * Hide any elements that are part of the tracks contents area. Should
@@ -2808,7 +2793,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         track.config.values['mode'] = name;
         track.tile_cache.clear();
         track.request_draw();
-        this.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
+        this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
         return track;
      },
     /**
@@ -2821,20 +2806,20 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Show/hide filter icon.
         //
         if (track.filters_available > 0) {
-            track.filters_icon.show();
+            track.action_icons.filters_icon.show();
         }
         else {
-            track.filters_icon.hide();
+            track.action_icons.filters_icon.hide();
         }
         
         //
         // Show/hide tool icon.
         //
         if (track.tool) {
-            track.tools_icon.show();
+            track.action_icons.tools_icon.show();
         }
         else {
-            track.tools_icon.hide();
+            track.action_icons.tools_icon.hide();
         }
                         
         //
@@ -3506,7 +3491,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             } else if ( mode == "summary_tree" ) {
                 mode = "coverage histogram";
             }
-            this.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
+            this.action_icons.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
         }
     },
     /**
