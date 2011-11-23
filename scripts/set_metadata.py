@@ -37,7 +37,9 @@ def __main__():
     # Set up datatypes registry
     config_root = sys.argv.pop( 1 )
     datatypes_config = sys.argv.pop( 1 )
-    galaxy.model.set_datatypes_registry( galaxy.datatypes.registry.Registry( config_root, datatypes_config ) )
+    datatypes_registry = galaxy.datatypes.registry.Registry()
+    datatypes_registry.load_datatypes( root_dir=config_root, config=datatypes_config )
+    galaxy.model.set_datatypes_registry( datatypes_registry )
 
     job_metadata = sys.argv.pop( 1 )
     ext_override = dict()

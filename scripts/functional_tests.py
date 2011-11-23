@@ -244,7 +244,9 @@ def main():
     else:
         # FIXME: This doesn't work at all now that toolbox requires an 'app' instance
         #        (to get at datatypes, might just pass a datatype registry directly)
-        my_app = bunch.Bunch( datatypes_registry = galaxy.datatypes.registry.Registry() )
+        datatypes_registry = galaxy.datatypes.registry.Registry()
+        datatypes_registry.load_datatypes()
+        my_app = bunch.Bunch( datatypes_registry )
         test_toolbox.toolbox = tools.ToolBox( 'tool_conf.xml.test', 'tools', my_app )
 
     # ---- Find tests ---------------------------------------------------------

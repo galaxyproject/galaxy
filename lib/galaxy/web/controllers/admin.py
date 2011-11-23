@@ -4,7 +4,7 @@ from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tools import ToolSection, json_fix
-from galaxy.util import inflector
+from galaxy.util import parse_xml, inflector
 import logging
 log = logging.getLogger( __name__ )
 
@@ -874,8 +874,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                             tmp_stderr.close()
                             if returncode == 0:
                                 # Load data types required by tools.
-                                # TODO: uncomment the following when we're ready...
-                                #self.__load_datatypes( trans, repo_files_dir )
+                                self.__load_datatypes( trans, repo_files_dir )
                                 # Load tools and tool data files required by them.
                                 sample_files, repository_tools_tups = self.__get_repository_tools_and_sample_files( trans, tool_path, repo_files_dir )
                                 if repository_tools_tups:
@@ -898,9 +897,8 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                                     persisted_new_tool_section.write( new_tool_section )
                                     persisted_new_tool_section.close()
                                     # Parse the persisted tool panel section
-                                    tree = ElementTree.parse( tmp_name )
+                                    tree = parse_xml( tmp_name )
                                     root = tree.getroot()
-                                    ElementInclude.include( root )
                                     # Load the tools in the section into the tool panel.
                                     trans.app.toolbox.load_section_tag_set( root, trans.app.toolbox.tool_panel, tool_path )
                                     # Remove the temporary file
@@ -1186,35 +1184,49 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
                         datatypes_config = os.path.abspath( os.path.join( root, name ) )
                         break
         if datatypes_config:
+            imported_module = None
             # Parse datatypes_config.
-            tree = ElementTree.parse( datatypes_config )
-            root = tree.getroot()
-            ElementInclude.include( root )
-            datatype_files = root.find( 'datatype_files' )
+            tree = parse_xml( datatypes_config )
+            datatypes_config_root = tree.getroot()
+            relative_path_to_datatype_file_name = None
+            datatype_files = datatypes_config_root.find( 'datatype_files' )
+            # Currently only a single datatype_file is supported.  For example:
+            # <datatype_files>
+            #    <datatype_file name="gmap.py"/>
+            # </datatype_files>
             for elem in datatype_files.findall( 'datatype_file' ):
                 datatype_file_name = elem.get( 'name', None )
                 if datatype_file_name:
                     # Find the file in the installed repository.
-                    relative_path = None
                     for root, dirs, files in os.walk( repo_files_dir ):
                         if root.find( '.hg' ) < 0:
                             for name in files:
                                 if name == datatype_file_name:
-                                    relative_path = os.path.join( root, name )
+                                    relative_path_to_datatype_file_name = os.path.join( root, name )
                                     break
-                    relative_head, relative_tail = os.path.split( relative_path )
-                    # TODO: get the import_module by parsing the <registration><datatype> tags
-                    if datatype_file_name.find( '.' ) > 0:
-                        import_module = datatype_file_name.split( '.' )[ 0 ]
-                    else:
-                        import_module = datatype_file_name
-                    try:
-                        sys.path.insert( 0, relative_head )
-                        module = __import__( import_module )
-                        sys.path.pop( 0 )
-                    except Exception, e:
-                        log.debug( "Exception importing datatypes code file included in installed repository: %s" % str( e ) )
-                    trans.app.datatypes_registry = galaxy.datatypes.registry.Registry( trans.app.config.root, datatypes_config )
+                    break
+            if relative_path_to_datatype_file_name:
+                relative_head, relative_tail = os.path.split( relative_path_to_datatype_file_name )
+                registration = datatypes_config_root.find( 'registration' )
+                # Get the module by parsing the <datatype> tag.
+                for elem in registration.findall( 'datatype' ):
+                    # A 'type' attribute is currently required.  The attribute
+                    # should be something like: type="gmap:GmapDB".
+                    dtype = elem.get( 'type', None )
+                    if dtype:
+                        fields = dtype.split( ':' )
+                        datatype_module = fields[0]
+                        datatype_class_name = fields[1]
+                        # Since we currently support only a single datatype_file,
+                        #  we have what we need.
+                        break
+                try:
+                    sys.path.insert( 0, relative_head )
+                    imported_module = __import__( datatype_module )
+                    sys.path.pop( 0 )
+                except Exception, e:
+                    log.debug( "Exception importing datatypes code file included in installed repository: %s" % str( e ) )
+            trans.app.datatypes_registry.load_datatypes( root_dir=trans.app.config.root, config=datatypes_config, imported_module=imported_module )
     def __get_repository_tools_and_sample_files( self, trans, tool_path, repo_files_dir ):
         # The sample_files list contains all files whose name ends in .sample
         sample_files = []

@@ -1307,7 +1307,9 @@ class DataToolParameter( ToolParameter ):
             if tool is None:
                 #This occurs for things such as unit tests
                 import galaxy.datatypes.registry
-                formats.append( galaxy.datatypes.registry.Registry().get_datatype_by_extension( extension.lower() ).__class__ )
+                datatypes_registry = galaxy.datatypes.registry.Registry()
+                datatypes_registry.load_datatypes()
+                formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
             else:
                 formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )

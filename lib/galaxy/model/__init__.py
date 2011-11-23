@@ -25,7 +25,9 @@ if sys.version_info[:2] < ( 2, 5 ):
 
 log = logging.getLogger( __name__ )
 
-datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
+datatypes_registry = galaxy.datatypes.registry.Registry()
+# Default Value Required for unit tests
+datatypes_registry.load_datatypes()
 
 class NoConverterException(Exception):
     def __init__(self, value):
