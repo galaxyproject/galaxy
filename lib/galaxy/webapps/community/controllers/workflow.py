@@ -379,9 +379,8 @@ class WorkflowController( BaseUIController ):
                 to_file.write( to_json_string( workflow_data ) )
                 return open( tmp_fname )
             galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-            # TODO: support https in the following url.
-            url = 'http://%s/workflow/import_workflow?tool_shed_url=%s&repository_metadata_id=%s&workflow_name=%s&webapp=%s' % \
-                ( galaxy_url, trans.request.host, repository_metadata_id, encode( workflow_name ), webapp )
+            url = '%s/workflow/import_workflow?tool_shed_url=%s&repository_metadata_id=%s&workflow_name=%s&webapp=%s' % \
+                ( galaxy_url, url_for( '', qualified=True ), repository_metadata_id, encode( workflow_name ), webapp )
             return trans.response.send_redirect( url )
         return trans.response.send_redirect( web.url_for( controller='workflow',
                                                           action='view_workflow',

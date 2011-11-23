@@ -1125,7 +1125,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            workflow_url = 'http://%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
+            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
                 ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp )
             response = urllib2.urlopen( workflow_url )
             workflow_text = response.read()
@@ -1197,7 +1197,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
                                 if shed_url.endswith( '/' ):
                                     shed_url = shed_url.rstrip( '/' )
-                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, trans.request.host, webapp )
+                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, url_for( '', qualified=True ), webapp )
                                     if missing_tool_tups:
                                         url += '&tool_id='
                                     for missing_tool_tup in missing_tool_tups:
@@ -1224,8 +1224,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     if tool_shed_url:
                         # We've received the textual representation of a workflow from a Galaxy tool shed.
                         message = "Workflow <b>%s</b> imported successfully." % workflow.name
-                        # TODO: support https in the following url.
-                        url = 'http://%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&message=%s' % \
+                        url = '%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&message=%s' % \
                             ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp, message )
                         return trans.response.send_redirect( url )
                     elif installed_repository_file:

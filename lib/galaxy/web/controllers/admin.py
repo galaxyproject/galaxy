@@ -986,12 +986,11 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamP
     @web.expose
     @web.require_admin
     def check_for_updates( self, trans, **kwd ):
-        repository = get_repository( trans, kwd[ 'id' ] )
-        galaxy_url = url_for( '', qualified=True )
         # Send a request to the relevant tool shed to see if there are any updates.
-        # TODO: Fix this to use url_for to support locally hosted tool sheds.
-        url = 'http://%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-            ( repository.tool_shed, galaxy_url, repository.name, repository.owner, repository.changeset_revision )
+        repository = get_repository( trans, kwd[ 'id' ] )
+        tool_shed_url = get_url_from_repository_tool_shed( trans, repository )
+        url = '%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+            ( tool_shed_url, url_for( '', qualified=True ), repository.name, repository.owner, repository.changeset_revision )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
@@ -1405,3 +1404,17 @@ def get_repository_by_shed_name_owner_changeset_revision( trans, tool_shed, name
                                           trans.model.ToolShedRepository.table.c.owner == owner,
                                           trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
                            .first()
+def get_url_from_repository_tool_shed( trans, repository ):
+    # The stored value of repository.tool_shed is something like:
+    # toolshed.g2.bx.psu.edu
+    # We need the URL to this tool shed, which is something like:
+    # http://toolshed.g2.bx.psu.edu/
+    for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
+        if shed_url.find( repository.tool_shed ) >= 0:
+            if shed_url.endswith( '/' ):
+                shed_url = shed_url.rstrip( '/' )
+            return shed_url
+    # The tool shed from which the repository was originally
+    # installed must no longer be configured in tool_sheds_conf.xml.
+    return None
+                                    
