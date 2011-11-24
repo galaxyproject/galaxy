@@ -33,11 +33,9 @@ msgstr "Galaxy"
 msgid "Are you sure you want to delete the current history?"
 msgstr "确认要删除当前的历史记录吗？"
 
-
 #: templates/root/history.mako:38
 msgid "collapse all"
 msgstr "全部收缩"
-
 
 #: templates/root/index.mako:5
 msgid "Tools"
@@ -56,7 +54,6 @@ msgstr "ENCODE工具"
 
 msgid "Lift-Over"
 msgstr "版本转换"
-
 
 msgid "Text Manipulation"
 msgstr "文本操作"
@@ -134,7 +131,7 @@ msgid "History Item Attributes"
 msgstr "历史项目属性"
 
 #: templates/dataset/edit_attributes.mako:19
-msgid "Edit Attributes"
+msgid "Edit attributes"
 msgstr "编辑属性"
 
 #: templates/dataset/edit_attributes.mako:64
@@ -148,21 +145,21 @@ msgid ""
 "Required metadata values are missing. Some of these values may not be "
 "editable by the user. Selecting \"Auto-detect\" will attempt to fix these "
 "values."
-msgstr "所需元数据值缺失。其中一些值可能无法被用户编辑。选择“自动检测”将修正这些值。"
+msgstr "缺少所需的metadata的值。用户可能无法对这些值进行编辑。选择“自动检测”来尝试修正这些值。"
 
 #: templates/dataset/edit_attributes.mako:78
 msgid "Convert to new format"
-msgstr "转换成新格式"
+msgstr "转换为新格式"
 
 #: templates/dataset/edit_attributes.mako:84
 msgid "Convert to"
-msgstr "转换"
+msgstr "转换为"
 
 #: templates/dataset/edit_attributes.mako:95
 msgid ""
 "This will create a new dataset with the contents of this dataset converted "
 "to a new format."
-msgstr "这将创建一个新的数据集，内容是转换后的数据集。"
+msgstr "这将产生一个转换格式后的新数据集，"
 
 #: templates/dataset/edit_attributes.mako:111
 msgid "Change data type"
@@ -177,7 +174,7 @@ msgid ""
 "This will change the datatype of the existing dataset but <i>not</i> modify "
 "its contents. Use this if Galaxy has incorrectly guessed the type of your "
 "dataset."
-msgstr "这将改变已有数据集的数据类型，但是<i>不</i>改变其内容。当Galaxy不能正确判断你的数据类型时，设置该参数。"
+msgstr "这将改变已有数据集的数据类型，但<i>不</i>改变其内容。当Galaxy不能正确判断你的数据类型时，设置该参数。"
 
 #: templates/dataset/edit_attributes.mako:137
 msgid "Copy History Item"
@@ -185,19 +182,16 @@ msgstr "复制历史记录项"
 
 #: templates/history/list.mako:3
 msgid "Saved Histories"
-msgstr "保存的历史记录"
+msgstr "已保存的历史"
 
-#: templates/history/list.mako:19
-msgid "Stored Histories"
-msgstr "存储的历史记录"
 
 #: templates/history/list.mako:21 templates/root/history.mako:239
 msgid "hide deleted"
-msgstr "隐藏已删除"
+msgstr "隐藏已删除的数据"
 
 #: templates/history/list.mako:23
 msgid "show deleted"
-msgstr "显示已删除"
+msgstr "显示已删除的数据"
 
 #: templates/history/list.mako:27
 msgid "Name"
@@ -209,7 +203,7 @@ msgstr "大小"
 
 #: templates/history/list.mako:27
 msgid "Last modified"
-msgstr "最后修改"
+msgstr "最后修改时间"
 
 #: templates/history/list.mako:27
 msgid "Actions"
@@ -229,7 +223,7 @@ msgstr "删除"
 
 #: templates/history/list.mako:49
 msgid "undelete"
-msgstr "取消删除"
+msgstr "还原"
 
 #: templates/history/list.mako:55
 msgid "Action"
@@ -249,7 +243,7 @@ msgstr "删除"
 
 #: templates/history/list.mako:58
 msgid "Undelete"
-msgstr "取消删除"
+msgstr "还原"
 
 #: templates/history/list.mako:65
 msgid "You have no stored histories"
@@ -261,7 +255,7 @@ msgstr "历史记录选项"
 
 #: templates/history/options.mako:9
 msgid "You must be "
-msgstr "你必须"
+msgstr "你必须成为"
 
 #: templates/history/options.mako:9
 msgid "logged in"
@@ -290,7 +284,7 @@ msgstr "创建"
 
 #: templates/history/options.mako:18
 msgid " a new empty history"
-msgstr " 一个新的空历史记录"
+msgstr " 一个新的空白历史记录"
 
 #: templates/history/options.mako:20
 msgid "Construct workflow"
@@ -550,10 +544,10 @@ msgstr "数据安全性"
 
 
 msgid "Show Deleted Datasets"
-msgstr "显示已删除数据"
+msgstr "显示已删除的数据"
 
 msgid "Show Hidden Datasets"
-msgstr "显示隐藏数据"
+msgstr "显示隐藏的数据"
 
 msgid "Show Structure"
 msgstr "显示结构"
@@ -595,3 +589,15 @@ msgstr "用户"
 
 msgid "Register"
 msgstr "注册"
+
+msgid "Support"
+msgstr "技术支持"
+
+msgid "Galaxy Wiki"
+msgstr "Galaxy百科"
+
+msgid "Video tutorials (screencasts)"
+msgstr "视频教程（动画演示）"
+
+msgid "How to Cite Galaxy"
+msgstr "如何引用Galaxy"
