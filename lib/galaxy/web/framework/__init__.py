@@ -404,26 +404,38 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # If the old session was invalid, get a new history with our new session
         if invalidate_existing_session:
             self.new_history()
-    def _ensure_logged_in_user( self, environ ):
-        allowed_paths = (
-            url_for( controller='root', action='index' ),
-            url_for( controller='root', action='tool_menu' ),
-            url_for( controller='root', action='masthead' ),
-            url_for( controller='root', action='history' ),
-            url_for( controller='user', action='login' ),
-            url_for( controller='user', action='create' ),
-            url_for( controller='user', action='reset_password' ),
-            url_for( controller='library', action='browse' )
-        )
-        display_as = url_for( controller='root', action='display_as' )
-        if self.galaxy_session.user is None:
-            if self.app.config.ucsc_display_sites and self.request.path == display_as:
-                try:
-                    host = socket.gethostbyaddr( self.environ[ 'REMOTE_ADDR' ] )[0]
-                except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
-                    host = None
-                if host in UCSC_SERVERS:
-                    return
+    def _ensure_logged_in_user( self, environ, session_cookie ):
+        # The value of session_cookie can be one of 
+        # 'galaxysession' or 'galaxycommunitysession'
+        if session_cookie == 'galaxysession':
+            # TODO: re-engineer to eliminate the use of allowed_paths
+            # as maintenance overhead is far too high.
+            allowed_paths = (
+                url_for( controller='root', action='index' ),
+                url_for( controller='root', action='tool_menu' ),
+                url_for( controller='root', action='masthead' ),
+                url_for( controller='root', action='history' ),
+                url_for( controller='user', action='api_keys' ),
+                url_for( controller='user', action='create' ),
+                url_for( controller='user', action='index' ),
+                url_for( controller='user', action='login' ),
+                url_for( controller='user', action='logout' ),
+                url_for( controller='user', action='manage_user_info' ),
+                url_for( controller='user', action='set_default_permissions' ),
+                url_for( controller='user', action='reset_password' ),
+                url_for( controller='library', action='browse' ),
+                url_for( controller='history', action='list' ),
+                url_for( controller='dataset', action='list' )
+            )
+            display_as = url_for( controller='root', action='display_as' )
+            if self.galaxy_session.user is None:
+                if self.app.config.ucsc_display_sites and self.request.path == display_as:
+                    try:
+                        host = socket.gethostbyaddr( self.environ[ 'REMOTE_ADDR' ] )[0]
+                    except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
+                        host = None
+                    if host in UCSC_SERVERS:
+                        return
             if self.request.path not in allowed_paths:
                 self.response.send_redirect( url_for( controller='root', action='index' ) )
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
@@ -857,7 +869,7 @@ class GalaxyWebUITransaction( GalaxyWebTransaction ):
         if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
             self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
         if self.app.config.require_login:
-            self._ensure_logged_in_user( environ )
+            self._ensure_logged_in_user( environ, session_cookie )
     def get_user( self ):
         """Return the current user if logged in or None."""
         return self.galaxy_session.user

@@ -74,12 +74,7 @@
             %else:
                 <li>Logged in as <span id="user-email">${user_email}</span></li>
                 <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='index', cntrller='user', webapp='community' )}">Preferences</a></li>
-                <%
-                    if app.config.require_login:
-                        logout_url = h.url_for( controller='/root', action='index', webapp='community', m_c='user', m_a='logout' )
-                    else:
-                        logout_url = h.url_for( controller='/user', action='logout', webapp='community' )
-                %>
+                <% logout_url = h.url_for( controller='/user', action='logout', webapp='community' ) %>
                 <li><a target="_top" href="${logout_url}">Logout</a></li>
             %endif
         </ul>
