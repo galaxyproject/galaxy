@@ -1,0 +1,51 @@
+<tool id="hgv_master2pgSnp" name="Convert CG MasterVar" version="1.0.0">
+  <description>file to pgSnp format</description>
+  <command interpreter="perl">
+    master2pg.pl $indel $input1 > $out_file1
+  </command>
+  <inputs>
+    <param format="tab" name="input1" type="data" label="Complete Genomics MasterVar file" />
+    <param name="indel" type="select" label="Convert indels">
+      <option value="" selected="true">no</option>
+      <option value="indel">yes</option>
+    </param>
+  </inputs>
+  <outputs>
+  <data format="interval" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name='input1' value='masterVarTest.txt' ftype='tab' />
+      <param name='indel' value="" />
+      <output name="output" file="masterVar_output.txt" />
+    </test>
+  </tests>
+
+  <help>
+**What it does**
+
+This converts from a Complete Genomics MasterVar file to a pgSnp format file 
+which can be viewed in browsers or used with other human variation and bed 
+operations tools.
+
+-----
+
+**Examples**
+
+- input MasterVar file::
+
+   934     2       chr1    41980   41981   hom     snp     A       G       G       76      97                      dbsnp.86:rs806721       425     1       1       1       2       -170                            ERVL-E-int:ERVL:47.4    2       1.17    N
+   935     2       chr1    41981   42198   hom     ref     =       =       =                                                                                       -170                                            1.17    N
+   1102    2       chr1    53205   53206   het-ref snp     G       C       G       93      127                     dbsnp.100:rs2854676     477     7       30      0       37      -127                                    2       1.17    N
+   etc.
+
+- output::
+
+   chr1    41980   41981   G       1       1       76
+   chr1    51672   51673   C       1       1       53
+   chr1    52237   52238   G       1       7       63
+   chr1    53205   53206   C/G     2       7,30    93,127
+   etc.
+
+</help>
+</tool>
