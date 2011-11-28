@@ -683,10 +683,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         return self.get_ave_item_rating_data( trans.sa_session, dataset )
         
     @web.expose
-    def display_by_username_and_slug( self, trans, username, slug, preview=True ):
+    def display_by_username_and_slug( self, trans, username, slug, filename=None, preview=True ):
         """ Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id. """
         dataset = self.get_dataset( trans, slug, False, True )
         if dataset:
+            # Filename used for composite types.
+            if filename:
+                return self.display( trans, dataset_id=slug, filename=filename)
+                
             truncated, dataset_data = self.get_data( dataset, preview )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             

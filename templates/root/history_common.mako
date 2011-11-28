@@ -87,7 +87,7 @@
                         # Get URL for display only.
                         if data.history.user and data.history.user.username:
                             display_url = h.url_for( controller='dataset', action='display_by_username_and_slug',
-                                                     username=data.history.user.username, slug=dataset_id )
+                                                     username=data.history.user.username, slug=dataset_id, filename='' )
                         else:
                             # HACK: revert to for_editing display URL when there is no user/username. This should only happen when
                             # there's no user/username because dataset is being displayed by history/view after error reported.
