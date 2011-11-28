@@ -1,11 +1,11 @@
-<tool id="microsatellite_birthdeath" name="Identify microsatellite births and deaths" version="1.0.0">
+<tool id="microsatellite_birthdeath" name="Identify microsatellite births and deaths" version="1.0.2">
   <description> and causal mutational mechanisms from previously identified orthologous microsatellite sets</description>
   <command interpreter="perl">
       microsatellite_birthdeath.pl 
       $alignment 
       $orthfile 
       $outfile 
-      ${alignment.metadata.species} 
+	  $species
       "$tree_definition" 
       $thresholds
       $separation 
@@ -14,11 +14,17 @@
   </command>
   <inputs>
     <page>
-        <param format="maf" name="alignment" type="data" label="Select MAF alignments"/>
+        <param format="maf" name="alignment" type="data" label="Select MAF alignments that have NOT been masked for nucleotide quality"/>
         
         <param format="txt" name="orthfile" type="data" label="Select raw microsatellite data"/>
 
-    	<param name="tree_definition" size="200" type="text" value= "((((hg18,panTro2),ponAbe2),rheMac2),calJac1)" label="Tree definition of all species above whether or not selected for microsatellite extraction" 
+     <param name="species" type="select" label="Select species" display="checkboxes" multiple="true" help="NOTE: Currently users are requested to select one of these three combinations: hg18-panTro2-ponAbe2, hg18-panTro2-ponAbe2-rheMac2 or hg18-panTro2-ponAbe2-rheMac2-calJac1">
+      <options>
+        <filter type="data_meta" ref="alignment" key="species" />
+      </options>
+    </param>
+
+   	<param name="tree_definition" size="200" type="text" value= "((((hg18,panTro2),ponAbe2),rheMac2),calJac1)" label="Tree definition of all species above whether or not selected for microsatellite extraction" 
     	help="For example: ((((hg18,panTro2),ponAbe2),rheMac2),calJac1)"/>
       	
       	<param name="separation" size="10" type="integer" value="40" label="Total length of flanking DNA used for sequence-similarity comparisons among species"
@@ -38,13 +44,14 @@
   </outputs>
   <tests>
     <test>
-      <param name="alignment" value="chr22_5sp.maf"/>
-      <param name="orthfile" value="chr22_5sp.microraw.tabular"/>
+      <param name="alignment" value="regVariation/microsatellite/Galaxy17_unmasked_short.maf.gz"/>
+      <param name="orthfile" value="regVariation/microsatellite/Galaxy17_short_raw.txt"/>
       <param name="thresholds" value="9,10,12,12"/>
+      <param name="species" value="hg18,panTro2,ponAbe2,rheMac2,calJac1"/>
       <param name="tree_definition" value="((((hg18, panTro2), ponAbe2), rheMac2), calJac1)"/>
-      <param name="separation" value="40"/>
-      <param name="simthresh" value="80"/>
-      <output name="outfile" file="chr22_5sp.microtab.tabular"/>
+      <param name="separation" value="10"/>
+      <param name="simthresh" value="85"/>
+      <output name="outfile" file="regVariation/microsatellite/Galaxy17_unmasked_results.txt"/>
     </test>
   </tests>
 
@@ -56,6 +63,40 @@
 **What it does**
 
 This tool uses raw orthologous microsatellite clusters (identified by the tool "Extract orthologous microsatellites") to identify microsatellite births and deaths along individual lineages of a phylogenetic tree.
+-----
+
+.. class:: warningmark
+
+**Note**
+
+A tab-separated output table (depending on the species being considered) is generated where each row contains all information for a microsatellite locus from multiple species. 
+The table typically reads like this:
+
+hg18.chr22	16153057	16153074	A		1	ins=,imot:0:tt;dels=	,9:t>c	-panTro2	hg18:tttttttttttttttttt,ponAbe2:--tttttttttttttttt,panTro2:-----ttttctttttttt
+
+hg18.chr22	16131711	16131722	ATGC	4	NA						,2:C>T	+ponAbe2	hg18:CACGCATGCATG,ponAbe2:CATGCATGCATG,panTro2:CACGCATGCATG,rheMac2:CACGCGTGCATG
+
+Where columns list the following:
+
+1: Chromosome/scaffold/contig  of one of the species. The species chosen is the first species readable in the Newick tree submitted by the user.
+
+2: Start coordinate
+
+3: End coordinate
+
+4: Motif of microsatellite
+
+5: Motif size
+
+6: Insertion and deletion details. Insertions are separated from deletions by a ";", and individual insertions and deletions are separated from others by a comma. For the purpose of illustration, consider the first row listed above:
+"imot:0:tt", where imot/imotf again suggest insertion, the number indicates position of insertion within the microsatellite's alignment, and this is followed by identity of nucleotides that are inserted.
+
+7: Substitution details. Individual substitutions are separated by commas. Each entry contains the position of substitution event in the microsatellites' alignment, and the nature of substitution.
+
+8: Inference of birth/death event. Births are indicated by "+", and deaths by "-". Events such as "-hg18:panTro2" suggest death in the common ancestor of hg18 and panTro2, whereas events such as "-hg18.panTro2" indicate parallel, independent death events along the two lineages. Alternative interpretations of the event may also be listed, following a "/", such as:
+"+hg18.+panTro2 / +hg18:panTro2"
+
+9: Actual sequences in the alignment, separated by commas.
 
 </help>  
 

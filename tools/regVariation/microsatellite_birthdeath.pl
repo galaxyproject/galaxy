@@ -11,11 +11,12 @@ use File::Temp qw/ tempfile tempdir /;
 my $tdir = tempdir( CLEANUP => 0 );
 chdir $tdir;
 my $dir = getcwd;  
-#print "current dit=$dir\n";
-
+# print "current dit=$dir\n"; 
+#<STDIN>;
 use vars qw (%treesToReject %template $printer $interr_poscord $interrcord $no_of_interruptionscord $stringfile @tags 
 $infocord $typecord $startcord $strandcord $endcord $microsatcord $motifcord $sequencepos $no_of_species 
-$gapcord %thresholdhash $tree_decipherer @sp_ident %revHash %sameHash %treesToIgnore %alternate @exactspecies @exacttags);
+$gapcord %thresholdhash $tree_decipherer @sp_ident %revHash %sameHash %treesToIgnore %alternate @exactspecies_orig @exactspecies @exacttags
+$mono_flanksimplicityRepno $di_flanksimplicityRepno $prop_of_seq_allowedtoAT $prop_of_seq_allowedtoCG);
 use FileHandle;
 use IO::Handle;                     # 5.004 or higher
 
@@ -30,14 +31,151 @@ $SIMILARITY_THRESH = $SIMILARITY_THRESH/100;
 my $EDGE_DISTANCE = 10; 
 my $COMPLEXITY_SUPPORT = 20;
 load_thresholds("9_10_12_12");
+my $FLANKINDEL_MAXTHRESH = 0.3;
+
+my $mono_flanksimplicityRepno=6;
+my $di_flanksimplicityRepno=10;
+my $prop_of_seq_allowedtoAT=0.5;
+my $prop_of_seq_allowedtoCG=0.66;
+
 #########################
+my $tspecies_set = $species_set;
+
+my %speciesReplacement = ();
+my %speciesReplacementTag = ();
+my %replacementArr= ();
+my %replacementArrTag= ();
+my %backReplacementArr= ();
+my %backReplacementArrTag= ();
+
+my $tree_definition_split = $tree_definition;
+$tree_definition_split =~ s/[\(\)]//g;
+my @gotSpecies = ($tree_definition_split =~ /(,)/g);
+# print "gotSpecies = @gotSpecies\n";
+
+if (scalar(@gotSpecies)+1 ==5){
+
+	$speciesReplacement{1}="calJac1";
+	$speciesReplacement{2}="rheMac2";
+	$speciesReplacement{3}="ponAbe2";
+	$speciesReplacement{4}="panTro2";
+	$speciesReplacement{5}="hg18";
+
+	$speciesReplacementTag{1}="M";
+	$speciesReplacementTag{2}="R";
+	$speciesReplacementTag{3}="O";
+	$speciesReplacementTag{4}="C";
+	$speciesReplacementTag{5}="H";
+	$species_set="hg18,panTro2,ponAbe2,rheMac2,calJac1";
+
+}
+if (scalar(@gotSpecies)+1 ==4){
+
+	$speciesReplacement{1}="rheMac2";
+	$speciesReplacement{2}="ponAbe2";
+	$speciesReplacement{3}="panTro2";
+	$speciesReplacement{4}="hg18";
+
+	$speciesReplacementTag{1}="R";
+	$speciesReplacementTag{2}="O";
+	$speciesReplacementTag{3}="C";
+	$speciesReplacementTag{4}="H";
+	$species_set="hg18,panTro2,ponAbe2,rheMac2";
+
+}
+
+#	$tree_definition = "((((hg18,panTro2),ponAbe2),rheMac2),calJac1)";
+my $tree_definition_copy = $tree_definition;
+my $tree_definition_orig = $tree_definition;
+my $brackets = 0;
+
+while (1){
+	#last if $tree_definition_copy !~ /\(/;
+	$brackets++;
+# print "brackets = $brackets\n";
+	last if $brackets > 6;
+	$tree_definition_copy =~ s/^\(//g;
+	$tree_definition_copy =~ s/\)$//g;
+# print "tree_definition_copy = $tree_definition_copy\n";
+	my @arr = ();
+
+	if ($tree_definition_copy =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_\(\),]+)\)$/){
+		@arr = $tree_definition_copy =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_\(\),]+)$/;
+# print "arr = @arr\n";
+		$tree_definition_copy = $2;
+		$replacementArr{$1} = $speciesReplacement{$brackets};
+		$backReplacementArr{$speciesReplacement{$brackets}}=$1;
+		
+		$replacementArrTag{$1} = $speciesReplacementTag{$brackets};
+		$backReplacementArrTag{$speciesReplacementTag{$brackets}}=$1;
+# print "replacing $1 with $replacementArr{$1}\n";
+		
+		$sp_ident[$brackets-1] = $1;
+	
+	}
+	elsif ($tree_definition_copy =~ /^\(([a-zA-Z0-9_\(\),]+),([a-zA-Z0-9_]+)$/){
+		@arr = $tree_definition_copy =~ /^([a-zA-Z0-9_\(\),]+),([a-zA-Z0-9_]+)$/;
+# print "arr = @arr\n";
+		$tree_definition_copy = $1;
+		$replacementArr{$2} = $speciesReplacement{$brackets};
+		$backReplacementArr{$speciesReplacement{$brackets}}=$2;
+
+		$replacementArrTag{$2} = $speciesReplacementTag{$brackets};
+		$backReplacementArrTag{$speciesReplacementTag{$brackets}}=$2;
+# print "replacing $2 with $replacementArr{$2}\n";
+
+		$sp_ident[$brackets-1] = $2;
+	}
+	elsif ($tree_definition_copy =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_]+)$/){
+		@arr = $tree_definition_copy =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_]+)$/;
+# print "arr = @arr .. TERMINAL\n";
+		$tree_definition_copy = $1;
+		$replacementArr{$2} = $speciesReplacement{$brackets};
+		$replacementArr{$1} = $speciesReplacement{$brackets+1};
+		$backReplacementArr{$speciesReplacement{$brackets}}=$2;
+		$backReplacementArr{$speciesReplacement{$brackets+1}}=$1;
+
+		$replacementArrTag{$1} = $speciesReplacementTag{$brackets+1};
+		$backReplacementArrTag{$speciesReplacementTag{$brackets+1}}=$1;
+
+		$replacementArrTag{$2} = $speciesReplacementTag{$brackets};
+		$backReplacementArrTag{$speciesReplacementTag{$brackets}}=$2;
+# print "replacing $1 with $replacementArr{$1}\n";
+# print "replacing $2 with $replacementArr{$2}\n";
+# print "replacing $1 with $replacementArrTag{$1}\n";
+# print "replacing $2 with $replacementArrTag{$2}\n";
+
+		$sp_ident[$brackets-1] = $2;
+		$sp_ident[$brackets] = $1;
+
+
+		last;
+
+	}
+	elsif ($tree_definition_copy =~ /^\(([a-zA-Z0-9_\(\),]+),([a-zA-Z0-9_\(\),]+)\)$/){
+		$tree_definition_copy =~ s/^\(//g;
+		$tree_definition_copy =~ s/\)$//g;
+		$brackets--;
+	}		
+}
+
+foreach my $key (keys %replacementArr){
+	my $replacement = $replacementArr{$key};
+	$tree_definition =~ s/$key/$replacement/g;
+}
+@sp_ident = reverse(@sp_ident);
+# print "modified tree_definition = $tree_definition\n";
+# print "done .. tree_definition = $tree_definition\n";
+# print "sp_ident = @sp_ident\n";
+#<STDIN>;
+
 
 my $complexity=int($COMPLEXITY_SUPPORT * (1/40));
 
 #print "complexity=$complexity\n";
 #<STDIN>;
 
-#$printer = 1;
+$printer = 1;
 
 my $rando = int(rand(1000));
 my $localdate = `date`;
@@ -54,9 +192,9 @@ my $megamatch = $randno.".megamatch.net.axt"; #"/gpfs/home/ydk104/work/rhesus_mi
 my $megamatchlck = $megamatch.".lck";
 unlink $megamatchlck;
 
-#my $selected= $orth;
+my $selected= $orth;
 #my $eventfile = $orth;
-#$selected = $selected."_SELECTED";
+ $selected = $selected."_SELECTED";
 #$selected = $selected."_".$SIMILARITY_THRESH;
 #my $runtime = $selected.".runtime";
 
@@ -66,14 +204,14 @@ $inputtags = $ARGV[3] if exists $ARGV[3] && $ARGV[3] =~ /[A-Z]:[A-Z]/;
 my @all_tags = split(/:/, $inputtags);
 my $inputsp = "hg18:panTro2:ponAbe2:rheMac2:calJac1";
 $inputsp = $ARGV[4] if exists $ARGV[4] && $ARGV[3] =~ /[0-9]+:/;
-@sp_ident = split(/:/,$inputsp);
+#@sp_ident = split(/:/,$inputsp);
 my $junkfile = $orth."_junk";
 
 my $sh = load_sameHash(1);
 my $rh = load_revHash(1);
 
 #print "inputs are : \n"; foreach(@ARGV){print $_,"\n";} 
-#open (SELECT, ">$selected") or die "Cannot open selected file: $selected: $!";
+open (SELECT, ">$selected") or die "Cannot open selected file: $selected: $!";
 open (SUMMARY, ">$summout") or die "Cannot open summout file: $summout: $!";
 #open (RUN, ">$runtime") or die "Cannot open orth file: $runtime: $!";
 #my $ctlfile = "baseml\.ctl"; #$ARGV[4];
@@ -101,23 +239,58 @@ my %allowedhash=();
 my $chromt=int(rand(10000));
 my $p_chr=$chromt;
 
+my $tree_definition_orig_copy = $tree_definition_orig;
+
 $tree_definition=~s/,/, /g;
 $tree_definition =~ s/, +/, /g;
+$tree_definition_orig=~s/,/, /g;
+$tree_definition_orig =~ s/, +/, /g;
 my @exactspeciesset_unarranged = split(/,/,$species_set);
+my @exactspeciesset_unarranged_orig = split(/,/,$tspecies_set);
 my $largesttree = "$tree_definition;";
+my $largesttree_orig = "$tree_definition_orig;";
+# print "largesttree = $largesttree\n";
+$tree_definition =~ s/\(//g;
+$tree_definition =~ s/\)//g;
 $tree_definition=~s/[\)\(, ]/\t/g;
-		
+$tree_definition =~ s/\t+/\t/g;		
+
+$tree_definition_orig =~ s/\(//g;
+$tree_definition_orig =~ s/\)//g;
+$tree_definition_orig =~s/[\)\(, ]/\t/g;
+$tree_definition_orig =~ s/\t+/\t/g;		
+# print "tree_definition = $tree_definition tree_definition_orig = $tree_definition_orig\n";
+
 my @treespecies=split(/\t+/,$tree_definition);
+my @treespecies_orig=split(/\t+/,$tree_definition_orig);
+# print "tree_definition = $tree_definition .. treespecies=@treespecies ... treespecies_orig=@treespecies_orig\n";
+#<STDIN>;
 
 foreach my $spec (@treespecies){
 	foreach my $espec (@exactspeciesset_unarranged){
+# print "spec=$spec and espec=$espec\n";
 		push @exactspecies, $spec if $spec eq $espec;
 	}
 }
-#print "exactspecies=@exactspecies\n";
+
+foreach my $spec (@treespecies_orig){
+	foreach my $espec (@exactspeciesset_unarranged_orig){
+# print "spec=$spec and espec=$espec\n";
+		push @exactspecies_orig, $spec if $spec eq $espec;
+	}
+}
+
 my $focalspec = $exactspecies[0];
-my $arranged_species_set=join(".",@exactspecies);
+my $focalspec_orig = $exactspecies_orig[0];
+# print "exactspecies=@exactspecies ... focalspec=$focalspec\n";
+# print "texactspecies=@exactspecies_orig ... focalspec_orig=$focalspec_orig\n";
+#<STDIN>;
+my $arranged_species_set = join(".",@exactspecies);
+my $arranged_species_set_orig = join(".",@exactspecies_orig);
+
 @exacttags=@exactspecies;
+my @exacttags_orig=@exactspecies_orig;
+
 foreach my $extag (@exacttags){
 	$extag =~ s/hg18/H/g;
 	$extag =~ s/panTro2/C/g;
@@ -125,15 +298,27 @@ foreach my $extag (@exacttags){
 	$extag =~ s/rheMac2/R/g;
 	$extag =~ s/calJac1/M/g;
 }
+
+foreach my $extag (@exacttags_orig){
+	$extag =~ s/hg18/H/g;
+	$extag =~ s/panTro2/C/g;
+	$extag =~ s/ponAbe2/O/g;
+	$extag =~ s/rheMac2/R/g;
+	$extag =~ s/calJac1/M/g;
+}
+
 my $chr_name = join(".",("chr".$p_chr),$arranged_species_set, "net", "axt");
 #print "sending to maftoAxt_multispecies: $maf, $tree_definition, $chr_name, $species_set .. focalspec=$focalspec \n"; 
-maftoAxt_multispecies($maf, $tree_definition, $chr_name, $species_set);
+
+maftoAxt_multispecies($maf, $tree_definition_orig_copy, $chr_name, $tspecies_set);
+#print "made files\n";
 my @filterseqfiles= ($chr_name);
-		$largesttree =~ s/hg18/H/g;
-		$largesttree =~ s/panTro2/C/g;
-		$largesttree =~ s/ponAbe2/O/g;
-		$largesttree =~ s/rheMac2/R/g;
-		$largesttree =~ s/calJac1/M/g;
+$largesttree =~ s/hg18/H/g;
+$largesttree =~ s/panTro2/C/g;
+$largesttree =~ s/ponAbe2/O/g;
+$largesttree =~ s/rheMac2/R/g;
+$largesttree =~ s/calJac1/M/g;
+#<STDIN>;
 #---------------------------------------------------------------------------
 
 my ($lagestnodes, $largestbranches) = get_nodes($largesttree); 
@@ -143,13 +328,13 @@ my @extendedtitle=();
 my $title = ();
 my $parttitle = ();
 my @titlearr = ();
-my @firsttitle=($focalspec."chrom", $focalspec."start", $focalspec."end", $focalspec."motif", $focalspec."motifsize", $focalspec."threshold");
+my @firsttitle=($focalspec_orig."chrom", $focalspec_orig."start", $focalspec_orig."end", $focalspec_orig."motif", $focalspec_orig."motifsize", $focalspec_orig."threshold");
 
 my @finames= qw(chr	start	end	motif	motifsize	microsat	mutation	mutation.position	mutation.from	mutation.to	insertion.details	deletion.details);
 
 my @fititle=();
 
-foreach my $spec (split(",",$species_set)){
+foreach my $spec (split(",",$tspecies_set)){
 	push @fititle, $spec;
 	foreach my $name (@finames){
 		push @fititle, $spec.".".$name;
@@ -167,30 +352,42 @@ push @fnames, qw(ninsertions_num ndeletions_num nmotinsertions_num nmotinsertion
 push @fnames, qw(substitutions_num bsubstitutions_num dsubstitutions_num nsubstitutions_num indels_num subs_num);
 
 my @fullnames = ();
+# print "revising\n";
+# print "H = $backReplacementArrTag{H}\n";
+# print "C = $backReplacementArrTag{C}\n";
+# print "O = $backReplacementArrTag{O}\n";
+# print "R = $backReplacementArrTag{R}\n";
+# print "M = $backReplacementArrTag{M}\n";
 
 foreach my $lnode (@$lagestnodes){
 	my @pair = @$lnode;
 	my @nodemutarr = ();
 	for my $p (@pair){
-	#	print "p = $p\n";
+# print "p = $p\n";
 		$p =~ s/[\(\), ]+//g;
-		$p =~ s/H/hg18/g;
-		$p =~ s/C/panTro2/g;
-		$p =~ s/O/ponAbe2/g;
-		$p =~ s/R/rheMac2/g;
-		$p =~ s/M/calJac1/g;
+		$p =~ s/([A-Z])/$1./g;
+		$p =~ s/\.$//g;
+		
+		$p =~ s/H/$backReplacementArrTag{H}/g;
+		$p =~ s/C/$backReplacementArrTag{C}/g;
+		$p =~ s/O/$backReplacementArrTag{O}/g;
+		$p =~ s/R/$backReplacementArrTag{R}/g;
+		$p =~ s/M/$backReplacementArrTag{M}/g;
 		foreach my $n (@fnames) {	push @fullnames, $p.".".$n;}
 	}
 }
-print SUMMARY "#",join("\t", @firsttitle, @fititle, @othertitle);
 
-print SUMMARY "\t",join("\t", @fullnames);
-#$title = $title."\t".join("\t", @fullnames);
+#print SUMMARY "#",join("\t", @firsttitle, @fititle, @othertitle);
 
-print SUMMARY "\t",join("\t", @fnames);
+#print SUMMARY "\t",join("\t", @fullnames);
+my $header = join("\t",@firsttitle, @fititle, @othertitle,  @fullnames, @fnames, "tree", "cleancase");
+# print "header= $header\n";
+#<STDIN>;
+
+#print SUMMARY "\t",join("\t", @fnames);
 #$title=  $title."\t".join("\t", @fnames);
 
-print SUMMARY "\t","tree","\t", "cleancase", "\n";
+#print SUMMARY "\t","tree","\t", "cleancase", "\n";
 #$title=  $title."\t"."tree"."\t"."cleancase". "\n";
 
 #print $title; #<STDIN>;
@@ -200,12 +397,11 @@ print SUMMARY "\t","tree","\t", "cleancase", "\n";
 for my $no (3 ... $#all_tags+1){
 #	print "no=$no\n"; #<STDIN>;
 	@tags = @all_tags[0 ... $no-1];
-	#print "tags = = @tags\n" if $printer == 1;
+# print "all_tags=>@all_tags< , tags = >@tags<\n" if $printer == 1; #<STDIN>;
 	%template=();
 	my @nextcounter = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	#next if scalar(@tags) < 4;
-	
-	#print "now doing tags = @tags, no = $no\n"; 
+# print "now doing tags = @tags, no = $no\n"; 
 	open (ORTH, "<$orth") or die "Cannot open orth file: $orth: $!";
 	
 #	print SUMMARY join "\t", qw (species chr start end branch motif microsat mutation position from to insertion deletion);
@@ -239,6 +435,8 @@ for my $no (3 ... $#all_tags+1){
 	#---------------------------------------------------------------------------
 	# LOADING HASH CONTAINING ALL POSSIBLE TREES:
 	$tree_decipherer = "/gpfs/home/ydk104/work/rhesus_microsat/codes/lib/tree_analysis_".join("",@tags).".txt";
+	%template=();
+	%alternate=();
 	load_allPossibleTrees($tree_decipherer, \%template, \%alternate);
 	
 	#---------------------------------------------------------------------------
@@ -263,17 +461,25 @@ for my $no (3 ... $#all_tags+1){
 #	print "no = $no\n"; #<STDIN>;
 
 	while (my $line = <ORTH>){
-		#print "line=$line\n";
-		$line =~ s/>hg18/>H/g;
-		$line =~ s/>panTro2/>C/g;
-		$line =~ s/>ponAbe2/>O/g;
-		$line =~ s/>rheMac2/>R/g;
-		$line =~ s/>calJac1/>M/g;
+	#	print "line=$line\n";
+		my $register1 = $line =~ s/>$exactspecies_orig[0]/>$replacementArrTag{$exactspecies_orig[0]}/g;
+		my $register2 = $line =~ s/>$exactspecies_orig[1]/>$replacementArrTag{$exactspecies_orig[1]}/g;
+		my $register3 = $line =~ s/>$exactspecies_orig[2]/>$replacementArrTag{$exactspecies_orig[2]}/g;
+		my $register4 = $line =~ s/>$exactspecies_orig[3]/>$replacementArrTag{$exactspecies_orig[3]}/g;
+		my $register5 = $line =~ s/>$exactspecies_orig[4]/>$replacementArrTag{$exactspecies_orig[4]}/g if exists $exactspecies_orig[4];
+		
+	#	print "line = $line\n"; <STDIN>;
+		
+		
+	#	next if $register1 + $register2 + $register3 + $register4 + $register5 > scalar(@tags);
 		my @micros = split(/>/,$line); 									# LOADING ALL THE MICROSAT ENTRIES FROM THE CLUSTER INTO @micros
 		#print "micros=",printarr(@micros),"\n"; #<STDIN>;
 		shift @micros; 													# EMPTYING THE FIRST, EMTPY ELEMENT OF THE ARRAY
+		
 		$no_of_species = adjustCoordinates($micros[0]);
+#		print "A: $no_of_species\n";
 		next if $no_of_species != $no;
+# print "no = $no ... no_of_species=$no_of_species\n";#<STDIN>;
 		$counterm++;
 		#------------------------------------------------
 		$nextcounter[0]++  if $line =~ /compound/;
@@ -351,11 +557,14 @@ for my $no (3 ... $#all_tags+1){
 		my $prevmotif = $tempfirstmotif;
 		
 		my $key = ();
-		if ($tempmicro =~ /([0-9]+)\s+($focalspec)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
-			$key = join("\t",$1, $2,  $4, $5);
+	#	print "searching temp micro for 0-9 $focalspec chr0-9a-zA-Z 0-9 0-9 \n";
+	#	print "tempmicro = $tempmicro .. looking for ([0-9]+)\s+($focalspec_orig)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\n"; <STDIN>;
+		if ($tempmicro =~ /([0-9]+)\s+($focalspec_orig)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
+	#		print "B: $no_of_species\n";
+			$key = join("_",$2, $3,  $4, $5);
 		}
 		else{
-		#	print "counld not form  a key \n" if $printer == 1;
+# print "counld not form  a key for temp\n"; # if $printer == 1;
 			$nextcounter[7]++;
 			next;
 		}
@@ -404,8 +613,9 @@ for my $no (3 ... $#all_tags+1){
 			
 			for my $t (0 ... $#tags){								#1	DISCARDING MICROSAT CLUSTERS WHERE MICROSAT ENTRIES BELONG
 																	#2	DIFFERENT ALIGNMENT BLOCKS
-				if ($micro =~ /([0-9]+)\s+($focalspec)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
-					my $key2 = join("\t",$1, $2,  $4, $5);
+				if ($micro =~ /([0-9]+)\s+($focalspec_orig)\s([_0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
+					my $key2 = join("_",$2, $3, $4, $5);
+# print "key = $key .. key2 = $key2\n"; #<STDIN>;
 					if ($key2 ne $key){
 #						print "microsats belong to diffferent alignment blocks altogether\n" if $printer == 1;
 						$nextcounter[10]++;
@@ -413,49 +623,53 @@ for my $no (3 ... $#all_tags+1){
 					}
 				}
 				else{
-				#	print "counld not form  a key \n" if $printer == 1;
+# print "counld not form  a key for $line\n"; # if $printer == 1; 
+					#<STDIN>;
 					$nexter = 1; last;
 				}
 			}
-			
 		}
+		#print "D2: $no_of_species\n";
+
 		#####################
 		if ($nexter == 1){
-			#	print "nexting\n" if $printer == 1; 
+# print "nexting\n"; # if $printer == 1; 
 				next;
 			}
 		else{
-#			print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n$key:\n$line\nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"  if $printer == 1;
+# print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n$key:\n$line\nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"  if $printer == 1;
 			push (@{$orths{$key}},$line);	
 			$loaded++;
-			if ($line =~ /($focalspec)\s([a-zA-Z0-9]+)\s([0-9]+)\s([0-9]+)/ ) {
+			if ($line =~ /($focalspec_orig)\s([_a-zA-Z0-9]+)\s([0-9]+)\s([0-9]+)/ ) {
+				
 #				print "$line\n"  if $printer == 1; #if $line =~ /Contig/;
 #				print "################ ################\n" if $printer == 1;
 				push @allowedchrs, $2 if !exists $allowedhash{$2};
 				$allowedhash{$2} = 1; 
 				my $key = join("\t",$1, $2, $3, $4);
-				#print "print the shit: $key\n" if $printer  == 1;
+#				print "C: $no_of_species .. key = $key\n";#<STDIN>;
+# print "print the shit: $key\n" ; #if $printer  == 1;
 				$seen{$key} = 1;
 			}
-			else { #print "Key could not be formed in SPUT for ($org) ($title) ([0-9]+) ([0-9]+)\n";
+			else { #print "Key could not be formed in SPUT for ($focalspec_orig) (chrom) ([0-9]+) ([0-9]+)\n";
 			}
 		}
 	}
 	close ORTH;
-
-#	print "now studying where we lost microsatellites: @nextcounter\n";
+# print "now studying where we lost microsatellites: @nextcounter\n";
 	for my $reason (0 ... $#nextcounter){
-#		print $removalReasons[$reason]."\t".$nextcounter[$reason],"\n";
+		#print $removalReasons[$reason]."\t".$nextcounter[$reason],"\n";
 	}
-#	print "\ntotal number of keys formed = ", scalar(keys %orths), " = \n";
-#	print "done filtering .. counterm = $counterm and loaded = $loaded\n"; 
-
+# print "\ntotal number of keys formed = ", scalar(keys %orths), " = \n";
+# print "done filtering .. counterm = $counterm and loaded = $loaded\n"; 
 	#----------------------------------------------------------------------------------------------------------------
 	# NOW GENERATING THE ALIGNMENT FILE WITH RELELEVENT ALIGNMENTS STORED ONLY.
+# print "adding files @filterseqfiles \n";
+	#<STDIN>;
 	
 	while (1){
 		if (-e $megamatchlck){
-#			print "waiting to write into $megamatchlck\n";
+# print "waiting to write into $megamatchlck\n";
 			sleep 10;
 		}
 		else{
@@ -467,15 +681,20 @@ for my $no (3 ... $#all_tags+1){
 	
 	foreach my $seqfile (@filterseqfiles){
 		my $fullpath = $seqfile;
-		
-#		print "opening file: $fullpath\n"; 
+  		#print "opening file: $fullpath\n"; <STDIN>;
 		open (MATCH, "<$fullpath") or die "Cannot open MATCH file $fullpath: $!";
 		my $matchlines = 0;
 
 		while (my $line = <MATCH>)	{
-			if ($line =~ /($focalspec)\s([a-zA-Z0-9]+)\s([0-9]+)\s([0-9]+)/ ) {
+			#print "checking $line";
+			if ($line =~ /($focalspec_orig)\s([a-zA-Z0-9]+)\s([0-9]+)\s([0-9]+)/ ) {
 				my $key = join("\t",$1, $2, $3, $4);
+# print "key = $key\n";
+				#print "------------------------------------------------------\n";
+				#print "asking $line\n";
 				if (exists $seen{$key}){
+				
+				#print "seen $line \n"; <STDIN>;
 					while (1){
 						$matchlines++;
 						print MEGAM $line;
@@ -483,6 +702,9 @@ for my $no (3 ... $#all_tags+1){
 						print MEGAM "\n" if $line !~/[0-9a-zA-Z]/;
 						last if $line !~/[0-9a-zA-Z]/;
 					}
+				}
+				else{
+# print "not seen\n";
 				}
 			}
 		}
@@ -494,8 +716,9 @@ for my $no (3 ... $#all_tags+1){
 	unlink $megamatchlck;
 	close MEGAM;
 	undef %seen;
+# print "done writitn to $megamatch\n";#<STDIN>;
 	#----------------------------------------------------------------------------------------------------------------
-
+	#<STDIN>;
 	#---------------------------------------------------------------------------
 	# NOW, AFTER FILTERING MANY MICROSATS, AND LOADING THE FILTERED ONES INTO
 	# THE HASH %orths , WE GO THROUGH THE ALIGNMENT FILE, AND STUDY THE 
@@ -509,34 +732,47 @@ for my $no (3 ... $#all_tags+1){
 	my $keynotfoundcounter= 0;
 	my $dotcounter = 0;
 
+#	print "opening $megamatch\n";
+
 	open (BO, "<$megamatch") or die "Cannot open alignment file: $megamatch: $!";
+# print "doing  $megamatch\n " ;
+
+	#<STDIN>;
 	
 	while (my $line = <BO>){
-#		print "." if $dotcounter % 100 ==0;
+#		print $line; #<STDIN>;
+# print "." if $dotcounter % 100 ==0;
 #		print "\n" if $dotcounter % 5000 ==0;
-#		print "dotcounter = $dotcounter\n " if $printer == 1;
+# print "dotcounter = $dotcounter\n " if $printer == 1;
 		next if $line !~ /^[0-9]+/;
 		$dotcounter++;
 #		print colored ['green'], "~" x 60, "\n" if $printer == 1;
 #		print colored ['green'], $line;# if $printer == 1;
-		chomp $line;	
+		chomp $line;
 		my @fields2 = split(/\t/,$line);
 		my $key2 = ();
 		my $alignment_no = ();										#1 TEMPORARY
-		if ($line =~ /([0-9]+)\s+($focalspec)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
-			$key2 = join("\t",$1, $2,  $4, $5);
+		if ($line =~ /([0-9]+)\s+($focalspec_orig)\s([_\-s0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
+#			$key2 = join("\t",$1, $2,  $4, $5);
+			$key2 = join("_",$2, $3,  $4, $5);
+#			print "key = $key2\n";
+
+# print "key = $key2\n";
 			$alignment_no=$1;
 		}
 		else {print "seq line $line incompatible\n"; $keynotformedcounter++; next;}
 		
 		$no_of_species = adjustCoordinates($line);
+
 		$contignotrightcounter++  if $no_of_species != $no;
-	#	print "contignotrightcounter=$contignotrightcounter\n";
-	#	print "no_of_species=$no_of_species\n";
-	#	print "no=$no\n";
+# print "contignotrightcounter=$contignotrightcounter\n";
+# print "no_of_species=$no_of_species\n";
+# print "no=$no\n";
 		
 		next if $no_of_species != $no;
-		
+#		print "D: $no_of_species\n";
+#		print "E: $no_of_species\n";
+		#<STDIN>;
 	#	print "key = $key2\n" if $printer == 1;
 		my @clusters = ();											#1 EXTRACTING MICROSATS CORRESPONDING TO THIS 
 																	#2 ALIGNMENT BLOCK
@@ -546,7 +782,7 @@ for my $no (3 ... $#all_tags+1){
 			delete $orths{$key2};
 		}
 		else{
-			#print "orth does not exist\n";
+#			 print "orth does not exist\n";
 			$keynotfoundcounter++;
 			next;
 		}
@@ -563,8 +799,8 @@ for my $no (3 ... $#all_tags+1){
 		
 		
 		foreach my $cluster (@clusters){							#1 NOW, GOING THROUGH THE CLUSTER OF MICROSATS
-			#print "x" x 60, "\n" if $printer == 1;
-			#print colored ['red'],"cluster = $cluster\n";
+# print "x" x 60, "\n" if $printer == 1;
+#			print colored ['red'],"cluster = $cluster\n";
 			$largesttree =~ s/hg18/H/g;
 			$largesttree =~ s/panTro2/C/g;
 			$largesttree =~ s/ponAbe2/O/g;
@@ -573,6 +809,12 @@ for my $no (3 ... $#all_tags+1){
 
 			$microreadcounter++;
 			my @micros = split(/>/,$cluster);
+			
+			
+			
+			
+			
+			
 			shift @micros;
 	
 			my $edge_microsat=0;									#1 THIS WILL HAVE VALUE "1" IF MICROSAT IS FOUND
@@ -586,7 +828,7 @@ for my $no (3 ... $#all_tags+1){
 			my %microsathash=();
 			my %nonmicrosathash=();
 			my $motif=();											#1 BASIC MOTIF OF THE MICROSATELLITE.. THERE'S ONLY 1
-			#print "tags=@tags\n";
+# print "tags=@tags\n";
 			for my $i (0 ... $#tags){								#1	FINDING THE MICROSAT, AND THE ALIGNMENT SEQUENCE
 																	#2	CORRESPONDING TO THE PARTICULAR SPECIES (AS PER 
 																	#3	THE VARIABLE $TAG;
@@ -621,7 +863,7 @@ for my $no (3 ... $#all_tags+1){
 			my $extreme_end  = largest_number(@ends);			#2 MICROSAT CLUSTER ACCROSS ALL THE SPECIES IN 
 																#3 WHOM IT IS FOUND TO BE ORTHOLOGOUS.
 			
-			#print "starts=@starts... ends=@ends\n";
+#			print "starts=@starts... ends=@ends\n";
 				
 			my %up_flanks = ();									#1	CONTAINS UPSTEAM FLANKING REGIONS FOR EACH SPECIES
 			my %down_flanks = ();								#1	CONTAINS DOWNDTREAM FLANKING REGIONS FOR EACH SPECIES
@@ -656,7 +898,7 @@ for my $no (3 ... $#all_tags+1){
 																#5 FLANKING SEQUENCE OF ALL ORGS, AND STUDY IT IN 
 																#6 MORE DETAIL.
 				my $tag = $tags[$i];		
-			#	print "tag=$tag.. seqlength = ",length($sequences{$tag})," extreme_start=$extreme_start and extreme_end=$extreme_end\n";
+#				print "tag=$tag.. seqlength = ",length($sequences{$tag})," extreme_start=$extreme_start and extreme_end=$extreme_end\n";
 				my $upstream_gaps = (substr($sequences{$tag}, 0, $extreme_start) =~ s/\-/-/g);		#1	NOW MEASURING THE NUMBER OF GAPS IN THE UPSTEAM 
 																										#2	AND DOWNSTREAM SEQUENCES OF THE MICROSATs IN THIS
 																										#3	CLUSTER.
@@ -747,13 +989,20 @@ for my $no (3 ... $#all_tags+1){
 
 			next if $sequence_dissimilarity == 1;
 			my ($simplified_microsat, $Hchrom, $Hstart, $Hend, $locusmotif, $locusmotifsize) = summarize_microsat($cluster, $humseq);
-		#	print "simplified_microsat=$simplified_microsat\n"; <STDIN>;
-			my ($tree_analysis, $alternative_trees, $conformation) = treeStudy($simplified_microsat);
+#			print "simplified_microsat=$simplified_microsat\n"; 
+			my ($tree_analysis,  $conformation) = treeStudy($simplified_microsat);
+# print "tree_analysis = $tree_analysis .. conformation=$conformation\n"; 
+			#<STDIN>;
 			
+			print SELECT "\"$conformation\"\t$tree_analysis\n";
+			
+			next if $tree_analysis =~ /DISCARD/;
 			if (exists $treesToReject{$tree_analysis}){
 				$nextcounter[14]++;
 				next;
 			}
+
+#			print "F: $no_of_species\n";
 
 # 			my $adjuster=();
 # 			if ($no_of_species == 4){
@@ -779,7 +1028,7 @@ for my $no (3 ... $#all_tags+1){
 			if (exists $treesToIgnore{$tree_analysis}){
 				my @appendarr = ();
 
-				print SUMMARY $Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t", $thresharr[$locusmotifsize], "\t", $simplified_microsat,"\t", $tree_analysis,"\t", join("",@tags), "\t";
+#				print SUMMARY $Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t", $thresharr[$locusmotifsize], "\t", $simplified_microsat,"\t", $tree_analysis,"\t", join("",@tags), "\t";
 				#print "SUMMARY ",$Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t", $thresharr[$locusmotifsize], "\t", $simplified_microsat,"\t", $tree_analysis,"\t", join("",@tags), "\t";
 #				print SELECT $Hchrom,"\t",$Hstart,"\t",$Hend,"\t","NOEVENT", "\t\t", $cluster,"\n";
 				
@@ -789,46 +1038,48 @@ for my $no (3 ... $#all_tags+1){
 					for my $p (@pair){
 						my @mutinfoarray1 = ();
 						for (1 ... 38){
-							push (@mutinfoarray1, "NA")
+#							push (@mutinfoarray1, "NA")
 						}
-						print SUMMARY join ("\t", @mutinfoarray1[0...($#mutinfoarray1)] ),"\t"; 			
+#						print SUMMARY join ("\t", @mutinfoarray1[0...($#mutinfoarray1)] ),"\t"; 			
+#						print  join ("\t", @mutinfoarray1[0...($#mutinfoarray1)] ),"\t"; 			
 					}
 	
 				}
 				for (1 ... 38){
 					push (@appendarr, "NA")
 				}
-				print SUMMARY join ("\t", @appendarr,"NULL", "NULL"),"\n"; 
+#				print SUMMARY join ("\t", @appendarr,"NULL", "NULL"),"\n"; 
+#				print  join ("\t", @appendarr,"NULL", "NULL"),"\n"; 
 		#		print "SUMMARY ",join ("\t", @appendarr,"NULL", "NULL"),"\n"; #<STDIN>;
 				next;
 			}
+#			print colored ['blue'],"cluster = $cluster\n";
 			
 			my ($mutations_array, $nodes, $branches_hash, $alivehash, $primaryalignment) = peel_onion($tree, \%sequences, \%alignment, \@tags, \%microsathash, \%nonmicrosathash, $motif, $tree_analysis, $thresholdhash{length($motif)}, \%microsatstarts);
-			
+	
 			if ($mutations_array eq "NULL"){
+			#	print "cluster = $cluster \n"; <STDIN>;
 				my @appendarr = ();
 
-				print SUMMARY $Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t", $thresharr[$locusmotifsize],"\t",$simplified_microsat,"\t", $tree_analysis,"\t", join("",@tags), "\t";
-		#		print "SUMMARY ", $Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t", $thresharr[$locusmotifsize],"\t",$simplified_microsat,"\t", $tree_analysis,"\t", join("",@tags), "\t"; 
-#				print SELECT $Hchrom,"\t",$Hstart,"\t",$Hend,"\t","EVENT", "\t\t", $cluster,"\n";
+			#	print SUMMARY $Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize, "\t";
 
-				foreach my $lnode (@$lagestnodes){
-					my @pair = @$lnode;
-					my @nodemutarr = ();
-					for my $p (@pair){
-						my @mutinfoarray1 = ();
-						for (1 ... 38){
-							push (@mutinfoarray1, "NA")
-						}
-						print SUMMARY join ("\t", @mutinfoarray1[0...($#mutinfoarray1)] ),"\t"; 			
-		#				print  join ("\t", "SUMMARY", @mutinfoarray1[0...($#mutinfoarray1)] ),"\t"; 			
-					}
-	
-				}
-				for (1 ... 38){
-					push (@appendarr, "NA")
-				}
-				print SUMMARY join ("\t", @appendarr,"NULL", "NULL"),"\n"; 
+			#	foreach my $lnode (@$lagestnodes){
+			#		my @pair = @$lnode;
+			#		my @nodemutarr = ();
+			#		for my $p (@pair){
+			#			my @mutinfoarray1 = ();
+			#			for (1 ... 38){
+			#				push (@mutinfoarray1, "NA")
+			#			}
+			#			print SUMMARY join ("\t", @mutinfoarray1[0...($#mutinfoarray1)] ),"\t"; 			
+			#			print  join ("\t", @mutinfoarray1[0...($#mutinfoarray1)] ),"\t"; 			
+			#		}
+			#	}
+			#	for (1 ... 38){
+			#		push (@appendarr, "NA")
+			#	}
+			#	print SUMMARY join ("\t", @appendarr,"NULL", "NULL"),"\n"; 
+			#	print  join ("\t", @appendarr,"NULL", "NULL"),"\n"; 
 			#	print  join ("\t","SUMMARY", @appendarr,"NULL", "NULL"),"\n"; #<STDIN>;
 				next;
 			}
@@ -842,19 +1093,42 @@ for my $no (3 ... $#all_tags+1){
 			my @finalmutations_array= ();
 			@finalmutations_array = selectMutationArray($mutations_array, $newmutations_array, \@tags, $alivehash, \%alignment, $motif) if $newmutations_array ne "NULL";
 			@finalmutations_array = selectMutationArray($mutations_array, $mutations_array, \@tags, $alivehash, \%alignment, $motif) if $newmutations_array eq "NULL";
+# print "alt = $alternate{$conformation}\n";
 
-			my ($besttree, $treescore) = selectBetterTree($tree_analysis, $alternate{$tree_analysis}, \@finalmutations_array);
+			my ($besttree, $treescore) = selectBetterTree($tree_analysis, $alternate{$conformation}, \@finalmutations_array);
 			my $cleancase = "UNCLEAN";
-			
 			$cleancase = checkCleanCase($besttree, $finalalignment) if $treescore > 0 && $finalalignment ne "NULL" && $finalalignment =~ /\!/;
 			$cleancase = checkCleanCase($besttree, $primaryalignment) if $treescore > 0 && $finalalignment eq "NULL" && $primaryalignment =~ /\!/ && $primaryalignment ne "NULL";
 			$cleancase = "CLEAN" if $finalalignment eq "NULL" && $primaryalignment !~ /\!/ && $primaryalignment ne "NULL";
 			$cleancase = "CLEAN" if $finalalignment ne "NULL" && $finalalignment !~ /\!/ ;
+# print "besttree = $besttree ... cleancase=$cleancase\n"; #<STDIN>;
+
+			my @selects = ("-C","+C","-H","+H","-HC","+HC","-O","+O","-H.-C","-H.-O","-HC,+C","-HC,+H","-HC.-O","-HCO,+HC","-HCO,+O","-O.-C","-O.-H",
+			"+C.+O","+H.+C","+H.+O","+HC,-C","+HC,-H","+HC.+O","+HCO,-C","+HCO,-H","+HCO,-HC","+HCO,-O","+O.+C","+O.+H","+H.+C.+O","-H.-C.-O","+HCO","-HCO");
+			next if (oneOf(@selects, $besttree) == 0);
+			if ( ($besttree =~ /,/ || $besttree =~ /\./) && $cleancase eq "UNCLEAN"){
+				$besttree = "$besttree / $tree_analysis";				
+			}
+
 			$besttree = "NULL" if $treescore <= 0;
-			print SUMMARY $Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t", $thresharr[$locusmotifsize],"\t",$simplified_microsat,"\t", $tree_analysis,"\t", join("",@tags), "\t";
-		#	print "SUMMARY ", $Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t", $thresharr[$locusmotifsize],"\t",$simplified_microsat,"\t", $tree_analysis,"\t", join("",@tags), "\t";
-		
-#			print SELECT $Hchrom,"\t",$Hstart,"\t",$Hend,"\t","EVENT", "\t\t", $cluster,"\n";
+			
+			while ($besttree =~ /[A-Z][A-Z]/){
+				$besttree =~ s/([A-Z])([A-Z])/$1:$2/g;
+			}
+			
+			if ($besttree !~ /NULL/){			
+				my @elements = ($besttree =~ /([A-Z])/g);
+				
+				foreach my $ele (@elements){
+#					 print "replacing $ele with $backReplacementArrTag{$ele}\n";
+					$besttree =~ s/$ele/$backReplacementArrTag{$ele}/g if exists $backReplacementArrTag{$ele};
+				}
+			}
+			my $endendstate = $focalspec_orig.".".$Hchrom."\t".$Hstart."\t".$Hend."\t".$locusmotif."\t".$locusmotifsize."\t".$tree_analysis."\t";
+			next if $endendstate =~ /NA\tNA\tNA/;
+			
+			print SUMMARY $focalspec_orig,".",$Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t";
+# print "SUMMARY\t", $focalspec_orig,".",$Hchrom,"\t",$Hstart,"\t",$Hend,"\t",$locusmotif,"\t",$locusmotifsize,"\t",$tree_analysis,"\t" ;
 			
 			my @mutinfoarray =();
 			
@@ -868,19 +1142,33 @@ for my $no (3 ... $#all_tags+1){
 						$mut =~ /node=([A-Z, \(\)]+)/;
 						push @nodemutarr, $mut if $p eq $1;
 					}
-#					print "from pair @pair, p=$p\n";
 					@mutinfoarray = summarizeMutations(\@nodemutarr, $besttree);
-					print SUMMARY join ("\t", @mutinfoarray[0...($#mutinfoarray-1)] ),"\t"; 			
-		#			print "SUMMARY ",join ("\t", @mutinfoarray[0...($#mutinfoarray-1)] ),"\t"; 			
+					
+				#	print SUMMARY join ("\t", @mutinfoarray[0...($#mutinfoarray-1)] ),"\t"; 			
+				#	print  join ("\t", @mutinfoarray[0...($#mutinfoarray-1)] ),"\t"; 			
 				}
-
 			}
+			
+#			print "G: $no_of_species\n";
+			
+			my @alignmentarr = ();
+			
+			foreach my $key (keys %alignment){
+				push @alignmentarr, $backReplacementArrTag{$key}.":".$alignment{$key};
+				
+			}
+#			print "alignmentarr = @alignmentarr"; <STDIN>;
 			
 			@mutinfoarray = summarizeMutations(\@finalmutations_array, $besttree);
 			print SUMMARY join ("\t", @mutinfoarray ),"\t"; 			
-			print SUMMARY  $cleancase, "\n";
-		#	print "SUMMARY ",join ("\t", @mutinfoarray,$cleancase ),"\n"; #<STDIN>; 			
-		#	print "summarized\n"; <STDIN>;
+			print SUMMARY join(",",@alignmentarr),"\n";
+#			print join("\t","--------------","\n",$besttree, join("",@tags)),"\n" if scalar(@tags) < 5;
+#			<STDIN> if scalar(@tags) < 5;
+#			print   $cleancase, "\n";
+#			print join ("\t", @mutinfoarray,$cleancase,join(",",@alignmentarr)),"\n"; #<STDIN>; 			
+# print "summarized\n"; #<STDIN>;
+	
+	
 	
 			my %indelcatch = ();
 			my %substcatch = ();
@@ -936,11 +1224,11 @@ for my $no (3 ... $#all_tags+1){
 		#	print colored ['red'], "-------------------------------------------------------------\n" if $printer == 1;
 
 		#	print colored ['red'],"finalmutations_array=\n" if $printer == 1;
-			foreach (@finalmutations_array) {
+#			foreach (@finalmutations_array) {
 #				print colored ['red'], "$_\n" if $_ =~ /type=substitution/ && $printer == 1  ;
 #				print colored ['yellow'], "$_\n" if $_ !~ /type=substitution/ && $printer == 1  ;
 				
-			}# if $line =~ /cal/;# && $line =~ /chr4/;
+#			}# if $line =~ /cal/;# && $line =~ /chr4/;
 			
 #			print colored ['red'], "-------------------------------------------------------------\n" if $printer == 1;
 #			print colored ['red'], "-------------------------------------------------------------\n" if $printer == 1;
@@ -959,20 +1247,19 @@ for my $no (3 ... $#all_tags+1){
 		}
 	}
 	close BO;
-#	print "now studying where we lost microsatellites:";
-#	print "x" x 60,"\n";
+# print "now studying where we lost microsatellites:\n";
+# print "x" x 60,"\n";
 	for my $reason (0 ... $#nextcounter){
 #		print $removalReasons[$reason]."\t".$nextcounter[$reason],"\n";
 	}
-#	print "x" x 60,"\n";
-#	print "In total we read $microreadcounter microsatellites after reading through $contigsentered contigs\n";
-#	print " we lost $keynotformedcounter contigs as they did not form the key, \n";
-#	print "$contignotrightcounter contigs as they were not of the right species configuration\n";  
-#	print "$keynotfoundcounter contigs as they did not contain the microsats\n";  
-#	print "... In total we went through a file that had $dotcounter contigs...\n";  
+# print "x" x 60,"\n";
+# print "In total we read $microreadcounter microsatellites after reading through $contigsentered contigs\n";
+# print " we lost $keynotformedcounter contigs as they did not form the key, \n";
+# print "$contignotrightcounter contigs as they were not of the right species configuration\n";  
+# print "$keynotfoundcounter contigs as they did not contain the microsats\n";  
+# print "... In total we went through a file that had $dotcounter contigs...\n";  
 #	print join ("\n","remaining orth keys = ", (keys %orths),"");
-
-
+# print "------   ------   ------   ------   ------   ------   ------   ------   ------   ------   ------   \n";
 #	print "now printing counted trees: \n";
 		if (scalar(keys %registeredTrees) > 0){
 		foreach my $keyb ( sort (keys %registeredTrees) )
@@ -983,6 +1270,8 @@ for my $no (3 ... $#all_tags+1){
 	
 	
 }	
+
+close SUMMARY;
 
 my @summarizarr = ("+C=+C +R.+C -HCOR,+C",
 "+H=+H +R.+H -HCOR,+H",
@@ -1105,6 +1394,7 @@ sub baseml_parser{
 sub test_complexity{
 	my $printer = 0;
 	my $sequence = $_[0];
+	#print "sequence = $sequence\n";
 	my $COMPLEXITY_SUPPORT = $_[1];
 	my $complexity=int($COMPLEXITY_SUPPORT * (1/40));				#1	THIS IS AN ARBITRARY THRESHOLD SET FOR LOW COMPLEXITY.
 																	#2	THE INSPIRATION WAS WEB MILLER'S MAIL SENT ON 
@@ -1121,7 +1411,10 @@ sub test_complexity{
 	my $Ts = ($sequence=~ s/T/T/gi);
 	my $Gs = ($sequence=~ s/G/G/gi);
 	my $Cs = ($sequence=~ s/C/C/gi);
-	#print "seq = $sequence, As=$As, Ts=$Ts, Gs=$Gs, Cs=$Cs\n" if $printer == 1;
+	my $dashes = ($sequence=~ s/\-/-/gi);
+	$dashes = 0 if $sequence !~ /\-/;
+# print "seq = $sequence, As=$As, Ts=$Ts, Gs=$Gs, Cs=$Cs, dashes=$dashes\n";
+	return "LOW" if $dashes > length($sequence)/2;
 	
 	my $ans = ();
 
@@ -1132,13 +1425,12 @@ sub test_complexity{
 	my $lowcomplex = 0;
 	
 	foreach my $nt (@nts){
-		$lowcomplex =1 if $sequence =~ /(($nt\-*){10,})/i;
-#		print "caught with a mono of $nt : $1 in $sequence\n" if $sequence =~ /(($nt\-*){10,})/i;
-		$lowcomplex =1 if $sequence =~ /(($nt[A-Za-z]){10,})/i;
-		$lowcomplex =1 if $sequence =~ /(([A-Za-z]$nt){10,})/i;
-#		print "caught with a di with $nt : $2 in $sequence\n" if $sequence =~ /(($nt[A-Za-z]){10,})/i || $sequence =~ /(([A-Za-z]$nt){10,})/i;
+		$lowcomplex =1 if $sequence =~ /(($nt\-*){$mono_flanksimplicityRepno,})/i;
+		$lowcomplex =1 if $sequence =~ /(($nt[A-Za-z]){$di_flanksimplicityRepno,})/i;
+		$lowcomplex =1 if $sequence =~ /(([A-Za-z]$nt){$di_flanksimplicityRepno,})/i;
 		my $nont = ($sequence=~ s/$nt/$nt/gi);
-		
+		$lowcomplex = 1 if $nont > (length($sequence)  * $prop_of_seq_allowedtoAT) && ($nt =~ /[AT\-]/);
+		$lowcomplex = 1 if $nont > (length($sequence)  * $prop_of_seq_allowedtoCG) && ($nt =~ /[CG]/);
 	}
 #	print "leaving for now.. $sequence\n" if $printer == 1 && $lowcomplex == 0;
 	#<STDIN>;
@@ -1240,8 +1532,8 @@ sub load_allPossibleTrees{
 "+ + + +	+HCOR	NA",
 "+ + + _	+HCO|-R	+H.+C.+O",
 "+ + _ _	+HC	+H.+C;-O",
-"+ _ _ _	+H	+HC,-C",
-"_ + _ _	+C	+HC,-H",
+"+ _ _ _	+H	+HC,-C;+HC,-C",
+"_ + _ _	+C	+HC,-H;+HC,-H",
 "_ _ + _	+O	-HC|-H.-C",
 "_ _ + +	-HC	-H.-C",
 "+ _ _ +	+H|-C.-O	+HC,-C",
@@ -1254,37 +1546,38 @@ sub load_allPossibleTrees{
 "+ + _ +	-O	+HC") if $tree_list =~ /_HCOR\.txt/;
 
 		@trarr = ("#H C O R M	CONCLUSION	ALTERNATE",
-"+ + + + _	+HCOR	NA",
-"+ + + _ +	-R	+HCO;+HC.+O;+H.+C.+O",
 "+ + _ + +	-O	-HCO,+HC|-HCO,+HC;-HCO,(+H.+C)",
 "+ _ + + +	-C	-HC,+H;+HCO,(+H.+O)",
 "_ + + + +	-H	-HC,+C;-HCO,(+C.+O)",
-"_ _ _ _ +	-HCOR	NA",
-"_ _ _ + _	+R	-HC.-O;-H.-C.-O",
 "_ _ + _ _	+O	+HCO,-HC;+HCO,(-H.-C)",
 "_ + _ _ _	+C	+HC,-H;+HCO,(-H.-O)",
 "+ _ _ _ _	+H	+HC,-C;+HCO,(-C.-O)",
 "+ + + _ _	+HCO	+H.+C.+O",
-"+ + _ + _	-O	+R.+HC|-HCO,+HC;+H.+C.+R|-HCO,(+H.+C)",
-"+ _ + + _	-C	-HC,+H;+H.+O.+R|-HCO,(+H.+O)",
-"_ + + + _	-H	-HC,+C;+C.+O.+R|-HCO,(+C.+O)",
 "_ _ _ + +	-HCO	-HC.-O;-H.-C.-O",
-"_ _ + _ +	+O	+HCO,-HC;+HCO,(-H.-C)",
-"_ + _ _ +	+C	+HC,-H;+HCO,(-H.-O)",
-"+ _ _ _ +	+H	-HC,+H;+HCO,(-C.-O)",
-"+ + _ _ +	+HC	-R.-O|+HCO,-O|+H.+C;-HCO,+HC;-HCO,(+H.+C)",
-"+ _ + _ +	-R.-C|+HCO,-C|+H.+O	NA",
-"_ + + _ +	-R.-H|+HCO,-H|+C.+O	NA",
-"_ _ + + _	-HC	+R.+O|-HCO,+O|+HCO,-HC",
-"_ + _ + _	+R.+C|-HCO,+C|-HC,+C	+HCO,(-H.-O)",
-"+ _ _ + _	+R.+H|-C.-O	+HCO,(-C.-O)",
 "+ _ _ + +	-O.-C|-HCO,+H	+R.+H;-HCO,(+R.+H)",
 "_ + _ + +	-O.-H|-HCO,+C	+R.+C;-HCO,(+R.+C)",
 "_ + + _ _	+HCO,-H|+O.+C	NA",
 "+ _ + _ _	+HCO,-C|+O.+H	NA",
 "_ _ + + +	-HC	-H.-C|-HCO,+O",
 "+ + _ _ _	+HC	+H.+C|+HCO,-O|-HCO,+HC;-HCO,(+H.+C)",
-"+ + + + +	+HCORM	NA") if $tree_list =~ /_HCORM\.txt/;
+"+ + + + +	+HCORM	NA",
+"_ _ + _ +	DISCARD	+O;+HCO,-HC;+HCO,(-H.-C)",
+"_ + _ _ +	+C	+HC,-H;+HCO,(-H.-O)",
+"+ _ _ _ +	+H	+HC,-C;+HCO,(-C.-O)",
+"+ + _ _ +	+HC	-R.-O|+HCO,-O|+H.+C;-HCO,+HC;-HCO,(+H.+C)",
+"+ _ + _ +	DISCARD	-R.-C|+HCO,-C|+H.+O	NA",
+"_ + + _ +	DISCARD	-R.-H|+HCO,-H|+C.+O	NA",
+"_ _ _ _ +	DISCARD	-HCOR	NA",
+"_ _ _ + _	DISCARD	+R;-HC.-O;-H.-C.-O",
+"+ + _ + _	-O	+R.+HC|-HCO,+HC;+H.+C.+R|-HCO,(+H.+C)",
+"+ + + + _	+HCOR	NA",
+"+ + + _ +	DISCARD	-R;+HCO;+HC.+O;+H.+C.+O",
+"+ _ + + _	-C	-HC,+H;+H.+O.+R|-HCO,(+H.+O)",
+"_ + + + _	-H	-HC,+C;+C.+O.+R|-HCO,(+C.+O)",
+"_ _ + + _	-HC	+R.+O|-HCO,+O|+HCO,-HC",
+"_ + _ + _	+C	+R.+C|-HCO,+C|-HC,+C	+HCO,(-H.-O)",
+"+ _ _ + _	+H	+R.+H|-C.-O	+HCO,(-C.-O)"
+) if $tree_list =~ /_HCORM\.txt/;
 
 	
 	my $template_p = $_[1];
@@ -1304,6 +1597,7 @@ sub load_allPossibleTrees{
 																	#13 MENTIONED ABOVE.	
 	my @keys_array=();
 	foreach my $line (@trarr){
+#		print $line,"\n";
 		next if $line =~ /^#/;
 		chomp $line;
 		my @fields = split("\t", $line);
@@ -1311,8 +1605,9 @@ sub load_allPossibleTrees{
 #		print "loading: $fields[0]\n";
 		$template_p->{$fields[0]}[0] = $fields[1];
 		$template_p->{$fields[0]}[1] = 0;
-		$alternate_p->{$fields[1]} = $fields[2];
-		
+		$alternate_p->{$fields[0]} = $fields[2];
+#		$alternate_p->{$fields[1]} = $fields[2];
+# print "loading alternate_p $fields[1] $fields[2]\n"; #<STDIN> if $fields[1] eq "+H";
 	}
 #	print "loaded the trees with keys: @keys_array\n";
 	return $template_p, \@keys_array, $alternate_p;
@@ -1363,7 +1658,14 @@ sub checkCleanCase{
 
 sub adjustCoordinates{
 	my $line = $_[0];
-	my $no_of_species = $line =~ s/(chr[0-9a-zA-Z]+)|(Contig[0-9a-zA-Z\._\-]+)/x/g;
+	return 0 if !defined $line;
+	#print "------x------x------x------x------x------x------x------x------\n";
+	#print $line,"\n\n";
+	my $no_of_species = $line =~ s/(chr[0-9a-zA-Z]+)|(Contig[0-9a-zA-Z\._\-]+)|(scaffold[0-9a-zA-Z\._\-]+)|(supercontig[0-9a-zA-Z\._\-]+)/x/ig;
+	#print $line,"\n";
+	#print "------x------x------x------x------x------x------x------x------\n\n\n";
+#	my @got = ($line =~ s/(chr[0-9a-zA-Z]+)|(Contig[0-9a-zA-Z\._\-]+)/x/g);
+# print "line = $line\n";
 	$infocord = 2 + (4*$no_of_species) - 1;
 	$typecord = 2 + (4*$no_of_species) + 1 - 1;
 	$motifcord = 2 + (4*$no_of_species) + 2 - 1;
@@ -1376,7 +1678,8 @@ sub adjustCoordinates{
 	$interr_poscord = $microsatcord + 3;
 	$no_of_interruptionscord = $microsatcord + 4;
 	$interrcord = $microsatcord + 2;
-	#print "$line\n startcord = $startcord, and endcord = $endcord and no_of_species = $no_of_species\n" if $printer == 1;
+#	print "$line\n startcord = $startcord, and endcord = $endcord and no_of_species = $no_of_species\n" if $line !~ /calJac/i;
+	
 	return $no_of_species;
 }
 
@@ -1417,11 +1720,11 @@ sub peel_onion{
 		$node_sequences{$tag}=join ".",split(/\s*/,$nonmicrosathash->{$tag}) if $microsathash->{$tag} eq "NULL";
 		$node_alignments{$tag}=join ".",split(/\s*/,$alignment->{$tag}) ;
 		push @locus_sequences, $node_sequences{$tag};
-		#print "adding to node_seq: $tag = ",$node_alignments{$tag},"\n";
+# print "adding to node_seq: $tag = ",$node_alignments{$tag},"\n";
 	}
-
 	
-
+	#<STDIN>;
+	
 	my ($nodes_arr, $branches_hash) = get_nodes($tree);
 	my @nodes=@$nodes_arr;
 #	print "recieved nodes = " if $printer == 1; 
@@ -1457,7 +1760,7 @@ sub peel_onion{
 
 		foreach my $tag (@pair){
 #			print "$tag:  $node_alignments{$tag}\n" if $printer == 1;
-			print $node_alignments{$tag},"\n" if $printer == 1;
+#			print $node_alignments{$tag},"\n" if $printer == 1;
 			push @pair_sequences, $node_alignments{$tag};
 		}
 #		print "ppeel onion joint = $joint , pair_sequences=>@pair_sequences< , pair=>@pair<\n" if $printer == 1; 
@@ -1468,17 +1771,8 @@ sub peel_onion{
 #		print "newly added to node_sequences: $node_alignments{$joint} and list of mutations =\n", join("\n",@mutations_array),"\n" if $printer == 1;
 	}
 	
-#	print "now sending for analyze_mutations: mutation_array=@mutations_array, nodes=@nodes, branches_hash=$branches_hash, alignment=$alignment, tags=@tags, alivehash=\%alivehash, node_sequences=\%node_sequences, microsatstarts=$microsatstarts, motif=$motif\n" if $printer == 1;
-	## <STDIN> if $printer == 1;
 	
 	my $analayzed_mutations = analyze_mutations(\@mutations_array, \@nodes, $branches_hash, $alignment, \@tags, \%alivehash, \%node_sequences, $microsatstarts, $motif);
-
-#	print "returning: ", $analayzed_mutations, \@nodes, $branches_hash,"\n" if scalar @mutations_array > 0 && $printer == 1;
-#	print "returning: NULL, NULL, NULL " if scalar @mutations_array == 0 && $printer == 1;
-#	print "final node alignment = $node_alignments{$joint}\n" if $printer == 1;
-	
-	# <STDIN> if $printer == 1;
-
 
 	return ($analayzed_mutations, \@nodes, $branches_hash, \%alivehash, $node_alignments{$joint}) if scalar @mutations_array > 0;
 	return ("NULL",\@nodes,$branches_hash, \%alivehash, "NULL") if scalar @mutations_array == 0;
@@ -1497,7 +1791,7 @@ sub get_nodes{
 	#$tree =~ s/ +//g;
 	$tree =~ s/\t+//g;
 	$tree=~s/;//g;
-	print "tree=$tree\n" if $printer == 1; 
+# print "tree=$tree\n" if $printer == 1; 
 	my @nodes = ();
 	my @onions=($tree);
 	my %branches=();
@@ -1509,11 +1803,11 @@ sub get_nodes{
 		$bite=~ /([ ,\(\)A-Z]+)\,\s*([ ,\(\)A-Z]+)/;
 		#$tree =~ /(\(\(\(H, C\), O\), R\))\, (M)/;
 		my @raw_nodes = ($1, $2);
-		print "raw nodes =  $1 and $2\n" if $printer == 1;
+# print "raw nodes =  $1 and $2\n" if $printer == 1;
 		push(@nodes, [@raw_nodes]);
 		foreach my $node (@raw_nodes) {push (@onions, $node) if $node =~ /,/;}
-		foreach my $node (@raw_nodes) {$branches{$node}="(".$bite.")"; print "adding to branches: $node = ($bite)\n" if $printer == 1;}
-		print "onions = @onions\n" if $printer == 1;<STDIN> if $printer == 1;
+		foreach my $node (@raw_nodes) {$branches{$node}="(".$bite.")"; }
+#		print "onions = @onions\n" if $printer == 1;<STDIN> if $printer == 1;
 	}
 	$printer = 0;
 	return \@nodes, \%branches;
@@ -1578,7 +1872,7 @@ sub analyze_mutations{
 #						print "now open_insertion=$open_insertion\n" if $printer == 1;
 						delete $mutation_hash{$posnext} if $froms_megahash{$posnext}{$local_node} eq "-";
 					}					
-					print "1 Feeding in: ", join("\t", "node=$local_node","type=insertion" ,"position=$pos", "from=", "to=", "insertion=$open_insertion", "deletion="),"\n" if $printer == 1;
+# print "1 Feeding in: ", join("\t", "node=$local_node","type=insertion" ,"position=$pos", "from=", "to=", "insertion=$open_insertion", "deletion="),"\n" if $printer == 1;
 					push (@solutions_array, join("\t", "node=$local_node","type=insertion" ,"position=$pos", "from=", "to=", "insertion=$open_insertion", "deletion="));
 				}
 				elsif ($tos_megahash{$pos}{$local_node} eq "-"){
@@ -1587,14 +1881,14 @@ sub analyze_mutations{
 					#next if exists $alivehash->{$local_node} && exists $alivehash->{$branches_hash->{$local_node}};
 					$open_deletion=$froms_megahash{$pos}{$local_node};
 					for my $posnext ($pos+1 ... $locuslength-1){
-						print "in 1st elsif studying posnext: $posnext\n" if $printer == 1;
-						print "nexting as nextpos does not exist\n" if !exists ($tos_megahash{$posnext}{$local_node}) && $printer == 1;
+# print "in 1st elsif studying posnext: $posnext\n" if $printer == 1;
+# print "nexting as nextpos does not exist\n" if !exists ($tos_megahash{$posnext}{$local_node}) && $printer == 1;
 						last if !exists ($tos_megahash{$posnext}{$local_node});
-						print "for posnext: $posnext, there exists $tos_megahash{$posnext}{$local_node}\n" if $printer == 1;
+# print "for posnext: $posnext, there exists $tos_megahash{$posnext}{$local_node}\n" if $printer == 1;
 						$open_deletion = $open_deletion.$froms_megahash{$posnext}{$local_node} if $tos_megahash{$posnext}{$local_node} eq "-";
 						delete $mutation_hash{$posnext} if $tos_megahash{$posnext}{$local_node} eq "-";
 					}					
-					print "2 Feeding in:",  join("\t", "node=$local_node","type=deletion" ,"position=$pos", "from=", "to=", "insertion=", "deletion=$open_deletion"), "\n" if $printer == 1;
+# print "2 Feeding in:",  join("\t", "node=$local_node","type=deletion" ,"position=$pos", "from=", "to=", "insertion=", "deletion=$open_deletion"), "\n" if $printer == 1;
 					push (@solutions_array, join("\t", "node=$local_node","type=deletion" ,"position=$pos", "from=", "to=", "insertion=", "deletion=$open_deletion"));
 				}
 				elsif ($tos_megahash{$pos}{$local_node} ne "-"){
@@ -1605,16 +1899,16 @@ sub analyze_mutations{
 					next if exists $microsatstarts->{$local_node} && $pos < $microsatstarts->{$local_node};
 					$open_to_substitution=$tos_megahash{$pos}{$local_node};
 					$open_from_substitution=$froms_megahash{$pos}{$local_node};
-					print "open from substitution: $open_from_substitution \n" if $printer == 1;
+# print "open from substitution: $open_from_substitution \n" if $printer == 1;
 					for my $posnext ($pos+1 ... $locuslength-1){
 						#print "in last elsif studying posnext: $posnext\n";
 						last if !exists ($tos_megahash{$posnext}{$local_node});
-						print "for posnext: $posnext, there exists $tos_megahash{$posnext}{$local_node}\n" if $printer == 1;
+# print "for posnext: $posnext, there exists $tos_megahash{$posnext}{$local_node}\n" if $printer == 1;
 						$open_to_substitution = $open_to_substitution.$tos_megahash{$posnext}{$local_node} if $tos_megahash{$posnext}{$local_node} ne "-";
 						$open_from_substitution = $open_from_substitution.$froms_megahash{$posnext}{$local_node} if $tos_megahash{$posnext}{$local_node} ne "-";
 						delete $mutation_hash{$posnext} if $tos_megahash{$posnext}{$local_node} ne "-" && $froms_megahash{$posnext}{$local_node} ;
 					}	
-					print "open from substitution: $open_from_substitution \n" if $printer == 1;
+# print "open from substitution: $open_from_substitution \n" if $printer == 1;
 					
 					#IS THE STRETCH OF SUBSTITUTION MICROSATELLITE-LIKE?
 					my @motif_parts=split(/\s*/,$motif);
@@ -1625,8 +1919,7 @@ sub analyze_mutations{
 						$left_query="(".$left_query;
 					}
 					$left_query=$left_query."?";
-				
-					print "left_quewry = $left_query\n" if $printer == 1;
+# print "left_quewry = $left_query\n" if $printer == 1;
 					#GENERATING THE FLEXIBLE RIGHT END	
 					my $right_query=();
 					for my $k (0 ... ($#motif_parts-1)) {
@@ -1634,22 +1927,22 @@ sub analyze_mutations{
 						$right_query=$right_query.")";
 					}
 					$right_query=$right_query."?";
-					print "right_query = $right_query\n" if $printer == 1;
-					print "Hence, searching for: ^$left_query($motif)+$right_query\$\n" if $printer == 1;
+# print "right_query = $right_query\n" if $printer == 1;
+# print "Hence, searching for: ^$left_query($motif)+$right_query\$\n" if $printer == 1;
 					
 					my $motifcomb=$motif x 50;
-					print "motifcomb = $motifcomb\n" if $printer == 1;
+# print "motifcomb = $motifcomb\n" if $printer == 1;
 					if ( ($motifcomb =~/$open_to_substitution/i) && (length ($open_to_substitution) >= length($motif)) ){
-						print "sequence microsat-like\n" if $printer == 1;
+# print "sequence microsat-like\n" if $printer == 1;
 						my $all_microsat_like = 0;
-						print "3 feeding in: ", join("\t", "node=$local_node","type=deletion" ,"position=$pos", "from=", "to=", "insertion=", "deletion=$open_from_substitution"), "\n" if $printer == 1;
+# print "3 feeding in: ", join("\t", "node=$local_node","type=deletion" ,"position=$pos", "from=", "to=", "insertion=", "deletion=$open_from_substitution"), "\n" if $printer == 1;
 						push (@solutions_array, join("\t", "node=$local_node","type=deletion" ,"position=$pos", "from=", "to=", "insertion=", "deletion=$open_from_substitution"));
-						print "4 feeding in: ", join("\t", "node=$local_node","type=insertion" ,"position=$pos", "from=", "to=", "insertion=$open_to_substitution", "deletion="), "\n" if $printer == 1;
+# print "4 feeding in: ", join("\t", "node=$local_node","type=insertion" ,"position=$pos", "from=", "to=", "insertion=$open_to_substitution", "deletion="), "\n" if $printer == 1;
 						push (@solutions_array, join("\t", "node=$local_node","type=insertion" ,"position=$pos", "from=", "to=", "insertion=$open_to_substitution", "deletion="));
 						
 					}
 					else{
-						print "5 feeding in: ", join("\t", "node=$local_node","type=substitution" ,"position=$pos", "from=$open_from_substitution", "to=$open_to_substitution", "insertion=", "deletion="), "\n" if $printer == 1;
+# print "5 feeding in: ", join("\t", "node=$local_node","type=substitution" ,"position=$pos", "from=$open_from_substitution", "to=$open_to_substitution", "insertion=", "deletion="), "\n" if $printer == 1;
 						push (@solutions_array, join("\t", "node=$local_node","type=substitution" ,"position=$pos", "from=$open_from_substitution", "to=$open_to_substitution", "insertion=", "deletion="));
 					}
 					#IS THE FROM-SEQUENCE MICROSATELLITE-LIKE?
@@ -1660,14 +1953,12 @@ sub analyze_mutations{
 			#<STDIN> if $printer ==1;
 		}
 	}
-
-	print "\n", "#" x 50, "\n"  if $printer == 1;
+# print "\n", "#" x 50, "\n"  if $printer == 1;
 	foreach my $tag (@$tags){
-		print "$tag: $alignment->{$tag}\n" if $printer == 1;	
+# print "$tag: $alignment->{$tag}\n" if $printer == 1;	
 	}
-	print "\n", "#" x 50, "\n" if $printer == 1;
-
-	print "returning SOLUTIONS ARRAY : \n",join("\n", @solutions_array),"\n" if $printer == 1; 
+# print "\n", "#" x 50, "\n" if $printer == 1;
+# print "returning SOLUTIONS ARRAY : \n",join("\n", @solutions_array),"\n" if $printer == 1; 
 	#print "end\n";
 	#<STDIN> if 
 	return \@solutions_array;
@@ -1681,12 +1972,12 @@ sub base_by_base_simple{
 	my $printer = 0;
 	my ($motif, $locus, $no, $pair0, $pair1, $joint) = @_;
 	my @seq_array=();
-	print "IN SUBROUTUNE base_by_base_simple.. information received = @_\n" if $printer == 1;
-	print "pair0 = $pair0 and pair1  = $pair1\n" if $printer == 1;
+# print "IN SUBROUTUNE base_by_base_simple.. information received = @_\n" if $printer == 1;
+# print "pair0 = $pair0 and pair1  = $pair1\n" if $printer == 1;
 
 	my @example=split(/\./,$locus->[0]);
-	print "example, for length = @example\n" if $printer == 1;
-	for my $i (0...$no-1){push(@seq_array, [split(/\./,$locus->[$i])]); print "for $i, from $locus->[$i],  seq_array = >@{$seq_array[$i]}<\n" if $printer == 1;}
+# print "example, for length = @example\n" if $printer == 1;
+	for my $i (0...$no-1){push(@seq_array, [split(/\./,$locus->[$i])]); }
 
 	my @compared_sequence=();
 	my @substitutions_list;
@@ -1733,7 +2024,7 @@ sub base_by_base_simple{
 			}
 		}		
 	}
-	print "returning: comared = @compared_sequence \nand substitutions list =\n", join("\n",@substitutions_list),"\n" if $printer == 1; 
+# print "returning: comared = @compared_sequence \nand substitutions list =\n", join("\n",@substitutions_list),"\n" if $printer == 1; 
 	return join(".",@compared_sequence), join(":", @substitutions_list) if scalar (@substitutions_list) > 0;
 	return join(".",@compared_sequence), "" if scalar (@substitutions_list) == 0;
 }
@@ -1741,19 +2032,18 @@ sub base_by_base_simple{
 
 sub resolve_base{
 	my $printer = 0;
-
-	print "IN SUBROUTUNE resolve_base.. information received = @_\n" if $printer == 1;
+# print "IN SUBROUTUNE resolve_base.. information received = @_\n" if $printer == 1;
 	my ($optional, $single, $singlesp, $arg) = @_;
 	my @options=split(/!/,$optional);
 	foreach my $option(@options) { 
 		$option=~s/[A-Z\(\) ,]+://g;
 		if ($option =~ /$single/i){
-			print "option = $option , returning single: $single\n" if $printer == 1;
+# print "option = $option , returning single: $single\n" if $printer == 1;
 			return $single;
 		}
 	}
-	print "returning ",$optional."!".$singlesp.":".$single. "\n" if $arg eq "keep" && $printer == 1; 
-	print "returning ",$singlesp.":".$single."!".$optional. "\n" if $arg eq "invert" && $printer == 1; 
+# print "returning ",$optional."!".$singlesp.":".$single. "\n" if $arg eq "keep" && $printer == 1; 
+# print "returning ",$singlesp.":".$single."!".$optional. "\n" if $arg eq "invert" && $printer == 1; 
 	return $optional."!".$singlesp.":".$single if $arg eq "keep";
 	return $singlesp.":".$single."!".$optional if $arg eq "invert";
 
@@ -1772,26 +2062,26 @@ sub same_length{
 	return 1;
 }
 sub treeStudy{
-	my $printer = 0;
+	my $printer = 1;
 #	print "template DEFINED.. received: @_\n" if defined %template; 
 #	print "only received = @_" if !defined %template; 
 	my $stopper = 0;
 	if (!defined %template){
 		$stopper = 1;
 		%template=();
-		print "tree decipherer = $tree_decipherer\n" if $printer == 1;
+# print "tree decipherer = $tree_decipherer\n" if $printer == 1; 
 		my ( $template_ref, $keys_array)=load_allPossibleTrees($tree_decipherer, \%template);
-		print "return = $template_ref and @{$keys_array}\n" if $printer == 1;
+# print "return = $template_ref and @{$keys_array}\n" if $printer == 1;
 		foreach my $key (@$keys_array){
-			print "addding : $template_ref->{$key} for $key\n" if $printer == 1;
+# print "addding : $template_ref->{$key} for $key\n" if $printer == 1;
 			$template{$key} = $template_ref->{$key};
 		}
 	}
-	
+#	<STDIN>;
 	for my $templet ( keys %template ) {
 	#	print "$templet => @{$template{$templet}}\n";
 	}
-	<STDIN> if !defined %template;
+#	<STDIN> if !defined %template;
 
 	my $strict = 0;
 
@@ -1881,7 +2171,7 @@ sub treeStudy{
 	chomp $line;
 	
 	my @f = split(/\t/,$line);
-	print "received array : @f.. recieved tags = @tags\n" if $printer == 1;
+# print "received array : @f.. recieved tags = @tags\n" if $printer == 1;
 	
 	# collect all motifs
 	my @motifs=();
@@ -1889,7 +2179,7 @@ sub treeStudy{
 	 @motifs = ($f[$Hmotif], $f[$Cmotif], $f[$Omotif], $f[$Rmotif]) if $tags[$#tags] =~ /R/;
 	 @motifs = ($f[$Hmotif], $f[$Cmotif], $f[$Omotif]) if $tags[$#tags] =~ /O/;
 #	print "motifs in the array = $f[$Hmotif], $f[$Cmotif], $f[$Omotif], $f[$Rmotif]\n" if $tags[$#tags] =~ /R/;;
-	print "motifs = @motifs\n" if $printer == 1;
+# print "motifs = @motifs\n" if $printer == 1;
 	my @translation = ();
 	foreach my $motif (@motifs){
 		push(@translation, "_") if $motif eq "NA";
@@ -1898,8 +2188,7 @@ sub treeStudy{
 	my $translate = join(" ", @translation);
 #	print "translate = >$translate< and analysis = $template{$translate}[0].. on the other hand, ",$template{"- - +"}[0],"\n"; 
 	my @analyses = split(/\|/,$template{$translate}[0]);
-	
-	print "motifs = @motifs, analyses = @analyses\n" if $printer == 1; 
+# print "motifs = @motifs, analyses = @analyses\n" if $printer == 1; 
 
 	if (scalar(@analyses) == 1) {
 		#print "analysis = $analyses[0]\n"; 
@@ -1909,11 +2198,12 @@ sub treeStudy{
 				$analysis =~ s/\+|\-//g;
 				my @species = split(/\s*/,$analysis);
 				my @currentMotifs = ();
-				foreach my $specie (@species){	push(@currentMotifs, $motifs[$speciesOrder{$specie}]); print "pushing into currentMotifs: $speciesOrder{$specie}: $motifs[$speciesOrder{$specie}]\n" if $printer == 1;}
-				print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
+				foreach my $specie (@species){	push(@currentMotifs, $motifs[$speciesOrder{$specie}]); #print "pushing into currentMotifs: $speciesOrder{$specie}: $motifs[$speciesOrder{$specie}]\n" if $printer == 1;
+					}
+# print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
 				$template{$translate}[1]++ if $strict == 1 && consistency(@currentMotifs) ne "NULL";
 				$template{$translate}[1]++ if $strict == 0;
-				print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
+# print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
 			}
 			else{
 				my $analysis = $analyses[0];
@@ -1923,32 +2213,33 @@ sub treeStudy{
 				my @complementarySpecies = ();
 				my $allSpecies = join("",@tags);
 				foreach my $specie (@species){	$allSpecies =~	s/$specie//g; }
-				foreach my $specie (split(/\s*/,$allSpecies)){	push(@currentMotifs, $motifs[$speciesOrder{$specie}]); print "pushing into currentMotifs: $speciesOrder{$specie}: $motifs[$speciesOrder{$specie}]\n" if $printer == 1;;}
-				print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
+				foreach my $specie (split(/\s*/,$allSpecies)){	push(@currentMotifs, $motifs[$speciesOrder{$specie}]); #print "pushing into currentMotifs: $speciesOrder{$specie}: $motifs[$speciesOrder{$specie}]\n" if $printer == 1;;
+					}
+# print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
 				$template{$translate}[1]=$template{$translate}[1]+1 if $strict == 1 && consistency(@currentMotifs) ne "NULL";
 				$template{$translate}[1]=$template{$translate}[1]+1  if $strict == 0;
-				print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
+# print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
 			}
 		}
 
 		elsif ($analyses[0] =~ /,/) {
 			my @events = split(/,/,$analyses[0]);	
-			print "events = @events \n " if $printer == 1;
+# print "events = @events \n " if $printer == 1;
 			if ($events[0] =~ /\+/){
 				my $analysis1 = $events[0];
 				$analysis1 =~ s/\+|\-//g;
 				my $analysis2 = $events[1];
 				$analysis2 =~ s/\+|\-//g;
 				my @nSpecies = split(/\s*/,$analysis2);
-				print "original anslysis = $analysis1 " if $printer == 1;
+# print "original anslysis = $analysis1 " if $printer == 1;
 				foreach my $specie (@nSpecies){ $analysis1=~ s/$specie//g;}
-				print "processed anslysis = $analysis1 \n" if $printer == 1; 
+# print "processed anslysis = $analysis1 \n" if $printer == 1; 
 				my @currentMotifs = ();
 				foreach my $specie (split(/\s*/,$analysis1)){push(@currentMotifs, $motifs[$speciesOrder{$specie}]); }
-				print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
+# print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
 				$template{$translate}[1]=$template{$translate}[1]+1 if $strict == 1 && consistency(@currentMotifs) ne "NULL";
 				$template{$translate}[1]=$template{$translate}[1]+1  if $strict == 0;
-				print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
+# print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
 			}
 			else{
 				my $analysis1 = $events[0];
@@ -1958,10 +2249,10 @@ sub treeStudy{
 				my @pSpecies = split(/\s*/,$analysis2);
 				my @currentMotifs = ();
 				foreach my $specie (@pSpecies){	push(@currentMotifs, $motifs[$speciesOrder{$specie}]); }
-				print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
+# print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
 				$template{$translate}[1]=$template{$translate}[1]+1 if $strict == 1 && consistency(@currentMotifs) ne "NULL";
 				$template{$translate}[1]=$template{$translate}[1]+1 if $strict == 0;
-				print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
+# print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
 			
 			}
 			
@@ -1969,7 +2260,7 @@ sub treeStudy{
 		elsif ($analyses[0] =~ /\./) {
 			my @events = split(/\./,$analyses[0]);	
 			foreach my $event (@events){
-				print "event = $event \n" if $printer == 1;
+# print "event = $event \n" if $printer == 1;
 				if ($event =~ /\+/){
 					my $analysis = $event;
 					$analysis =~ s/\+|\-//g;
@@ -1977,10 +2268,10 @@ sub treeStudy{
 					my @currentMotifs = ();
 					foreach my $specie (@species){	push(@currentMotifs, $motifs[$speciesOrder{$specie}]); }
 					#print consistency(@currentMotifs),"<- \n"; 
-					print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
+# print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
 					$template{$translate}[1]=$template{$translate}[1]+1 if $strict == 1 && consistency(@currentMotifs) ne "NULL";
 					$template{$translate}[1]=$template{$translate}[1]+1 if $strict == 0;
-					print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
+# print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
 				}
 				else{
 					my $analysis = $event;
@@ -1992,10 +2283,10 @@ sub treeStudy{
 					foreach my $specie (@species){	$allSpecies =~	s/$specie//g; }
 					foreach my $specie (split(/\s*/,$allSpecies)){	push(@currentMotifs, $motifs[$speciesOrder{$specie}]); }
 					#print consistency(@currentMotifs),"<- \n"; 
-					print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
+# print "current motifs = @currentMotifs and consistency? ", (consistency(@currentMotifs))," \n" if $printer == 1;
 					$template{$translate}[1]=$template{$translate}[1]+1 if $strict == 1 && consistency(@currentMotifs) ne "NULL";
 					$template{$translate}[1]=$template{$translate}[1]+1 if $strict == 0;
-					print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
+# print "adding to template $translate: $template{$translate}[1]\n" if $printer == 1;
 				}
 			}	
 		
@@ -2011,24 +2302,24 @@ sub treeStudy{
 	
 	
 	for my $templet ( keys %template ) {
-	#	print "now returning: $templet\n";
 		if (@{ $template{$templet} }[1] > 0){
-			print "returning in the end: $templet and $translate\n" if $printer == 1;
+			
 			$template{$templet}[1] = 0;
-			return 	(@{$template{$templet}}[0], $translate);
+# print "now returning: @{$template{$templet}}[0], $templet\n";
+			return 	(@{$template{$templet}}[0], $templet);
 		}
 	}
 	undef %template;
-	print "sending NULL\n" if $printer == 1;
-	return ("NULL", $translate);
+# print "sending NULL\n" if $printer == 1;
+	return ("NULL", "NULL");
 	
 }
 
 
 sub consistency{
 	my @motifs = @_;
-	print "in consistency \n" if $printer == 1;
-	print "motifs sent = >",join("|",@motifs),"< \n" if $printer == 1; 
+# print "in consistency \n" if $printer == 1;
+# print "motifs sent = >",join("|",@motifs),"< \n" if $printer == 1; 
 	return $motifs[0] if scalar(@motifs) == 1;
 	my $prevmotif = shift(@motifs);
 	my $stopper = 0;
@@ -2043,14 +2334,14 @@ sub consistency{
 	return "NULL" if $stopper == 1;
 }
 sub summarize_microsat{
-	my $printer = 0;
+	my $printer = 1;
 	my $line = $_[0];	
 	my $humseq = $_[1];
 
 	my @gaps = $line =~ /[0-9]+\t[0-9]+\t[\+\-]/g;
 	my @starts = $line =~ /[0-9]+\t[\+\-]/g;
 	my @ends = $line =~ /[\+\-]\t[0-9]+/g;
-	print "starts = @starts\tends = @ends\n" if $printer == 1;
+# print "starts = @starts\tends = @ends\n" if $printer == 1;
 	for my $i (0 ... $#gaps) {$gaps[$i] =~ s/\t[0-9]+\t[\+\-]//g;}
 	for my $i (0 ... $#starts) {$starts[$i] =~ s/\t[\+\-]//g;}
 	for my $i (0 ... $#ends) {$ends[$i] =~ s/[\+\-]\t//g;}
@@ -2066,9 +2357,7 @@ sub summarize_microsat{
 	$no_of_gaps_to_end = ($humupstream_en =~ s/\-/x/g) if $humupstream_en=~/\-/;
 
 	my $locusmotif = ();
-	
-	
-	print "IN SUB SUMMARIZE_MICROSAT $line\n" if $printer == 1;
+# print "IN SUB SUMMARIZE_MICROSAT $line\n" if $printer == 1;
 	#return "NULL" if $line =~ /compound/;
 	my $Hstart = "NA";
 	my $Hend = "NA";
@@ -2114,37 +2403,35 @@ sub summarize_microsat{
 		$micro =~ s/\t\t/\t \t/g;
 		$micro =~ s/\t,/\t ,/g;
 		$micro =~ s/,\t/, \t/g;
-		print "------------------------------------------------------------------------------------------\n" if $printer == 1;
+# print "------------------------------------------------------------------------------------------\n" if $printer == 1;
 		chomp $micro;
 		if ($micro eq '0'){
 			push(@endstatement, join("\t",$exacttags[$species_counter],"NA","NA","NA","NA",0 ,"NA", "NA", 0,"NA","NA","NA", "NA" ));
 			$species_counter++;
-			print join("|","ENDSTATEMENT:",@endstatement),"\n" if $printer == 1;
+		#	print join("|","ENDSTATEMENT:",@endstatement),"\n" if $printer == 1;
 			next;
 		}
 	#		print $micro,"\n";
-		print "micro  = $micro \n" if $printer == 1;
+# print "micro  = $micro \n" if $printer == 1;
 		my @fields  = split(/\t/,$micro);
 		my $microcopy = $fields[$microsatcord];
 		$microcopy =~ s/\[|\]|-//g;
 		my $microsatlength = length($microcopy);
-		print "microsat = $fields[$microsatcord] and microsatlength = $microsatlength\n" if $printer == 1;
+# print "microsat = $fields[$microsatcord] and microsatlength = $microsatlength\n" if $printer == 1;
 #		print "sp_ident = @sp_ident.. species_no=$species_no\n";
-		$micro =~ /$sp_ident[$species_no]\s(\S+)\s([0-9]+)\s([0-9]+)/;
-		
-	
+		$micro =~ /$sp_ident[$species_no]\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)/;
+# print "$micro =~ /$sp_ident[$species_no] ([0-9a-zA-Z_]+) ([0-9]+) ([0-9]+)/\n";
 		my $sp_chr=$1;
 		my $sp_start=$2 + $fields[$startcord] - $fields[$gapcord];
 		my $sp_end= $sp_start + $microsatlength - 1;
 		
 		$species_no++;
 	
-		$micro =~ /$focalspec\s(\S+)\s([0-9]+)\s([0-9]+)/;
+		$micro =~ /$focalspec_orig\s(\S+)\s([0-9]+)\s([0-9]+)/;
 		$orthHchr=$1;
 		$Hstart=$2+$minstart-$no_of_gaps_to_start;
 		$Hend=$2+$maxend-$no_of_gaps_to_end;
-
-		print "Hstart = $Hstart = $fields[4] + $fields[$startcord] - $fields[$gapcord]\n" if $printer == 1;
+# print "Hstart = $Hstart = $fields[4] + $fields[$startcord] - $fields[$gapcord]\n" if $printer == 1;
 	
 		my $motif = $fields[$motifcord];
 		my $firstmotif = ();
@@ -2159,7 +2446,7 @@ sub summarize_microsat{
 		}
 		
 		else {$firstmotif = $motif;}
-		print "firstmotif =$firstmotif : \n" if $printer == 1;
+# print "firstmotif =$firstmotif : \n" if $printer == 1;
 		$firstmotif = allCaps($firstmotif);
 
 		if (exists $revHash{$firstmotif} && $turn == 0) {
@@ -2168,17 +2455,17 @@ sub summarize_microsat{
 		}
 		
 		elsif (exists $revHash{$firstmotif} && $turn == 1) {$firstmotif = $revHash{$firstmotif}; $turn = 1;}
-		print "changed firstmotif =$firstmotif\n" if $printer == 1;
+# print "changed firstmotif =$firstmotif\n" if $printer == 1;
 	#		<STDIN>;
 		$locusmotif = $firstmotif;
 		
 		if (scalar(@fields) > $microsatcord + 2){
-			print "fields = @fields ... interr_poscord=$interr_poscord=$fields[$interr_poscord] .. interrcord=$interrcord=$fields[$interrcord]\n" if $printer == 1; 
+# print "fields = @fields ... interr_poscord=$interr_poscord=$fields[$interr_poscord] .. interrcord=$interrcord=$fields[$interrcord]\n" if $printer == 1; 
 
 			my @interposes = ();
 			@interposes = split(",",$fields[$interr_poscord]) if $fields[$interr_poscord] =~ /,/; 
 			$interposes[0] = $fields[$interr_poscord] if $fields[$interr_poscord] !~ /,/ ;
-			print "interposes=@interposes\n" if $printer == 1;
+# print "interposes=@interposes\n" if $printer == 1;
 			my @relativeposes = (); 
 			my @interruptions = ();
 			@interruptions = split(",",$fields[$interrcord]) if $fields[$interrcord] =~ /,/; 
@@ -2196,16 +2483,16 @@ sub summarize_microsat{
 			
 				
 				my $relativepos = (100 * $interpos) / $microsatlength;
-				print "relativepos  = $relativepos ,interpos=$interpos, interruption=$interruption, interlen=$interlen \n" if $printer == 1;
+# print "relativepos  = $relativepos ,interpos=$interpos, interruption=$interruption, interlen=$interlen \n" if $printer == 1;
 				$relativepos = (100 * ($interpos-$interlen)) / $microsatlength if $relativepos > 50;
-				print "-->  = $relativepos\n" if $printer == 1;
+# print "-->  = $relativepos\n" if $printer == 1;
 				$interruption = "IND" if length($interruption) < 1;
 		
 				if ($turn == 1){
 					$fields[$microsatcord] = switch_micro($fields[$microsatcord]);
 					$interruption = switch_nucl($interruption) unless $interruption eq "IND";
 					$interpos = ($microsatlength - $interpos) - $interlen + 2;
-					print "turn interpos = $interpos for $fields[$microsatcord]\n" if $printer == 1;
+# print "turn interpos = $interpos for $fields[$microsatcord]\n" if $printer == 1;
 					$relativepos = (100 * $interpos) / $microsatlength;
 					$relativepos = (100 * ($interpos-$interlen)) / $microsatlength if $relativepos > 50;
 		
@@ -2213,7 +2500,7 @@ sub summarize_microsat{
 					$strand = '+' if $strand eq '-';
 					$strand = '-' if $strand eq '+';
 				}
-				print "final relativepos = $relativepos\n" if $printer == 1;
+# print "final relativepos = $relativepos\n" if $printer == 1;
 				push(@relativeposes, $relativepos);
 			}
 			push(@endstatement,join("\t",($exacttags[$species_counter],$sp_chr, $sp_start, $sp_end, $firstmotif,length($firstmotif),$fields[$microsatcord],$strand,$microsatlength,join(",",@interposes),join(",",@relativeposes),join(",",@interruptions), join(",",@interlens))));
@@ -2230,7 +2517,7 @@ sub summarize_microsat{
 		$locusmotif = $revHash{$locusmotif} if exists $revHash{$locusmotif};
 	
 		my $endst =  join("\t", @endstatement, $orthHchr, $Hstart, $Hend);
-		print join("\t", @endstatement, $orthHchr,  $Hstart, $Hend), "\n" if $printer == 1; 
+#		print join("\t", @endstatement, $orthHchr,  $Hstart, $Hend), "\n" if $printer == 1; 
 	
 	
 	return (join("\t", @endstatement, $orthHchr, $Hstart, $Hend), $orthHchr, $Hstart, $Hend, $locusmotif, length($locusmotif));
@@ -2267,10 +2554,10 @@ sub decipher_history{
 	my ($mutations_array, $tags_string, $nodes, $branches_hash, $tree_analysis, $confirmation_string, $alivehash) = @_;
 	my %mutations_hash=();
 	foreach my $mutation (@$mutations_array){
-		print "mutation = $mutation\n" if $printer == 1;
+# print "mutation = $mutation\n" if $printer == 1;
 		my %local = $mutation =~ /([\S ]+)=([\S ]+)/g;
 		push @{$mutations_hash{$local{"node"}}},$mutation; 
-		print "just for confirmation: $local{node} pushed as: $mutation\n" if $printer == 1;
+# print "just for confirmation: $local{node} pushed as: $mutation\n" if $printer == 1;
 	}
 	my @nodes;
 	my @birth_steps=();
@@ -2282,7 +2569,7 @@ sub decipher_history{
 	
 	for my $i (0 ... $#tags){
 		$info{$tags[$i]}=$confirmation[$i];
-		print "feeding info: $tags[$i] = $info{$tags[$i]}\n" if $printer == 1;
+# print "feeding info: $tags[$i] = $info{$tags[$i]}\n" if $printer == 1;
 	}
 	
 	for my $keys (@$nodes) {
@@ -2295,8 +2582,7 @@ sub decipher_history{
 			foreach my $copy (@copykeys){
 				$states=$states.$info{$copy};
 			}
-			
-			print "reduced key = $copykey and state = $states\n" if $printer == 1;
+# print "reduced key = $copykey and state = $states\n" if $printer == 1;
 			
 			if (exists $mutations_hash{$key}) {
 				
@@ -2313,18 +2599,18 @@ sub decipher_history{
 			}
 		}
 	}
-	print "conformation = $confirmation_string\n" if $printer == 1;
+# print "conformation = $confirmation_string\n" if $printer == 1;
 	push (@birth_steps, "NULL") if scalar(@birth_steps) == 0;
 	push (@death_steps, "NULL") if scalar(@death_steps) == 0;
-	print "birth steps = ",join("\n",@birth_steps)," and death steps = ",join("\n",@death_steps),"\n" if $printer == 1;
+# print "birth steps = ",join("\n",@birth_steps)," and death steps = ",join("\n",@death_steps),"\n" if $printer == 1;
 	return \@birth_steps, \@death_steps;
 }
 
 sub fillAlignmentGaps{
 	my $printer = 0;
-	print "received: @_\n" if $printer == 1;
+# print "received: @_\n" if $printer == 1;
 	my ($tree, $sequences, $alignment, $tagarray, $microsathash, $nonmicrosathash, $motif, $tree_analysis, $threshold, $microsatstarts) = @_;
-	print "in fillAlignmentGaps.. tree = $tree \n" if $printer == 1;
+# print "in fillAlignmentGaps.. tree = $tree \n" if $printer == 1;
 	my %sequence_hash=();
 
 	my @phases = ();
@@ -2392,12 +2678,11 @@ sub fillAlignmentGaps{
 		$node_sequences{$tag} = join ".",split(/\s*/,$node_sequences_temp{$tag});
 		$node_alignments{$tag} = join ".",split(/\s*/,$node_alignments_temp{$tag});		
 	}	
-
-	print "\n", "#" x 50, "\n" if $printer == 1;
+# print "\n", "#" x 50, "\n" if $printer == 1;
 	foreach my $tag (@tags){
-		print "$tag: $alignment->{$tag} = $node_alignments{$tag}\n" if $printer == 1;	
+# print "$tag: $alignment->{$tag} = $node_alignments{$tag}\n" if $printer == 1;	
 	}
-	print "\n", "#" x 50, "\n" if $printer == 1;
+# print "\n", "#" x 50, "\n" if $printer == 1;
 #	print "change = $change\n";
 	#<STDIN> if $concatalignment=~/\-/;
 	
@@ -2407,7 +2692,7 @@ sub fillAlignmentGaps{
 	
 	my ($nodes_arr, $branches_hash) = get_nodes($tree);
 	my @nodes=@$nodes_arr;
-	print "recieved nodes = @nodes\n" if $printer == 1; 
+# print "recieved nodes = @nodes\n" if $printer == 1; 
 	
 	
 	#POPULATE branches_hash WITH INFORMATION ABOUT LIVESTATUS
@@ -2416,13 +2701,13 @@ sub fillAlignmentGaps{
 		my $joint = "(".join(", ",@pair).")";
 		my $copykey = join "", @pair;
 		$copykey =~ s/[\W ]+//g;
-		print "for node: $keys, copykey = $copykey and joint = $joint\n" if $printer == 1;
+# print "for node: $keys, copykey = $copykey and joint = $joint\n" if $printer == 1;
 		my $livestatus = 1;
 		foreach my $copy (split(/\s*/,$copykey)){
 			$livestatus = 0 if !exists $alivehash{$copy};
 		}
 		$alivehash{$joint} = $joint if !exists $alivehash{$joint} && $livestatus == 1;
-		print "alivehash = $alivehash{$joint}\n" if exists $alivehash{$joint} && $printer == 1;
+# print "alivehash = $alivehash{$joint}\n" if exists $alivehash{$joint} && $printer == 1;
 	}
 	
 
@@ -2434,31 +2719,31 @@ sub fillAlignmentGaps{
 	my $joint = ();
 	foreach my $node (@nodes){
 		my @pair = @$node; 
-		print "now in the nodes for loop, pair = @pair\n and sequences=\n" if $printer == 1;
+# print "now in the nodes for loop, pair = @pair\n and sequences=\n" if $printer == 1;
 		$joint = "(".join(", ",@pair).")"; 	
-		print "joint = $joint \n" if $printer == 1; 
+# print "joint = $joint \n" if $printer == 1; 
 		my @pair_sequences=();
 
 		foreach my $tag (@pair){
-			print "tag = $tag: " if $printer == 1;
-			print $node_alignments{$tag},"\n" if $printer == 1;
+# print "tag = $tag: " if $printer == 1;
+#			print $node_alignments{$tag},"\n" if $printer == 1;
 			push @pair_sequences, $node_alignments{$tag};
 		}
 #		print "fillgap\n";
 		my ($compared, $substitutions_list) = base_by_base_simple($motif,\@pair_sequences, scalar(@pair_sequences), @pair, $joint);
 		$node_alignments{$joint}=$compared;
 		push(  @mutations_array,split(/:/,$substitutions_list));
-		print "newly added to node_sequences: $node_alignments{$joint} and list of mutations = @mutations_array\n" if $printer == 1;
+# print "newly added to node_sequences: $node_alignments{$joint} and list of mutations = @mutations_array\n" if $printer == 1;
 	}
-	print "now sending for analyze_mutations: mutation_array=@mutations_array, nodes=@nodes, branches_hash=$branches_hash, alignment=$alignment, tags=@tags, alivehash=%alivehash, node_sequences=\%node_sequences, microsatstarts=$microsatstarts, motif=$motif\n" if $printer == 1;
+# print "now sending for analyze_mutations: mutation_array=@mutations_array, nodes=@nodes, branches_hash=$branches_hash, alignment=$alignment, tags=@tags, alivehash=%alivehash, node_sequences=\%node_sequences, microsatstarts=$microsatstarts, motif=$motif\n" if $printer == 1;
 #	<STDIN> if $printer == 1;
 	
 	my $analayzed_mutations = analyze_mutations(\@mutations_array, \@nodes, $branches_hash, $alignment, \@tags, \%alivehash, \%node_sequences, $microsatstarts, $motif);
 
 #	print "returningt: ", $analayzed_mutations, \@nodes,"\n" if scalar @mutations_array > 0;;
 #	print "returningy: NULL, NULL, NULL " if scalar @mutations_array == 0 && $printer == 1;
-	print "final node alignment after filling for $joint= " if $printer == 1;
-	print "$node_alignments{$joint}\n" if $printer == 1;
+# print "final node alignment after filling for $joint= " if $printer == 1;
+# print "$node_alignments{$joint}\n" if $printer == 1;
 	
 
 	return 1, $analayzed_mutations, \@nodes, $branches_hash, \%alivehash, $node_alignments{$joint} if scalar @mutations_array > 0 ;
@@ -2469,21 +2754,21 @@ sub fillAlignmentGaps{
 
 sub add_mutation{
 	my $printer = 0;
-	print "IN SUBROUTUNE add_mutation.. information received = @_\n" if $printer == 1;
+# print "IN SUBROUTUNE add_mutation.. information received = @_\n" if $printer == 1;
 	my ($i , $bite, $to, $from) = @_;
-	print "bite = $bite.. all received info = ",join("^", @_),"\n" if $printer == 1;
-	print "to=$to\n" if $printer == 1;
-	print "tis split = ",join(" and ",split(/!/,$to)),"\n" if $printer == 1;
+# print "bite = $bite.. all received info = ",join("^", @_),"\n" if $printer == 1;
+# print "to=$to\n" if $printer == 1;
+# print "tis split = ",join(" and ",split(/!/,$to)),"\n" if $printer == 1;
 	my @toields = split "!",$to;
-	print "toilds  = @toields\n" if $printer == 1;
+# print "toilds  = @toields\n" if $printer == 1;
 	my @mutations=();
 	
 	foreach my $toield (@toields){
 		my @toinfo=split(":",$toield);
-		print " at toinfo=@toinfo \n" if $printer == 1;
+# print " at toinfo=@toinfo \n" if $printer == 1;
 		next if  $toinfo[1] =~ /$from/i;
 		my @mutation = @toinfo if $toinfo[1] !~ /$from/i;
-		print "adding to mutaton list: ", join(",", "node=$mutation[0]","type=substitution" ,"position=$i", "from=$from", "to=$mutation[1]", "insertion=", "deletion="),"\n" if $printer == 1;
+# print "adding to mutaton list: ", join(",", "node=$mutation[0]","type=substitution" ,"position=$i", "from=$from", "to=$mutation[1]", "insertion=", "deletion="),"\n" if $printer == 1;
 		push (@mutations, join("\t", "node=$mutation[0]","type=substitution" ,"position=$i", "from=$from", "to=$mutation[1]", "insertion=", "deletion="));
 	}
 	return @mutations;
@@ -2493,7 +2778,7 @@ sub add_mutation{
 sub add_bases{
 
 	my $printer = 0;
-	print "IN SUBROUTUNE add_bases.. information received = @_\n" if $printer == 1;
+# print "IN SUBROUTUNE add_bases.. information received = @_\n" if $printer == 1;
 	my ($optional0, $optional1, $pair0, $pair1,$joint) = @_;
 	my $total_list=();
 
@@ -2535,8 +2820,7 @@ sub add_bases{
 		}
 
 	}
-
-	print "returning ",join "!",@return_options,"\n" if $printer == 1; 
+# print "returning ",join "!",@return_options,"\n" if $printer == 1; 
 	return join "!",@return_options;
 
 }
@@ -2688,7 +2972,7 @@ sub selectMutationArray{
 	my @tags = @$tagstringpt;
 	my $alignmentln = length($alignmentpt->{$tags[0]});
 	
-	foreach my $key (keys %$alivehashpt) { push @alivehasharr, $key; print "we have alive: $key\n" if $printer == 1;}
+	foreach my $key (keys %$alivehashpt) { push @alivehasharr, $key; }
 	
 	my %newside = ();
 	my %oldside = ();
@@ -2717,8 +3001,8 @@ sub selectMutationArray{
 			 $mut =~ /node=([A-Z\(\), ]+)\stype=([a-zA-Z ]+)\sposition=([0-9 ]+)\sfrom=([a-zA-Z\- ]+)\sto=([a-zA-Z\- ]+)\sinsertion=([a-zA-Z\- ]+)\sdeletion=([a-zA-Z\- ]+)/;
 			my $node = $1;
 			next if $3 != $pos;
-			print "new mut = $mut\n" if $printer == 1;
-			print "node = $node, pos = $3 ... and alivehasharr = >@alivehasharr<\n" if $printer == 1;
+# print "new mut = $mut\n" if $printer == 1;
+# print "node = $node, pos = $3 ... and alivehasharr = >@alivehasharr<\n" if $printer == 1;
 			my $alivenode = 0;
 			foreach my $key (@alivehasharr){
 				$alivenode = 1 if $key =~ /$node/;
@@ -2734,14 +3018,14 @@ sub selectMutationArray{
 				$indel_type = "d".checkIndelType($node, $thisindel, $motif,$alignmentpt, $3, $2) if $2 eq "deletion";
 				$indel_type = $indel_type."f" if $indel_type =~ /mot/ && length($thisindel) >= length($motif);
 			}
-			print "indeltype = $indel_type\n" if $printer == 1;
+# print "indeltype = $indel_type\n" if $printer == 1;
 			my $added = 0;
 			
 			if (exists $newside{$pos} && $indel_type =~ /[a-z]+/){
-				print "we have a preexisting one for $pos\n" if $printer == 1;
+# print "we have a preexisting one for $pos\n" if $printer == 1;
 				my @preexisting = @{$newside{$pos}};
 				foreach my $pre (@preexisting){
-					print "looking at $pre\n" if $printer == 1;
+# print "looking at $pre\n" if $printer == 1;
 					next if $pre !~ /node=$node/;
 					next if $pre !~ /indeltype=([a-z]+)/;
 					my $currtype = $1;
@@ -2768,11 +3052,9 @@ sub selectMutationArray{
 					}					
 				}
 			}
-			
-			print "added = $added\n" if $printer == 1;
+# print "added = $added\n" if $printer == 1;
 			push @{$newside{$pos}}, $mut."\tindeltype=$indel_type" if $added == 0;
-
-			print "for new pos,: $pos we have: @{$newside{$pos}}\n " if $printer == 1;
+# print "for new pos,: $pos we have: @{$newside{$pos}}\n " if $printer == 1;
 		}
 	}
 	
@@ -2786,7 +3068,7 @@ sub selectMutationArray{
 			$mut =~ /node=([A-Z\(\), ]+)\ttype=([a-zA-Z ]+)\tposition=([0-9 ]+)\tfrom=([a-zA-Z\- ]+)\tto=([a-zA-Z\- ]+)\tinsertion=([a-zA-Z\- ]+)\tdeletion=([a-zA-Z\- ]+)/;
 			my $node = $1;
 			next if $3 != $pos;
-			print "old mut = $mut\n" if $printer == 1;
+# print "old mut = $mut\n" if $printer == 1;
 			my $alivenode = 0;
 			foreach my $key (@alivehasharr){
 				$alivenode = 1 if $key =~ /$node/;
@@ -2807,7 +3089,7 @@ sub selectMutationArray{
 			
 			if (exists $newside{$pos} && $indel_type =~ /[a-z]+/){
 				my @preexisting = @{$newside{$pos}};
-				print "we have a preexisting one for $pos: @preexisting\n" if $printer == 1;
+# print "we have a preexisting one for $pos: @preexisting\n" if $printer == 1;
 				next if $imp == 0;
 				
 				if (scalar(@preexisting) == 1){
@@ -2816,7 +3098,7 @@ sub selectMutationArray{
 					next if $1 eq $node;
 					
 					if (exists $oldside{$pos} || exists $commons{$foundmut}){
-						print "not replacing, but just adding\n" if $printer == 1;
+# print "not replacing, but just adding\n" if $printer == 1;
 						push @{$newside{$pos}}, $mut."\tindeltype=$indel_type";
 						push @{$oldside{$pos}}, $mut."\tindeltype=$indel_type";
 						next;
@@ -2825,26 +3107,23 @@ sub selectMutationArray{
 					delete $newside{$pos};
 					push @{$oldside{$pos}}, $mut."\tindeltype=$indel_type";
 					push @{$newside{$pos}}, $mut."\tindeltype=$indel_type";
-					print "now  new one is : @{$newside{$pos}}\n" if $printer == 1;
+# print "now  new one is : @{$newside{$pos}}\n" if $printer == 1;
 				}
-				
-				print "for pos: $pos: @{$newside{$pos}}\n" if $printer == 1;
+# print "for pos: $pos: @{$newside{$pos}}\n" if $printer == 1;
 				next;
 			}
 
 			
 			my @news = @{$newside{$pos}} if exists $newside{$pos};
-			
-			print "mut = $mut and news = @news\n" if $printer == 1; 
+# print "mut = $mut and news = @news\n" if $printer == 1; 
 			push @{$oldside{$pos}}, $mut."\tindeltype=$indel_type";
 			push @{$newside{$pos}}, $mut."\tindeltype=$indel_type";
 		}
 	}
-
-	print "in the end, our collected mutations = \n" if $printer == 1;
+# print "in the end, our collected mutations = \n" if $printer == 1;
 	my @returnarr = ();
 	foreach my $key (keys %newside) {push @returnarr,@{$newside{$key}};}
-	print join("\n", @returnarr),"\n" if $printer == 1;
+#	print join("\n", @returnarr),"\n" if $printer == 1;
 	#<STDIN>;
 	return @returnarr;
 
@@ -2863,7 +3142,7 @@ sub checkIndelType{
 	my %prephases = ();
 	my %postphases = ();
 	#print "motif = $motif\n";
-	print "IN checkIndelType ... received: @_\n" if $printer == 1;
+# print "IN checkIndelType ... received: @_\n" if $printer == 1;
 	my $concat = $motif.$motif.$motif.$motif;
 	my $motiflength = length($motif);
 	
@@ -2878,16 +3157,16 @@ sub checkIndelType{
 		push @phases, $phase;
 		$firstpass = 1 if $indel =~ /$phase/i;
 		for my $k (0 ... length($motif)-1){
-			print "at: motiflength=$motiflength , y=$y , k=$k.. for pre: $motiflength+$y-$k and post: $motiflength+$y-$k+$motiflength in $concat\n" if $printer == 1;
+# print "at: motiflength=$motiflength , y=$y , k=$k.. for pre: $motiflength+$y-$k and post: $motiflength+$y-$k+$motiflength in $concat\n" if $printer == 1;
 			my $pre = substr($concat, $motiflength+$y-$k, $k );
 			my $post = substr($concat, $motiflength+$y+$motiflength, $k);
-			print "adding to phases : $phase - $pre and $post\n" if $printer == 1;
+# print "adding to phases : $phase - $pre and $post\n" if $printer == 1;
 			push @{$prephases{$phase}} , $pre;
 			push @{$postphases{$phase}} , $post;			
 		}
 		
 	}
-	print "firstpass 1= $firstpass\n" if $printer == 1;
+# print "firstpass 1= $firstpass\n" if $printer == 1;
 	return "non" if $firstpass ==0;
 	$firstpass =0;
 	
@@ -2900,15 +3179,14 @@ sub checkIndelType{
 				
 				$firstpass = 1 if $indel =~ /($pre)?($phase)+($post)?/i && length($indel) > (3 * length($motif));
 				$firstpass = 1 if $indel =~ /^($pre)?($phase)+($post)?$/i && length($indel) < (3 * length($motif));
-				print "matched here : ($pre)?($phase)+($post)?\n" if $printer == 1;
+# print "matched here : ($pre)?($phase)+($post)?\n" if $printer == 1;
 				last if $firstpass == 1;
 			}
 			last if $firstpass == 1;
 		}
 		last if $firstpass == 1;
 	}
-	
-	print "firstpass 2= $firstpass\n" if $printer == 1;
+# print "firstpass 2= $firstpass\n" if $printer == 1;
 	return "non" if $firstpass ==0;
 	return "mot" if $firstpass ==1;	
 }
@@ -2926,10 +3204,10 @@ sub checkIndelType_ComplexAnalysis{
 	
 	my @seqs = ();
 	my $residualseq = length($motif) - length($indel);
-	print "IN COMPLEX ANALYSIS ... received: @_  .... speciesinvolved = @speciesinvolved\n" if $printer == 1;
-	print "we have position = $pos, sseq = $alignmentpt->{$speciesinvolved[0]}\n" if $printer == 1;
-	print "residualseq = $residualseq\n" if $printer == 1;
-	print "pos=$pos... got: @_\n" if $printer == 1;
+# print "IN COMPLEX ANALYSIS ... received: @_  .... speciesinvolved = @speciesinvolved\n" if $printer == 1;
+# print "we have position = $pos, sseq = $alignmentpt->{$speciesinvolved[0]}\n" if $printer == 1;
+# print "residualseq = $residualseq\n" if $printer == 1;
+# print "pos=$pos... got: @_\n" if $printer == 1;
 	foreach my $sp (@speciesinvolved){
 		my $spseq = $alignmentpt->{$sp};
 		#print "orig spseq = $spseq\n";
@@ -2946,23 +3224,21 @@ sub checkIndelType_ComplexAnalysis{
 		}
 		#print "mod spseq = $spseq\n";
 	#	$spseq=~ s/\-//g if $type !~ /deletion/;
-		
-		print "substr($spseq, $pos-($residualseq), length($indel)+$residualseq+$residualseq)\n" if $pos > 0 && $pos < (length($spseq) - length($motif))  && $printer == 1;
-		print "substr($spseq, 0, length($indel)+$residualseq)\n" if $pos == 0 && $printer == 1;
-		print "substr($spseq, $pos - $residualseq, length($indel)+$residualseq)\n" if $pos >= (length($spseq) - length($motif))  && $printer == 1;
+# print "substr($spseq, $pos-($residualseq), length($indel)+$residualseq+$residualseq)\n" if $pos > 0 && $pos < (length($spseq) - length($motif))  && $printer == 1;
+# print "substr($spseq, 0, length($indel)+$residualseq)\n" if $pos == 0 && $printer == 1;
+# print "substr($spseq, $pos - $residualseq, length($indel)+$residualseq)\n" if $pos >= (length($spseq) - length($motif))  && $printer == 1;
 		
 		$subseq = substr($spseq, $pos-($residualseq), length($indel)+$residualseq+$residualseq) if $pos > 0 && $pos < (length($spseq) - length($motif))  ;
 		$subseq = substr($spseq, 0, length($indel)+$residualseq) if $pos == 0;
 		$subseq = substr($spseq, $pos - $residualseq, length($indel)+$residualseq) if $pos >= (length($spseq) - length($motif))  ;
-		print "spseq = $spseq . subseq=$subseq . type = $type\n" if $printer == 1;
+# print "spseq = $spseq . subseq=$subseq . type = $type\n" if $printer == 1;
 		#<STDIN> if $subseq !~ /[a-z\-]/i; 
 		$subseq =~ s/\-/$indel/g if $type =~ /insertion/;
 		push @seqs, $subseq;
-		print "seqs = @seqs\n" if $printer == 1;
+# print "seqs = @seqs\n" if $printer == 1;
 	}
 	return "non" if checkIfSeqsIdentical(@seqs) eq "NO";
-	
-	print "checking for $seqs[0] \n" if $printer == 1;
+# print "checking for $seqs[0] \n" if $printer == 1;
 	
 	my @phases =();
 	my %prephases = ();
@@ -2979,13 +3255,13 @@ sub checkIndelType_ComplexAnalysis{
 		for my $k (0 ... length($motif)-1){
 			my $pre = substr($concat, $motiflength+$y-$k, $k );
 			my $post = substr($concat, $motiflength+$y+$motiflength, $k);
-			print "adding to phases : $phase - $pre and $post\n" if $printer == 1;
+# print "adding to phases : $phase - $pre and $post\n" if $printer == 1;
 			push @{$prephases{$phase}} , $pre;
 			push @{$postphases{$phase}} , $post;			
 		}
 		
 	}
-	print "firstpass 1= $firstpass.. also, res-d = ",(length($seqs[0]))%(length($motif)),"\n" if $printer == 1;
+# print "firstpass 1= $firstpass.. also, res-d = ",(length($seqs[0]))%(length($motif)),"\n" if $printer == 1;
 	return "non" if $firstpass ==0;
 	$firstpass =0;
 	foreach my $phase (@phases){
@@ -2999,7 +3275,7 @@ sub checkIndelType_ComplexAnalysis{
 				foreach my $post (@posts){
 					next if $pre !~ /\S/ && $post !~ /\S/;
 					$firstpass = 1 if ($seqs[0] =~ /^($pre)($phase)+($post)$/i || $seqs[0] =~ /^($pre)($phase)+$/i || $seqs[0] =~ /^($phase)+($post)$/i);
-					print "caught with $pre $phase $post\n" if $printer == 1;
+# print "caught with $pre $phase $post\n" if $printer == 1;
 					last if $firstpass == 1;
 				}
 				last if $firstpass == 1;
@@ -3124,9 +3400,9 @@ sub summarizeMutations{
 			$dsubstitutions++ if $myutype eq "d";
 			$nsubstitutions++ if $myutype eq "n";
 	#		print "substitution: from= $mhash{from}, to = $mhash{to}, and type = myutype\n";
-			push @substitutionsarr, "b:$mhash{position}:".$mhash{"from"}.">".$mhash{"to"} if $myutype eq "b";
-			push @substitutionsarr, "d:$mhash{position}:".$mhash{"from"}.">".$mhash{"to"} if $myutype eq "d";
-			push @substitutionsarr, "n:$mhash{position}:".$mhash{"from"}.">".$mhash{"to"} if $myutype eq "n";
+			push @substitutionsarr, "$mhash{position}:".$mhash{"from"}.">".$mhash{"to"} if $myutype eq "b";
+			push @substitutionsarr, "$mhash{position}:".$mhash{"from"}.">".$mhash{"to"} if $myutype eq "d";
+			push @substitutionsarr, "$mhash{position}:".$mhash{"from"}.">".$mhash{"to"} if $myutype eq "n";
 	#		print "substitutionsarr = @substitutionsarr\n";
 	#		<STDIN>;
 		}
@@ -3156,9 +3432,9 @@ sub summarizeMutations{
 				$nmotdeletionsf++ if $mhash{"indeltype"} =~ /dmotf/ && $myutype eq "n";
 				$nnondeletions++ if $mhash{"indeltype"} =~ /dnon/ && $myutype eq "n";
 				
-				push @deletionsarr, "b:$mhash{indeltype}:$mhash{position}:".$mhash{"deletion"} if $myutype eq "b";
-				push @deletionsarr, "d:$mhash{indeltype}:$mhash{position}:".$mhash{"deletion"} if $myutype eq "d";
-				push @deletionsarr, "n:$mhash{indeltype}:$mhash{position}:".$mhash{"deletion"} if $myutype eq "n";
+				push @deletionsarr, "$mhash{indeltype}:$mhash{position}:".$mhash{"deletion"} if $myutype eq "b";
+				push @deletionsarr, "$mhash{indeltype}:$mhash{position}:".$mhash{"deletion"} if $myutype eq "d";
+				push @deletionsarr, "$mhash{indeltype}:$mhash{position}:".$mhash{"deletion"} if $myutype eq "n";
 			}
 
 			if ($mhash{"type"} eq "insertion"){
@@ -3184,9 +3460,9 @@ sub summarizeMutations{
 				$nmotinsertionsf++ if $mhash{"indeltype"} =~ /imotf/ && $myutype eq "n";
 				$nnoninsertions++ if $mhash{"indeltype"} =~ /inon/ && $myutype eq "n";
 
-				push @insertionsarr, "b:$mhash{indeltype}:$mhash{position}:".$mhash{"insertion"} if $myutype eq "b";
-				push @insertionsarr, "d:$mhash{indeltype}:$mhash{position}:".$mhash{"insertion"} if $myutype eq "d";
-				push @insertionsarr, "n:$mhash{indeltype}:$mhash{position}:".$mhash{"insertion"} if $myutype eq "n";
+				push @insertionsarr, "$mhash{indeltype}:$mhash{position}:".$mhash{"insertion"} if $myutype eq "b";
+				push @insertionsarr, "$mhash{indeltype}:$mhash{position}:".$mhash{"insertion"} if $myutype eq "d";
+				push @insertionsarr, "$mhash{indeltype}:$mhash{position}:".$mhash{"insertion"} if $myutype eq "n";
 				
 			}
 		}
@@ -3204,21 +3480,19 @@ sub summarizeMutations{
 	#print "tree = $tree, indels = $indels, subs = $subs, bspecies = @bspecies, dspecies = @dspecies \n";
 	my @returnarray = ();
 	
-	push (@returnarray, $insertions,  $deletions,  $motinsertions, $motinsertionsf,  $motdeletions,  $motdeletionsf,  $noninsertions,  $nondeletions) ;
-	push (@returnarray, $binsertions, $bdeletions, $bmotinsertions,$bmotinsertionsf, $bmotdeletions, $bmotdeletionsf, $bnoninsertions, $bnondeletions) ;
-	push (@returnarray, $dinsertions, $ddeletions, $dmotinsertions,$dmotinsertionsf, $dmotdeletions, $dmotdeletionsf, $dnoninsertions, $dnondeletions) ;
-	push (@returnarray, $ninsertions, $ndeletions, $nmotinsertions,$nmotinsertionsf, $nmotdeletions, $nmotdeletionsf, $nnoninsertions, $nnondeletions) ;
-	push (@returnarray, $substitutions, $bsubstitutions, $dsubstitutions, $nsubstitutions, $indels, $subs) ;
+	push (@returnarray, $indels, $subs) ;
 		
 	push @returnarray, $tree;
 	
 	my @copy = @returnarray;
+	#print "\n\nreturnarray = @returnarray ... binsertions=$binsertions dinsertions=$dinsertions bsubstitutions=$bsubstitutions dsubstitutions=$dsubstitutions\n";
+	#<STDIN>;
 	return (@returnarray);
 	
 }
 
 sub selectBetterTree{
-	my $printer = 0;
+	my $printer = 1;
 	my $treestudy = $_[0];
 	my $alt = $_[1];
 	my $mutspt = $_[2];
@@ -3235,11 +3509,10 @@ sub selectBetterTree{
 #	push(@alltrees,@alternatetrees);
 	
 	my %mutspecies = ();
-	
-	print "IN selectBetterTree..treestudy=$treestudy. alt=$alt. for: @_. trees=@trees<. alternatetrees=@alternatetrees\n" if $printer == 1;
+# print "IN selectBetterTree..treestudy=$treestudy. alt=$alt. for: @_. trees=@trees<. alternatetrees=@alternatetrees\n" if $printer == 1;
 	#<STDIN>;
 	foreach my $mut (@muts){
-		print colored ['green'],"mut = $mut\n" if $printer == 1;
+#		print colored ['green'],"mut = $mut\n" if $printer == 1;
 		$mut =~ /node=([A-Z,\(\) ]+)/;
 		my $node  = $1;
 		$node =~s/[,\(\) ]+//g;
@@ -3247,35 +3520,30 @@ sub selectBetterTree{
 		#print "adding node: $node\n" if $printer == 1;
 		$mutspecies{$node} = $node;
 		
-		#foreach (@indivspecies) { 
-			#$mutspecies{$mut} = $_; #print "for $_ adding $mutspecies{$_}\n";
-		#}
-		
 	}
 	
 	my @treerecords = ();
 	my $treecount = -1;
 	foreach my $tree (@alltrees){
-		print "checking with tree $tree\n" if $printer == 1;
+# print "checking with tree $tree\n" if $printer == 1;
 		$treecount++;
 		$treerecords[$treecount] = 0;
 		my @indivspecies = ($tree =~ /[A-Z]+/g);
-		print "indivspecies=@indivspecies\n" if $printer == 1;
+# print "indivspecies=@indivspecies\n" if $printer == 1;
 		foreach my $species (@indivspecies){
-			print "checkin if exists species: $species\n" if $printer == 1;
+# print "checkin if exists species: $species\n" if $printer == 1;
 			$treerecords[$treecount]+=2 if exists $mutspecies{$species} && $mutspecies{$species} !~ /indeltype=[a-z]mot/;
 			$treerecords[$treecount]+=1.5 if exists $mutspecies{$species} && $mutspecies{$species} =~ /indeltype=[a-z]mot/;
 			$treerecords[$treecount]-- if !exists $mutspecies{$species};
 		}
-		
-		print "for tree $tree, our treecount = $treerecords[$treecount]\n" if $printer == 1;
+# print "for tree $tree, our treecount = $treerecords[$treecount]\n" if $printer == 1;
 	}
 	
 	my @best_tree = array_largest_number_arrayPosition(@treerecords);
-	print "treerecords = @treerecords. hence, best tree = @best_tree\n" if $printer == 1;
-	
+# print "treerecords = @treerecords. hence, best tree = @best_tree = $alltrees[$best_tree[0]], $treerecords[$best_tree[0]]\n" if $printer == 1;
+	#<STDIN>;	
 	return ($alltrees[$best_tree[0]], $treerecords[$best_tree[0]]) if scalar(@best_tree) == 1;
-	print "best_tree[0] = $best_tree[0], and treerecords = $treerecords[$best_tree[0]]\n" if $printer == 1;
+# print "best_tree[0] = $best_tree[0], and treerecords = $treerecords[$best_tree[0]]\n" if $printer == 1;
 	return ("NULL", -1) if $treerecords[$best_tree[0]] < 1;
 	my $rando = int(rand($#trees));
 	return ($alltrees[$rando], $treerecords[$rando]) if scalar(@best_tree) > 1;
@@ -3777,10 +4045,15 @@ sub basic_stats{
 
 sub maftoAxt_multispecies {
 	my $printer = 0;
-#	print "in maftoAxt_multispecies : got @_\n";
+	#print "in maftoAxt_multispecies : got @_\n";
 	my $fname=$_[0];
 	open(IN,"<$_[0]") or die "Cannot open $_[0]: $! \n";
 	my $treedefinition = $_[1];
+	#print "treedefinition= $treedefinition\n";
+	
+	my @treedefinitions = MakeTrees($treedefinition);
+	
+	
 	open(OUT,">$_[2]") or die "Cannot open $_[2]: $! \n";
 	my $counter = 0;
 	my $exactspeciesset = $_[3];
@@ -3788,14 +4061,28 @@ sub maftoAxt_multispecies {
 	
 	$treedefinition=~s/[\)\(, ]/\t/g;
 	my @species=split(/\t+/,$treedefinition);
-	my @exactspecies=();
+	@exactspeciesset_unarranged = @species;
+#	print "species=@species\n";
 	
-	foreach my $spec (@species){
-		foreach my $espec (@exactspeciesset_unarranged){
-			push @exactspecies, $spec if $spec eq $espec;
+	my @exactspeciesarr=();
+
+	
+	foreach my $def (@treedefinitions){
+		$def=~s/[\)\(, ]/\t/g;
+		my @specs = split(/\t+/,$def);
+		my @exactspecies=();
+		foreach my $spec (@specs){
+			foreach my $espec (@exactspeciesset_unarranged){
+			#	print "pushing >$spec< nd >$espec<\n"  if $spec eq $espec && $espec =~ /[a-zA-Z0-9]/;
+				push @exactspecies, $spec if $spec eq $espec && $espec =~ /[a-zA-Z0-9]/;
+			}
+			
 		}
+			#print "exactspecies = >@exactspecies<\n";
+			push @exactspeciesarr, [@exactspecies];
 	}
-#	print "exactspecies=@exactspecies\n";
+	#<STDIN>;
+	#print "exactspeciesarr=@exactspeciesarr\n";
 	
 	###########
 	my $select = 2;  
@@ -3806,10 +4093,15 @@ sub maftoAxt_multispecies {
 	my @allowedset = ();
 	@allowedset = split(/;/,allowedSetOfSpecies(join("_",@species))) if $select == 0;
 	@allowedset = join("_",0,@species) if $select == 1;
-	#print "species = @species , allowedset =",join("\n", @allowedset) ," \n"; 
-	@allowedset = join("_",0,@exactspecies) if $select == 2;
-	#print "allowedset = @allowedset and exactspecies = @exactspecies\n";
+	#print "species = @species , allowedset =",join("\n", @allowedset) ," \n";
 	
+	
+	foreach my $set (@exactspeciesarr){
+		my @openset = @$set;
+		push @allowedset, join("_",0,@openset) if $select == 2;
+	#	print "openset = >@openset<, allowedset = @allowedset and exactspecies = @exactspecies\n";
+	}
+#	<STDIN>;
 	my $start = 0;
 	my @sequences = ();
 	my @titles = ();
@@ -3820,8 +4112,8 @@ sub maftoAxt_multispecies {
 	while(my $line = <IN>){
 		next if $line =~ /^#/;
 		next if $line =~ /^i/;
+	#	print "$line .. species = @species\n";
 		chomp $line;
-		#print "$line";
 		my @fields = split(/\s+/,$line);
 		chomp $line;
 		if ($line =~ /^a /){
@@ -3844,13 +4136,16 @@ sub maftoAxt_multispecies {
 		}
 		
 		if (($line !~ /^a/) && ($line !~ /^s/) && ($line !~ /^#/) && ($line !~ /^i/) && ($start = 1)){
-		
+			
 			my $arranged = reorderSpecies($species_counter, @species);
+#			print "species_counter=$species_counter .. arranged = $arranged\n";
+			
 			my $stopper = 1;
 			my $arrno = 0;
 			foreach my $set (@allowedset){
+#					print "checking $set with $arranged\n";
 				if ($arranged eq $set){
-	#				print "$arranged == $set\n";
+#					print "checked $set with $arranged\n";
 					$stopper = 0; last;
 				}
 				$arrno++;
@@ -3881,6 +4176,7 @@ sub maftoAxt_multispecies {
 		}
 	}
 #	print "countermatch = $countermatch\n";
+#	<STDIN>;
 }
 
 sub reorderSpecies{
@@ -3977,8 +4273,53 @@ sub orderInfo{
 #xxxxxxx maftoAxt_multispecies xxxxxxx xxxxxxx maftoAxt_multispecies xxxxxxx xxxxxxx maftoAxt_multispecies xxxxxxx 
 
 sub printarr {
-	print ">::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n";
-	foreach my $line (@_) {print "$line\n";}
-	print "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::<\n";
+# print ">::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n";
+#	foreach my $line (@_) {print "$line\n";}
+# print "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::<\n";
 }
+
+sub oneOf{
+	my @arr = @_;
+	my $element = $arr[$#arr];
+	@arr = @arr[0 ... $#arr-1];
+	my $present = 0;
+	
+	foreach my $el (@arr){
+		$present = 1 if $el eq $element;		
+	}
+	return $present;
+}
+
+#xxxxxxxxxxxxxx MakeTrees xxxxxxxxxxxxxxxxxxxxxxxxxxxx  MakeTrees xxxxxxxxxxxxxxxxxxxxxxxxxxxx  MakeTrees xxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+sub MakeTrees{
+	my $tree = $_[0];
+#	my @parts=($tree);
+	my @parts=();
+	
+#	print "parts=@parts\n";
+	
+	while (1){
+		$tree =~ s/^\(//g;
+		$tree =~ s/\)$//g;
+		my @arr = ();
+	
+		if ($tree =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_\(\),]+)\)$/){
+			@arr = $tree =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_\(\),]+)$/;
+			push @parts, "(".$tree.")";
+			$tree = $2;
+		}
+		elsif ($tree =~ /^\(([a-zA-Z0-9_\(\),]+),([a-zA-Z0-9_]+)$/){
+			@arr = $tree =~ /^([a-zA-Z0-9_\(\),]+),([a-zA-Z0-9_]+)$/;
+			push @parts, "(".$tree.")";
+			$tree = $1;
+		}
+		elsif ($tree =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_]+)$/){
+			last;
+		}
+	}	
+	#print "parts=@parts\n";
+	return @parts;
+}
+
 
