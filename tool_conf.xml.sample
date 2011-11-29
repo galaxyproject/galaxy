@@ -469,7 +469,7 @@
     <tool file="human_genome_variation/lps.xml" />
     <tool file="human_genome_variation/hilbertvis.xml" />
     <tool file="human_genome_variation/freebayes.xml" />
-	<tool file="human_genome_variation/master2pg.xml" />
+    <tool file="human_genome_variation/master2pg.xml" />
   </section>
   <section name="Genome Diversity" id="gd">
     <tool file="genome_diversity/extract_primers.xml" />
