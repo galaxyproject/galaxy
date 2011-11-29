@@ -1,4 +1,4 @@
-<tool id="gatk_variant_annotator" name="Variant Annotator" version="0.0.3">
+<tool id="gatk_variant_annotator" name="Variant Annotator" version="0.0.4">
   <description></description>
   <requirements>
       <requirement type="package" version="1.3">gatk</requirement>
@@ -13,6 +13,7 @@
    -d "--variant" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
+    ##--list
     -T "VariantAnnotator"
     ##--num_threads 4 ##hard coded, for now
     -et "NO_ET" ##ET no phone home
@@ -29,6 +30,11 @@
                 --annotation "${annotation}"
             #end for
         #end if
+    #end if
+    #if str( $exclude_annotations ) != "None":
+        #for $annotation in str( $exclude_annotations ).split( ',' ):
+            --excludeAnnotation "${annotation}"
+        #end for
     #end if
 ##    #for $additional_annotation in $additional_annotations:
 ##        --annotation "${additional_annotation.additional_annotation_type.additional_annotation_type_selector}"
@@ -55,7 +61,10 @@
     #end for
     
     #if str( $snpEff_rod_bind_type.snpEff_rod_bind_type_selector ) == 'set_snpEff':
-        -d "--snpEff:${snpEff_rod_bind_type.snpEff_rod_name},%(file_type)s" "${snpEff_rod_bind_type.snpEff_input_rod}" "${snpEff_rod_bind_type.snpEff_input_rod.ext}" "input_snpEff_${snpEff_rod_bind_type.snpEff_rod_name}"
+        -p '--annotation "SnpEff"'
+        -d "--snpEffFile:${snpEff_rod_bind_type.snpEff_rod_name},%(file_type)s" "${snpEff_rod_bind_type.snpEff_input_rod}" "${snpEff_rod_bind_type.snpEff_input_rod.ext}" "input_snpEff_${snpEff_rod_bind_type.snpEff_rod_name}"
+    #else:
+        -p '--excludeAnnotation "SnpEff"'
     #end if
     
     #for $expression in $expressions:
@@ -124,6 +133,10 @@
             --group "${group}"
         #end for
     #end if
+    #if str( $family_string ) != "":
+        --family_string "${family_string}"
+    #end if
+    --MendelViolationGenotypeQualityThreshold "${mendel_violation_genotype_quality_threshold}"
         '
   </command>
   <inputs>
@@ -166,35 +179,35 @@
       <when value="choose">
         <param name="annotations" type="select" multiple="True" display="checkboxes" label="Annotations to apply" >
           <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
-          <option value="ChromosomeCounts"/>
-          <option value="IndelType"/>
-          <option value="SpanningDeletions"/>
-          <option value="HardyWeinberg"/>
-          <option value="NBaseCount"/>
-          <option value="MappingQualityZero"/>
-          <option value="AlleleBalance"/>
-          <option value="BaseCounts"/>
-          <option value="LowMQ"/>
-          <option value="InbreedingCoeff"/>
-          <option value="RMSMappingQuality"/>
-          <option value="HaplotypeScore"/>
-          <option value="TechnologyComposition"/>
-          <option value="SampleList"/>
-          <option value="FisherStrand"/>
-          <option value="HomopolymerRun"/>
-          <option value="DepthOfCoverage"/>
-          <option value="SnpEff"/>
-          <option value="MappingQualityZeroFraction"/>
-          <option value="GCContent"/>
-          <option value="MappingQualityRankSumTest"/>
-          <option value="ReadPosRankSumTest"/>
-          <option value="BaseQualityRankSumTest"/>
-          <option value="QualByDepth"/>
-          <option value="SBByDepth"/>
-          <option value="ReadDepthAndAllelicFractionBySample"/>
-          <option value="AlleleBalanceBySample"/>
-          <option value="DepthPerAlleleBySample"/>
-          <option value="MappingQualityZeroBySample"/>
+          <option value="AlleleBalance" />
+          <option value="AlleleBalanceBySample" />
+          <option value="BaseCounts" />
+          <option value="BaseQualityRankSumTest" />
+          <option value="ChromosomeCounts" />
+          <option value="DepthOfCoverage" />
+          <option value="DepthPerAlleleBySample" />
+          <option value="FisherStrand" />
+          <option value="GCContent" />
+          <option value="HaplotypeScore" />
+          <option value="HardyWeinberg" />
+          <option value="HomopolymerRun" />
+          <option value="InbreedingCoeff" />
+          <option value="IndelType" />
+          <option value="LowMQ" />
+          <option value="MVLikelihoodRatio" />
+          <option value="MappingQualityRankSumTest" />
+          <option value="MappingQualityZero" />
+          <option value="MappingQualityZeroBySample" />
+          <option value="MappingQualityZeroFraction" />
+          <option value="NBaseCount" />
+          <option value="QualByDepth" />
+          <option value="RMSMappingQuality" />
+          <option value="ReadDepthAndAllelicFractionBySample" />
+          <option value="ReadPosRankSumTest" />
+          <option value="SampleList" />
+          <option value="SnpEff" />
+          <option value="SpanningDeletions" />
+          <option value="TechnologyComposition" />
         </param>
       </when>
     </conditional>
@@ -371,7 +384,41 @@
       <option value="WorkInProgress">WorkInProgress</option>
       <option value="RankSumTest">RankSumTest</option>
     </param>
-        
+    <param name="family_string" type="text" value="" label="Family String"/>
+    <param name="mendel_violation_genotype_quality_threshold" type="float" value="0.0" label="genotype quality treshold in order to annotate mendelian violation ratio."/>
+    <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" >
+      <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
+      <option value="AlleleBalance" />
+      <option value="AlleleBalanceBySample" />
+      <option value="BaseCounts" />
+      <option value="BaseQualityRankSumTest" />
+      <option value="ChromosomeCounts" />
+      <option value="DepthOfCoverage" />
+      <option value="DepthPerAlleleBySample" />
+      <option value="FisherStrand" />
+      <option value="GCContent" />
+      <option value="HaplotypeScore" />
+      <option value="HardyWeinberg" />
+      <option value="HomopolymerRun" />
+      <option value="InbreedingCoeff" />
+      <option value="IndelType" />
+      <option value="LowMQ" />
+      <option value="MVLikelihoodRatio" />
+      <option value="MappingQualityRankSumTest" />
+      <option value="MappingQualityZero" />
+      <option value="MappingQualityZeroBySample" />
+      <option value="MappingQualityZeroFraction" />
+      <option value="NBaseCount" />
+      <option value="QualByDepth" />
+      <option value="RMSMappingQuality" />
+      <option value="ReadDepthAndAllelicFractionBySample" />
+      <option value="ReadPosRankSumTest" />
+      <option value="SampleList" />
+      <option value="SnpEff" />
+      <option value="SpanningDeletions" />
+      <option value="TechnologyComposition" />
+    </param>
+    
   </inputs>
   <outputs>
     <data format="vcf" name="output_vcf" label="${tool.name} on ${on_string} (Variant File)" />

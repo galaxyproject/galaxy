@@ -1,4 +1,4 @@
-<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.4">
+<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.5">
   <description>SNP and indel caller</description>
   <requirements>
       <requirement type="package" version="1.3">gatk</requirement>
@@ -122,7 +122,18 @@
                 --group "${group}"
             #end for
         #end if
+        #if str( $analysis_param_type.exclude_annotations ) != "None":
+            #for $annotation in str( $analysis_param_type.exclude_annotations ).split( ','):
+                --excludeAnnotation "${annotation}"
+            #end for
+        #end if
         '
+##        #if str( $analysis_param_type.snpEff_rod_bind_type.snpEff_rod_bind_type_selector ) == 'set_snpEff':
+##            -p '--annotation "SnpEff"'
+##            -d "--snpEffFile:${analysis_param_type.snpEff_rod_bind_type.snpEff_rod_name},%(file_type)s" "${analysis_param_type.snpEff_rod_bind_type.snpEff_input_rod}" "${analysis_param_type.snpEff_rod_bind_type.snpEff_input_rod.ext}" "input_snpEff_${analysis_param_type.snpEff_rod_bind_type.snpEff_rod_name}"
+##        #else:
+##            -p '--excludeAnnotation "SnpEff"'
+##        #end if
     #end if
   </command>
   <inputs>
@@ -354,42 +365,91 @@
         <param name="indelHaplotypeSize" type="integer" value="80" label="Indel haplotype size" />
         <param name="doContextDependentGapPenalties" type="boolean" truevalue="--doContextDependentGapPenalties" falsevalue="" label="Vary gap penalties by context" />
 	    <param name="annotation" type="select" multiple="True" display="checkboxes" label="Annotation Types">
-          <option value="ChromosomeCounts"/>
-          <option value="IndelType"/>
-          <option value="SpanningDeletions"/>
-          <option value="HardyWeinberg"/>
-          <option value="NBaseCount"/>
-          <option value="MappingQualityZero"/>
-          <option value="AlleleBalance"/>
-          <option value="BaseCounts"/>
-          <option value="LowMQ"/>
-          <option value="InbreedingCoeff"/>
-          <option value="RMSMappingQuality"/>
-          <option value="HaplotypeScore"/>
-          <option value="TechnologyComposition"/>
-          <option value="SampleList"/>
-          <option value="FisherStrand"/>
-          <option value="HomopolymerRun"/>
-          <option value="DepthOfCoverage"/>
-          <option value="SnpEff"/>
-          <option value="MappingQualityZeroFraction"/>
-          <option value="GCContent"/>
-          <option value="MappingQualityRankSumTest"/>
-          <option value="ReadPosRankSumTest"/>
-          <option value="BaseQualityRankSumTest"/>
-          <option value="QualByDepth"/>
-          <option value="SBByDepth"/>
-          <option value="ReadDepthAndAllelicFractionBySample"/>
-          <option value="AlleleBalanceBySample"/>
-          <option value="DepthPerAlleleBySample"/>
-          <option value="MappingQualityZeroBySample"/>
+          <option value="AlleleBalance" />
+          <option value="AlleleBalanceBySample" />
+          <option value="BaseCounts" />
+          <option value="BaseQualityRankSumTest" />
+          <option value="ChromosomeCounts" />
+          <option value="DepthOfCoverage" />
+          <option value="DepthPerAlleleBySample" />
+          <option value="FisherStrand" />
+          <option value="GCContent" />
+          <option value="HaplotypeScore" />
+          <option value="HardyWeinberg" />
+          <option value="HomopolymerRun" />
+          <option value="InbreedingCoeff" />
+          <option value="IndelType" />
+          <option value="LowMQ" />
+          <option value="MVLikelihoodRatio" />
+          <option value="MappingQualityRankSumTest" />
+          <option value="MappingQualityZero" />
+          <option value="MappingQualityZeroBySample" />
+          <option value="MappingQualityZeroFraction" />
+          <option value="NBaseCount" />
+          <option value="QualByDepth" />
+          <option value="RMSMappingQuality" />
+          <option value="ReadDepthAndAllelicFractionBySample" />
+          <option value="ReadPosRankSumTest" />
+          <option value="SampleList" />
+          <!-- <option value="SnpEff" /> -->
+          <option value="SpanningDeletions" />
+          <option value="TechnologyComposition" />
 	    </param>
+<!--
+        <conditional name="snpEff_rod_bind_type">
+          <param name="snpEff_rod_bind_type_selector" type="select" label="Provide a snpEff reference-ordered data file">
+            <option value="set_snpEff">Set snpEff</option>
+            <option value="exclude_snpEff" selected="True">Don't set snpEff</option>
+          </param>
+          <when value="exclude_snpEff">
+          </when>
+          <when value="set_snpEff">
+            <param name="snpEff_input_rod" type="data" format="vcf" label="ROD file" />
+            <param name="snpEff_rod_name" type="hidden" value="snpEff" label="ROD Name"/>
+          </when>
+        </conditional>
+-->
 	    <param name="group" type="select" multiple="True" display="checkboxes" label="Annotation Interfaces/Groups">
-	      <option value="Standard">Standard</option>
-	      <option value="Experimental">Experimental</option>
-	      <option value="WorkInProgress">WorkInProgress</option>
-	      <!-- <option value="none">none</option> -->
+            <option value="RodRequiringAnnotation">RodRequiringAnnotation</option>
+            <option value="Standard">Standard</option>
+            <option value="Experimental">Experimental</option>
+            <option value="WorkInProgress">WorkInProgress</option>
+            <option value="RankSumTest">RankSumTest</option>
+	        <!-- <option value="none">none</option> -->
 	    </param>
+    <!--     <param name="family_string" type="text" value="" label="Family String"/> -->
+        <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" >
+          <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
+          <option value="AlleleBalance" />
+          <option value="AlleleBalanceBySample" />
+          <option value="BaseCounts" />
+          <option value="BaseQualityRankSumTest" />
+          <option value="ChromosomeCounts" />
+          <option value="DepthOfCoverage" />
+          <option value="DepthPerAlleleBySample" />
+          <option value="FisherStrand" />
+          <option value="GCContent" />
+          <option value="HaplotypeScore" />
+          <option value="HardyWeinberg" />
+          <option value="HomopolymerRun" />
+          <option value="InbreedingCoeff" />
+          <option value="IndelType" />
+          <option value="LowMQ" />
+          <option value="MVLikelihoodRatio" />
+          <option value="MappingQualityRankSumTest" />
+          <option value="MappingQualityZero" />
+          <option value="MappingQualityZeroBySample" />
+          <option value="MappingQualityZeroFraction" />
+          <option value="NBaseCount" />
+          <option value="QualByDepth" />
+          <option value="RMSMappingQuality" />
+          <option value="ReadDepthAndAllelicFractionBySample" />
+          <option value="ReadPosRankSumTest" />
+          <option value="SampleList" />
+          <!-- <option value="SnpEff" /> -->
+          <option value="SpanningDeletions" />
+          <option value="TechnologyComposition" />
+        </param>
       </when>
     </conditional>
   </inputs>
