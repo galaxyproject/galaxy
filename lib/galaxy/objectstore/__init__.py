@@ -306,7 +306,6 @@ class DiskObjectStore(ObjectStore):
             return path
         else:
             path = self._construct_path(dataset_id, **kwargs)
-        print "Checking it %s exists: %s" %(path, os.path.exists(path))
         if os.path.exists(path):
             return path
         else:
@@ -499,7 +498,7 @@ class S3ObjectStore(ObjectStore):
         except S3ResponseError, ex:
             log.error("Trouble checking existence of S3 key '%s': %s" % (rel_path, ex))
             return False
-        print "Checking if '%s' exists in S3: %s" % (rel_path, exists)
+        #print "Checking if '%s' exists in S3: %s" % (rel_path, exists)
         if rel_path[0] == '/':
             raise
         return exists
@@ -570,14 +569,14 @@ class S3ObjectStore(ObjectStore):
             if ret_code == 127:
                 self.transfer_progress = 0 # Reset transfer progress counter
                 key.get_contents_to_filename(self._get_cache_path(rel_path), cb=self._transfer_cb, num_cb=10)
-                print "(ssss1) Pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path))
+                #print "(ssss1) Pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path))
                 return True
             else:
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
                 ret_code = subprocess.call("axel -a -n %s '%s'" % (ncores, url))
                 if ret_code == 0:
-                    print "(ssss2) Parallel pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path))
+                    #print "(ssss2) Parallel pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path))
                     return True
         except S3ResponseError, ex:
             log.error("Problem downloading key '%s' from S3 bucket '%s': %s" % (rel_path, self.bucket.name, ex))
@@ -659,7 +658,7 @@ class S3ObjectStore(ObjectStore):
     
     def create(self, dataset_id, **kwargs):
         if not self.exists(dataset_id, **kwargs):
-            print "S3 OS creating a dataset with ID %s" % dataset_id
+            #print "S3 OS creating a dataset with ID %s" % dataset_id
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
             extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
@@ -742,8 +741,8 @@ class S3ObjectStore(ObjectStore):
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
-        else:
-            print "(cccc) Getting '%s' from cache" % self._get_cache_path(rel_path)
+        #else:
+        #    print "(cccc) Getting '%s' from cache" % self._get_cache_path(rel_path)
         # Read the file content from cache
         data_file = open(self._get_cache_path(rel_path), 'r')
         data_file.seek(start)
@@ -752,7 +751,7 @@ class S3ObjectStore(ObjectStore):
         return content
     
     def get_filename(self, dataset_id, **kwargs):
-        print "S3 get_filename for dataset: %s" % dataset_id
+        #print "S3 get_filename for dataset: %s" % dataset_id
         dir_only = kwargs.get('dir_only', False)
         rel_path = self._construct_path(dataset_id, **kwargs)
         cache_path = self._get_cache_path(rel_path)

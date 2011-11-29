@@ -41,7 +41,7 @@ def transfer_part(mp_id, mp_keyname, mp_bucketname, i, part):
     """Transfer a part of a multipart upload. Designed to be run in parallel.
     """
     mp = mp_from_ids(mp_id, mp_keyname, mp_bucketname)
-    print " Transferring", i, part
+    #print " Transferring", i, part
     with open(part) as t_handle:
         mp.upload_part_from_file(t_handle, i+1)
     os.remove(part)
@@ -50,7 +50,7 @@ def multipart_upload(bucket, s3_key_name, tarball, mb_size, use_rr=True):
     """Upload large files using Amazon's multipart upload functionality.
     """
     cores = multiprocessing.cpu_count()
-    print "Initiating multipart upload using %s cores" % cores
+    #print "Initiating multipart upload using %s cores" % cores
     def split_file(in_file, mb_size, split_num=5):
         prefix = os.path.join(os.path.dirname(in_file),
                               "%sS3PART" % (os.path.basename(s3_key_name)))
