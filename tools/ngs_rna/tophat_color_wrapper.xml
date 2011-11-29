@@ -19,7 +19,7 @@
             #if $refGenomeSource.genomeSource == "history":
                 --own-file=$refGenomeSource.ownFile
             #else:
-                --indexes-path="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'tophat_indexes_color' ].get_fields() )[0][-1] }"
+                --indexes-path="${refGenomeSource.index.fields.path}"
             #end if
 
             ## Are reads single-end or paired?

@@ -61,8 +61,7 @@
         #end if
       #else
         ##use pre-built index
-        ##--ref="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'bowtie_indexes' ].get_fields() )[0][-1] }"
-        --ref="${ refGenomeSource.index.fields.path }"
+        --ref="${refGenomeSource.index.fields.path}"
       #end if
       --paired=$singlePaired.sPaired
       #if $singlePaired.sPaired == "single":

@@ -2,7 +2,7 @@
     <description> compare short reads against htgs, nt, and wgs databases</description>
     <command interpreter="python">
       megablast_wrapper.py
-        --db_build="${ filter( lambda x: str( x[0] ) == str( $source_select ), $__app__.tool_data_tables[ 'blastdb' ].get_fields() )[0][-1] }"
+        --db_build="${source_select.fields.path}"
         --input=$input_query
         --word_size=$word_size
         --identity_cutoff=$iden_cutoff

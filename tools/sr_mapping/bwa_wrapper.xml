@@ -17,7 +17,7 @@
         --dbkey=$dbkey
       #else:
         ##use precomputed indexes
-        --ref="${ filter( lambda x: str( x[0] ) == str( $genomeSource.indices ), $__app__.tool_data_tables[ 'bwa_indexes' ].get_fields() )[0][-1] }"
+        --ref="${genomeSource.indices.fields.path}"
         --do_not_build_index
       #end if
 
