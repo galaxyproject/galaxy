@@ -13,7 +13,7 @@
         #if $s.space == "color"
           "${s.sourceOfRef.index.fields.path}"
         #elif $s.space == "base"
-          "${s.sourceOfRef.index.fields.path"
+          "${s.sourceOfRef.index.fields.path}"
         #end if
       #end if
       #if $s.mate.singleOrPairs == "single":
