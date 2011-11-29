@@ -765,6 +765,48 @@ def load_tool( trans, config_file ):
             ToolClass = Tool
         return ToolClass( config_file, root, trans.app )
     return None
+def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config ):
+    repository = get_repository( trans, repository_id )
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    tool = None
+    message = ''
+    if changeset_revision == repository.tip:
+        try:
+            tool = load_tool( trans, os.path.abspath( tool_config ) )
+        except Exception, e:
+            tool = None
+            message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
+    else:
+        # Get the tool config file name from the hgweb url, something like:
+        # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
+        old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
+        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+        fctx = None
+        for filename in ctx:
+            filename_head, filename_tail = os.path.split( filename )
+            if filename_tail == old_tool_config_file_name:
+                fctx = ctx[ filename ]
+                break
+        if fctx:
+            # Write the contents of the old tool config to a temporary file.
+            fh = tempfile.NamedTemporaryFile( 'w' )
+            tmp_filename = fh.name
+            fh.close()
+            fh = open( tmp_filename, 'w' )
+            fh.write( fctx.data() )
+            fh.close()
+            try:
+                tool = load_tool( trans, tmp_filename )
+            except Exception, e:
+                tool = None
+                message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
+            try:
+                os.unlink( tmp_filename )
+            except:
+                pass
+        else:
+            tool = None
+    return tool, message
 def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True ):
     """
     Build a SelectField whose options are the changeset_revision
