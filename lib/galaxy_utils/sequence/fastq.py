@@ -597,8 +597,10 @@ class fastqJoiner( object ):
             del tmp
         if read1_id.endswith( '/1' ) and read2_id.endswith( '/2' ):
             read1_id = read1_id[:-2]
-        
-        identifier = read1_id + ' ' + read1_desc
+
+        identifier = read1_id
+        if read1_desc:
+            identifier = identifier + ' ' + read1_desc
         
         #use force quality encoding, if not present force to encoding of first read
         force_quality_encoding = self.force_quality_encoding
