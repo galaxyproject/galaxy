@@ -407,6 +407,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def _ensure_logged_in_user( self, environ, session_cookie ):
         # The value of session_cookie can be one of 
         # 'galaxysession' or 'galaxycommunitysession'
+        # Currently this method does nothing unless session_cookie is 'galaxysession'
         if session_cookie == 'galaxysession':
             # TODO: re-engineer to eliminate the use of allowed_paths
             # as maintenance overhead is far too high.
@@ -436,8 +437,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                         host = None
                     if host in UCSC_SERVERS:
                         return
-            if self.request.path not in allowed_paths:
-                self.response.send_redirect( url_for( controller='root', action='index' ) )
+                if self.request.path not in allowed_paths:
+                    self.response.send_redirect( url_for( controller='root', action='index' ) )
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """
         Create a new GalaxySession for this request, possibly with a connection
