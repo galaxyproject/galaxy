@@ -142,7 +142,11 @@
             menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
             if app.config.get_bool( 'enable_tracks', False ):
                 menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
-            menu_options.append( [ 'Logout', h.url_for( controller='/user', action='logout', webapp='galaxy' ), "_top" ] )
+            if app.config.require_login:
+                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout', webapp='galaxy' )
+            else:
+                logout_url = h.url_for( controller='/user', action='logout', webapp='galaxy' )
+            menu_options.append( [ 'Logout', logout_url, "_top" ] )
             menu_options.append( None )
         menu_options.append( [ _('Saved Histories'), h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
         menu_options.append( [ _('Saved Datasets'), h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
