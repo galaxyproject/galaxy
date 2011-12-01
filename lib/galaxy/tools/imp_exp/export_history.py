@@ -10,6 +10,14 @@ from galaxy import eggs
 from galaxy.util.json import *
 import optparse, sys, os, tempfile, tarfile
 
+def get_dataset_filename( name, ext ):
+    """
+    Builds a filename for a dataset using its name an extension.
+    """
+    valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    base = ''.join( c in valid_chars and c or '_' for c in name )
+    return base + ".%s" % ext
+
 def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, out_file, gzip=False ):
     """ Create archive from the given attribute/metadata files and save it to out_file. """
     tarfile_mode = "w"
@@ -37,7 +45,8 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
         # TODO: security check to ensure that files added are in Galaxy dataset directory?
         for dataset_attrs in datasets_attrs:
             dataset_file_name = dataset_attrs[ 'file_name' ] # Full file name.
-            dataset_archive_name = os.path.join( "datasets", os.path.split( dataset_file_name )[-1] )
+            dataset_archive_name = os.path.join( 'datasets', 
+                                                 get_dataset_filename( dataset_attrs[ 'name' ], dataset_attrs[ 'extension' ] ) )
             history_archive.add( dataset_file_name, arcname=dataset_archive_name )
             # Update dataset filename to be archive name.
             dataset_attrs[ 'file_name' ] = dataset_archive_name
