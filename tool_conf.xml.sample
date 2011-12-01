@@ -192,8 +192,8 @@
     <tool file="regVariation/compute_motif_frequencies_for_all_motifs.xml" />
     <tool file="regVariation/categorize_elements_satisfying_criteria.xml" />s
     <tool file="regVariation/draw_stacked_barplots.xml" />
-    <tool file="regVariation/multispecies_MicrosatDataGenerator_interrupted_GALAXY.xml" />
-    <tool file="regVariation/microsatellite_birthdeath.xml" />
+    <!-- <tool file="regVariation/multispecies_MicrosatDataGenerator_interrupted_GALAXY.xml" />
+    <tool file="regVariation/microsatellite_birthdeath.xml" /> -->
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />
