@@ -3459,13 +3459,17 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             }
 
             // Determine if filters are available; this is based on the tiles' data.
+            // Criteria for filter to be available: (a) it is applicable to tile data and (b) filter min != filter max.
             var filters_available = false,
-                example_feature;
+                example_feature,
+                filter;
             for (var i = 0; i < tiles.length; i++) {
                 if (tiles[i].data.length) {
                     example_feature = tiles[i].data[0];
                     for (var f = 0; f < filters.length; f++) {
-                        if (filters[f].applies_to(example_feature)) {
+                        filter = filters[f];
+                        if ( filter.applies_to(example_feature) && 
+                             filter.min !== filter.max ) {
                             filters_available = true;
                             break;
                         }
