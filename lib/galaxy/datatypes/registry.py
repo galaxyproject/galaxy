@@ -169,6 +169,7 @@ class Registry( object ):
                 'customtrack' : interval.CustomTrack(),
                 'csfasta'     : sequence.csFasta(),
                 'fasta'       : sequence.Fasta(),
+                'eland'       : tabular.Eland(),
                 'fastq'       : sequence.Fastq(),
                 'fastqsanger' : sequence.FastqSanger(),
                 'gtf'         : interval.Gtf(),
@@ -200,6 +201,7 @@ class Registry( object ):
                 'blastxml'    : 'application/xml', 
                 'customtrack' : 'text/plain',
                 'csfasta'     : 'text/plain',
+                'eland'       : 'application/octet-stream',
                 'fasta'       : 'text/plain',
                 'fastq'       : 'text/plain',
                 'fastqsanger' : 'text/plain',
@@ -253,7 +255,8 @@ class Registry( object ):
                 interval.Gff3(),
                 tabular.Pileup(),
                 interval.Interval(),
-                tabular.Sam()
+                tabular.Sam(),
+                tabular.Eland()
             ]
         def append_to_sniff_order():
             # Just in case any supported data types are not included in the config's sniff_order section.
