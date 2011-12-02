@@ -218,10 +218,6 @@
         
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         
-        if ldda.user:
-            uploaded_by = ldda.user.email
-        else:
-            uploaded_by = 'anonymous'
         if ldda == library_dataset.library_dataset_dataset_association:
             current_version = True
             if is_admin:
@@ -303,7 +299,7 @@
             </td>
             % if not simple:
                 <td id="libraryItemInfo">${render_library_item_info( ldda )}</td>
-                <td>${uploaded_by}</td>
+                <td>${ldda.extension}</td>
             % endif
             <td>${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
             <td>${ldda.get_size( nice_size=True )}</td>
@@ -579,10 +575,10 @@
                     </th>
                     % if not simple:
                         <th>Message</th>
-                        <th>Uploaded By</th>
+                        <th>Data type</th>
                     % endif
-                    <th>Date</th>
-                    <th>File Size</th>
+                    <th>Date uploaded</th>
+                    <th>File size</th>
                 </tr>
             </thead>
             <% row_counter = RowCounter() %>
