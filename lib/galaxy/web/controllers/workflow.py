@@ -1230,8 +1230,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     elif installed_repository_file:
                         # The workflow was read from a file included with an installed tool shed repository.
                         message = "Workflow <b>%s</b> imported successfully." % workflow.name
-                        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                          action='browse_tool_shed_repository',
+                        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                          action='browse_repository',
                                                                           id=repository_id,
                                                                           message=message,
                                                                           status=status ) )

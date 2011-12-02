@@ -437,7 +437,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if operation == "install":
                     galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
                     encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
-                    url = '%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
+                    url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
                         ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict )
                     return trans.response.send_redirect( url )
             else:
@@ -513,7 +513,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if operation == "install":
                     galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
                     encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
-                    url = '%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
+                    url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
                         ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict )
                     return trans.response.send_redirect( url )
             else:
@@ -759,7 +759,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
         encoded_repo_info_dict = encode( repo_info_dict )
         # Redirect back to local Galaxy to perform install.
-        url = '%s/admin/install_tool_shed_repository?tool_shed_url=%s&repo_info_dict=%s' % \
+        url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s' % \
             ( galaxy_url, url_for( '', qualified=True ), encoded_repo_info_dict )
         return trans.response.send_redirect( url )
     @web.expose
@@ -773,7 +773,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changeset_revision = params.get( 'changeset_revision', None )
         webapp = params.get( 'webapp', 'community' )
         # Start building up the url to redirect back to the calling Galaxy instance.
-        url = '%s/admin/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '', qualified=True ) )
+        url = '%s/admin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '', qualified=True ) )
         repository = get_repository_by_name_and_owner( trans, name, owner )
         url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
             ( repository.name, repository.user.username, changeset_revision )
@@ -1035,7 +1035,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         hgweb_config = "%s/hgweb.config" %  trans.app.config.root
         if repository_path.startswith( './' ):
             repository_path = repository_path.replace( './', '', 1 )
-        entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
+        entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path )
         tmp_fd, tmp_fname = tempfile.mkstemp()
         if os.path.exists( hgweb_config ):
             # Make a backup of the hgweb.config file since we're going to be changing it.

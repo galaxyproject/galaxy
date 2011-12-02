@@ -22,12 +22,12 @@
                     <tr class="libraryTitle">
                         <td>
                             <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="dataset-${shed_id}-popup">
-                                <a class="view-info" href="${h.url_for( controller='admin', action='browse_tool_shed', tool_shed_url=url )}">${name}</a>
+                                <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='browse_tool_shed', tool_shed_url=url )}">${name}</a>
                             </div>
                             <div popupmenu="dataset-${shed_id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='admin', action='browse_tool_shed', tool_shed_url=url )}">Browse valid repositories</a>
-                                <a class="action-button" href="${h.url_for( controller='admin', action='find_tools_in_tool_shed', tool_shed_url=url )}">Search for valid tools</a>
-                                <a class="action-button" href="${h.url_for( controller='admin', action='find_workflows_in_tool_shed', tool_shed_url=url )}">Search for workflows</a>
+                                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_shed', tool_shed_url=url )}">Browse valid repositories</a>
+                                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='find_tools_in_tool_shed', tool_shed_url=url )}">Search for valid tools</a>
+                                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='find_workflows_in_tool_shed', tool_shed_url=url )}">Search for workflows</a>
                             </div>
                         </td>
                     </tr>
