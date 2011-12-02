@@ -63,7 +63,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
      */
     var add_tracks = function() {
         $.ajax({
-            url: "${h.url_for( action='list_histories' )}",
+            url: "${h.url_for( action='list_current_history_datasets' )}",
             data: { "f-dbkey": view.dbkey },
             error: function() { alert( "Grid failed" ); },
             success: function(table_html) {
