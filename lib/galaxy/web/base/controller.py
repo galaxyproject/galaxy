@@ -359,7 +359,18 @@ class UsesVisualization( SharableItemSecurity ):
                     'drawables': drawables,
                     'prefs': collection_dict.get( 'prefs', [] )
                 }
-
+                
+            def encode_dbkey( dbkey ):
+                """ 
+                Encodes dbkey as needed. For now, prepends user's public name 
+                to custom dbkey keys.
+                """
+                encoded_dbkey = dbkey
+                user = visualization.user
+                if 'dbkeys' in user.preferences and dbkey in user.preferences[ 'dbkeys' ]:
+                    encoded_dbkey = "%s:%s" % ( user.username, dbkey )
+                return encoded_dbkey
+                    
             # Set tracks.
             tracks = []
             if 'tracks' in latest_revision.config:
@@ -373,8 +384,12 @@ class UsesVisualization( SharableItemSecurity ):
                     else:
                         tracks.append( pack_collection( drawable_dict ) )
                 
-            config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ),
-                        "tracks": tracks, "bookmarks": bookmarks, "chrom": "", "dbkey": visualization.dbkey }
+            config = {  "title": visualization.title, 
+                        "vis_id": trans.security.encode_id( visualization.id ),
+                        "tracks": tracks, 
+                        "bookmarks": bookmarks, 
+                        "chrom": "", 
+                        "dbkey": encode_dbkey( visualization.dbkey ) }
 
             if 'viewport' in latest_revision.config:
                 config['viewport'] = latest_revision.config['viewport']

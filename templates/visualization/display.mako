@@ -8,7 +8,7 @@
       <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
     <![endif]-->
     
-    ${h.js( "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
+    ${h.js( "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic" )}
 </%def>
 
 <%def name="stylesheets()">

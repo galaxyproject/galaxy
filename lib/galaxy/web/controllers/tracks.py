@@ -189,7 +189,11 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 avail_genomes[key] = path
         self.available_genomes = avail_genomes
         
-    def _has_reference_data( self, trans, dbkey ):
+    def _has_reference_data( self, trans, dbkey, dbkey_owner=None ):
+        """ 
+        Returns true if there is reference data for the specified dbkey. If dbkey is custom, 
+        dbkey_owner is needed to determine if there is reference data.
+        """
         # Initialize built-in builds if necessary.
         if not self.available_genomes:
             self._init_references( trans )
@@ -198,12 +202,10 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         if dbkey in self.available_genomes:
             # There is built-in reference data.
             return True
-            
-        # Look for key in user's custom builds.
-        # TODO: how to make this work for shared visualizations?
-        user = trans.user
-        if user and 'dbkeys' in trans.user.preferences:
-            user_keys = from_json_string( user.preferences['dbkeys'] )
+                
+        # Look for key in owner's custom builds.
+        if dbkey_owner and 'dbkeys' in dbkey_owner.preferences:
+            user_keys = from_json_string( dbkey_owner.preferences[ 'dbkeys' ] )
             if dbkey in user_keys:
                 dbkey_attributes = user_keys[ dbkey ]
                 if 'fasta' in dbkey_attributes:
@@ -211,6 +213,13 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                     return True
                     
         return False
+        
+    def _decode_dbkey( self, dbkey ):
+        """ Decodes dbkey and returns tuple ( username, dbkey )"""
+        if ':' in dbkey:
+            return dbkey.split( ':' )
+        else:
+            return None, dbkey
     
     @web.expose
     @web.require_login()
@@ -272,7 +281,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
     @web.require_login()
     def browser(self, trans, id, chrom="", **kwargs):
         """
-        Display browser for the datasets listed in `dataset_ids`.
+        Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
         """
         vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
@@ -356,7 +365,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % vis_dbkey )
             else:
                 len_file = len_ds.file_name
-
+                
         #
         # Get chroms data:
         #   (a) chrom name, len;
@@ -423,7 +432,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
-        return { 'reference': self._has_reference_data( trans, vis_dbkey ), 'chrom_info': to_sort, 
+        return { 'reference': self._has_reference_data( trans, vis_dbkey, vis_user ), 'chrom_info': to_sort, 
                  'prev_chroms' : prev_chroms, 'next_chroms' : next_chroms, 'start_index' : start_index }
         
     @web.json
@@ -432,7 +441,14 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         Return reference data for a build.
         """
         
-        if not self._has_reference_data( trans, dbkey ):
+        # If there is no dbkey owner, default to current user.
+        dbkey_owner, dbkey = self._decode_dbkey( dbkey )
+        if dbkey_owner:
+            dbkey_user = trans.sa_session.query( trans.app.model.User ).filter_by( username=dbkey_owner ).first()
+        else:
+            dbkey_user = trans.user
+            
+        if not self._has_reference_data( trans, dbkey, dbkey_user ):
             return None
         
         #    
@@ -444,9 +460,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             twobit_file_name = self.available_genomes[dbkey]
         else:
             # From custom build.
-            # TODO: how to make this work for shared visualizations?
-            user = trans.user
-            user_keys = from_json_string( user.preferences['dbkeys'] )
+            user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
             dbkey_attributes = user_keys[ dbkey ]
             fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( dbkey_attributes[ 'fasta' ] )
             error = self._convert_dataset( trans, fasta_dataset, 'twobit' )
