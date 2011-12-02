@@ -230,7 +230,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             
             $("#save-icon").click( function() {                
                 // Show saving dialog box
-                show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
+                show_modal("Saving...", "progress");
                                     
                 // Save bookmarks.
                 var bookmarks = [];
@@ -267,7 +267,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                         // Needed to set URL when first saving a visualization.
                         window.history.pushState({}, "", vis_info.url);
                     },
-                    error: function() { alert("Could not save visualization"); }
+                    error: function() { 
+                        show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
+                                    { "Close" : hide_modal } );
+                    }
                 });
             });
             
