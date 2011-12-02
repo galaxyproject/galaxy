@@ -2355,6 +2355,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, me
             more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
 
         // Set up actions for icons.
+        var tile = this;
         more_down_icon.click(function() {
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
