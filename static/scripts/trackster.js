@@ -4294,6 +4294,8 @@ FeaturePositionMapper.prototype.get_feature_data = function(x, y) {
 
 /**
  * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
+ * Painter uses a 0-based, half-open coordinate system; start coordinate is closed--included--and the end is open.
+ * This coordinate system matches the BED format.
  */
 var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
     Painter.call(this, data, view_start, view_end, prefs, mode);
@@ -4419,7 +4421,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         var 
             feature_uid = feature[0],
             feature_start = feature[1],
-            feature_end = feature[2], 
+            // -1 because end is not included in feature; see FeaturePainter documentation for details.
+            feature_end = feature[2] - 1,
             feature_name = feature[3],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
@@ -4537,7 +4540,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
                         block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) ),
+                        // -1 because end is not included in feature; see FeaturePainter documentation for details.
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - 1 - tile_low) * w_scale)) ),
                         last_block_start, last_block_end;
 
                     // Skip drawing if block not on tile.    
