@@ -94,7 +94,7 @@
             view = create_visualization( container_element, "${config.get('title') | h}", 
                                          "${config.get('vis_id')}", "${config.get('dbkey')}",
                                          JSON.parse('${ h.to_json_string( config.get( 'viewport', dict() ) ) }'),
-                                         JSON.parse('${ h.to_json_string( config.get('tracks') ) }'),
+                                         JSON.parse('${ h.to_json_string( config['tracks'] ).replace("'", "\\'") }'),
                                          JSON.parse('${ h.to_json_string( config.get('bookmarks') ) }')
                                          );
             
