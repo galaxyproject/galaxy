@@ -30,6 +30,13 @@ messages = Bunch(
     OK = "ok"
 )
 
+def _decode_dbkey( dbkey ):
+    """ Decodes dbkey and returns tuple ( username, dbkey )"""
+    if ':' in dbkey:
+        return dbkey.split( ':' )
+    else:
+        return None, dbkey
+
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
         return history.get_display_name()
@@ -92,6 +99,7 @@ class DbKeyColumn( grids.GridColumn ):
     def filter( self, trans, user, query, dbkey ):
         """ Filter by dbkey; datasets without a dbkey are returned as well. """
         # use raw SQL b/c metadata is a BLOB
+        dbkey_user, dbkey = _decode_dbkey( dbkey )
         dbkey = dbkey.replace("'", "\\'")
         return query.filter( or_( \
                                 or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
@@ -213,13 +221,6 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                     return True
                     
         return False
-        
-    def _decode_dbkey( self, dbkey ):
-        """ Decodes dbkey and returns tuple ( username, dbkey )"""
-        if ':' in dbkey:
-            return dbkey.split( ':' )
-        else:
-            return None, dbkey
     
     @web.expose
     @web.require_login()
@@ -323,7 +324,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             low = 0
             
         # If there is no dbkey owner, default to current user.
-        dbkey_owner, dbkey = self._decode_dbkey( dbkey )
+        dbkey_owner, dbkey = _decode_dbkey( dbkey )
         if dbkey_owner:
             dbkey_user = trans.sa_session.query( trans.app.model.User ).filter_by( username=dbkey_owner ).first()
         else:
@@ -429,7 +430,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         """
         
         # If there is no dbkey owner, default to current user.
-        dbkey_owner, dbkey = self._decode_dbkey( dbkey )
+        dbkey_owner, dbkey = _decode_dbkey( dbkey )
         if dbkey_owner:
             dbkey_user = trans.sa_session.query( trans.app.model.User ).filter_by( username=dbkey_owner ).first()
         else:
