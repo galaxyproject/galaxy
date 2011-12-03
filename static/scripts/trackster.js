@@ -1195,7 +1195,8 @@ extend( View.prototype, DrawableCollection.prototype, {
      */
     load_chroms: function(url_parms) {
         url_parms['num'] = MAX_CHROMS_SELECTABLE;
-        $.extend( url_parms, (this.vis_id !== undefined ? { vis_id: this.vis_id } : { dbkey: this.dbkey } ) );
+        url_parms['dbkey'] = this.dbkey;
+
         var 
             view = this,
             chrom_data = $.Deferred();

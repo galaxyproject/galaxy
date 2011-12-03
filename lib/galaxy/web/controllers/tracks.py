@@ -293,7 +293,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
 
     @web.json
-    def chroms( self, trans, vis_id=None, dbkey=None, num=None, chrom=None, low=None ):
+    def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
         """
         Returns a naturally sorted list of chroms/contigs for either a given visualization or a given dbkey.
         Use either chrom or low to specify the starting chrom in the return list.
@@ -322,25 +322,12 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         else:
             low = 0
             
-        #
-        # Get viz, dbkey.
-        #
-            
-        # Must specify either vis_id or dbkey.
-        if not vis_id and not dbkey:
-            return trans.show_error_message("No visualization id or dbkey specified.")
-            
-        # Need to get user and dbkey in order to get chroms data.
-        if vis_id:
-            # Use user, dbkey from viz.
-            visualization = self.get_visualization( trans, vis_id, check_ownership=False, check_accessible=True )
-            visualization.config = self.get_visualization_config( trans, visualization )
-            vis_user = visualization.user
-            vis_dbkey = visualization.dbkey
+        # If there is no dbkey owner, default to current user.
+        dbkey_owner, dbkey = self._decode_dbkey( dbkey )
+        if dbkey_owner:
+            dbkey_user = trans.sa_session.query( trans.app.model.User ).filter_by( username=dbkey_owner ).first()
         else:
-            # No vis_id, so visualization is new. User is current user, dbkey must be given.
-            vis_user = trans.user
-            vis_dbkey = dbkey
+            dbkey_user = trans.user
 
         #
         # Get len file.
@@ -348,21 +335,21 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         len_file = None
         len_ds = None
         user_keys = {}
-        if 'dbkeys' in vis_user.preferences:
-            user_keys = from_json_string( vis_user.preferences['dbkeys'] )
-            if vis_dbkey in user_keys:
-                dbkey_attributes = user_keys[ vis_dbkey ]
+        if 'dbkeys' in dbkey_user.preferences:
+            user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
+            if dbkey in user_keys:
+                dbkey_attributes = user_keys[ dbkey ]
                 if 'fasta' in dbkey_attributes:
                     build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
                     len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
                 # Backwards compatibility: look for len file directly.
                 elif 'len' in dbkey_attributes:
-                    len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ vis_dbkey ][ 'len' ] ).file_name
+                    len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ dbkey ][ 'len' ] ).file_name
 
         if not len_file:
             len_ds = trans.db_dataset_for( dbkey )
             if not len_ds:
-                len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % vis_dbkey )
+                len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % dbkey )
             else:
                 len_file = len_ds.file_name
                 
@@ -432,7 +419,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
-        return { 'reference': self._has_reference_data( trans, vis_dbkey, vis_user ), 'chrom_info': to_sort, 
+        return { 'reference': self._has_reference_data( trans, dbkey, dbkey_user ), 'chrom_info': to_sort, 
                  'prev_chroms' : prev_chroms, 'next_chroms' : next_chroms, 'start_index' : start_index }
         
     @web.json
