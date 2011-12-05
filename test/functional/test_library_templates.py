@@ -181,7 +181,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda1 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda1 from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ ldda1.name, ldda1.message, admin_user.email ] )
+                             strings_displayed=[ ldda1.name, ldda1.message, 'bed' ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library1.id ),
@@ -308,7 +308,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library2.id ),
-                             strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
+                             strings_displayed=[ ldda.name, ldda.message, 'bed' ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library2.id ),
@@ -363,8 +363,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                               'Option1' ] )
     def test_100_add_ldda_to_folder3( self ):
         """
-        Testing adding a new library dataset to library3's folder,
-        making sure the SelectField setting is correct on the upload form.
+        Testing adding a new library dataset to library3's folder, making sure the SelectField setting is correct on the upload form.
         """
         filename = '3.bed'
         ldda_message = '3.bed message'
@@ -381,7 +380,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library3.id ),
-                             strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
+                             strings_displayed=[ ldda.name, ldda.message, 'bed' ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library3.id ),
@@ -453,8 +452,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                               'This text should be inherited' ] )
     def test_120_add_ldda_to_folder4( self ):
         """
-        Testing adding a new library dataset to library4's folder,
-        making sure the TextArea setting is correct on the upload form.
+        Testing adding a new library dataset to library4's folder, making sure the TextArea setting is correct on the upload form.
         """
         filename = '4.bed'
         ldda_message = '4.bed message'
@@ -471,7 +469,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library4.id ),
-                             strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
+                             strings_displayed=[ ldda.name, ldda.message, 'bed' ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library4.id ),
@@ -519,8 +517,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                               'This text should be inherited' ] )
     def test_140_add_ldda_to_folder5( self ):
         """
-        Testing adding a new library dataset to library5's folder,
-        making sure the TextField setting is correct on the upload form.
+        Testing adding a new library dataset to library5's folder, making sure the TextField setting is correct on the upload form.
         """
         # Logged in as admin_user
         filename = '5.bed'
@@ -537,7 +534,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library5.id ),
-                             strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
+                             strings_displayed=[ ldda.name, ldda.message, 'bed' ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library5.id ),
@@ -558,9 +555,7 @@ class TestLibraryFeatures( TwillTestCase ):
                             field_default_1='%s default' % TextArea_form.name )
     def test_150_add_ldda_to_library5( self ):
         """
-        Testing adding a new library dataset to library5's folder,
-        making sure the TextField and new TextArea settings are 
-        correct on the upload form.
+        Testing adding a new library dataset to library5's folder, making sure the TextField and new TextArea settings are correct on the upload form.
         """
         filename = '6.bed'
         ldda_message = '6.bed message'
@@ -579,7 +574,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library5.id ),
-                             strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
+                             strings_displayed=[ ldda.name, ldda.message, 'bed' ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library5.id ),
@@ -626,8 +621,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                               'none' ] )
     def test_170_add_ldda_to_folder6( self ):
         """
-        Testing adding a new library dataset to library6's folder,
-        making sure the WorkflowField setting is correct on the upload form.
+        Testing adding a new library dataset to library6's folder, making sure the WorkflowField setting is correct on the upload form.
         """
         # Logged in as admin_user
         filename = '7.bed'
@@ -644,7 +638,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library6.id ),
-                             strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
+                             strings_displayed=[ ldda.name, ldda.message, 'bed' ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library6.id ),

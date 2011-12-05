@@ -1224,7 +1224,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "password", password )
         tc.fv( "1", "confirm", password )
         tc.submit( "reset_user_password_button" )
-        self.check_page_for_string( "Passwords reset for 1 users" )
+        self.check_page_for_string( "Passwords reset for 1 user." )
         self.home()
     def mark_user_deleted( self, user_id, email='' ):
         """Mark a user as deleted"""
@@ -2278,7 +2278,7 @@ class TwillTestCase( unittest.TestCase ):
             item_desc = 'Dataset'
         else:
             item_desc = item_type.capitalize()
-        check_str = "%s '%s' has been marked deleted" % ( item_desc, item_name )
+        check_str = "marked deleted"
         self.check_page_for_string( check_str )
         self.home()
     def undelete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
@@ -2290,7 +2290,7 @@ class TwillTestCase( unittest.TestCase ):
             item_desc = 'Dataset'
         else:
             item_desc = item_type.capitalize()
-        check_str = "%s '%s' has been marked undeleted" % ( item_desc, item_name )
+        check_str = "marked undeleted"
         self.check_page_for_string( check_str )
         self.home()
     def purge_library( self, library_id, library_name ):
