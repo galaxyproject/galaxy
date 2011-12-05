@@ -928,7 +928,10 @@ class DatasetInstance( object ):
             depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
         except KeyError:
             depends_list = []
-        # See if converted dataset already exists
+        # See if converted dataset already exists, either in metadata in conversions.
+        converted_dataset = self.get_metadata_dataset( trans, target_ext )
+        if converted_dataset:
+            return converted_dataset
         converted_dataset = self.get_converted_files_by_type( target_ext )
         if converted_dataset:
             return converted_dataset
@@ -958,6 +961,21 @@ class DatasetInstance( object ):
         session.add( assoc )
         session.flush()
         return None
+    def get_metadata_dataset( self, trans, dataset_ext ):
+        """ 
+        Returns an HDA that points to a metadata file which contains a 
+        converted data with the requested extension.
+        """
+        for name, value in self.metadata.items():
+            # HACK: MetadataFile objects do not have a type/ext, so need to use metadata name
+            # to determine type.
+            if dataset_ext == 'bai' and name == 'bam_index' and isinstance( value, trans.app.model.MetadataFile ):
+                # HACK: MetadataFile objects cannot be used by tools, so return 
+                # a fake HDA that points to metadata file.
+                fake_dataset = trans.app.model.Dataset( state=trans.app.model.Dataset.states.OK, 
+                                                        external_filename=value.file_name )
+                fake_hda = trans.app.model.HistoryDatasetAssociation( dataset=fake_dataset )
+                return fake_hda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         raise 'Unimplemented'
     def get_child_by_designation(self, designation):

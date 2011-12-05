@@ -546,7 +546,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             valid_chroms = indexer.valid_chroms()
         else:
             # Standalone data provider
-            standalone_provider = get_data_provider(data_sources['data_standalone']['name'])( dataset )
+            standalone_provider = get_data_provider( data_sources['data_standalone']['name'] )( dataset )
             kwargs = {"stats": True}
             if not standalone_provider.has_data( chrom ):
                 return messages.NO_DATA
@@ -609,16 +609,8 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         else:
             tracks_dataset_type = data_sources['data']['name']
             data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
-            # HACK: Use bai from bam HDA's metadata if available. This saves 
-            # the client from waiting a long time to generate a duplicate
-            # bam via a converted dataset.
-            if dataset.ext == "bam" and dataset.metadata.get( "bam_index", None ) is not None:
-                converted_dataset = dataset.metadata.bam_index
-                deps = None
-            else:
-                # Default behavior.    
-                converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-                deps = dataset.get_converted_dataset_deps( trans, tracks_dataset_type )
+            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
+            deps = dataset.get_converted_dataset_deps( trans, tracks_dataset_type )
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
@@ -1037,16 +1029,15 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
         
         return data_sources_dict
-        
+                    
     def _convert_dataset( self, trans, dataset, target_type ):
         """
         Converts a dataset to the target_type and returns a message indicating 
         status of the conversion. None is returned to indicate that dataset
         was converted successfully. 
         """
-                
-        # Get converted dataset; this will start the conversion if 
-        # necessary.
+        
+        # Get converted dataset; this will start the conversion if necessary.
         try:
             converted_dataset = dataset.get_converted_dataset( trans, target_type )
         except NoConverterException:
@@ -1063,7 +1054,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             msg = { 'kind': messages.ERROR, 'message': job.stderr }
         elif not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
             msg = messages.PENDING
-            
+        
         return msg
         
 def _get_highest_priority_msg( message_list ):
