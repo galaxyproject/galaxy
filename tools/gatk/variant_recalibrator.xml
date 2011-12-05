@@ -100,7 +100,7 @@
     ##start analysis specific options
     -p '
     #if str( $annotations ) != "None":
-        #for $annotation in str( $annotations ).split( ',' ):
+        #for $annotation in str( $annotations.fields.gatk_value ).split( ',' ):
             --use_annotation "${annotation}"
         #end for
     #end if
@@ -337,36 +337,11 @@
     </repeat>
     
     <param name="annotations" type="select" multiple="True" display="checkboxes" label="annotations which should used for calculations">
-      <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
-      <option value="ChromosomeCounts"/>
-      <option value="IndelType"/>
-      <option value="SpanningDeletions"/>
-      <option value="HardyWeinberg"/>
-      <option value="NBaseCount"/>
-      <option value="MappingQualityZero"/>
-      <option value="AlleleBalance"/>
-      <option value="BaseCounts"/>
-      <option value="LowMQ"/>
-      <option value="InbreedingCoeff"/>
-      <option value="RMSMappingQuality"/>
-      <option value="HaplotypeScore"/>
-      <option value="TechnologyComposition"/>
-      <option value="SampleList"/>
-      <option value="FisherStrand"/>
-      <option value="HomopolymerRun"/>
-      <option value="DepthOfCoverage"/>
-      <option value="SnpEff"/>
-      <option value="MappingQualityZeroFraction"/>
-      <option value="GCContent"/>
-      <option value="MappingQualityRankSumTest"/>
-      <option value="ReadPosRankSumTest"/>
-      <option value="BaseQualityRankSumTest"/>
-      <option value="QualByDepth"/>
-      <option value="SBByDepth"/>
-      <option value="ReadDepthAndAllelicFractionBySample"/>
-      <option value="AlleleBalanceBySample"/>
-      <option value="DepthPerAlleleBySample"/>
-      <option value="MappingQualityZeroBySample"/>
+      <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
+      <options from_data_table="gatk_annotations">
+        <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
+        <filter type="static_value" value="VariantRecalibrator" column="tools_valid_for"/>
+      </options>
     </param>
     
         <param name="mode" type="select" label="Recalibration mode">

@@ -26,13 +26,13 @@
         --useAllAnnotations
     #else:
         #if str( $annotations_type.annotations ) != "None":
-            #for $annotation in str( $annotations_type.annotations ).split( ',' ):
+            #for $annotation in str( $annotations_type.annotations.fields.gatk_value ).split( ',' ):
                 --annotation "${annotation}"
             #end for
         #end if
     #end if
     #if str( $exclude_annotations ) != "None":
-        #for $annotation in str( $exclude_annotations ).split( ',' ):
+        #for $annotation in str( $exclude_annotations.fields.gatk_value ).split( ',' ):
             --excludeAnnotation "${annotation}"
         #end for
     #end if
@@ -179,36 +179,11 @@
       </when>
       <when value="choose">
         <param name="annotations" type="select" multiple="True" display="checkboxes" label="Annotations to apply" >
-          <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
-          <option value="AlleleBalance" />
-          <option value="AlleleBalanceBySample" />
-          <option value="BaseCounts" />
-          <option value="BaseQualityRankSumTest" />
-          <option value="ChromosomeCounts" />
-          <option value="DepthOfCoverage" />
-          <option value="DepthPerAlleleBySample" />
-          <option value="FisherStrand" />
-          <option value="GCContent" />
-          <option value="HaplotypeScore" />
-          <option value="HardyWeinberg" />
-          <option value="HomopolymerRun" />
-          <option value="InbreedingCoeff" />
-          <option value="IndelType" />
-          <option value="LowMQ" />
-          <option value="MVLikelihoodRatio" />
-          <option value="MappingQualityRankSumTest" />
-          <option value="MappingQualityZero" />
-          <option value="MappingQualityZeroBySample" />
-          <option value="MappingQualityZeroFraction" />
-          <option value="NBaseCount" />
-          <option value="QualByDepth" />
-          <option value="RMSMappingQuality" />
-          <option value="ReadDepthAndAllelicFractionBySample" />
-          <option value="ReadPosRankSumTest" />
-          <option value="SampleList" />
-          <option value="SnpEff" />
-          <option value="SpanningDeletions" />
-          <option value="TechnologyComposition" />
+          <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
+          <options from_data_table="gatk_annotations">
+            <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
+            <filter type="static_value" value="VariantAnnotator" column="tools_valid_for"/>
+          </options>
         </param>
       </when>
     </conditional>
@@ -388,36 +363,11 @@
     <param name="family_string" type="text" value="" label="Family String"/>
     <param name="mendel_violation_genotype_quality_threshold" type="float" value="0.0" label="genotype quality treshold in order to annotate mendelian violation ratio."/>
     <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" >
-      <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
-      <option value="AlleleBalance" />
-      <option value="AlleleBalanceBySample" />
-      <option value="BaseCounts" />
-      <option value="BaseQualityRankSumTest" />
-      <option value="ChromosomeCounts" />
-      <option value="DepthOfCoverage" />
-      <option value="DepthPerAlleleBySample" />
-      <option value="FisherStrand" />
-      <option value="GCContent" />
-      <option value="HaplotypeScore" />
-      <option value="HardyWeinberg" />
-      <option value="HomopolymerRun" />
-      <option value="InbreedingCoeff" />
-      <option value="IndelType" />
-      <option value="LowMQ" />
-      <option value="MVLikelihoodRatio" />
-      <option value="MappingQualityRankSumTest" />
-      <option value="MappingQualityZero" />
-      <option value="MappingQualityZeroBySample" />
-      <option value="MappingQualityZeroFraction" />
-      <option value="NBaseCount" />
-      <option value="QualByDepth" />
-      <option value="RMSMappingQuality" />
-      <option value="ReadDepthAndAllelicFractionBySample" />
-      <option value="ReadPosRankSumTest" />
-      <option value="SampleList" />
-      <option value="SnpEff" />
-      <option value="SpanningDeletions" />
-      <option value="TechnologyComposition" />
+      <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
+      <options from_data_table="gatk_annotations">
+        <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
+        <filter type="static_value" value="VariantAnnotator" column="tools_valid_for"/>
+      </options>
     </param>
     
   </inputs>
