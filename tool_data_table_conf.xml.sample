@@ -77,8 +77,13 @@
     </table>
     <!-- Location of Picard dict files valid for GATK -->
     <table name="gatk_picard_indexes" comment_char="#">
-        <columns>value, dbkey, name, path, tools_valid_for</columns>
-        <file path="tool-data/picard_index.loc" />
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/gatk_sorted_picard_index.loc" />
+    </table>
+    <!-- Available of GATK references -->
+    <table name="gatk_annotations" comment_char="#">
+        <columns>value, name, gatk_value, tools_valid_for</columns>
+        <file path="tool-data/gatk_annotations.txt" />
     </table>
     <!-- Location of SRMA dict file and other files -->
     <table name="srma_indexes" comment_char="#">
