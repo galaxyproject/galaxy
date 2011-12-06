@@ -700,7 +700,7 @@ class JobWrapper( object ):
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
         self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
-        if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
+        if self.app.config.cleanup_job == 'always' or ( not stderr and self.app.config.cleanup_job == 'onsuccess' ):
             self.cleanup()
 
     def cleanup( self ):

@@ -519,7 +519,7 @@ class PBSJobRunner( BaseJobRunner ):
             pbs_job_state.job_wrapper.fail("Unable to finish job", exception=True)
 
         # clean up the pbs files
-        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" )):
+        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
             self.cleanup( ( ofile, efile, job_file ) )
 
     def fail_job( self, pbs_job_state ):

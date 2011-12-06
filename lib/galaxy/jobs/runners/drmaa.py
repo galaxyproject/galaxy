@@ -290,7 +290,7 @@ class DRMAAJobRunner( BaseJobRunner ):
             log.exception("Job wrapper finish method failed")
 
         # clean up the drm files
-        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" )):
+        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
             self.cleanup( ( ofile, efile, job_file ) )
 
     def fail_job( self, drm_job_state ):
