@@ -1,7 +1,7 @@
 <tool id="sam_pileup" name="Generate pileup" version="1.1.1">
   <description>from BAM dataset</description>
   <requirements>
-    <requirement type="package">samtools</requirement>
+    <requirement type="package" version="0.1.16">samtools</requirement>
   </requirements>
   <command interpreter="python">
     sam_pileup.py
