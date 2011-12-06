@@ -58,6 +58,7 @@ def main():
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
     tool_data_table_config_path = 'tool_data_table_conf.xml'
+    tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
     if os.path.exists( 'tool_data_table_conf.test.xml' ):
         tool_data_table_config_path = 'tool_data_table_conf.test.xml'
     if start_server:
@@ -148,6 +149,9 @@ def main():
 
         if not database_connection.startswith( 'sqlite://' ):
             kwargs['database_engine_option_max_overflow'] = '20'
+
+        if tool_dependency_dir is not None:
+            kwargs['tool_dependency_dir'] = tool_dependency_dir
 
         # Build the Universe Application
         app = UniverseApplication( job_queue_workers = 5,

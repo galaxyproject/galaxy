@@ -93,7 +93,19 @@ class ToolTestCase( TwillTestCase ):
             self.assertTrue( elem is not None )
             elem_hid = elem.get( 'hid' )
             elem_index += 1
-            self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes )
+            try:
+                self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes )
+            except Exception, e:
+                print '-----------'
+                print 'Job STDOUT:'
+                print '-----------'
+                print self.get_history_dataset_stdout( elem.get( 'id' ) )
+                print '-----------'
+                print 'Job STDERR:'
+                print '-----------'
+                print self.get_history_dataset_stderr( elem.get( 'id' ) )
+                print '-----------'
+                raise
         self.delete_history( id=self.security.encode_id( latest_history.id ) )
 
     def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):

@@ -624,6 +624,14 @@ class TwillTestCase( unittest.TestCase ):
         fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
         return temp_prefix
 
+    def get_history_dataset_stdout( self, hda_id ):
+        self.visit_page( "/datasets/%s/stdout" % hda_id )
+        return self.last_page()
+
+    def get_history_dataset_stderr( self, hda_id ):
+        self.visit_page( "/datasets/%s/stderr" % hda_id )
+        return self.last_page()
+
     def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait:

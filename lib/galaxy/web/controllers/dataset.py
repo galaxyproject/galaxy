@@ -154,10 +154,24 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
     @web.expose
-    def stderr( self, trans, id ):
-        dataset = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        job = dataset.creating_job_associations[0].job
+    def stdout( self, trans, dataset_id=None, **kwargs ):
         trans.response.set_content_type( 'text/plain' )
+        try:
+            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+            assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+            job = hda.creating_job_associations[0].job
+        except:
+            return "Invalid dataset ID or you are not allowed to access this dataset"
+        return job.stdout
+    @web.expose
+    def stderr( self, trans, dataset_id=None, **kwargs ):
+        trans.response.set_content_type( 'text/plain' )
+        try:
+            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+            assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+            job = hda.creating_job_associations[0].job
+        except:
+            return "Invalid dataset ID or you are not allowed to access this dataset"
         return job.stderr
     @web.expose
     def report_error( self, trans, id, email='', message="" ):
