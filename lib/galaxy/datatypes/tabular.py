@@ -353,7 +353,7 @@ class Sam( Tabular ):
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
 
-     def merge( split_files, output_file):
+    def merge( split_files, output_file):
         """
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
         the headers from files 1-n, keeping them in the first file only
