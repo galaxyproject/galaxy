@@ -104,6 +104,9 @@
             --use_annotation "${annotation}"
         #end for
     #end if
+    #for $additional_annotation in $additional_annotations:
+        --use_annotation "${additional_annotation.additional_annotation_name}"
+    #end for
     --mode "${mode}"
     '
     
@@ -344,11 +347,15 @@
       </options>
     </param>
     
-        <param name="mode" type="select" label="Recalibration mode">
-          <option value="SNP" selected="True">SNP</option>
-          <option value="INDEL">INDEL</option>
-          <option value="BOTH">BOTH</option>
-        </param>
+    <repeat name="additional_annotations" title="Additional annotation">
+      <param name="additional_annotation_name" type="text" value="" label="Annotation name" />
+    </repeat>
+    
+    <param name="mode" type="select" label="Recalibration mode">
+        <option value="SNP" selected="True">SNP</option>
+        <option value="INDEL">INDEL</option>
+        <option value="BOTH">BOTH</option>
+    </param>
     
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">

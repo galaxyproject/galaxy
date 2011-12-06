@@ -117,6 +117,9 @@
                 --annotation "${annotation}"
             #end for
         #end if
+        #for $additional_annotation in $analysis_param_type.additional_annotations:
+            --annotation "${additional_annotation.additional_annotation_name}"
+        #end for
         #if str( $analysis_param_type.group ) != "None":
             #for $group in str( $analysis_param_type.group ).split( ','):
                 --group "${group}"
@@ -372,6 +375,9 @@
             <filter type="static_value" value="UnifiedGenotyper" column="tools_valid_for"/>
           </options>
 	    </param>
+        <repeat name="additional_annotations" title="Additional annotation">
+          <param name="additional_annotation_name" type="text" value="" label="Annotation name" />
+        </repeat>
 <!--
         <conditional name="snpEff_rod_bind_type">
           <param name="snpEff_rod_bind_type_selector" type="select" label="Provide a snpEff reference-ordered data file">

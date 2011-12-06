@@ -36,14 +36,9 @@
             --excludeAnnotation "${annotation}"
         #end for
     #end if
-##    #for $additional_annotation in $additional_annotations:
-##        --annotation "${additional_annotation.additional_annotation_type.additional_annotation_type_selector}"
-##        #for $name, $param in $additional_annotation.additional_annotation_type.iteritems():
-##            #if $name not in [ "__current_case__", "additional_annotation_type_selector" ]:
-##                --${name} "${param}"
-##            #end if
-##        #end for
-##    #end for
+    #for $additional_annotation in $additional_annotations:
+        --annotation "${additional_annotation.additional_annotation_name}"
+    #end for
     ${reference_source.input_variant_bti}
    '
     
@@ -187,6 +182,10 @@
         </param>
       </when>
     </conditional>
+    
+    <repeat name="additional_annotations" title="Additional annotation">
+      <param name="additional_annotation_name" type="text" value="" label="Annotation name" />
+    </repeat>
     
     <repeat name="comp_rod_bind" title="Binding for reference-ordered comparison data">
       <param name="comp_input_rod" type="data" format="vcf" label="ROD file" />
