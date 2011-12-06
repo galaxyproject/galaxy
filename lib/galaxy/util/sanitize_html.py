@@ -373,7 +373,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
         clean_attrs = []
         for key, value in self.normalize_attrs(attrs):
-            if key=="href" and value.startswith("javascript"):
+            if key=="href" and value.strip().startswith("javascript"):
                 pass
             elif key in acceptable_attributes:
                 key=keymap.get(key,key)
