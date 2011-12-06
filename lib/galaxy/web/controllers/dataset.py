@@ -317,7 +317,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, file_ext)
         return open(data.metadata.get(metadata_name).file_name)
-        
+
     @web.expose
     def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
@@ -337,10 +337,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
-        
+
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
-        
         if filename and filename != "index":
             # For files in extra_files_path
             file_path = os.path.join( data.extra_files_path, filename )
@@ -357,14 +356,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                 return open( file_path )
             else:
                 return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
-        
+
         trans.response.set_content_type(data.get_mime())
         trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
-        
+
         if to_ext or isinstance(data.datatype, datatypes.binary.Binary): # Saving the file, or binary file
             if data.extension in composite_extensions:
                 return self.archive_composite_dataset( trans, data, **kwd )
-            else:                    
+            else:
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
                 if not to_ext:
                     to_ext = data.extension
@@ -375,11 +374,13 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
-        
         max_peek_size = 1000000 # 1 MB
         if isinstance(data.datatype, datatypes.images.Html):
             max_peek_size = 10000000 # 10 MB for html
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
+            if trans.response.get_content_type() == "text/html":
+                # Sanitize anytime we respond with plain text/html content.
+                return sanitize_html(open( data.file_name ).read())
             return open( data.file_name )
         else:
             trans.response.set_content_type( "text/html" )
