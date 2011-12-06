@@ -725,6 +725,18 @@ class BamDataProvider( TracksDataProvider ):
         max_low, max_high = get_bounds( results, 1, 2 )
                 
         return { 'data': results, 'message': message, 'max_low': max_low, 'max_high': max_high }
+        
+class SamDataProvider( BamDataProvider ):
+    
+    def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None ):
+        """ Create SamDataProvider. """
+        
+        # HACK: to use BamDataProvider, original dataset must be BAM and 
+        # converted dataset must be BAI. Use BAI from BAM metadata.
+        if converted_dataset:
+            self.converted_dataset = converted_dataset.metadata.bam_index
+            self.original_dataset = converted_dataset
+        self.dependencies = dependencies
 
 class BBIDataProvider( TracksDataProvider ):
     """
@@ -957,6 +969,7 @@ dataset_type_name_to_data_provider = {
     "tabix": { Vcf: VcfTabixDataProvider, Bed: BedTabixDataProvider, "default" : TabixDataProvider },
     "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
+    "bam": SamDataProvider,
     "summary_tree": SummaryTreeDataProvider,
     "bigwig": BigWigDataProvider,
     "bigbed": BigBedDataProvider

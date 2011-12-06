@@ -139,7 +139,10 @@
     <datatype extension="qualsolid" type="galaxy.datatypes.qualityscore:QualityScoreSOLiD" display_in_upload="true"/>
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
     <datatype extension="Roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
-    <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true"/>
+    <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
+    	<converter file="sam_to_bam.xml" target_datatype="bam"/>
+    	<converter file="sam_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+	</datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
     <datatype extension="sff" type="galaxy.datatypes.binary:Sff" mimetype="application/octet-stream" display_in_upload="true"/>

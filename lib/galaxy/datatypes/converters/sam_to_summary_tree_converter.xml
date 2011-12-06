@@ -1,0 +1,14 @@
+<tool id="CONVERTER_sam_to_summary_tree_0" name="Convert SAM to Summary Tree" version="1.0.0" hidden="true">
+<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <command interpreter="python">sam_or_bam_to_summary_tree_converter.py --sam $input1 $output1</command>
+  <inputs>
+    <page>
+        <param format="sam" name="input1" type="data" label="Choose sam file"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="summary_tree" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

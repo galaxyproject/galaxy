@@ -368,7 +368,10 @@ class Sam( Tabular ):
         if result != 0:
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
-
+    
+    def get_track_type( self ):
+        return "ReadTrack", {"data": "bam", "index": "summary_tree"}
+    
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
