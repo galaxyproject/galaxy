@@ -403,7 +403,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library3.id ),
-                             strings_displayed=[ ldda.name, admin_user.email ] )
+                             strings_displayed=[ ldda.name, 'bed' ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library3.id ),
