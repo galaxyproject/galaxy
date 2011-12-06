@@ -214,7 +214,8 @@ class PBSJobRunner( BaseJobRunner ):
         # Check for deletion before we change state
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
-            job_wrapper.cleanup()
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                job_wrapper.cleanup()
             return
 
         ( pbs_server_name, runner_url ) = self.determine_pbs_server( runner_url, rewrite = True )
@@ -277,8 +278,9 @@ class PBSJobRunner( BaseJobRunner ):
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
             pbs.pbs_disconnect(c)
-            self.cleanup( ( ofile, efile, job_file ) )
-            job_wrapper.cleanup()
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                self.cleanup( ( ofile, efile, job_file ) )
+                job_wrapper.cleanup()
             return
 
         # submit
@@ -517,7 +519,8 @@ class PBSJobRunner( BaseJobRunner ):
             pbs_job_state.job_wrapper.fail("Unable to finish job", exception=True)
 
         # clean up the pbs files
-        self.cleanup( ( ofile, efile, job_file ) )
+        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" )):
+            self.cleanup( ( ofile, efile, job_file ) )
 
     def fail_job( self, pbs_job_state ):
         """
@@ -526,13 +529,15 @@ class PBSJobRunner( BaseJobRunner ):
         if pbs_job_state.stop_job:
             self.stop_job( self.sa_session.query( self.app.model.Job ).get( pbs_job_state.job_wrapper.job_id ) )
         pbs_job_state.job_wrapper.fail( pbs_job_state.fail_message )
-        self.cleanup( ( pbs_job_state.ofile, pbs_job_state.efile, pbs_job_state.job_file ) )
+        if self.app.config.cleanup_job == "always":
+            self.cleanup( ( pbs_job_state.ofile, pbs_job_state.efile, pbs_job_state.job_file ) )
 
     def cleanup( self, files ):
-        if not asbool( self.app.config.get( 'debug', False ) ):
-            for file in files:
-                if os.access( file, os.R_OK ):
-                    os.unlink( file )
+        for file in files:
+            try:
+                os.unlink( file )
+            except Exception, e:
+                log.warning( "Unable to cleanup: %s" % str( e ) )
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""

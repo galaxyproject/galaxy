@@ -482,7 +482,8 @@ class JobWrapper( object ):
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             self.tool.job_failed( self, message, exception )
-        self.cleanup()
+        if self.app.config.cleanup_job == 'always':
+            self.cleanup()
 
     def change_state( self, state, info = False ):
         job = self.get_job()
@@ -525,7 +526,8 @@ class JobWrapper( object ):
         job = self.get_job()
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:
-            self.cleanup()
+            if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
+                self.cleanup()
             return
         elif job.state == job.states.ERROR:
             # Job was deleted by an administrator
@@ -698,7 +700,8 @@ class JobWrapper( object ):
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
         self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
-        self.cleanup()
+        if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
+            self.cleanup()
 
     def cleanup( self ):
         # remove temporary files
@@ -1045,7 +1048,8 @@ class TaskWrapper(JobWrapper):
         task = self.get_task()
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:
-            self.cleanup()
+            if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
+                self.cleanup()
             return
         elif task.state == task.states.ERROR:
             # Job was deleted by an administrator

@@ -514,6 +514,12 @@ use_interactive = True
 # Galaxy server after the job completes.
 #outputs_to_working_directory = False
 
+# Clean up various bits of jobs left on the filesystem after completion.  These
+# bits include the job working directory, external metadata temporary files,
+# and DRM stdout and stderr files (if using a DRM).  Possible values are:
+# always, onsuccess, never
+#cleanup_job = always
+
 # Number of concurrent jobs to run (local job runner)
 #local_job_queue_workers = 5
 
