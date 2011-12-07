@@ -1553,7 +1553,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             view.overview_close.show();
             view.resize_window();
         };
-        this.overview_drawable.init();
+        view.overview_drawable.request_draw();
         view.has_changes = true;
     },
     /** Close and reset overview. */
@@ -2524,7 +2524,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
  * -------> ReadTrack
  * -------> VcfTrack
  */
-var Track = function(name, view, container, prefs, data_url, data_query_wait) {
+var Track = function(name, view, container, prefs, data_manager, data_url, data_query_wait) {
     // For now, track's container is always view.
     Drawable.call(this, name, view, container, {}, "draghandle");
     
@@ -2535,9 +2535,7 @@ var Track = function(name, view, container, prefs, data_url, data_query_wait) {
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
-
-    if (!Track.id_counter) { Track.id_counter = 0; }
-    this.id = Track.id_counter++;
+    this.data_manager = (data_manager ? data_manager : new DataManager(DATA_CACHE_SIZE, this));
         
     //
     // Create content div, which is where track is displayed.
@@ -2700,7 +2698,6 @@ extend(Track.prototype, Drawable.prototype, {
         track.enabled = false;
         track.tile_cache.clear();    
         track.data_manager.clear();
-        track.initial_canvas = undefined;
         track.content_div.css("height", "auto");
         /*
         if (!track.content_div.text()) {
@@ -2767,8 +2764,8 @@ extend(Track.prototype, Drawable.prototype, {
     predraw_init: function() {}
 });
 
-var TiledTrack = function(name, view, container, prefs, filters_list, tool_dict) {
-    Track.call(this, name, view, container, prefs);
+var TiledTrack = function(name, view, container, prefs, filters_list, tool_dict, data_manager) {
+    Track.call(this, name, view, container, prefs, data_manager);
 
     var track = this,
         view = track.view;
@@ -2803,10 +2800,15 @@ var TiledTrack = function(name, view, container, prefs, filters_list, tool_dict)
 };
 extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
-     * Returns a copy of the track.
+     * Returns a copy of the track. The copy uses the same data manager so that the tracks can share data.
      */
-    copy: function(container) {        
-        return new this.constructor(this.name, this.view, container, this.hda_ldda, this.dataset_id, this.prefs, this.filters, this.tool);
+    copy: function(container) {
+        // Create copy.
+        var new_track = new this.constructor(this.name, this.view, container, this.hda_ldda, this.dataset_id, this.prefs, 
+                                             this.filters, this.tool, this.data_manager);
+        // Misc. init and return.                            
+        new_track.enabled = this.enabled;
+        return new_track;
     },
     /**
      * Convert track to JSON object.
@@ -3247,11 +3249,11 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
+var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
-    TiledTrack.call( this, name, view, container, prefs );
+    TiledTrack.call(this, name, view, container, prefs, filters, tool, data_manager);
    
     this.min_height_px = 16; 
     this.max_height_px = 400; 
@@ -3260,7 +3262,6 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.data_manager = new DataManager(DATA_CACHE_SIZE, this);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.left_offset = 0;
 
@@ -3400,7 +3401,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     } 
 });
 
-var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool) {
+var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
     //
     // Preinitialization: do things that need to be done before calling Track and TiledTrack
     // initialization code.
@@ -3411,7 +3412,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     //
     // Initialization.
     //    
-    TiledTrack.call(this, name, view, container, prefs, filters, tool);
+    TiledTrack.call(this, name, view, container, prefs, filters, tool, data_manager);
 
     // Define and restore track configuration.
     this.config = new DrawableConfig( {
@@ -3447,7 +3448,6 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     this.inc_slots = {};
     this.start_end_dct = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
-    this.data_manager = new DataManager(DATA_CACHE_SIZE, this);
     this.left_offset = 200;
 
     // this.painter = painters.LinkedFeaturePainter;
@@ -3810,8 +3810,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, tool);
+var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager);
     
     this.config = new DrawableConfig( {
         track: this,
@@ -3837,8 +3837,8 @@ var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filt
 
 extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
-var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
+var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters, data_manager) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, data_manager);
     
     var 
         block_color = get_random_color(),
