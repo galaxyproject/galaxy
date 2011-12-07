@@ -498,7 +498,8 @@ class JobWrapper( object ):
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             self.tool.job_failed( self, message, exception )
-        self.cleanup()
+        if self.app.config.cleanup_job == 'always':
+            self.cleanup()
 
     def change_state( self, state, info = False ):
         job = self.get_job()
@@ -541,7 +542,8 @@ class JobWrapper( object ):
         job = self.get_job()
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:
-            self.cleanup()
+            if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
+                self.cleanup()
             return
         elif job.state == job.states.ERROR:
             # Job was deleted by an administrator
@@ -557,7 +559,7 @@ class JobWrapper( object ):
                 self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
 
-        if self.app.config.outputs_to_working_directory:
+        if self.app.config.outputs_to_working_directory and not self.__link_file_check():
             for dataset_path in self.get_output_fnames():
                 try:
                     shutil.move( dataset_path.false_path, dataset_path.real_path )
@@ -717,7 +719,8 @@ class JobWrapper( object ):
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
         self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
-        self.cleanup()
+        if self.app.config.cleanup_job == 'always' or ( not stderr and self.app.config.cleanup_job == 'onsuccess' ):
+            self.cleanup()
 
     def cleanup( self ):
         # remove temporary files
@@ -898,6 +901,17 @@ class JobWrapper( object ):
         else:
             return 'anonymous@unknown'
 
+    def __link_file_check( self ):
+        """ outputs_to_working_directory breaks library uploads where data is
+        linked.  This method is a hack that solves that problem, but is
+        specific to the upload tool and relies on an injected job param.  This
+        method should be removed ASAP and replaced with some properly generic
+        and stateful way of determining link-only datasets. -nate
+        """
+        job = self.get_job()
+        param_dict = job.get_param_values( self.app )
+        return self.tool.id == 'upload1' and param_dict.get( 'link_data_only', None ) == 'link_to_files'
+
 class TaskWrapper(JobWrapper):
     """
     Extension of JobWrapper intended for running tasks.
@@ -1053,7 +1067,8 @@ class TaskWrapper(JobWrapper):
         task = self.get_task()
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:
-            self.cleanup()
+            if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
+                self.cleanup()
             return
         elif task.state == task.states.ERROR:
             # Job was deleted by an administrator

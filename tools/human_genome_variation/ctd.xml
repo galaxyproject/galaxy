@@ -29,13 +29,10 @@
        <when value="genes">
           <!-- do nothing -->
        </when>
-       <when value="pathways">
-          <!-- do nothing -->
-       </when>
-       <when value="pathways_curated">
-          <!-- do nothing -->
-       </when>
        <when value="pathways_inferred">
+          <!-- do nothing -->
+       </when>
+       <when value="pathways_enriched">
           <!-- do nothing -->
        </when>
        <when value="diseases">
@@ -247,7 +244,7 @@ interaction type from the search-and-select box.  The choices that
 start with '-' are a subset of a choice above them; you can chose
 either the general interaction type or a more specific one.
 
-Home page: http://ctd.mdibl.org/
+Home page: http://ctdbase.org
 
 .. _tabular: ./static/formatHelp.html#tab
 

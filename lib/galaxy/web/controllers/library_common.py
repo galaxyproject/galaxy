@@ -1045,7 +1045,12 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                                                        status='error' ) )
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
-        return upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
+        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
+        # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
+        job.add_parameter( 'link_data_only', to_json_string( kwd.get( 'link_data_only', 'copy_files' ) ) )
+        trans.sa_session.add( job )
+        trans.sa_session.flush()
+        return output
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
@@ -2245,6 +2250,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         # contents will be purged.  The association between this method and the cleanup_datasets.py script
         # enables clean maintenance of libraries and library dataset disk files.  This is also why the item_types
         # are not any of the associations ( the cleanup_datasets.py script handles everything ).
+        status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         item_types = { 'library': trans.app.model.Library,
                        'folder': trans.app.model.LibraryFolder,
@@ -2259,22 +2265,36 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                 item_desc = 'Dataset'
             else:
                 item_desc = item_type.capitalize()
-            try:
-                library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
-            except:
-                library_item = None
-            if not library_item or not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, library_item, trans.user ) ):
-                message = 'Invalid %s id ( %s ) specifield.' % ( item_desc, item_id )
-                status = 'error'
-            elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_item ) ):
-                message = "You are not authorized to delete %s '%s'." % ( item_desc, library_item.name )
-                status = 'error'
-            else:
-                library_item.deleted = True
-                trans.sa_session.add( library_item )
+            library_item_ids = util.listify( item_id )
+            valid_items = 0
+            invalid_items = 0
+            not_authorized_items = 0
+            flush_needed = False
+            message = ''
+            for library_item_id in library_item_ids:
+                try:
+                    library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( library_item_id ) )
+                except:
+                    library_item = None
+                if not library_item or not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, library_item, trans.user ) ):
+                    invalid_items += 1
+                elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_item ) ):
+                    not_authorized_items += 1
+                else:
+                    valid_items += 1
+                    library_item.deleted = True
+                    trans.sa_session.add( library_item )
+                    flush_needed = True
+            if flush_needed:
                 trans.sa_session.flush()
-                message = util.sanitize_text( "%s '%s' has been marked deleted" % ( item_desc, library_item.name ) )
-                status = 'done'
+            if valid_items:
+                message += "%d %s marked deleted.  " % ( valid_items, inflector.cond_plural( valid_items, item_desc ) )
+            if invalid_items:
+                message += '%d invalid %s specifield.  ' % ( invalid_items, inflector.cond_plural( invalid_items, item_desc ) )
+                status = 'error'
+            if not_authorized_items:
+                message += 'You are not authorized to delete %d %s.  ' % ( not_authorized_items, inflector.cond_plural( not_authorized_items, item_desc ) )
+                status = 'error'
         if item_type == 'library':
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_libraries',
@@ -2291,6 +2311,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
     @web.expose
     def undelete_library_item( self, trans, cntrller, library_id, item_id, item_type, **kwd ):
         # This action will handle undeleting all types of library items
+        status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         item_types = { 'library': trans.app.model.Library,
                        'folder': trans.app.model.LibraryFolder,
@@ -2299,31 +2320,49 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         current_user_roles = trans.get_current_user_roles()
         if item_type not in item_types:
             message = 'Bad item_type specified: %s' % str( item_type )
-            status = ERROR
+            status = 'error'
         else:
             if item_type == 'library_dataset':
                 item_desc = 'Dataset'
             else:
                 item_desc = item_type.capitalize()
-            try:
-                library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
-            except:
-                library_item = None
-            if not library_item or not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, library_item, trans.user ) ):
-                message = 'Invalid %s id ( %s ) specifield.' % ( item_desc, item_id )
-                status = 'error'
-            elif library_item.purged:
-                message = '%s %s has been purged, so it cannot be undeleted' % ( item_desc, library_item.name )
-                status = ERROR
-            elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_item ) ):
-                message = "You are not authorized to delete %s '%s'." % ( item_desc, library_item.name )
-                status = 'error'
-            else:
-                library_item.deleted = False
-                trans.sa_session.add( library_item )
+
+            library_item_ids = util.listify( item_id )
+            valid_items = 0
+            invalid_items = 0
+            purged_items = 0
+            not_authorized_items = 0
+            flush_needed = False
+            message = ''
+            for library_item_id in library_item_ids:
+                try:
+                    library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( library_item_id ) )
+                except:
+                    library_item = None
+                if not library_item or not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, library_item, trans.user ) ):
+                    invalid_items += 1
+                elif library_item.purged:
+                    purged_items += 1
+                elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_item ) ):
+                    not_authorized_items += 1
+                else:
+                    valid_items += 1
+                    library_item.deleted = False
+                    trans.sa_session.add( library_item )
+                    flush_needed = True
+            if flush_needed:
                 trans.sa_session.flush()
-                message = util.sanitize_text( "%s '%s' has been marked undeleted" % ( item_desc, library_item.name ) )
-                status = SUCCESS
+            if valid_items:
+                message += "%d %s marked undeleted.  " % ( valid_items, inflector.cond_plural( valid_items, item_desc ) )
+            if invalid_items:
+                message += '%d invalid %s specifield.  ' % ( invalid_items, inflector.cond_plural( invalid_items, item_desc ) )
+                status = 'error'
+            if not_authorized_items:
+                message += 'You are not authorized to undelete %d %s.  ' % ( not_authorized_items, inflector.cond_plural( not_authorized_items, item_desc ) )
+                status = 'error'  
+            if purged_items:
+                message += '%d %s marked purged, so cannot be undeleted.  ' % ( purged_items, inflector.cond_plural( purged_items, item_desc ) )
+                status = 'error'  
         if item_type == 'library':
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_libraries',

@@ -376,7 +376,7 @@ var
     DATA_OK = "Ready for display",
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 5,
-    CACHED_DATA = 5;
+    DATA_CACHE_SIZE = 20;
     
 /**
  * Round a number to a given number of decimal places.
@@ -650,8 +650,13 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
  */
 
 /**
- * Base interface for all drawable objects. Drawable objects have a name and are
- * associated with a view and container. They optionally have a drag handle class. 
+ * Base class for all drawable objects. Drawable objects are associated with a view and live in a 
+ * container. They have the following HTML elements and structure:
+ *  <container_div>
+ *      <header_div>
+ *      <content_div>
+ *
+ * They optionally have a drag handle class. 
  */
 var Drawable = function(name, view, container, prefs, drag_handle_class) {
     if (!Drawable.id_counter) { Drawable.id_counter = 0; }
@@ -672,10 +677,105 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
     this.prefs = this.config.values;
     this.drag_handle_class = drag_handle_class;
     this.is_overview = false;
+    this.action_icons = {};
+    
+    // FIXME: this should be a saved setting
+    this.content_visible = true;
+    
+    // Build Drawable HTML and behaviors.
+    this.container_div = this.build_container_div();
+    this.header_div = this.build_header_div();
+    
+    if (this.header_div) { 
+        this.container_div.append(this.header_div);
+        
+        this.icons_div = $("<div/>").css("float", "left").hide().appendTo(this.header_div);
+        this.build_action_icons(this.action_icons_def);
+        this.header_div.append( $("<div style='clear: both'/>") );
+        
+        
+        // Suppress double clicks in header so that they do not impact viz.
+        this.header_div.dblclick( function(e) { e.stopPropagation(); } );
+        
+        // Show icons when users is hovering over track.
+        var drawable = this;
+        this.container_div.hover(
+            function() { drawable.icons_div.show(); }, 
+            function() { drawable.icons_div.hide(); }
+        );
+        
+        // Needed for floating elts in header.
+        $("<div style='clear: both'/>").appendTo(this.container_div);
+    }
 };
+
+Drawable.prototype.action_icons_def = [
+    // Hide/show drawable content.
+    {
+        name: "toggle_icon",
+        title: "Hide/show content",
+        css_class: "toggle",
+        on_click_fn: function(drawable) {
+            if ( drawable.content_visible ) {
+                drawable.action_icons.toggle_icon.addClass("toggle-expand").removeClass("toggle");
+                drawable.hide_contents();
+                drawable.content_visible = false;
+            } else {
+                drawable.action_icons.toggle_icon.addClass("toggle").removeClass("toggle-expand");
+                drawable.content_visible = true;
+                drawable.show_contents();
+            }
+        }
+    },
+    // Edit settings.
+    {
+        name: "settings_icon",
+        title: "Edit settings",
+        css_class: "settings-icon",
+        on_click_fn: function(drawable) {
+            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+                ok_fn = function() { 
+                    drawable.config.update_from_form( $(".dialog-box") );
+                    hide_modal(); 
+                    $(window).unbind("keypress.check_enter_esc"); 
+                },
+                check_enter_esc = function(e) {
+                    if ((e.keyCode || e.which) === 27) { // Escape key
+                        cancel_fn();
+                    } else if ((e.keyCode || e.which) === 13) { // Enter key
+                        ok_fn();
+                    }
+                };
+
+            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
+            show_modal("Configure", drawable.config.build_form(), {
+                "Cancel": cancel_fn,
+                "OK": ok_fn
+            });
+        }
+    },
+    // Remove.
+    {
+        name: "remove_icon",
+        title: "Remove",
+        css_class: "remove-icon",
+        on_click_fn: function(drawable) {
+            // Tipsy for remove icon must be deleted when drawable is deleted.
+            $(".tipsy").remove();
+            drawable.remove();
+        }
+    }
+];
 
 extend(Drawable.prototype, {
     init: function() {},
+    can_draw: function() {
+        if (this.enabled && this.content_visible) { 
+            return true;
+        }
+        
+        return false;
+    },
     request_draw: function() {},
     _draw: function() {},
     to_json: function() {},
@@ -707,7 +807,49 @@ extend(Drawable.prototype, {
             view.update_intro_div();
             view.has_changes = true;
         });
-    }
+    },
+    /**
+     * Build drawable's container div; this is the parent div for all drawable's elements.
+     */ 
+    build_container_div: function() {},
+    /**
+     * Build drawable's header div.
+     */
+    build_header_div: function() {},
+    /**
+     * Add an action icon to this object. Appends icon unless prepend flag is specified.
+     */
+    add_action_icon: function(name, title, css_class, on_click_fn, prepend) {
+        var drawable = this;
+        this.action_icons[name] = $("<a/>").attr("href", "javascript:void(0);").attr("title", title)
+                                           .addClass("icon-button").addClass(css_class).tipsy( {gravity: 's'} )
+                                           .click( function() { on_click_fn(drawable); } )
+                                           .appendTo(this.icons_div);
+    },
+    /**
+     * Build drawable's icons div from object's icons_dict.
+     */
+    build_action_icons: function(action_icons_def) {        
+        // Create icons.
+        var icon_dict;
+        for (var i = 0; i < action_icons_def.length; i++) {
+            icon_dict = action_icons_def[i];
+            this.add_action_icon(icon_dict.name, icon_dict.title, icon_dict.css_class, 
+                                 icon_dict.on_click_fn, icon_dict.prepend);
+        }
+    },
+    /**
+     * Update icons.
+     */
+    update_icons: function() {},
+    /**
+     * Hide drawable's contents.
+     */
+    hide_contents: function () {},
+    /**
+     * Show drawable's contents.
+     */
+    show_contents: function() {}
 });
 
 /**
@@ -805,65 +947,56 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
 var DrawableGroup = function(name, view, container, prefs) {
     DrawableCollection.call(this, "DrawableGroup", name, view, container, prefs, "group-handle");
         
-    // HTML elements.
-    this.container_div = $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
-    this.header_div = $("<div/>").addClass("track-header").appendTo(this.container_div);
-    this.header_div.append($("<div/>").addClass(this.drag_handle_class));
-    this.name_div = $("<div/>").addClass("group-name menubutton popup").text(this.name).appendTo(this.header_div);    
-    this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + this.id + "_content_div").appendTo(this.container_div);
-    
     // Set up containers/moving for group: register both container_div and content div as container
     // because both are used as containers (container div to recognize container, content_div to 
     // store elements). Group can be moved.
+    this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + this.id + "_content_div").appendTo(this.container_div);
     is_container(this.container_div, this);
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
-    
-    this.update_icons();
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
-    /**
-     * Make popup menu for group.
-     */
+    /*
+    action_icons_def: [
+    // Create composite track from group's tracks.
+    {
+        name: "composite-icon",
+        title: "Show composite track",
+        css_class: "layers-stack",
+        on_click_fn: function(group) {
+            group.show_composite_track();
+        }
+    }
+    ].concat(Drawable.prototype.action_icons_def),
+    */
+    build_container_div: function() {
+        return $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
+    },
+    build_header_div: function() {
+        var header_div = $("<div/>").addClass("track-header");
+        header_div.append($("<div/>").addClass(this.drag_handle_class));
+        this.name_div = $("<div/>").addClass("track-name").text(this.name).appendTo(header_div);
+        return header_div;
+    },
+    hide_contents: function () {
+        this.content_div.hide();
+    },
+    show_contents: function() {
+        // Show the contents div and labels (if present)
+        this.content_div.show();
+        // Request a redraw of the content
+        this.request_draw();
+    },
     update_icons: function() {
-        var group = this;
-        
-        var group_dropdown = {};
-                
-        //
-        // Edit config option.
-        //
-        group_dropdown["Edit configuration"] = function() {
-            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
-                ok_fn = function() { 
-                    group.config.update_from_form( $(".dialog-box") );
-                    hide_modal(); 
-                    $(window).unbind("keypress.check_enter_esc"); 
-                },
-                check_enter_esc = function(e) {
-                    if ((e.keyCode || e.which) === 27) { // Escape key
-                        cancel_fn();
-                    } else if ((e.keyCode || e.which) === 13) { // Enter key
-                        ok_fn();
-                    }
-                };
-
-            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-            show_modal("Configure Group", group.config.build_form(), {
-                "Cancel": cancel_fn,
-                "OK": ok_fn
-            });
-        };
-        
-        //
-        // Remove option.
-        //
-        group_dropdown.Remove = function() {
-            group.remove();
-        };
-        
-        make_popupmenu(group.name_div, group_dropdown);
+        // TODO: only show icon for compositing if all tracks are the same type.  
+    },
+    /**
+     * Show composite track using group's tracks.
+     */
+    show_composite_track: function() {
+        this.composite_track = new CompositeTiledTrack(this.drawables, this.view, this);
+        this.composite_track.request_draw();
     }
 });
 
@@ -909,7 +1042,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.content_div = this.viewport_container;
         is_container(this.viewport_container, view);
         // Introduction div shown when there are no tracks.
-        this.intro_div = $("<div/>").addClass("intro");
+        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
             add_tracks();
         });
@@ -1077,10 +1210,10 @@ extend( View.prototype, DrawableCollection.prototype, {
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
         if (this.drawables.length === 0) {
-            this.intro_div.appendTo(this.viewport_container);
+            this.intro_div.show();
         }
         else {
-            this.intro_div.remove();
+            this.intro_div.hide();
         }
     },
     update_location: function(low, high) {
@@ -1092,7 +1225,8 @@ extend( View.prototype, DrawableCollection.prototype, {
      */
     load_chroms: function(url_parms) {
         url_parms['num'] = MAX_CHROMS_SELECTABLE;
-        $.extend( url_parms, (this.vis_id !== undefined ? { vis_id: this.vis_id } : { dbkey: this.dbkey } ) );
+        url_parms['dbkey'] = this.dbkey;
+
         var 
             view = this,
             chrom_data = $.Deferred();
@@ -1419,7 +1553,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             view.overview_close.show();
             view.resize_window();
         };
-        this.overview_drawable.init();
+        view.overview_drawable.request_draw();
         view.has_changes = true;
     },
     /** Close and reset overview. */
@@ -2218,7 +2352,7 @@ var Tile = function(track, index, resolution, canvas, data) {
     this.high = (index + 1) * DENSITY * resolution;
     this.resolution = resolution;
     // Wrap element in div for background.
-    this.canvas = $("<div class='track-tile'/>").append(canvas);
+    this.html_elt = $("<div class='track-tile'/>").append(canvas);
     this.data = data;
     this.stale = false;
 };
@@ -2235,10 +2369,44 @@ var SummaryTreeTile = function(track, index, resolution, canvas, data, max_val) 
 extend(SummaryTreeTile.prototype, Tile.prototype);
 
 var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, message, feature_mapper) {
+    // Attribute init.
     Tile.call(this, track, index, resolution, canvas, data);
     this.mode = mode;
     this.message = message;
     this.feature_mapper = feature_mapper;
+    
+    // Add message + action icons to tile's html.
+    if (this.message) {
+        var 
+            canvas = this.html_elt.children()[0],
+            message_div = $("<div/>").addClass("tile-message").text(this.message).
+                            // -1 to account for border.
+                            css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt),
+            more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
+            more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
+
+        // Set up actions for icons.
+        var tile = this;
+        more_down_icon.click(function() {
+            // Mark tile as stale, request more data, and redraw track.
+            tile.stale = true;
+            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+            track.request_draw();
+        }).dblclick(function(e) {
+            // Do not propogate as this would normally zoom in.
+            e.stopPropagation();
+        });
+
+        more_across_icon.click(function() {
+            // Mark tile as stale, request more data, and redraw track.
+            tile.stale = true;
+            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+            track.request_draw();
+        }).dblclick(function(e) {
+            // Do not propogate as this would normally zoom in.
+            e.stopPropagation();
+        });
+    }
 };
 extend(FeatureTrackTile.prototype, Tile.prototype);
 
@@ -2255,7 +2423,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     // Only show popups in Pack mode.
     if (tile.mode !== "Pack") { return; }
     
-    $(this.canvas).hover( function() { 
+    $(this.html_elt).hover( function() { 
         this.hovered = true; 
         $(this).mousemove();
     }, function() { 
@@ -2319,14 +2487,14 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
             }
             
             // Attach popup to canvas's parent.
-            popup.appendTo($(tile.canvas).parent());
+            popup.appendTo($(tile.html_elt).parent());
             
             // Offsets are within canvas, but popup must be positioned relative to parent element.
             // parseInt strips "px" from left, top measurements. +7 so that mouse pointer does not
             // overlap popup.
             var 
-                popupX = offsetX + parseInt( tile.canvas.css("left") ) - popup.width() / 2,
-                popupY = offsetY + parseInt( tile.canvas.css("top") ) + 7;
+                popupX = offsetX + parseInt( tile.html_elt.css("left") ) - popup.width() / 2,
+                popupY = offsetY + parseInt( tile.html_elt.css("top") ) + 7;
             popup.css("left", popupX + "px").css("top", popupY + "px")
         }
         else if (!e.isPropagationStopped()) {
@@ -2356,7 +2524,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
  * -------> ReadTrack
  * -------> VcfTrack
  */
-var Track = function(name, view, container, show_header, prefs, data_url, data_query_wait) {
+var Track = function(name, view, container, prefs, data_manager, data_url, data_query_wait) {
     // For now, track's container is always view.
     Drawable.call(this, name, view, container, {}, "draghandle");
     
@@ -2367,59 +2535,100 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
     this.data_url_extra_params = {}
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
-
-    // FIXME: this should be a saved setting
-    this.content_visible = true;
-
-    if (!Track.id_counter) { Track.id_counter = 0; }
-    this.id = Track.id_counter++;
-    
+    this.data_manager = (data_manager ? data_manager : new DataManager(DATA_CACHE_SIZE, this));
+        
     //
-    // Create HTML element structure for track.
+    // Create content div, which is where track is displayed.
     //
-    this.container_div = $("<div />").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
-    
-    // Create and initialize track header and icons.
-    if (show_header) {
-        this.header_div = $("<div class='track-header'/>").appendTo(this.container_div);
-        if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(this.header_div); }
-        this.name_div = $("<div/>").addClass("track-name").appendTo(this.header_div).text(this.name)
+    this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
+    this.container.content_div.append(this.container_div);
+};
+
+extend(Track.prototype, Drawable.prototype, {
+    action_icons_def: [
+        // Change track mode.
+        {
+            name: "mode_icon",
+            title: "Set display mode",
+            css_class: "chevron-expand",
+            on_click_fn: function() {}
+        },
+        // Hide/show content.
+        Drawable.prototype.action_icons_def[0],
+        // Set track as overview.
+        {
+            name: "overview_icon",
+            title: "Set as overview",
+            css_class: "overview-icon",
+            on_click_fn: function(track) {
+                track.view.set_overview(track);
+            }
+        },
+        // Edit config.
+        Drawable.prototype.action_icons_def[1],
+        // Toggle track filters.
+        {
+            name: "filters_icon",
+            title: "Filters",
+            css_class: "filters-icon",
+            on_click_fn: function(track) {
+                // TODO: update tipsy text.            
+                track.filters_div.toggle();
+                track.filters_manager.reset_filters();
+            }
+        },
+        // Toggle track tool.
+        {
+            name: "tools_icon",
+            title: "Tools",
+            css_class: "tools-icon",
+            on_click_fn: function(track) {
+                // TODO: update tipsy text.
+
+                track.dynamic_tool_div.toggle();
+
+                // Update track name.
+                if (track.dynamic_tool_div.is(":visible")) {
+                    track.set_name(track.name + track.tool_region_and_parameters_str());
+                }
+                else {
+                    track.revert_name();
+                }
+                // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
+                $(".tipsy").remove();
+            }
+        },
+        // Remove track.
+        Drawable.prototype.action_icons_def[2]
+    ],
+    can_draw: function() {        
+        if ( this.dataset_id && Drawable.prototype.can_draw.call(this) ) { 
+            return true;
+        }
+        return false;
+    },
+    build_container_div: function () {
+        return $("<div/>").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
+    },
+    build_header_div: function() {
+        var header_div = $("<div class='track-header'/>");
+        if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(header_div); }
+        this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.name)
                         .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
-        this.icons_div = $("<div/>").css("float", "left").appendTo(this.header_div).hide();
-    
-        // Track icons.
-        this.mode_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set display mode")
-                                  .addClass("icon-button chevron-expand").tipsy( {gravity: 's'} ).appendTo(this.icons_div);
-        this.toggle_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Hide/show track content")
-                                    .addClass("icon-button toggle-contract").tipsy( {gravity: 's'} )
-                                    .appendTo(this.icons_div);
-        this.settings_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Edit settings")
-                                      .addClass("icon-button settings-icon").tipsy( {gravity: 's'} )
-                                      .appendTo(this.icons_div);
-        this.overview_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Set as overview")
-                                      .addClass("icon-button overview-icon").tipsy( {gravity: 's'} )
-                                      .appendTo(this.icons_div);
-        this.filters_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Filters")
-                                     .addClass("icon-button filters-icon").tipsy( {gravity: 's'} )
-                                     .appendTo(this.icons_div).hide();
-        this.tools_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Tools")
-                                   .addClass("icon-button tools-icon").tipsy( {gravity: 's'} )
-                                   .appendTo(this.icons_div).hide();
-        this.remove_icon = $("<a/>").attr("href", "javascript:void(0);").attr("title", "Remove")
-                                    .addClass("icon-button remove-icon").tipsy( {gravity: 's'} )
-                                    .appendTo(this.icons_div);
-        var track = this;
-                    
-        // Suppress double clicks in header so that they do not impact viz.
-        this.header_div.dblclick( function(e) { e.stopPropagation(); } );
+        return header_div;
+    },
+    build_action_icons: function() {
+        Drawable.prototype.build_action_icons.call(this, this.action_icons_def);
         
         // Set up behavior for modes popup.
+        var track = this;
         if (track.display_modes !== undefined) {
             var init_mode = (track.config && track.config.values['mode'] ? 
                              track.config.values['mode'] : track.display_modes[0]);
             track.mode = init_mode;
-            this.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
             
+            this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
+
             var mode_mapping = {};
             for (var i = 0, len = track.display_modes.length; i < len; i++) {
                 var mode = track.display_modes[i];
@@ -2432,94 +2641,33 @@ var Track = function(name, view, container, show_header, prefs, data_url, data_q
                         track.container_div.mouseleave(function() { track.icons_div.hide(); } ); };
                 }(mode);
             }
-            
-            make_popupmenu(this.mode_icon, mode_mapping);
+
+            make_popupmenu(this.action_icons.mode_icon, mode_mapping);
         }
-
-        // Toggle icon hides or shows the track content.
-        this.toggle_icon.click( function() {
-            if ( track.content_visible ) {
-                track.toggle_icon.addClass("toggle-expand").removeClass("toggle-contract");
-                track.hide_contents();
-                track.content_visible = false;
-            } else {
-                track.toggle_icon.addClass("toggle-contract").removeClass("toggle-expand");
-                track.content_visible = true;
-                track.show_contents();
-            }
-        });
-        
-        // Clicking on settings icon opens track config.
-        this.settings_icon.click( function() {
-            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
-                ok_fn = function() { 
-                    track.config.update_from_form( $(".dialog-box") );
-                    hide_modal(); 
-                    $(window).unbind("keypress.check_enter_esc"); 
-                },
-                check_enter_esc = function(e) {
-                    if ((e.keyCode || e.which) === 27) { // Escape key
-                        cancel_fn();
-                    } else if ((e.keyCode || e.which) === 13) { // Enter key
-                        ok_fn();
-                    }
-                };
-
-            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-            show_modal("Configure Track", track.config.build_form(), {
-                "Cancel": cancel_fn,
-                "OK": ok_fn
-            });
-        });
-        
-        this.overview_icon.click( function() {
-            track.view.set_overview(track);
-        });
-                
-        this.filters_icon.click( function() {
-            // TODO: update tipsy text.            
-            track.filters_div.toggle();
-            track.filters_manager.reset_filters();
-        });
-        
-        this.tools_icon.click( function() {
-            // TODO: update tipsy text.
-            
-            track.dynamic_tool_div.toggle();
-            
-            // Update track name.
-            if (track.dynamic_tool_div.is(":visible")) {
-                track.set_name(track.name + track.tool_region_and_parameters_str());
-            }
-            else {
-                track.revert_name();
-            }
-            // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
-            $(".tipsy").remove();
-        });
-        
-        // Clicking on remove icon removes track.
-        this.remove_icon.click( function() {
-            // Tipsy for remove icon must be deleted when track is deleted.
-            $(".tipsy").remove();
-            track.remove();
-        });
-                
-        // Show icons when users is hovering over track.
-        this.container_div.hover( function() { track.icons_div.show(); }, function() { track.icons_div.hide(); } );
-        
-        // Needed for floating elts in header.
-        $("<div style='clear: both'/>").appendTo(this.container_div);
-    }
-    
-    //
-    // Create content div, which is where track is displayed.
-    //
-    this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
-    this.container.content_div.append(this.container_div);
-};
-extend(Track.prototype, Drawable.prototype, {
-    /** Returns track type. */
+    },
+    /**
+     * Hide any elements that are part of the tracks contents area. Should
+     * remove as approprite, the track will be redrawn by show_contents.
+     */
+    hide_contents : function () {
+        // Clear contents by removing any elements that are contained in
+        // the tracks content_div
+        this.content_div.children().remove();
+        // Hide the content div
+        this.content_div.hide();
+        // And any y axis labels (common to several track types)
+        this.container_div.find(".yaxislabel, .track-resize").hide()
+    },
+    show_contents : function() {
+        // Show the contents div and labels (if present)
+        this.content_div.show();
+        this.container_div.find(".yaxislabel, .track-resize").show()
+        // Request a redraw of the content
+        this.request_draw();
+    },
+    /** 
+     * Returns track type. 
+     */
     get_type: function() {
         // Order is important: start with most-specific classes and go up the track hierarchy.
         if (this instanceof LabelTrack) {
@@ -2550,7 +2698,6 @@ extend(Track.prototype, Drawable.prototype, {
         track.enabled = false;
         track.tile_cache.clear();    
         track.data_manager.clear();
-        track.initial_canvas = undefined;
         track.content_div.css("height", "auto");
         /*
         if (!track.content_div.text()) {
@@ -2612,33 +2759,13 @@ extend(Track.prototype, Drawable.prototype, {
         this.update_icons();
     },
     /**
-     * Hide any elements that are part of the tracks contents area. Should
-     * remove as approprite, the track will be redrawn by show_contents.
-     */
-    hide_contents : function () {
-        // Clear contents by removing any elements that are contained in
-        // the tracks content_div
-        this.content_div.children().remove();
-        // Hide the content div
-        this.content_div.hide();
-        // And any y axis labels (common to several track types)
-        this.container_div.find(".yaxislabel, .track-resize").hide()
-    },
-    show_contents : function() {
-        // Show the contents div and labels (if present)
-        this.content_div.show();
-        this.container_div.find(".yaxislabel, .track-resize").show()
-        // Request a redraw of the content
-        this.request_draw();
-    },
-    /**
      * Additional initialization required before drawing track for the first time.
      */
     predraw_init: function() {}
 });
 
-var TiledTrack = function(name, view, container, show_header, prefs, filters_list, tool_dict) {
-    Track.call(this, name, view, container, show_header, prefs);
+var TiledTrack = function(name, view, container, prefs, filters_list, tool_dict, data_manager) {
+    Track.call(this, name, view, container, prefs, data_manager);
 
     var track = this,
         view = track.view;
@@ -2673,10 +2800,15 @@ var TiledTrack = function(name, view, container, show_header, prefs, filters_lis
 };
 extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
-     * Returns a copy of the track.
+     * Returns a copy of the track. The copy uses the same data manager so that the tracks can share data.
      */
-    copy: function(container) {        
-        return new this.constructor(this.name, this.view, container, this.hda_ldda, this.dataset_id, this.prefs, this.filters, this.tool);
+    copy: function(container) {
+        // Create copy.
+        var new_track = new this.constructor(this.name, this.view, container, this.hda_ldda, this.dataset_id, this.prefs, 
+                                             this.filters, this.tool, this.data_manager);
+        // Misc. init and return.                            
+        new_track.enabled = this.enabled;
+        return new_track;
     },
     /**
      * Convert track to JSON object.
@@ -2701,7 +2833,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         track.config.values['mode'] = name;
         track.tile_cache.clear();
         track.request_draw();
-        this.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
+        this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
         return track;
      },
     /**
@@ -2713,21 +2845,21 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         // Show/hide filter icon.
         //
-        if (track.filters_available > 0) {
-            track.filters_icon.show();
+        if (track.filters_available) {
+            track.action_icons.filters_icon.show();
         }
         else {
-            track.filters_icon.hide();
+            track.action_icons.filters_icon.hide();
         }
         
         //
         // Show/hide tool icon.
         //
         if (track.tool) {
-            track.tools_icon.show();
+            track.action_icons.tools_icon.show();
         }
         else {
-            track.tools_icon.hide();
+            track.action_icons.tools_icon.hide();
         }
                         
         //
@@ -2761,15 +2893,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * can manage drawing.
      */
     _draw: function(force, clear_after) {
-        if (!this.enabled) { return; }
-
-        // TODO: There should probably be a general way to disable content drawing 
-        //       for all drawables. However the button to toggle this is currently
-        //       only present for Track instances.
-        if (!this.content_visible) { return; }
-        
-        // HACK: ReferenceTrack can draw without dataset ID, but other tracks cannot.
-        if ( !(this instanceof ReferenceTrack) && (!this.dataset_id) ) { return; }
+        if ( !this.can_draw() ) { return; }
         
         var low = this.view.low,
             high = this.view.high,
@@ -2778,7 +2902,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // w_scale units are pixels per base.
             w_scale = width / range,
             resolution = this.view.resolution,
-            parent_element = $("<div style='position: relative;'></div>");
+            // FIXME: parent element is not currently needed, but it may be useful for multitrack drawing.
+            parent_element = this.content_div;
 
         // For overview, adjust high, low, resolution, and w_scale.
         if (this.is_overview) {
@@ -2787,9 +2912,19 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) ));
             w_scale = width / (view.max_high - view.max_low);
         }
+
+        //
+        // Method for moving and/or removing tiles:
+        // (a) mark all elements for removal using class 'remove'
+        // (b) during tile drawing/placement, remove class for elements that are moved; 
+        //     this occurs in show_tile()
+        // (c) after drawing all tiles, remove elements still marked for removal 
+        //     (i.e. that still have class 'remove').
+        //
         
-        if (!clear_after) { this.content_div.children().remove(); }
-        this.content_div.append( parent_element );
+        // Step (a) for (re)moving tiles.
+        if (!clear_after) { this.content_div.children().addClass("remove"); }
+
         this.max_height = 0;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
@@ -2808,6 +2943,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             tile_index += 1;
             tile_count++;
         }
+        
+        // Step (c) for (re)moving tiles.
+        if (!clear_after) { this.content_div.children(".remove").remove(); }
                 
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         var track = this;
@@ -2838,7 +2976,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 tile = tiles[tile_index];
                 if (!tile.message) {
                     // Need to align with other tile(s) that have message(s).
-                    tile.canvas.css("padding-top", ERROR_PADDING);
+                    tile.html_elt.css("padding-top", ERROR_PADDING);
                 }
             }
         }        
@@ -2904,65 +3042,36 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         return null;
     }, 
     /**
-     * Show track tile and perform associated actions.
+     * Show track tile and perform associated actions. Showing tile may actually move
+     * an existing tile rather than reshowing it.
      */
     show_tile: function(tile, parent_element, w_scale) {
-        // Readability.
         var 
             track = this,
-            canvas = tile.canvas,
-            tile_element = canvas;
+            tile_element = tile.html_elt;
         
         //
-        // If tile has message, display message and button to show more data.
-        // TODO: need to handle other messages, not assume message === show more data.
-        //
-        if (tile.message) {
-            var 
-                container_div = $("<div/>"),
-                message_div = $("<div/>").addClass("tile-message").text(tile.message).
-                                // -1 to account for border.
-                                css({'height': ERROR_PADDING-1, 'width': tile.canvas.width}).appendTo(container_div),
-                more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
-                more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
-            container_div.append(canvas);
-            tile_element = container_div;
-            
-            // Set up actions for icons.
-            more_down_icon.click(function() {
-                // Mark tile as stale, request more data, and redraw track.
-                tile.stale = true;
-                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
-                track.request_draw();
-            }).dblclick(function(e) {
-                // Do not propogate as this would normally zoom in.
-                e.stopPropagation();
-            });
-            
-            more_across_icon.click(function() {
-                // Mark tile as stale, request more data, and redraw track.
-                tile.stale = true;
-                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
-                track.request_draw();
-            }).dblclick(function(e) {
-                // Do not propogate as this would normally zoom in.
-                e.stopPropagation();
-            });
-        }
-        
-        //
-        // Show tile element.
+        // Show/move tile element.
         //
         
         tile.predisplay_actions();
       
-        // Position tile element, recalculate left position at display time
+        // Position tile element based on current viewport.
         var left = ( tile.low - (this.is_overview? this.view.max_low : this.view.low) ) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
         }
         tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
-        parent_element.append(tile_element);
+        
+        if ( tile_element.hasClass("remove") ) {
+            // Step (b) for (re)moving tiles. See _draw() function for description of algorithm
+            // for removing tiles.
+            tile_element.removeClass("remove");
+        }
+        else {
+            // Showing new tile.
+            parent_element.append(tile_element);
+        }
         
         // Set track height.
         track.max_height = Math.max(track.max_height, tile_element.height());
@@ -3031,6 +3140,7 @@ var LabelTrack = function (view, container) {
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
+    build_header_div: function() {},
     init: function() {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;  
@@ -3056,8 +3166,40 @@ extend(LabelTrack.prototype, Track.prototype, {
     }
 });
 
+/**
+ * A tiled track composed of multiple other tracks.
+ */
+var CompositeTiledTrack = function(drawables, view, container) {
+    TiledTrack.call(this, "Composite Track", view, container);
+    this.drawables = drawables;
+    this.enabled = true;
+    // HACK: tile cache should be (but is not) set up in TiledTrack or earlier.
+    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
+};
+extend(CompositeTiledTrack.prototype, TiledTrack.prototype, {
+    init: function() {
+        console.log("initing CompositeTiledTrack");
+        this.enabled = true;  
+    },
+    can_draw: Drawable.prototype.can_draw,
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
+        // Check tile cache, if found show existing tile in correct position
+        var 
+            key = this._gen_tile_cache_key(width, w_scale, tile_index),
+            tile = ( force ? undefined : this.tile_cache.get(key) );
+        if (tile) { 
+            this.show_tile(tile, parent_element, w_scale);
+            return tile;
+        }
+        
+        // TODO: Try to build tile.
+        
+        return tile;
+    }
+});
+
 var ReferenceTrack = function (view) {
-    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack }, false, {});
+    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack }, {});
     
     view.reference_track = this;
     this.left_offset = 200;
@@ -3068,14 +3210,16 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
-    this.data_manager = new ReferenceTrackDataManager(CACHED_DATA, this, false);
+    this.data_manager = new ReferenceTrackDataManager(DATA_CACHE_SIZE, this, false);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    build_header_div: function() {},
     init: function() {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;  
     },
+    can_draw: Drawable.prototype.can_draw,
     /**
      * Draw ReferenceTrack tile.
      */
@@ -3105,11 +3249,11 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
+var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
-    TiledTrack.call( this, name, view, container, true, prefs );
+    TiledTrack.call(this, name, view, container, prefs, filters, tool, data_manager);
    
     this.min_height_px = 16; 
     this.max_height_px = 400; 
@@ -3118,7 +3262,6 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.data_manager = new DataManager(CACHED_DATA, this);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.left_offset = 0;
 
@@ -3258,7 +3401,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     } 
 });
 
-var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool) {
+var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
     //
     // Preinitialization: do things that need to be done before calling Track and TiledTrack
     // initialization code.
@@ -3269,7 +3412,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     //
     // Initialization.
     //    
-    TiledTrack.call(this, name, view, container, true, prefs, filters, tool);
+    TiledTrack.call(this, name, view, container, prefs, filters, tool, data_manager);
 
     // Define and restore track configuration.
     this.config = new DrawableConfig( {
@@ -3305,7 +3448,6 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     this.inc_slots = {};
     this.start_end_dct = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
-    this.data_manager = new DataManager(20, this);
     this.left_offset = 200;
 
     // this.painter = painters.LinkedFeaturePainter;
@@ -3362,8 +3504,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             for (var i = 0; i < tiles.length; i++) {
                 var tile = tiles[i];
                 if (tile.max_val !== global_max) {
-                    tile.canvas.remove();
-                    track.draw_helper(true, width, tile.index, tile.resolution, tile.canvas.parent(), w_scale, [], { max: global_max });
+                    tile.html_elt.remove();
+                    track.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, [], { max: global_max });
                 }
             }
         }                
@@ -3380,13 +3522,17 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             }
 
             // Determine if filters are available; this is based on the tiles' data.
+            // Criteria for filter to be available: (a) it is applicable to tile data and (b) filter min != filter max.
             var filters_available = false,
-                example_feature;
+                example_feature,
+                filter;
             for (var i = 0; i < tiles.length; i++) {
                 if (tiles[i].data.length) {
                     example_feature = tiles[i].data[0];
                     for (var f = 0; f < filters.length; f++) {
-                        if (filters[f].applies_to(example_feature)) {
+                        filter = filters[f];
+                        if ( filter.applies_to(example_feature) && 
+                             filter.min !== filter.max ) {
                             filters_available = true;
                             break;
                         }
@@ -3412,7 +3558,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             } else if ( mode == "summary_tree" ) {
                 mode = "coverage histogram";
             }
-            this.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
+            this.action_icons.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
         }
     },
     /**
@@ -3664,8 +3810,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, tool);
+var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager);
     
     this.config = new DrawableConfig( {
         track: this,
@@ -3691,8 +3837,8 @@ var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filt
 
 extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
-var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters);
+var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters, data_manager) {
+    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, data_manager);
     
     var 
         block_color = get_random_color(),
@@ -4211,6 +4357,8 @@ FeaturePositionMapper.prototype.get_feature_data = function(x, y) {
 
 /**
  * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
+ * Painter uses a 0-based, half-open coordinate system; start coordinate is closed--included--and the end is open.
+ * This coordinate system matches the BED format.
  */
 var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
     Painter.call(this, data, view_start, view_end, prefs, mode);
@@ -4336,7 +4484,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         var 
             feature_uid = feature[0],
             feature_start = feature[1],
-            feature_end = feature[2], 
+            // -1 because end is not included in feature; see FeaturePainter documentation for details.
+            feature_end = feature[2] - 1,
             feature_name = feature[3],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
@@ -4454,7 +4603,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
                         block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) ),
+                        // -1 because end is not included in feature; see FeaturePainter documentation for details.
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - 1 - tile_low) * w_scale)) ),
                         last_block_start, last_block_end;
 
                     // Skip drawing if block not on tile.    

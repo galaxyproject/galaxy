@@ -64,32 +64,32 @@
     
 
     ## Analyze data tab.
-    ${tab( "analysis", "Analyze Data", h.url_for( controller='/root', action='index' ) )}
+    ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
     
     ## Workflow tab.
-    ${tab( "workflow", "Workflow", h.url_for( controller='/workflow', action='index' ) )}
+    ${tab( "workflow", _("Workflow"), h.url_for( controller='/workflow', action='index' ) )}
     
     ## 'Shared Items' or Libraries tab.
     <%
         menu_options = [ 
-                        [ 'Data Libraries', h.url_for( controller='/library', action='index') ],
+                        [ _('Data Libraries'), h.url_for( controller='/library', action='index') ],
                         None,
-                        [ 'Published Histories', h.url_for( controller='/history', action='list_published' ) ],
-                        [ 'Published Workflows', h.url_for( controller='/workflow', action='list_published' ) ]
+                        [ _('Published Histories'), h.url_for( controller='/history', action='list_published' ) ],
+                        [ _('Published Workflows'), h.url_for( controller='/workflow', action='list_published' ) ]
                        ]
         if app.config.get_bool( 'enable_tracks', False ):
-            menu_options.append( [ 'Published Visualizations', h.url_for( controller='/visualization', action='list_published' ) ] )        
+            menu_options.append( [ _('Published Visualizations'), h.url_for( controller='/visualization', action='list_published' ) ] )        
         if app.config.get_bool( 'enable_pages', False ):
-            menu_options.append( [ 'Published Pages', h.url_for( controller='/page', action='list_published' ) ] )
-        tab( "shared", "Shared Data", h.url_for( controller='/library', action='index'), menu_options=menu_options )
+            menu_options.append( [ _('Published Pages'), h.url_for( controller='/page', action='list_published' ) ] )
+        tab( "shared", _("Shared Data"), h.url_for( controller='/library', action='index'), menu_options=menu_options )
     %>
     
     ## Lab menu.
     <%
         menu_options = [
-                         [ 'Sequencing Requests', h.url_for( controller='/requests', action='index' ) ],
-                         [ 'Find Samples', h.url_for( controller='/requests', action='find_samples_index' ) ],
-                         [ 'Help', app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" ), "galaxy_main" ]
+                         [ _('Sequencing Requests'), h.url_for( controller='/requests', action='index' ) ],
+                         [ _('Find Samples'), h.url_for( controller='/requests', action='find_samples_index' ) ],
+                         [ _('Help'), app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" ), "galaxy_main" ]
                        ]
         tab( "lab", "Lab", None, menu_options=menu_options, visible=( trans.user and ( trans.user.requests or trans.app.security_agent.get_accessible_request_types( trans, trans.user ) ) ) )
     %>
@@ -98,10 +98,10 @@
     %if app.config.get_bool( 'enable_tracks', False ):
         <%
             menu_options = [
-                             ['New Track Browser', h.url_for( controller='/tracks', action='index' ) ],
-                             ['Saved Visualizations', h.url_for( controller='/visualization', action='list' ) ]
+                             [_('New Track Browser'), h.url_for( controller='/tracks', action='index' ) ],
+                             [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' ) ]
                            ]
-            tab( "visualization", "Visualization", h.url_for( controller='/visualization', action='list'), menu_options=menu_options )
+            tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list'), menu_options=menu_options )
         %>
     %endif
 
@@ -111,23 +111,23 @@
     ## Help tab.
     <%
         menu_options = [
-                            ['Support', app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
-                            ['Galaxy Wiki', app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
-                            ['Video tutorials (screencasts)', app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
-                            ['How to Cite Galaxy', app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
+                            [_('Support'), app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
+                            [_('Galaxy Wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
+                            [_('Video tutorials (screencasts)'), app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
+                            [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
                         ]
-        tab( "help", "Help", None, menu_options=menu_options)
+        tab( "help", _("Help"), None, menu_options=menu_options)
     %>
     
     ## User tabs.
     <%  
         # Menu for user who is not logged in.
-        menu_options = [ [ "Login", h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
+        menu_options = [ [ _("Login"), h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
         if app.config.allow_user_creation:
-            menu_options.append( [ "Register", h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] ) 
+            menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user', webapp='galaxy' ), "galaxy_main" ] ) 
         extra_class = "loggedout-only"
         visible = ( trans.user == None )
-        tab( "user", "User", None, visible=visible, menu_options=menu_options )
+        tab( "user", _("User"), None, visible=visible, menu_options=menu_options )
         
         # Menu for user who is logged in.
         if trans.user:
@@ -137,25 +137,25 @@
         menu_options = [ [ '<li>Logged in as <span id="user-email">%s</span></li>' %  email ] ]
         if app.config.use_remote_user:
             if app.config.remote_user_logout_href:
-                menu_options.append( [ 'Logout', app.config.remote_user_logout_href, "_top" ] )
+                menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
         else:
-            menu_options.append( [ 'Preferences', h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
+            menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
             if app.config.get_bool( 'enable_tracks', False ):
                 menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
             if app.config.require_login:
-                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
+                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout', webapp='galaxy' )
             else:
-                logout_url = h.url_for( controller='/user', action='logout' )
+                logout_url = h.url_for( controller='/user', action='logout', webapp='galaxy' )
             menu_options.append( [ 'Logout', logout_url, "_top" ] )
             menu_options.append( None )
-        menu_options.append( [ 'Saved Histories', h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
-        menu_options.append( [ 'Saved Datasets', h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
+        menu_options.append( [ _('Saved Histories'), h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
+        menu_options.append( [ _('Saved Datasets'), h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
         if app.config.get_bool( 'enable_pages', False ):
-            menu_options.append( [ 'Saved Pages', h.url_for( controller='/page', action='list' ), "_top" ] )
+            menu_options.append( [ _('Saved Pages'), h.url_for( controller='/page', action='list' ), "_top" ] )
         if app.config.enable_api:
-            menu_options.append( [ 'API Keys', h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
+            menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
         if app.config.use_remote_user:
-            menu_options.append( [ 'Public Name', h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
+            menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
     
         extra_class = "loggedin-only"
         visible = ( trans.user != None )

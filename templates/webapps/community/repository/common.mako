@@ -181,7 +181,7 @@
                                             <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=encode( workflow_name ), webapp=webapp )}">${workflow_name}</a>
                                         </td>
                                         <td>
-                                            %if 'steps' in workflow_dict:
+                                            %if steps:
                                                 ${len( steps )}
                                             %else:
                                                 unknown

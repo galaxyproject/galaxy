@@ -1,6 +1,7 @@
 <tool id="picard_SamToFastq" name="SAM to FASTQ" version="1.56.0">
   <description>creates a FASTQ file</description>
-  <requirements><requirement type="package">picard</requirement></requirements>
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <!-- Dan Blankenberg -->
   <command>java -XX:DefaultMaxRAMFraction=1 -XX:+UseParallelGC
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/SamToFastq.jar"
     INPUT="${input_sam}"

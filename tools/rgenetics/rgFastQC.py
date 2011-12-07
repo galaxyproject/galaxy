@@ -91,21 +91,20 @@ class FastQC():
     def fix_fastqc(self,rep=[],flist=[],runlog=[]):
         """ add some of our stuff to the html
         """
-        bs = '</body></html>\n' # hope they don't change this
-        try:
-            bodyindex = rep.index(bs) # hope they don't change this
-        except:
-            bodyindex = len(rep) - 1
-        res = []
-        res.append('<table>\n')
+        bodyindex = len(rep) -1  # hope they don't change this
+        footrow = bodyindex - 1 
+        footer = rep[footrow]
+        rep = rep[:footrow] + rep[footrow+1:]
+        res = ['<div class="module"><h2>Files created by FastQC</h2><table cellspacing="2" cellpadding="2">\n']
         flist.sort()
         for i,f in enumerate(flist):
              if not(os.path.isdir(f)):
                  fn = os.path.split(f)[-1]
                  res.append('<tr><td><a href="%s">%s</a></td></tr>\n' % (fn,getFileString(fn, self.opts.outputdir)))
-        res.append('</table><p/>\n') 
+        res.append('</table>\n') 
         res.append('<a href="http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/">FastQC documentation and full attribution is here</a><br/><hr/>\n')
-        res.append('FastQC was run by Galaxy using the rgenetics rgFastQC wrapper - see http://rgenetics.org for details and licensing\n')
+        res.append('FastQC was run by Galaxy using the rgenetics rgFastQC wrapper - see http://rgenetics.org for details and licensing\n</div>')
+        res.append(footer)
         fixed = rep[:bodyindex] + res + rep[bodyindex:]
         return fixed # with our additions
 
@@ -147,3 +146,4 @@ if __name__ == '__main__':
     f.write(''.join(html))
     f.close()
     
+

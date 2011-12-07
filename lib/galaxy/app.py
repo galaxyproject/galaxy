@@ -23,7 +23,8 @@ class UniverseApplication( object ):
         self.config.check()
         config.configure_logging( self.config )
         # Set up datatypes registry
-        self.datatypes_registry = galaxy.datatypes.registry.Registry( self.config.root, self.config.datatypes_config )
+        self.datatypes_registry = galaxy.datatypes.registry.Registry()
+        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
         galaxy.model.set_datatypes_registry( self.datatypes_registry )
         # Set up the tool sheds registry
         if os.path.isfile( self.config.tool_sheds_config ):

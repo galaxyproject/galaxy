@@ -26,9 +26,6 @@ file_path = database/community_files
 # Temporary storage for additional datasets, this should be shared through the cluster
 new_file_path = database/tmp
 
-# Where templates are stored
-template_path = lib/galaxy/webapps/community/templates
-
 # Session support (beaker)
 use_beaker_session = True
 session_type = memory

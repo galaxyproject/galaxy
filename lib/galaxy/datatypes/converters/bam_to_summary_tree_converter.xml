@@ -1,6 +1,6 @@
 <tool id="CONVERTER_bam_to_summary_tree_0" name="Convert BAM to Summary Tree" version="1.0.0" hidden="true">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">bam_to_summary_tree_converter.py $input1 $bai $output1</command>
+  <command interpreter="python">sam_or_bam_to_summary_tree_converter.py --bam $input1 $bai $output1</command>
   <inputs>
     <page>
         <param format="bam" name="input1" type="data" label="Choose BAM file"/>

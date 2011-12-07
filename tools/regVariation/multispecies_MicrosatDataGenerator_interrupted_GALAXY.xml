@@ -1,8 +1,9 @@
-<tool id="multispecies_orthologous_microsats" name="Extract orthologous microsatellites" version="1.0.1">
+<tool id="multispecies_orthologous_microsats" name="Extract orthologous microsatellites" version="1.0.2">
   <description> for multiple (>2) species alignments</description>
   <command interpreter="perl">
     multispecies_MicrosatDataGenerator_interrupted_GALAXY.pl   	
     $input1 
+    $input2
   	$out_file1 
   	$thresholds 
   	$species 
@@ -12,16 +13,17 @@
   </command>
   <inputs>
     <page>
-        <param format="maf" name="input1" type="data" label="Select MAF alignments"/>
+        <param format="maf" name="input1" type="data" label="Select unfiltered MAF alignments" help= "NOTE: Currently users are requested to select only the alignments that contain five, four or three species' genomes. )"/>
+        <param format="maf" name="input2" type="data" label="Select the filtered version of above MAF alignments" help= "NOTE: Please use the tool 'Filter nucleotides' to filter nucleotides based on quality, in multiple species. When using the Filter nucleotide tool, ensure that you click 'Select All' for the option 'Mask Species')"/>
        	<param name="separation" size="10" type="integer" value="10" label="Minimum base pair distance between adjacent microsatellite blocks"
     	help="A value of 10 means: Adjacent microsatellites separated by less than 10 base pairs will be excluded from the output."/>
     	<param name="thresholds" size="15" type="text" value="9,10,12,12" label="Minimum Threshold for the number of repeats for microsatellites"
     	help="A value of 9,10,12,12 means: All monos having fewer than 9 repeats, dis having fewer than 5 repeats, tris having fewer than 4 repeats, tetras having fewer than 3 repeats will be excluded from the output."/>
-        <param name="species" type="select" label="Select species" display="checkboxes" multiple="true" help="NOTE: Currently users are requested to select one of these three combinations: hg18-panTro2-ponAbe2, hg18-panTro2-ponAbe2-rheMac2 or hg18-panTro2-ponAbe2-rheMac2-calJac1">
-      	<options>
-        	<filter type="data_meta" ref="input1" key="species" />
-      	</options>
-    	</param>
+    <param name="species" type="select" label="Select species" display="checkboxes" multiple="true" help="NOTE: Currently users are requested to select one of these three combinations: hg18-panTro2-ponAbe2, hg18-panTro2-ponAbe2-rheMac2 or hg18-panTro2-ponAbe2-rheMac2-calJac1">
+      <options>
+        <filter type="data_meta" ref="input1" key="species" />
+      </options>
+    </param>
     	<param name="treedefinition" size="200" type="text" value = "((((hg18,panTro2),ponAbe2),rheMac2),calJac1)" label="Tree definition of all species above whether or not selected for microsatellite extraction" 
     	help="For example: ((((hg18,panTro2),ponAbe2),rheMac2),calJac1)"/>
     </page>
@@ -30,16 +32,17 @@
     <data format="txt" name="out_file1" metadata_source="input1"/>
   </outputs>
   <requirements>
-     <requirement type="binary">sputnik</requirement>
+     <requirement type="binary">bx-sputnik</requirement>
   </requirements>
   <tests>
     <test>
-      <param name="input1" value="chr22_5sp.maf"/>
+      <param name="input1" value="regVariation/microsatellite/Galaxy17_unmasked_short.maf.gz"/>
+      <param name="input2" value="regVariation/microsatellite/Galaxy17_masked_short.maf.gz"/>
       <param name="thresholds" value="9,10,12,12"/>
       <param name="species" value="hg18,panTro2,ponAbe2,rheMac2,calJac1"/>
       <param name="treedefinition" value="((((hg18, panTro2), ponAbe2), rheMac2), calJac1)"/>
       <param name="separation" value="10"/>
-      <output name="out_file1" file="chr22_5sp.microraw.tabular"/>
+      <output name="out_file1" file="regVariation/microsatellite/Galaxy17_short_raw.txt"/>
     </test>
   </tests>
 
@@ -51,6 +54,39 @@
 
 This tool finds ortholgous microsatellite blocks between aligned species
   
+-----
+
+.. class:: warningmark
+
+**Note**
+
+A non-tabular format is created in which each row contains all information pertaining to a microsatellite locus from multiple species in the alignment.
+The rows read like this:
+
+>hg18	15	hg18	chr22	16092941	16093413	panTro2	chr22	16103944	16104421	ponAbe2	chr22	13797750	13798215	rheMac2	chr10	61890946	61891409	calJac1	Contig6986	140254	140728	mononucleotide	A	0	13	+	29	aaaaa------aaaAAA	>rheMac2	15	hg18	chr22	16092941	16093413	panTro2	chr22	16103944	16104421	ponAbe2	chr22	13797750	13798215	rheMac2	chr10	61890946	61891409	calJac1	Contig6986	140254	140728	mononucleotide	A	0	13	+	29	aaaaaaaa---AAAAAA
+
+Information from each species starts with an ">" followed by the species name, for instance, ">rheMac2". Below we describe all information listed for a microsatellite sequence in each species.
+
+After the species tag the alignemnt number is listed.
+What follows is details of the alignment block from all the species, including the chromosome number, start and end coordinates in each species. For instance:
+
+hg18	chr22	16092941	16093413	panTro2	chr22	16103944	16104421	ponAbe2	chr22	13797750	13798215	rheMac2	chr10	61890946	61891409	calJac1	Contig6986	140254	140728
+
+suggests that the alignment block as five species: hg18, panTro2, ponAbe2, rheMac2 and calJac1.
+
+Then the type of microsatellite is written, for instance, "mononucleotide".
+
+Then the microsatellite motif.
+
+Then the number of gaps in the alignment, in the respective species (as noted above, rheMac2 in this case).
+
+Then the start coordinate, the strand, and the end coordinate WITHIN the alignment block.
+
+At the end is listed the microsatellite sequence.
+
+If the microsatellite contains interruptions (which are not important for this tool), then the interruptions' information will be written out after the microsatellite sequence.
+
+
 </help>  
 
 

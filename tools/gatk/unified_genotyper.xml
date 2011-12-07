@@ -1,7 +1,7 @@
-<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.3">
+<tool id="gatk_unified_genotyper" name="Unified Genotyper" version="0.0.5">
   <description>SNP and indel caller</description>
   <requirements>
-      <requirement type="package" version="1.2">gatk</requirement>
+      <requirement type="package" version="1.3">gatk</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "1"
@@ -34,16 +34,17 @@
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
         -d "--dbsnp:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
-        #end if
     #end for
    
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
-        #for $sample_metadata in $gatk_param_type.sample_metadata:
-            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #for $pedigree in $gatk_param_type.pedigree:
+            -p '--pedigree "${pedigree.pedigree_file}"'
         #end for
+        #for $pedigree_string in $gatk_param_type.pedigree_string_repeat:
+            -p '--pedigreeString "${pedigree_string.pedigree_string}"'
+        #end for
+        -p '--pedigreeValidationType "${gatk_param_type.pedigree_validation_type}"'
         #for $read_filter in $gatk_param_type.read_filter:
             -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
             ###raise Exception( str( dir( $read_filter ) ) )
@@ -62,7 +63,7 @@
             -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
         #end for
 
-        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        -p '--interval_set_rule "${gatk_param_type.interval_set_rule}"'
         
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
@@ -104,7 +105,6 @@
         --output_mode "${analysis_param_type.output_mode}"
         ${analysis_param_type.compute_SLOD}
         --min_base_quality_score "${analysis_param_type.min_base_quality_score}"
-        --min_mapping_quality_score "${analysis_param_type.min_mapping_quality_score}"
         --max_deletion_fraction "${analysis_param_type.max_deletion_fraction}"
         --min_indel_count_for_genotyping "${analysis_param_type.min_indel_count_for_genotyping}"
         --indel_heterozygosity "${analysis_param_type.indel_heterozygosity}"
@@ -113,16 +113,30 @@
         --indelHaplotypeSize "${analysis_param_type.indelHaplotypeSize}"
         ${analysis_param_type.doContextDependentGapPenalties}
         #if str( $analysis_param_type.annotation ) != "None":
-            #for $annotation in str( $analysis_param_type.annotation ).split( ','):
+            #for $annotation in str( $analysis_param_type.annotation.fields.gatk_value ).split( ','):
                 --annotation "${annotation}"
             #end for
         #end if
+        #for $additional_annotation in $analysis_param_type.additional_annotations:
+            --annotation "${additional_annotation.additional_annotation_name}"
+        #end for
         #if str( $analysis_param_type.group ) != "None":
             #for $group in str( $analysis_param_type.group ).split( ','):
                 --group "${group}"
             #end for
         #end if
+        #if str( $analysis_param_type.exclude_annotations ) != "None":
+            #for $annotation in str( $analysis_param_type.exclude_annotations.fields.gatk_value ).split( ','):
+                --excludeAnnotation "${annotation}"
+            #end for
+        #end if
         '
+##        #if str( $analysis_param_type.snpEff_rod_bind_type.snpEff_rod_bind_type_selector ) == 'set_snpEff':
+##            -p '--annotation "SnpEff"'
+##            -d "--snpEffFile:${analysis_param_type.snpEff_rod_bind_type.snpEff_rod_name},%(file_type)s" "${analysis_param_type.snpEff_rod_bind_type.snpEff_input_rod}" "${analysis_param_type.snpEff_rod_bind_type.snpEff_input_rod.ext}" "input_snpEff_${analysis_param_type.snpEff_rod_bind_type.snpEff_rod_name}"
+##        #else:
+##            -p '--excludeAnnotation "SnpEff"'
+##        #end if
     #end if
   </command>
   <inputs>
@@ -143,6 +157,7 @@
           <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/> does not yet work in a repeat...--> 
           </options>
+          <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
@@ -165,20 +180,16 @@
 	      </param>
           <when value="dbsnp">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="indels">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
         </conditional>
     </repeat>
@@ -202,9 +213,16 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <repeat name="sample_metadata" title="Sample Metadata">
-            <param name="sample_metadata_file" type="data" format="txt" label="Sample file in JSON format" />
+        <repeat name="pedigree" title="Pedigree file">
+            <param name="pedigree_file" type="data" format="txt" label="Pedigree files for samples" />
         </repeat>
+        <repeat name="pedigree_string_repeat" title="Pedigree string">
+            <param name="pedigree_string" type="text" value="" label="Pedigree string for samples" />
+        </repeat>
+        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
 		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
@@ -226,7 +244,7 @@
           <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
         </repeat>
         
-        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+        <param name="interval_set_rule" type="select" label="Interval set rule">
           <option value="UNION" selected="True">UNION</option>
           <option value="INTERSECTION">INTERSECTION</option>
         </param>
@@ -343,7 +361,6 @@
         </param>
         <param name="compute_SLOD" type="boolean" truevalue="--computeSLOD" falsevalue="" label="Compute the SLOD" />
         <param name="min_base_quality_score" type="integer" value="17" label="Minimum base quality required to consider a base for calling" />
-        <param name="min_mapping_quality_score" type="integer" value="20" label="Minimum read mapping quality required to consider a read for calling" />
         <param name="max_deletion_fraction" type="float" value="0.05" label="Maximum fraction of reads with deletions spanning this locus for it to be callable" help="to disable, set to &lt; 0 or &gt; 1" />
         <param name="min_indel_count_for_genotyping" type="integer" value="5" label="Minimum number of consensus indels required to trigger genotyping run" />
         <param name="indel_heterozygosity" type="float" value="0.000125" label="Heterozygosity for indel calling" help="1.0/8000==0.000125"/>
@@ -352,42 +369,45 @@
         <param name="indelHaplotypeSize" type="integer" value="80" label="Indel haplotype size" />
         <param name="doContextDependentGapPenalties" type="boolean" truevalue="--doContextDependentGapPenalties" falsevalue="" label="Vary gap penalties by context" />
 	    <param name="annotation" type="select" multiple="True" display="checkboxes" label="Annotation Types">
-          <option value="ChromosomeCounts"/>
-          <option value="IndelType"/>
-          <option value="SpanningDeletions"/>
-          <option value="HardyWeinberg"/>
-          <option value="NBaseCount"/>
-          <option value="MappingQualityZero"/>
-          <option value="AlleleBalance"/>
-          <option value="BaseCounts"/>
-          <option value="LowMQ"/>
-          <option value="InbreedingCoeff"/>
-          <option value="RMSMappingQuality"/>
-          <option value="HaplotypeScore"/>
-          <option value="TechnologyComposition"/>
-          <option value="SampleList"/>
-          <option value="FisherStrand"/>
-          <option value="HomopolymerRun"/>
-          <option value="DepthOfCoverage"/>
-          <option value="SnpEff"/>
-          <option value="MappingQualityZeroFraction"/>
-          <option value="GCContent"/>
-          <option value="MappingQualityRankSumTest"/>
-          <option value="ReadPosRankSumTest"/>
-          <option value="BaseQualityRankSumTest"/>
-          <option value="QualByDepth"/>
-          <option value="SBByDepth"/>
-          <option value="ReadDepthAndAllelicFractionBySample"/>
-          <option value="AlleleBalanceBySample"/>
-          <option value="DepthPerAlleleBySample"/>
-          <option value="MappingQualityZeroBySample"/>
+          <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
+          <options from_data_table="gatk_annotations">
+            <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
+            <filter type="static_value" value="UnifiedGenotyper" column="tools_valid_for"/>
+          </options>
 	    </param>
+        <repeat name="additional_annotations" title="Additional annotation">
+          <param name="additional_annotation_name" type="text" value="" label="Annotation name" />
+        </repeat>
+<!--
+        <conditional name="snpEff_rod_bind_type">
+          <param name="snpEff_rod_bind_type_selector" type="select" label="Provide a snpEff reference-ordered data file">
+            <option value="set_snpEff">Set snpEff</option>
+            <option value="exclude_snpEff" selected="True">Don't set snpEff</option>
+          </param>
+          <when value="exclude_snpEff">
+          </when>
+          <when value="set_snpEff">
+            <param name="snpEff_input_rod" type="data" format="vcf" label="ROD file" />
+            <param name="snpEff_rod_name" type="hidden" value="snpEff" label="ROD Name"/>
+          </when>
+        </conditional>
+-->
 	    <param name="group" type="select" multiple="True" display="checkboxes" label="Annotation Interfaces/Groups">
-	      <option value="Standard">Standard</option>
-	      <option value="Experimental">Experimental</option>
-	      <option value="WorkInProgress">WorkInProgress</option>
-	      <!-- <option value="none">none</option> -->
+            <option value="RodRequiringAnnotation">RodRequiringAnnotation</option>
+            <option value="Standard">Standard</option>
+            <option value="Experimental">Experimental</option>
+            <option value="WorkInProgress">WorkInProgress</option>
+            <option value="RankSumTest">RankSumTest</option>
+	        <!-- <option value="none">none</option> -->
 	    </param>
+    <!--     <param name="family_string" type="text" value="" label="Family String"/> -->
+        <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" >
+          <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
+          <options from_data_table="gatk_annotations">
+            <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
+            <filter type="static_value" value="UnifiedGenotyper" column="tools_valid_for"/>
+          </options>
+        </param>
       </when>
     </conditional>
   </inputs>
@@ -404,7 +424,6 @@
           <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
           <param name="rod_bind_type_selector" value="dbsnp" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
-          <param name="rodToIntervalTrackName" />
           <param name="standard_min_confidence_threshold_for_calling" value="0" />
           <param name="standard_min_confidence_threshold_for_emitting" value="4" />
           <param name="gatk_param_type_selector" value="basic" />
@@ -417,7 +436,6 @@
           <param name="output_mode" value="EMIT_ALL_CONFIDENT_SITES" />
           <param name="compute_SLOD" />
           <param name="min_base_quality_score" value="17" />
-          <param name="min_mapping_quality_score" value="20" />
           <param name="max_deletion_fraction" value="-1" />
           <param name="min_indel_count_for_genotyping" value="2" />
           <param name="indel_heterozygosity" value="0.000125" />
@@ -471,7 +489,6 @@ Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_th
  standard_min_confidence_threshold_for_emitting    The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be emitted (and filtered if less than the calling threshold)
  noSLOD                                            If provided, we will not calculate the SLOD
  min_base_quality_score                            Minimum base quality required to consider a base for calling
- min_mapping_quality_score                         Minimum read mapping quality required to consider a read for calling
  max_deletion_fraction                             Maximum fraction of reads with deletions spanning this locus for it to be callable [to disable, set to &lt; 0 or &gt; 1; default:0.05]
  min_indel_count_for_genotyping                    Minimum number of consensus indels required to trigger genotyping run
  indel_heterozygosity                              Heterozygosity for indel calling

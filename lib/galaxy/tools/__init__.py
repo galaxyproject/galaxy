@@ -2205,11 +2205,14 @@ class SelectToolParameterWrapper( object ):
         Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
         """
         def __init__( self, input, value, other_values ):
-            self.input = input
-            self.value = value
-            self.other_values = other_values
+            self._input = input
+            self._value = value
+            self._other_values = other_values
+            self._fields = {}
         def __getattr__( self, name ):
-            return self.input.options.get_field_by_name_for_value( name, self.value, None, self.other_values )
+            if name not in self._fields:
+                self._fields[ name ] = self._input.options.get_field_by_name_for_value( name, self._value, None, self._other_values )
+            return self._input.separator.join( map( str, self._fields[ name ] ) )
     
     def __init__( self, input, value, app, other_values={} ):
         self.input = input

@@ -475,6 +475,7 @@ class AdminController( BaseUIController, Admin ):
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
                 if kwd[ 'id' ]:
+                    kwd[ 'caller' ] = 'browse_repositories'
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='set_email_alerts',
                                                                       **kwd ) )

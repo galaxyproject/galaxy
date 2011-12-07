@@ -25,7 +25,9 @@ if sys.version_info[:2] < ( 2, 5 ):
 
 log = logging.getLogger( __name__ )
 
-datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
+datatypes_registry = galaxy.datatypes.registry.Registry()
+# Default Value Required for unit tests
+datatypes_registry.load_datatypes()
 
 class NoConverterException(Exception):
     def __init__(self, value):
@@ -910,7 +912,10 @@ class DatasetInstance( object ):
             depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
         except KeyError:
             depends_list = []
-        # See if converted dataset already exists
+        # See if converted dataset already exists, either in metadata in conversions.
+        converted_dataset = self.get_metadata_dataset( trans, target_ext )
+        if converted_dataset:
+            return converted_dataset
         converted_dataset = self.get_converted_files_by_type( target_ext )
         if converted_dataset:
             return converted_dataset
@@ -940,6 +945,21 @@ class DatasetInstance( object ):
         session.add( assoc )
         session.flush()
         return None
+    def get_metadata_dataset( self, trans, dataset_ext ):
+        """ 
+        Returns an HDA that points to a metadata file which contains a 
+        converted data with the requested extension.
+        """
+        for name, value in self.metadata.items():
+            # HACK: MetadataFile objects do not have a type/ext, so need to use metadata name
+            # to determine type.
+            if dataset_ext == 'bai' and name == 'bam_index' and isinstance( value, trans.app.model.MetadataFile ):
+                # HACK: MetadataFile objects cannot be used by tools, so return 
+                # a fake HDA that points to metadata file.
+                fake_dataset = trans.app.model.Dataset( state=trans.app.model.Dataset.states.OK, 
+                                                        external_filename=value.file_name )
+                fake_hda = trans.app.model.HistoryDatasetAssociation( dataset=fake_dataset )
+                return fake_hda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         raise 'Unimplemented'
     def get_child_by_designation(self, designation):
@@ -2637,7 +2657,8 @@ class APIKeys( object ):
     pass
 
 class ToolShedRepository( object ):
-    def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, changeset_revision=None, deleted=False ):
+    def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None,
+                  changeset_revision=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False ):
         self.id = id
         self.create_time = create_time
         self.tool_shed = tool_shed
@@ -2645,6 +2666,9 @@ class ToolShedRepository( object ):
         self.description = description
         self.owner = owner
         self.changeset_revision = changeset_revision
+        self.metadata = metadata
+        self.includes_datatypes = includes_datatypes
+        self.update_available = update_available
         self.deleted = deleted
 
 ## ---- Utility methods -------------------------------------------------------

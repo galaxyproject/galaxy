@@ -6,19 +6,19 @@ use File::Basename;
 use IO::Handle;
 use Cwd;
 use File::Path;
-use File::Temp qw/ tempfile tempdir /;
-use vars qw($distance @thresholds @tags $printer $mergestarts $mergeends $mergemicros $interrtypecord $microscanned $interrcord $interr_poscord $no_of_interruptionscord $infocord $typecord $startcord $strandcord $endcord $microsatcord $motifcord $sequencepos $no_of_species $gapcord $prinkter);
+#use File::Temp qw/ tempfile tempdir /;
+use vars qw($distance @thresholds @tags $species_set @allspecies $printer $treeSpeciesNum $focalspec $mergestarts $mergeends $mergemicros $interrtypecord $microscanned $interrcord $interr_poscord $no_of_interruptionscord $infocord $typecord $startcord $strandcord $endcord $microsatcord $motifcord $sequencepos $no_of_species $gapcord $prinkter);
 
-$ENV{'PATH'} .= ':' . dirname($0);
+#$ENV{'PATH'} .= ':' . dirname($0);
 my $date = `date`;
 
-my ($mafile, $orthfile, $threshold_array,  $species_set, $tree_definition, $separation) = @ARGV;
-if (!$mafile or !$orthfile or !$threshold_array or !$separation or !$tree_definition or !$species_set) { die "missing arguments\n"; }
-
+my ($mafile, $mafile_sputt, $orthfile, $threshold_array,  $allspeciesin, $tree_definition_all, $separation) = @ARGV;
+if (!$mafile or !$mafile_sputt or !$orthfile or !$threshold_array or !$separation or !$tree_definition_all or !$allspeciesin) { die "missing arguments\n"; }
 #-------------------------------------------------------------------------------
 # WHICH SPUTNIK USED?
 my $sputnikpath = ();
-$sputnikpath = "sputnik";
+$sputnikpath = "bx-sputnik" ;
+#$sputnikpath = "/Users/ydk/work/rhesus_microsat/codes/./sputnik_Mac-PowerPC";
 #print "sputnik_Mac-PowerPC non-existant\n" if !-e $sputnikpath;
 #exit if !-e $sputnikpath;
 #$sputnikpath = "bx-sputnik" ;
@@ -29,418 +29,450 @@ $sputnikpath = "sputnik";
 #-------------------------------------------------------------------------------
 $distance = 1; #bp
 $distance++;
-#-------------------------------------------------------------------------------
-# MICROSATELLITE THRESHOLD SETTINGS (LENGTH, BP)
-$threshold_array=~ s/,/_/g;
-my @thresharr = split("_",$threshold_array);
-my @thresholds=@thresharr;
-my $mono_threshold = $thresharr[0];
-my $di_threshold = $thresharr[1];
-my $tri_threshold = $thresharr[2];
-my $tetra_threshold = $thresharr[3];
-#my $threshold_array = join("_",($mono_threshold, $di_threshold, $tri_threshold, $tetra_threshold));
-my $tdir = tempdir( CLEANUP => 0 );
-chdir $tdir;
+my @tree_definitions=MakeTrees($tree_definition_all);
+my $allspeciesset = $tree_definition_all;
+$allspeciesset =~ s/[\(\) ]+//g;
+@allspecies = split(/,/,$allspeciesset);
+
+my @outputfiles = ();
+my $round = 0;
+#my $tdir = tempdir( CLEANUP => 0 );
+#chdir $tdir;
 my $dir = getcwd;  
-#print "current dit=$dir\n";
-#-------------------------------------------------------------------------------
-# CREATE AXT FILES IN FORWARD AND REVERSE ORDERS IF NECESSARY
-my @chrfiles=();
 
-#my $mafile =  "/Users/ydk/work/rhesus_microsat/results/galay/align.txt"; #$ARGV[0];
-my $chromt=int(rand(10000));
-my $p_chr=$chromt;
+foreach my $tree_definition (@tree_definitions){
+	my @commas = ($tree_definition =~ /,/g) ;
+	#print "commas = @commas\n"; <STDIN>;
+	next if scalar(@commas) <= 1;
+	#print "species_set = $species_set\n";
+	$treeSpeciesNum = scalar(@commas) + 1;
+	$species_set = $tree_definition;
+	$species_set =~ s/[\)\( ;]+//g;
+	#print "species_set = $species_set\n"; <STDIN>;
 
-
-my @exactspeciesset_unarranged = split(/,/,$species_set);
-$tree_definition=~s/[\)\(, ]/\t/g;
-my @treespecies=split(/\t+/,$tree_definition);
-my @exactspecies=();
-
-foreach my $spec (@treespecies){
-	foreach my $espec (@exactspeciesset_unarranged){
-		push @exactspecies, $spec if $spec eq $espec;
-	}
-}
-#print "exactspecies=@exactspecies\n";
-my $focalspec = $exactspecies[0];
-my $arranged_species_set=join(".",@exactspecies);
-my $chr_name = join(".",("chr".$p_chr),$arranged_species_set, "net", "axt");
-#print "sending to maftoAxt_multispecies: $mafile, $tree_definition, $chr_name, $species_set .. focalspec=$focalspec \n"; 
-maftoAxt_multispecies($mafile, $tree_definition, $chr_name, $species_set);
-#print "done maf to axt conversion\n";
-my $reverse_chr_name = join(".",("chr".$p_chr."r"),$arranged_species_set, "net", "axt");
-artificial_axdata_inverter ($chr_name, $reverse_chr_name);
-#print "reverse_chr_name=$reverse_chr_name\n"; 
-#-------------------------------------------------------------------------------
-# FIND THE CORRESPONDING CHIMP CHROMOSOME FROM FILE ORTp_chrS.TXT
-foreach my $direct ("reverse_direction","forward_direction"){
-	$p_chr=$chromt;
-	#print "direction = $direct\n";
-	$p_chr = $p_chr."r" if $direct eq "reverse_direction";
-	$p_chr = $p_chr if $direct eq "forward_direction";
-	my $config = $species_set;
-	$config=~s/,/./g;
-	my @orgs = split(/\./,$arranged_species_set);
-	#print "ORGS= @orgs\n";
-	my @tag=@orgs;
-		
-	
-	my $tags = join(",", @tag);
-	my @tags=@tag;
-	chomp $p_chr;
-	$tags = join("_", split(/,/, $tags));
-	my $pchr = "chr".$p_chr;
-	
-	my $ptag = $orgs[0]."-".$pchr.".".join(".",@orgs[1 ... scalar(@orgs)-1])."-".$threshold_array;
-	my @sp_tags = ();
-	
-	#print "orgs=@orgs, pchr=$pchr, hence, ptag = $ptag\n";
-	foreach my $sp (@tag){
-		push(@sp_tags, ($sp.".".$ptag));
-	}
-
-	my $preptag = $orgs[0]."-".$pchr.".".join(".",@orgs[1 ... scalar(@orgs)-1]);
-	my @presp_tags = ();
-	
-	foreach my $sp (@tag){
-		push(@presp_tags, ($sp.".".$preptag));
-	}
-
-	my $resultdir = "";
-	my $orthdir = "";
-	my $filtereddir = "";
-	my $pipedir = "";
-	
-	my @title_queries = ();
-	push(@title_queries, "^[0-9]+");
-	my $sep="\\s";
-	for my $or (0 ... $#orgs){
-		my $title =  join($sep, ($orgs[$or],  "[A-Za-z]+[0-9a-zA-Z]+", "[0-9]+", "[0-9]+", "[\\-\\+]"));
-		#$title =~ s/chr\\+\\s+\+/chr/g;
-		push(@title_queries, $title);
-	}
-	my $title_query = join($sep, @title_queries);
-	#print "title_queries=@title_queries\n";
-	#print "query = >$title_query<\n"; 
-	#print "orgs = @orgs\n"; 
+	$round++;
 	#-------------------------------------------------------------------------------
-	# GET AXTNET FILES, EDIT THEM AND SPLIT THEM INTO HUMAN AND CHIMP INPUT FILES
-	my $t1input = $pchr.".".$arranged_species_set.".net.axt";
-	
-	my @t1outputs = ();
-	
-	foreach my $sp (@presp_tags){
-		push(@t1outputs, $sp."_gap_op");
-	}
-	
-	multi_species_t1($t1input,$tags,(join(",", @t1outputs)), $title_query); 
-	#print "t1outputs=@t1outputs\n";
-	#print "done t1\n";
+	# MICROSATELLITE THRESHOLD SETTINGS (LENGTH, BP)
+	$threshold_array=~ s/,/_/g;
+	my @thresharr = split("_",$threshold_array);
+	@thresholds=@thresharr;
+	#my $threshold_array = join("_",($mono_threshold, $di_threshold, $tri_threshold, $tetra_threshold));
+	#print "current dit=$dir\n";
 	#-------------------------------------------------------------------------------
-	#START T2.PL
+	# CREATE AXT FILES IN FORWARD AND REVERSE ORDERS IF NECESSARY
+	my @chrfiles=();
 	
-	my $stag  = (); my $tag1 = (); my $tag2 = ();  my $schrs = ();
+	#my $mafile =  "/Users/ydk/work/rhesus_microsat/results/galay/align.txt"; #$ARGV[0];
+	my $chromt=int(rand(10000));
+	my $p_chr=$chromt;
 	
-	for my $t (0 ... scalar(@tags)-1){
-		multi_species_t2($t1outputs[$t], $tag[$t]);		
-	}
-	#-------------------------------------------------------------------------------
-	#START T2.2.PL
 	
-	my @temp_tags = @tag;
+	my @exactspeciesset_unarranged = split(/,/,$species_set);
+	$tree_definition=~s/[\)\(, ]/\t/g;
+	my @treespecies=split(/\t+/,$tree_definition);
+	my @exactspecies=();
 	
-	foreach my $sp (@presp_tags){
-		my $t2input =  $sp."_nogap_op_unrand";
-		multi_species_t2_2($t2input, shift(@temp_tags));
-	}
-	undef (@temp_tags);
-	
-	#-------------------------------------------------------------------------------
-	#START SPUTNIK
-	
-	my @jobIDs = ();
-	@temp_tags = @tag;
-	my @sput_filelist = ();
-	
-	foreach my $sp (@presp_tags){
-		#print "sp = $sp\n";
-		my $sputnikoutput = $pipedir.$sp."_sput_op0";
-		my $sputnikinput = $pipedir.$sp."_nogap_op_unrand";
-		push(@sput_filelist, $sputnikinput);
-		my $sputnikcommand = $sputnikpath." ".$sputnikinput." > ".$sputnikoutput;
-		#print "$sputnikcommand\n";
-		my @sputnikcommand_system = $sputnikcommand;
-		system(@sputnikcommand_system);
-	}
-
-	#-------------------------------------------------------------------------------
-	#START SPUTNIK OUTPUT CORRECTOR
-	
-	foreach my $sp (@presp_tags){
-		my $corroutput = $pipedir.$sp."_sput_op1";
-		my $corrinput = $pipedir.$sp."_sput_op0";
-		sputnikoutput_corrector($corrinput,$corroutput);
-		
-		my $t4output = $pipedir.$sp."_sput_op2";
-		multi_species_t4($corroutput,$t4output);
-	
-		my $t5output = $pipedir.$sp."_sput_op3";
-		multi_species_t5($t4output,$t5output);
-		#print "done t5.pl for $sp\n";
-	
-		my $t6output = $pipedir.$sp."_sput_op4";
-		multi_species_t6($t5output,$t6output,scalar(@orgs));
-	}
-	#-------------------------------------------------------------------------------
-	#START T9.PL FOR T10.PL AND FOR INTERRUPTED HUNTING
-	
-	foreach my $sp (@presp_tags){
-		my $t9output = $pipedir.$sp."_gap_op_unrand_match";
-		my $t9sequence = $pipedir.$sp."_gap_op_unrand2";
-		my $t9micro = $pipedir.$sp."_sput_op4";
-		t9($t9micro,$t9sequence,$t9output);
-		
-		my $t9output2 = $pipedir.$sp."_nogap_op_unrand2_match";
-		my $t9sequence2 = $pipedir.$sp."_nogap_op_unrand2";
-		t9($t9micro,$t9sequence2,$t9output2);
-	}
-	#print "done both t9.pl for all orgs\n";
-
-	#-------------------------------------------------------------------------------
-	# FIND COMPOUND MICROSATELLITES
-	
-	@jobIDs = ();
-	my $species_counter = 0;
-	
-	foreach my $sp (@presp_tags){
-		my $simple_microsats=$pipedir.$sp."_sput_op4_simple";
-		my $compound_microsats=$pipedir.$sp."_sput_op4_compound";
-		my $input_micro = $pipedir.$sp."_sput_op4";
-		my $input_seq = $pipedir.$sp."_nogap_op_unrand2_match";
-		multiSpecies_compound_microsat_hunter3($input_micro,$input_seq,$simple_microsats,$compound_microsats,$orgs[$species_counter], scalar(@sp_tags), $threshold_array );
-		$species_counter++;
-	}
-	
-	#-------------------------------------------------------------------------------
-	# READING  AND FILTERING SIMPLE MICROSATELLITES
-	my $spcounter2=0;
-	foreach my $sp (@sp_tags){
-		my $presp = $presp_tags[$spcounter2];
-		$spcounter2++;
-		my $simple_microsats=$pipedir.$presp."_sput_op4_simple";
-		my $simple_filterout = $pipedir.$sp."_sput_op4_simple_filtered";
-		my $simple_residue = $pipedir.$sp."_sput_op4_simple_residue";
-		multiSpecies_filtering_interrupted_microsats($simple_microsats, $simple_filterout, $simple_residue,$threshold_array,$threshold_array,scalar(@sp_tags));
-	}
-	
-	#-------------------------------------------------------------------------------
-	# ANALYZE  COMPOUND MICROSATELLITES FOR BEING INTERRUPTED MICROSATS
-	
-	$species_counter = 0;
-	foreach my $sp (@sp_tags){
-		my $presp = $presp_tags[$species_counter];
-		my $compound_microsats = $pipedir.$presp."_sput_op4_compound";
-		my $analyzed_simple_microsats=$pipedir.$presp."_sput_op4_compound_interrupted";
-		my $analyzed_compound_microsats=$pipedir.$presp."_sput_op4_compound_pure";
-		my $seq_file = $pipedir.$presp."_nogap_op_unrand2_match";
-		multiSpecies_compound_microsat_analyzer($compound_microsats,$seq_file,$analyzed_simple_microsats,$analyzed_compound_microsats,$orgs[$species_counter], scalar(@sp_tags));
-		$species_counter++;
-	}
-	#-------------------------------------------------------------------------------
-	# REANALYZE COMPOUND MICROSATELLITES FOR PRESENCE OF SIMPLE ONES WITHIN THEM.. 
-	$species_counter = 0;
-	
-	foreach my $sp (@sp_tags){
-		my $presp = $presp_tags[$species_counter];
-		my $compound_microsats = $pipedir.$presp."_sput_op4_compound_pure";
-		my $compound_interrupted = $pipedir.$presp."_sput_op4_compound_clarifiedInterrupted";
-		my $compound_compound = $pipedir.$presp."_sput_op4_compound_compound";
-		my $seq_file = $pipedir.$presp."_nogap_op_unrand2_match";
-		multiSpecies_compoundClarifyer($compound_microsats,$seq_file,$compound_interrupted,$compound_compound,$orgs[$species_counter], scalar(@sp_tags), "2_4_6_8", "3_4_6_8", "2_4_6_8");
-		$species_counter++;
-	}
-	#-------------------------------------------------------------------------------
-	# READING  AND FILTERING SIMPLE AND COMPOUND MICROSATELLITES
-	$species_counter = 0;
-	
-	foreach my $sp (@sp_tags){
-		my $presp = $presp_tags[$species_counter];
-	
-		my $simple_microsats=$pipedir.$presp."_sput_op4_compound_clarifiedInterrupted";
-		my $simple_filterout = $pipedir.$sp."_sput_op4_compound_clarifiedInterrupted_filtered";
-		my $simple_residue = $pipedir.$sp."_sput_op4_compound_clarifiedInterrupted_residue";
-		multiSpecies_filtering_interrupted_microsats($simple_microsats, $simple_filterout, $simple_residue,$threshold_array,$threshold_array,scalar(@sp_tags));
-	
-		my $simple_microsats2 = $pipedir.$presp."_sput_op4_compound_interrupted";
-		my $simple_filterout2 = $pipedir.$sp."_sput_op4_compound_interrupted_filtered";
-		my $simple_residue2 = $pipedir.$sp."_sput_op4_compound_interrupted_residue";
-		multiSpecies_filtering_interrupted_microsats($simple_microsats2, $simple_filterout2, $simple_residue2,$threshold_array,$threshold_array,scalar(@sp_tags));
-	
-		my $compound_microsats=$pipedir.$presp."_sput_op4_compound_compound";
-		my $compound_filterout = $pipedir.$sp."_sput_op4_compound_compound_filtered";
-		my $compound_residue = $pipedir.$sp."_sput_op4_compound_compound_residue";
-		multispecies_filtering_compound_microsats($compound_microsats, $compound_filterout, $compound_residue,$threshold_array,$threshold_array,scalar(@sp_tags));
-		$species_counter++;
-	}
-	#print "done filtering both simple and compound microsatellites \n";
-	
-	#-------------------------------------------------------------------------------
-	
-	my @combinedarray = ();
-	my @combinedarray_indicators = ("mononucleotide", "dinucleotide", "trinucleotide", "tetranucleotide");
-	my @combinedarray_tags = ("mono", "di", "tri", "tetra");
-	$species_counter = 0;
-	
-	foreach my $sp (@sp_tags){
-		my $simple_interrupted = $pipedir.$sp."_simple_analyzed_simple";
-		push @{$combinedarray[$species_counter]}, $pipedir.$sp."_simple_analyzed_simple_mono", $pipedir.$sp."_simple_analyzed_simple_di", $pipedir.$sp."_simple_analyzed_simple_tri", $pipedir.$sp."_simple_analyzed_simple_tetra";
-		$species_counter++;
-	}
-	
-	#-------------------------------------------------------------------------------
-	# PUT TOGETHER THE INTERRUPTED AND SIMPLE MICROSATELLITES BASED ON THEIR MOTIF SIZE FOR FURTHER EXTENTION	
-	my $sp_counter = 0;
-	foreach my $sp (@sp_tags){	
-		my $analyzed_simple = $pipedir.$sp."_sput_op4_compound_interrupted_filtered";
-		my $clarifyed_simple = $pipedir.$sp."_sput_op4_compound_clarifiedInterrupted_filtered";
-		my $simple = $pipedir.$sp."_sput_op4_simple_filtered";
-		my $simple_analyzed_simple = $pipedir.$sp."_simple_analyzed_simple";
-		`cat $analyzed_simple $clarifyed_simple $simple > $simple_analyzed_simple`;
-		for my $i (0 ... 3){
-			`grep "$combinedarray_indicators[$i]" $simple_analyzed_simple > $combinedarray[$sp_counter][$i]`;	
+	foreach my $spec (@treespecies){
+		foreach my $espec (@exactspeciesset_unarranged){
+			push @exactspecies, $spec if $spec eq $espec;
 		}
-		$sp_counter++;		
 	}
-	#print "\ndone grouping interrupted & simple microsats based on their motif size for further extention\n";
-	
+	#print "exactspecies=@exactspecies\n";
+	$focalspec = $exactspecies[0];
+	my $arranged_species_set=join(".",@exactspecies);
+	my $chr_name = join(".",("chr".$p_chr),$arranged_species_set, "net", "axt");
+	my $chr_name_sputt = join(".",("chr".$p_chr),$arranged_species_set, "net", "axt_sputt");
+	#print "sending to maftoAxt_multispecies: $mafile, $tree_definition, $chr_name, $species_set .. focalspec=$focalspec \n"; 
+	maftoAxt_multispecies($mafile, $tree_definition, $chr_name, $species_set);
+	maftoAxt_multispecies($mafile_sputt, $tree_definition, $chr_name_sputt, $species_set);
+	#print "done maf to axt conversion\n";
+	my $reverse_chr_name = join(".",("chr".$p_chr."r"),$arranged_species_set, "net", "axt");
+	artificial_axdata_inverter ($chr_name, $reverse_chr_name);
+	#print "reverse_chr_name=$reverse_chr_name\n"; 
 	#-------------------------------------------------------------------------------
-	# BREAK CHROMOSOME INTO PARTS OF CERTAIN NO. CONTIGS EACH, FOR FUTURE SEARCHING OF INTERRUPTED MICROSATELLITES
-	# ESPECIALLY DI, TRI AND TETRANUCLEOTIDE MICROSATELLITES
-	@temp_tags = @sp_tags;
-	my $increment = 1000000;
-	my @splist = ();
-	my $targetdir = $pipedir;
-	$species_counter=0;
-	
-	foreach my $sp (@sp_tags){
-		my $presp = $presp_tags[$species_counter];
-		$species_counter++;
-		my $localtag = shift @temp_tags;
-		my $locallist = $targetdir.$localtag."_".$p_chr."_list";
-		push(@splist, $locallist);
-		my $input = $pipedir.$presp."_nogap_op_unrand2_match";
-		chromosome_unrand_breaker($input,$targetdir,$locallist,$increment, $localtag, $pchr);
-	}
-	
+	# FIND THE CORRESPONDING CHIMP CHROMOSOME FROM FILE ORTp_chrS.TXT
+	foreach my $direct ("reverse_direction","forward_direction"){
+		$p_chr=$chromt;
+		#print "direction = $direct\n";
+		$p_chr = $p_chr."r" if $direct eq "reverse_direction";
+		$p_chr = $p_chr if $direct eq "forward_direction";
+		my $config = $species_set;
+		$config=~s/,/./g;
+		my @orgs = split(/\./,$arranged_species_set);
+		#print "ORGS= @orgs\n";
+		my @tag=@orgs;
+			
+		
+		my $tags = join(",", @tag);
+		my @tags=@tag;
+		chomp $p_chr;
+		$tags = join("_", split(/,/, $tags));
+		my $pchr = "chr".$p_chr;
+		
+		my $ptag = $orgs[0]."-".$pchr.".".join(".",@orgs[1 ... scalar(@orgs)-1])."-".$threshold_array;
+		my @sp_tags = ();
+		
+#		print "$ptag _ orthfile\n"; <STDIN>;
 
-	my @unionarray = ();
-	#print "splist=@splist\n";
-	#-------------------------------------------------------------------------------
-	# FIND INTERRUPTED MICROSATELLITES
+		
+		#print "orgs=@orgs, pchr=$pchr, hence, ptag = $ptag\n";
+		foreach my $sp (@tag){
+			push(@sp_tags, ($sp.".".$ptag));
+		}
 	
-	$species_counter = 0;		
+		my $preptag = $orgs[0]."-".$pchr.".".join(".",@orgs[1 ... scalar(@orgs)-1]);
+		my @presp_tags = ();
+		
+		foreach my $sp (@tag){
+			push(@presp_tags, ($sp.".".$preptag));
+		}
 	
-	for my $i (0 .. $#combinedarray){
+		my $resultdir = "";
+		my $orthdir = "";
+		my $filtereddir = "";
+		my $pipedir = "";
+		
+		my @title_queries = ();
+		push(@title_queries, "^[0-9]+");
+		my $sep="\\s";
+		for my $or (0 ... $#orgs){
+			my $title =  join($sep, ($orgs[$or],  "[A-Za-z_]+[0-9a-zA-Z]+", "[0-9]+", "[0-9]+", "[\\-\\+]"));
+			#$title =~ s/chr\\+\\s+\+/chr/g;
+			push(@title_queries, $title);
+		}
+		my $title_query = join($sep, @title_queries);
+		#print "title_queries=@title_queries\n";
+		#print "query = >$title_query<\n"; 
+		#print "orgs = @orgs\n"; 
+		#-------------------------------------------------------------------------------
+		# GET AXTNET FILES, EDIT THEM AND SPLIT THEM INTO HUMAN AND CHIMP INPUT FILES
+		my $t1input = $pchr.".".$arranged_species_set.".net.axt";
+		
+		my @t1outputs = ();
+		
+		foreach my $sp (@presp_tags){
+			push(@t1outputs, $sp."_gap_op");
+		}
+		
+		
+		
+		multi_species_t1($t1input,$tags,(join(",", @t1outputs)), $title_query); 
+		#print "t1outputs=@t1outputs\n";
+		#print "done t1\n"; <STDIN>;
+		#-------------------------------------------------------------------------------
+		#START T2.PL
+		
+		my $stag  = (); my $tag1 = (); my $tag2 = ();  my $schrs = ();
+		
+		for my $t (0 ... scalar(@tags)-1){
+			multi_species_t2($t1outputs[$t], $tag[$t]);		
+		}
+		#-------------------------------------------------------------------------------
+		#START T2.2.PL
+		
+		my @temp_tags = @tag;
+		
+		foreach my $sp (@presp_tags){
+			my $t2input =  $sp."_nogap_op_unrand";
+			multi_species_t2_2($t2input, shift(@temp_tags));
+		}
+		undef (@temp_tags);
+		
+		#-------------------------------------------------------------------------------
+		#START SPUTNIK
+		
+		my @jobIDs = ();
+		@temp_tags = @tag;
+		my @sput_filelist = ();
+		
+		foreach my $sp (@presp_tags){
+			#print "sp = $sp\n";
+			my $sputnikoutput = $pipedir.$sp."_sput_op0";
+			my $sputnikinput = $pipedir.$sp."_nogap_op_unrand";
+			push(@sput_filelist, $sputnikinput);
+			my $sputnikcommand = $sputnikpath." ".$sputnikinput." > ".$sputnikoutput;
+			#print "$sputnikcommand\n";
+			my @sputnikcommand_system = $sputnikcommand;
+			system(@sputnikcommand_system);
+		}
+	
+		#-------------------------------------------------------------------------------
+		#START SPUTNIK OUTPUT CORRECTOR
+		
+		foreach my $sp (@presp_tags){
+			my $corroutput = $pipedir.$sp."_sput_op1";
+			my $corrinput = $pipedir.$sp."_sput_op0";
+			sputnikoutput_corrector($corrinput,$corroutput);
+			
+			my $t4output = $pipedir.$sp."_sput_op2";
+			multi_species_t4($corroutput,$t4output);
+		
+			my $t5output = $pipedir.$sp."_sput_op3";
+			multi_species_t5($t4output,$t5output);
+			#print "done t5.pl for $sp\n";
+		
+			my $t6output = $pipedir.$sp."_sput_op4";
+			multi_species_t6($t5output,$t6output,scalar(@orgs));
+		}
+		#-------------------------------------------------------------------------------
+		#START T9.PL FOR T10.PL AND FOR INTERRUPTED HUNTING
+		
+		foreach my $sp (@presp_tags){
+			my $t9output = $pipedir.$sp."_gap_op_unrand_match";
+			my $t9sequence = $pipedir.$sp."_gap_op_unrand2";
+			my $t9micro = $pipedir.$sp."_sput_op4";
+			t9($t9micro,$t9sequence,$t9output);
+			
+			my $t9output2 = $pipedir.$sp."_nogap_op_unrand2_match";
+			my $t9sequence2 = $pipedir.$sp."_nogap_op_unrand2";
+			t9($t9micro,$t9sequence2,$t9output2);
+		}
+		#print "done both t9.pl for all orgs\n";
+	
+		#-------------------------------------------------------------------------------
+		# FIND COMPOUND MICROSATELLITES
 		
 		@jobIDs = ();
-		open (JLIST1, "$splist[$i]") or die "Cannot open file $splist[$i]: $!";
+		my $species_counter = 0;
 		
-		while (my $sp1  = <JLIST1>){
-			#print "$splist[$i]: sp1=$sp1\n";
-			chomp $sp1;
+		foreach my $sp (@presp_tags){
+			my $simple_microsats=$pipedir.$sp."_sput_op4_simple";
+			my $compound_microsats=$pipedir.$sp."_sput_op4_compound";
+			my $input_micro = $pipedir.$sp."_sput_op4";
+			my $input_seq = $pipedir.$sp."_nogap_op_unrand2_match";
+			multiSpecies_compound_microsat_hunter3($input_micro,$input_seq,$simple_microsats,$compound_microsats,$orgs[$species_counter], scalar(@sp_tags), $threshold_array );
+			$species_counter++;
+		}
+		
+		#-------------------------------------------------------------------------------
+		# READING  AND FILTERING SIMPLE MICROSATELLITES
+		my $spcounter2=0;
+		foreach my $sp (@sp_tags){
+			my $presp = $presp_tags[$spcounter2];
+			$spcounter2++;
+			my $simple_microsats=$pipedir.$presp."_sput_op4_simple";
+			my $simple_filterout = $pipedir.$sp."_sput_op4_simple_filtered";
+			my $simple_residue = $pipedir.$sp."_sput_op4_simple_residue";
+			multiSpecies_filtering_interrupted_microsats($simple_microsats, $simple_filterout, $simple_residue,$threshold_array,$threshold_array,scalar(@sp_tags));
+		}
+		
+		#-------------------------------------------------------------------------------
+		# ANALYZE  COMPOUND MICROSATELLITES FOR BEING INTERRUPTED MICROSATS
+		
+		$species_counter = 0;
+		foreach my $sp (@sp_tags){
+			my $presp = $presp_tags[$species_counter];
+			my $compound_microsats = $pipedir.$presp."_sput_op4_compound";
+			my $analyzed_simple_microsats=$pipedir.$presp."_sput_op4_compound_interrupted";
+			my $analyzed_compound_microsats=$pipedir.$presp."_sput_op4_compound_pure";
+			my $seq_file = $pipedir.$presp."_nogap_op_unrand2_match";
+			multiSpecies_compound_microsat_analyzer($compound_microsats,$seq_file,$analyzed_simple_microsats,$analyzed_compound_microsats,$orgs[$species_counter], scalar(@sp_tags));
+			$species_counter++;
+		}
+		#-------------------------------------------------------------------------------
+		# REANALYZE COMPOUND MICROSATELLITES FOR PRESENCE OF SIMPLE ONES WITHIN THEM.. 
+		$species_counter = 0;
+		
+		foreach my $sp (@sp_tags){
+			my $presp = $presp_tags[$species_counter];
+			my $compound_microsats = $pipedir.$presp."_sput_op4_compound_pure";
+			my $compound_interrupted = $pipedir.$presp."_sput_op4_compound_clarifiedInterrupted";
+			my $compound_compound = $pipedir.$presp."_sput_op4_compound_compound";
+			my $seq_file = $pipedir.$presp."_nogap_op_unrand2_match";
+			multiSpecies_compoundClarifyer($compound_microsats,$seq_file,$compound_interrupted,$compound_compound,$orgs[$species_counter], scalar(@sp_tags), "2_4_6_8", "3_4_6_8", "2_4_6_8");
+			$species_counter++;
+		}
+		#-------------------------------------------------------------------------------
+		# READING  AND FILTERING SIMPLE AND COMPOUND MICROSATELLITES
+		$species_counter = 0;
+		
+		foreach my $sp (@sp_tags){
+			my $presp = $presp_tags[$species_counter];
+		
+			my $simple_microsats=$pipedir.$presp."_sput_op4_compound_clarifiedInterrupted";
+			my $simple_filterout = $pipedir.$sp."_sput_op4_compound_clarifiedInterrupted_filtered";
+			my $simple_residue = $pipedir.$sp."_sput_op4_compound_clarifiedInterrupted_residue";
+			multiSpecies_filtering_interrupted_microsats($simple_microsats, $simple_filterout, $simple_residue,$threshold_array,$threshold_array,scalar(@sp_tags));
+		
+			my $simple_microsats2 = $pipedir.$presp."_sput_op4_compound_interrupted";
+			my $simple_filterout2 = $pipedir.$sp."_sput_op4_compound_interrupted_filtered";
+			my $simple_residue2 = $pipedir.$sp."_sput_op4_compound_interrupted_residue";
+			multiSpecies_filtering_interrupted_microsats($simple_microsats2, $simple_filterout2, $simple_residue2,$threshold_array,$threshold_array,scalar(@sp_tags));
+		
+			my $compound_microsats=$pipedir.$presp."_sput_op4_compound_compound";
+			my $compound_filterout = $pipedir.$sp."_sput_op4_compound_compound_filtered";
+			my $compound_residue = $pipedir.$sp."_sput_op4_compound_compound_residue";
+			multispecies_filtering_compound_microsats($compound_microsats, $compound_filterout, $compound_residue,$threshold_array,$threshold_array,scalar(@sp_tags));
+			$species_counter++;
+		}
+		#print "done filtering both simple and compound microsatellites \n";
+		
+		#-------------------------------------------------------------------------------
+		
+		my @combinedarray = ();
+		my @combinedarray_indicators = ("mononucleotide", "dinucleotide", "trinucleotide", "tetranucleotide");
+		my @combinedarray_tags = ("mono", "di", "tri", "tetra");
+		$species_counter = 0;
+		
+		foreach my $sp (@sp_tags){
+			my $simple_interrupted = $pipedir.$sp."_simple_analyzed_simple";
+			push @{$combinedarray[$species_counter]}, $pipedir.$sp."_simple_analyzed_simple_mono", $pipedir.$sp."_simple_analyzed_simple_di", $pipedir.$sp."_simple_analyzed_simple_tri", $pipedir.$sp."_simple_analyzed_simple_tetra";
+			$species_counter++;
+		}
+		
+		#-------------------------------------------------------------------------------
+		# PUT TOGETHER THE INTERRUPTED AND SIMPLE MICROSATELLITES BASED ON THEIR MOTIF SIZE FOR FURTHER EXTENTION	
+		my $sp_counter = 0;
+		foreach my $sp (@sp_tags){	
+			my $analyzed_simple = $pipedir.$sp."_sput_op4_compound_interrupted_filtered";
+			my $clarifyed_simple = $pipedir.$sp."_sput_op4_compound_clarifiedInterrupted_filtered";
+			my $simple = $pipedir.$sp."_sput_op4_simple_filtered";
+			my $simple_analyzed_simple = $pipedir.$sp."_simple_analyzed_simple";
+			`cat $analyzed_simple $clarifyed_simple $simple > $simple_analyzed_simple`;
+			for my $i (0 ... 3){
+				`grep "$combinedarray_indicators[$i]" $simple_analyzed_simple > $combinedarray[$sp_counter][$i]`;	
+			}
+			$sp_counter++;		
+		}
+		#print "\ndone grouping interrupted & simple microsats based on their motif size for further extention\n";
+		
+		#-------------------------------------------------------------------------------
+		# BREAK CHROMOSOME INTO PARTS OF CERTAIN NO. CONTIGS EACH, FOR FUTURE SEARCHING OF INTERRUPTED MICROSATELLITES
+		# ESPECIALLY DI, TRI AND TETRANUCLEOTIDE MICROSATELLITES
+		@temp_tags = @sp_tags;
+		my $increment = 1000000;
+		my @splist = ();
+		my $targetdir = $pipedir;
+		$species_counter=0;
+		
+		foreach my $sp (@sp_tags){
+			my $presp = $presp_tags[$species_counter];
+			$species_counter++;
+			my $localtag = shift @temp_tags;
+			my $locallist = $targetdir.$localtag."_".$p_chr."_list";
+			push(@splist, $locallist);
+			my $input = $pipedir.$presp."_nogap_op_unrand2_match";
+			chromosome_unrand_breaker($input,$targetdir,$locallist,$increment, $localtag, $pchr);
+		}
+		
+	
+		my @unionarray = ();
+		#print "splist=@splist\n";
+		#-------------------------------------------------------------------------------
+		# FIND INTERRUPTED MICROSATELLITES
+		
+		$species_counter = 0;		
+		
+		for my $i (0 .. $#combinedarray){
 			
-			for my $j (0 ... $#combinedarray_tags){
-				my $interr  = $sp1."_interr_".$combinedarray_tags[$j];
-				my $simple  = $sp1."_simple_".$combinedarray_tags[$j];
-				push @{$unionarray[$i]}, $interr, $simple;	
-				multiSpecies_interruptedMicrosatHunter($combinedarray[$i][$j],$sp1,$interr ,$simple, $orgs[$species_counter], scalar(@sp_tags), "3_4_6_8"); 
-			}		
+			@jobIDs = ();
+			open (JLIST1, "$splist[$i]") or die "Cannot open file $splist[$i]: $!";
+			
+			while (my $sp1  = <JLIST1>){
+				#print "$splist[$i]: sp1=$sp1\n";
+				chomp $sp1;
+				
+				for my $j (0 ... $#combinedarray_tags){
+					my $interr  = $sp1."_interr_".$combinedarray_tags[$j];
+					my $simple  = $sp1."_simple_".$combinedarray_tags[$j];
+					push @{$unionarray[$i]}, $interr, $simple;	
+					multiSpecies_interruptedMicrosatHunter($combinedarray[$i][$j],$sp1,$interr ,$simple, $orgs[$species_counter], scalar(@sp_tags), "3_4_6_8"); 
+				}		
+			}
+			$species_counter++;
 		}
-		$species_counter++;
-	}
-	close JLIST1;	
-	#-------------------------------------------------------------------------------
-	#	REUNION AND ZIPPING BEFORE T10.PL
-	
-	my @allarray = ();
-	
-	for my $i (0 ... $#sp_tags){	
-		my $localfile = $pipedir.$sp_tags[$i]."_allmicrosats";
-		unlink $localfile if -e $localfile;
-		push(@allarray, $localfile);
-	
-		my $unfiltered_localfile= $localfile."_unfiltered";
-		my $residue_localfile= $localfile."_residue";
+		close JLIST1;	
+		#-------------------------------------------------------------------------------
+		#	REUNION AND ZIPPING BEFORE T10.PL
 		
-		unlink $unfiltered_localfile;
-		#unlink $unfiltered_localfile;
-		for my $j (0 ... $#{$unionarray[$i]}){
-			#print "listing files for species $i  and list number $j= \n$unionarray[$i][$j] \n";
-			`cat $unionarray[$i][$j] >> $unfiltered_localfile`;
-			unlink $unionarray[$i][$j];
+		my @allarray = ();
+		
+		for my $i (0 ... $#sp_tags){	
+			my $localfile = $pipedir.$sp_tags[$i]."_allmicrosats";
+			unlink $localfile if -e $localfile;
+			push(@allarray, $localfile);
+		
+			my $unfiltered_localfile= $localfile."_unfiltered";
+			my $residue_localfile= $localfile."_residue";
+			
+			unlink $unfiltered_localfile;
+			#unlink $unfiltered_localfile;
+			for my $j (0 ... $#{$unionarray[$i]}){
+				#print "listing files for species $i  and list number $j= \n$unionarray[$i][$j] \n";
+				`cat $unionarray[$i][$j] >> $unfiltered_localfile`;
+				unlink $unionarray[$i][$j];
+			}
+	
+			multiSpecies_filtering_interrupted_microsats($unfiltered_localfile, $localfile, $residue_localfile,$threshold_array,$threshold_array,scalar(@sp_tags) );
+			my $analyzed_compound = $pipedir.$sp_tags[$i]."_sput_op4_compound_compound_filtered";
+			my $simple_residue = $pipedir.$sp_tags[$i]."_sput_op4_simple_residue";
+			my $compound_residue = $pipedir.$sp_tags[$i]."_sput_op4_compound_residue";
+			
+			`cat $analyzed_compound >> $localfile`;
 		}
+		#-------------------------------------------------------------------------------
+		# MERGING MICROSATELLITES THAT ARE VERY CLOSE TO EACH OTHER, INCLUDING THOSE FOUND BY SEARCHING IN 2 OPPOSIT DIRECTIONS
+		
+		my $toescape=0;
+		
+		
+		for my $i (0 ... $#sp_tags){	
+			my $localfile = $pipedir.$sp_tags[$i]."_allmicrosats";
+			$localfile =~ /$focalspec\-(chr[0-9a-zA-Z]+)\./;
+			my $direction = $1;
+			#print "localfile = $localfile , direction = $direction\n"; 
+	#		`gzip $reverse_chr_name` if $direction =~ /chr[0-9a-zA-Z]+r/ && $switchboard{"deleting_processFiles"} != 1;
+			$toescape =1 if $direction =~ /chr[0-9a-zA-Z]+r/;
+			last if $direction =~ /chr[0-9a-zA-Z]+r/;
+			my $nogap_sequence = $pipedir.$presp_tags[$i]."_nogap_op_unrand2_match";
+			my $gap_sequence = $pipedir.$presp_tags[$i]."_gap_op_unrand_match";
+			my $reverselocal = $localfile;
+			$reverselocal =~ s/\-chr([0-9a-zA-Z]+)\./-chr$1r./g;
+			merge_interruptedMicrosats($nogap_sequence,$localfile, $reverselocal ,scalar(@sp_tags)); 
+			#-------------------------------------------------------------------------------
+			my $forward_separate = $localfile."_separate";
+			my $reverse_separate = $reverselocal."_separate";
+			my $diff = $forward_separate."_diff";
+			my $miss = $forward_separate."_miss";
+			my $common = $forward_separate."_common";
+			forward_reverse_sputoutput_comparer($nogap_sequence,$forward_separate, $reverse_separate, $diff, $miss, $common ,scalar(@sp_tags)); 
+			#-------------------------------------------------------------------------------
+			my $symmetrical_file = $localfile."_symmetrical";
+			my $merged_file = $localfile."_merged";
+			#print "cating: $merged_file $common  into -> $symmetrical_file \n"; 
+			`cat $merged_file $common > $symmetrical_file`;
+			#-------------------------------------------------------------------------------
+			my $t10output = $symmetrical_file."_fin_hit_all_2";
+			new_multispecies_t10($gap_sequence, $symmetrical_file, $t10output, join(".", @orgs));
+			#-------------------------------------------------------------------------------		
+		}
+		next if $toescape == 1;
+		#------------------------------------------------------------------------------------------------
+		# BRINGING IT ALL TOGETHER: FINDING ORTHOLOGOUS MICROSATELLITES AMONG THE SPECIES
+		
+		
+		my @micros_array = ();
+		my $sampletag = ();
+		for my $i (0 ... $#sp_tags){
+			my $finhitFile = $pipedir.$sp_tags[$i]."_allmicrosats_symmetrical_fin_hit_all_2";
+			push(@micros_array, $finhitFile);
+			$sampletag = $sp_tags[$i];
+		}
+		#$sampletag =~ s/^([A-Z]+\.)/ORTH_/;
+		#$sampletag = $sampletag."_monoThresh-".$mono_threshold."bp";
+		my $orthfiletemp = $ptag."_orthfile";
+		my $orthanswer = multiSpecies_orthFinder4($t1input, join(":",@micros_array), $orthfiletemp, join(":", @orgs), $separation);
 
-		multiSpecies_filtering_interrupted_microsats($unfiltered_localfile, $localfile, $residue_localfile,$threshold_array,$threshold_array,scalar(@sp_tags) );
-		my $analyzed_compound = $pipedir.$sp_tags[$i]."_sput_op4_compound_compound_filtered";
-		my $simple_residue = $pipedir.$sp_tags[$i]."_sput_op4_simple_residue";
-		my $compound_residue = $pipedir.$sp_tags[$i]."_sput_op4_compound_residue";
-		
-		`cat $analyzed_compound >> $localfile`;
+		my $maskedorthfiletemp = $ptag."_orthfile_masked";
+		qualityFilter ($orthfiletemp, $chr_name_sputt, $maskedorthfiletemp);
+
+		push @outputfiles , $maskedorthfiletemp;
 	}
-	#-------------------------------------------------------------------------------
-	# MERGING MICROSATELLITES THAT ARE VERY CLOSE TO EACH OTHER, INCLUDING THOSE FOUND BY SEARCHING IN 2 OPPOSIT DIRECTIONS
-	
-	my $toescape=0;
-	
-	
-	for my $i (0 ... $#sp_tags){	
-		my $localfile = $pipedir.$sp_tags[$i]."_allmicrosats";
-		$localfile =~ /$focalspec\-(chr[0-9a-zA-Z]+)\./;
-		my $direction = $1;
-		#print "localfile = $localfile , direction = $direction\n"; 
-#		`gzip $reverse_chr_name` if $direction =~ /chr[0-9a-zA-Z]+r/ && $switchboard{"deleting_processFiles"} != 1;
-		$toescape =1 if $direction =~ /chr[0-9a-zA-Z]+r/;
-		last if $direction =~ /chr[0-9a-zA-Z]+r/;
-		my $nogap_sequence = $pipedir.$presp_tags[$i]."_nogap_op_unrand2_match";
-		my $gap_sequence = $pipedir.$presp_tags[$i]."_gap_op_unrand_match";
-		my $reverselocal = $localfile;
-		$reverselocal =~ s/\-chr([0-9a-zA-Z]+)\./-chr$1r./g;
-		merge_interruptedMicrosats($nogap_sequence,$localfile, $reverselocal ,scalar(@sp_tags)); 
-		#-------------------------------------------------------------------------------
-		my $forward_separate = $localfile."_separate";
-		my $reverse_separate = $reverselocal."_separate";
-		my $diff = $forward_separate."_diff";
-		my $miss = $forward_separate."_miss";
-		my $common = $forward_separate."_common";
-		forward_reverse_sputoutput_comparer($nogap_sequence,$forward_separate, $reverse_separate, $diff, $miss, $common ,scalar(@sp_tags)); 
-		#-------------------------------------------------------------------------------
-		my $symmetrical_file = $localfile."_symmetrical";
-		my $merged_file = $localfile."_merged";
-		#print "cating: $merged_file $common  into -> $symmetrical_file \n"; 
-		`cat $merged_file $common > $symmetrical_file`;
-		#-------------------------------------------------------------------------------
-		my $t10output = $symmetrical_file."_fin_hit_all_2";
-		new_multispecies_t10($gap_sequence, $symmetrical_file, $t10output, join(".", @orgs));
-		#-------------------------------------------------------------------------------		
-	}
-	next if $toescape == 1;
-	#------------------------------------------------------------------------------------------------
-	# BRINGING IT ALL TOGETHER: FINDING ORTHOLOGOUS MICROSATELLITES AMONG THE SPECIES
-	
-	
-	my @micros_array = ();
-	my $sampletag = ();
-	for my $i (0 ... $#sp_tags){
-		my $finhitFile = $pipedir.$sp_tags[$i]."_allmicrosats_symmetrical_fin_hit_all_2";
-		push(@micros_array, $finhitFile);
-		$sampletag = $sp_tags[$i];
-	}
-	#$sampletag =~ s/^([A-Z]+\.)/ORTH_/;
-	#$sampletag = $sampletag."_monoThresh-".$mono_threshold."bp";
-	my $orthanswer = multiSpecies_orthFinder4($t1input, join(":",@micros_array), $orthfile, join(":", @orgs), $separation);
+	$date = `date`;
 }
-$date = `date`;
+
+`cat @outputfiles > $orthfile`;
+
 #print "date = $date\n";
 #remove_tree($tdir);
 #------------------------------------------------------------------------------------------------
@@ -492,10 +524,10 @@ sub maftoAxt_multispecies {
 	my $outsideSpecies=0;
 	
 	while(my $line = <IN>){
+#		print $line;
 		next if $line =~ /^#/;
 		next if $line =~ /^i/;
 		chomp $line;
-		#print "$line";
 		my @fields = split(/\s+/,$line);
 		chomp $line;
 		if ($line =~ /^a /){
@@ -503,39 +535,48 @@ sub maftoAxt_multispecies {
 		}
 		
 		if ($line =~ /^s /){
-		#	print "fields1 = $fields[1] , start = $start\n";
 		
-			foreach my $sp (@species){
+			foreach my $sp (@allspecies){
+#				print "checking species $sp\n";
 				if ($fields[1] =~ /$sp/){
 					$species_counter = $species_counter."_".$sp;
 					push(@sequences, $fields[6]);
 					my @sp_info = split(/\./,$fields[1]);
 					my $title = join(" ",@sp_info, $fields[2], ($fields[2]+$fields[3]), $fields[4]);
 					push(@titles, $title);				
-					
+#					print "species_counter = $species_counter\n";
 				}
 			}
 		}
 		
 		if (($line !~ /^a/) && ($line !~ /^s/) && ($line !~ /^#/) && ($line !~ /^i/) && ($start = 1)){
-			my $arranged = reorderSpecies($species_counter, @species);
+#			print "species_counter = $species_counter\n"; 
+			my $arranged = reorderSpecies($species_counter, @allspecies);
 			my $stopper = 1;
 			my $arrno = 0;
-			foreach my $set (@allowedset){
-				if ($arranged eq $set){
-	#				print "$arranged == $set\n";
-					$stopper = 0; last;
+			
+#			print "checking if ", scalar(@sequences), " match @exactspecies allowedset=@allowedset\n";
+			if (scalar(@sequences) == scalar(@exactspecies)){
+				foreach my $set (@allowedset){
+#					print "testing $arranged against $set\n";
+					if ($arranged eq $set){
+						$stopper = 0; last;
+					}
+					$arrno++;
 				}
-				$arrno++;
 			}
-	
+			else{
+				$stopper = 1;
+			}
+			
+			
 			if ($stopper == 0) {
-			#	print "    accepted\n";
 				@titles = split ";", orderInfo(join(";", @titles), $species_counter, $arranged) if $species_counter ne $arranged;				
 				@sequences = split ";", orderInfo(join(";", @sequences), $species_counter, $arranged) if $species_counter ne $arranged;				
 				my $filteredseq = filter_gaps(@sequences);
 				
 				if ($filteredseq ne "SHORT"){
+					#print "printing"; <STDIN>;
 					$counter++;
 					print OUT join (" ",$counter, @titles), "\n";
 					print OUT $filteredseq, "\n";
@@ -543,7 +584,7 @@ sub maftoAxt_multispecies {
 					$countermatch++;
 				}
 			}
-			else{#print "\n";
+			else{ #print "nexting\n";<STDIN>;
 			}
 	
 			@sequences = (); @titles = (); $start = 0;$species_counter = "0";
@@ -559,6 +600,7 @@ sub reorderSpecies{
 	my $currSpecies = shift (@inarr);
 	my $ordered_species = 0;
 	my @species=@inarr;
+	#print "species = @species\n";
 	foreach my $order (@species){
 		$ordered_species = $ordered_species."_".$order	if	$currSpecies=~ /$order/;
 	}
@@ -687,7 +729,7 @@ sub artificial_axdata_inverter{
 sub multi_species_t1 {
 
 	my $input1 = $_[0];
-#	print "@_\n"; #<STDIN>;
+	#print "@_\n"; <STDIN>;
 	my @tags = split(/_/, $_[1]);
 	my @outputs = split(/,/, $_[2]);
 	my $title_query = $_[3];
@@ -778,8 +820,8 @@ sub multi_species_t2{
 		my $line = $_;
 		chomp($line);
 		my @fields=split (/\t/, $line);
-	#   print $line,"\n";
-		if($fields[5] ne "chrUn_random"){
+	  #  print $line,"\n"; <STDIN>;
+		if($line !~ /random/){
 			print FILEF3 join ("\t",@fields[0 ... scalar(@fields)-2]), "\n", $fields[scalar(@fields)-1], "\n";
 			print FILEF4 join ("\t",@fields[0 ... scalar(@fields)-2]), "\t", $fields[scalar(@fields)-1], "\n";	
 		}
@@ -1061,7 +1103,7 @@ sub t9{
 		while (my $line = <IN1>){
 			chomp($line);
 			my @fields = split(/\t/,$line);
-			my $key1 = join ("_",@fields[0,1,3,4,5]);
+			my $key1 = join ("_K10K1_",@fields[0,1,3,4,5]);
 		#	print "key in t9 = $key1\n";
 			$seen{$key1}++	if ($prevkey ne $key1) ;
 			$prevkey = $key1;
@@ -1075,7 +1117,7 @@ sub t9{
 		if (-e $input1){
 			chomp($line);
 			my @fields = split(/\t/,$line);
-			my $key2 = join ("_",@fields[0,1,3,4,5]);
+			my $key2 = join ("_K10K1_",@fields[0,1,3,4,5]);
 			if (exists $seen{$key2}){
 				print OUT "$line\n"	;
 				delete $seen{$key2};
@@ -1083,6 +1125,7 @@ sub t9{
 		}
 		else {
 			print OUT "$line\n"	;		
+#			print  "$line\n"	;		
 		}
 	}
 	
@@ -1125,7 +1168,7 @@ sub multiSpecies_compound_microsat_hunter3{
 	while (my $line = <IN>){
 	#	print "$org\t(chr[0-9]+)\t([0-9]+)\t([0-9])+\t \n";
 		next if $line =~ /\t\t/;
-		if ($line =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([a-zA-Z0-9]+)\s([a-zA-Z]+[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($line =~ /^>[A-Za-z0-9_]+\s+([0-9]+)\s+([a-zA-Z0-9]+)\s([a-zA-Z]+[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			my $key = join("\t",$1, $2, $3, $4, $5);
 		#	print $key, "#-#-#-#-#-#-#-#\n";
 			push (@{$micros{$key}},$line);		
@@ -1507,7 +1550,7 @@ sub multiSpecies_compound_microsat_analyzer{
 	my $linecounter=0;
 	while (my $line = <IN>){
 		$linecounter++;
-		if ($line =~ /([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($line =~ /([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			my $key = join("\t",$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
 			push (@{$micros{$key}},$line);		
 			$keycounter++;
@@ -1530,14 +1573,18 @@ sub multiSpecies_compound_microsat_analyzer{
 		my %microstart=();
 		my %microend=();
 		my @sields = split(/\t/,$sine);
-		my $key = ();
-		if ($sine =~ /([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s[\+|\-]\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s[\+|\-]\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		my $key = 0;
+		if ($sine =~ /([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s[\+|\-]\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s[\+|\-]\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			$key = join("\t",$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+		#	print $sine;
+		#	print $key;
 			$keyfound++;
 		}
 		else{
 		
 		}
+		#<STDIN> if !defined $key;
+
 		if (exists $micros{$key}){
 			$keyexists++;
 			my @microstring = @{$micros{$key}};
@@ -1689,13 +1736,15 @@ sub multiSpecies_compoundClarifyer{
 	while (my $line = <IN>){
 	#	print "$org\t(chr[0-9a-zA-Z]+)\t([0-9]+)\t([0-9])+\t \n";
 		$linecounter++;
-		if ($line =~ /([a-zA-Z0-9]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s([a-zA-Z0-9]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s([a-zA-Z0-9]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
-			my $key = join("\t",$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+		if ($line =~ /($focalspec)\s+([0-9a-zA-Z_\-]+)\s+([0-9]+)\s+([0-9]+)/ ) {
+			my $key = join("\t",$1, $2, $3, $4);
 	#		print $key, "#-#-#-#-#-#-#-#\n";
+	#		print "key = $key\n";
 			push (@{$micros{$key}},$line);	
 			$microcounter++;
 		}
-		else {print $line;}
+		else {#print $line," key not made\n"; <STDIN>;
+			}
 	}
 #	print "number of microsatellites added to hash = $microcounter\nnumber of lines scanned = $linecounter\n";
 	close IN;
@@ -1712,8 +1761,14 @@ sub multiSpecies_compoundClarifyer{
 		my %microend=();
 		my @sields = split(/\t/,$sine);
 		my $key = ();
-		if ($sine =~ /([a-z0-9A-Z]+)\s+(chr[0-9a-zA-Z]+)\s+([0-9]+)\s+([0-9]+)\s+[\+|\-]\s+([a-z0-9A-Z]+)\s+(chr[0-9a-zA-Z]+)\s+([0-9]+)\s+([0-9]+)\s+[\+|\-]\s+([a-z0-9A-Z]+)\s+(chr[0-9a-zA-Z]+)\s+([0-9]+)\s+([0-9]+)\s/ ) {
-			$key = join("\t",$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+		
+#		print "sine = $sine. focalspec = $focalspec \n"; #<STDIN>;
+		
+		if ($sine =~ /($focalspec)\s+([0-9a-zA-Z_\-]+)\s+([0-9]+)\s+([0-9]+)/ ) {
+			
+#			if ($sine =~ /([a-z0-9A-Z]+)\s+([0-9a-zA-Z_]+)\s+([0-9]+)\s+([0-9]+)\s+[\+|\-]\s+([a-z0-9A-Z]+)\s+([0-9a-zA-Z_]+)\s+([0-9]+)\s+([0-9]+)\s+[\+|\-]\s+([a-z0-9A-Z]+)\s+([0-9a-zA-Z_]+)\s+([0-9]+)\s+([0-9]+)\s/ ) {
+			$key = join("\t",$1, $2, $3, $4);
+#			print "key = $key\n";
 		}
 		else{
 #			print "no key in $sine\nfor pattern ([a-z0-9A-Z]+) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+) [\+|\-] (a-z0-9A-Z) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+) [\+|\-] (a-z0-9A-Z) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+)   / \n"; 
@@ -1726,7 +1781,7 @@ sub multiSpecies_compoundClarifyer{
 			foreach my $line (@microstring){
 #				print "#---------#---------#---------#---------#---------#---------#---------#---------\n" if $printer == 1; 
 #				print "microsat = $line" if $printer == 1; 
-				$linecounter++;
+				$linecounter++; 
 				my $copy_line = $line;
 				my @mields = split(/\t/,$line);
 				my @fields = @mields;
@@ -1944,7 +1999,8 @@ sub multiSpecies_compoundClarifyer{
 					if ($tempfields[$startcord] != $fields[$startcord]) {
 						$leftmotif = $motields[$left_captured]; 
 #						print "$left_captured in @microields: $motields[$left_captured]\n" if $printer == 1; 
-						if ( $left_captured !~ /[0-9]+/) {print $line,"\n", $templine,"\n"; }
+						if ( $left_captured !~ /[0-9]+/) {#print $line,"\n", $templine,"\n"; 
+						}
 						 $left_trashed = length($microields[$left_captured]) - $left_bp;
 					}
 					my $rightmotif = (); my $right_trashed = ();
@@ -2689,7 +2745,7 @@ sub multiSpecies_interruptedMicrosatHunter{
 	while (my $line = <IN>){
 	#	print "$org\t(chr[0-9a-zA-Z]+)\t([0-9]+)\t([0-9])+\t \n";
 		$linecounter++;
-		if ($line =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s+(chr[0-9a-zA-Z]+)\s([0-9]+)\s+([0-9]+)\s/ ) {
+		if ($line =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s+([0-9a-zA-Z_]+)\s([0-9]+)\s+([0-9]+)\s/ ) {
 			my $key = join("\t",$1, $2, $3, $4, $5);
 		#	print $key, "#-#-#-#-#-#-#-#\n" if $prinkter == 1;
 			push (@{$micros{$key}},$line);	
@@ -2711,7 +2767,7 @@ sub multiSpecies_interruptedMicrosatHunter{
 		my %microend=();
 		my @sields = split(/\t/,$sine);
 		my $key = ();
-		if ($sine =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($sine =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			$key = join("\t",$1, $2, $3, $4, $5);
 	#		print $key, "<-<-<-<-<-<-<-<\n";		
 		}
@@ -3417,13 +3473,15 @@ sub merge_interruptedMicrosats{
 	while (my $line = <INF>){
 	#	print "$org\t(chr[0-9a-zA-Z]+)\t([0-9]+)\t([0-9])+\t \n";
 		$linecounter++;
-		if ($line =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($line =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			my $key = join("\t",$1, $2, $4, $5);
 		#	print $key, "#-#-#-#-#-#-#-#\n";
 			push (@{$fmicros{$key}},$line);	
 			$microcounter++;
 		}
-		else {print $line;}
+		else {
+			#print $line;
+		}
 	}
 #	print "number of microsatellites added to hash = $microcounter\nnumber of lines scanned = $linecounter\n";
 	close INF;
@@ -3437,13 +3495,15 @@ sub merge_interruptedMicrosats{
 	while (my $line = <INR>){
 	#	print "$org\t(chr[0-9a-zA-Z]+)\t([0-9]+)\t([0-9])+\t \n";
 		$linecounter++;
-		if ($line =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($line =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			my $key = join("\t",$1, $2, $4, $5);
 	#		print $key, "#-#-#-#-#-#-#-#\n";
 			push (@{$rmicros{$key}},$line);	
 			$microcounter++;
 		}
-		else {print "cant make key\n";}
+		else {
+			#print "cant make key\n";
+		}
 	}
 #	print "number of reverse microsatellites added to hash = $microcounter\nnumber of lines scanned = $linecounter\n";
 	close INR;
@@ -3461,7 +3521,7 @@ sub merge_interruptedMicrosats{
 	
 		my $key = ();
 	
-		if ($sine =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($sine =~ /^>[A-Za-z0-9]+\s+([0-9]+)\s+([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			$key = join("\t",$1, $2, $4, $5);
 		#	print $key, "<-<-<-<-<-<-<-<\n";		
 		}
@@ -3493,7 +3553,7 @@ sub merge_interruptedMicrosats{
 			chomp @microstring;
 			my $clusterresult = (find_clusters(@microstring, $sields[$sequencepos])); 	
 			@sets1 = split("\=", $clusterresult);
-			my @temp = split(/_/,$sets1[0]) ; $microscanned+= scalar(@temp);
+			my @temp = split(/_X0X_/,$sets1[0]) ; $microscanned+= scalar(@temp);
 		#	print "sets = ", join("<all\nmerged>", @sets1), "\n<<-sets1\n"; <STDIN>;
 		}	#if (exists $micros{$key}){
 	
@@ -3515,7 +3575,7 @@ sub merge_interruptedMicrosats{
 	#		print "sending reversed sequence\n";
 			my $clusterresult = (find_clusters(@microstring, $rev_sequence ) ); 	
 			@sets2 = split("\=", $clusterresult);
-			my @temp = split(/_/,$sets2[0]) ; $microscanned+= scalar(@temp);
+			my @temp = split(/_X0X_/,$sets2[0]) ; $microscanned+= scalar(@temp);
 		}	#if (exists $micros{$key}){
 	
 		my @popout1 = ();
@@ -3525,10 +3585,11 @@ sub merge_interruptedMicrosats{
 			if(exists $sets1[0]) {
 				push (@popout1, $sets1[0],$sets2[1]);
 				my @forwardset = split("=", popOuter(@popout1, $rev_sequence ));#		
-				print OUTF join("\n",split("_", $forwardset[0])), "\n";
-				my @localmerged = split("_", $forwardset[1]);
+				print OUTF join("\n",split("_X0X_", $forwardset[0])), "\n";
+				my @localmerged = split("_X0X_", $forwardset[1]);
 				my $sequence = $sields[$sequencepos];
 				$sequence =~ s/ //g;
+#				print "\nforwardset = @forwardset\n";
 				for my $j (0 ... $#localmerged){
 					$localmerged[$j] = 	invert_justCoordinates ($localmerged[$j], length($sequence));
 				}
@@ -3537,10 +3598,11 @@ sub merge_interruptedMicrosats{
 				
 			}
 			else{
-				my @localmerged = split("_", $sets2[1]);
+				my @localmerged = split("_X0X_", $sets2[1]);
 				my $sequence = $sields[$sequencepos];
 				$sequence =~ s/ //g;
 				for my $j (0 ... $#localmerged){
+#					print "\nlocalmerged = @localmerged\n";
 					$localmerged[$j] = 	invert_justCoordinates ($localmerged[$j], length($sequence));
 				}
 				
@@ -3548,7 +3610,7 @@ sub merge_interruptedMicrosats{
 			}
 		}
 		elsif (exists $sets1[0]){
-			print OUTF join("\n",split("_", $sets1[0])), "\n";
+			print OUTF join("\n",split("_X0X_", $sets1[0])), "\n";
 		}
 		
 		my @reverseset= ();
@@ -3558,15 +3620,15 @@ sub merge_interruptedMicrosats{
 			#	print "popout2 = @popout2\n";
 				my @reverseset = split("=", popOuter(@popout2, $sields[$sequencepos]));
 				#print "reverseset = $reverseset[1] < --- reverseset1\n"; 
-				print OUTR join("\n",split("_", $reverseset[0])), "\n";
-				push(@merged,  (split("_", $reverseset[1])));
+				print OUTR join("\n",split("_X0X_", $reverseset[0])), "\n";
+				push(@merged,  (split("_X0X_", $reverseset[1])));
 			}
 			else{
-				push(@merged,  (split("_", $sets1[1])));
+				push(@merged,  (split("_X0X_", $sets1[1])));
 			}
 		}
 		elsif (exists $sets2[0]){
-			print OUTR join("\n",split("_", $sets2[0])), "\n";
+			print OUTR join("\n",split("_X0X_", $sets2[0])), "\n";
 		
 		}
 		
@@ -3721,7 +3783,7 @@ sub find_clusters{
 #	print join("\n",@mergedSet),"<-----mergedSet\n"  if $printer == 1;
 #<STDIN> if scalar(@mergedSet) > 0;
 #	print "EXIT: find_clusters\n";
-return (join("_",@nonmerged). "=".join("_",@mergedSet));
+return (join("_X0X_",@nonmerged). "=".join("_X0X_",@mergedSet));
 }
 
 sub custom {
@@ -3729,19 +3791,16 @@ sub custom {
 }
 
 sub popOuter {
-#	print "\nIN: popOuter @_\n";
-	my @all = split ("_",$_[0]);
+#	print "\nIN: popOuter @_\n"; <STDIN>;
+	my @all = split ("_X0X_",$_[0]);
 #	<STDIN> if !defined $_[0];
-	my @merged = split ("_",$_[1]);
+	my @merged = split ("_X0X_",$_[1]);
 	my $sequence = $_[2];
 	my $seqlen = length($sequence);
-#	print "\nIN: popOuter @_\n" if scalar(@_) != 3;
-#	<STDIN> if scalar(@_) != 3;
 	my %microstart=();
 	my %microend=();
 	my @mergedSet = ();
 	my @nonmerged = ();
-#	print "\n\n\n all = @all\n<--all\n";
 	
 	foreach my $line (@all){
 		my @fields = split(/\t/,$line);
@@ -3751,18 +3810,18 @@ sub popOuter {
 		push (@{$microend{$end}},$line);	
 	}
 	my $firstflag = 'down';
-
 	my %forPopouting = ();
 
 	while( my $line =shift(@merged)){
-#		print "\n MErgedline: $line \n" if $printer == 1;
+	#	print "\n MErgedline: $line .. startcord = $startcord  ... endcord = $endcord\n" ;
 		chomp $line;
 		my @fields = split(/\t/,$line);
 		my $start = $fields[$startcord];
 		my $end = $fields[$endcord];
 		my $startmicro = $line;
 		my $endmicro = $line;
-
+		
+		
 		delete ($microstart{$start});
 		delete ($microend{$end});
 		my $flag = 'down';	
@@ -3817,14 +3876,14 @@ sub popOuter {
     	push(@nonmerged,$microstart{$key}[0]);
 	}
 	
-	return (join("_",@nonmerged). "=".join("_",@mergedSet) );
+	return (join("_X0X_",@nonmerged). "=".join("_X0X_",@mergedSet) );
 }
 
 
 
 sub invert_justCoordinates{
 	my $microsat = $_[0];
-#	print "IN invert_justCoordinates\n" if $printer == 1;
+#	print "IN invert_justCoordinates ... @_\n" ; <STDIN>;
 	chomp $microsat;
 	my $seqLength = $_[1];
 	my @fields = split(/\t/,$microsat);
@@ -3868,7 +3927,7 @@ sub filterDuplicates_merged{
 	foreach my $micro (@merged) {
 		my @fields = split(/\t/,$micro);
 		if ($fields[3] =~ /chr[A-Z0-9a-z]+r/){
-			my $key = join("_",$fields[1], $fields[$startcord], $fields[$endcord]);
+			my $key = join("_K0K_",$fields[1], $fields[$startcord], $fields[$endcord]);
 	#		print "adding  ... \n$key\n$micro\n";
 			push(@{$revmerged{$key}}, $micro);
 		}
@@ -3880,7 +3939,7 @@ sub filterDuplicates_merged{
 #	print "\n";
 	foreach my $micro (@fmerged) {
 			my @fields = split(/\t/,$micro);
-			my $key = join("_",$fields[1], $fields[$startcord], $fields[$endcord]);
+			my $key = join("_K0K_",$fields[1], $fields[$startcord], $fields[$endcord]);
 	#		print "searching for key $key\n";
 			if (exists $revmerged{$key}){
 		#		print "deleting $revmerged{$key}[0]\n";
@@ -3998,7 +4057,7 @@ sub forward_reverse_sputoutput_comparer	{
 	my $microcounter=0;
 	while (my $line = <INF>){
 		$linecounter++;
-		if ($line =~ /([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($line =~ /([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			my $key = join("\t",$1, $3, $4, $5, $7, $8, $9, $11, $12);
 		#	print $key, "#-#-#-#-#-#-#-#\n";
 			push (@{$fmicros{$key}},$line);	
@@ -4019,7 +4078,7 @@ sub forward_reverse_sputoutput_comparer	{
 	$microcounter=0;
 	while (my $line = <INR>){
 		$linecounter++;
-		if ($line =~ /([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($line =~ /([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			my $key = join("\t",$1, $3, $4, $5, $7, $8, $9, $11, $12);
 		#	print $key, "#-#-#-#-#-#-#-#\n";
 			push (@{$rmicros{$key}},$line);	
@@ -4039,7 +4098,7 @@ sub forward_reverse_sputoutput_comparer	{
 		my %microend=();
 		my @sields = split(/\t/,$sine);
 		my $key = ();
-		if ($sine =~ /([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s[\+|\-]\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s[\+|\-]\s([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
+		if ($sine =~ /([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s[\+|\-]\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s[\+|\-]\s([0-9a-zA-Z]+)\s([0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			$key = join("\t",$1, $3, $4, $5, $7, $8, $9, $11, $12);
 		}
 		else {
@@ -4464,7 +4523,8 @@ sub new_multispecies_t10{
 			push (@{$seen{$key}},$line);	
 			$microcounter++;
 		}
-		else {		print "could not make ker in SPUT : \n$line \n"; 
+		else {		
+			#print "could not make ker in SPUT : \n$line \n"; 
 		}
 	}
 #	print "done hash.. linecounter = $linecounter, microcounter = $microcounter and total keys entered = ",scalar(keys %seen),"\n";
@@ -4583,6 +4643,10 @@ sub new_multispecies_t10{
 #					print "with poscounter = $poscounter\n" if $prinkter == 1;
 					my $search_result = ();
 					my $posnow  = ();
+					
+#					print "for $line, temp $temp or human_search $human_search not defined\n" if !defined $temp || !defined $human_search;
+#					<STDIN> if !defined $temp || !defined $human_search;
+					
 					while ($temp =~ /($human_search)/gi){
 						$search_result = $1;
 					#	$posnow  = pos($temp);
@@ -4590,6 +4654,8 @@ sub new_multispecies_t10{
 					}
 					
 					my @gapspos = ();
+					next if !defined $search_result;
+					
 					while($search_result =~ m/-/g) {push(@gapspos, (pos($search_result))); }
 					my $gaps  = join("__",@gapspos);
 	
@@ -4609,10 +4675,10 @@ sub new_multispecies_t10{
 		}
 	}
 	my $unusedkeys = scalar(keys %seen);
-	print INFO "in hash = $ref, looped = $ref4, captured = $ref3\n REMOVED: \nmicrosats with too long gaps = $deletes\n";
-	print INFO "exact duplicated removed = $duplicates \nmicrosats removed due to multiple microsats defined  in +-10 bp neighboring region: $neighbors \n";
-	print INFO "microsatellites too short = $tooshort\n";
-	print INFO "keysused = $keysused...starts not found = $startnotfound ... matchkeysformed=$matchkeysformed ... unusedkeys=$unusedkeys\n";
+#	print INFO "in hash = $ref, looped = $ref4, captured = $ref3\n REMOVED: \nmicrosats with too long gaps = $deletes\n";
+#	print INFO "exact duplicated removed = $duplicates \nmicrosats removed due to multiple microsats defined  in +-10 bp neighboring region: $neighbors \n";
+#	print INFO "microsatellites too short = $tooshort\n";
+#	print INFO "keysused = $keysused...starts not found = $startnotfound ... matchkeysformed=$matchkeysformed ... unusedkeys=$unusedkeys\n";
 	
 	#print  "in hash = $ref, looped = $ref4, captured = $ref3\n REMOVED: \nmicrosats with too long gaps = $deletes\n";
 	#print  "exact duplicated removed = $duplicates \nmicrosats removed due to multiple microsats defined  in +-10 bp neighboring region: $neighbors \n";
@@ -4800,9 +4866,6 @@ sub multiSpecies_orthFinder4{
 	while (my $line = <BO>){
 #		print "x" x 60, "\n" if $prinkter == 1;
 		$dotcounter++;
-		
-	
-		
 #		print "." if $dotcounter % 100 ==0;
 #		print "\n" if $dotcounter % 5000 ==0;
 		next if $line !~ /^[0-9]+/;
@@ -4861,11 +4924,11 @@ sub multiSpecies_orthFinder4{
 			if (exists $hasharr[$i]{$key2}){
 				@temparr =  @{$hasharr[$i]{$key2}};
 				
-#				print "in line $line, trying to hunt for: $tags[$i]\\s([a-zA-Z0-9])+\\s([0-9]+)\\s([0-9]+) \n" if $prinkter == 1;
-				$line =~ /$tags[$i]\s([a-zA-Z0-9]+)\s([0-9]+)\s([0-9]+)/;
+				$line =~ /$tags[$i]\s([a-zA-Z0-9_]+)\s([0-9]+)\s([0-9]+)/;
+##				print "in line $line, trying to hunt for: $tags[$i]\\s([a-zA-Z0-9_])+\\s([0-9]+)\\s([0-9]+) \n" if $prinkter == 1;
 #				print "org = $tags[$i], and chr = $1, start = $2, end =$3 \n" if $prinkter == 1; 
-				my $startkey = $1."_".$2; print "adding start key for this alignmebt block: $startkey to species $tags[$i]\n" if $prinkter == 1;
-				my $endkey = $1."_".$3; print "adding end key for this alignmebt block: $endkey to species $tags[$i]\n" if $prinkter == 1;
+				my $startkey = $1."_SK0SK_".$2; #print "adding start key for this alignmebt block: $startkey to species $tags[$i]\n" if $prinkter == 1;
+				my $endkey = $1."_EK0EK_".$3; #print "adding end key for this alignmebt block: $endkey to species $tags[$i]\n" if $prinkter == 1;
 				$contigstarts[$i]{$startkey}= $key2;
 				$contigends[$i]{$endkey}= $key2;
 #				print "confirming existance: \n" if $prinkter == 1;
@@ -4910,6 +4973,8 @@ sub multiSpecies_orthFinder4{
 			push @starthash, {%localhash};
 			my $foundclusters  =findClusters(join("!",@{$strings[$i]}), $CLUSTER_DIST);
 	
+#			print "foundclusters = $foundclusters\n";
+	
 			my @clusters = split(/_/,$foundclusters);
 			
 			my $clustno = 0;
@@ -4919,7 +4984,7 @@ sub multiSpecies_orthFinder4{
 #				print "clusters returned: @constituenst\n" if $prinkter == 1;
 			}
 	
-			@string = split("_",stringPainter(join("_",@string),$foundclusters));
+			@string = split("_S0S_",stringPainter(join("_C0C_",@string),$foundclusters));
 			
 			
 		}
@@ -4927,6 +4992,7 @@ sub multiSpecies_orthFinder4{
 	
 #		print colored ['blue'],"FINAL:\n" if $prinkter == 1;
 		my $finalclusters  =findClusters(join("!",@string), 1);
+#		print "finalclusters = $finalclusters\n";
 #		print colored ['blue'],"----------------------\n" if $prinkter == 1;
 		my @clusters = split(/,/,$finalclusters);
 #			print "@string\n" if $prinkter == 1;
@@ -5053,11 +5119,14 @@ sub multiSpecies_orthFinder4{
 		chomp $line;	
 		my @fields2 = split(/\t/,$line);
 		my $key2 = ();
-		if ($line =~ /([0-9]+)\s+($focalspec)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
+		if ($line =~ /([0-9]+)\s+($focalspec)\s(chr[0-9a-zA-Z_]+)\s([0-9]+)\s([0-9]+)/ ) {
 			$key2 = join("\t",$1, $2,  $4, $5);
 		}
 		
-		else {print "seq line $line incompatible\n"; next;}
+		else {
+		#	print "seq line $line incompatible\n";
+			next;
+		}
 #		print "KEY =  : $key2\n" if $prinkter == 1;
 	
 	
@@ -5071,10 +5140,10 @@ sub multiSpecies_orthFinder4{
 			@clusterscopy=@clusters;
 			for my $i (0 ... $#tags){
 	#			print "in line $line, trying to hunt for: $tags[$i]\\s([a-zA-Z0-9])+\\s([0-9]+)\\s([0-9]+) \n" if $prinkter == 1;
-				if ($line =~ /$tags[$i]\s([a-zA-Z0-9]+)\s([0-9]+)\s([0-9]+)/){
+				if ($line =~ /$tags[$i]\s([a-zA-Z0-9_]+)\s([0-9]+)\s([0-9]+)/){
 	#				print "org = $tags[$i], and chr = $1, start = $2, end =$3 \n" if $prinkter == 1; 
-					my $startkey = $1."_".$2; #print "adding start key for this alignmebt block: $startkey to species $tags[$i]\n" if $prinkter == 1;
-					my $endkey = $1."_".$3; #print "adding end key for this alignmebt block: $endkey to species $tags[$i]\n" if $prinkter == 1;
+					my $startkey = $1."_S0E_".$2; #print "adding start key for this alignmebt block: $startkey to species $tags[$i]\n" if $prinkter == 1;
+					my $endkey = $1."_S0E_".$3; #print "adding end key for this alignmebt block: $endkey to species $tags[$i]\n" if $prinkter == 1;
 					$currentcontigchrs[$i]=$1;
 					$currentcontigstarts[$i]=$2;
 					$currentcontigends[$i]=$3;			
@@ -5112,7 +5181,7 @@ sub multiSpecies_orthFinder4{
 			my $firstclusterstart = $contigclustersFirstStartOnly{$key2};
 			my $lastclusterend = $contigclustersLastEndOnly{$key2};
 					
-			my $key3 = $currentcontigchrs[$i]."_".($currentcontigstarts[$i]);
+			my $key3 = $currentcontigchrs[$i]."_S0E_".($currentcontigstarts[$i]);
 #			print  "check if exists $key3 in  contigends for $i\n" if $prinkter == 1; 
 			
 			if (exists($contigends[$i]{$key3}) && !exists $visitedcontigs{$contigends[$i]{$key3}}){
@@ -5251,7 +5320,9 @@ sub multiSpecies_orthFinder4{
 #				print "KEEY $key->$key3\n" if $prinkter == 1;
 #				print "our contigcluster = @{$contigclusters{$key}}\n----------\n" if $prinkter == 1;
 				
-				if (scalar(@{$contigclusters{$key}}) > 0) {push @pool, @{$contigclusters{$key}}; print "now pool = @pool\n" if $prinkter == 1;}
+				if (scalar(@{$contigclusters{$key}}) > 0) {push @pool, @{$contigclusters{$key}}; 
+				#	print "now pool = @pool\n" if $prinkter == 1;
+				}
 				delete $foundkeys{$key3};
 				$key=$key3;
 				$key3=$clusteringpaths{$key};
@@ -5278,7 +5349,7 @@ sub multiSpecies_orthFinder4{
 	
 }
 sub stringPainter{
-	my @string  = split(/_/,$_[0]);
+	my @string  = split(/_C0C_/,$_[0]);
 #	print $_[0], " <- in stringPainter\n";
 #	print $_[1], " <- in clusters\n";
 	
@@ -5304,7 +5375,7 @@ sub stringPainter{
 		
 	}
 #	print "@string <-done from function stringPainter\n";
-	return join("_",@string);
+	return join("_S0S_",@string);
 }
 
 sub findClusters{
@@ -5390,3 +5461,135 @@ sub findClusters{
 	return join(",",@returner);
 }
 #xxxxxxxxxxxxxx multiSpecies_orthFinder4 xxxxxxxxxxxxxx  multiSpecies_orthFinder4 xxxxxxxxxxxxxx  multiSpecies_orthFinder4 xxxxxxxxxxxxxx 
+
+#xxxxxxxxxxxxxx MakeTrees xxxxxxxxxxxxxxxxxxxxxxxxxxxx  MakeTrees xxxxxxxxxxxxxxxxxxxxxxxxxxxx  MakeTrees xxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+sub MakeTrees{
+	my $tree = $_[0];
+	my @parts=($tree);
+#	my @parts=();
+	
+	while (1){
+		$tree =~ s/^\(//g;
+		$tree =~ s/\)$//g;
+		my @arr = ();
+	
+		if ($tree =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_\(\),]+)\)$/){
+			@arr = $tree =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_\(\),]+)$/;
+			$tree = $2;
+			push @parts, $tree;
+		}
+		elsif ($tree =~ /^\(([a-zA-Z0-9_\(\),]+),([a-zA-Z0-9_]+)$/){
+			@arr = $tree =~ /^([a-zA-Z0-9_\(\),]+),([a-zA-Z0-9_]+)$/;
+			$tree = $1;
+			push @parts, $tree;
+		}
+		elsif ($tree =~ /^([a-zA-Z0-9_]+),([a-zA-Z0-9_]+)$/){
+			last;
+		}
+	}	
+	return @parts;
+}
+
+#xxxxxxxxxxxxxx qualityFilter xxxxxxxxxxxxxxxxxxxxxxxxxxxx  qualityFilter xxxxxxxxxxxxxxxxxxxxxxxxxxxx  qualityFilter xxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+sub qualityFilter{
+	my $unmaskedorthfile = $_[0];
+	my $seqfile = $_[1];
+	my $maskedorthfile = $_[2];
+	my $filteredout = $maskedorthfile."_residue";
+	open (PMORTH, "<$unmaskedorthfile") or die "Cannot open unmaskedorthfile file: $unmaskedorthfile: $!";
+
+	my %keyhash = ();
+	
+	while (my $line = <PMORTH>){
+		my $key = join("\t", $1,$2,$3,$4) if $line =~ /($focalspec)\s+([a-zA-Z0-9\-_]+)\s+([0-9]+)\s+([0-9]+)/;
+		push @{$keyhash{$key}}, $line;
+	}
+	
+	open (SEQ, "<$seqfile") or die "Cannot open seqfile file: $seqfile: $!";
+	open (MORTH, ">$maskedorthfile") or die "Cannot open maskedorthfile file: $maskedorthfile: $!";
+        open (RES, ">$filteredout") or die "Cannot open filteredout file: $filteredout: $!";
+
+
+	
+	while (my $line = <SEQ>){
+		chomp $line;
+		if ($line =~ /($focalspec)\s+([a-zA-Z0-9\-_]+)\s+([0-9]+)\s+([0-9]+)/){
+			my $key = join("\t", $1,$2,$3,$4);
+			next if !exists $keyhash{$key};
+			my @orths = @{$keyhash{$key}} if exists $keyhash{$key};
+			delete $keyhash{$key};
+			
+			my $sine = <SEQ>;
+			
+			foreach my $orth (@orths){
+				#print "-----------------------------------------------------------------\n";
+				#print $orth;
+				my $orthcopy = $orth;
+				$orth =~ s/^>//;
+				my @parts = split(/>/,$orth);
+				
+				my @starts = ();
+				my @ends = ();
+				
+				foreach my $part (@parts){
+					my $no_of_species = adjustCoordinates($part);
+					my @pields = split(/\t/,$part);
+					
+				#	print "pields = @pields .. no_of_species = $no_of_species .. startcord = $pields[$startcord]\n";
+					
+					push @starts, $pields[$startcord];
+					push @ends, $pields[$endcord];
+				}
+				
+				#print "starts = @starts ... ends = @ends\n";
+				
+				my $leftend = smallest_number(@starts)-10;
+				my $rightend = largest_number(@ends)+10;
+
+				my $maskarea = substr($sine, $leftend, $rightend-$leftend+1);
+				print RES $orth if $maskarea =~ /#/;		
+				
+				
+				next if $maskarea =~ /#/;
+				
+				print MORTH $orthcopy;
+			}
+		}
+		else{
+			next;
+		}
+		
+		
+	}
+	
+#	print "UNDONE: ", scalar(keys %keyhash),"\n";
+#	print MORTH "UNDONE: ", scalar(keys %keyhash),"\n";
+	
+}
+
+sub adjustCoordinates{
+	my $line = $_[0];
+	my $no_of_species = $line =~ s/(chr[0-9a-zA-Z]+)|(Contig[0-9a-zA-Z\._\-]+)|(scaffold[0-9a-zA-Z\._\-]+)|(supercontig[0-9a-zA-Z\._\-]+)/x/ig;
+	my @got = ($line =~ s/(chr[0-9a-zA-Z]+)|(Contig[0-9a-zA-Z\._\-]+)/x/g);
+# print "line = $line\n";
+	$infocord = 2 + (4*$no_of_species) - 1;
+	$typecord = 2 + (4*$no_of_species) + 1 - 1;
+	$motifcord = 2 + (4*$no_of_species) + 2 - 1;
+	$gapcord = $motifcord+1;
+	$startcord = $gapcord+1;
+	$strandcord = $startcord+1;
+	$endcord = $strandcord + 1;
+	$microsatcord = $endcord + 1;
+	$sequencepos = 2 + (5*$no_of_species) + 1 -1 ; 
+	$interr_poscord = $microsatcord + 3;
+	$no_of_interruptionscord = $microsatcord + 4;
+	$interrcord = $microsatcord + 2;
+#	print "$line\n startcord = $startcord, and endcord = $endcord and no_of_species = $no_of_species\n" if $line !~ /calJac/i;
+	return $no_of_species;
+}
+
+
+
+

@@ -9,7 +9,7 @@
       <converter file="bam_to_summary_tree_converter.xml" target_datatype="summary_tree" depends_on="bai"/>
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
-      <!-- <display file="igv/bam.xml" /> -->
+      <display file="igv/bam.xml" />
     </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
@@ -88,7 +88,7 @@
     <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
     <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
     <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true"/>
-    <datatype extension="h5" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream"/>
+    <datatype extension="h5" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" />
     <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
@@ -139,7 +139,10 @@
     <datatype extension="qualsolid" type="galaxy.datatypes.qualityscore:QualityScoreSOLiD" display_in_upload="true"/>
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
     <datatype extension="Roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
-    <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true"/>
+    <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
+    	<converter file="sam_to_bam.xml" target_datatype="bam"/>
+    	<converter file="sam_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+	</datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
     <datatype extension="sff" type="galaxy.datatypes.binary:Sff" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -154,9 +157,12 @@
     <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
       <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="vcf_to_vcf_bgzip_converter.xml" target_datatype="vcf_bgzip"/>
       <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <display file="igv/vcf.xml" />
     </datatype>
+    <datatype extension="bcf" type="galaxy.datatypes.binary:Binary" subclass="True"/>
     <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
@@ -164,10 +170,14 @@
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
       <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
     </datatype>
-    <datatype extension="summary_tree" type="galaxy.datatypes.data:Data" />
-    <datatype extension="interval_index" type="galaxy.datatypes.data:Data" />
-    <datatype extension="tabix" type="galaxy.datatypes.data:Data" />
-    <datatype extension="bgzip" type="galaxy.datatypes.data:Data" />
+    <datatype extension="summary_tree" type="galaxy.datatypes.binary:Binary" subclass="True" />
+    <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="True" />
+    <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="True" />
+    <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="True" />
+    <datatype extension="vcf_bgzip" type_extension="bgzip" subclass="True" >
+      <display file="igv/vcf.xml" />
+      <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
+    </datatype>
     <!-- Start EMBOSS tools -->
     <datatype extension="acedb" type="galaxy.datatypes.data:Text"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:Text"/>

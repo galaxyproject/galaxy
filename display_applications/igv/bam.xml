@@ -1,12 +1,32 @@
+<?xml version="1.0"?>
 <display id="igv_bam" version="1.0.0" name="display with IGV">
-    <link id="web" name="web">
-        <url>$jnlp.url</url>
-        <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" strip_https="True" />
-        <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" strip_https="True" />
-        <param type="template" name="jnlp" url="galaxy_${DATASET_HASH}.jnlp" viewable="True" strip_https="True" mimetype="application/x-java-jnlp-file">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+    
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links from_file="tool-data/shared/igv/igv_build_sites.txt" skip_startswith="#" id="0" name="1">
+        
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="site_name" value="1"/>
+        <dynamic_param name="site_link" value="2"/>
+        <dynamic_param name="site_dbkeys" value="3" split="True" separator="," />
+        <dynamic_param name="site_organisms" value="4" split="True" separator="," />
+        
+        <!-- Filter out some of the links based upon matching site_dbkeys to dataset dbkey -->
+        <filter>${dataset.dbkey in $site_dbkeys}</filter>
+        
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${redirect_url}</url>
+        
+        <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" />
+        <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" />
+        <param type="template" name="site_organism" strip="True" >
+            $site_organisms[ $site_dbkeys.index( $bam_file.dbkey ) ]
+        </param>
+        
+        <param type="template" name="jnlp" url="galaxy_${DATASET_HASH}.jnlp" viewable="True" mimetype="application/x-java-jnlp-file">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
 &lt;jnlp
   spec=&quot;1.0+&quot;
-  codebase=&quot;http://www.broadinstitute.org/igvdata/jws/prod&quot;&gt;
+  codebase=&quot;${site_link}&quot;&gt;
   &lt;information&gt;
     &lt;title&gt;IGV 1.5&lt;/title&gt;
     &lt;vendor&gt;The Broad Institute&lt;/vendor&gt;
@@ -54,17 +74,22 @@
 
   &lt;application-desc main-class=&quot;org.broad.igv.ui.IGVMainFrame&quot;&gt;
      &lt;argument&gt;-g&lt;/argument&gt;
-     &lt;argument&gt;${bam_file.dbkey}&lt;/argument&gt;
+     &lt;argument&gt;${site_organism}&lt;/argument&gt;
      &lt;argument&gt;${bam_file.url}&lt;/argument&gt;
   &lt;/application-desc&gt;
 &lt;/jnlp&gt;
-
 		</param>
-	</link>
-		
-    <link id="local" name="local">
-        <url>http://localhost:60151/load?file=${qp($bam_file.url)}&amp;genome=${qp($bam_file.dbkey)}&amp;merge=true</url>
-        <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" strip_https="True" />
-        <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" strip_https="True" />
-	</link>
+        <param type="template" name="redirect_url" strip="True" >
+            #if $site_id.startswith( 'local_' )
+                ${site_link}?file=${bam_file.qp}&amp;genome=${site_organism}&amp;merge=true
+            #elif $site_id.startswith( 'web_link_' ):
+                ${site_link}?sessionURL=${bam_file.qp}&amp;genome=${site_organism}&amp;merge=true
+            #else:
+                ${jnlp.url}
+            #end if
+        </param>
+    </dynamic_links>
+    
+    
 </display>
+<!-- Dan Blankenberg -->

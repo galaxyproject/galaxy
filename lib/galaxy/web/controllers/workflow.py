@@ -1125,7 +1125,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            workflow_url = 'http://%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
+            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
                 ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp )
             response = urllib2.urlopen( workflow_url )
             workflow_text = response.read()
@@ -1197,7 +1197,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
                                 if shed_url.endswith( '/' ):
                                     shed_url = shed_url.rstrip( '/' )
-                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, trans.request.host, webapp )
+                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, url_for( '', qualified=True ), webapp )
                                     if missing_tool_tups:
                                         url += '&tool_id='
                                     for missing_tool_tup in missing_tool_tups:
@@ -1224,15 +1224,14 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     if tool_shed_url:
                         # We've received the textual representation of a workflow from a Galaxy tool shed.
                         message = "Workflow <b>%s</b> imported successfully." % workflow.name
-                        # TODO: support https in the following url.
-                        url = 'http://%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&message=%s' % \
+                        url = '%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&message=%s' % \
                             ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp, message )
                         return trans.response.send_redirect( url )
                     elif installed_repository_file:
                         # The workflow was read from a file included with an installed tool shed repository.
                         message = "Workflow <b>%s</b> imported successfully." % workflow.name
-                        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                          action='browse_tool_shed_repository',
+                        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                          action='browse_repository',
                                                                           id=repository_id,
                                                                           message=message,
                                                                           status=status ) )
@@ -1433,7 +1432,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                         step.upgrade_messages = {}
                         # Connections by input name
                         step.input_connections_by_name = \
-                            dict( ( conn.input_name, conn ) for conn in step.input_connections ) 
+                            dict( ( conn.input_name, conn ) for conn in step.input_connections )
                         # Extract just the arguments for this step by prefix
                         p = "%s|" % step.id
                         l = len(p)
@@ -1447,7 +1446,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                 has_upgrade_messages = True
                             # Any connected input needs to have value DummyDataset (these
                             # are not persisted so we need to do it every time)
-                            module.add_dummy_datasets( connections=step.input_connections )    
+                            module.add_dummy_datasets( connections=step.input_connections )
                             # Get the tool
                             tool = module.tool
                             # Get the state
@@ -1463,7 +1462,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
                             step_errors = module.update_runtime_state( trans, state, step_args )
                         if step_errors:
-                            errors[step.id] = state.inputs["__errors__"] = step_errors   
+                            errors[step.id] = state.inputs["__errors__"] = step_errors
                     if 'run_workflow' in kwargs and not errors:
                         new_history = None
                         if 'new_history' in kwargs:
@@ -1487,7 +1486,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                     tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
                                 except KeyError, e:
                                     # Handle the case where the workflow requires a tool not available in the local Galaxy instance.
-                                    # The id value of tools installed from a Galaxy tool shed is a guid, but these tool's old_id 
+                                    # The id value of tools installed from a Galaxy tool shed is a guid, but these tool's old_id
                                     # attribute should contain what we're looking for.
                                     for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
                                         if step.tool_id == available_tool.old_id:
@@ -1529,7 +1528,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                         invocations.append({'outputs': outputs,
                                             'new_history': new_history})
                         trans.sa_session.flush()
-                        return trans.fill_template( "workflow/run_complete.mako",
+                if invocations:
+                    return trans.fill_template( "workflow/run_complete.mako",
                                                     workflow=stored,
                                                     invocations=invocations )
             else:
@@ -1550,7 +1550,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             has_upgrade_messages = True
                         # Any connected input needs to have value DummyDataset (these
                         # are not persisted so we need to do it every time)
-                        step.module.add_dummy_datasets( connections=step.input_connections )                  
+                        step.module.add_dummy_datasets( connections=step.input_connections )
                         # Store state with the step
                         step.state = step.module.state
                         # Error dict
@@ -1569,7 +1569,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             # Render the form
             stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
             return trans.fill_template(
-                        "workflow/run.mako", 
+                        "workflow/run.mako",
                         steps=workflow.steps,
                         workflow=stored,
                         has_upgrade_messages=has_upgrade_messages,
@@ -1581,8 +1581,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         finally:
             # restore the active history
             if saved_history is not None:
-                trans.set_history(saved_history) 
-                    
+                trans.set_history(saved_history)
+
     def get_item( self, trans, id ):
         return self.get_stored_workflow( trans, id ) 
         

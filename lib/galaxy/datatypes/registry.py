@@ -12,7 +12,7 @@ class ConfigurationError( Exception ):
     pass
 
 class Registry( object ):
-    def __init__( self, root_dir=None, config=None ):
+    def __init__( self ):
         self.log = logging.getLogger(__name__)
         self.log.addHandler( logging.NullHandler() )
         self.datatypes_by_extension = {}
@@ -27,37 +27,56 @@ class Registry( object ):
         self.sniff_order = []
         self.upload_file_formats = []
         self.display_applications = odict() #map a display application id to a display application
-        inherit_display_application_by_class = []
+        self.datatype_converters_path = None
+        self.datatype_indexers_path = None
+        self.display_applications_path = None
+    def load_datatypes( self, root_dir=None, config=None, imported_module=None ):
         if root_dir and config:
+            inherit_display_application_by_class = []
             # Parse datatypes_conf.xml
             tree = galaxy.util.parse_xml( config )
             root = tree.getroot()
             # Load datatypes and converters from config
             self.log.debug( 'Loading datatypes from %s' % config )
             registration = root.find( 'registration' )
-            self.datatype_converters_path = os.path.join( root_dir, registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' ) )
-            self.datatype_indexers_path = os.path.join( root_dir, registration.get( 'indexers_path', 'lib/galaxy/datatypes/indexers' ) )
-            self.display_applications_path = os.path.join( root_dir, registration.get( 'display_path', 'display_applications' ) )
-            if not os.path.isdir( self.datatype_converters_path ):
-                raise ConfigurationError( "Directory does not exist: %s" % self.datatype_converters_path )
-            if not os.path.isdir( self.datatype_indexers_path ):
-                raise ConfigurationError( "Directory does not exist: %s" % self.datatype_indexers_path )                
+            # The following implementation implies that only the first datatypes_conf.xml parsed will
+            # define the various paths.  This is probably ok, since we can justifiably require that the
+            # local datatypes_conf.xml file sets the standard, and all additional datatypes_conf.xml
+            # files installed with repositories from tool sheds must use the same paths.  However, we
+            # may discover at some future time that allowing for multiple paths is more optimal.
+            if not self.datatype_converters_path:
+                self.datatype_converters_path = os.path.join( root_dir, registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' ) )
+                if not os.path.isdir( self.datatype_converters_path ):
+                    raise ConfigurationError( "Directory does not exist: %s" % self.datatype_converters_path )
+            if not self.datatype_indexers_path:
+                self.datatype_indexers_path = os.path.join( root_dir, registration.get( 'indexers_path', 'lib/galaxy/datatypes/indexers' ) )
+                if not os.path.isdir( self.datatype_indexers_path ):
+                    raise ConfigurationError( "Directory does not exist: %s" % self.datatype_indexers_path )
+            if not self.display_applications_path:
+                self.display_applications_path = os.path.join( root_dir, registration.get( 'display_path', 'display_applications' ) )
             for elem in registration.findall( 'datatype' ):
                 try:
                     extension = elem.get( 'extension', None ) 
                     dtype = elem.get( 'type', None )
+                    type_extension = elem.get( 'type_extension', None )
                     mimetype = elem.get( 'mimetype', None )
                     display_in_upload = elem.get( 'display_in_upload', False )
                     make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
-                    if extension and dtype:
-                        fields = dtype.split( ':' )
-                        datatype_module = fields[0]
-                        datatype_class_name = fields[1]
-                        fields = datatype_module.split( '.' )
-                        module = __import__( fields.pop(0) )
-                        for mod in fields:
-                            module = getattr( module, mod )
-                        datatype_class = getattr( module, datatype_class_name )
+                    if extension and ( dtype or type_extension ):
+                        if dtype:
+                            fields = dtype.split( ':' )
+                            datatype_module = fields[0]
+                            datatype_class_name = fields[1]
+                            if imported_module:
+                                datatype_class = getattr( imported_module, datatype_class_name )
+                            else:
+                                fields = datatype_module.split( '.' )
+                                module = __import__( fields.pop(0) )
+                                for mod in fields:
+                                    module = getattr( module, mod )
+                                datatype_class = getattr( module, datatype_class_name )
+                        elif type_extension:
+                            datatype_class = self.datatypes_by_extension[type_extension].__class__
                         if make_subclass:
                             datatype_class = type( datatype_class_name, (datatype_class,), {} )
                         self.datatypes_by_extension[extension] = datatype_class()
@@ -248,10 +267,8 @@ class Registry( object ):
                 if not included:
                     self.sniff_order.append(datatype)
         append_to_sniff_order()
-    
     def get_available_tracks(self):
         return self.available_tracks
-        
     def get_mimetype_by_extension(self, ext, default = 'application/octet-stream' ):
         """Returns a mimetype based on an extension"""
         try:
@@ -261,7 +278,6 @@ class Registry( object ):
             mimetype = default
             self.log.warning('unknown mimetype in data factory %s' % ext)
         return mimetype
-    
     def get_datatype_by_extension(self, ext ):
         """Returns a datatype based on an extension"""
         try:
@@ -269,7 +285,6 @@ class Registry( object ):
         except KeyError:
             builder = data.Text()
         return builder
-
     def change_datatype(self, data, ext, set_meta = True ):
         data.extension = ext
         # call init_meta and copy metadata from itself.  The datatype
@@ -283,7 +298,6 @@ class Registry( object ):
                 data.set_meta( overwrite = False )
                 data.set_peek()
         return data
-
     def old_change_datatype(self, data, ext):
         """Creates and returns a new datatype based on an existing data and an extension"""
         newdata = factory(ext)(id=data.id)
@@ -291,7 +305,6 @@ class Registry( object ):
             setattr(newdata, key, value)
         newdata.ext = ext
         return newdata
-
     def load_datatype_converters( self, toolbox ):
         """Adds datatype converters from self.converters to the calling app's toolbox"""     
         for elem in self.converters:
@@ -308,7 +321,6 @@ class Registry( object ):
                 self.log.debug( "Loaded converter: %s", converter.id )
             except:
                 self.log.exception( "error reading converter from path: %s" % converter_path )
-
     def load_external_metadata_tool( self, toolbox ):
         """Adds a tool which is used to set external metadata"""
         #we need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated tool.
@@ -333,7 +345,6 @@ class Registry( object ):
         toolbox.tools_by_id[ set_meta_tool.id ] = set_meta_tool
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
-        
     def load_datatype_indexers( self, toolbox ):
         """Adds indexers from self.indexers to the toolbox from app"""
         for elem in self.indexers:
@@ -343,7 +354,6 @@ class Registry( object ):
             toolbox.tools_by_id[indexer.id] = indexer
             self.datatype_indexers[datatype] = indexer
             self.log.debug( "Loaded indexer: %s", indexer.id )
-            
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
         converters = odict()
@@ -356,7 +366,6 @@ class Registry( object ):
         if ext in self.datatype_converters.keys():
             converters.update(self.datatype_converters[ext])
         return converters
-
     def get_indexers_by_datatype( self, ext ):
         """Returns indexers based on datatype"""
         class_chain = list()
@@ -369,14 +378,12 @@ class Registry( object ):
         ext2type = lambda x: self.get_datatype_by_extension(x)
         class_chain = sorted(class_chain, lambda x,y: issubclass(ext2type(x),ext2type(y)) and -1 or 1)
         return [self.datatype_indexers[x] for x in class_chain]
-    
     def get_converter_by_target_type(self, source_ext, target_ext):
         """Returns a converter based on source and target datatypes"""
         converters = self.get_converters_by_datatype(source_ext)
         if target_ext in converters.keys():
             return converters[target_ext]
         return None
-
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
@@ -390,10 +397,8 @@ class Registry( object ):
                     ret_data = None
                 return ( convert_ext, ret_data )
         return ( None, None )
-    
     def get_composite_extensions( self ):
         return [ ext for ( ext, d_type ) in self.datatypes_by_extension.iteritems() if d_type.composite_type is not None ]
-
     def get_upload_metadata_params( self, context, group, tool ):
         """Returns dict of case value:inputs for metadata conditional for upload tool"""
         rval = {}
@@ -409,4 +414,3 @@ class Registry( object ):
         if 'auto' not in rval and 'txt' in rval: #need to manually add 'auto' datatype
             rval[ 'auto' ] = rval[ 'txt' ]
         return rval
-

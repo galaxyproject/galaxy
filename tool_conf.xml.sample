@@ -26,7 +26,9 @@
     <tool file="data_source/epigraph_import.xml" />
     <tool file="data_source/epigraph_import_test.xml" />
     <tool file="data_source/hbvar.xml" />
-    <tool file="data_source/genomespace_file_browser_dev.xml" />
+    <tool file="data_source/genomespace_file_browser_prod.xml" />
+    <!-- <tool file="data_source/genomespace_file_browser_test.xml" />
+    <tool file="data_source/genomespace_file_browser_dev.xml" /> -->
     <tool file="validation/fix_errors.xml" />
   </section>
   <section name="Send Data" id="send">
@@ -190,8 +192,8 @@
     <tool file="regVariation/compute_motif_frequencies_for_all_motifs.xml" />
     <tool file="regVariation/categorize_elements_satisfying_criteria.xml" />s
     <tool file="regVariation/draw_stacked_barplots.xml" />
-    <tool file="regVariation/multispecies_MicrosatDataGenerator_interrupted_GALAXY.xml" />
-    <tool file="regVariation/microsatellite_birthdeath.xml" />
+    <!-- <tool file="regVariation/multispecies_MicrosatDataGenerator_interrupted_GALAXY.xml" />
+    <tool file="regVariation/microsatellite_birthdeath.xml" /> -->
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />
@@ -371,6 +373,7 @@
     <tool file="samtools/sam_to_bam.xml" />
     <tool file="samtools/bam_to_sam.xml" />
     <tool file="samtools/sam_merge.xml" />
+    <tool file="samtools/samtools_mpileup.xml" />
     <tool file="samtools/sam_pileup.xml" />
     <tool file="samtools/pileup_parser.xml" />
     <tool file="samtools/pileup_interval.xml" />
@@ -378,6 +381,8 @@
     <tool file="samtools/samtools_rmdup.xml" />
   </section>
   <section name="NGS: GATK Tools (beta)" id="gatk">
+    <label text="Alignment Utilities" id="gatk_bam_utilities"/>
+    <tool file="gatk/depth_of_coverage.xml" />
     
     <label text="Realignment" id="gatk_realignment" />
     <tool file="gatk/realigner_target_creator.xml" />
@@ -464,6 +469,7 @@
     <tool file="human_genome_variation/lps.xml" />
     <tool file="human_genome_variation/hilbertvis.xml" />
     <tool file="human_genome_variation/freebayes.xml" />
+    <tool file="human_genome_variation/master2pg.xml" />
   </section>
   <section name="Genome Diversity" id="gd">
     <tool file="genome_diversity/extract_primers.xml" />

@@ -5,6 +5,7 @@ import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess, b
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import config, tools, web, util
+from galaxy.util import inflector
 from galaxy.util.hash_util import *
 from galaxy.util.json import json_fix
 from galaxy.web import error, form, url_for
@@ -359,7 +360,18 @@ class UsesVisualization( SharableItemSecurity ):
                     'drawables': drawables,
                     'prefs': collection_dict.get( 'prefs', [] )
                 }
-
+                
+            def encode_dbkey( dbkey ):
+                """ 
+                Encodes dbkey as needed. For now, prepends user's public name 
+                to custom dbkey keys.
+                """
+                encoded_dbkey = dbkey
+                user = visualization.user
+                if 'dbkeys' in user.preferences and dbkey in user.preferences[ 'dbkeys' ]:
+                    encoded_dbkey = "%s:%s" % ( user.username, dbkey )
+                return encoded_dbkey
+                    
             # Set tracks.
             tracks = []
             if 'tracks' in latest_revision.config:
@@ -373,8 +385,12 @@ class UsesVisualization( SharableItemSecurity ):
                     else:
                         tracks.append( pack_collection( drawable_dict ) )
                 
-            config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ),
-                        "tracks": tracks, "bookmarks": bookmarks, "chrom": "", "dbkey": visualization.dbkey }
+            config = {  "title": visualization.title, 
+                        "vis_id": trans.security.encode_id( visualization.id ),
+                        "tracks": tracks, 
+                        "bookmarks": bookmarks, 
+                        "chrom": "", 
+                        "dbkey": encode_dbkey( visualization.dbkey ) }
 
             if 'viewport' in latest_revision.config:
                 config['viewport'] = latest_revision.config['viewport']
@@ -2015,28 +2031,28 @@ class Admin( object ):
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
         webapp = kwd.get( 'webapp', 'galaxy' )
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No user ids received for resetting passwords"
+        user_id = kwd.get( 'id', None )
+        if not user_id:
+            message = "No users received for resetting passwords."
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='users',
                                                        webapp=webapp,
                                                        message=message,
                                                        status='error' ) )
-        ids = util.listify( id )
+        user_ids = util.listify( user_id )
         if 'reset_user_password_button' in kwd:
             message = ''
             status = ''
-            for user_id in ids:
+            for user_id in user_ids:
                 user = get_user( trans, user_id )
                 password = kwd.get( 'password', None )
                 confirm = kwd.get( 'confirm' , None )
                 if len( password ) < 6:
-                    message = "Please use a password of at least 6 characters"
+                    message = "Use a password of at least 6 characters."
                     status = 'error'
                     break
                 elif password != confirm:
-                    message = "Passwords do not match"
+                    message = "Passwords do not match."
                     status = 'error'
                     break
                 else:
@@ -2044,18 +2060,18 @@ class Admin( object ):
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
             if not message and not status:
-                message = "Passwords reset for %d users" % len( ids )
+                message = "Passwords reset for %d %s." % ( len( user_ids ), inflector.cond_plural( len( user_ids ), 'user' ) )
                 status = 'done'
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='users',
                                                        webapp=webapp,
                                                        message=util.sanitize_text( message ),
                                                        status=status ) )
-        users = [ get_user( trans, user_id ) for user_id in ids ]
-        if len( ids ) > 1:
-            id=','.join( id )
+        users = [ get_user( trans, user_id ) for user_id in user_ids ]
+        if len( user_ids ) > 1:
+            user_id = ','.join( user_ids )
         return trans.fill_template( '/admin/user/reset_password.mako',
-                                    id=id,
+                                    id=user_id,
                                     users=users,
                                     password='',
                                     confirm='',
@@ -2420,13 +2436,11 @@ def copy_sample_loc_file( trans, filename ):
     # overwrite it in case it contains stuff proprietary to the local instance.
     if not os.path.exists( os.path.join( tool_data_path, loc_file ) ):
         shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
-def get_user( trans, id ):
+def get_user( trans, user_id ):
     """Get a User from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id( id )
-    user = trans.sa_session.query( trans.model.User ).get( id )
+    user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
     if not user:
-        return trans.show_error_message( "User not found for id (%s)" % str( id ) )
+        return trans.show_error_message( "User not found for id (%s)" % str( user_id ) )
     return user
 def get_user_by_username( trans, username ):
     """Get a user from the database by username"""

@@ -30,6 +30,13 @@ messages = Bunch(
     OK = "ok"
 )
 
+def _decode_dbkey( dbkey ):
+    """ Decodes dbkey and returns tuple ( username, dbkey )"""
+    if ':' in dbkey:
+        return dbkey.split( ':' )
+    else:
+        return None, dbkey
+
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
         return history.get_display_name()
@@ -92,6 +99,7 @@ class DbKeyColumn( grids.GridColumn ):
     def filter( self, trans, user, query, dbkey ):
         """ Filter by dbkey; datasets without a dbkey are returned as well. """
         # use raw SQL b/c metadata is a BLOB
+        dbkey_user, dbkey = _decode_dbkey( dbkey )
         dbkey = dbkey.replace("'", "\\'")
         return query.filter( or_( \
                                 or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
@@ -189,7 +197,11 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 avail_genomes[key] = path
         self.available_genomes = avail_genomes
         
-    def _has_reference_data( self, trans, dbkey ):
+    def _has_reference_data( self, trans, dbkey, dbkey_owner=None ):
+        """ 
+        Returns true if there is reference data for the specified dbkey. If dbkey is custom, 
+        dbkey_owner is needed to determine if there is reference data.
+        """
         # Initialize built-in builds if necessary.
         if not self.available_genomes:
             self._init_references( trans )
@@ -198,12 +210,10 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         if dbkey in self.available_genomes:
             # There is built-in reference data.
             return True
-            
-        # Look for key in user's custom builds.
-        # TODO: how to make this work for shared visualizations?
-        user = trans.user
-        if user and 'dbkeys' in trans.user.preferences:
-            user_keys = from_json_string( user.preferences['dbkeys'] )
+                
+        # Look for key in owner's custom builds.
+        if dbkey_owner and 'dbkeys' in dbkey_owner.preferences:
+            user_keys = from_json_string( dbkey_owner.preferences[ 'dbkeys' ] )
             if dbkey in user_keys:
                 dbkey_attributes = user_keys[ dbkey ]
                 if 'fasta' in dbkey_attributes:
@@ -272,7 +282,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
     @web.require_login()
     def browser(self, trans, id, chrom="", **kwargs):
         """
-        Display browser for the datasets listed in `dataset_ids`.
+        Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
         """
         vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
@@ -284,7 +294,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
 
     @web.json
-    def chroms( self, trans, vis_id=None, dbkey=None, num=None, chrom=None, low=None ):
+    def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
         """
         Returns a naturally sorted list of chroms/contigs for either a given visualization or a given dbkey.
         Use either chrom or low to specify the starting chrom in the return list.
@@ -313,25 +323,12 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         else:
             low = 0
             
-        #
-        # Get viz, dbkey.
-        #
-            
-        # Must specify either vis_id or dbkey.
-        if not vis_id and not dbkey:
-            return trans.show_error_message("No visualization id or dbkey specified.")
-            
-        # Need to get user and dbkey in order to get chroms data.
-        if vis_id:
-            # Use user, dbkey from viz.
-            visualization = self.get_visualization( trans, vis_id, check_ownership=False, check_accessible=True )
-            visualization.config = self.get_visualization_config( trans, visualization )
-            vis_user = visualization.user
-            vis_dbkey = visualization.dbkey
+        # If there is no dbkey owner, default to current user.
+        dbkey_owner, dbkey = _decode_dbkey( dbkey )
+        if dbkey_owner:
+            dbkey_user = trans.sa_session.query( trans.app.model.User ).filter_by( username=dbkey_owner ).first()
         else:
-            # No vis_id, so visualization is new. User is current user, dbkey must be given.
-            vis_user = trans.user
-            vis_dbkey = dbkey
+            dbkey_user = trans.user
 
         #
         # Get len file.
@@ -339,24 +336,24 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         len_file = None
         len_ds = None
         user_keys = {}
-        if 'dbkeys' in vis_user.preferences:
-            user_keys = from_json_string( vis_user.preferences['dbkeys'] )
-            if vis_dbkey in user_keys:
-                dbkey_attributes = user_keys[ vis_dbkey ]
+        if 'dbkeys' in dbkey_user.preferences:
+            user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
+            if dbkey in user_keys:
+                dbkey_attributes = user_keys[ dbkey ]
                 if 'fasta' in dbkey_attributes:
                     build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
                     len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
                 # Backwards compatibility: look for len file directly.
                 elif 'len' in dbkey_attributes:
-                    len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ vis_dbkey ][ 'len' ] ).file_name
+                    len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ dbkey ][ 'len' ] ).file_name
 
         if not len_file:
             len_ds = trans.db_dataset_for( dbkey )
             if not len_ds:
-                len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % vis_dbkey )
+                len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % dbkey )
             else:
                 len_file = len_ds.file_name
-
+                
         #
         # Get chroms data:
         #   (a) chrom name, len;
@@ -423,7 +420,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
-        return { 'reference': self._has_reference_data( trans, vis_dbkey ), 'chrom_info': to_sort, 
+        return { 'reference': self._has_reference_data( trans, dbkey, dbkey_user ), 'chrom_info': to_sort, 
                  'prev_chroms' : prev_chroms, 'next_chroms' : next_chroms, 'start_index' : start_index }
         
     @web.json
@@ -432,7 +429,14 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         Return reference data for a build.
         """
         
-        if not self._has_reference_data( trans, dbkey ):
+        # If there is no dbkey owner, default to current user.
+        dbkey_owner, dbkey = _decode_dbkey( dbkey )
+        if dbkey_owner:
+            dbkey_user = trans.sa_session.query( trans.app.model.User ).filter_by( username=dbkey_owner ).first()
+        else:
+            dbkey_user = trans.user
+            
+        if not self._has_reference_data( trans, dbkey, dbkey_user ):
             return None
         
         #    
@@ -444,9 +448,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             twobit_file_name = self.available_genomes[dbkey]
         else:
             # From custom build.
-            # TODO: how to make this work for shared visualizations?
-            user = trans.user
-            user_keys = from_json_string( user.preferences['dbkeys'] )
+            user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
             dbkey_attributes = user_keys[ dbkey ]
             fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( dbkey_attributes[ 'fasta' ] )
             error = self._convert_dataset( trans, fasta_dataset, 'twobit' )
@@ -544,7 +546,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             valid_chroms = indexer.valid_chroms()
         else:
             # Standalone data provider
-            standalone_provider = get_data_provider(data_sources['data_standalone']['name'])( dataset )
+            standalone_provider = get_data_provider( data_sources['data_standalone']['name'] )( dataset )
             kwargs = {"stats": True}
             if not standalone_provider.has_data( chrom ):
                 return messages.NO_DATA
@@ -725,6 +727,15 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         
         # Render the list view
         return self.histories_grid( trans, **kwargs )
+        
+    @web.expose
+    @web.require_login( "see current history's datasets that can added to this visualization" )
+    def list_current_history_datasets( self, trans, **kwargs ):
+        """ List a history's datasets that can be added to a visualization. """
+        
+        kwargs[ 'f-history' ] = trans.security.encode_id( trans.get_history().id )
+        kwargs[ 'show_item_checkboxes' ] = 'True'
+        return self.list_history_datasets( trans, **kwargs )
         
     @web.expose
     @web.require_login( "see a history's datasets that can added to this visualization" )
@@ -1018,16 +1029,15 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
         
         return data_sources_dict
-        
+                    
     def _convert_dataset( self, trans, dataset, target_type ):
         """
         Converts a dataset to the target_type and returns a message indicating 
         status of the conversion. None is returned to indicate that dataset
         was converted successfully. 
         """
-                
-        # Get converted dataset; this will start the conversion if 
-        # necessary.
+        
+        # Get converted dataset; this will start the conversion if necessary.
         try:
             converted_dataset = dataset.get_converted_dataset( trans, target_type )
         except NoConverterException:
@@ -1044,7 +1054,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             msg = { 'kind': messages.ERROR, 'message': job.stderr }
         elif not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
             msg = messages.PENDING
-            
+        
         return msg
         
 def _get_highest_priority_msg( message_list ):

@@ -26,7 +26,7 @@ class Binary( data.Data ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = 'binary data'
-            dataset.blurb = 'data'
+            dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

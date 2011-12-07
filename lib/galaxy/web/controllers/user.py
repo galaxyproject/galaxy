@@ -15,15 +15,11 @@ from galaxy.security.validate_user_input import validate_email, validate_usernam
 log = logging.getLogger( __name__ )
 
 require_login_template = """
-<h1>Welcome to Galaxy</h1>
-
 <p>
-    This installation of Galaxy has been configured such that only users who are logged in may use it.%s
+    This %s has been configured such that only users who are logged in may use it.%s
 </p>
 <p/>
 """
-require_login_nocreation_template = require_login_template % ""
-require_login_creation_template = require_login_template % "  If you don't already have an account, <a href='%s'>you may create one</a>."
 
 OPENID_PROVIDERS = { 'Google' : 'https://www.google.com/accounts/o8/id',
                      'Yahoo!' : 'http://yahoo.com',
@@ -368,9 +364,17 @@ class User( BaseUIController, UsesFormDefinitions ):
                 redirect_url = url_for( '/' )
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
-                header = require_login_creation_template % web.url_for( action='create', cntrller='user' )
+                create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
+                    web.url_for( action='create', cntrller='user', webapp=webapp )
+                if webapp == 'galaxy':
+                    header = require_login_template % ( "Galaxy instance", create_account_str )
+                else:
+                    header = require_login_template % ( "Galaxy tool shed", create_account_str )
             else:
-                header = require_login_nocreation_template
+                if webapp == 'galaxy':
+                    header = require_login_template % ( "Galaxy instance", "" )
+                else:
+                    header = require_login_template % ( "Galaxy tool shed", "" )
         return trans.fill_template( '/user/login.mako',
                                     webapp=webapp,
                                     email=email,
@@ -405,11 +409,12 @@ class User( BaseUIController, UsesFormDefinitions ):
             status = 'error'
         else:
             trans.handle_user_login( user, webapp )
-            trans.log_event( "User logged in" )
-            message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                ( user.email, referer, url_for( '/' ) )
-            if trans.app.config.require_login:
-                message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
+            if webapp == 'galaxy':
+                trans.log_event( "User logged in" )
+                message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                    ( user.email, referer, url_for( '/' ) )
+                if trans.app.config.require_login:
+                    message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
             success = True
         return ( message, status, user, success )
     @web.expose
@@ -419,10 +424,10 @@ class User( BaseUIController, UsesFormDefinitions ):
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
             else:
                 refresh_frames = [ 'masthead', 'history' ]
+            # Since logging an event requires a session, we'll log prior to ending the session
+            trans.log_event( "User logged out" )
         else:
             refresh_frames = [ 'masthead' ]
-        # Since logging an event requires a session, we'll log prior to ending the session
-        trans.log_event( "User logged out" )
         trans.handle_user_logout( logout_all=logout_all )
         message = 'You have been logged out.<br>You can log in again, <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
             ( trans.request.referer, url_for( '/' ) )
@@ -471,10 +476,8 @@ class User( BaseUIController, UsesFormDefinitions ):
                                                                       cntrller,
                                                                       subscribe_checked,
                                                                       **kwd )
-                    if success and not is_admin and webapp != 'galaxy':
-                        # Must be logging into the community space webapp
-                        trans.handle_user_login( user, webapp )
-                        redirect_url = referer
+                    if webapp == 'community':
+                        redirect_url = url_for( '/' )
                     if success and not is_admin:
                         # The handle_user_login() method has a call to the history_set_default_permissions() method
                         # (needed when logging in with a history), user needs to have default permissions set before logging in

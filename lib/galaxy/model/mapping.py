@@ -373,6 +373,9 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "description" , TEXT ),
     Column( "owner", TrimmedString( 255 ), index=True ),
     Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "metadata", JSONType, nullable=True ),
+    Column( "includes_datatypes", Boolean, index=True, default=False ),
+    Column( "update_available", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 Job.table = Table( "job", metadata,

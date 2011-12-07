@@ -22,13 +22,13 @@ class RepoInputDataModule( InputDataModule ):
         module.state = dict( name="Input Dataset" )
         return module
     @classmethod
-    def from_dict( Class, trans, d, tools_metadata=None, secure=True ):
+    def from_dict( Class, trans, repository_id, changeset_revision, step_dict, tools_metadata=None, secure=True ):
         module = Class( trans )
-        state = from_json_string( d[ "tool_state" ] )
+        state = from_json_string( step_dict[ "tool_state" ] )
         module.state = dict( name=state.get( "name", "Input Dataset" ) )
         return module
     @classmethod
-    def from_workflow_step( Class, trans, tools_metadata, step ):
+    def from_workflow_step( Class, trans, repository_id, changeset_revision, tools_metadata, step ):
         module = Class( trans )
         module.state = dict( name="Input Dataset" )
         if step.tool_inputs and "name" in step.tool_inputs:
@@ -39,35 +39,38 @@ class RepoToolModule( ToolModule ):
     
     type = "tool"
     
-    def __init__( self, trans, tools_metadata, tool_id ):
+    def __init__( self, trans, repository_id, changeset_revision, tools_metadata, tool_id ):
         self.trans = trans
         self.tools_metadata = tools_metadata
         self.tool_id = tool_id
         self.tool = None
+        self.errors = None
         for tool_dict in tools_metadata:
             if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
-                self.tool = load_tool( trans, os.path.abspath( tool_dict[ 'tool_config' ] ) )
+                self.tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
+                if message and self.tool is None:
+                    self.errors = 'unavailable'
+                break
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
-        self.errors = None
     @classmethod
-    def new( Class, trans, tools_metadata, tool_id=None ):
-        module = Class( trans, tools_metadata, tool_id )
+    def new( Class, trans, repository_id, changeset_revision, tools_metadata, tool_id=None ):
+        module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
     @classmethod
-    def from_dict( Class, trans, d, tools_metadata, secure=True ):
-        tool_id = d[ 'tool_id' ]
-        module = Class( trans, tools_metadata, tool_id )
+    def from_dict( Class, trans, repository_id, changeset_revision, step_dict, tools_metadata, secure=True ):
+        tool_id = step_dict[ 'tool_id' ]
+        module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
         module.state = DefaultToolState()
         if module.tool is not None:
-            module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
-        module.errors = d.get( "tool_errors", None )
+            module.state.decode( step_dict[ "tool_state" ], module.tool, module.trans.app, secure=secure )
+        module.errors = step_dict.get( "tool_errors", None )
         return module
     @classmethod
-    def from_workflow_step( Class, trans, tools_metadata, step ):
-        module = Class( trans, tools_metadata, step.tool_id )
+    def from_workflow_step( Class, trans, repository_id, changeset_revision, tools_metadata, step ):
+        module = Class( trans, repository_id, changeset_revision, tools_metadata, step.tool_id )
         module.state = DefaultToolState()
         if module.tool:
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
@@ -115,18 +118,18 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
     def __init__( self, module_types ):
         self.module_types = module_types
     def new( self, trans, type, tools_metadata=None, tool_id=None ):
-        """Return module for type and (optional) tool_id intialized with new / default state."""
+        """Return module for type and (optional) tool_id initialized with new / default state."""
         assert type in self.module_types
         return self.module_types[type].new( trans, tool_id )
-    def from_dict( self, trans, d, **kwargs ):
-        """Return module initialized from the data in dictionary `d`."""
-        type = d[ 'type' ]
+    def from_dict( self, trans, repository_id, changeset_revision, step_dict, **kwd ):
+        """Return module initialized from the data in dictionary `step_dict`."""
+        type = step_dict[ 'type' ]
         assert type in self.module_types
-        return self.module_types[ type ].from_dict( trans, d, **kwargs )
-    def from_workflow_step( self, trans, tools_metadata, step ):
+        return self.module_types[ type ].from_dict( trans, repository_id, changeset_revision, step_dict, **kwd )
+    def from_workflow_step( self, trans, repository_id, changeset_revision, tools_metadata, step ):
         """Return module initialized from the WorkflowStep object `step`."""
         type = step.type
-        return self.module_types[ type ].from_workflow_step( trans, tools_metadata, step )
+        return self.module_types[ type ].from_workflow_step( trans, repository_id, changeset_revision, tools_metadata, step )
 
 module_factory = RepoWorkflowModuleFactory( dict( data_input=RepoInputDataModule, tool=RepoToolModule ) )
 
@@ -153,6 +156,8 @@ class WorkflowController( BaseUIController ):
     @web.expose
     def generate_workflow_image( self, trans, repository_metadata_id, workflow_name, webapp='community' ):
         repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository_id = trans.security.encode_id( repository_metadata.repository_id )
+        changeset_revision = repository_metadata.changeset_revision
         metadata = repository_metadata.metadata
         workflow_name = decode( workflow_name )
         for workflow_dict in metadata[ 'workflows' ]:
@@ -162,7 +167,7 @@ class WorkflowController( BaseUIController ):
             tools_metadata = metadata[ 'tools' ]
         else:
             tools_metadata = []
-        workflow, missing_tool_tups = self.__workflow_from_dict( trans, workflow_dict, tools_metadata )
+        workflow, missing_tool_tups = self.__workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id, changeset_revision )
         data = []
         canvas = svgfig.canvas( style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left" )
         text = svgfig.SVG( "g" )
@@ -179,7 +184,7 @@ class WorkflowController( BaseUIController ):
         max_width, max_x, max_y = 0, 0, 0
         for step in workflow.steps:
             step.upgrade_messages = {}
-            module = module_factory.from_workflow_step( trans, tools_metadata, step )
+            module = module_factory.from_workflow_step( trans, repository_id, changeset_revision, tools_metadata, step )
             tool_errors = module.type == 'tool' and not module.tool
             module_data_inputs = self.__get_data_inputs( step, module )
             module_data_outputs = self.__get_data_outputs( step, module, workflow.steps )
@@ -308,11 +313,11 @@ class WorkflowController( BaseUIController ):
                 data_outputs.append( data_outputs_dict )       
                 return data_outputs
         return module.get_data_outputs()
-    def __workflow_from_dict( self, trans, data, tools_metadata ):
+    def __workflow_from_dict( self, trans, workflow_dict, tools_metadata, repository_id, changeset_revision ):
         """Creates and returns workflow object from a dictionary."""
         trans.workflow_building_mode = True
         workflow = model.Workflow()
-        workflow.name = data[ 'name' ]
+        workflow.name = workflow_dict[ 'name' ]
         workflow.has_errors = False
         steps = []
         # Keep ids for each step that we need to use to make connections.
@@ -322,12 +327,12 @@ class WorkflowController( BaseUIController ):
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         # First pass to build step objects and populate basic values
-        for key, step_dict in data[ 'steps' ].iteritems():
+        for key, step_dict in workflow_dict[ 'steps' ].iteritems():
             # Create the model class for the step
             step = model.WorkflowStep()
             step.name = step_dict[ 'name' ]
             step.position = step_dict[ 'position' ]
-            module = module_factory.from_dict( trans, step_dict, tools_metadata=tools_metadata, secure=False )
+            module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata, secure=False )
             if module.type == 'tool' and module.tool is None:
                 # A required tool is not available in the current repository.
                 step.tool_errors = 'unavailable'
@@ -379,9 +384,8 @@ class WorkflowController( BaseUIController ):
                 to_file.write( to_json_string( workflow_data ) )
                 return open( tmp_fname )
             galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-            # TODO: support https in the following url.
-            url = 'http://%s/workflow/import_workflow?tool_shed_url=%s&repository_metadata_id=%s&workflow_name=%s&webapp=%s' % \
-                ( galaxy_url, trans.request.host, repository_metadata_id, encode( workflow_name ), webapp )
+            url = '%s/workflow/import_workflow?tool_shed_url=%s&repository_metadata_id=%s&workflow_name=%s&webapp=%s' % \
+                ( galaxy_url, url_for( '', qualified=True ), repository_metadata_id, encode( workflow_name ), webapp )
             return trans.response.send_redirect( url )
         return trans.response.send_redirect( web.url_for( controller='workflow',
                                                           action='view_workflow',
