@@ -376,7 +376,7 @@ var
     DATA_OK = "Ready for display",
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 5,
-    CACHED_DATA = 5;
+    DATA_CACHE_SIZE = 20;
     
 /**
  * Round a number to a given number of decimal places.
@@ -769,6 +769,13 @@ Drawable.prototype.action_icons_def = [
 
 extend(Drawable.prototype, {
     init: function() {},
+    can_draw: function() {
+        if (this.enabled && this.content_visible) { 
+            return true;
+        }
+        
+        return false;
+    },
     request_draw: function() {},
     _draw: function() {},
     to_json: function() {},
@@ -950,6 +957,19 @@ var DrawableGroup = function(name, view, container, prefs) {
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
+    /*
+    action_icons_def: [
+    // Create composite track from group's tracks.
+    {
+        name: "composite-icon",
+        title: "Show composite track",
+        css_class: "layers-stack",
+        on_click_fn: function(group) {
+            group.show_composite_track();
+        }
+    }
+    ].concat(Drawable.prototype.action_icons_def),
+    */
     build_container_div: function() {
         return $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
     },
@@ -959,14 +979,24 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         this.name_div = $("<div/>").addClass("track-name").text(this.name).appendTo(header_div);
         return header_div;
     },
-    hide_contents : function () {
+    hide_contents: function () {
         this.content_div.hide();
     },
-    show_contents : function() {
+    show_contents: function() {
         // Show the contents div and labels (if present)
         this.content_div.show();
         // Request a redraw of the content
         this.request_draw();
+    },
+    update_icons: function() {
+        // TODO: only show icon for compositing if all tracks are the same type.  
+    },
+    /**
+     * Show composite track using group's tracks.
+     */
+    show_composite_track: function() {
+        this.composite_track = new CompositeTiledTrack(this.drawables, this.view, this);
+        this.composite_track.request_draw();
     }
 });
 
@@ -2532,7 +2562,7 @@ extend(Track.prototype, Drawable.prototype, {
             name: "overview_icon",
             title: "Set as overview",
             css_class: "overview-icon",
-            on_click_fn: function() {
+            on_click_fn: function(track) {
                 track.view.set_overview(track);
             }
         },
@@ -2573,6 +2603,12 @@ extend(Track.prototype, Drawable.prototype, {
         // Remove track.
         Drawable.prototype.action_icons_def[2]
     ],
+    can_draw: function() {        
+        if ( this.dataset_id && Drawable.prototype.can_draw.call(this) ) { 
+            return true;
+        }
+        return false;
+    },
     build_container_div: function () {
         return $("<div/>").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
     },
@@ -2807,7 +2843,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         // Show/hide filter icon.
         //
-        if (track.filters_available > 0) {
+        if (track.filters_available) {
             track.action_icons.filters_icon.show();
         }
         else {
@@ -2855,15 +2891,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * can manage drawing.
      */
     _draw: function(force, clear_after) {
-        if (!this.enabled) { return; }
-
-        // TODO: There should probably be a general way to disable content drawing 
-        //       for all drawables. However the button to toggle this is currently
-        //       only present for Track instances.
-        if (!this.content_visible) { return; }
-        
-        // HACK: ReferenceTrack can draw without dataset ID, but other tracks cannot.
-        if ( !(this instanceof ReferenceTrack) && (!this.dataset_id) ) { return; }
+        if ( !this.can_draw() ) { return; }
         
         var low = this.view.low,
             high = this.view.high,
@@ -3136,6 +3164,38 @@ extend(LabelTrack.prototype, Track.prototype, {
     }
 });
 
+/**
+ * A tiled track composed of multiple other tracks.
+ */
+var CompositeTiledTrack = function(drawables, view, container) {
+    TiledTrack.call(this, "Composite Track", view, container);
+    this.drawables = drawables;
+    this.enabled = true;
+    // HACK: tile cache should be (but is not) set up in TiledTrack or earlier.
+    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
+};
+extend(CompositeTiledTrack.prototype, TiledTrack.prototype, {
+    init: function() {
+        console.log("initing CompositeTiledTrack");
+        this.enabled = true;  
+    },
+    can_draw: Drawable.prototype.can_draw,
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
+        // Check tile cache, if found show existing tile in correct position
+        var 
+            key = this._gen_tile_cache_key(width, w_scale, tile_index),
+            tile = ( force ? undefined : this.tile_cache.get(key) );
+        if (tile) { 
+            this.show_tile(tile, parent_element, w_scale);
+            return tile;
+        }
+        
+        // TODO: Try to build tile.
+        
+        return tile;
+    }
+});
+
 var ReferenceTrack = function (view) {
     TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack }, {});
     
@@ -3148,7 +3208,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
-    this.data_manager = new ReferenceTrackDataManager(CACHED_DATA, this, false);
+    this.data_manager = new ReferenceTrackDataManager(DATA_CACHE_SIZE, this, false);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
@@ -3157,6 +3217,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;  
     },
+    can_draw: Drawable.prototype.can_draw,
     /**
      * Draw ReferenceTrack tile.
      */
@@ -3199,7 +3260,7 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs) {
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.data_manager = new DataManager(CACHED_DATA, this);
+    this.data_manager = new DataManager(DATA_CACHE_SIZE, this);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.left_offset = 0;
 
@@ -3386,7 +3447,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     this.inc_slots = {};
     this.start_end_dct = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
-    this.data_manager = new DataManager(20, this);
+    this.data_manager = new DataManager(DATA_CACHE_SIZE, this);
     this.left_offset = 200;
 
     // this.painter = painters.LinkedFeaturePainter;
