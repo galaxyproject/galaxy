@@ -224,7 +224,7 @@ class IntegerToolParameter( TextToolParameter ):
                 int( self.value )
             except:
                 raise ValueError( "An integer is required" )
-        elif self.value is None:
+        elif self.value is None and not self.optional:
             raise ValueError( "The settings for the field named '%s' require a 'value' setting and optionally a default value which must be an integer" % self.name )
         self.min = elem.get( 'min' )
         self.max = elem.get( 'max' )
@@ -296,7 +296,7 @@ class FloatToolParameter( TextToolParameter ):
                 float( self.value )
             except:
                 raise ValueError( "A real number is required" )
-        elif self.value is None:
+        elif self.value is None and not self.optional:
             raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be a real number" )
         if self.min:
             try:
