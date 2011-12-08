@@ -13,7 +13,7 @@
             <div class="toolTitleNoSection">
         %endif
             <%
-                if tool.input_required:
+                if not tool.tool_type.startswith( 'data_source' ):
                     link = h.url_for( controller='tool_runner', tool_id=tool.id )
                 else:
                     link = h.url_for( tool.action, ** tool.get_static_param_values( t ) )

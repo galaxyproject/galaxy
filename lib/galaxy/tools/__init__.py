@@ -386,6 +386,16 @@ class Tool:
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
+        #setup initial attribute values
+        self.inputs = odict()
+        self.inputs_by_page = list()
+        self.display_by_page = list()
+        self.action = '/tool_runner/index'
+        self.target = 'galaxy_main'
+        self.method = 'post'
+        self.check_values = True
+        self.nginx_upload = False
+        self.input_required = False
         # Define a place to keep track of all input parameters.  These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -565,11 +575,12 @@ class Tool:
         """
         # Load parameters (optional)
         input_elem = root.find("inputs")
+        enctypes = set()
         if input_elem:
             # Handle properties of the input form
-            self.check_values = util.string_as_bool( input_elem.get("check_values", "true") )
-            self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", "false" ) )
-            self.action = input_elem.get( 'action', '/tool_runner/index' )
+            self.check_values = util.string_as_bool( input_elem.get("check_values", self.check_values ) )
+            self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
+            self.action = input_elem.get( 'action', self.action )
             # If we have an nginx upload, save the action as a tuple instead of
             # a string. The actual action needs to get url_for run to add any
             # prefixes, and we want to avoid adding the prefix to the
@@ -582,13 +593,9 @@ class Tool:
                                      'hidden POST parameters' )
                 self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
                         urllib.unquote_plus(self.action))
-            self.target = input_elem.get( "target", "galaxy_main" )
-            self.method = input_elem.get( "method", "post" )
+            self.target = input_elem.get( "target", self.target )
+            self.method = input_elem.get( "method", self.method )
             # Parse the actual parameters
-            self.inputs = odict()
-            self.inputs_by_page = list()
-            self.display_by_page = list()
-            enctypes = set()
             # Handle multiple page case
             pages = input_elem.findall( "page" )
             for page in ( pages or [ input_elem ] ):
@@ -596,22 +603,24 @@ class Tool:
                 self.inputs_by_page.append( inputs )
                 self.inputs.update( inputs )
                 self.display_by_page.append( display )
-            self.display = self.display_by_page[0]
-            self.npages = len( self.inputs_by_page )
-            self.last_page = len( self.inputs_by_page ) - 1
-            self.has_multiple_pages = bool( self.last_page )
-            # Determine the needed enctype for the form
-            if len( enctypes ) == 0:
-                self.enctype = "application/x-www-form-urlencoded"
-            elif len( enctypes ) == 1:
-                self.enctype = enctypes.pop()
-            else:
-                raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
+        else:
+            self.inputs_by_page.append( self.inputs )
+            self.display_by_page.append( None )
+        self.display = self.display_by_page[0]
+        self.npages = len( self.inputs_by_page )
+        self.last_page = len( self.inputs_by_page ) - 1
+        self.has_multiple_pages = bool( self.last_page )
+        # Determine the needed enctype for the form
+        if len( enctypes ) == 0:
+            self.enctype = "application/x-www-form-urlencoded"
+        elif len( enctypes ) == 1:
+            self.enctype = enctypes.pop()
+        else:
+            raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
         # Check if the tool either has no parameters or only hidden (and
         # thus hardcoded) parameters. FIXME: hidden parameters aren't
         # parameters at all really, and should be passed in a different
         # way, making this check easier.
-        self.input_required = False
         for param in self.inputs.values():
             if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
                 self.input_required = True
@@ -943,7 +952,7 @@ class Tool:
             return False
         # This is probably the best bet for detecting external web tools
         # right now
-        if self.action != "/tool_runner/index":
+        if self.tool_type.startswith( 'data_source' ):
             return False
         # HACK: upload is (as always) a special case becuase file parameters
         #       can't be persisted.
