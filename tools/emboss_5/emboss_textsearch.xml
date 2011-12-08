@@ -1,8 +1,8 @@
 <tool id="EMBOSS: textsearch98" name="textsearch" version="5.0.0">
   <description>Search sequence documentation. Slow, use SRS and Entrez!</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>textsearch -sequence $input1 -outfile $out_file1 -pattern "$pattern" -casesensitive -heading $heading -usa $usa -accession $accession -name $search_name -description $description -html
-  $html_out1 -auto</command>
+  <command>textsearch -sequence '$input1' -outfile '$out_file1' -pattern '$pattern' -casesensitive -heading '$heading' -usa '$usa' -accession '$accession' -name '$search_name' -description '$description' -html
+  '$html_out1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

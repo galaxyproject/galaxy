@@ -1,7 +1,7 @@
 <tool id="EMBOSS: chips10" name="chips" version="5.0.0">
   <description>Codon usage statistics</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>chips -seqall $input1 -outfile $out_file1 -sum $sum -auto</command>
+  <command>chips -seqall '$input1' -outfile '$out_file1' -sum '$sum' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>On query</label>

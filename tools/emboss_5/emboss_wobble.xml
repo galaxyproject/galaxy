@@ -1,7 +1,7 @@
 <tool id="EMBOSS: wobble108" name="wobble" version="5.0.0">
   <description>Wobble base plot</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl wobble -sequence $input1 -graph png -goutfile $ofile1 -outfile $ofile2 -window "$window" -bases "$bases" -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl wobble -sequence '$input1' -graph png -goutfile '$ofile1' -outfile '$ofile2' -window '$window' -bases '$bases' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequence</label>

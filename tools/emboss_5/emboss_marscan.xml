@@ -1,7 +1,7 @@
 <tool id="EMBOSS: marscan49" name="marscan" version="5.0.0">
   <description>Finds MAR/SAR sites in nucleic sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>marscan -sequence $input1 -outfile $out_file1 -rformat2 $out_format1 -auto</command>
+  <command>marscan -sequence '$input1' -outfile '$out_file1' -rformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

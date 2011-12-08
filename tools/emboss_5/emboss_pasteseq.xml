@@ -1,7 +1,7 @@
 <tool id="EMBOSS: pasteseq66" name="pasteseq" version="5.0.0">
   <description>Insert one sequence into another</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>pasteseq -asequence $input2 -bsequence $input1 -outseq $out_file1 -pos $pos -osformat3 $out_format1 -auto</command>
+  <command>pasteseq -asequence '$input2' -bsequence '$input1' -outseq '$out_file1' -pos '$pos' -osformat3 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Main sequence</label>

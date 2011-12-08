@@ -1,7 +1,7 @@
 <tool id="EMBOSS: matcher52" name="matcher" version="5.0.0">
   <description>Finds the best local alignments between two sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>matcher -asequence $input1 -bsequence $input2 -outfile $out_file1 -alternatives $alternatives -gapopen $gapopen -gapextend $gapextend -aformat3 $out_format1 -auto</command>
+  <command>matcher -asequence '$input1' -bsequence '$input2' -outfile '$out_file1' -alternatives '$alternatives' -gapopen '$gapopen' -gapextend '$gapextend' -aformat3 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence 1</label>

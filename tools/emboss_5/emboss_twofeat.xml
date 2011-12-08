@@ -1,9 +1,9 @@
 <tool id="EMBOSS: twofeat104" name="twofeat" version="5.0.0">
   <description>Finds neighbouring pairs of features in sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>twofeat -sequence $input1 -outfile $out_file1 -atype "$atype" -btype "$btype" -minrange "$minrange" -maxrange "$maxrange" -asource "$asource" -asense $asense -aminscore "$aminscore"
-  -amaxscore "$amaxscore" -atag "$atag" -avalue "$avalue" -bsource "$bsource" -bsense "$bsense" -bminscore "$bminscore" -bmaxscore "$bmaxscore" -btag "$btag" -bvalue "$bvalue" -overlap $overlap
-  -rangetype $rangetype -sense $sense -order $order -twoout $twoout -typeout "$typeout" -rformat2 $out_format1 -auto</command>
+  <command>twofeat -sequence '$input1' -outfile '$out_file1' -atype '$atype' -btype '$btype' -minrange '$minrange' -maxrange '$maxrange' -asource '$asource' -asense '$asense' -aminscore '$aminscore'
+  -amaxscore '$amaxscore' -atag '$atag' -avalue '$avalue' -bsource '$bsource' -bsense '$bsense' -bminscore '$bminscore' -bmaxscore '$bmaxscore' -btag '$btag' -bvalue '$bvalue' -overlap '$overlap'
+  -rangetype '$rangetype' -sense '$sense' -order '$order' -twoout '$twoout' -typeout '$typeout' -rformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

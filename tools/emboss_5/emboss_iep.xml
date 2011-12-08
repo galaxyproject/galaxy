@@ -1,7 +1,7 @@
 <tool id="EMBOSS: iep45" name="iep" version="5.0.0">
   <description>Calculates the isoelectric point of a protein</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>iep -sequence $input1 -outfile $out_file1 -step $step -amino $amino -graph png -termini $termini -auto</command>
+  <command>iep -sequence '$input1' -outfile '$out_file1' -step '$step' -amino '$amino' -graph png -termini '$termini' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

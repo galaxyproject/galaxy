@@ -1,7 +1,7 @@
 <tool id="EMBOSS: notseq61" name="notseq" version="5.0.0">
   <description>Exclude a set of sequences and write out the remaining ones</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>notseq -sequence $input1 -outseq $out_file1 -exclude "$exclude" -osformat3 $out_format1 -auto</command>
+  <command>notseq -sequence '$input1' -outseq '$out_file1' -exclude '$exclude' -osformat3 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>

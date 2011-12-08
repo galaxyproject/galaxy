@@ -1,7 +1,7 @@
 <tool id="EMBOSS: dreg27" name="dreg" version="5.0.0">
   <description>Regular expression search of a nucleotide sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>dreg -sequence $input1 -outfile $out_file1 -pattern "$pattern" -raccshow3 "no" -rusashow3 "no" -rdesshow3 "no" -auto</command>
+  <command>dreg -sequence '$input1' -outfile '$out_file1' -pattern '$pattern' -raccshow3 'no' -rusashow3 'no' -rdesshow3 'no' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence 1</label>

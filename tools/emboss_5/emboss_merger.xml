@@ -1,7 +1,7 @@
 <tool id="EMBOSS: merger54" name="merger" version="5.0.0">
   <description>Merge two overlapping nucleic acid sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>merger -asequence $input1 -bsequence $input2 -outseq $out_file1 -outfile $out_file2 -gapopen $gapopen -gapextend $gapextend -osformat4 $out_format1 -aformat3 $out_format2 -auto</command>
+  <command>merger -asequence '$input1' -bsequence '$input2' -outseq '$out_file1' -outfile '$out_file2' -gapopen '$gapopen' -gapextend '$gapextend' -osformat4 '$out_format1' -aformat3 '$out_format2' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence 1</label>

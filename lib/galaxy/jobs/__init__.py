@@ -455,7 +455,7 @@ class JobWrapper( object ):
         job = self.get_job()
         self.sa_session.refresh( job )
         # if the job was deleted, don't fail it
-        if not job.state == model.Job.states.DELETED:
+        if not job.state == job.states.DELETED:
             # Check if the failure is due to an exception
             if exception:
                 # Save the traceback immediately in case we generate another
@@ -490,15 +490,18 @@ class JobWrapper( object ):
                     self.app.object_store.update_from_file(dataset.id, create=True)
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
-            job.state = model.Job.states.ERROR
+            job.state = job.states.ERROR
             job.command_line = self.command_line
             job.info = message
             self.sa_session.add( job )
             self.sa_session.flush()
+        #Perform email action even on failure.
+        for pja in [x for x in job.post_job_actions if x.action_type == "EmailAction"]:
+            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job)
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             self.tool.job_failed( self, message, exception )
-        if self.app.config.cleanup_job == 'always':
+        if self.app.cleanup_job == 'always' or (self.app.config.cleanup_job == 'onsuccess' and job.state == job.states.DELETED):
             self.cleanup()
 
     def change_state( self, state, info = False ):
@@ -541,14 +544,9 @@ class JobWrapper( object ):
         self.sa_session.expunge_all()
         job = self.get_job()
         # if the job was deleted, don't finish it
-        if job.state == job.states.DELETED:
-            if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
-                self.cleanup()
-            return
-        elif job.state == job.states.ERROR:
-            # Job was deleted by an administrator
-            self.fail( job.info )
-            return
+        if job.state == job.states.DELETED or job.state == job.states.ERROR:
+            #ERROR at this point means the job was deleted by an administrator.
+            return self.fail( job.info )
         if stderr:
             job.state = job.states.ERROR
         else:
@@ -571,8 +569,7 @@ class JobWrapper( object ):
                     if os.path.exists( dataset_path.real_path ) and os.stat( dataset_path.real_path ).st_size > 0:
                         log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead" % ( dataset_path.false_path, dataset_path.real_path ) )
                     else:
-                        self.fail( "Job %s's output dataset(s) could not be read" % job.id )
-                        return
+                        return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
         job_context = ExpressionContext( dict( stdout = stdout, stderr = stderr ) )
         job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
         def in_directory( file, directory ):

@@ -1,7 +1,7 @@
 <tool id="EMBOSS: cpgplot15" name="cpgplot" version="5.0.0">
   <description>Plot CpG rich areas</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_cpgplot_wrapper.pl cpgplot -sequence $input1 -window $window -minlen $minlen -minpc $minpc -outfile $outfile -graph png -goutfile $goutfile -outfeat $outfeat -minoe $minoe -auto</command>
+  <command interpreter="perl">emboss_cpgplot_wrapper.pl cpgplot -sequence '$input1' -window '$window' -minlen '$minlen' -minpc '$minpc' -outfile '$outfile' -graph png -goutfile '$goutfile' -outfeat '$outfeat' -minoe '$minoe' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>On query</label>

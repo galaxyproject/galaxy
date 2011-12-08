@@ -1,7 +1,7 @@
 <tool id="EMBOSS: equicktandem31" name="equicktandem" version="5.0.0">
   <description>Finds tandem repeats</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>equicktandem -sequence $input1 -outfile $out_file1 -origfile $ofile2 -maxrepeat $maxrepeat -threshold $threshold -rformat2 $out_format1 -auto</command>
+  <command>equicktandem -sequence '$input1' -outfile '$out_file1' -origfile '$ofile2' -maxrepeat '$maxrepeat' -threshold '$threshold' -rformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequence</label>

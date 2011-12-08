@@ -2,7 +2,7 @@
   <!-- produces random outputs each time -->
   <description>Shuffles a set of sequences maintaining composition</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>shuffleseq -sequence $input1 -outseq $out_file1 -shuffle "$shuffle" -osformat2 $out_format1 -auto</command>
+  <command>shuffleseq -sequence '$input1' -outseq '$out_file1' -shuffle '$shuffle' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>

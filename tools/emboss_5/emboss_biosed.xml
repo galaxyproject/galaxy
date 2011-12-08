@@ -1,7 +1,7 @@
 <tool id="EMBOSS: biosed4" name="biosed" version="5.0.0">
   <description>Replace or delete sequence sections</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>biosed -sequence $input1 -outseq $out_file1 -target "$target" -replace "$replace" -osformat2 "$out_format1" -auto</command>
+  <command>biosed -sequence '$input1' -outseq '$out_file1' -target '$target' -replace '$replace' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>

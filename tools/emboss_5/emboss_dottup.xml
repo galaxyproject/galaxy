@@ -1,7 +1,7 @@
 <tool id="EMBOSS: dottup26" name="dottup" version="5.0.0">
   <description>Displays a wordmatch dotplot of two sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl dottup -asequence $input1 -bsequence $input2 -goutfile $out_file1 -wordsize $wordsize -boxit $boxit -graph png  -xygraph png -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl dottup -asequence '$input1' -bsequence '$input2' -goutfile '$out_file1' -wordsize '$wordsize' -boxit '$boxit' -graph png  -xygraph png -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence 1</label>

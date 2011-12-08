@@ -2,8 +2,8 @@
   <!-- info contains file information always -->
   <description>Displays some simple information about sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>infoseq -sequence $input1 -outfile $out_file1 -html $html_out1 -heading $heading -usa $usa -name $disname -accession $accession -gi $gi -version $version -type $type -length $length -pgc
-  $pgc -description $description -auto</command>
+  <command>infoseq -sequence '$input1' -outfile '$out_file1' -html '$html_out1' -heading '$heading' -usa '$usa' -name '$disname' -accession '$accession' -gi '$gi' -version '$version' -type '$type' -length '$length' -pgc
+  '$pgc' -description '$description' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

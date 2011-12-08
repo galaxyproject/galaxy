@@ -1,7 +1,7 @@
 <tool id="EMBOSS: seqmatchall83" name="seqmatchall" version="5.0.0">
   <description>All-against-all comparison of a set of sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>seqmatchall -sequence $input1 -outfile $out_file1 -wordsize $wordsize -aformat2 $out_format1 -auto</command>
+  <command>seqmatchall -sequence '$input1' -outfile '$out_file1' -wordsize '$wordsize' -aformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>

@@ -10,7 +10,7 @@
         <filter>${dataset.dbkey in $builds}</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
         <url>${ucsc_link}db=${qp($bigbed_file.dbkey)}&amp;hgt.customText=${qp($track.url)}</url>
-        <param type="data" name="bigbed_file" url="galaxy_${DATASET_HASH}.bigbed" strip_https="True" />
-        <param type="template" name="track" viewable="True" strip_https="True">track type=bigBed name="${bigbed_file.name}" bigDataUrl=${bigbed_file.url} db=${bigbed_file.dbkey}</param>
+        <param type="data" name="bigbed_file" url="galaxy_${DATASET_HASH}.bigbed" />
+        <param type="template" name="track" viewable="True">track type="bigBed" name="${bigbed_file.name.replace( '\\', '\\\\' ).replace( '"', '\\"' )}" bigDataUrl="${bigbed_file.url}" db="${bigbed_file.dbkey}"</param>
     </dynamic_links>
 </display>

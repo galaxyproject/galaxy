@@ -1,7 +1,7 @@
 <tool id="EMBOSS: noreturn60" name="noreturn" version="5.0.0">
   <description>Removes carriage return from ASCII files</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>noreturn -infile $input1 -outfile $out_file1 -system $system -auto</command>
+  <command>noreturn -infile '$input1' -outfile '$out_file1' -system '$system' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>On query</label>

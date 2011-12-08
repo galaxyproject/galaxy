@@ -1,7 +1,7 @@
 <tool id="EMBOSS: charge8" name="charge" version="5.0.0">
   <description>Protein charge plot</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>charge -seqall $input1 -outfile $out_file1 -window $window -auto</command>
+  <command>charge -seqall '$input1' -outfile '$out_file1' -window '$window' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>

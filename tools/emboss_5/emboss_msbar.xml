@@ -1,7 +1,7 @@
 <tool id="EMBOSS: msbar55" name="msbar" version="5.0.0">
   <description>Mutate sequence beyond all recognition</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>msbar -sequence $input1 -outseq $out_file1 -count $count -point $point -block $block -codon $codon -inframe $inframe -minimum $minimum -maximum $maximum -osformat2 $out_format1
+  <command>msbar -sequence '$input1' -outseq '$out_file1' -count '$count' -point '$point' -block '$block' -codon '$codon' -inframe '$inframe' -minimum '$minimum' -maximum '$maximum' -osformat2 '$out_format1'
   -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">

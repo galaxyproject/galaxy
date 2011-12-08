@@ -1,7 +1,7 @@
 <tool id="EMBOSS: chaos7" name="chaos" version="5.0.0">
   <description>Create a chaos game representation plot for a sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl chaos -sequence $input1 -graph png -goutfile $out_file1 -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl chaos -sequence '$input1' -graph png -goutfile '$out_file1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>On query</label>

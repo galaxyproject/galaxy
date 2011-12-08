@@ -1,7 +1,7 @@
 <tool id="EMBOSS: tcode97" name="tcode" version="5.0.0">
   <description>Fickett TESTCODE statistic to identify protein-coding DNA</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>tcode -sequence $input1 -outfile $out_file1 -window "$window" -step "$step" -rformat $out_format1 -auto</command>
+  <command>tcode -sequence '$input1' -outfile '$out_file1' -window '$window' -step '$step' -rformat '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

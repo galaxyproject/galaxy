@@ -2,9 +2,9 @@
   <!-- tool gives memory errors -->
   <description>Show features of a sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>showfeat -sequence $input1 -outfile $out_file1 -matchsource "$matchsource" -matchtype "$matchtype" -matchtag "$matchtag" -matchvalue "$matchvalue" -sort $sort -annotation "$annotation" -id
-  $id -description "$description" -scale "$scale" -width "$width" -collapse $collapse -forward $forward -reverse $reverse -unknown $unknown -strand $strand -source $source -position $position -type
-  $type -tags $tags -values $values -stricttags $stricttags -html $html_out1 -auto</command>
+  <command>showfeat -sequence '$input1' -outfile '$out_file1' -matchsource '$matchsource' -matchtype '$matchtype' -matchtag '$matchtag' -matchvalue '$matchvalue' -sort '$sort' -annotation '$annotation' -id
+  '$id' -description '$description' -scale '$scale' -width '$width' -collapse '$collapse' -forward '$forward' -reverse '$reverse' -unknown '$unknown' -strand '$strand' -source '$source' -position '$position' -type
+  '$type' -tags '$tags' -values '$values' -stricttags '$stricttags' -html '$html_out1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

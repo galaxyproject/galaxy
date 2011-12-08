@@ -1,8 +1,8 @@
 <tool id="EMBOSS: vectorstrip106" name="vectorstrip" version="5.0.0">
   <description>Strips out DNA between a pair of vector sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>vectorstrip -sequence $input1 -vectorsfile $input2 -outseq $ofile1 -outfile $ofile2 -vectorfile yes -mismatch "$mismatch" -besthits $besthits -linkera "$linkera" -linkerb
-  "$linkerb" -osformat4 $out_format1 -auto</command>
+  <command>vectorstrip -sequence '$input1' -vectorsfile '$input2' -outseq '$ofile1' -outfile '$ofile2' -vectorfile yes -mismatch '$mismatch' -besthits '$besthits' -linkera '$linkera' -linkerb
+  '$linkerb' -osformat4 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>
