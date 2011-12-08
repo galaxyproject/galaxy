@@ -291,14 +291,11 @@ class DefaultToolAction( object ):
                     trans.sa_session.flush()
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
                 # Create an empty file immediately
-                # open( data.file_name, "w" ).close()
                 trans.app.object_store.create( data.id, store_name=store_name )
                 if not store_name_set:
                     # Ensure all other datasets in this job are created in the same store
                     store_name = trans.app.object_store.store_name( data.id )
                     store_name_set = True
-                # Fix permissions
-                util.umask_fix_perms( data.file_name, trans.app.config.umask, 0666 )
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
                 # Copy metadata from one of the inputs if requested. 
