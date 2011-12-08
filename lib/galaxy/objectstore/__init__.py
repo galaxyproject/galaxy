@@ -204,6 +204,7 @@ class DiskObjectStore(ObjectStore):
     def __init__(self, config, file_path=None, extra_dirs=None):
         super(DiskObjectStore, self).__init__()
         self.file_path = file_path or config.file_path
+        self.config = config
         if extra_dirs is not None:
             self.extra_dirs = extra_dirs
     
@@ -300,6 +301,7 @@ class DiskObjectStore(ObjectStore):
             if not dir_only:
                 path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % dataset_id)
                 open(path, 'w').close() 
+                util.umask_fix_perms( path, self.config.umask, 0666 )
 
     def empty(self, dataset_id, **kwargs):
         return os.path.getsize(self.get_filename(dataset_id, **kwargs)) > 0
