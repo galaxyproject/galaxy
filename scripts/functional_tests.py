@@ -59,6 +59,7 @@ def main():
     tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
     tool_data_table_config_path = 'tool_data_table_conf.xml'
     tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
+    use_hierarchical_object_store = os.environ.get( 'GALAXY_USE_HIERARCHICAL_OBJECT_STORE', False )
     if os.path.exists( 'tool_data_table_conf.test.xml' ):
         tool_data_table_config_path = 'tool_data_table_conf.test.xml'
     if start_server:
@@ -152,6 +153,10 @@ def main():
 
         if tool_dependency_dir is not None:
             kwargs['tool_dependency_dir'] = tool_dependency_dir
+
+        if use_hierarchical_object_store:
+            kwargs['object_store'] = 'hierarchical'
+            kwargs['hierarchical_object_store_config_file'] = 'hierarchical_object_store_conf.xml.sample'
 
         # Build the Universe Application
         app = UniverseApplication( job_queue_workers = 5,
