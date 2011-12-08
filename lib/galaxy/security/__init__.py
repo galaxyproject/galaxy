@@ -2,7 +2,7 @@
 Galaxy Security
 
 """
-import logging, socket, operator
+import logging, socket, operator, pwd
 from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify

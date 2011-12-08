@@ -282,7 +282,7 @@ class DefaultToolAction( object ):
                 # Create an empty file immediately
                	open( data.file_name, "w" ).close()
                 # Fix permissions
-                util.umask_fix_perms( data.file_name, trans.app.config.umask, 0666)
+                util.umask_fix_perms( data.file_name, trans.app.config.umask, 0666 )
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
                 # Copy metadata from one of the inputs if requested. 

@@ -1,4 +1,4 @@
-import os, tempfile, StringIO
+import os, tempfile, StringIO, pwd, subprocess
 from cgi import FieldStorage
 from galaxy import datatypes, util
 from galaxy.util.odict import odict
@@ -252,6 +252,18 @@ def create_paramfile( trans, uploaded_datasets ):
     """
     Create the upload tool's JSON "param" file.
     """
+    def _chown( path ):
+        try:
+            pwent = pwd.getpwnam( trans.user.email.split('@')[0] )
+            cmd = [ '/usr/bin/sudo', '-E', trans.app.config.external_chown_script, path, pwent[0], str( pwent[3] ) ]
+            log.debug( 'Changing ownership of %s with: %s' % ( path, ' '.join( cmd ) ) )
+            p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            stdout, stderr = p.communicate()
+            assert p.returncode == 0, stderr
+        except Exception, e:
+            log.warning( 'Changing ownership of uploaded file %s failed: %s' % ( path, str( e ) ) )
+
+    # TODO: json_file should go in the working directory
     json_file = tempfile.mkstemp()
     json_file_path = json_file[1]
     json_file = os.fdopen( json_file[0], 'w' )
@@ -279,10 +291,8 @@ def create_paramfile( trans, uploaded_datasets ):
                 is_binary = None
             try:
                 link_data_only = uploaded_dataset.link_data_only
-                chmod_flag = 1
             except:
                 link_data_only = 'copy_files'
-                chmod_flag = 0
             json = dict( file_type = uploaded_dataset.file_type,
                          ext = uploaded_dataset.ext,
                          name = uploaded_dataset.name,
@@ -292,13 +302,17 @@ def create_paramfile( trans, uploaded_datasets ):
                          is_binary = is_binary,
                          link_data_only = link_data_only,
                          space_to_tab = uploaded_dataset.space_to_tab,
+                         in_place = trans.app.config.external_chown_script is None,
                          path = uploaded_dataset.path )
-            if chmod_flag == 0 and trans.app.config.drmaa_external_runjob_script:	
-                 os.chmod(uploaded_dataset.path, 0777)
+            # TODO: This will have to change when we start bundling inputs.
+            # Also, in_place above causes the file to be left behind since the
+            # user cannot remove it unless the parent directory is writable.
+            if link_data_only == 'copy_files' and trans.app.config.external_chown_script:
+                _chown( uploaded_dataset.path )
         json_file.write( to_json_string( json ) + '\n' )
     json_file.close()
-    if trans.app.config.drmaa_external_runjob_script:
-        os.chmod(json_file_path, 0777)
+    if trans.app.config.external_chown_script:
+        _chown( json_file_path )
     return json_file_path
 def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     """
@@ -331,16 +345,12 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
             # Create an empty file immediately
             if not dataset.dataset.external_filename:
                 open( dataset.file_name, "w" ).close()
-                if trans.app.config.drmaa_external_runjob_script:
-                    os.chmod(dataset.file_name, 0777)
     else:
         for i, dataset in enumerate( data_list ):
             job.add_output_dataset( 'output%i' % i, dataset )
             # Create an empty file immediately
             if not dataset.dataset.external_filename:
                 open( dataset.file_name, "w" ).close()
-                if trans.app.config.drmaa_external_runjob_script:
-                    os.chmod(dataset.file_name, 0777)
 
     job.state = job.states.NEW
     trans.sa_session.add( job )

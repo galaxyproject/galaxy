@@ -80,6 +80,7 @@ def add_file( dataset, registry, json_file, output_path ):
     converted_path = None
     stdout = None
     link_data_only = dataset.get( 'link_data_only', 'copy_files' )
+    in_place = dataset.get( 'in_place', True )
 
     try:
         ext = dataset.file_type
@@ -161,7 +162,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 os.close( fd )
                 gzipped_file.close()
                 # Replace the gzipped file with the decompressed file if it's safe to do so
-                if dataset.type in ( 'server_dir', 'path_paste' ):
+                if dataset.type in ( 'server_dir', 'path_paste' ) or not in_place:
                     dataset.path = uncompressed
                 else:
                     shutil.move( uncompressed, dataset.path )
@@ -194,7 +195,7 @@ def add_file( dataset, registry, json_file, output_path ):
                     os.close( fd )
                     bzipped_file.close()
                     # Replace the bzipped file with the decompressed file if it's safe to do so
-                    if dataset.type in ( 'server_dir', 'path_paste' ):
+                    if dataset.type in ( 'server_dir', 'path_paste' ) or not in_place:
                         dataset.path = uncompressed
                     else:
                         shutil.move( uncompressed, dataset.path )
@@ -251,7 +252,7 @@ def add_file( dataset, registry, json_file, output_path ):
                     z.close()
                     # Replace the zipped file with the decompressed file if it's safe to do so
                     if uncompressed is not None:
-                        if dataset.type in ( 'server_dir', 'path_paste' ):
+                        if dataset.type in ( 'server_dir', 'path_paste' ) or not in_place:
                             dataset.path = uncompressed
                         else:
                             shutil.move( uncompressed, dataset.path )
@@ -280,7 +281,6 @@ def add_file( dataset, registry, json_file, output_path ):
                 return
         if data_type != 'binary':
             if link_data_only == 'copy_files':
-                in_place = True
                 if dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
                     in_place = False
                 if dataset.space_to_tab:
@@ -305,27 +305,18 @@ def add_file( dataset, registry, json_file, output_path ):
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
             file_err( err_msg, dataset, json_file )
             return
-    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
-        # Move the dataset to its "real" path
-        if converted_path is not None:
-            shutil.copy( converted_path, output_path )
-            try:
-                os.remove( converted_path )
-            except:
-                pass
-        else:
-            # This should not happen, but it's here just in case
-            shutil.move( dataset.path, output_path )
-            try:
-               os.chmod(output_path,0644)
-            except:
-               pass
-    elif link_data_only == 'copy_files':
+    if link_data_only == 'copy_files' and converted_path is not None:
+        # Move the converted dataset to its "real" path
+        shutil.move( converted_path, output_path )
+    elif link_data_only == 'copy_files' and in_place:
+        # Dataset was not converted but should still be removed from original location
         shutil.move( dataset.path, output_path )
-        try:
-           os.chmod(output_path,0644)
-        except:
- 	   pass 
+    elif link_data_only == 'copy_files':
+        shutil.copy( dataset.path, output_path )
+
+    if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
+        # Groom the dataset content if necessary
+        datatype.groom_dataset_content( output_path )
 
     # Write the job info
     stdout = stdout or 'uploaded %s file' % data_type
@@ -336,9 +327,7 @@ def add_file( dataset, registry, json_file, output_path ):
                  name = dataset.name,
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )
-    if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
-        # Groom the dataset content if necessary
-        datatype.groom_dataset_content( output_path )
+
 def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         if dataset.composite_files:
             os.mkdir( files_path )
@@ -396,7 +385,10 @@ def __main__():
             add_composite_file( dataset, registry, json_file, output_path, files_path )
         else:
             add_file( dataset, registry, json_file, output_path )
+
     # clean up paramfile
+    # TODO: this will not work when running as the actual user unless the
+    # parent directory is writable by the user.
     try:
         os.remove( sys.argv[3] )
     except:
