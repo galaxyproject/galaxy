@@ -96,15 +96,8 @@ class ToolTestCase( TwillTestCase ):
             try:
                 self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes )
             except Exception, e:
-                print '-----------'
-                print 'Job STDOUT:'
-                print '-----------'
-                print self.get_history_dataset_stdout( elem.get( 'id' ) )
-                print '-----------'
-                print 'Job STDERR:'
-                print '-----------'
-                print self.get_history_dataset_stderr( elem.get( 'id' ) )
-                print '-----------'
+                print >>sys.stderr, self.get_job_stdout( elem.get( 'id' ), format=True )
+                print >>sys.stderr, self.get_job_stderr( elem.get( 'id' ), format=True )
                 raise
         self.delete_history( id=self.security.encode_id( latest_history.id ) )
 

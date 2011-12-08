@@ -455,16 +455,27 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Functions associated with datasets (history items) and meta data
-    def get_job_stderr( self, id ):
-        self.visit_page( "dataset/stderr?id=%s" % id )
-        return self.last_page()
+    def _get_job_stream_output( self, hda_id, stream, format ):
+        self.visit_page( "datasets/%s/%s" % ( self.security.encode_id( hda_id ), stream ) )
+        output = self.last_page()
+        if format:
+            msg =  "---------------------- >> begin tool %s << -----------------------\n" % stream
+            msg += output + "\n"
+            msg += "----------------------- >> end tool %s << ------------------------\n" % stream
+        else:
+            msg = output
+        return msg
+
+    def get_job_stdout( self, hda_id, format=False ):
+        return self._get_job_stream_output( hda_id, 'stdout', format )
+
+    def get_job_stderr( self, hda_id, format=False ):
+        return self._get_job_stream_output( hda_id, 'stderr', format )
 
     def _assert_dataset_state( self, elem, state ):
         if elem.get( 'state' ) != state:
             errmsg = "Expecting dataset state '%s', but state is '%s'. Dataset blurb: %s\n\n" % ( state, elem.get('state'), elem.text.strip() )
-            errmsg += "---------------------- >> begin tool stderr << -----------------------\n"
-            errmsg += self.get_job_stderr( elem.get( 'id' ) ) + "\n"
-            errmsg += "----------------------- >> end tool stderr << ------------------------\n"
+            errmsg += self.get_job_stderr( elem.get( 'id' ), format=True )
             raise AssertionError( errmsg )
 
     def check_metadata_for_string( self, patt, hid=None ):
@@ -623,14 +634,6 @@ class TwillTestCase( unittest.TestCase ):
         suffix = os.path.split(fname)[-1] # ignore full path
         fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
         return temp_prefix
-
-    def get_history_dataset_stdout( self, hda_id ):
-        self.visit_page( "/datasets/%s/stdout" % hda_id )
-        return self.last_page()
-
-    def get_history_dataset_stderr( self, hda_id ):
-        self.visit_page( "/datasets/%s/stderr" % hda_id )
-        return self.last_page()
 
     def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
