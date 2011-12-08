@@ -129,13 +129,13 @@ class UploadController( BaseUIController ):
                         # file is being uploaded by parsing the file and adding new entries
                         # to the in-memory trans.app.tool_data_tables dictionary as well as
                         # appending them to the shed's tool_data_table_conf.xml file on disk.
-                        error, error_message = handle_sample_tool_data_table_conf_file( trans, full_path )
+                        error, error_message = handle_sample_tool_data_table_conf_file( trans.app, full_path )
                         if error:
                             message = '%s<br/>%s' % ( message, error_message )
                     if full_path.endswith( '.loc.sample' ):
                         # Handle the special case where a xxx.loc.sample file is
                         # being uploaded by copying it to ~/tool-data/xxx.loc.
-                        copy_sample_loc_file( trans, full_path )
+                        copy_sample_loc_file( trans.app, full_path )
                     # See if the content of the change set was valid.
                     admin_only = len( repository.downloadable_revisions ) != 1
                     handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
@@ -267,7 +267,7 @@ class UploadController( BaseUIController ):
                 if filename_in_archive.endswith( '.loc.sample' ):
                     # Handle the special case where a xxx.loc.sample file is
                     # being uploaded by copying it to ~/tool-data/xxx.loc.
-                    copy_sample_loc_file( trans, filename_in_archive )
+                    copy_sample_loc_file( trans.app, filename_in_archive )
             try:
                 commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
             except Exception, e:

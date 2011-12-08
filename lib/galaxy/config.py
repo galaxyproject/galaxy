@@ -47,11 +47,14 @@ class Configuration( object ):
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
         self.tool_sheds_config = kwargs.get( 'tool_sheds_config_file', 'tool_sheds_conf.xml' )
-        self.enable_unique_workflow_defaults = string_as_bool ( kwargs.get ('enable_unique_workflow_defaults', False ) )
+        self.enable_unique_workflow_defaults = string_as_bool( kwargs.get ( 'enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.len_file_path = kwargs.get( "len_file_path", resolve_path(os.path.join(self.tool_data_path, 'shared','ucsc','chrom'), self.root) )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
+        self.enable_tool_shed_install = string_as_bool( kwargs.get ( 'enable_tool_shed_install', False ) )
+        self.tool_shed_install_config = resolve_path( kwargs.get( "tool_shed_install_config_file", "tool_shed_install.xml" ), self.root )
+        self.install_tool_config = resolve_path( kwargs.get( "install_tool_config_file", "shed_tool_conf.xml" ), self.root )
         if 'tool_config_file' in kwargs:
             tcf = kwargs[ 'tool_config_file' ]
         elif 'tool_config_files' in kwargs:

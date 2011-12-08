@@ -378,6 +378,17 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "update_available", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
+ToolIdGuidMap.table = Table( "tool_id_guid_map", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_id", String( 255 ) ),
+    Column( "tool_version", TEXT ),
+    Column( "tool_shed", TrimmedString( 255 ) ),
+    Column( "repository_owner", TrimmedString( 255 ) ),
+    Column( "repository_name", TrimmedString( 255 ) ),
+    Column( "guid", TEXT, index=True, unique=True ) )
+
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1603,6 +1614,8 @@ assign_mapper( context, Page, Page.table,
                    ) )
                    
 assign_mapper( context, ToolShedRepository, ToolShedRepository.table )
+
+assign_mapper( context, ToolIdGuidMap, ToolIdGuidMap.table )
 
 # Set up proxy so that 
 #   Page.users_shared_with
