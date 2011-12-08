@@ -486,7 +486,6 @@ class JobWrapper( object ):
                     dataset.extension = 'data'
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    print "====== Handing failed job's dataset '%s' with name '%s' to object store" % (dataset.id, dataset.file_name)
                     self.app.object_store.update_from_file(dataset.id, create=True)
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
