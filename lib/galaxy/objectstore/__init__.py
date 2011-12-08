@@ -854,7 +854,7 @@ class S3ObjectStore(ObjectStore):
         return None
 
 
-class HierarchicalObjectStore(ObjectStore):
+class DistributedObjectStore(ObjectStore):
     """
     ObjectStore that defers to a list of backends, for getting objects the
     first store where the object exists is used, objects are created in a
@@ -862,22 +862,22 @@ class HierarchicalObjectStore(ObjectStore):
     """
     
     def __init__(self, config):
-        super(HierarchicalObjectStore, self).__init__()
-        assert config is not None, "hierarchical object store ('object_store = hierarchical') " \
+        super(DistributedObjectStore, self).__init__()
+        assert config is not None, "distributed object store ('object_store = distributed') " \
                                    "requires a config file, please set one in " \
-                                   "'hierarchical_object_store_config_file')"
-        self.hierarchical_config = config
+                                   "'distributed_object_store_config_file')"
+        self.distributed_config = config
         self.backends = {}
         self.weighted_backend_names = []
 
         random.seed()
 
-        self.__parse_hierarchical_config(config)
+        self.__parse_distributed_config(config)
 
-    def __parse_hierarchical_config(self, config):
-        tree = util.parse_xml(self.hierarchical_config)
+    def __parse_distributed_config(self, config):
+        tree = util.parse_xml(self.distributed_config)
         root = tree.getroot()
-        log.debug('Loading backends for hierarchical object store from %s' % self.hierarchical_config)
+        log.debug('Loading backends for distributed object store from %s' % self.distributed_config)
         for elem in [ e for e in root if e.tag == 'backend' ]:
             name = elem.get('name')
             weight = int(elem.get('weight', 1))
@@ -980,6 +980,16 @@ class HierarchicalObjectStore(ObjectStore):
                 return store
         return None
 
+class HierarchicalObjectStore(ObjectStore):
+    """
+    ObjectStore that defers to a list of backends, for getting objects the
+    first store where the object exists is used, objects are always created
+    in the first store.
+    """
+    
+    def __init__(self, backends=[]):
+        super(HierarchicalObjectStore, self).__init__()
+
 def build_object_store_from_config(config):
     """ Depending on the configuration setting, invoke the appropriate object store
     """
@@ -990,8 +1000,10 @@ def build_object_store_from_config(config):
         os.environ['AWS_ACCESS_KEY_ID'] = config.aws_access_key
         os.environ['AWS_SECRET_ACCESS_KEY'] = config.aws_secret_key
         return S3ObjectStore(config=config)
+    elif store == 'distributed':
+        return DistributedObjectStore(config.distributed_object_store_config_file)
     elif store == 'hierarchical':
-        return HierarchicalObjectStore(config.hierarchical_object_store_config_file)
+        return HierarchicalObjectStore()
 
 def convert_bytes(bytes):
     """ A helper function used for pretty printing disk usage """

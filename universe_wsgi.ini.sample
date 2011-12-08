@@ -437,7 +437,7 @@ use_interactive = True
 
 # -- Beta features
 
-# Object store mode (valid options are: disk, s3, hierarchical)
+# Object store mode (valid options are: disk, s3, distributed, hierarchical)
 #object_store = s3
 #aws_access_key = <AWS access key>
 #aws_secret_key = <AWS secret key>
