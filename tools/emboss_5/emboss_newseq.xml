@@ -1,7 +1,7 @@
 <tool id="EMBOSS: newseq59" name="newseq" version="5.0.0">
   <description>Type in a short new sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>newseq -outseq $out_file1 -name "$seqname" -description "$description" -type $type -sequence "$sequence" -osformat5 $out_format1 -auto</command>
+  <command>newseq -outseq '$out_file1' -name '$seqname' -description '$description' -type '$type' -sequence '$sequence' -osformat5 '$out_format1' -auto</command>
   <inputs>
     <param name="seqname" size="10" type="text" value="">
       <label>Name of of the sequence</label>

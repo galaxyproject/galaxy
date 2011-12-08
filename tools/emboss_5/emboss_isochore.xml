@@ -1,8 +1,8 @@
 <tool id="EMBOSS: isochore47" name="isochore" version="5.0.0">
   <description>Plots isochores in large DNA sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence $input1 -outfile $ofile2 -goutfile $ofile1 -graph png -window $window -shift $shift -auto</command>
-  <!--  <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence $input1 -goutfile $ofile1 -graph png -window $window -shift $shift -auto</command>-->
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence '$input1' -outfile '$ofile2' -goutfile '$ofile1' -graph png -window '$window' -shift '$shift' -auto</command>
+  <!--  <command interpreter="perl">emboss_single_outputfile_wrapper.pl isochore -sequence '$input1' -goutfile '$ofile1' -graph png -window '$window' -shift '$shift' -auto</command>-->
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>

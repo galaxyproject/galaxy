@@ -1,8 +1,8 @@
 <tool id="EMBOSS: getorf42" name="getorf" version="5.0.0">
   <description>Finds and extracts open reading frames (ORFs)</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>getorf -sequence $input1 -outseq $out_file1 -table $table -minsize $minsize -maxsize $maxsize -find $find -methionine $methionine -circular $circular -reverse $reverse -flanking $flanking
-  -osformat2 $out_format1 -auto</command>
+  <command>getorf -sequence '$input1' -outseq '$out_file1' -table '$table' -minsize '$minsize' -maxsize '$maxsize' -find '$find' -methionine '$methionine' -circular '$circular' -reverse '$reverse' -flanking '$flanking'
+  -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>

@@ -1,7 +1,7 @@
 <tool id="EMBOSS: nthseq62" name="nthseq" version="5.0.0">
   <description>Writes one sequence from a multiple set of sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>nthseq -sequence $input1 -outseq $out_file1 -number $number -osformat2 $out_format1 -auto</command>
+  <command>nthseq -sequence '$input1' -outseq '$out_file1' -number '$number' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>

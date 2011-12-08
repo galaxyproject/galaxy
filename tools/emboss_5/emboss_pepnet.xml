@@ -2,7 +2,7 @@
   <!-- graphical output file with path information -->
   <description>Displays proteins as a helical net</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>pepnet -sequence $input1 -graph png -goutfile $out_file1 -squares $squares -diamonds $diamonds -octags $octags -amphipathic $amphipathic -auto</command>
+  <command>pepnet -sequence '$input1' -graph png -goutfile '$out_file1' -squares '$squares' -diamonds '$diamonds' -octags '$octags' -amphipathic '$amphipathic' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

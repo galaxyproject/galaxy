@@ -1,7 +1,7 @@
 <tool id="EMBOSS: banana3" name="banana" version="5.0.0">
   <description>Bending and curvature plot in B-DNA</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>banana -sequence $input1 -outfile $out_file1 -graph none -auto</command>
+  <command>banana -sequence '$input1' -outfile '$out_file1' -graph none -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>On query</label>

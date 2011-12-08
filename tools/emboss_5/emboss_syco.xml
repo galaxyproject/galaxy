@@ -2,7 +2,7 @@
   <!-- graphics output -->
   <description>Synonymous codon usage Gribskov statistic plot</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl syco -sequence $input1 -graph png -goutfile $ofile1 -outfile $ofile2 -cfile $cfile -window "$window" -uncommon $uncommon -minimum "$minimum"
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl syco -sequence '$input1' -graph png -goutfile '$ofile1' -outfile '$ofile2' -cfile '$cfile' -window '$window' -uncommon '$uncommon' -minimum '$minimum'
   -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">

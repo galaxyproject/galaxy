@@ -1,7 +1,7 @@
 <tool id="EMBOSS: freak36" name="freak" version="5.0.0">
   <description>Residue/base frequency table or plot</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>freak -seqall $input1 -outfile $out_file1 -window $window -letters $letters -graph png -step $step -auto</command>
+  <command>freak -seqall '$input1' -outfile '$out_file1' -window '$window' -letters '$letters' -graph png -step '$step' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

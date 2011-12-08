@@ -1,7 +1,7 @@
 <tool id="EMBOSS: cirdna11" name="cirdna" version="5.0.0">
   <description>Draws circular maps of DNA constructs</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl cirdna -infile $input1 -graphout png -goutfile $out_file1 -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl cirdna -infile '$input1' -graphout png -goutfile '$out_file1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>On query</label>

@@ -1,7 +1,7 @@
 <tool id="EMBOSS: pepcoil68" name="pepcoil" version="5.0.0">
   <description>Predicts coiled coil regions</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>pepcoil -sequence $input1 -outfile $out_file1 -window $window -coil $coil -frame $frame -other $other -auto</command>
+  <command>pepcoil -sequence '$input1' -outfile '$out_file1' -window '$window' -coil '$coil' -frame '$frame' -other '$other' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

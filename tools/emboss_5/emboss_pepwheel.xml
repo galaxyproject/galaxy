@@ -2,8 +2,8 @@
   <!-- produces png file -->
   <description>Shows protein sequences as helices</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl pepwheel -sequence $input1 -graph png -goutfile $out_file1 -squares $squares -diamonds $diamonds -octags $octags -amphipathic
-  $amphipathic -steps $steps -turns $turns -wheel $wheel -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl pepwheel -sequence '$input1' -graph png -goutfile '$out_file1' -squares '$squares' -diamonds '$diamonds' -octags '$octags' -amphipathic
+  '$amphipathic' -steps '$steps' -turns '$turns' -wheel '$wheel' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

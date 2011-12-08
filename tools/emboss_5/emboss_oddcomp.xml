@@ -2,7 +2,7 @@
   <!-- output contains file location info, commented out functional tests -->
   <description>Find protein sequence regions with a biased composition</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>oddcomp -sequence $input1 -infile $input2 -outfile $out_file1 -window $window -ignorebz $ignorebz -auto</command>
+  <command>oddcomp -sequence '$input1' -infile '$input2' -outfile '$out_file1' -window '$window' -ignorebz '$ignorebz' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

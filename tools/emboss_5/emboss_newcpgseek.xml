@@ -1,7 +1,7 @@
 <tool id="EMBOSS: newcpgseek58" name="newcpgseek" version="5.0.0">
   <description>Reports CpG rich region</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>newcpgseek -sequence $input1 -outfile $out_file1 -score $score -auto</command>
+  <command>newcpgseek -sequence '$input1' -outfile '$out_file1' -score '$score' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequence</label>

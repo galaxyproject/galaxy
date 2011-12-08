@@ -1,7 +1,7 @@
 <tool id="EMBOSS: checktrans9" name="checktrans" version="5.0.0">
   <description>Reports STOP codons and ORF statistics of a protein</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>checktrans -sequence $input1 -outfile $out_file1 -outseq $out_file2 -osformat3 $out_format2 -outfeat $out_file3 -offormat4 $out_format3 -orfml $orfml -addlast $addlast -auto</command>
+  <command>checktrans -sequence '$input1' -outfile '$out_file1' -outseq '$out_file2' -osformat3 '$out_format2' -outfeat '$out_file3' -offormat4 '$out_format3' -orfml '$orfml' -addlast '$addlast' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>

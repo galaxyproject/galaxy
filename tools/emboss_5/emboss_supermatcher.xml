@@ -2,8 +2,8 @@
   <!-- puts file information in output report -->
   <description>Match large sequences against one or more other sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>supermatcher -asequence $input1 -bsequence $input2 -gapopen "$gapopen" -gapextend "$gapextend" -width "$width" -wordlen "$wordlen" -outfile $ofile1 -errorfile $ofile2 -aformat3
-  $out_format1 -auto</command>
+  <command>supermatcher -asequence '$input1' -bsequence '$input2' -gapopen '$gapopen' -gapextend '$gapextend' -width '$width' -wordlen '$wordlen' -outfile '$ofile1' -errorfile '$ofile2' -aformat3
+  '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Large sequences</label>

@@ -1,7 +1,7 @@
 <tool id="EMBOSS: wordcount109" name="wordcount" version="5.0.0">
   <description>Counts words of a specified size in a DNA sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>wordcount -sequence $input1 -outfile $out_file1 -wordsize "$wordsize" -auto</command>
+  <command>wordcount -sequence '$input1' -outfile '$out_file1' -wordsize '$wordsize' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequence</label>

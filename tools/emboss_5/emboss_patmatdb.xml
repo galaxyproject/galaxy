@@ -1,7 +1,7 @@
 <tool id="EMBOSS: patmatdb67" name="patmatdb" version="5.0.0">
   <description>Search a protein sequence with a motif</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>patmatdb -sequence $input1 -outfile $out_file1 -motif "$motif" -rformat3 $out_format1 -auto</command>
+  <command>patmatdb -sequence '$input1' -outfile '$out_file1' -motif '$motif' -rformat3 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Main sequence</label>

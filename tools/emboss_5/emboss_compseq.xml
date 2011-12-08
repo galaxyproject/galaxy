@@ -1,7 +1,7 @@
 <tool id="EMBOSS: compseq14" name="compseq" version="5.0.0">
   <description>Count composition of dimer/trimer/etc words in a sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>compseq -sequence $input1 -outfile $out_file1 -word $word -frame $frame -auto</command>
+  <command>compseq -sequence '$input1' -outfile '$out_file1' -word '$word' -frame '$frame' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>

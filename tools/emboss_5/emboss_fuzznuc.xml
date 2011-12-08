@@ -1,7 +1,7 @@
 <tool id="EMBOSS: fuzznuc37" name="fuzznuc" version="5.0.1">
   <description>Nucleic acid pattern search</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>fuzznuc -sequence $input1 -outfile $out_file1 -pattern '$pattern' -pmismatch $mismatch -complement $complement -rformat2 $out_format1 -auto</command>
+  <command>fuzznuc -sequence '$input1' -outfile '$out_file1' -pattern '$pattern' -pmismatch '$mismatch' -complement '$complement' -rformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>

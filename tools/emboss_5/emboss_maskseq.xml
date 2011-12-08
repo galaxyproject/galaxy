@@ -1,7 +1,7 @@
 <tool id="EMBOSS: maskseq51" name="maskseq" version="5.0.0">
   <description>Mask off regions of a sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>maskseq -sequence $input1 -outseq $out_file1 -regions "$regions" -tolower $tolower -maskchar "$maskchar" -osformat2 $out_format1 -auto</command>
+  <command>maskseq -sequence '$input1' -outseq '$out_file1' -regions '$regions' -tolower '$tolower' -maskchar '$maskchar' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

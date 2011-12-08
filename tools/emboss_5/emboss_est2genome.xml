@@ -1,8 +1,8 @@
 <tool id="EMBOSS: est2genome32" name="est2genome" version="5.0.0">
   <description>Align EST and genomic DNA sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>est2genome -estsequence $input1 -genomesequence $input2 -outfile $out_file1 -match $match -mismatch $mismatch -gappenalty $gappenalty -intronpenalty $intronpenalty -splicepenalty
-  $splicepenalty -minscore $minscore -reverse $reverse -splice $splice -mode $mode -best $best -shuffle $shuffle -seed $seed -align $align -width $width -auto</command>
+  <command>est2genome -estsequence '$input1' -genomesequence '$input2' -outfile '$out_file1' -match '$match' -mismatch '$mismatch' -gappenalty '$gappenalty' -intronpenalty '$intronpenalty' -splicepenalty
+  ''$splice'penalty' -minscore '$minscore' -reverse '$reverse' -splice '$splice' -mode '$mode' -best '$best' -shuffle '$shuffle' -seed '$seed' -align '$align' -width '$width' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>EST sequence(s)</label>
