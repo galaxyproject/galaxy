@@ -330,7 +330,7 @@ class JobWrapper( object ):
         if job.output_datasets:
             da = job.output_datasets[0]
         elif job.output_library_datasets:
-            da = job.output_datasets[0]
+            da = job.output_library_datasets[0]
         if da is not None:
             store_name = self.app.object_store.store_name(da.dataset.id)
         # Create the working dir if necessary

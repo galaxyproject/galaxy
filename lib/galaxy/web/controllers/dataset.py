@@ -358,7 +358,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         """ Primarily used for the S3ObjectStore - get the status of data transfer
         if the file is not in cache """
         data = self._check_dataset(trans, dataset_id)
-        print "dataset.py -> transfer_status: Checking transfer status for dataset %s..." % data.id
+        if isinstance( data, basestring ):
+            return data
+        log.debug( "dataset.py -> transfer_status: Checking transfer status for dataset %s..." % data.id )
         
         # Pulling files in extra_files_path into cache is not handled via this
         # method but that's primarily because those files are typically linked to
@@ -375,10 +377,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
         composite_extensions.append('html') # for archiving composite datatypes
         data = self._check_dataset(trans, dataset_id)
+        if isinstance( data, basestring ):
+            return data
         
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = os.path.join( data.extra_files_path, filename ) # remove after debugging
             file_path = trans.app.object_store.get_filename(data.id, extra_dir='dataset_%s_files' % data.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
