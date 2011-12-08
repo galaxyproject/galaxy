@@ -58,6 +58,11 @@ class UniverseApplication( object ):
         self.toolbox = tools.ToolBox( self.config.tool_configs, self.config.tool_path, self )
         # Search support for tools
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
+        # If enabled, check for tools missing from the distribution because they
+        # have been moved to the tool shed and install all such discovered tools.
+        if self.config.get_bool( 'enable_tool_shed_install', False ):
+            from tools import install_manager
+            self.install_manager = install_manager.InstallManager( self, self.config.tool_shed_install_config, self.config.install_tool_config )
         # Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load history import/export tools

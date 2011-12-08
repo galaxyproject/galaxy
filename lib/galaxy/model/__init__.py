@@ -2671,6 +2671,17 @@ class ToolShedRepository( object ):
         self.update_available = update_available
         self.deleted = deleted
 
+class ToolIdGuidMap( object ):
+    def __init__( self, id=None, create_time=None, tool_id=None, tool_version=None, tool_shed=None, repository_owner=None, repository_name=None, guid=None ):
+        self.id = id
+        self.create_time = create_time
+        self.tool_id = tool_id
+        self.tool_version = tool_version
+        self.tool_shed = tool_shed
+        self.repository_owner = repository_owner
+        self.repository_name = repository_name
+        self.guid = guid
+
 ## ---- Utility methods -------------------------------------------------------
 
 def directory_hash_id( id ):

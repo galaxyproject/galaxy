@@ -186,7 +186,7 @@ def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
                         head, tail = os.path.split( sample_file )
                         if tail == 'tool_data_table_conf.xml.sample':
                             sample_found = True
-                            error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_file )
+                            error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, sample_file )
                             if error:
                                 can_set_metadata = False
                                 invalid_files.append( ( tail, correction_msg ) ) 
@@ -207,7 +207,7 @@ def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
                     for sample_file in sample_files:
                         sample_head, sample_tail = os.path.split( sample_file )
                         if sample_tail == '%s.sample' % index_tail:
-                            copy_sample_loc_file( trans, sample_file )
+                            copy_sample_loc_file( trans.app, sample_file )
                             options.index_file = index_tail
                             options.missing_index_file = None
                             if options.tool_data_table:

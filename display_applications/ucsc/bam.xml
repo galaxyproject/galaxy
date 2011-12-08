@@ -12,6 +12,6 @@
         <url>${ucsc_link}db=${qp($bam_file.dbkey)}&amp;hgt.customText=${qp($track.url)}</url>
         <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" />
         <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" /><!-- UCSC expects index file to exist as bam_file_name.bai -->
-        <param type="template" name="track" viewable="True">track type="bam" name="${bam_file.name.replace( '\\', '\\\\' ).replace( '"', '\\"' )}" bigDataUrl="${bam_file.url}" db="${bam_file.dbkey}"</param>
+        <param type="template" name="track" viewable="True">track type="bam" name="${bam_file.name.replace( '\\', '\\\\' ).replace( '"', '\\"' )}" bigDataUrl="${bam_file.url}" db="${bam_file.dbkey}" pairEndsByName="."</param>
     </dynamic_links>
 </display>

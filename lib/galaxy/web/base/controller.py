@@ -12,7 +12,8 @@ from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
+from galaxy.web.form_builder import WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
 from galaxy.visualization.tracks.data_providers import get_data_provider
 from galaxy.visualization.tracks.visual_analytics import get_tool_def
 from galaxy.security.validate_user_input import validate_username
@@ -2425,11 +2426,11 @@ class Admin( object ):
 
 ## ---- Utility methods -------------------------------------------------------
 
-def copy_sample_loc_file( trans, filename ):
+def copy_sample_loc_file( app, filename ):
     """Copy xxx.loc.sample to ~/tool-data/xxx.loc.sample and ~/tool-data/xxx.loc"""
     head, sample_loc_file = os.path.split( filename )
     loc_file = sample_loc_file.replace( '.sample', '' )
-    tool_data_path = os.path.abspath( trans.app.config.tool_data_path )
+    tool_data_path = os.path.abspath( app.config.tool_data_path )
     # It's ok to overwrite the .sample version of the file.
     shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
     # Only create the .loc file if it does not yet exist.  We don't  
@@ -2470,29 +2471,27 @@ def get_quota( trans, id ):
     id = trans.security.decode_id( id )
     quota = trans.sa_session.query( trans.model.Quota ).get( id )
     return quota
-def handle_sample_tool_data_table_conf_file( trans, filename ):
+def handle_sample_tool_data_table_conf_file( app, filename ):
     """
     Parse the incoming filename and add new entries to the in-memory
-    trans.app.tool_data_tables dictionary as well as appending them 
-    to the shed's tool_data_table_conf.xml file on disk.
+    app.tool_data_tables dictionary as well as appending them to the
+    shed's tool_data_table_conf.xml file on disk.
     """
-    # Parse the incoming file and add new entries to the in-memory 
-    # trans.app.tool_data_tables dictionary.
     error = False
     message = ''
     try:
-        new_table_elems = trans.app.tool_data_tables.add_new_entries_from_config_file( filename )
+        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename )
     except Exception, e:
         message = str( e )
         error = True
     if not error:
         # Add an entry to the end of the tool_data_table_conf.xml file.
-        tdt_config = "%s/tool_data_table_conf.xml" %  trans.app.config.root
+        tdt_config = "%s/tool_data_table_conf.xml" % app.config.root
         if os.path.exists( tdt_config ):
             # Make a backup of the file since we're going to be changing it.
             today = date.today()
             backup_date = today.strftime( "%Y_%m_%d" )
-            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( trans.app.config.root, backup_date )
+            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( app.config.root, backup_date )
             shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
             # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
             fh = tempfile.NamedTemporaryFile( 'wb' )

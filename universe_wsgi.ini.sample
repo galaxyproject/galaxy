@@ -131,6 +131,22 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
 #tool_path = tools
 
+# Enable automatic installation of tools that used to be in the Galaxy
+# distribution but are now in the main Galaxy tool shed.  The tools
+# that will be installed are configured in the config file named
+# tool_shed_install.xml, which is located in the Galaxy install directory.
+# Tools already installed will not be re-installed even if they are
+# referenced in the tool_shed_install.xml file.
+#enable_tool_shed_install = False
+#tool_shed_install_config_file = tool_shed_install.xml
+
+# CRITICAL NOTE: the location in which the tools will be installed is the
+# location pointed to by the "tool_path" attribute in the following file.
+# The default location setting in shed_tool_conf.xml ("../shed_tools") may
+# be problematic for some cluster environments, so make sure to change it
+# if appropriate or use a different file name for the setting.
+#install_tool_config_file = shed_tool_conf.xml
+
 # Directory where data used by tools is located, see the samples in that
 # directory and the wiki for help:
 # http://wiki.g2.bx.psu.edu/Admin/Data%20Integration
