@@ -374,8 +374,7 @@ var
     DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ",
     DATA_LOADING = "Loading data...",
     DATA_OK = "Ready for display",
-    CACHED_TILES_FEATURE = 10,
-    CACHED_TILES_LINE = 5,
+    TILE_CACHE_SIZE = 10,
     DATA_CACHE_SIZE = 20;
     
 /**
@@ -2779,6 +2778,7 @@ var TiledTrack = function(name, view, container, prefs, filters_list, tool_dict,
     this.filters_available = false;
     this.filters_visible = false;
     this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(this, tool_dict) : undefined);
+    this.tile_cache = new Cache(TILE_CACHE_SIZE);
     
     if (this.header_div) {
         //
@@ -3173,8 +3173,6 @@ var CompositeTiledTrack = function(drawables, view, container) {
     TiledTrack.call(this, "Composite Track", view, container);
     this.drawables = drawables;
     this.enabled = true;
-    // HACK: tile cache should be (but is not) set up in TiledTrack or earlier.
-    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
 };
 extend(CompositeTiledTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -3211,7 +3209,6 @@ var ReferenceTrack = function (view) {
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
     this.data_manager = new ReferenceTrackDataManager(DATA_CACHE_SIZE, this, false);
-    this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     build_header_div: function() {},
@@ -3262,7 +3259,6 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.left_offset = 0;
 
     // Define track configuration
@@ -3447,7 +3443,6 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     this.summary_draw_height = 30;
     this.inc_slots = {};
     this.start_end_dct = {};
-    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.left_offset = 200;
 
     // this.painter = painters.LinkedFeaturePainter;
