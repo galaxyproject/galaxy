@@ -2141,7 +2141,14 @@ class BadValue( object ):
     def __init__( self, value ):
         self.value = value
 
-class RawObjectWrapper( object ):
+class ToolParameterValueWrapper( object ):
+    """
+    Base class for object that Wraps a Tool Parameter and Value.
+    """
+    def __nonzero__( self ):
+        return bool( self.value )
+
+class RawObjectWrapper( ToolParameterValueWrapper ):
     """
     Wraps an object so that __str__ returns module_name:class_name.
     """
@@ -2152,7 +2159,7 @@ class RawObjectWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.obj, key )
 
-class LibraryDatasetValueWrapper( object ):
+class LibraryDatasetValueWrapper( ToolParameterValueWrapper ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
@@ -2173,7 +2180,7 @@ class LibraryDatasetValueWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.value, key )
         
-class InputValueWrapper( object ):
+class InputValueWrapper( ToolParameterValueWrapper ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
@@ -2186,7 +2193,7 @@ class InputValueWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.value, key )
 
-class SelectToolParameterWrapper( object ):
+class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     """
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
     attributes are accessible.
@@ -2218,7 +2225,7 @@ class SelectToolParameterWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.input, key )
 
-class DatasetFilenameWrapper( object ):
+class DatasetFilenameWrapper( ToolParameterValueWrapper ):
     """
     Wraps a dataset so that __str__ returns the filename, but all other
     attributes are accessible.
@@ -2278,6 +2285,9 @@ class DatasetFilenameWrapper( object ):
             return self.false_path
         else:
             return getattr( self.dataset, key )
+    
+    def __nonzero__( self ):
+        return bool( self.dataset )
         
 def json_fix( val ):
     if isinstance( val, list ):
