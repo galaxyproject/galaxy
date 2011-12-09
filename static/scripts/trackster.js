@@ -777,7 +777,15 @@ extend(Drawable.prototype, {
     },
     request_draw: function() {},
     _draw: function() {},
-    to_json: function() {},
+    /** 
+     * Returns representation of object in a dictionary for easy saving. 
+     * Use from_dict to recreate object.
+     */
+    to_dict: function() {},
+    /**
+     * Restore object from a dictionary created by to_dict()
+     */
+    from_dict: function(object_dict) {},
     update_icons: function() {},
     /**
      * Set drawable name.
@@ -878,20 +886,43 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             this.drawables[i]._draw();
         }
     },
-    /**
-     * Returns jsonified representation of collection.
+    /** 
+     * Returns representation of object in a dictionary for easy saving. 
+     * Use from_dict to recreate object.
      */
-    to_json: function() {
-        var jsonified_drawables = [];
+    to_dict: function() {
+        var dictified_drawables = [];
         for (var i = 0; i < this.drawables.length; i++) {
-            jsonified_drawables.push(this.drawables[i].to_json());
+            dictified_drawables.push(this.drawables[i].to_dict());
         }
         return {
             name: this.name,
             prefs: this.prefs,
             obj_type: this.obj_type,
-            drawables: jsonified_drawables
+            drawables: dictified_drawables
             };
+    },
+    /**
+     * Restore object from a dictionary created by to_dict()
+     */
+    from_dict: function(collection_dict, container) {
+        var collection = new this.constructor( collection_dict.name, view, 
+                                               container, collection_dict.prefs, 
+                                               view.viewport_container, view);
+       var drawable_dict,
+           drawable_type,
+           drawable;
+        for (var i = 0; i < collection_dict.drawables.length; i++) {
+            drawable_dict = collection_dict.drawables[i];
+            drawable_type = drawable_dict['obj_type'];
+            // For backward compatibility:
+            if (!drawable_type) {
+                drawable_type = drawable_dict['track_type']; 
+            }
+            drawable = addable_objects[ drawable_type ].prototype.from_dict( drawable_dict, collection );
+            collection.add_drawable( drawable );
+        }
+        return collection;
     },
     /**
      * Add a drawable to the end of the collection.
@@ -956,11 +987,10 @@ var DrawableGroup = function(name, view, container, prefs) {
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
-    /*
     action_icons_def: [
     // Create composite track from group's tracks.
     {
-        name: "composite-icon",
+        name: "composite_icon",
         title: "Show composite track",
         css_class: "layers-stack",
         on_click_fn: function(group) {
@@ -968,7 +998,6 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         }
     }
     ].concat(Drawable.prototype.action_icons_def),
-    */
     build_container_div: function() {
         return $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
     },
@@ -988,14 +1017,51 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         this.request_draw();
     },
     update_icons: function() {
-        // TODO: only show icon for compositing if all tracks are the same type.  
+        // Only show composite icon if all tracks are the same type.
+        var can_composite = true,
+            a_type = this.drawables[0].get_type();
+        for (var i = 0; i < this.drawables.length; i++) {
+            if ( this.drawables[i].get_type() !== a_type ) {
+                can_composite = false;
+                break;
+            }
+        }
+        
+        if (can_composite) {
+            this.action_icons.composite_icon.show();
+        }
+        else {
+            this.action_icons.composite_icon.hide();
+            $(".tipsy").remove();
+        }        
     },
     /**
-     * Show composite track using group's tracks.
+     * Add composite track to group that includes all of group's tracks.
      */
     show_composite_track: function() {
-        this.composite_track = new CompositeTiledTrack(this.drawables, this.view, this);
-        this.composite_track.request_draw();
+        var composite_track = new CompositeTrack("Composite Track", this.view, this, this.drawables);
+        this.add_drawable(composite_track);
+        composite_track.request_draw();
+    },
+    add_drawable: function(drawable) {
+        DrawableCollection.prototype.add_drawable.call(this, drawable);
+        this.update_icons();
+    },
+    remove_drawable: function(drawable) {
+        DrawableCollection.prototype.remove_drawable.call(this, drawable);
+        this.update_icons();
+    },
+    /**
+     * Restore object from a dictionary created by to_dict()
+     */
+    from_dict: function(collection_dict, container) {
+        var group = DrawableCollection.prototype.from_dict.call(this, collection_dict, container);
+        
+        // Add drawables to group's content div to make them visible.
+        for (var i = 0; i < group.drawables.length; i++) {
+            group.content_div.append(group.drawables[i].container_div);   
+        }
+        return group;
     }
 });
 
@@ -2537,10 +2603,10 @@ var Track = function(name, view, container, prefs, data_manager, data_url, data_
     this.data_manager = (data_manager ? data_manager : new DataManager(DATA_CACHE_SIZE, this));
         
     //
-    // Create content div, which is where track is displayed.
+    // Create content div, which is where track is displayed, and add to container if available.
     //
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
-    this.container.content_div.append(this.container_div);
+    if (this.container) { this.container.content_div.append(this.container_div); }
 };
 
 extend(Track.prototype, Drawable.prototype, {
@@ -2684,6 +2750,9 @@ extend(Track.prototype, Drawable.prototype, {
         else if (this instanceof VcfTrack) {
             return "VcfTrack";
         }
+        else if (this instanceof CompositeTrack) {
+            return "CompositeTrack";
+        }
         else if (this instanceof FeatureTrack) {
             return "FeatureTrack";
         }
@@ -2810,10 +2879,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         new_track.enabled = this.enabled;
         return new_track;
     },
-    /**
-     * Convert track to JSON object.
+    /** 
+     * Returns representation of object in a dictionary for easy saving. 
+     * Use from_dict to recreate object.
      */
-    to_json: function() {
+    to_dict: function() {
         return {
             "track_type": this.get_type(),
             "name": this.name,
@@ -2824,13 +2894,25 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         };
     },
     /**
+     * Restore object from a dictionary created by to_dict()
+     */
+    from_dict: function(track_dict, container) {
+        var track = new this.constructor( 
+                            track_dict.name, view, container, track_dict.hda_ldda, track_dict.dataset_id,
+                            track_dict.prefs, track_dict.filters, track_dict.tool);
+        if (track_dict.mode) {
+            track.change_mode(track_dict.mode);
+        }
+        return track;
+    },
+    /**
      * Change track's mode.
      */
-    change_mode: function(name) {
+    change_mode: function(new_mode) {
         var track = this;
         // TODO: is it necessary to store the mode in two places (.mode and track_config)?
-        track.mode = name;
-        track.config.values['mode'] = name;
+        track.mode = new_mode;
+        track.config.values['mode'] = new_mode;
         track.tile_cache.clear();
         track.request_draw();
         this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
@@ -2932,11 +3014,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var all_tiles_drawn = true;
         var drawn_tiles = [];
         var tile_count = 0;
+        var is_tile = function(o) { return ('track' in o) };
         // Draw or fetch and show tiles.
         while ( ( tile_index * DENSITY * resolution ) < high ) {
-            tile = this.draw_helper( force, width, tile_index, resolution, parent_element, w_scale );
-            if ( tile ) {
-                drawn_tiles.push( tile );
+            var draw_result = this.draw_helper( force, width, tile_index, resolution, parent_element, w_scale );
+            if ( is_tile(draw_result) ) {
+                drawn_tiles.push( draw_result );
             } else {
                 all_tiles_drawn = false;
             }
@@ -2982,8 +3065,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }        
     },
     /**
-     * Handle a single tile, either from cache or by setting up a deferred
-     * operation and then requesting another redraw
+     * Retrieves from cache, draws, or sets up drawing for a single tile. Returns either a Tile object or a 
+     * jQuery.Deferred object that is fulfilled when tile can be drawn again.
      */ 
     draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
         var track = this,
@@ -3001,7 +3084,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Helper to determine if object is jQuery deferred
         var is_deferred = function ( d ) {
             return ( 'isResolved' in d );
-        }
+        };
         
         // Flag to track whether we can draw everything now 
         var can_draw_now = true
@@ -3034,13 +3117,27 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
          
         // Can't draw now, so trigger another redraw when the data is ready
+        var can_draw = $.Deferred();
         $.when( tile_data, seq_data ).then( function() {
             view.request_redraw(false, false, false, track);
+            can_draw.resolve();
         });
         
-        // Indicate to caller that this tile could not be drawn
-        return null;
-    }, 
+        // Returned Deferred is resolved when tile can be drawn.
+        return can_draw;
+    },
+    /**
+     * Draw a track tile.
+     * @param result result from server
+     * @param mode mode to draw in
+     * @param resolution view resolution
+     * @param tile_index index of tile to be drawn
+     * @param w_scale pixels per base
+     * @param ref_seq reference sequence data
+     */
+    draw_tile: function(result, mode, resolution, tile_index, w_scale, ref_seq) {
+        console.log("Warning: TiledTrack.draw_tile() not implemented.")
+    },
     /**
      * Show track tile and perform associated actions. Showing tile may actually move
      * an existing tile rather than reshowing it.
@@ -3169,15 +3266,81 @@ extend(LabelTrack.prototype, Track.prototype, {
 /**
  * A tiled track composed of multiple other tracks.
  */
-var CompositeTiledTrack = function(drawables, view, container) {
-    TiledTrack.call(this, "Composite Track", view, container);
-    this.drawables = drawables;
-    this.enabled = true;
+var CompositeTrack = function(name, view, container, drawables) {
+    // HACK: modes should be static class vars for most tracks and should update as
+    // needed for CompositeTracks
+    this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
+    TiledTrack.call(this, name, view, container);
+    
+    // Init drawables; each drawable is a copy so that config/preferences 
+    // are independent of each other.
+    this.drawables = [];
+    if (drawables) {
+        var 
+            ids = [],
+            drawable;
+        for (var i = 0; i < drawables.length; i++) {
+            drawable = drawables[i];
+            ids.push(drawable.dataset_id);
+            this.drawables[i] = drawable.copy();
+        }
+        this.enabled = true;
+    }
+    
+    this.update_icons();
+    
+    // HACK: needed for saving object for now. Need to generalize get_type() to all Drawables and use
+    // that for object type.
+    this.obj_type = "CompositeTrack";
 };
-extend(CompositeTiledTrack.prototype, TiledTrack.prototype, {
+
+extend(CompositeTrack.prototype, TiledTrack.prototype, {
+    // HACK: CompositeTrack should inherit from DrawableCollection as well.
+    /** 
+     * Returns representation of object in a dictionary for easy saving. 
+     * Use from_dict to recreate object.
+     */
+    to_dict: DrawableCollection.prototype.to_dict,
+    add_drawable: DrawableCollection.prototype.add_drawable,
+    /**
+     * Restore object from a dictionary created by to_dict()
+     */
+    // TODO: unify with DrawableCollection.prototype.from_dict?
+    from_dict: function(collection_dict, container) {
+        var collection = new this.constructor( collection_dict.name, view, 
+                                               container, collection_dict.prefs, 
+                                               view.viewport_container, view);
+       var drawable_dict,
+           drawable_type,
+           drawable;
+        for (var i = 0; i < collection_dict.drawables.length; i++) {
+            drawable_dict = collection_dict.drawables[i];
+            drawable_type = drawable_dict['obj_type'];
+            // For backward compatibility:
+            if (!drawable_type) {
+                drawable_type = drawable_dict['track_type']; 
+            }
+            // No container for tracks so that it is not made visible.
+            drawable = addable_objects[ drawable_type ].prototype.from_dict( drawable_dict );
+            collection.add_drawable( drawable );
+        }
+        return collection;
+    },
+    change_mode: function(new_mode) {
+        TiledTrack.prototype.change_mode.call(this, new_mode);
+        for (var i = 0; i < this.drawables.length; i++) {
+            this.drawables[i].change_mode(new_mode);
+        }
+    },
     init: function() {
-        console.log("initing CompositeTiledTrack");
-        this.enabled = true;  
+        // FIXME: probably should enable based on whether/how many drawaables are enabled.
+        this.enabled = true;
+        this.request_draw();
+    },
+    update_icons: function() {
+        // For now, hide filters and tool.
+        this.action_icons.filters_icon.hide();
+        this.action_icons.tools_icon.hide();  
     },
     can_draw: Drawable.prototype.can_draw,
     draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
@@ -3190,7 +3353,62 @@ extend(CompositeTiledTrack.prototype, TiledTrack.prototype, {
             return tile;
         }
         
-        // TODO: Try to build tile.
+        // Get/build tiles.
+        // FIXME: using very naive and simple approach for building tiles.
+        //        issues not addressed include:
+        //        (a) choosing tile size;
+        //        (b) any kind of normalization.
+        var 
+            drawable,
+            dummy_parent = $("<div/>"),
+            draw_result,
+            tiles = [],
+            deferreds = [],
+            can_draw = true;
+        for (var i = 0; i < this.drawables.length; i++) {
+            // Build drawable tile and show it.
+            draw_result = this.drawables[i].draw_helper(force, width, tile_index, resolution, dummy_parent, 
+                                                        w_scale, drawn_tiles, more_tile_data);
+            if (draw_result instanceof Tile) {
+                tiles.push(draw_result);
+            }
+            else {
+                deferreds.push(draw_result);
+                can_draw = false;
+            }
+        }
+        
+        if (can_draw) {
+            // Build composite tile by compositing canvases.
+            
+            // Copy first canvas.
+            var src_canvas = tiles[0].html_elt.find("canvas"), 
+                cmp_canvas = src_canvas.clone(), 
+                src_ctx = src_canvas.get(0).getContext("2d"),
+                cmp_ctx = cmp_canvas.get(0).getContext("2d"),
+                imageData = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
+                
+            cmp_ctx.putImageData(imageData, 0, 0);
+              
+            // Composite additional canvases.
+            cmp_ctx.globalCompositeOperation = "darker";
+            var another_canvas;
+            for (var i = 1; i < tiles.length; i++) {
+                another_canvas = tiles[i].html_elt.find("canvas").get(0);
+                cmp_ctx.drawImage(another_canvas, 0, 0);
+            }
+            
+            tile = new Tile(this, tile_index, resolution, cmp_canvas);
+            this.tile_cache.set(key, tile);
+            this.show_tile(tile, parent_element, w_scale);
+        }
+        else {
+            // Wait until tiles can be drawn, then try again.
+            var track = this;
+            $.when.apply($, deferreds).then(function() {
+                track.request_draw(); 
+            });
+        }
         
         return tile;
     }
@@ -3865,13 +4083,13 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
 // Exports
-
 exports.View = View;
 exports.DrawableGroup = DrawableGroup;
 exports.LineTrack = LineTrack;
 exports.FeatureTrack = FeatureTrack;
 exports.ReadTrack = ReadTrack;
 exports.VcfTrack = VcfTrack;
+exports.CompositeTrack = CompositeTrack;
 
 // End trackster_module encapsulation
 };
@@ -5007,9 +5225,6 @@ extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeatur
         }
     }
 });
-
-
-
 
 exports.Scaler = Scaler;
 exports.SummaryTreePainter = SummaryTreePainter;

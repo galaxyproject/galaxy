@@ -244,7 +244,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 // FIXME: give unique IDs to Drawables and save overview as ID.
                 var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null);
                 var payload = { 
-                    'view': view.to_json(), 
+                    'view': view.to_dict(), 
                     'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
                     'bookmarks': bookmarks
                 };
