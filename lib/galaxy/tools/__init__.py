@@ -1890,7 +1890,7 @@ class Tool:
                                                                           sa_session=self.sa_session )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
-                shutil.move( filename, child_dataset.file_name )
+                self.app.object_store.update_from_file(child_dataset.dataset.id, filename, create=True)
                 self.sa_session.add( child_dataset )
                 self.sa_session.flush()
                 child_dataset.set_size()
@@ -1902,7 +1902,7 @@ class Tool:
                 job = None
                 for assoc in outdata.creating_job_associations:
                     job = assoc.job
-                    break   
+                    break
                 if job:
                     assoc = self.app.model.JobToOutputDatasetAssociation( '__new_child_file_%s|%s__' % ( name, designation ), child_dataset )
                     assoc.job = job
