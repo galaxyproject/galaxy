@@ -200,6 +200,15 @@ class DiskObjectStore(ObjectStore):
     """
     Standard Galaxy object store, stores objects in files under a specific
     directory on disk.
+
+    >>> from galaxy.util.bunch import Bunch
+    >>> import tempfile
+    >>> file_path=tempfile.mkdtemp()
+    >>> s = DiskObjectStore(Bunch(umask=077), file_path=file_path)
+    >>> s.create(1)
+    >>> s.exists(1)
+    True
+    >>> assert s.get_filename(1) == file_path + '/000/dataset_1.dat'
     """
     def __init__(self, config, file_path=None, extra_dirs=None):
         super(DiskObjectStore, self).__init__()
