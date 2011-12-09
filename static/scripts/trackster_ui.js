@@ -29,6 +29,19 @@ var add_bookmark = function(position, annotation) {
 };
 
 /**
+ * Create object from a dictionary.
+ */
+var object_from_dict = function(track_dict, container) {
+    var
+       drawable_type = track_dict['obj_type'];
+    // For backward compatibility:
+    if (!drawable_type) {
+        drawable_type = track_dict['track_type']; 
+    }
+    return addable_objects[ drawable_type ].prototype.from_dict(track_dict, container);
+};
+
+/**
  * Objects that can be added to a view.
  */
 var addable_objects = { 
@@ -68,14 +81,7 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
                 drawable_type,
                 drawable;
             for (var i = 0; i < drawables_config.length; i++) {
-                drawable_config = drawables_config[i];
-                drawable_type = drawable_config['obj_type'];
-                // For backward compatibility:
-                if (!drawable_type) {
-                    drawable_type = drawable_config['track_type']; 
-                }
-                drawable = addable_objects[ drawable_type ].prototype.from_dict( drawable_config, view );
-                view.add_drawable( drawable );
+                view.add_drawable( object_from_dict( drawables_config[i], view ) );
             }
         }
         

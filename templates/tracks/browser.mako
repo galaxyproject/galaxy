@@ -100,7 +100,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                                    [ arguments[0] ]
                                                    );
                                  for (var i= 0; i < track_defs.length; i++) {
-                                     view.add_drawable( track_from_dict(track_defs[i], view) ); 
+                                     view.add_drawable( object_from_dict(track_defs[i], view) ); 
                                  }
                             });
                             hide_modal();
@@ -214,7 +214,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     url: "${h.url_for( action='add_track_async' )}",
                     data: { hda_id: "${add_dataset}" },
                     dataType: "json",
-                    success: function(track_data) { view.add_drawable( track_from_dict(track_data, view) ) }
+                    success: function(track_data) { view.add_drawable( object_from_dict(track_data, view) ) }
                 });
                 
             %endif
