@@ -16,6 +16,7 @@ from galaxy.security import RBACAgent, get_permitted_actions
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
+from galaxy.exceptions import ObjectNotFound
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
 import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
@@ -649,10 +650,12 @@ class Dataset( object ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
-            filename = self.object_store.get_filename( self.id )
-            if not self.object_store.exists( self.id ):
-                # Create directory if it does not exist
-                self.object_store.create( self.id, dir_only=True )
+            try:
+                filename = self.object_store.get_filename( self.id )
+            except ObjectNotFound, e:
+                # Create file if it does not exist
+                self.object_store.create( self.id )
+                filename = self.object_store.get_filename( self.id )
             return filename
         else:
             filename = self.external_filename

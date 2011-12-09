@@ -18,6 +18,7 @@ from galaxy import util
 from galaxy.jobs import Sleeper
 from galaxy.model import directory_hash_id
 from galaxy.objectstore.s3_multipart_upload import multipart_upload
+from galaxy.exceptions import ObjectNotFound
 
 from boto.s3.key import Key
 from boto.s3.connection import S3Connection
@@ -25,11 +26,6 @@ from boto.exception import S3ResponseError
 
 log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO) # Otherwise boto is quite noisy
-
-
-class ObjectNotFound(Exception):
-    """ Accessed object was not found """
-    pass
 
 
 class ObjectStore(object):
