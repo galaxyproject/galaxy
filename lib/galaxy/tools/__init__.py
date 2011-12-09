@@ -1958,7 +1958,7 @@ class Tool:
                 self.sa_session.add( primary_data )
                 self.sa_session.flush()
                 # Move data from temp location to dataset location
-                shutil.move( filename, primary_data.file_name )
+                self.app.object_store.update_from_file(primary_data.dataset.id, filename, create=True)
                 primary_data.set_size()
                 primary_data.name = "%s (%s)" % ( outdata.name, designation )
                 primary_data.info = outdata.info
@@ -1970,7 +1970,7 @@ class Tool:
                 job = None
                 for assoc in outdata.creating_job_associations:
                     job = assoc.job
-                    break   
+                    break
                 if job:
                     assoc = self.app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s|%s__' % ( name, designation ), primary_data )
                     assoc.job = job
