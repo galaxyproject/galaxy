@@ -120,31 +120,34 @@ var get_random_color = function(colors) {
     var new_color, nr, ng, nb,
         other_color, or, og, ob,
         n_brightness, o_brightness,
-        diff, ok = false;
+        diff, ok = false,
+        num_tries = 0;
     do {
         // New color is never white b/c random in [0,1)
-        new_color = Math.random() * 0xffffff;
-        nr = new_color | 0xff0000;
-        ng = new_color | 0x00ff00;
-        nb = new_color | 0x0000ff;
+        new_color = Math.round( Math.random() * 0xffffff );
+        nr = ( new_color & 0xff0000 ) >> 16;
+        ng = ( new_color & 0x00ff00 ) >> 8;
+        nb = new_color & 0x0000ff;
         n_brightness = brightness(nr, ng, nb);
         ok = true;
         for (var i = 0; i < colors.length; i++) {
             other_color = colors[i];
-            or = other_color | 0xff0000;
-            og = other_color | 0x00ff00;
-            ob = other_color | 0x0000ff;
+            or = ( other_color & 0xff0000 ) >> 16;
+            og = ( other_color & 0x00ff00 ) >> 8;
+            ob = other_color & 0x0000ff;
             o_brightness = brightness(or, og, ob);
             diff = difference(nr, ng, nb, or, og, ob);
-            // Thresholds for brightness difference and color difference
-            // are from W3C link above.
-            if ( ( Math.abs(n_brightness - o_brightness) < 125 ) ||
-                 ( diff < 500 ) ) {
+            // These thresholds may need to be adjusted. Brightness difference range is 125; 
+            // color difference range is 500.
+            if ( ( Math.abs(n_brightness - o_brightness) < 40 ) ||
+                 ( diff < 200 ) ) {
                 ok = false;
                 break;         
             }
         }
-    } while (!ok);
+        
+        num_tries++
+    } while (!ok && num_tries <= 10 );
     
     // Add 0x1000000 to left pad number with 0s.
     return '#' + ( 0x1000000 + new_color ).toString(16).substr(1,6);
@@ -4445,8 +4448,17 @@ LinePainter.prototype.draw = function(ctx, width, height) {
     } else {
         delta_x_px = 10;
     }
+    
+    // Extract RGB from preference color.
+    var
+        pref_color = parseInt( this.prefs.color.slice(1), 16 ),
+        pref_r = (pref_color & 0xff0000) >> 16,
+        pref_g = (pref_color & 0x00ff00) >> 8,
+        pref_b = pref_color & 0x0000ff;
+    
+    // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
-        ctx.fillStyle = this.prefs.color;
+        ctx.fillStyle = ctx.strokeStyle = this.prefs.color;
         x_scaled = Math.round((data[i][0] - view_start) * w_scale);
         y = data[i][1];
         var top_overflow = false, bot_overflow = false;
@@ -4469,9 +4481,14 @@ LinePainter.prototype.draw = function(ctx, width, height) {
             // y becomes the bar height in pixels, which is the negated for canvas coords
             y = Math.round( y / vertical_range * height_px );
             ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
-        } else if (mode === "Intensity" ) {
-            y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
-            ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
+        } else if (mode === "Intensity") {
+            var 
+                saturation = (y - min_value) / vertical_range,
+                // Range is [pref_color, 255] where saturation = 0 --> 255 and saturation = 1 --> pref color
+                new_r = Math.round( pref_r + (255 - pref_r) * (1 - saturation) ),
+                new_g = Math.round( pref_g + (255 - pref_g) * (1 - saturation) ),
+                new_b = Math.round( pref_b + (255 - pref_b) * (1 - saturation) );
+            ctx.fillStyle = "rgb(" + new_r + "," + new_g + "," + new_b + ")";
             ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
         } else {
             // console.log(y, track.min_value, track.vertical_range, (y - track.min_value) / track.vertical_range * track.height_px);
