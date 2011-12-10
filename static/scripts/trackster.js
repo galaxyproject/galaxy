@@ -3110,7 +3110,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // If we can draw now, do so.
         if ( can_draw_now ) {
             extend( tile_data, more_tile_data );
-            var tile = track.draw_tile(tile_data, track.mode, resolution, tile_index, w_scale, seq_data);
+            var canvas = this.view.canvas_manager.new_canvas();
+            var tile = track.draw_tile(tile_data, canvas, track.mode, resolution, tile_index, w_scale, seq_data);
             // Don't cache, show if no tile.
             if (tile !== undefined) {
                 track.tile_cache.set(key, tile);
@@ -3132,13 +3133,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Draw a track tile.
      * @param result result from server
+     * @param canvas canvas to draw on
      * @param mode mode to draw in
      * @param resolution view resolution
      * @param tile_index index of tile to be drawn
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, mode, resolution, tile_index, w_scale, ref_seq) {
+    draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale, ref_seq) {
         console.log("Warning: TiledTrack.draw_tile() not implemented.")
     },
     /**
@@ -3411,6 +3413,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             $.when.apply($, deferreds).then(function() {
                 track.request_draw(); 
             });
+            tile = {};
         }
         
         return tile;
@@ -3441,7 +3444,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(seq, mode, resolution, tile_index, w_scale) {
+    draw_tile: function(seq, canvas, mode, resolution, tile_index, w_scale) {
         var track = this,
             tile_length = DENSITY * resolution;
         
@@ -3450,7 +3453,6 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 track.content_div.css("height", "0px");
                 return;
             }
-            var canvas = this.view.canvas_manager.new_canvas();
             var ctx = canvas.getContext("2d");
             canvas.width = Math.ceil(tile_length * w_scale + track.left_offset);
             canvas.height = track.height_px;
@@ -3592,7 +3594,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw LineTrack tile.
      */
-    draw_tile: function(result, mode, resolution, tile_index, w_scale) {
+    draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale) {
         if (this.vertical_range === undefined) {
             return;
         }
@@ -3604,8 +3606,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             width = Math.ceil( (tile_high - tile_low) * w_scale ),
             height = this.height_px;
         
-        // Create canvas
-        var canvas = this.view.canvas_manager.new_canvas();
+        // Canvas setup.
         canvas.width = width,
         canvas.height = height;
         
@@ -3883,13 +3884,14 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw FeatureTrack tile.
      * @param result result from server
+     * @param canvas canvas to draw on
      * @param mode mode to draw in
      * @param resolution view resolution
      * @param tile_index index of tile to be drawn
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, mode, resolution, tile_index, w_scale, ref_seq) {
+    draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
             tile_bounds = track._get_tile_bounds(tile_index, resolution),
             tile_low = tile_bounds[0],
@@ -3942,8 +3944,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             max_label.text(result.max);
             max_label.css({ position: "absolute", top: "24px", left: "10px", color: this.prefs.label_color });
             max_label.prependTo(this.container_div);
-            // Create canvas
-            var canvas = this.view.canvas_manager.new_canvas();
             canvas.width = width + left_offset;
             // Extra padding at top of summary tree
             canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
@@ -4002,7 +4002,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
         var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, ref_seq);
         var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required,width));
-        var canvas = this.view.canvas_manager.new_canvas();
         var feature_mapper = null;
         
         canvas.width = width + left_offset;
