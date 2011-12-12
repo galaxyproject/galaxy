@@ -3071,7 +3071,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Retrieves from cache, draws, or sets up drawing for a single tile. Returns either a Tile object or a 
      * jQuery.Deferred object that is fulfilled when tile can be drawn again.
      */ 
-    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, more_tile_data) {
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
             tile_low = tile_index * DENSITY * resolution,
@@ -3348,7 +3348,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         this.action_icons.tools_icon.hide();  
     },
     can_draw: Drawable.prototype.can_draw,
-    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, more_tile_data) {
         // Check tile cache, if found show existing tile in correct position
         var 
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
@@ -3373,7 +3373,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         for (var i = 0; i < this.drawables.length; i++) {
             // Build drawable tile and show it.
             draw_result = this.drawables[i].draw_helper(force, width, tile_index, resolution, dummy_parent, 
-                                                        w_scale, drawn_tiles, more_tile_data);
+                                                        w_scale, more_tile_data);
             if (draw_result instanceof Tile) {
                 tiles.push(draw_result);
             }
@@ -3722,7 +3722,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 var tile = tiles[i];
                 if (tile.max_val !== global_max) {
                     tile.html_elt.remove();
-                    track.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, [], { max: global_max });
+                    track.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { max: global_max });
                 }
             }
         }                
