@@ -3109,9 +3109,20 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 
         // If we can draw now, do so.
         if ( can_draw_now ) {
-            extend( tile_data, more_tile_data );
-            var canvas = this.view.canvas_manager.new_canvas();
+            // Set up and draw tile.
+            extend(tile_data, more_tile_data);
+            var 
+                canvas = track.view.canvas_manager.new_canvas(),
+                tile_bounds = track._get_tile_bounds(tile_index, resolution),
+                tile_low = tile_bounds[0],
+                tile_high = tile_bounds[1],
+                width = Math.ceil( (tile_high - tile_low) * w_scale ),
+                height = track.get_canvas_height(tile_data);
+            
+            canvas.width = width;
+            canvas.height = height;
             var tile = track.draw_tile(tile_data, canvas, track.mode, resolution, tile_index, w_scale, seq_data);
+            
             // Don't cache, show if no tile.
             if (tile !== undefined) {
                 track.tile_cache.set(key, tile);
@@ -3131,6 +3142,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         return can_draw;
     },
     /**
+     * Returns canvas height needed to display data; return value is an integer that denotes the
+     * number of pixels required.
+     */
+    get_canvas_height: function(data) {
+        return this.height_px;
+    },
+    /**
      * Draw a track tile.
      * @param result result from server
      * @param canvas canvas to draw on
@@ -3141,7 +3159,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * @param ref_seq reference sequence data
      */
     draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale, ref_seq) {
-        console.log("Warning: TiledTrack.draw_tile() not implemented.")
+        console.log("Warning: TiledTrack.draw_tile() not implemented.");
     },
     /**
      * Show track tile and perform associated actions. Showing tile may actually move
@@ -3349,74 +3367,94 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     },
     can_draw: Drawable.prototype.can_draw,
     draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, more_tile_data) {
-        // Check tile cache, if found show existing tile in correct position
-        var 
+        // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
+        var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
-            tile = ( force ? undefined : this.tile_cache.get(key) );
+            tile_low = tile_index * DENSITY * resolution,
+            tile_high = tile_low + DENSITY * resolution;
+                       
+        // Check tile cache, if found show existing tile in correct position
+        var tile = (force ? undefined : track.tile_cache.get(key));
         if (tile) { 
-            this.show_tile(tile, parent_element, w_scale);
+            track.show_tile(tile, parent_element, w_scale);
             return tile;
         }
-        
-        // Get/build tiles.
-        // FIXME: using very naive and simple approach for building tiles.
-        //        issues not addressed include:
-        //        (a) choosing tile size;
-        //        (b) any kind of normalization.
-        var 
-            drawable,
-            dummy_parent = $("<div/>"),
-            draw_result,
-            tiles = [],
-            deferreds = [],
-            can_draw = true;
-        for (var i = 0; i < this.drawables.length; i++) {
-            // Build drawable tile and show it.
-            draw_result = this.drawables[i].draw_helper(force, width, tile_index, resolution, dummy_parent, 
-                                                        w_scale, more_tile_data);
-            if (draw_result instanceof Tile) {
-                tiles.push(draw_result);
-            }
-            else {
-                deferreds.push(draw_result);
-                can_draw = false;
-            }
-        }
-        
-        if (can_draw) {
-            // Build composite tile by compositing canvases.
-            
-            // Copy first canvas.
-            var src_canvas = tiles[0].html_elt.find("canvas"), 
-                cmp_canvas = src_canvas.clone(), 
-                src_ctx = src_canvas.get(0).getContext("2d"),
-                cmp_ctx = cmp_canvas.get(0).getContext("2d"),
-                imageData = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
                 
-            cmp_ctx.putImageData(imageData, 0, 0);
-              
-            // Composite additional canvases.
-            cmp_ctx.globalCompositeOperation = "darker";
-            var another_canvas;
-            for (var i = 1; i < tiles.length; i++) {
-                another_canvas = tiles[i].html_elt.find("canvas").get(0);
-                cmp_ctx.drawImage(another_canvas, 0, 0);
+        // Helper to determine if object is jQuery deferred
+        var is_deferred = function ( d ) {
+            return ( 'isResolved' in d );
+        };
+        
+        // Try to get drawables' data.
+        var all_data = [],
+            track,
+            // Flag to track whether we can draw everything now 
+            can_draw_now = true,
+            tile_data,
+            seq_data;
+        for (var i = 0; i < this.drawables.length; i++) {
+            track = this.drawables[i];
+            // Get the track data, maybe a deferred.
+            tile_data = track.data_manager.get_data( tile_low, tile_high, track.mode, resolution, track.data_url_extra_params );
+            if ( is_deferred( tile_data ) ) {
+                can_draw_now = false;
+            }
+            all_data.push(tile_data);
+
+            // Get seq data if needed, maybe a deferred.
+            seq_data = null;
+            if ( view.reference_track && w_scale > view.canvas_manager.char_width_px ) {
+                seq_data = view.reference_track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, view.reference_track.data_url_extra_params)
+                if ( is_deferred( seq_data ) ) {
+                    can_draw_now = false;
+                }
+            }
+            all_data.push(seq_data);
+        }
+                
+        // If we can draw now, do so.
+        if ( can_draw_now ) {
+            // Set up and draw tile.
+            extend(tile_data, more_tile_data);
+            var 
+                canvas = track.view.canvas_manager.new_canvas(),
+                tile_bounds = track._get_tile_bounds(tile_index, resolution),
+                tile_low = tile_bounds[0],
+                tile_high = tile_bounds[1],
+                width = Math.ceil( (tile_high - tile_low) * w_scale ),
+                height = track.get_canvas_height(tile_data);
+            
+            // FIXME: 
+            // (a) right now, only LineTracks respect width/height setting and do not set it in draw_tile; 
+            // however, other track types be modified to work this way. This is necessary b/c setting the width/height 
+            // clears the canvas and hence prevents non-compliant tracks from being used in CompositeTracks.
+            // (b) need to normalize across tracks before displaying, e.g. set LineTracks' min/max appropriately.
+            canvas.width = width;
+            canvas.height = height;
+            var all_data_index = 0
+            for (var i = 0; i < this.drawables.length; i++, all_data_index += 2) {
+                track = this.drawables[i];
+                tile_data = all_data[ all_data_index ];
+                seq_data = all_data[ all_data_index + 1 ];
+                tile = track.draw_tile(tile_data, canvas, track.mode, resolution, tile_index, w_scale, seq_data);
             }
             
-            tile = new Tile(this, tile_index, resolution, cmp_canvas);
-            this.tile_cache.set(key, tile);
-            this.show_tile(tile, parent_element, w_scale);
+            // Don't cache, show if no tile.
+            track.tile_cache.set(key, tile);
+            track.show_tile(tile, parent_element, w_scale);
+            return tile;
         }
-        else {
-            // Wait until tiles can be drawn, then try again.
-            var track = this;
-            $.when.apply($, deferreds).then(function() {
-                track.request_draw(); 
-            });
-            tile = {};
-        }
+         
+        // Can't draw now, so trigger another redraw when the data is ready
+        var can_draw = $.Deferred(),
+            track = this;
+        $.when.apply($, all_data).then(function() {
+            view.request_redraw(false, false, false, track);
+            can_draw.resolve();
+        });
         
-        return tile;
+        // Returned Deferred that is resolved when tile can be drawn.
+        return can_draw;
     }
 });
 
@@ -3595,28 +3633,25 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Draw LineTrack tile.
      */
     draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale) {
+        // FIXME: is this needed?
         if (this.vertical_range === undefined) {
             return;
         }
-        
+
+        // Paint onto canvas.        
         var 
+            ctx = canvas.getContext("2d"),
             tile_bounds = this._get_tile_bounds(tile_index, resolution),
             tile_low = tile_bounds[0],
             tile_high = tile_bounds[1],
-            width = Math.ceil( (tile_high - tile_low) * w_scale ),
-            height = this.height_px;
-        
-        // Canvas setup.
-        canvas.width = width,
-        canvas.height = height;
-        
-        // Paint line onto full canvas
-        var ctx = canvas.getContext("2d");
-        var painter = new painters.LinePainter(result.data, tile_low, tile_high, this.prefs, mode);
-        painter.draw(ctx, width, height);
+            painter = new painters.LinePainter(result.data, tile_low, tile_high, this.prefs, mode);
+        // HACK: this is needed for compositing tracks. This should be a config setting somewhere; also,
+        // "darker" may not be included in future canvas implementations.
+        ctx.globalCompositeOperation = "darker";
+        painter.draw(ctx, canvas.width, canvas.height);
         
         return new Tile(this.track, tile_index, resolution, canvas, result.data);
-    } 
+    }
 });
 
 var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
