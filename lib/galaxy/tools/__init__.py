@@ -1754,8 +1754,10 @@ class Tool:
             log.debug( "Dependency %s", requirement.name )
             if requirement.type == 'package':
                 script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
-                if script_file is None:
+                if script_file is None and base_path is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+                elif script_file is None:
+                    commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path ) )
                 else:
                     commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, script_file ) )
         return commands
