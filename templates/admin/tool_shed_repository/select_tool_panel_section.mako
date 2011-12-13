@@ -23,39 +23,42 @@
 <br/>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Choose section to load tools into tool panel</div>
+    <div class="toolFormTitle">Choose tool panel section to contain installed tools (optional)</div>
     <div class="toolFormBody">
-    <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='install_repository', tool_shed_url=tool_shed_url, repo_info_dict=repo_info_dict )}" method="post" >
-        %if shed_tool_conf_select_field:
+        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='install_repository', tool_shed_url=tool_shed_url, repo_info_dict=repo_info_dict )}" method="post" >
+            %if shed_tool_conf_select_field:
+                <div class="form-row">
+                    <label>Shed tool configuration file:</label>
+                    ${shed_tool_conf_select_field.get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        Your Galaxy instance is configured with ${len( shed_tool_conf_select_field.options )} shed tool configuration files, 
+                        so choose one in which to configure the installed tools.
+                    </div>
+                </div>
+                <div style="clear: both"></div>
+            %else:
+                <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf}"/>
+            %endif
             <div class="form-row">
-                <label>Shed tool configuration file:</label>
-                ${shed_tool_conf_select_field.get_html()}
+                <label>Add new tool panel section:</label>
+                <input name="new_tool_panel_section" type="textfield" value="${new_tool_panel_section}" size="40"/>
                 <div class="toolParamHelp" style="clear: both;">
-                    Your Galaxy instance is configured with ${len( shed_tool_conf_select_field.options )} shed tool configuration files, 
-                    so choose one in which to configure the installed tools.
+                    Add a new tool panel section contain the installed tools (optional).
                 </div>
             </div>
-            <div style="clear: both"></div>
-        %else:
-            <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf}"/>
-        %endif
-        <div class="form-row">
-            <label>Add new tool panel section:</label>
-            <input name="new_tool_panel_section" type="textfield" value="${new_tool_panel_section}" size="40"/>
-            <div class="toolParamHelp" style="clear: both;">
-                Add a new tool panel section or choose an existing section in your tool panel below to contain the installed tools.
+            <div class="form-row">
+                <label>Select existing tool panel section:</label>
+                ${tool_panel_section_select_field.get_html()}
+                <div class="toolParamHelp" style="clear: both;">
+                    Choose an existing section in your tool panel to contain the installed tools (optional).  
+                </div>
             </div>
-        </div>
-        <div class="form-row">
-            <label>Select existing tool panel section:</label>
-            ${tool_panel_section_select_field.get_html()}
-            <div class="toolParamHelp" style="clear: both;">
-                Choose an existing section in your tool panel to contain the installed tools.
+            <div class="form-row">
+                <input type="submit" name="select_tool_panel_section_button" value="Install"/>
+                <div class="toolParamHelp" style="clear: both;">
+                    Clicking <b>Install</b> without selecting a tool panel section will load the installed tools into the tool panel outside of any sections.
+                </div>
             </div>
-        </div>
-        <div class="form-row">
-            <input type="submit" name="select_tool_panel_section_button" value="Install"/>
-        </div>
-    </form>
+        </form>
     </div>
 </div>

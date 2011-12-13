@@ -24,7 +24,7 @@ from Cheetah.Template import Template
 
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element
+from elementtree.ElementTree import Element, SubElement, tostring
 
 log = logging.getLogger( __name__ )
 
