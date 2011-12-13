@@ -2,7 +2,6 @@ import logging, threading, sys, os, time, traceback, shutil
 
 import galaxy
 from galaxy import util, model
-from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
 # tabular/interval imports appear to be unused.  Clean up?
@@ -114,7 +113,7 @@ class JobQueue( object ):
             else:
                 log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
                 self.queue.put( ( job.id, job.tool_id ) )
-        for job in self.sa_session.query( model.Job ).options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ).filter( ( model.Job.state == model.Job.states.RUNNING ) | ( model.Job.state == model.Job.states.QUEUED ) ):
+        for job in self.sa_session.query( model.Job ).enable_eagerloads( False ).filter( ( model.Job.state == model.Job.states.RUNNING ) | ( model.Job.state == model.Job.states.QUEUED ) ):
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "Tool '%s' removed from tool config, unable to recover job: %s" % ( job.tool_id, job.id ) )
                 JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
@@ -161,8 +160,7 @@ class JobQueue( object ):
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
             # Fetch all new jobs
-            jobs_to_check = self.sa_session.query( model.Job ) \
-                                .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+            jobs_to_check = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
                                 .filter( model.Job.state == model.Job.states.NEW ).all()
         else:
             # Get job objects and append to watch queue for any which were
@@ -264,21 +262,19 @@ class JobQueue( object ):
         if not self.app.config.user_job_limit:
             return JOB_READY
         if job.user:
-            user_jobs = self.sa_session.query( model.Job ) \
-                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
-                            .filter( and_( model.Job.user_id == job.user.id,
-                                           or_( model.Job.state == model.Job.states.RUNNING,
-                                                model.Job.state == model.Job.states.QUEUED ) ) ).all()
+            count = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                        .filter( and_( model.Job.user_id == job.user.id,
+                                       or_( model.Job.state == model.Job.states.RUNNING,
+                                            model.Job.state == model.Job.states.QUEUED ) ) ).count()
         elif job.galaxy_session:
-            user_jobs = self.sa_session.query( model.Job ) \
-                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
-                            .filter( and_( model.Job.session_id == job.galaxy_session.id,
-                                           or_( model.Job.state == model.Job.states.RUNNING,
-                                                model.Job.state == model.Job.states.QUEUED ) ) ).all()
+            count = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                        .filter( and_( model.Job.session_id == job.galaxy_session.id,
+                                       or_( model.Job.state == model.Job.states.RUNNING,
+                                            model.Job.state == model.Job.states.QUEUED ) ) ).count()
         else:
             log.warning( 'Job %s is not associated with a user or session so job concurrency limit cannot be checked.' % job.id )
             return JOB_READY
-        if len( user_jobs ) >= self.app.config.user_job_limit:
+        if count >= self.app.config.user_job_limit:
             return JOB_WAIT
         return JOB_READY
 
@@ -1245,8 +1241,7 @@ class JobStopQueue( object ):
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
             # Fetch all new jobs
-            newly_deleted_jobs = self.sa_session.query( model.Job ) \
-                                     .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+            newly_deleted_jobs = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
                                      .filter( model.Job.state == model.Job.states.DELETED_NEW ).all()
             for job in newly_deleted_jobs:
                 jobs_to_check.append( ( job, None ) )
