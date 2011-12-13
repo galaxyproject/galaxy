@@ -251,7 +251,7 @@ def wrap_in_static( app, global_conf, **local_conf ):
     urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir" ), cache_time )
     urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
     urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
-    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt" ), cache_time )
+    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", 'static/robots.txt'), cache_time )
     # URL mapper becomes the root webapp
     return urlmap
     
