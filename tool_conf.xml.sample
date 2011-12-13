@@ -6,6 +6,7 @@
     <tool file="data_source/ucsc_tablebrowser_test.xml" />
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
     <tool file="data_source/bx_browser.xml" />
+    <tool file="data_source/ebi_sra.xml"/>
     <tool file="data_source/microbial_import.xml" />
     <tool file="data_source/biomart.xml" />
     <tool file="data_source/biomart_test.xml" />
