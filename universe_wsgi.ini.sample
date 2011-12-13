@@ -247,6 +247,7 @@ static_images_dir = %(here)s/static/images
 static_favicon_dir = %(here)s/static/favicon.ico
 static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
+static_robots_txt = %(here)s/static/robots.txt
 
 # -- Advanced proxy features
 
