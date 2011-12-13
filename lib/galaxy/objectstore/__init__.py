@@ -868,10 +868,10 @@ class DistributedObjectStore(ObjectStore):
     
     def __init__(self, config):
         super(DistributedObjectStore, self).__init__()
-        assert config is not None, "distributed object store ('object_store = distributed') " \
-                                   "requires a config file, please set one in " \
-                                   "'distributed_object_store_config_file')"
-        self.distributed_config = config
+        self.distributed_config = config.distributed_object_store_config_file
+        assert self.distributed_config is not None, "distributed object store ('object_store = distributed') " \
+                                                    "requires a config file, please set one in " \
+                                                    "'distributed_object_store_config_file')"
         self.backends = {}
         self.weighted_backend_names = []
 
@@ -1006,7 +1006,7 @@ def build_object_store_from_config(config):
         os.environ['AWS_SECRET_ACCESS_KEY'] = config.aws_secret_key
         return S3ObjectStore(config=config)
     elif store == 'distributed':
-        return DistributedObjectStore(config.distributed_object_store_config_file)
+        return DistributedObjectStore(config=config)
     elif store == 'hierarchical':
         return HierarchicalObjectStore()
 

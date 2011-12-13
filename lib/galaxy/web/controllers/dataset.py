@@ -382,7 +382,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = trans.app.object_store.get_filename(data.id, extra_dir='dataset_%s_files' % data.id, alt_name=filename)
+            file_path = trans.app.object_store.get_filename(data.dataset.id, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
                     return trans.show_error_message( "Directory listing is not allowed." ) #TODO: Reconsider allowing listing of directories?
