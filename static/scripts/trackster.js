@@ -3017,7 +3017,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var all_tiles_drawn = true;
         var drawn_tiles = [];
         var tile_count = 0;
-        var is_tile = function(o) { return ('track' in o) };
+        var is_tile = function(o) { return (o && 'track' in o) };
         // Draw or fetch and show tiles.
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             var draw_result = this.draw_helper( force, width, tile_index, resolution, parent_element, w_scale );
@@ -3116,7 +3116,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
                 tile_low = tile_bounds[0],
                 tile_high = tile_bounds[1],
-                width = Math.ceil( (tile_high - tile_low) * w_scale ),
+                width = Math.ceil( (tile_high - tile_low) * w_scale ) + track.left_offset,
                 height = track.get_canvas_height(tile_data);
             
             canvas.width = width;
@@ -3483,17 +3483,14 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Draw ReferenceTrack tile.
      */
     draw_tile: function(seq, canvas, mode, resolution, tile_index, w_scale) {
-        var track = this,
-            tile_length = DENSITY * resolution;
+        var track = this;
         
         if (w_scale > this.view.canvas_manager.char_width_px) {
             if (seq.data === null) {
                 track.content_div.css("height", "0px");
                 return;
             }
-            var ctx = canvas.getContext("2d");
-            canvas.width = Math.ceil(tile_length * w_scale + track.left_offset);
-            canvas.height = track.height_px;
+            var ctx = canvas.getContext("2d");            
             ctx.font = ctx.canvas.manager.default_font;
             ctx.textAlign = "center";
             seq = seq.data;
