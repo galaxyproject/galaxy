@@ -3111,17 +3111,27 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         if ( can_draw_now ) {
             // Set up and draw tile.
             extend(tile_data, more_tile_data);
+            
+            // HACK: this is FeatureTrack-specific.
+            // If track mode is Auto, determine mode and update.
+            var mode = track.mode;
+            if (mode === "Auto") {
+                mode = track.get_mode(tile_data);
+                track.update_auto_mode(mode);
+            }
+            
+            // Draw canvas.
             var 
                 canvas = track.view.canvas_manager.new_canvas(),
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
                 tile_low = tile_bounds[0],
                 tile_high = tile_bounds[1],
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + track.left_offset,
-                height = track.get_canvas_height(tile_data);
+                height = track.get_canvas_height(tile_data, mode, w_scale, width);
             
             canvas.width = width;
             canvas.height = height;
-            var tile = track.draw_tile(tile_data, canvas, track.mode, resolution, tile_index, w_scale, seq_data);
+            var tile = track.draw_tile(tile_data, canvas, mode, resolution, tile_index, w_scale, seq_data);
             
             // Don't cache, show if no tile.
             if (tile !== undefined) {
@@ -3145,7 +3155,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
      */
-    get_canvas_height: function(data) {
+    get_canvas_height: function(result, mode, w_scale, canvas_width) {
         return this.height_px;
     },
     /**
@@ -3416,13 +3426,14 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         if ( can_draw_now ) {
             // Set up and draw tile.
             extend(tile_data, more_tile_data);
+            
             var 
                 canvas = track.view.canvas_manager.new_canvas(),
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
                 tile_low = tile_bounds[0],
                 tile_high = tile_bounds[1],
                 width = Math.ceil( (tile_high - tile_low) * w_scale ),
-                height = track.get_canvas_height(tile_data);
+                height = track.get_canvas_height(tile_data, mode, w_scale, width);
             
             // FIXME: 
             // (a) right now, only LineTracks respect width/height setting and do not set it in draw_tile; 
@@ -3914,6 +3925,58 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         return {max: max_count, delta: bin_size, data: bins};
     },
     /**
+     * Returns appropriate display mode based on data.
+     */
+    get_mode: function(data) {
+        if (data.dataset_type === "summary_tree") {
+            mode = "summary_tree";
+        } 
+        // HACK: use no_detail mode track is in overview to prevent overview from being too large.
+        else if (data.extra_info === "no_detail" || this.is_overview) {
+            mode = "no_detail";
+        } 
+        else {
+            // Choose b/t Squish and Pack.
+            // Proxy measures for using Squish: 
+            // (a) error message re: limiting number of features shown; 
+            // (b) X number of features shown;
+            // (c) size of view shown.
+            // TODO: cannot use (a) and (b) because it requires coordinating mode across tiles;
+            // fix this so that tiles are redrawn as necessary to use the same mode.
+            //if ( (result.message && result.message.match(/^Only the first [\d]+/)) ||
+            //     (result.data && result.data.length > 2000) ||
+            //var data = result.data;
+            // if ( (data.length && data.length < 4) ||
+            //      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
+            if ( this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH ) {
+                mode = "Squish";
+            } else {
+                mode = "Pack";
+            }
+        }
+        return mode;
+    },
+    /**
+     * Returns canvas height needed to display data; return value is an integer that denotes the
+     * number of pixels required.
+     */
+    get_canvas_height: function(result, mode, w_scale, canvas_width) {
+        if (mode === "summary_tree" || mode === "Histogram") {
+            // Extra padding at top of summary tree so label does not overlap data.
+            return this.summary_draw_height + SUMMARY_TREE_TOP_PADDING;
+        }
+        else {
+            var rows_required = 1;
+            if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
+                var rows_required = this.incremental_slots(w_scale, result.data, mode);
+            }
+            // HACK: use dummy painter to get required height. Painter should be extended so that get_required_height
+            // works as a static function.
+            var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
+            return Math.max(MIN_TRACK_HEIGHT, dummy_painter.get_required_height(rows_required, canvas_width) );
+        }
+    },
+    /**
      * Draw FeatureTrack tile.
      * @param result result from server
      * @param canvas canvas to draw on
@@ -3925,50 +3988,14 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      */
     draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
-            tile_bounds = track._get_tile_bounds(tile_index, resolution),
+            tile_bounds = this._get_tile_bounds(tile_index, resolution),
             tile_low = tile_bounds[0],
             tile_high = tile_bounds[1],
-            tile_span = tile_high - tile_low,
-            width = Math.ceil(tile_span * w_scale),
             min_height = 25,
-            left_offset = this.left_offset,
-            slots,
-            required_height;
-            
-        // Set display mode if Auto.
-        if (mode === "Auto") {
-            if (result.dataset_type === "summary_tree") {
-                mode = result.dataset_type;
-            } 
-            // HACK: use no_detail mode track is in overview to prevent overview from being too large.
-            else if (result.extra_info === "no_detail" || track.is_overview) {
-                mode = "no_detail";
-            } 
-            else {
-                // Choose b/t Squish and Pack.
-                // Proxy measures for using Squish: 
-                // (a) error message re: limiting number of features shown; 
-                // (b) X number of features shown;
-                // (c) size of view shown.
-                // TODO: cannot use (a) and (b) because it requires coordinating mode across tiles;
-                // fix this so that tiles are redrawn as necessary to use the same mode.
-                //if ( (result.message && result.message.match(/^Only the first [\d]+/)) ||
-                //     (result.data && result.data.length > 2000) ||
-                var data = result.data;
-                // if ( (data.length && data.length < 4) ||
-                //      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
-                if ( this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH ) {
-                    mode = "Squish";
-                } else {
-                    mode = "Pack";
-                }
-            }
-            this.update_auto_mode( mode );
-        }
+            left_offset = this.left_offset;
         
         // Drawing the summary tree (feature coverage histogram)
         if (mode === "summary_tree" || mode === "Histogram") {
-            required_height = this.summary_draw_height;
             // Add label to container div showing maximum count
             // TODO: this shouldn't be done at the tile level
             this.container_div.find(".yaxislabel").remove();
@@ -3976,9 +4003,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             max_label.text(result.max);
             max_label.css({ position: "absolute", top: "24px", left: "10px", color: this.prefs.label_color });
             max_label.prependTo(this.container_div);
-            canvas.width = width + left_offset;
-            // Extra padding at top of summary tree
-            canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
             
             // Get summary tree data if necessary and set max if there is one.
             if (result.dataset_type != "summary_tree") {
@@ -3993,18 +4017,11 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             var ctx = canvas.getContext("2d");
             // Deal with left_offset by translating.
             ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
-            painter.draw(ctx, width, required_height);
+            painter.draw(ctx, canvas.width, canvas.height);
             return new SummaryTreeTile(track, tile_index, resolution, canvas, result.data, result.max);
         }
 
-        // Start dealing with row-by-row tracks
-        
-        // If working with a mode where slotting is necessary, update the incremental slotting
-        var slots, slots_required = 1;
-        if ( mode === "no_detail" || mode === "Squish" || mode === "Pack" ) {
-            slots_required = this.incremental_slots(w_scale, result.data, mode);
-            slots = this.inc_slots[w_scale].slots;
-        }
+        // Handle row-by-row tracks
 
         // Filter features.
         var filtered = [];
@@ -4028,16 +4045,12 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             }
         }        
         
-        // Create painter, and canvas of sufficient size to contain all features.
+        // Create painter.
         var filter_alpha_scaler = (this.filters_manager.alpha_filter ? new FilterScaler(this.filters_manager.alpha_filter) : null);
         var filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null);
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
         var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, ref_seq);
-        var required_height = Math.max(MIN_TRACK_HEIGHT, painter.get_required_height(slots_required,width));
         var feature_mapper = null;
-        
-        canvas.width = width + left_offset;
-        canvas.height = required_height;
 
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = canvas.getContext("2d");
@@ -4048,8 +4061,9 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         if (result.data) {
             // Draw features.
+            slots = this.inc_slots[w_scale].slots;
             ctx.translate(left_offset, 0);
-            feature_mapper = painter.draw(ctx, width, required_height, slots);
+            feature_mapper = painter.draw(ctx, canvas.width, canvas.height, slots);
             feature_mapper.translation = -left_offset;
         }
         
