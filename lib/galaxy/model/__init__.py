@@ -2660,7 +2660,7 @@ class APIKeys( object ):
     pass
 
 class ToolShedRepository( object ):
-    def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None,
+    def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
                   changeset_revision=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False ):
         self.id = id
         self.create_time = create_time
@@ -2668,6 +2668,7 @@ class ToolShedRepository( object ):
         self.name = name
         self.description = description
         self.owner = owner
+        self.installed_changeset_revision = installed_changeset_revision
         self.changeset_revision = changeset_revision
         self.metadata = metadata
         self.includes_datatypes = includes_datatypes

@@ -3,6 +3,55 @@ from galaxy.util.shed_util import *
 
 log = logging.getLogger( __name__ )
 
+class ToolIdGuidMapGrid( grids.Grid ):
+    class ToolIdColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_id_guid_map ):
+            return tool_id_guid_map.tool_id
+    class ToolVersionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_id_guid_map ):
+            return tool_id_guid_map.tool_version
+    class ToolGuidColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_id_guid_map ):
+            return tool_id_guid_map.guid
+    class ToolShedColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_id_guid_map ):
+            return tool_id_guid_map.tool_shed
+    class RepositoryNameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_id_guid_map ):
+            return tool_id_guid_map.repository_name
+    class RepositoryOwnerColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_id_guid_map ):
+            return tool_id_guid_map.repository_owner
+    # Grid definition
+    title = "Map tool id to guid"
+    model_class = model.ToolIdGuidMap
+    template='/admin/tool_shed_repository/grid.mako'
+    default_sort_key = "tool_id"
+    columns = [
+        ToolIdColumn( "Tool id" ),
+        ToolVersionColumn( "Version" ),
+        ToolGuidColumn( "Guid" ),
+        ToolShedColumn( "Tool shed" ),
+        RepositoryNameColumn( "Repository name" ),
+        RepositoryOwnerColumn( "Repository owner" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0], columns[2], columns[4], columns[5] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    global_actions = [
+        grids.GridAction( "Manage installed tool shed repositories", dict( controller='admin_toolshed', action='browse_repositories' ) )
+    ]
+    operations = []
+    standard_filters = []
+    default_filter = {}
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( self.model_class )
+
 class RepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool_shed_repository ):
@@ -46,6 +95,9 @@ class RepositoryListGrid( grids.Grid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
+    global_actions = [
+        grids.GridAction( "View tool id guid map", dict( controller='admin_toolshed', action='browse_tool_id_guid_map' ) )
+    ]
     operations = [ grids.GridOperation( "Get updates",
                                         allow_multiple=False,
                                         condition=( lambda item: not item.deleted ),
@@ -62,7 +114,12 @@ class RepositoryListGrid( grids.Grid ):
 class AdminToolshed( AdminGalaxy ):
     
     repository_list_grid = RepositoryListGrid()
+    tool_id_guid_map_grid = ToolIdGuidMapGrid()
 
+    @web.expose
+    @web.require_admin
+    def browse_tool_id_guid_map( self, trans, **kwd ):
+        return self.tool_id_guid_map_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def browse_repository( self, trans, **kwd ):
@@ -272,7 +329,7 @@ class AdminToolshed( AdminGalaxy ):
     def check_for_updates( self, trans, **kwd ):
         # Send a request to the relevant tool shed to see if there are any updates.
         repository = get_repository( trans, kwd[ 'id' ] )
-        tool_shed_url = get_url_from_repository_tool_shed( trans, repository )
+        tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
         url = '%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
             ( tool_shed_url, url_for( '', qualified=True ), repository.name, repository.owner, repository.changeset_revision )
         return trans.response.send_redirect( url )
@@ -296,30 +353,14 @@ class AdminToolshed( AdminGalaxy ):
                 current_working_dir = os.getcwd()
                 relative_install_dir = self.__get_relative_install_dir( trans, repository )
                 if relative_install_dir:
-                    # Update the cloned repository to changeset_revision.
                     repo_files_dir = os.path.join( relative_install_dir, name )
-                    log.debug( "Updating cloned repository named '%s' from revision '%s' to revision '%s'..." % \
-                        ( name, changeset_revision, latest_changeset_revision ) )
-                    cmd = 'hg pull'
-                    tmp_name = tempfile.NamedTemporaryFile().name
-                    tmp_stderr = open( tmp_name, 'wb' )
-                    os.chdir( repo_files_dir )
-                    proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
-                    returncode = proc.wait()
-                    os.chdir( current_working_dir )
-                    tmp_stderr.close()
+                    returncode, tmp_name = pull_repository( current_working_dir, repo_files_dir, name )
                     if returncode == 0:
-                        cmd = 'hg update -r %s' % latest_changeset_revision
-                        tmp_name = tempfile.NamedTemporaryFile().name
-                        tmp_stderr = open( tmp_name, 'wb' )
-                        os.chdir( repo_files_dir )
-                        proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
-                        returncode = proc.wait()
-                        os.chdir( current_working_dir )
-                        tmp_stderr.close()
+                        returncode, tmp_name = update_repository( current_working_dir, repo_files_dir, latest_changeset_revision )
                         if returncode == 0:
                             # Update the repository changeset_revision in the database.
                             repository.changeset_revision = latest_changeset_revision
+                            repository.update_available = False
                             trans.sa_session.add( repository )
                             trans.sa_session.flush()
                             message = "The cloned repository named '%s' has been updated to change set revision '%s'." % \
@@ -370,7 +411,7 @@ class AdminToolshed( AdminGalaxy ):
     def __get_relative_install_dir( self, trans, repository ):
         # Get the directory where the repository is install.
         tool_shed = clean_tool_shed_url( repository.tool_shed )
-        partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.changeset_revision )
+        partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
         # Get the relative tool installation paths from each of the shed tool configs.
         shed_tool_confs = trans.app.toolbox.shed_tool_confs
         relative_install_dir = None
@@ -396,7 +437,7 @@ class AdminToolshed( AdminGalaxy ):
         return '%s/repos%s/%s' % ( tool_shed_url, repo_path, changeset_revision )
     def __generate_clone_url( self, trans, repository ):
         """Generate the URL for cloning a repository."""
-        tool_shed_url = get_url_from_repository_tool_shed( trans, repository )
+        tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
         return '%s/repos/%s/%s' % ( tool_shed_url, repository.owner, repository.name )
 
 ## ---- Utility methods -------------------------------------------------------
@@ -426,23 +467,3 @@ def build_tool_panel_section_select_field( trans ):
 def get_repository( trans, id ):
     """Get a tool_shed_repository from the database via id"""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
-def get_repository_by_name_owner_changeset_revision( trans, name, owner, changeset_revision ):
-    """Get a repository from the database via name owner and changeset_revision"""
-    return trans.sa_session.query( trans.model.ToolShedRepository ) \
-                             .filter( and_( trans.model.ToolShedRepository.table.c.name == name,
-                                            trans.model.ToolShedRepository.table.c.owner == owner,
-                                            trans.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
-                             .first()
-def get_url_from_repository_tool_shed( trans, repository ):
-    # The stored value of repository.tool_shed is something like:
-    # toolshed.g2.bx.psu.edu
-    # We need the URL to this tool shed, which is something like:
-    # http://toolshed.g2.bx.psu.edu/
-    for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
-        if shed_url.find( repository.tool_shed ) >= 0:
-            if shed_url.endswith( '/' ):
-                shed_url = shed_url.rstrip( '/' )
-            return shed_url
-    # The tool shed from which the repository was originally
-    # installed must no longer be configured in tool_sheds_conf.xml.
-    return None

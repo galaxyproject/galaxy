@@ -764,22 +764,32 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return trans.response.send_redirect( url )
     @web.expose
     def check_for_updates( self, trans, **kwd ):
+        # Handle a request from a local Galaxy instance.  If the request originated with the
+        # Galaxy instances' UpdateManager, the value of 'webapp' will be 'update_manager'.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = kwd[ 'galaxy_url' ]
+        # If the request originated with the UpdateManager, it will not include a galaxy_url.
+        galaxy_url = kwd.get( 'galaxy_url', '' )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         webapp = params.get( 'webapp', 'community' )
-        # Start building up the url to redirect back to the calling Galaxy instance.
-        url = '%s/admin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '', qualified=True ) )
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
-            ( repository.name, repository.user.username, changeset_revision )
+        from_update_manager = webapp == 'update_manager'
+        if from_update_manager:
+            update = 'true'
+            no_update = 'false'
+        else:
+            # Start building up the url to redirect back to the calling Galaxy instance.
+            url = '%s/admin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '', qualified=True ) )
+            url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
+                ( repository.name, repository.user.username, changeset_revision )
         if changeset_revision == repository.tip:
             # If changeset_revision is the repository tip, then
             # we know there are no additional updates for the tools.
+            if from_update_manager:
+                return no_update
             url += repository.tip
         else:
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
@@ -788,6 +798,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if repository_metadata:
                 # If changeset_revision is in the repository_metadata table for this
                 # repository, then we know there are no additional updates for the tools.
+                if from_update_manager:
+                    return no_update
                 url += changeset_revision
             else:
                 # The changeset_revision column in the repository_metadata table has been
@@ -836,15 +848,21 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             if tool_guids == metadata_tool_guids:
                                 # We've found the repository_metadata record whose changeset_revision
                                 # value has been updated.
+                                if from_update_manager:
+                                    return update
                                 url += repository_metadata.changeset_revision
                                 found = True
                                 break
                         if not found:
                             # There must be a problem in the data, so we'll just send back the received changeset_revision.
                             log.debug( "Possible data corruption - updated repository_metadata cannot be found for repository id %d." % repository.id )
+                            if from_update_manager:
+                                return no_update
                             url += changeset_revision
                     else:
                         # There are not tools in the changeset_revision, so no tool updates are possible.
+                        if from_update_manager:
+                            return no_update
                         url += changeset_revision
         return trans.response.send_redirect( url )
     @web.expose

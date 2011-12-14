@@ -3,7 +3,7 @@ import sys, os, atexit
 from galaxy import config, jobs, util, tools, web
 import galaxy.tools.search
 import galaxy.tools.data
-import galaxy.tools.tool_shed_registry
+import galaxy.tool_shed.tool_shed_registry
 from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
@@ -28,7 +28,7 @@ class UniverseApplication( object ):
         galaxy.model.set_datatypes_registry( self.datatypes_registry )
         # Set up the tool sheds registry
         if os.path.isfile( self.config.tool_sheds_config ):
-            self.tool_shed_registry = galaxy.tools.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
         else:
             self.tool_shed_registry = None
         # Determine the database url
@@ -61,8 +61,13 @@ class UniverseApplication( object ):
         # If enabled, check for tools missing from the distribution because they
         # have been moved to the tool shed and install all such discovered tools.
         if self.config.get_bool( 'enable_tool_shed_install', False ):
-            from tools import install_manager
+            from tool_shed import install_manager
             self.install_manager = install_manager.InstallManager( self, self.config.tool_shed_install_config, self.config.install_tool_config )
+        # If enabled, poll respective tool sheds to see if updates are
+        # available for any installed tool shed repositories.
+        if self.config.get_bool( 'enable_tool_shed_check', False ):
+            from tool_shed import update_manager
+            self.update_manager = update_manager.UpdateManager( self )
         # Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load history import/export tools

@@ -65,7 +65,8 @@ def clean_tool_shed_url( tool_shed_url ):
     return tool_shed_url.rstrip( '/' )
 def clone_repository( name, clone_dir, current_working_dir, repository_clone_url ):
     log.debug( "Installing repository '%s'" % name )
-    os.makedirs( clone_dir )
+    if not os.path.exists( clone_dir ):
+        os.makedirs( clone_dir )
     log.debug( 'Cloning %s' % repository_clone_url )
     cmd = 'hg clone %s' % repository_clone_url
     tmp_name = tempfile.NamedTemporaryFile().name
@@ -88,15 +89,18 @@ def create_or_undelete_tool_shed_repository( app, name, description, changeset_r
     tool_shed_repository = get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision )
     if tool_shed_repository:
         if tool_shed_repository.deleted:
-            tool_shed_repository.deleted = False
-            # Reset includes_datatypes in case metadata changed since last installed.
+            tool_shed_repository.description = description
+            tool_shed_repository.changeset_revision = changeset_revision
+            tool_shed_repository.metadata = metadata_dict
             tool_shed_repository.includes_datatypes = includes_datatypes
+            tool_shed_repository.deleted = False
             flush_needed = True
     else:
         tool_shed_repository = app.model.ToolShedRepository( tool_shed=tool_shed,
                                                              name=name,
                                                              description=description,
                                                              owner=owner,
+                                                             installed_changeset_revision=changeset_revision,
                                                              changeset_revision=changeset_revision,
                                                              metadata=metadata_dict,
                                                              includes_datatypes=includes_datatypes )
@@ -318,6 +322,20 @@ def get_tool_id_guid_map( app, tool_id, version, tool_shed, repository_owner, re
                                     app.model.ToolIdGuidMap.table.c.repository_owner == repository_owner,
                                     app.model.ToolIdGuidMap.table.c.repository_name == repository_name ) ) \
                      .first()
+def get_url_from_repository_tool_shed( app, repository ):
+    """
+    This method is used by the UpdateManager, which does not have access to trans.
+    The stored value of repository.tool_shed is something like: toolshed.g2.bx.psu.edu
+    We need the URL to this tool shed, which is something like: http://toolshed.g2.bx.psu.edu/
+    """
+    for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
+        if shed_url.find( repository.tool_shed ) >= 0:
+            if shed_url.endswith( '/' ):
+                shed_url = shed_url.rstrip( '/' )
+            return shed_url
+    # The tool shed from which the repository was originally
+    # installed must no longer be configured in tool_sheds_conf.xml.
+    return None
 def handle_missing_data_table_entry( app, tool_path, sample_files, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically
@@ -532,7 +550,19 @@ def pretty_print_xml( elem, level=0 ):
         if level and ( not elem.tail or not elem.tail.strip() ):
             elem.tail = i + pad
     return elem
-def update_repository( current_working_dir, relative_install_dir, changeset_revision ):
+def pull_repository( current_working_dir, repo_files_dir, name ):
+    # Pull the latest possible contents to the repository.
+    log.debug( "Pulling latest updates to the repository named '%s'" % name )
+    cmd = 'hg pull'
+    tmp_name = tempfile.NamedTemporaryFile().name
+    tmp_stderr = open( tmp_name, 'wb' )
+    os.chdir( repo_files_dir )
+    proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
+    returncode = proc.wait()
+    os.chdir( current_working_dir )
+    tmp_stderr.close()
+    return returncode, tmp_name
+def update_repository( current_working_dir, repo_files_dir, changeset_revision ):
     # Update the cloned repository to changeset_revision.  It is imperative that the 
     # installed repository is updated to the desired changeset_revision before metadata
     # is set because the process for setting metadata uses the repository files on disk.
@@ -540,7 +570,7 @@ def update_repository( current_working_dir, relative_install_dir, changeset_revi
     cmd = 'hg update -r %s' % changeset_revision
     tmp_name = tempfile.NamedTemporaryFile().name
     tmp_stderr = open( tmp_name, 'wb' )
-    os.chdir( relative_install_dir )
+    os.chdir( repo_files_dir )
     proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
     returncode = proc.wait()
     os.chdir( current_working_dir )

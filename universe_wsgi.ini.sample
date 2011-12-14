@@ -147,6 +147,13 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # if appropriate or use a different file name for the setting.
 #install_tool_config_file = shed_tool_conf.xml
 
+# Enable automatic polling of relative tool sheds to see if any updates
+# are available for installed repositories.  Ideally only one Galaxy 
+# server process should be able to check for repository updates.  The
+# setting for hours_between_check should be an integer between 1 and 24.
+#enable_tool_shed_check = False
+#hours_between_check = 12
+
 # Directory where data used by tools is located, see the samples in that
 # directory and the wiki for help:
 # http://wiki.g2.bx.psu.edu/Admin/Data%20Integration
