@@ -1198,14 +1198,57 @@ class User( BaseUIController, UsesFormDefinitions ):
             # Add new custom build.
             name = kwds.get('name', '')
             key = kwds.get('key', '')
-            dataset_id = kwds.get('dataset_id', '')
-            if not name or not key or not dataset_id:
+            
+            # Look for build's chrom info in len_file and len_text.
+            len_file = kwds.get( 'len_file', None )
+            if getattr( len_file, "file", None ): # Check if it's a FieldStorage object
+                len_text = len_file.file.read()
+            else:
+                len_text = kwds.get( 'len_text', None )
+            
+            if not len_text:
+                # Using FASTA from history.
+                dataset_id = kwds.get('dataset_id', '')
+                
+            if not name or not key or not ( len_text or dataset_id ):
                 message = "You must specify values for all the fields."
             elif key in dbkeys:
                 message = "There is already a custom build with that key. Delete it first if you want to replace it."
             else:
-                dataset_id = trans.security.decode_id( dataset_id )
-                dbkeys[key] = { "name": name, "fasta": dataset_id }
+                # Have everything needed; create new build.
+                build_dict = { "name": name }
+                if len_text:
+                    # Create new len file
+                    new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
+                    trans.sa_session.add( new_len )
+                    new_len.name = name
+                    new_len.visible = False
+                    new_len.state = trans.app.model.Job.states.OK
+                    new_len.info = "custom build .len file"
+                    trans.sa_session.flush()
+                    counter = 0
+                    f = open(new_len.file_name, "w")
+                    # LEN files have format:
+                    #   <chrom_name><tab><chrom_length>
+                    for line in len_text.split("\n"):
+                        lst = line.strip().rsplit(None, 1) # Splits at the last whitespace in the line
+                        if not lst or len(lst) < 2:
+                            lines_skipped += 1
+                            continue
+                        chrom, length = lst[0], lst[1]
+                        try:
+                            length = int(length)
+                        except ValueError:
+                            lines_skipped += 1
+                            continue
+                        counter += 1
+                        f.write("%s\t%s\n" % (chrom, length))
+                    f.close()
+                    build_dict.update( { "len": new_len.id, "count": counter } )
+                else:
+                    dataset_id = trans.security.decode_id( dataset_id )
+                    build_dict[ "fasta" ] = dataset_id
+                dbkeys[key] = build_dict
         # Save builds.
         # TODO: use database table to save builds.
         user.preferences['dbkeys'] = to_json_string(dbkeys)
