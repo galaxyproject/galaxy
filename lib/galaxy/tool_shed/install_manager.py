@@ -73,18 +73,19 @@ class InstallManager( object ):
             if returncode == 0:
                 returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, changeset_revision )
                 if returncode == 0:
-                    metadata_dict = load_repository_contents( self.app,
-                                                              name,
-                                                              description,
-                                                              self.repository_owner,
-                                                              changeset_revision,
-                                                              repository_clone_url,
-                                                              self.install_tool_config, 
-                                                              self.tool_path,
-                                                              tool_section,
-                                                              relative_install_dir,
-                                                              current_working_dir,
-                                                              tmp_name )
+                    metadata_dict = load_repository_contents( app=self.app,
+                                                              name=name,
+                                                              description=description,
+                                                              owner=self.repository_owner,
+                                                              changeset_revision=changeset_revision,
+                                                              tool_path=self.tool_path,
+                                                              repository_clone_url=repository_clone_url,
+                                                              relative_install_dir=relative_install_dir,
+                                                              current_working_dir=current_working_dir,
+                                                              tmp_name=tmp_name,
+                                                              tool_section=tool_section,
+                                                              shed_tool_conf=self.install_tool_config,
+                                                              new_install=True )
                     # Add a new record to the tool_id_guid_map table for each
                     # tool in the repository if one doesn't already exist.
                     if 'tools' in metadata_dict:

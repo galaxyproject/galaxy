@@ -237,18 +237,19 @@ class AdminToolshed( AdminGalaxy ):
                         returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, changeset_revision )
                         if returncode == 0:
                             owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
-                            metadata_dict = load_repository_contents( trans.app,
-                                                                      name,
-                                                                      description,
-                                                                      owner,
-                                                                      changeset_revision,
-                                                                      repository_clone_url,
-                                                                      shed_tool_conf, 
-                                                                      tool_path,
-                                                                      tool_section,
-                                                                      relative_install_dir,
-                                                                      current_working_dir,
-                                                                      tmp_name )
+                            metadata_dict = load_repository_contents( app=trans.app,
+                                                                      name=name,
+                                                                      description=description,
+                                                                      owner=owner,
+                                                                      changeset_revision=changeset_revision,
+                                                                      tool_path=tool_path,
+                                                                      repository_clone_url=repository_clone_url,
+                                                                      relative_install_dir=relative_install_dir,
+                                                                      current_working_dir=current_working_dir,
+                                                                      tmp_name=tmp_name,
+                                                                      tool_section=tool_section,
+                                                                      shed_tool_conf=shed_tool_conf,
+                                                                      new_install=True )
                             installed_repository_names.append( name )
                         else:
                             tmp_stderr = open( tmp_name, 'rb' )
@@ -302,7 +303,7 @@ class AdminToolshed( AdminGalaxy ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, kwd[ 'id' ] )
         description = util.restore_text( params.get( 'description', repository.description ) )
-        relative_install_dir = self.__get_relative_install_dir( trans, repository )
+        tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
         repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
         if params.get( 'edit_repository_button', False ):
             if description != repository.description:
@@ -351,13 +352,28 @@ class AdminToolshed( AdminGalaxy ):
                 message = "The cloned tool shed repository named '%s' is current (there are no updates available)." % name
             else:
                 current_working_dir = os.getcwd()
-                relative_install_dir = self.__get_relative_install_dir( trans, repository )
+                tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
                 if relative_install_dir:
                     repo_files_dir = os.path.join( relative_install_dir, name )
                     returncode, tmp_name = pull_repository( current_working_dir, repo_files_dir, name )
                     if returncode == 0:
                         returncode, tmp_name = update_repository( current_working_dir, repo_files_dir, latest_changeset_revision )
                         if returncode == 0:
+                            # Update the repository metadata.
+                            repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
+                            metadata_dict = load_repository_contents( app=trans.app,
+                                                                      name=name,
+                                                                      description=repository.description,
+                                                                      owner=owner,
+                                                                      changeset_revision=changeset_revision,
+                                                                      tool_path=tool_path,
+                                                                      repository_clone_url=repository_clone_url,
+                                                                      relative_install_dir=relative_install_dir,
+                                                                      current_working_dir=current_working_dir,
+                                                                      tmp_name=tmp_name,
+                                                                      tool_section=None,
+                                                                      shed_tool_conf=None,
+                                                                      new_install=False )
                             # Update the repository changeset_revision in the database.
                             repository.changeset_revision = latest_changeset_revision
                             repository.update_available = False
@@ -408,8 +424,9 @@ class AdminToolshed( AdminGalaxy ):
                                     metadata=metadata,
                                     message=message,
                                     status=status )
-    def __get_relative_install_dir( self, trans, repository ):
-        # Get the directory where the repository is install.
+    def __get_tool_path_and_relative_install_dir( self, trans, repository ):
+        # Return both the tool_path configured in the relative shed_tool_conf and
+        # the relative path to the directory where the repository is installed.
         tool_shed = clean_tool_shed_url( repository.tool_shed )
         partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
         # Get the relative tool installation paths from each of the shed tool configs.
@@ -420,7 +437,7 @@ class AdminToolshed( AdminGalaxy ):
             relative_install_dir = os.path.join( tool_path, partial_install_dir )
             if os.path.isdir( relative_install_dir ):
                 break
-        return relative_install_dir
+        return tool_path, relative_install_dir
     def __generate_tool_path( self, repository_clone_url, changeset_revision ):
         """
         Generate a tool path that guarantees repositories with the same name will always be installed

@@ -2,6 +2,7 @@ import os, tempfile, shutil, subprocess, logging
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import util
+from galaxy.util.json import *
 from galaxy.tools import ToolSection
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.model.orm import *
@@ -77,7 +78,7 @@ def clone_repository( name, clone_dir, current_working_dir, repository_clone_url
     os.chdir( current_working_dir )
     tmp_stderr.close()
     return returncode, tmp_name
-def create_or_undelete_tool_shed_repository( app, name, description, changeset_revision, repository_clone_url, metadata_dict, owner='' ):
+def create_or_update_tool_shed_repository( app, name, description, changeset_revision, repository_clone_url, metadata_dict, owner='' ):
     # This method is used by the InstallManager, which does not have access to trans.
     sa_session = app.model.context.current
     tmp_url = clean_repository_clone_url( repository_clone_url )
@@ -85,16 +86,13 @@ def create_or_undelete_tool_shed_repository( app, name, description, changeset_r
     if not owner:
         owner = get_repository_owner( tmp_url )
     includes_datatypes = 'datatypes_config' in metadata_dict
-    flush_needed = False
     tool_shed_repository = get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision )
     if tool_shed_repository:
-        if tool_shed_repository.deleted:
-            tool_shed_repository.description = description
-            tool_shed_repository.changeset_revision = changeset_revision
-            tool_shed_repository.metadata = metadata_dict
-            tool_shed_repository.includes_datatypes = includes_datatypes
-            tool_shed_repository.deleted = False
-            flush_needed = True
+        tool_shed_repository.description = description
+        tool_shed_repository.changeset_revision = changeset_revision
+        tool_shed_repository.metadata = metadata_dict
+        tool_shed_repository.includes_datatypes = includes_datatypes
+        tool_shed_repository.deleted = False
     else:
         tool_shed_repository = app.model.ToolShedRepository( tool_shed=tool_shed,
                                                              name=name,
@@ -104,10 +102,8 @@ def create_or_undelete_tool_shed_repository( app, name, description, changeset_r
                                                              changeset_revision=changeset_revision,
                                                              metadata=metadata_dict,
                                                              includes_datatypes=includes_datatypes )
-        flush_needed = True
-    if flush_needed:
-        sa_session.add( tool_shed_repository )
-        sa_session.flush()
+    sa_session.add( tool_shed_repository )
+    sa_session.flush()
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     """
     Update the received metadata_dict with changes that have been applied
@@ -471,12 +467,17 @@ def load_datatypes( app, datatypes_config, relative_intall_dir ):
         except Exception, e:
             log.debug( "Exception importing datatypes code file included in installed repository: %s" % str( e ) )
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_module=imported_module )
-def load_repository_contents( app, name, description, owner, changeset_revision, repository_clone_url, shed_tool_conf, 
-                              tool_path, tool_section, relative_install_dir, current_working_dir, tmp_name ):
+def load_repository_contents( app, name, description, owner, changeset_revision, tool_path, repository_clone_url, relative_install_dir,
+                              current_working_dir, tmp_name, tool_section=None, shed_tool_conf=None, new_install=True ):
     # This method is used by the InstallManager, which does not have access to trans.
     # Generate the metadata for the installed tool shed repository.  It is imperative that
     # the installed repository is updated to the desired changeset_revision before metadata
-    # is set because the process for setting metadata uses the repository files on disk.
+    # is set because the process for setting metadata uses the repository files on disk.  This
+    # method is called when new tools have been installed (in which case values should be received
+    # for tool_section and shed_tool_conf, and new_install should be left at it's default value)
+    # and when updates have been pulled to previously installed repositories (in which case the
+    # default value None is set for tool_section and shed_tool_conf, and the value of new_install
+    # is passed as False).
     metadata_dict = generate_metadata( app.toolbox, relative_install_dir, repository_clone_url )
     if 'datatypes_config' in metadata_dict:
         datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
@@ -497,42 +498,38 @@ def load_repository_contents( app, name, description, owner, changeset_revision,
             repository_tools_tups = handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups )
             # Handle tools that use fabric scripts to install dependencies.
             handle_tool_dependencies( current_working_dir, relative_install_dir, repository_tools_tups )
-            # Generate a new entry for the tool config.
-            elem_list = generate_tool_panel_elem_list( name,
-                                                       repository_clone_url,
-                                                       changeset_revision,
-                                                       repository_tools_tups,
-                                                       tool_section=tool_section,
-                                                       owner=owner )
-            if tool_section:
-                for section_elem in elem_list:
-                    # Load the section into the tool panel.
-                    app.toolbox.load_section_tag_set( section_elem, app.toolbox.tool_panel, tool_path )
-            else:
-                # Load the tools into the tool panel outside of any sections.
-                for tool_elem in elem_list:
-                    guid = tool_elem.get( 'guid' )
-                    app.toolbox.load_tool_tag_set( tool_elem, app.toolbox.tool_panel, tool_path=tool_path, guid=guid )
+            if new_install:
+                # Generate a new entry for the tool config.
+                elem_list = generate_tool_panel_elem_list( name,
+                                                           repository_clone_url,
+                                                           changeset_revision,
+                                                           repository_tools_tups,
+                                                           tool_section=tool_section,
+                                                           owner=owner )
+                if tool_section:
+                    for section_elem in elem_list:
+                        # Load the section into the tool panel.
+                        app.toolbox.load_section_tag_set( section_elem, app.toolbox.tool_panel, tool_path )
+                else:
+                    # Load the tools into the tool panel outside of any sections.
+                    for tool_elem in elem_list:
+                        guid = tool_elem.get( 'guid' )
+                        app.toolbox.load_tool_tag_set( tool_elem, app.toolbox.tool_panel, tool_path=tool_path, guid=guid )
+                for elem_entry in elem_list:
+                    # Append the new entry (either section or list of tools) to the shed_tool_config file.
+                    add_shed_tool_conf_entry( app, shed_tool_conf, elem_entry )
+            if app.toolbox_search.enabled:
+                # If search support for tools is enabled, index the new installed tools.
+                app.toolbox_search = ToolBoxSearch( app.toolbox )
             # Remove the temporary file
             try:
                 os.unlink( tmp_name )
             except:
                 pass
-            for elem_entry in elem_list:
-                # Append the new entry (either section or list of tools) to the shed_tool_config file.
-                add_shed_tool_conf_entry( app, shed_tool_conf, elem_entry )
-            if app.toolbox_search.enabled:
-                # If search support for tools is enabled, index the new installed tools.
-                app.toolbox_search = ToolBoxSearch( app.toolbox )
     # Add a new record to the tool_shed_repository table if one doesn't
     # already exist.  If one exists but is marked deleted, undelete it.
-    log.debug( "Adding new row to tool_shed_repository table for repository '%s'" % name )
-    create_or_undelete_tool_shed_repository( app,
-                                             name,
-                                             description,
-                                             changeset_revision,
-                                             repository_clone_url,
-                                             metadata_dict )
+    log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name )
+    create_or_update_tool_shed_repository( app, name, description, changeset_revision, repository_clone_url, metadata_dict )
     return metadata_dict
 def pretty_print_xml( elem, level=0 ):
     pad = '    '
