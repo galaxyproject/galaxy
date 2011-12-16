@@ -62,7 +62,10 @@ class Registry( object ):
                     mimetype = elem.get( 'mimetype', None )
                     display_in_upload = elem.get( 'display_in_upload', False )
                     make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
-                    if extension and ( dtype or type_extension ):
+                    if extension and extension in self.datatypes_by_extension:
+                        self.log.debug( "Ignoring datatype with extension '%s' from '%s' because the registry already includes a datatype with that extension." \
+                                        % ( extension, config ) )
+                    elif extension and ( dtype or type_extension ):
                         if dtype:
                             fields = dtype.split( ':' )
                             datatype_module = fields[0]
@@ -142,23 +145,24 @@ class Registry( object ):
                         d_type1.add_display_application( display_app )
             # Load datatype sniffers from the config
             sniffers = root.find( 'sniffers' )
-            for elem in sniffers.findall( 'sniffer' ):
-                dtype = elem.get( 'type', None )
-                if dtype:
-                    try:
-                        fields = dtype.split( ":" )
-                        datatype_module = fields[0]
-                        datatype_class = fields[1]
-                        module = __import__( datatype_module )
-                        for comp in datatype_module.split('.')[1:]:
-                            module = getattr(module, comp)
-                        aclass = getattr( module, datatype_class )() 
-                        self.sniff_order.append( aclass )
-                        self.log.debug( 'Loaded sniffer for datatype: %s' % dtype )
-                    except Exception, exc:
-                        self.log.warning( 'Error appending datatype %s to sniff_order, problem: %s' % ( dtype, str( exc ) ) )
-        #default values
-        if len(self.datatypes_by_extension) < 1:
+            if sniffers:
+                for elem in sniffers.findall( 'sniffer' ):
+                    dtype = elem.get( 'type', None )
+                    if dtype:
+                        try:
+                            fields = dtype.split( ":" )
+                            datatype_module = fields[0]
+                            datatype_class = fields[1]
+                            module = __import__( datatype_module )
+                            for comp in datatype_module.split('.')[1:]:
+                                module = getattr(module, comp)
+                            aclass = getattr( module, datatype_class )() 
+                            self.sniff_order.append( aclass )
+                            self.log.debug( 'Loaded sniffer for datatype: %s' % dtype )
+                        except Exception, exc:
+                            self.log.warning( 'Error appending datatype %s to sniff_order, problem: %s' % ( dtype, str( exc ) ) )
+        # Default values.
+        if not self.datatypes_by_extension:
             self.datatypes_by_extension = { 
                 'ab1'         : binary.Ab1(),
                 'axt'         : sequence.Axt(),
