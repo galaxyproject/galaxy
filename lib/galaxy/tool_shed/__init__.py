@@ -14,7 +14,8 @@ class InstalledRepositoryManager( object ):
     def load_datatypes( self ):
         for tool_shed_repository in self.sa_session.query( self.model.ToolShedRepository ) \
                                                    .filter( and_( self.model.ToolShedRepository.table.c.includes_datatypes==True,
-                                                                  self.model.ToolShedRepository.table.c.deleted==False ) ):
+                                                                  self.model.ToolShedRepository.table.c.deleted==False ) ) \
+                                                   .order_by( self.model.ToolShedRepository.table.c.id ):
             metadata = tool_shed_repository.metadata
             datatypes_config = metadata[ 'datatypes_config' ]
             full_path = os.path.abspath( datatypes_config )

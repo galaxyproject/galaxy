@@ -544,6 +544,7 @@ class JobExternalOutputMetadataWrapper( object ):
         if config_root is None:
             config_root = os.path.abspath( os.getcwd() )
         if datatypes_config is None:
+            raise Exception( 'In setup_external_metadata, the received datatypes_config is None.' )
             datatypes_config = 'datatypes_conf.xml'
         metadata_files_list = []
         for dataset in datasets:

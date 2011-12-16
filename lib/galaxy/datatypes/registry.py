@@ -27,9 +27,15 @@ class Registry( object ):
         self.sniff_order = []
         self.upload_file_formats = []
         self.display_applications = odict() #map a display application id to a display application
+        self.converters_path_attr = None
         self.datatype_converters_path = None
+        self.indexers_path_attr = None
         self.datatype_indexers_path = None
+        self.display_path_attr = None
         self.display_applications_path = None
+        self.datatype_elems = []
+        self.sniffer_elems = []
+        self.xml_filename = None
     def load_datatypes( self, root_dir=None, config=None, imported_module=None ):
         if root_dir and config:
             inherit_display_application_by_class = []
@@ -45,16 +51,21 @@ class Registry( object ):
             # files installed with repositories from tool sheds must use the same paths.  However, we
             # may discover at some future time that allowing for multiple paths is more optimal.
             if not self.datatype_converters_path:
-                self.datatype_converters_path = os.path.join( root_dir, registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' ) )
+                self.converters_path_attr = registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' )
+                self.datatype_converters_path = os.path.join( root_dir, self.converters_path_attr )
                 if not os.path.isdir( self.datatype_converters_path ):
                     raise ConfigurationError( "Directory does not exist: %s" % self.datatype_converters_path )
             if not self.datatype_indexers_path:
-                self.datatype_indexers_path = os.path.join( root_dir, registration.get( 'indexers_path', 'lib/galaxy/datatypes/indexers' ) )
+                self.indexers_path_attr = registration.get( 'indexers_path', 'lib/galaxy/datatypes/indexers' )
+                self.datatype_indexers_path = os.path.join( root_dir, self.indexers_path_attr )
                 if not os.path.isdir( self.datatype_indexers_path ):
                     raise ConfigurationError( "Directory does not exist: %s" % self.datatype_indexers_path )
             if not self.display_applications_path:
-                self.display_applications_path = os.path.join( root_dir, registration.get( 'display_path', 'display_applications' ) )
+                self.display_path_attr = registration.get( 'display_path', 'display_applications' )
+                self.display_applications_path = os.path.join( root_dir, self.display_path_attr )
             for elem in registration.findall( 'datatype' ):
+                # Keep an in-memory list of datatype elems to enable persistence.
+                self.datatype_elems.append( elem )
                 try:
                     extension = elem.get( 'extension', None ) 
                     dtype = elem.get( 'type', None )
@@ -147,6 +158,8 @@ class Registry( object ):
             sniffers = root.find( 'sniffers' )
             if sniffers:
                 for elem in sniffers.findall( 'sniffer' ):
+                    # Keep an in-memory list of sniffer elems to enable persistence.
+                    self.sniffer_elems.append( elem )
                     dtype = elem.get( 'type', None )
                     if dtype:
                         try:
@@ -418,3 +431,31 @@ class Registry( object ):
         if 'auto' not in rval and 'txt' in rval: #need to manually add 'auto' datatype
             rval[ 'auto' ] = rval[ 'txt' ]
         return rval
+    def to_xml_file( self ):
+        fd, filename = tempfile.mkstemp()
+        self.xml_filename = filename
+        if self.converters_path_attr:
+            converters_path_str = ' converters_path="%s"' % self.converters_path_attr
+        else:
+            converters_path_str = ''
+        if self.indexers_path_attr:
+            indexers_path_str = ' indexers_path="%s"' % self.indexers_path_attr
+        else:
+            indexers_path_str = ''
+        if self.display_path_attr:
+            display_path_str = ' display_path="%s"' % self.display_path_attr
+        else:
+            display_path_str = ''
+        os.write( fd, '<?xml version="1.0"?>\n' )
+        os.write( fd, '<datatypes>\n' )
+        os.write( fd, '<registration%s%s%s>\n' % ( converters_path_str, indexers_path_str, display_path_str ) )
+        for elem in self.datatype_elems:
+            os.write( fd, '%s' % galaxy.util.xml_to_string( elem ) )
+        os.write( fd, '</registration>\n' )
+        os.write( fd, '<sniffers>\n' )
+        for elem in self.sniffer_elems:
+            os.write( fd, '%s' % galaxy.util.xml_to_string( elem ) )
+        os.write( fd, '</sniffers>\n' )
+        os.write( fd, '</datatypes>\n' )
+        os.close( fd )
+        return filename

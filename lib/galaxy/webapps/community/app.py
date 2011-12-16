@@ -16,6 +16,7 @@ class UniverseApplication( object ):
         config.configure_logging( self.config )
         # Set up datatypes registry
         self.datatypes_registry = galaxy.datatypes.registry.Registry()
+        # TODO: Handle datatypes included in repositories - the following will only load datatypes_conf.xml.
         self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
         # Determine the database url
         if self.config.database_connection:

@@ -9,7 +9,7 @@ from galaxy.model.orm import *
 
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element, SubElement, tostring
+from elementtree.ElementTree import Element, SubElement
 
 log = logging.getLogger( __name__ )
 
@@ -39,7 +39,7 @@ def add_shed_tool_conf_entry( app, shed_tool_conf, tool_panel_entry ):
         if line.startswith( '</toolbox>' ):
             # We're at the end of the original config file, so add our entry.
             new_shed_tool_conf.write( '    ' )
-            new_shed_tool_conf.write( tostring( pretty_print_xml( tool_panel_entry ) ) )
+            new_shed_tool_conf.write( util.xml_to_string( tool_panel_entry, pretty=True ) )
             new_shed_tool_conf.write( line )
         else:
             new_shed_tool_conf.write( line )
@@ -554,22 +554,6 @@ def load_repository_contents( app, name, description, owner, changeset_revision,
     log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name )
     create_or_update_tool_shed_repository( app, name, description, changeset_revision, repository_clone_url, metadata_dict )
     return metadata_dict
-def pretty_print_xml( elem, level=0 ):
-    pad = '    '
-    i = "\n" + level * pad
-    if len( elem ):
-        if not elem.text or not elem.text.strip():
-            elem.text = i + pad + pad
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for e in elem:
-            pretty_print_xml( e, level + 1 )
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and ( not elem.tail or not elem.tail.strip() ):
-            elem.tail = i + pad
-    return elem
 def pull_repository( current_working_dir, repo_files_dir, name ):
     # Pull the latest possible contents to the repository.
     log.debug( "Pulling latest updates to the repository named '%s'" % name )

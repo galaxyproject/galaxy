@@ -118,9 +118,16 @@ class UniverseApplication( object ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
-        
     def shutdown( self ):
         self.job_manager.shutdown()
         self.object_store.shutdown()
         if self.heartbeat:
             self.heartbeat.shutdown()
+        try:
+            # If the datatypes registry was persisted, attempt to
+            # remove the temporary file in which it was written.
+            tmp_filename = self.datatypes_registry.xml_filename
+            if tmp_filename:
+                os.unlink( tmp_filename )
+        except:
+            pass
