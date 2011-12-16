@@ -149,6 +149,7 @@
     <tool file="stats/plot_from_lda.xml" />
     <tool file="regVariation/t_test_two_samples.xml" />
     <tool file="regVariation/compute_q_values.xml" />
+    <tool file="stats/MINE.xml" />
     
     <label text="GFF" id="gff" />
     <tool file="stats/count_gff_features.xml" />
