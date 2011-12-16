@@ -128,25 +128,22 @@
                         <table class="grid">
                             <tr>
                                 <td><b>extension</b></td>
-                                <td><b>dtype</b></td>
+                                <td><b>type</b></td>
                                 <td><b>mimetype</b></td>
+                                <td><b>subclass</b></td>
                             </tr>
                             %for datatypes_dict in datatypes_dicts:
-                                <% 
-                                    extension = datatypes_dict[ 'extension' ]
-                                    dtype = datatypes_dict[ 'dtype' ]
-                                    mimetype = datatypes_dict[ 'mimetype' ]
+                                <%
+                                    extension = datatypes_dict.get( 'extension', '&nbsp;' )
+                                    dtype = datatypes_dict.get( 'dtype', '&nbsp;' )
+                                    mimetype = datatypes_dict.get( 'mimetype', '&nbsp;' )
+                                    subclass = datatypes_dict.get( 'subclass', '&nbsp;' )
                                 %>
                                 <tr>
                                     <td>${extension}</td>
                                     <td>${dtype}</td>
-                                    <td>
-                                        %if mimetype:
-                                            ${mimetype}
-                                        %else:
-                                            &nbsp;
-                                        %endif
-                                    </td>
+                                    <td>${mimetype}</td>
+                                    <td>${subclass}</td>
                                 </tr>
                             %endfor
                         </table>

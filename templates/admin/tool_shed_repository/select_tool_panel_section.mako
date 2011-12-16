@@ -25,7 +25,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Choose tool panel section to contain installed tools (optional)</div>
     <div class="toolFormBody">
-        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='install_repository', tool_shed_url=tool_shed_url, repo_info_dict=repo_info_dict )}" method="post" >
+        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='install_repository', tool_shed_url=tool_shed_url, repo_info_dict=repo_info_dict, includes_tools=includes_tools )}" method="post" >
             %if shed_tool_conf_select_field:
                 <div class="form-row">
                     <label>Shed tool configuration file:</label>

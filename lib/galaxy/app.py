@@ -22,7 +22,7 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
-        # Set up datatypes registry
+        # Initialize the datatypes registry to the default data types included in self.config.datatypes_config.
         self.datatypes_registry = galaxy.datatypes.registry.Registry()
         self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
         galaxy.model.set_datatypes_registry( self.datatypes_registry )
@@ -68,6 +68,10 @@ class UniverseApplication( object ):
         if self.config.get_bool( 'enable_tool_shed_check', False ):
             from tool_shed import update_manager
             self.update_manager = update_manager.UpdateManager( self )
+        # Manage installed tool shed repositories
+        self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
+        # Add additional datatypes from installed tool shed repositories to the datatypes registry.
+        self.installed_repository_manager.load_datatypes()
         # Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load history import/export tools

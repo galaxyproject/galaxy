@@ -109,6 +109,7 @@ def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     Update the received metadata_dict with changes that have been applied
     to the received datatypes_config.  This method is used by the InstallManager,
     which does not have access to trans.
+    TODO: Handle converters, indexers, sniffers, etc...
     """
     # Parse datatypes_config.
     tree = ElementTree.parse( datatypes_config )
@@ -125,13 +126,29 @@ def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     registration = root.find( 'registration' )
     if registration:
         for elem in registration.findall( 'datatype' ):
-            extension = elem.get( 'extension', None ) 
+            datatypes_dict = {}
+            display_in_upload = elem.get( 'display_in_upload', None )
+            if display_in_upload:
+                datatypes_dict[ 'display_in_upload' ] = display_in_upload
             dtype = elem.get( 'type', None )
+            if dtype:
+                datatypes_dict[ 'dtype' ] = dtype
+            extension = elem.get( 'extension', None )
+            if extension:
+                datatypes_dict[ 'extension' ] = extension
+            max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
+            if max_optional_metadata_filesize:
+                datatypes_dict[ 'max_optional_metadata_filesize' ] = max_optional_metadata_filesize
             mimetype = elem.get( 'mimetype', None )
-            datatypes.append( dict( extension=extension,
-                                    dtype=dtype,
-                                    mimetype=mimetype ) )
-        metadata_dict[ 'datatypes' ] = datatypes
+            if mimetype:
+                datatypes_dict[ 'mimetype' ] = mimetype
+            subclass = elem.get( 'subclass', None )
+            if subclass:
+                datatypes_dict[ 'subclass' ] = subclass
+            if datatypes_dict:
+                datatypes.append( datatypes_dict )
+        if datatypes:
+            metadata_dict[ 'datatypes' ] = datatypes
     return metadata_dict
 def generate_metadata( toolbox, relative_install_dir, repository_clone_url ):
     """
@@ -426,46 +443,52 @@ def load_datatypes( app, datatypes_config, relative_intall_dir ):
     # This method is used by the InstallManager, which does not have access to trans.
     imported_module = None
     # Parse datatypes_config.
-    tree = parse_xml( datatypes_config )
+    tree = util.parse_xml( datatypes_config )
     datatypes_config_root = tree.getroot()
     relative_path_to_datatype_file_name = None
     datatype_files = datatypes_config_root.find( 'datatype_files' )
-    # Currently only a single datatype_file is supported.  For example:
-    # <datatype_files>
-    #    <datatype_file name="gmap.py"/>
-    # </datatype_files>
-    for elem in datatype_files.findall( 'datatype_file' ):
-        datatype_file_name = elem.get( 'name', None )
-        if datatype_file_name:
-            # Find the file in the installed repository.
-            for root, dirs, files in os.walk( relative_intall_dir ):
-                if root.find( '.hg' ) < 0:
-                    for name in files:
-                        if name == datatype_file_name:
-                            relative_path_to_datatype_file_name = os.path.join( root, name )
-                            break
-            break
-    if relative_path_to_datatype_file_name:
-        relative_head, relative_tail = os.path.split( relative_path_to_datatype_file_name )
-        registration = datatypes_config_root.find( 'registration' )
-        # Get the module by parsing the <datatype> tag.
-        for elem in registration.findall( 'datatype' ):
-            # A 'type' attribute is currently required.  The attribute
-            # should be something like: type="gmap:GmapDB".
-            dtype = elem.get( 'type', None )
-            if dtype:
-                fields = dtype.split( ':' )
-                datatype_module = fields[0]
-                datatype_class_name = fields[1]
-                # Since we currently support only a single datatype_file,
-                #  we have what we need.
+    if datatype_files:
+        # Currently only a single datatype_file is supported.  For example:
+        # <datatype_files>
+        #    <datatype_file name="gmap.py"/>
+        # </datatype_files>
+        for elem in datatype_files.findall( 'datatype_file' ):
+            datatype_file_name = elem.get( 'name', None )
+            if datatype_file_name:
+                # Find the file in the installed repository.
+                for root, dirs, files in os.walk( relative_intall_dir ):
+                    if root.find( '.hg' ) < 0:
+                        for name in files:
+                            if name == datatype_file_name:
+                                relative_path_to_datatype_file_name = os.path.join( root, name )
+                                break
                 break
-        try:
-            sys.path.insert( 0, relative_head )
-            imported_module = __import__( datatype_module )
-            sys.path.pop( 0 )
-        except Exception, e:
-            log.debug( "Exception importing datatypes code file included in installed repository: %s" % str( e ) )
+        if relative_path_to_datatype_file_name:
+            relative_head, relative_tail = os.path.split( relative_path_to_datatype_file_name )
+            registration = datatypes_config_root.find( 'registration' )
+            # Get the module by parsing the <datatype> tag.
+            for elem in registration.findall( 'datatype' ):
+                # A 'type' attribute is currently required.  The attribute
+                # should be something like: type="gmap:GmapDB".
+                dtype = elem.get( 'type', None )
+                if dtype:
+                    fields = dtype.split( ':' )
+                    datatype_module = fields[0]
+                    datatype_class_name = fields[1]
+                    # Since we currently support only a single datatype_file,
+                    #  we have what we need.
+                    break
+            try:
+                sys.path.insert( 0, relative_head )
+                imported_module = __import__( datatype_module )
+                sys.path.pop( 0 )
+            except Exception, e:
+                log.debug( "Exception importing datatypes code file included in installed repository: %s" % str( e ) )
+    else:
+        # The repository includes a datayptes_conf.xml file, but no code file that
+        # contains data type classes.  This implies that the data types in datayptes_conf.xml
+        # are all subclasses of data types that are in the distribution.
+        imported_module = None
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_module=imported_module )
 def load_repository_contents( app, name, description, owner, changeset_revision, tool_path, repository_clone_url, relative_install_dir,
                               current_working_dir, tmp_name, tool_section=None, shed_tool_conf=None, new_install=True ):

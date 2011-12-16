@@ -4,6 +4,7 @@ from datetime import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
+from galaxy.util.shed_util import generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -149,6 +150,7 @@ def get_latest_repository_metadata( trans, id ):
                            .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
                            .first()
 def generate_clone_url( trans, repository_id ):
+    """Generate the URL for cloning a repository."""
     repository = get_repository( trans, repository_id )
     protocol, base = trans.request.base.split( '://' )
     if trans.user:
@@ -220,54 +222,6 @@ def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_tail )
                         invalid_files.append( ( name, correction_msg ) )
     return can_set_metadata, invalid_files
-def generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict ):
-    """
-    Update the received metadata_dict with changes that have been
-    applied to the received tool.
-    """
-    repository = get_repository( trans, id )
-    # Handle tool.requirements.
-    tool_requirements = []
-    for tr in tool.requirements:
-        name=tr.name
-        type=tr.type
-        if type == 'fabfile':
-            version = None
-            fabfile = tr.fabfile
-            method = tr.method
-        else:
-            version = tr.version
-            fabfile = None
-            method = None
-        requirement_dict = dict( name=name,
-                                 type=type,
-                                 version=version,
-                                 fabfile=fabfile,
-                                 method=method )
-        tool_requirements.append( requirement_dict )
-    # Handle tool.tests.
-    tool_tests = []
-    if tool.tests:
-        for ttb in tool.tests:
-            test_dict = dict( name=ttb.name,
-                              required_files=ttb.required_files,
-                              inputs=ttb.inputs,
-                              outputs=ttb.outputs )
-            tool_tests.append( test_dict )
-    tool_dict = dict( id=tool.id,
-                      guid = generate_tool_guid( trans, repository, tool ),
-                      name=tool.name,
-                      version=tool.version,
-                      description=tool.description,
-                      version_string_cmd = tool.version_string_cmd,
-                      tool_config=tool_config,
-                      requirements=tool_requirements,
-                      tests=tool_tests )
-    if 'tools' in metadata_dict:
-        metadata_dict[ 'tools' ].append( tool_dict )
-    else:
-        metadata_dict[ 'tools' ] = [ tool_dict ]
-    return metadata_dict
 def new_tool_metadata_required( trans, id, metadata_dict ):
     """
     Compare the last saved metadata for each tool in the repository with the new metadata
@@ -309,16 +263,6 @@ def new_tool_metadata_required( trans, id, metadata_dict ):
     # The received metadata_dict includes no metadata for tools, so a new repository_metadata table
     # record is not needed.
     return False
-def generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict ):
-    """
-    Update the received metadata_dict with changes that have been applied
-    to the received exported_workflow_dict.  Store everything in the database.
-    """
-    if 'workflows' in metadata_dict:
-        metadata_dict[ 'workflows' ].append( exported_workflow_dict )
-    else:
-        metadata_dict[ 'workflows' ] = [ exported_workflow_dict ]
-    return metadata_dict
 def new_workflow_metadata_required( trans, id, metadata_dict ):
     """
     Currently everything about an exported workflow except the name is hard-coded, so there's
@@ -337,34 +281,6 @@ def new_workflow_metadata_required( trans, id, metadata_dict ):
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
     # record is not needed.
     return False
-def generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config, metadata_dict ):
-    """
-    Update the received metadata_dict with changes that have been applied
-    to the received datatypes_config.
-    """
-    # Parse datatypes_config.
-    tree = ElementTree.parse( datatypes_config )
-    root = tree.getroot()
-    ElementInclude.include( root )
-    repository_datatype_code_files = []
-    datatype_files = root.find( 'datatype_files' )
-    if datatype_files:
-        for elem in datatype_files.findall( 'datatype_file' ):
-            name = elem.get( 'name', None )
-            repository_datatype_code_files.append( name )
-        metadata_dict[ 'datatype_files' ] = repository_datatype_code_files
-    datatypes = []
-    registration = root.find( 'registration' )
-    if registration:
-        for elem in registration.findall( 'datatype' ):
-            extension = elem.get( 'extension', None ) 
-            dtype = elem.get( 'type', None )
-            mimetype = elem.get( 'mimetype', None )
-            datatypes.append( dict( extension=extension,
-                                    dtype=dtype,
-                                    mimetype=mimetype ) )
-        metadata_dict[ 'datatypes' ] = datatypes
-    return metadata_dict
 def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo_dir ):
     # Browse the repository tip files on disk to generate metadata.  This is faster than
     # the generate_metadata_for_changeset_revision() method below because fctx.data() does
@@ -382,7 +298,7 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
                     datatypes_config = os.path.abspath( os.path.join( root, name ) )
                     break
     if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config, metadata_dict )
+        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
     # Find all special .sample files.
     for root, dirs, files in os.walk( repo_dir ):
         if root.find( '.hg' ) < 0:
@@ -409,19 +325,19 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
                         if can_set_metadata:
                             # Update the list of metadata dictionaries for tools in metadata_dict.
                             tool_config = os.path.join( root, name )
-                            metadata_dict = generate_tool_metadata( trans, id, changeset_revision, tool_config, tool, metadata_dict )
+                            repository_clone_url = generate_clone_url( trans, id )
+                            metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
                 # Find all exported workflows
                 elif name.endswith( '.ga' ):
                     try:
-                        full_path = os.path.abspath( os.path.join( root, name ) )
+                        relative_path = os.path.join( root, name )
                         # Convert workflow data from json
-                        fp = open( full_path, 'rb' )
+                        fp = open( relative_path, 'rb' )
                         workflow_text = fp.read()
                         fp.close()
                         exported_workflow_dict = from_json_string( workflow_text )
                         if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
-                            # Update the list of metadata dictionaries for workflows in metadata_dict.
-                            metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
+                            metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
                     except Exception, e:
                         invalid_files.append( ( name, str( e ) ) )
     return metadata_dict, invalid_files
@@ -438,7 +354,7 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
             datatypes_config = fctx.data()
             break
     if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( trans, id, changeset_revision, datatypes_config, metadata_dict )
+        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
     # Get all tool config file names from the hgweb url, something like:
     # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
     for filename in ctx:
@@ -469,7 +385,8 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
                 # anything, but may result in a bit of confusion when maintaining the code / data over time.
                 # IMPORTANT NOTE:  Here we are assuming that since the current change set is not the repository
                 # tip, we do not have to handle any .loc.sample files since they would have been handled previously.
-                metadata_dict = generate_tool_metadata( trans, id, changeset_revision, filename, tool, metadata_dict )
+                repository_clone_url = generate_clone_url( trans, id )
+                metadata_dict = generate_tool_metadata( filename, tool, repository_clone_url, metadata_dict )
             try:
                 os.unlink( tmp_filename )
             except:
@@ -481,8 +398,7 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
                 workflow_text = fctx.data()
                 exported_workflow_dict = from_json_string( workflow_text )
                 if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
-                    # Update the list of metadata dictionaries for workflows in metadata_dict.
-                    metadata_dict = generate_workflow_metadata( trans, id, changeset_revision, exported_workflow_dict, metadata_dict )
+                    metadata_dict = generate_workflow_metadata( '', exported_workflow_dict, metadata_dict )
             except Exception, e:
                 invalid_files.append( ( name, str( e ) ) )
     return metadata_dict, invalid_files
@@ -510,12 +426,18 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
                     if len( repository.downloadable_revisions ) == 1:
                         handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
                 else:
-                    # Update the last saved repository_metadata table row.
                     repository_metadata = get_latest_repository_metadata( trans, id )
-                    repository_metadata.changeset_revision = changeset_revision
-                    repository_metadata.metadata = metadata_dict
-                    trans.sa_session.add( repository_metadata )
-                    trans.sa_session.flush()
+                    if repository_metadata:
+                        # Update the last saved repository_metadata table row.
+                        repository_metadata.changeset_revision = changeset_revision
+                        repository_metadata.metadata = metadata_dict
+                        trans.sa_session.add( repository_metadata )
+                        trans.sa_session.flush()
+                    else:
+                        # There are no tools in the repository, and we're setting metadat on the repository tip.
+                        repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
+                        trans.sa_session.add( repository_metadata )
+                        trans.sa_session.flush()
             else:
                 # We're re-generating metadata for an old repository revision.
                 repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )

@@ -158,4 +158,13 @@ class InstallManager( object ):
                 if os.path.exists( clone_dir ):
                     installed = True
                     break
+        if not installed:
+            full_path = os.path.abspath( clone_dir )
+            # We may have a repository that contains no tools.
+            if os.path.exists( full_path ):
+                for root, dirs, files in os.walk( full_path ):
+                    if '.hg' in dirs:
+                        # Assume that the repository has been installed if we find a .hg directory.
+                        installed = True
+                        break
         return installed

@@ -436,9 +436,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                       **kwd ) )
                 if operation == "install":
                     galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-                    encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
-                    url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
-                        ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict )
+                    encoded_repo_info_dict, includes_tools = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
+                    url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s&includes_tools=%s' % \
+                        ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
                     return trans.response.send_redirect( url )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
@@ -512,9 +512,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                       **kwd ) )
                 if operation == "install":
                     galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-                    encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
-                    url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
-                        ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict )
+                    encoded_repo_info_dict, includes_tools = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
+                    url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s&includes_tools=%s' % \
+                        ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
                     return trans.response.send_redirect( url )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
@@ -707,14 +707,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return match_tuples
     def __encode_repo_info_dict( self, trans, webapp, repository_metadata_ids ):
         repo_info_dict = {}
+        includes_tools = False
         for repository_metadata_id in repository_metadata_ids:
             repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+            if not includes_tools and 'tools' in repository_metadata.metadata:
+                includes_tools = True
             repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
             repository_id = trans.security.encode_id( repository.id )
             changeset_revision = repository_metadata.changeset_revision
             repository_clone_url = generate_clone_url( trans, repository_id )
             repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
-        return encode( repo_info_dict )
+        return encode( repo_info_dict ), includes_tools
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
@@ -755,12 +758,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository_clone_url = generate_clone_url( trans, repository_id )        
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        # Tell the caller if the repository includes Galaxy tools so the page
+        # enabling selection of the tool panel section can be displayed.
+        includes_tools = 'tools' in repository_metadata.metadata
         repo_info_dict = {}
         repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
         encoded_repo_info_dict = encode( repo_info_dict )
         # Redirect back to local Galaxy to perform install.
-        url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s' % \
-            ( galaxy_url, url_for( '', qualified=True ), encoded_repo_info_dict )
+        url = '%s/admin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s' % \
+            ( galaxy_url, url_for( '', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
         return trans.response.send_redirect( url )
     @web.expose
     def check_for_updates( self, trans, **kwd ):

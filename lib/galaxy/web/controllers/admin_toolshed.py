@@ -191,13 +191,20 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dict = kwd[ 'repo_info_dict' ]
         new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
         tool_panel_section = kwd.get( 'tool_panel_section', '' )
-        if kwd.get( 'select_tool_panel_section_button', False ):
-            shed_tool_conf = kwd[ 'shed_tool_conf' ]
+        includes_tools = util.string_as_bool( kwd.get( 'includes_tools', False ) )
+        if not includes_tools or ( includes_tools and kwd.get( 'select_tool_panel_section_button', False ) ):
+            if includes_tools:
+                shed_tool_conf = kwd[ 'shed_tool_conf' ]
+            else:
+                # If installing a repository that includes no tools, get the relative
+                # tool_path from the file to which the install_tool_config_file config
+                # setting points.
+                shed_tool_conf = trans.app.config.install_tool_config
             # Get the tool path.
             for k, tool_path in trans.app.toolbox.shed_tool_confs.items():
                 if k == shed_tool_conf:
                     break
-            if new_tool_panel_section or tool_panel_section:
+            if includes_tools and ( new_tool_panel_section or tool_panel_section ):
                 if new_tool_panel_section:
                     section_id = new_tool_panel_section.lower().replace( ' ', '_' )
                     new_section_key = 'section_%s' % str( section_id )
@@ -290,6 +297,7 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_shed_url=tool_shed_url,
                                     repo_info_dict=repo_info_dict,
                                     shed_tool_conf=shed_tool_conf,
+                                    includes_tools=includes_tools,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
                                     new_tool_panel_section=new_tool_panel_section,
