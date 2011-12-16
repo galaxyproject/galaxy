@@ -432,6 +432,14 @@ class Registry( object ):
             rval[ 'auto' ] = rval[ 'txt' ]
         return rval
     def to_xml_file( self ):
+        if self.xml_filename is not None:
+            # If persisted previously, attempt to remove
+            # the temporary file in which we were written.
+            try:
+                os.unlink( self.xml_filename )
+            except:
+                pass
+            self.xml_filename = None
         fd, filename = tempfile.mkstemp()
         self.xml_filename = filename
         if self.converters_path_attr:
