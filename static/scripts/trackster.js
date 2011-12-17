@@ -3966,10 +3966,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             return this.summary_draw_height + SUMMARY_TREE_TOP_PADDING;
         }
         else {
-            var rows_required = 1;
-            if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
-                var rows_required = this.incremental_slots(w_scale, result.data, mode);
-            }
+            // All other modes require slotting.
+            var rows_required = this.incremental_slots(w_scale, result.data, mode);
             // HACK: use dummy painter to get required height. Painter should be extended so that get_required_height
             // works as a static function.
             var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
