@@ -1673,7 +1673,7 @@ class Tool:
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
         datatypes_config = self.app.datatypes_registry.to_xml_file()
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.abspath( datatypes_config )
+        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = datatypes_config
         # Return the dictionary of parameters
         return param_dict
     

@@ -441,7 +441,7 @@ class Registry( object ):
                 pass
             self.xml_filename = None
         fd, filename = tempfile.mkstemp()
-        self.xml_filename = filename
+        self.xml_filename = os.path.abspath( filename )
         if self.converters_path_attr:
             converters_path_str = ' converters_path="%s"' % self.converters_path_attr
         else:
@@ -466,4 +466,4 @@ class Registry( object ):
         os.write( fd, '</sniffers>\n' )
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
-        return filename
+        return os.path.abspath( filename )
