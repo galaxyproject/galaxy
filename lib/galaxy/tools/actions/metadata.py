@@ -51,7 +51,7 @@ class SetMetadataToolAction( ToolAction ):
                                                                       dataset_files_path = trans.app.model.Dataset.file_path,
                                                                       output_fnames = None,
                                                                       config_root = None,
-                                                                      datatypes_config = trans.app.datatypes_registry.to_xml_file(),
+                                                                      datatypes_config = trans.app.datatypes_registry.xml_filename,
                                                                       job_metadata = None,
                                                                       kwds = { 'overwrite' : overwrite } )
         incoming[ '__SET_EXTERNAL_METADATA_COMMAND_LINE__' ] = cmd_line

@@ -868,7 +868,7 @@ class JobWrapper( object ):
         if config_root is None:
             config_root = self.app.config.root
         if datatypes_config is None:
-            datatypes_config = self.app.datatypes_registry.to_xml_file()
+            datatypes_config = self.app.datatypes_registry.xml_filename
         return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ],
                                                                       self.sa_session,
                                                                       exec_dir = exec_dir,

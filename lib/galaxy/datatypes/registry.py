@@ -174,6 +174,9 @@ class Registry( object ):
                             self.log.debug( 'Loaded sniffer for datatype: %s' % dtype )
                         except Exception, exc:
                             self.log.warning( 'Error appending datatype %s to sniff_order, problem: %s' % ( dtype, str( exc ) ) )
+            # Persist the xml form of the registry into a temporary file so that it
+            # can be loaded from the command line by tools and set_metadata processing.
+            self.to_xml_file()
         # Default values.
         if not self.datatypes_by_extension:
             self.datatypes_by_extension = { 
@@ -466,4 +469,3 @@ class Registry( object ):
         os.write( fd, '</sniffers>\n' )
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
-        return os.path.abspath( filename )
