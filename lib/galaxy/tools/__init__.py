@@ -316,7 +316,7 @@ class ToolOutput( object ):
     """
 
     def __init__( self, name, format=None, format_source=None, metadata_source=None, 
-                  parent=None, label=None, filters = None, actions = None ):
+                  parent=None, label=None, filters = None, actions = None, hidden=False ):
         self.name = name
         self.format = format
         self.format_source = format_source
@@ -325,6 +325,7 @@ class ToolOutput( object ):
         self.label = label
         self.filters = filters or []
         self.actions = actions
+        self.hidden = hidden
 
     # Tuple emulation
 
@@ -677,6 +678,7 @@ class Tool:
             output.count = int( data_elem.get("count", 1) )
             output.filters = data_elem.findall( 'filter' )
             output.from_work_dir = data_elem.get("from_work_dir", None)
+            output.hidden = data_elem.get("hidden", None) in [ 'true', 'True' ]
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
             self.outputs[ output.name ] = output
