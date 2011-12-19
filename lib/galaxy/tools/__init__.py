@@ -678,7 +678,7 @@ class Tool:
             output.count = int( data_elem.get("count", 1) )
             output.filters = data_elem.findall( 'filter' )
             output.from_work_dir = data_elem.get("from_work_dir", None)
-            output.hidden = data_elem.get("hidden", None) in [ 'true', 'True' ]
+            output.hidden = util.string_as_bool( data_elem.get("hidden", "") )
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
             self.outputs[ output.name ] = output
