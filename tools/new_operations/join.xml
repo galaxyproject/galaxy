@@ -92,48 +92,26 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 -----
 
-**Example**
+**Examples**
 
-If **First dataset** is::
+.. image:: ./static/operation_icons/gops_joinRecordsList.gif
 
-   chr1 10   100  Query1.1
-   chr1 500  1000 Query1.2
-   chr1 1100 1250 Query1.3
+Only records that are joined (inner join):
 
-and **Second dataset** is::
+.. image:: ./static/operation_icons/gops_joinInner.gif
 
-   chr1 20   80   Query2.1
-   chr1 2000 2204 Query2.2
-   chr1 2500 3000 Query2.3
+All records of first dataset:
 
+.. image:: ./static/operation_icons/gops_joinLeftOuter.gif
 
-The four return options will generate:
+All records of second dataset:
 
+.. image:: ./static/operation_icons/gops_joinRightOuter.gif
 
-- **Return only records that are joined**::
+All records of both datasets:
 
-   chr1 10 100 Query1.1 chr1 20 80 Query2.1
+.. image:: ./static/operation_icons/gops_joinFullOuter.gif
 
-- **Return all records of first dataset**::
-
-   chr1 10   100  Query1.1 chr1 20 80 Query2.1
-   chr1 500  1000 Query1.2 .    .  .  .
-   chr1 1100 1250 Query1.3 .    .  .  .
-
-- **Return all records of second dataset**::
-
-   chr1 10 100 Query1.1 chr1 20   80   Query2.1
-   .    .  .   .        chr1 2000 2204 Query2.2
-   .    .  .   .        chr1 2500 3000 Query2.3
-
-- **Return all records of both datasets**::
-
-   chr1 10   100  Query1.1 chr1 20   80   Query2.1
-   chr1 500  1000 Query1.2 .    .    .    .
-   chr1 1100 1250 Query1.3 .    .    .    .
-   .    .    .    .        chr1 2000 2204 Query2.2
-   .    .    .    .        chr1 2500 3000 Query2.3
-   
 
 </help>
 </tool>
