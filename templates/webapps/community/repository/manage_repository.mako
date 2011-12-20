@@ -139,7 +139,14 @@
             %endif
             <div class="form-row">
                 <label>Name:</label>
-                <input name="repo_name" type="textfield" value="${repo_name}" size="40"/>
+                %if repository.times_downloaded > 0:
+                    ${repo_name}
+                %else:
+                    <input name="repo_name" type="textfield" value="${repo_name}" size="40"/>
+                %endif
+                <div class="toolParamHelp" style="clear: both;">
+                    Repository names cannot be changed if the repository has been cloned.
+                </div>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
