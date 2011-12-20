@@ -162,6 +162,7 @@
       <converter file="vcf_to_vcf_bgzip_converter.xml" target_datatype="vcf_bgzip"/>
       <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <display file="ucsc/vcf.xml" />
       <display file="igv/vcf.xml" />
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Binary" subclass="True"/>
