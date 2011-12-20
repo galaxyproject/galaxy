@@ -1674,7 +1674,7 @@ class Tool:
         # For the upload tool, we need to know the root directory and the 
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.xml_filename
+        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         # Return the dictionary of parameters
         return param_dict
     

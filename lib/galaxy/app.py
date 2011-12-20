@@ -126,7 +126,7 @@ class UniverseApplication( object ):
         try:
             # If the datatypes registry was persisted, attempt to
             # remove the temporary file in which it was written.
-            if self.datatypes_registry.xml_filename is not None:
-                os.unlink( self.datatypes_registry.xml_filename )
+            if self.datatypes_registry.integrated_datatypes_configs is not None:
+                os.unlink( self.datatypes_registry.integrated_datatypes_configs )
         except:
             pass

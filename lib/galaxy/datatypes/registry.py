@@ -434,6 +434,12 @@ class Registry( object ):
         if 'auto' not in rval and 'txt' in rval: #need to manually add 'auto' datatype
             rval[ 'auto' ] = rval[ 'txt' ]
         return rval
+    @property
+    def integrated_datatypes_configs( self ):
+        if self.xml_filename and os.path.isfile( self.xml_filename ):
+            return self.xml_filename
+        self.to_xml_file()
+        return self.xml_filename
     def to_xml_file( self ):
         if self.xml_filename is not None:
             # If persisted previously, attempt to remove
