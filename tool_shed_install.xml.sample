@@ -1,114 +1,116 @@
 <?xml version="1.0"?>
 <toolshed name="toolshed.g2.bx.psu.edu">
+    <!-- The following repository includes no tools, so nothing will be loaded into the tool panel. -->
+    <repository name="emboss_datatypes" description="Datatypes for Emboss tools" changeset_revision="a89163f31369" />
     <section name="EMBOSS" id="EMBOSSLite">
-        <repository name="emboss_5" description="Galaxy wrappers for EMBOSS version 5 tools" changeset_revision="PlaceHereWhenKnown">
-            <tool file="emboss_5/emboss_antigenic.xml" id="EMBOSS: antigenic1" version="5.0.0" />
-            <tool file="emboss_5/emboss_backtranseq.xml" id="EMBOSS: backtranseq2" version="5.0.0" />
-            <tool file="emboss_5/emboss_banana.xml" id="EMBOSS: banana3" version="5.0.0" />
-            <tool file="emboss_5/emboss_biosed.xml" id="EMBOSS: biosed4" version="5.0.0" />
-            <tool file="emboss_5/emboss_btwisted.xml" id="EMBOSS: btwisted5" version="5.0.0" />
-            <tool file="emboss_5/emboss_cai_custom.xml" id="EMBOSS: cai_custom6" version="5.0.0" />
-            <tool file="emboss_5/emboss_cai.xml" id="EMBOSS: cai6" version="5.0.0" />
-            <tool file="emboss_5/emboss_chaos.xml" id="EMBOSS: chaos7" version="5.0.0" />
-            <tool file="emboss_5/emboss_charge.xml" id="EMBOSS: charge8" version="5.0.0" />
-            <tool file="emboss_5/emboss_checktrans.xml" id="EMBOSS: checktrans9" version="5.0.0" />
-            <tool file="emboss_5/emboss_chips.xml" id="EMBOSS: chips10" version="5.0.0" />
-            <tool file="emboss_5/emboss_cirdna.xml" id="EMBOSS: cirdna11" version="5.0.0" />
-            <tool file="emboss_5/emboss_codcmp.xml" id="EMBOSS: codcmp12" version="5.0.0" />
-            <tool file="emboss_5/emboss_coderet.xml" id="EMBOSS: coderet13" version="5.0.0" />
-            <tool file="emboss_5/emboss_compseq.xml" id="EMBOSS: compseq14" version="5.0.0" />
-            <tool file="emboss_5/emboss_cpgplot.xml" id="EMBOSS: cpgplot15" version="5.0.0" />
-            <tool file="emboss_5/emboss_cpgreport.xml" id="EMBOSS: cpgreport16" version="5.0.0" />
-            <tool file="emboss_5/emboss_cusp.xml" id="EMBOSS: cusp17" version="5.0.0" />
-            <tool file="emboss_5/emboss_cutseq.xml" id="EMBOSS: cutseq18" version="5.0.0" />
-            <tool file="emboss_5/emboss_dan.xml" id="EMBOSS: dan19" version="5.0.0" />
-            <tool file="emboss_5/emboss_degapseq.xml" id="EMBOSS: degapseq20" version="5.0.0" />
-            <tool file="emboss_5/emboss_descseq.xml" id="EMBOSS: descseq21" version="5.0.0" />
-            <tool file="emboss_5/emboss_diffseq.xml" id="EMBOSS: diffseq22" version="5.0.0" />
-            <tool file="emboss_5/emboss_digest.xml" id="EMBOSS: digest23" version="5.0.0" />
-            <tool file="emboss_5/emboss_dotmatcher.xml" id="EMBOSS: dotmatcher24" version="5.0.0" />
-            <tool file="emboss_5/emboss_dotpath.xml" id="EMBOSS: dotpath25" version="5.0.0" />
-            <tool file="emboss_5/emboss_dottup.xml" id="EMBOSS: dottup26" version="5.0.0" />
-            <tool file="emboss_5/emboss_dreg.xml" id="EMBOSS: dreg27" version="5.0.0" />
-            <tool file="emboss_5/emboss_einverted.xml" id="EMBOSS: einverted28" version="5.0.0" />
-            <tool file="emboss_5/emboss_epestfind.xml" id="EMBOSS: epestfind29" version="5.0.0" />
-            <tool file="emboss_5/emboss_equicktandem.xml" id="EMBOSS: equicktandem31" version="5.0.0" />
-            <tool file="emboss_5/emboss_est2genome.xml" id="EMBOSS: est2genome32" version="5.0.0" />
-            <tool file="emboss_5/emboss_etandem.xml" id="EMBOSS: etandem33" version="5.0.0" />
-            <tool file="emboss_5/emboss_extractfeat.xml" id="EMBOSS: extractfeat34" version="5.0.0" />
-            <tool file="emboss_5/emboss_extractseq.xml" id="EMBOSS: extractseq35" version="5.0.0" />
-            <tool file="emboss_5/emboss_freak.xml" id="EMBOSS: freak36" version="5.0.0" />
-            <tool file="emboss_5/emboss_fuzznuc.xml" id="EMBOSS: fuzznuc37" version="5.0.0" />
-            <tool file="emboss_5/emboss_fuzzpro.xml" id="EMBOSS: fuzzpro38" version="5.0.0" />
-            <tool file="emboss_5/emboss_fuzztran.xml" id="EMBOSS: fuzztran39" version="5.0.0" />
-            <tool file="emboss_5/emboss_garnier.xml" id="EMBOSS: garnier40" version="5.0.0" />
-            <tool file="emboss_5/emboss_geecee.xml" id="EMBOSS: geecee41" version="5.0.0" />
-            <tool file="emboss_5/emboss_getorf.xml" id="EMBOSS: getorf42" version="5.0.0" />
-            <tool file="emboss_5/emboss_helixturnhelix.xml" id="EMBOSS: helixturnhelix43" version="5.0.0" />
-            <tool file="emboss_5/emboss_hmoment.xml" id="EMBOSS: hmoment44" version="5.0.0" />
-            <tool file="emboss_5/emboss_iep.xml" id="EMBOSS: iep45" version="5.0.0" />
-            <tool file="emboss_5/emboss_infoseq.xml" id="EMBOSS: infoseq46" version="5.0.0" />
-            <tool file="emboss_5/emboss_isochore.xml" id="EMBOSS: isochore47" version="5.0.0" />
-            <tool file="emboss_5/emboss_lindna.xml" id="EMBOSS: lindna48" version="5.0.0" />
-            <tool file="emboss_5/emboss_marscan.xml" id="EMBOSS: marscan49" version="5.0.0" />
-            <tool file="emboss_5/emboss_maskfeat.xml" id="EMBOSS: maskfeat50" version="5.0.0" />
-            <tool file="emboss_5/emboss_maskseq.xml" id="EMBOSS: maskseq51" version="5.0.0" />
-            <tool file="emboss_5/emboss_matcher.xml" id="EMBOSS: matcher52" version="5.0.0" />
-            <tool file="emboss_5/emboss_megamerger.xml" id="EMBOSS: megamerger53" version="5.0.0" />
-            <tool file="emboss_5/emboss_merger.xml" id="EMBOSS: merger54" version="5.0.0" />
-            <tool file="emboss_5/emboss_msbar.xml" id="EMBOSS: msbar55" version="5.0.0" />
-            <tool file="emboss_5/emboss_needle.xml" id="EMBOSS: needle56" version="5.0.0" />
-            <tool file="emboss_5/emboss_newcpgreport.xml" id="EMBOSS: newcpgreport57" version="5.0.0" />
-            <tool file="emboss_5/emboss_newcpgseek.xml" id="EMBOSS: newcpgseek58" version="5.0.0" />
-            <tool file="emboss_5/emboss_newseq.xml" id="EMBOSS: newseq59" version="5.0.0" />
-            <tool file="emboss_5/emboss_noreturn.xml" id="EMBOSS: noreturn60" version="5.0.0" />
-            <tool file="emboss_5/emboss_notseq.xml" id="EMBOSS: notseq61" version="5.0.0" />
-            <tool file="emboss_5/emboss_nthseq.xml" id="EMBOSS: nthseq62" version="5.0.0" />
-            <tool file="emboss_5/emboss_octanol.xml" id="EMBOSS: octanol63" version="5.0.0" />
-            <tool file="emboss_5/emboss_oddcomp.xml" id="EMBOSS: oddcomp64" version="5.0.0" />
-            <tool file="emboss_5/emboss_palindrome.xml" id="EMBOSS: palindrome65" version="5.0.0" />
-            <tool file="emboss_5/emboss_pasteseq.xml" id="EMBOSS: pasteseq66" version="5.0.0" />
-            <tool file="emboss_5/emboss_patmatdb.xml" id="EMBOSS: patmatdb67" version="5.0.0" />
-            <tool file="emboss_5/emboss_pepcoil.xml" id="EMBOSS: pepcoil68" version="5.0.0" />
-            <tool file="emboss_5/emboss_pepinfo.xml" id="EMBOSS: pepinfo69" version="5.0.0" />
-            <tool file="emboss_5/emboss_pepnet.xml" id="EMBOSS: pepnet70" version="5.0.0" />
-            <tool file="emboss_5/emboss_pepstats.xml" id="EMBOSS: pepstats71" version="5.0.0" />
-            <tool file="emboss_5/emboss_pepwheel.xml" id="EMBOSS: pepwheel72" version="5.0.0" />
-            <tool file="emboss_5/emboss_pepwindow.xml" id="EMBOSS: pepwindow73" version="5.0.0" />
-            <tool file="emboss_5/emboss_pepwindowall.xml" id="EMBOSS: pepwindowall74" version="5.0.0" />
-            <tool file="emboss_5/emboss_plotcon.xml" id="EMBOSS: plotcon75" version="5.0.0" />
-            <tool file="emboss_5/emboss_plotorf.xml" id="EMBOSS: plotorf76" version="5.0.0" />
-            <tool file="emboss_5/emboss_polydot.xml" id="EMBOSS: polydot77" version="5.0.0" />
-            <tool file="emboss_5/emboss_preg.xml" id="EMBOSS: preg78" version="5.0.0" />
-            <tool file="emboss_5/emboss_prettyplot.xml" id="EMBOSS: prettyplot79" version="5.0.0" />
-            <tool file="emboss_5/emboss_prettyseq.xml" id="EMBOSS: prettyseq80" version="5.0.0" />
-            <tool file="emboss_5/emboss_primersearch.xml" id="EMBOSS: primersearch81" version="5.0.0" />
-            <tool file="emboss_5/emboss_revseq.xml" id="EMBOSS: revseq82" version="5.0.0" />
-            <tool file="emboss_5/emboss_seqmatchall.xml" id="EMBOSS: seqmatchall83" version="5.0.0" />
-            <tool file="emboss_5/emboss_seqret.xml" id="EMBOSS: seqret84" version="5.0.0" />
-            <tool file="emboss_5/emboss_showfeat.xml" id="EMBOSS: showfeat85" version="5.0.0" />
-            <tool file="emboss_5/emboss_shuffleseq.xml" id="EMBOSS: shuffleseq87" version="5.0.0" />
-            <tool file="emboss_5/emboss_sigcleave.xml" id="EMBOSS: sigcleave88" version="5.0.0" />
-            <tool file="emboss_5/emboss_sirna.xml" id="EMBOSS: sirna89" version="5.0.0" />
-            <tool file="emboss_5/emboss_sixpack.xml" id="EMBOSS: sixpack90" version="5.0.0" />
-            <tool file="emboss_5/emboss_skipseq.xml" id="EMBOSS: skipseq91" version="5.0.0" />
-            <tool file="emboss_5/emboss_splitter.xml" id="EMBOSS: splitter92" version="5.0.0" />
-            <tool file="emboss_5/emboss_supermatcher.xml" id="EMBOSS: supermatcher95" version="5.0.0" />
-            <tool file="emboss_5/emboss_syco.xml" id="EMBOSS: syco96" version="5.0.0" />
-            <tool file="emboss_5/emboss_tcode.xml" id="EMBOSS: tcode97" version="5.0.0" />
-            <tool file="emboss_5/emboss_textsearch.xml" id="EMBOSS: textsearch98" version="5.0.0" />
-            <tool file="emboss_5/emboss_tmap.xml" id="EMBOSS: tmap99" version="5.0.0" />
-            <tool file="emboss_5/emboss_tranalign.xml" id="EMBOSS: tranalign100" version="5.0.0" />
-            <tool file="emboss_5/emboss_transeq.xml" id="EMBOSS: transeq101" version="5.0.0" />
-            <tool file="emboss_5/emboss_trimest.xml" id="EMBOSS: trimest102" version="5.0.0" />
-            <tool file="emboss_5/emboss_trimseq.xml" id="EMBOSS: trimseq103" version="5.0.0" />
-            <tool file="emboss_5/emboss_twofeat.xml" id="EMBOSS: twofeat104" version="5.0.0" />
-            <tool file="emboss_5/emboss_union.xml" id="EMBOSS: union105" version="5.0.0" />
-            <tool file="emboss_5/emboss_vectorstrip.xml" id="EMBOSS: vectorstrip106" version="5.0.0" />
-            <tool file="emboss_5/emboss_water.xml" id="EMBOSS: water107" version="5.0.0" />
-            <tool file="emboss_5/emboss_wobble.xml" id="EMBOSS: wobble108" version="5.0.0" />
-            <tool file="emboss_5/emboss_wordcount.xml" id="EMBOSS: wordcount109" version="5.0.0" />
-            <tool file="emboss_5/emboss_wordmatch.xml" id="EMBOSS: wordmatch110" version="5.0.0" />
+        <repository name="emboss_5" description="Galaxy wrappers for EMBOSS version 5.0.0 tools" changeset_revision="b94ca591877b">
+            <tool id="EMBOSS: antigenic1" version="5.0.0" />
+            <tool id="EMBOSS: backtranseq2" version="5.0.0" />
+            <tool id="EMBOSS: banana3" version="5.0.0" />
+            <tool id="EMBOSS: biosed4" version="5.0.0" />
+            <tool id="EMBOSS: btwisted5" version="5.0.0" />
+            <tool id="EMBOSS: cai_custom6" version="5.0.0" />
+            <tool id="EMBOSS: cai6" version="5.0.0" />
+            <tool id="EMBOSS: chaos7" version="5.0.0" />
+            <tool id="EMBOSS: charge8" version="5.0.0" />
+            <tool id="EMBOSS: checktrans9" version="5.0.0" />
+            <tool id="EMBOSS: chips10" version="5.0.0" />
+            <tool id="EMBOSS: cirdna11" version="5.0.0" />
+            <tool id="EMBOSS: codcmp12" version="5.0.0" />
+            <tool id="EMBOSS: coderet13" version="5.0.0" />
+            <tool id="EMBOSS: compseq14" version="5.0.0" />
+            <tool id="EMBOSS: cpgplot15" version="5.0.0" />
+            <tool id="EMBOSS: cpgreport16" version="5.0.0" />
+            <tool id="EMBOSS: cusp17" version="5.0.0" />
+            <tool id="EMBOSS: cutseq18" version="5.0.0" />
+            <tool id="EMBOSS: dan19" version="5.0.0" />
+            <tool id="EMBOSS: degapseq20" version="5.0.0" />
+            <tool id="EMBOSS: descseq21" version="5.0.0" />
+            <tool id="EMBOSS: diffseq22" version="5.0.0" />
+            <tool id="EMBOSS: digest23" version="5.0.0" />
+            <tool id="EMBOSS: dotmatcher24" version="5.0.0" />
+            <tool id="EMBOSS: dotpath25" version="5.0.0" />
+            <tool id="EMBOSS: dottup26" version="5.0.0" />
+            <tool id="EMBOSS: dreg27" version="5.0.0" />
+            <tool id="EMBOSS: einverted28" version="5.0.0" />
+            <tool id="EMBOSS: epestfind29" version="5.0.0" />
+            <tool id="EMBOSS: equicktandem31" version="5.0.0" />
+            <tool id="EMBOSS: est2genome32" version="5.0.0" />
+            <tool id="EMBOSS: etandem33" version="5.0.0" />
+            <tool id="EMBOSS: extractfeat34" version="5.0.0" />
+            <tool id="EMBOSS: extractseq35" version="5.0.0" />
+            <tool id="EMBOSS: freak36" version="5.0.0" />
+            <tool id="EMBOSS: fuzznuc37" version="5.0.0" />
+            <tool id="EMBOSS: fuzzpro38" version="5.0.0" />
+            <tool id="EMBOSS: fuzztran39" version="5.0.0" />
+            <tool id="EMBOSS: garnier40" version="5.0.0" />
+            <tool id="EMBOSS: geecee41" version="5.0.0" />
+            <tool id="EMBOSS: getorf42" version="5.0.0" />
+            <tool id="EMBOSS: helixturnhelix43" version="5.0.0" />
+            <tool id="EMBOSS: hmoment44" version="5.0.0" />
+            <tool id="EMBOSS: iep45" version="5.0.0" />
+            <tool id="EMBOSS: infoseq46" version="5.0.0" />
+            <tool id="EMBOSS: isochore47" version="5.0.0" />
+            <tool id="EMBOSS: lindna48" version="5.0.0" />
+            <tool id="EMBOSS: marscan49" version="5.0.0" />
+            <tool id="EMBOSS: maskfeat50" version="5.0.0" />
+            <tool id="EMBOSS: maskseq51" version="5.0.0" />
+            <tool id="EMBOSS: matcher52" version="5.0.0" />
+            <tool id="EMBOSS: megamerger53" version="5.0.0" />
+            <tool id="EMBOSS: merger54" version="5.0.0" />
+            <tool id="EMBOSS: msbar55" version="5.0.0" />
+            <tool id="EMBOSS: needle56" version="5.0.0" />
+            <tool id="EMBOSS: newcpgreport57" version="5.0.0" />
+            <tool id="EMBOSS: newcpgseek58" version="5.0.0" />
+            <tool id="EMBOSS: newseq59" version="5.0.0" />
+            <tool id="EMBOSS: noreturn60" version="5.0.0" />
+            <tool id="EMBOSS: notseq61" version="5.0.0" />
+            <tool id="EMBOSS: nthseq62" version="5.0.0" />
+            <tool id="EMBOSS: octanol63" version="5.0.0" />
+            <tool id="EMBOSS: oddcomp64" version="5.0.0" />
+            <tool id="EMBOSS: palindrome65" version="5.0.0" />
+            <tool id="EMBOSS: pasteseq66" version="5.0.0" />
+            <tool id="EMBOSS: patmatdb67" version="5.0.0" />
+            <tool id="EMBOSS: pepcoil68" version="5.0.0" />
+            <tool id="EMBOSS: pepinfo69" version="5.0.0" />
+            <tool id="EMBOSS: pepnet70" version="5.0.0" />
+            <tool id="EMBOSS: pepstats71" version="5.0.0" />
+            <tool id="EMBOSS: pepwheel72" version="5.0.0" />
+            <tool id="EMBOSS: pepwindow73" version="5.0.0" />
+            <tool id="EMBOSS: pepwindowall74" version="5.0.0" />
+            <tool id="EMBOSS: plotcon75" version="5.0.0" />
+            <tool id="EMBOSS: plotorf76" version="5.0.0" />
+            <tool id="EMBOSS: polydot77" version="5.0.0" />
+            <tool id="EMBOSS: preg78" version="5.0.0" />
+            <tool id="EMBOSS: prettyplot79" version="5.0.0" />
+            <tool id="EMBOSS: prettyseq80" version="5.0.0" />
+            <tool id="EMBOSS: primersearch81" version="5.0.0" />
+            <tool id="EMBOSS: revseq82" version="5.0.0" />
+            <tool id="EMBOSS: seqmatchall83" version="5.0.0" />
+            <tool id="EMBOSS: seqret84" version="5.0.0" />
+            <tool id="EMBOSS: showfeat85" version="5.0.0" />
+            <tool id="EMBOSS: shuffleseq87" version="5.0.0" />
+            <tool id="EMBOSS: sigcleave88" version="5.0.0" />
+            <tool id="EMBOSS: sirna89" version="5.0.0" />
+            <tool id="EMBOSS: sixpack90" version="5.0.0" />
+            <tool id="EMBOSS: skipseq91" version="5.0.0" />
+            <tool id="EMBOSS: splitter92" version="5.0.0" />
+            <tool id="EMBOSS: supermatcher95" version="5.0.0" />
+            <tool id="EMBOSS: syco96" version="5.0.0" />
+            <tool id="EMBOSS: tcode97" version="5.0.0" />
+            <tool id="EMBOSS: textsearch98" version="5.0.0" />
+            <tool id="EMBOSS: tmap99" version="5.0.0" />
+            <tool id="EMBOSS: tranalign100" version="5.0.0" />
+            <tool id="EMBOSS: transeq101" version="5.0.0" />
+            <tool id="EMBOSS: trimest102" version="5.0.0" />
+            <tool id="EMBOSS: trimseq103" version="5.0.0" />
+            <tool id="EMBOSS: twofeat104" version="5.0.0" />
+            <tool id="EMBOSS: union105" version="5.0.0" />
+            <tool id="EMBOSS: vectorstrip106" version="5.0.0" />
+            <tool id="EMBOSS: water107" version="5.0.0" />
+            <tool id="EMBOSS: wobble108" version="5.0.0" />
+            <tool id="EMBOSS: wordcount109" version="5.0.0" />
+            <tool id="EMBOSS: wordmatch110" version="5.0.0" />
         </repository>
     </section>
 </toolshed>
