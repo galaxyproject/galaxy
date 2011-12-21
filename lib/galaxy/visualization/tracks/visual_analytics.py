@@ -3,6 +3,31 @@ import urllib
 from galaxy.tools.parameters.basic import IntegerToolParameter, FloatToolParameter, SelectToolParameter
 from galaxy.tools.parameters.dynamic_options import DynamicOptions
 
+class TracksterConfig:
+    """ Trackster configuration encapsulation. """
+    
+    def __init__( self, actions ):
+        self.actions = actions
+    
+    @staticmethod
+    def parse( root ):
+        actions = []
+        for action_elt in root.findall( "action" ):
+            actions.append( SetParamAction.parse( action_elt ) )
+        return TracksterConfig( actions )
+        
+class SetParamAction:
+    """ Set parameter action. """
+    
+    def __init__( self, name, output_name ):
+        self.name = name
+        self.output_name = output_name
+        
+    @staticmethod
+    def parse( elt ):
+        """ Parse action from element. """
+        return SetParamAction( elt.get( "name" ), elt.get( "output_name" ) )    
+
 def get_dataset_job( hda ):
     # Get dataset's job.
     job = None

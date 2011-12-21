@@ -29,6 +29,7 @@ from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
+from galaxy.visualization.tracks.visual_analytics import TracksterConfig
 
 log = logging.getLogger( __name__ )
 
@@ -567,7 +568,11 @@ class Tool:
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible()
         # Trackster configuration.
-        self.trackster_conf = ( root.find( "trackster_conf" ) is not None )
+        trackster_conf = root.find( "trackster_conf" )
+        if trackster_conf:
+            self.trackster_conf = TracksterConfig.parse( trackster_conf )
+        else:
+            self.trackster_conf = None
             
     def parse_inputs( self, root ):
         """

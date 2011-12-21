@@ -824,7 +824,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             return to_json_string( msg )
             
         #
-        # Set tool parameters--except dataset parameters--using combination of
+        # Set tool parameters--except non-hidden dataset parameters--using combination of
         # job's previous parameters and incoming parameters. Incoming parameters
         # have priority.
         #
@@ -872,15 +872,10 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         else:
             target_history = trans.get_history( create=True )
         hda_permissions = trans.app.security_agent.history_get_default_permissions( target_history )
-            
-        #
-        # Set input datasets for tool. If running on region, extract and use subset
-        # when possible.
-        #
         
         def set_param_value( param_dict, param_name, param_value ):
             """
-            Set new parameter value in a parameter dictionary.
+            Set new parameter value in a tool's parameter dictionary.
             """
             
             # Recursive function to set param value.
@@ -913,8 +908,30 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 group_index = int( group[ index + 1: ] )
             
             return set_value( param_dict, group_name, group_index, param_name, param_value )
-            
+        
+        # Set parameters based tool's trackster config.
+        params_set = {}
+        for action in tool.trackster_conf.actions:
+            success = False
+            for joda in original_job.output_datasets:
+                if joda.name == action.output_name:
+                    set_param_value( tool_params, action.name, joda.dataset )
+                    params_set[ action.name ] = True
+                    success = True
+                    break
+                    
+            if not success:
+                return messages.ERROR
+                
+        #
+        # Set input datasets for tool. If running on region, extract and use subset
+        # when possible.
+        #
         for jida in original_job.input_datasets:
+            # If param set previously by config actions, do nothing.
+            if jida.name in params_set:
+                continue
+                
             input_dataset = jida.dataset
             if input_dataset is None: #optional dataset and dataset wasn't selected
                 tool_params[ jida.name ] = None

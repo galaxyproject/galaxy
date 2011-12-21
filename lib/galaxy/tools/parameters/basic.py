@@ -1549,6 +1549,22 @@ class DataToolParameter( ToolParameter ):
         if call_attribute:
             ref = ref()
         return ref
+        
+class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
+    """
+    Hidden parameter that behaves as a DataToolParameter. As with all hidden 
+    parameters, this is a HACK.
+    """
+    def __init__( self, tool, elem ):
+        DataToolParameter.__init__( self, tool, elem )
+        self.value = "None"
+        
+    def get_initial_value( self, trans, context ):
+        return None
+        
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        return form_builder.HiddenField( self.name, self.value )
+        
 
 class LibraryDatasetToolParameter( ToolParameter ):
     """
@@ -1644,6 +1660,7 @@ parameter_types = dict( text            = TextToolParameter,
                         select          = SelectToolParameter,
                         data_column     = ColumnListParameter,
                         hidden          = HiddenToolParameter,
+                        hidden_data     = HiddenDataToolParameter,
                         baseurl         = BaseURLToolParameter,
                         file            = FileToolParameter,
                         ftpfile         = FTPFileToolParameter,
