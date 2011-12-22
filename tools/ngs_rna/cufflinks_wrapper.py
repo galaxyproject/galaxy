@@ -137,11 +137,11 @@ def __main__():
         returncode = proc.wait()
         tmp_stderr.close()
         
-        # Read standard error to get total map mass.
+        # Read standard error to get total map/upper quartile mass.
         total_map_mass = -1
         tmp_stderr = open( tmp_name, 'r' )
         for line in tmp_stderr:
-            if line.lower().find( "total map mass") >= 0:
+            if line.lower().find( "total map mass" ) >= 0 or line.lower().find( "upper quartile" ) >= 0:
                 total_map_mass = float( line.split(":")[1].strip() )
                 break
         tmp_stderr.close()
