@@ -1,0 +1,17 @@
+<display id="ucsc_vcf" version="1.0.0" name="display at UCSC">
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links from_file="tool-data/shared/ucsc/ucsc_build_sites.txt" skip_startswith="#" id="0" name="0">
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="ucsc_link" value="1"/>
+        <dynamic_param name="builds" value="2" split="True" separator="," />
+        <!-- Filter out some of the links based upon matching site_id to a Galaxy application configuration parameter and by dataset dbkey -->
+        <filter>${site_id in $APP.config.ucsc_display_sites}</filter>
+        <filter>${dataset.dbkey in $builds}</filter>
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${ucsc_link}db=${qp($bgzip_file.dbkey)}&amp;hgt.customText=${qp($track.url)}</url>
+        <param type="data" name="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz" format="vcf_bgzip" />
+        <param type="data" name="tabix_file" dataset="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" format="tabix" />
+        <param type="template" name="track" viewable="True">track type="vcfTabix" name="${bgzip_file.name.replace( '\\', '\\\\' ).replace( '"', '\\"' )}" bigDataUrl="${bgzip_file.url}" db="${bgzip_file.dbkey}"</param>
+    </dynamic_links>
+</display>

@@ -29,6 +29,7 @@ from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
+from galaxy.visualization.tracks.visual_analytics import TracksterConfig
 
 log = logging.getLogger( __name__ )
 
@@ -104,6 +105,14 @@ class ToolBox( object ):
         try:
             path = elem.get( "file" )
             tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+            if guid is not None:
+                # Tool was installed from a Galaxy tool shed.
+                tool.tool_shed = elem.find( "tool_shed" ).text
+                tool.repository_name = elem.find( "repository_name" ).text
+                tool.repository_owner = elem.find( "repository_owner" ).text
+                tool.changeset_revision = elem.find( "changeset_revision" ).text
+                tool.old_id = elem.find( "id" ).text
+                tool.version = elem.find( "version" ).text
             if self.app.config.get_bool( 'enable_tool_tags', False ):
                 tag_names = elem.get( "tags", "" ).split( "," )
                 for tag_name in tag_names:
@@ -308,7 +317,7 @@ class ToolOutput( object ):
     """
 
     def __init__( self, name, format=None, format_source=None, metadata_source=None, 
-                  parent=None, label=None, filters = None, actions = None ):
+                  parent=None, label=None, filters = None, actions = None, hidden=False ):
         self.name = name
         self.format = format
         self.format_source = format_source
@@ -317,6 +326,7 @@ class ToolOutput( object ):
         self.label = label
         self.filters = filters or []
         self.actions = actions
+        self.hidden = hidden
 
     # Tuple emulation
 
@@ -352,6 +362,19 @@ class ToolRequirement( object ):
         self.fabfile = fabfile
         self.method = method
 
+class ToolParallelismInfo(object):
+    """
+    Stores the information (if any) for running multiple instances of the tool in parallel
+    on the same set of inputs.
+    """
+    def __init__(self, tag):
+        self.method = tag.get('method')
+        self.attributes = dict([item for item in tag.attrib.items() if item[0] != 'method' ])
+        if len(self.attributes) == 0:
+            # legacy basic mode - provide compatible defaults
+            self.attributes['split_size'] = 20
+            self.attributes['split_mode'] = 'number_of_parts'
+
 class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
@@ -365,6 +388,16 @@ class Tool:
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
+        #setup initial attribute values
+        self.inputs = odict()
+        self.inputs_by_page = list()
+        self.display_by_page = list()
+        self.action = '/tool_runner/index'
+        self.target = 'galaxy_main'
+        self.method = 'post'
+        self.check_values = True
+        self.nginx_upload = False
+        self.input_required = False
         # Define a place to keep track of all input parameters.  These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -372,6 +405,13 @@ class Tool:
         # easily ensure that parameter dependencies like index files or
         # tool_data_table_conf.xml entries exist.
         self.input_params = []
+        # Attributes of tools installed from Galaxy tool sheds.
+        self.tool_shed = None
+        self.repository_name = None
+        self.repository_owner = None
+        self.changeset_revision = None
+        self.old_id = None
+        self.version = None
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
     
@@ -392,14 +432,14 @@ class Tool:
             raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
         # TODO: can this be generated automatically?
-        if guid is not None:
-            self.id = guid
-        else:
+        if guid is None:
             self.id = root.get( "id" )
+            self.version = root.get( "version" )
+        else:
+            self.id = guid
         if not self.id: 
-            raise Exception, "Missing tool 'id'" 
-        self.version = root.get( "version" )
-        if not self.version: 
+            raise Exception, "Missing tool 'id'"
+        if not self.version:
             # For backward compatibility, some tools may not have versions yet.
             self.version = "1.0.0"
         # Support multi-byte tools
@@ -442,7 +482,7 @@ class Tool:
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
-            self.parallelism = parallelism.get("method")
+            self.parallelism = ToolParallelismInfo(parallelism)
         else:
             self.parallelism = None
         if self.app.config.start_job_runners is None:
@@ -528,7 +568,11 @@ class Tool:
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible()
         # Trackster configuration.
-        self.trackster_conf = ( root.find( "trackster_conf" ) is not None )
+        trackster_conf = root.find( "trackster_conf" )
+        if trackster_conf:
+            self.trackster_conf = TracksterConfig.parse( trackster_conf )
+        else:
+            self.trackster_conf = None
             
     def parse_inputs( self, root ):
         """
@@ -537,11 +581,12 @@ class Tool:
         """
         # Load parameters (optional)
         input_elem = root.find("inputs")
+        enctypes = set()
         if input_elem:
             # Handle properties of the input form
-            self.check_values = util.string_as_bool( input_elem.get("check_values", "true") )
-            self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", "false" ) )
-            self.action = input_elem.get( 'action', '/tool_runner/index' )
+            self.check_values = util.string_as_bool( input_elem.get("check_values", self.check_values ) )
+            self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
+            self.action = input_elem.get( 'action', self.action )
             # If we have an nginx upload, save the action as a tuple instead of
             # a string. The actual action needs to get url_for run to add any
             # prefixes, and we want to avoid adding the prefix to the
@@ -554,13 +599,9 @@ class Tool:
                                      'hidden POST parameters' )
                 self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
                         urllib.unquote_plus(self.action))
-            self.target = input_elem.get( "target", "galaxy_main" )
-            self.method = input_elem.get( "method", "post" )
+            self.target = input_elem.get( "target", self.target )
+            self.method = input_elem.get( "method", self.method )
             # Parse the actual parameters
-            self.inputs = odict()
-            self.inputs_by_page = list()
-            self.display_by_page = list()
-            enctypes = set()
             # Handle multiple page case
             pages = input_elem.findall( "page" )
             for page in ( pages or [ input_elem ] ):
@@ -568,22 +609,24 @@ class Tool:
                 self.inputs_by_page.append( inputs )
                 self.inputs.update( inputs )
                 self.display_by_page.append( display )
-            self.display = self.display_by_page[0]
-            self.npages = len( self.inputs_by_page )
-            self.last_page = len( self.inputs_by_page ) - 1
-            self.has_multiple_pages = bool( self.last_page )
-            # Determine the needed enctype for the form
-            if len( enctypes ) == 0:
-                self.enctype = "application/x-www-form-urlencoded"
-            elif len( enctypes ) == 1:
-                self.enctype = enctypes.pop()
-            else:
-                raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
+        else:
+            self.inputs_by_page.append( self.inputs )
+            self.display_by_page.append( None )
+        self.display = self.display_by_page[0]
+        self.npages = len( self.inputs_by_page )
+        self.last_page = len( self.inputs_by_page ) - 1
+        self.has_multiple_pages = bool( self.last_page )
+        # Determine the needed enctype for the form
+        if len( enctypes ) == 0:
+            self.enctype = "application/x-www-form-urlencoded"
+        elif len( enctypes ) == 1:
+            self.enctype = enctypes.pop()
+        else:
+            raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
         # Check if the tool either has no parameters or only hidden (and
         # thus hardcoded) parameters. FIXME: hidden parameters aren't
         # parameters at all really, and should be passed in a different
         # way, making this check easier.
-        self.input_required = False
         for param in self.inputs.values():
             if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
                 self.input_required = True
@@ -640,6 +683,7 @@ class Tool:
             output.count = int( data_elem.get("count", 1) )
             output.filters = data_elem.findall( 'filter' )
             output.from_work_dir = data_elem.get("from_work_dir", None)
+            output.hidden = util.string_as_bool( data_elem.get("hidden", "") )
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
             self.outputs[ output.name ] = output
@@ -786,7 +830,8 @@ class Tool:
             if elem.tag == "repeat":
                 group = Repeat()
                 group.name = elem.get( "name" )
-                group.title = elem.get( "title" ) 
+                group.title = elem.get( "title" )
+                group.help = elem.get( "help", None )
                 group.inputs = self.parse_input_elem( elem, enctypes, context )
                 group.default = int( elem.get( "default", 0 ) )
                 group.min = int( elem.get( "min", 0 ) )
@@ -914,7 +959,7 @@ class Tool:
             return False
         # This is probably the best bet for detecting external web tools
         # right now
-        if self.action != "/tool_runner/index":
+        if self.tool_type.startswith( 'data_source' ):
             return False
         # HACK: upload is (as always) a special case becuase file parameters
         #       can't be persisted.
@@ -1634,7 +1679,7 @@ class Tool:
         # For the upload tool, we need to know the root directory and the 
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.abspath( self.app.config.datatypes_config )
+        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         # Return the dictionary of parameters
         return param_dict
     
@@ -1716,8 +1761,10 @@ class Tool:
             log.debug( "Dependency %s", requirement.name )
             if requirement.type == 'package':
                 script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
-                if script_file is None:
+                if script_file is None and base_path is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+                elif script_file is None:
+                    commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path ) )
                 else:
                     commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, script_file ) )
         return commands
@@ -1805,23 +1852,22 @@ class Tool:
         Find extra files in the job working directory and move them into
         the appropriate dataset's files directory
         """
+        # print "Working in collect_associated_files"
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
             try:
-                if len( os.listdir( temp_file_path ) ) > 0:
-                    store_file_path = os.path.join( 
-                        os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), 
-                        "dataset_%d_files" % hda.dataset.id )
-                    shutil.move( temp_file_path, store_file_path )
-                    # Fix permissions
-                    for basedir, dirs, files in os.walk( store_file_path ):
-                        util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
-                        for file in files:
-                            path = os.path.join( basedir, file )
-                            # Ignore symlinks
-                            if os.path.islink( path ):
-                                continue 
-                            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+                a_files = os.listdir( temp_file_path )
+                if len( a_files ) > 0:
+                    for f in a_files:
+                        self.app.object_store.update_from_file(hda.dataset.id,
+                            extra_dir="dataset_%d_files" % hda.dataset.id, 
+                            alt_name = f,
+                            file_name = os.path.join(temp_file_path, f),
+                            create = True)
+                    # Clean up after being handled by object store. 
+                    # FIXME: If the object (e.g., S3) becomes async, this will 
+                    # cause issues so add it to the object store functionality?
+                    shutil.rmtree(temp_file_path)
             except:
                 continue
     
@@ -1853,7 +1899,7 @@ class Tool:
                                                                           sa_session=self.sa_session )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
-                shutil.move( filename, child_dataset.file_name )
+                self.app.object_store.update_from_file(child_dataset.dataset.id, filename, create=True)
                 self.sa_session.add( child_dataset )
                 self.sa_session.flush()
                 child_dataset.set_size()
@@ -1865,7 +1911,7 @@ class Tool:
                 job = None
                 for assoc in outdata.creating_job_associations:
                     job = assoc.job
-                    break   
+                    break
                 if job:
                     assoc = self.app.model.JobToOutputDatasetAssociation( '__new_child_file_%s|%s__' % ( name, designation ), child_dataset )
                     assoc.job = job
@@ -1921,7 +1967,7 @@ class Tool:
                 self.sa_session.add( primary_data )
                 self.sa_session.flush()
                 # Move data from temp location to dataset location
-                shutil.move( filename, primary_data.file_name )
+                self.app.object_store.update_from_file(primary_data.dataset.id, filename, create=True)
                 primary_data.set_size()
                 primary_data.name = "%s (%s)" % ( outdata.name, designation )
                 primary_data.info = outdata.info
@@ -1933,7 +1979,7 @@ class Tool:
                 job = None
                 for assoc in outdata.creating_job_associations:
                     job = assoc.job
-                    break   
+                    break
                 if job:
                     assoc = self.app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s|%s__' % ( name, designation ), primary_data )
                     assoc.job = job
@@ -2028,6 +2074,7 @@ class DataSourceTool( Tool ):
             data_dict = dict( out_data_name = out_name,
                               ext = data.ext,
                               dataset_id = data.dataset.id,
+                              hda_id = data.id,
                               file_name = file_name,
                               extra_files_path = extra_files_path )
             
@@ -2103,7 +2150,14 @@ class BadValue( object ):
     def __init__( self, value ):
         self.value = value
 
-class RawObjectWrapper( object ):
+class ToolParameterValueWrapper( object ):
+    """
+    Base class for object that Wraps a Tool Parameter and Value.
+    """
+    def __nonzero__( self ):
+        return bool( self.value )
+
+class RawObjectWrapper( ToolParameterValueWrapper ):
     """
     Wraps an object so that __str__ returns module_name:class_name.
     """
@@ -2114,7 +2168,7 @@ class RawObjectWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.obj, key )
 
-class LibraryDatasetValueWrapper( object ):
+class LibraryDatasetValueWrapper( ToolParameterValueWrapper ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
@@ -2135,7 +2189,7 @@ class LibraryDatasetValueWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.value, key )
         
-class InputValueWrapper( object ):
+class InputValueWrapper( ToolParameterValueWrapper ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
@@ -2148,7 +2202,7 @@ class InputValueWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.value, key )
 
-class SelectToolParameterWrapper( object ):
+class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     """
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
     attributes are accessible.
@@ -2160,11 +2214,14 @@ class SelectToolParameterWrapper( object ):
         Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
         """
         def __init__( self, input, value, other_values ):
-            self.input = input
-            self.value = value
-            self.other_values = other_values
+            self._input = input
+            self._value = value
+            self._other_values = other_values
+            self._fields = {}
         def __getattr__( self, name ):
-            return self.input.options.get_field_by_name_for_value( name, self.value, None, self.other_values )
+            if name not in self._fields:
+                self._fields[ name ] = self._input.options.get_field_by_name_for_value( name, self._value, None, self._other_values )
+            return self._input.separator.join( map( str, self._fields[ name ] ) )
     
     def __init__( self, input, value, app, other_values={} ):
         self.input = input
@@ -2177,7 +2234,7 @@ class SelectToolParameterWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.input, key )
 
-class DatasetFilenameWrapper( object ):
+class DatasetFilenameWrapper( ToolParameterValueWrapper ):
     """
     Wraps a dataset so that __str__ returns the filename, but all other
     attributes are accessible.
@@ -2237,6 +2294,9 @@ class DatasetFilenameWrapper( object ):
             return self.false_path
         else:
             return getattr( self.dataset, key )
+    
+    def __nonzero__( self ):
+        return bool( self.dataset )
         
 def json_fix( val ):
     if isinstance( val, list ):

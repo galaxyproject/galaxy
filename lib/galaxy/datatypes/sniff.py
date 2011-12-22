@@ -280,6 +280,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     """
     if sniff_order is None:
         datatypes_registry = registry.Registry()
+        datatypes_registry.load_datatypes()
         sniff_order = datatypes_registry.sniff_order
     for datatype in sniff_order:
         """

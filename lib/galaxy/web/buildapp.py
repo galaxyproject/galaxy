@@ -98,7 +98,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
     webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param', controller='dataset', action='display_application', dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None )
-    webapp.add_route( '/u/:username/d/:slug', controller='dataset', action='display_by_username_and_slug' )
+    webapp.add_route( '/u/:username/d/:slug/:filename', controller='dataset', action='display_by_username_and_slug', filename=None )
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
@@ -251,6 +251,7 @@ def wrap_in_static( app, global_conf, **local_conf ):
     urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir" ), cache_time )
     urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
     urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
+    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", 'static/robots.txt'), cache_time )
     # URL mapper becomes the root webapp
     return urlmap
     

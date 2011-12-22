@@ -50,13 +50,13 @@
         %if can_manage:
             <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">Manage repository</a>
         %else:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">View repository</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, webapp='community' )}">View repository</a>
         %endif
         %if can_view_change_log:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ), webapp='community' )}">View change log</a>
         %endif
         %if can_browse_contents:
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">Browse or delete repository files</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ), webapp='community' )}">Browse or delete repository files</a>
         %endif
     </div>
 </ul>
@@ -64,7 +64,13 @@
 <div class="toolForm">
     <div class="toolFormTitle">Upload a single file or a tarball</div>
     <div class="toolFormBody">
-        ## TODO: nginx
+        <div class="form-row">
+            <div class="warningmessage">
+                Uploading may take a while, depending upon the size of the file.  Wait until a message is displayed in your 
+                browser after clicking the <b>Upload</b> button below.
+            </div>
+            <div style="clear: both"></div>
+        </div>
         <form id="upload_form" name="upload_form" action="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}" enctype="multipart/form-data" method="post">
             <div class="form-row">
                 <label>File:</label>
@@ -73,7 +79,16 @@
                 </div>
                 <div style="clear: both"></div>
             </div>
-        
+            <div class="form-row">
+                <label>Url:</label>
+                <div class="form-row-input">
+                    <input name="url" type="textfield" value="${url}" size="40"/>
+                </div>
+                <div class="toolParamHelp" style="clear: both;">
+                     Enter a URL to upload your files via http.
+                </div>
+                <div style="clear: both"></div>
+            </div>
             <div class="form-row">
                 <%
                     if uncompress_file:

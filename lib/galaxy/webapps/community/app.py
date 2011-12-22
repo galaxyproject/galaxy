@@ -15,7 +15,9 @@ class UniverseApplication( object ):
         self.config.check()
         config.configure_logging( self.config )
         # Set up datatypes registry
-        self.datatypes_registry = galaxy.datatypes.registry.Registry( self.config.root, self.config.datatypes_config )
+        self.datatypes_registry = galaxy.datatypes.registry.Registry()
+        # TODO: Handle datatypes included in repositories - the following will only load datatypes_conf.xml.
+        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection
@@ -35,6 +37,8 @@ class UniverseApplication( object ):
         self.tag_handler = CommunityTagHandler()
         # Tool data tables
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_table_config_path )
+        # The tool shed has no toolbox, but this attribute is still required.
+        self.toolbox = None
         # Load security policy
         self.security_agent = self.model.security_agent
         self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )

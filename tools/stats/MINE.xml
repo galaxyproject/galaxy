@@ -1,0 +1,82 @@
+<tool id="maximal_information_based_nonparametric_exploration" name="MINE" version="0.0.1">
+  <description>- Maximal Information-based Nonparametric Exploration</description>
+  <requirements>
+      <requirement type="package" version="1.0">MINE</requirement>
+  </requirements>
+  <command interpreter="python">mine_wrapper.py
+    --jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/mine/MINE.jar" 
+    
+    --infile "${input_file}"
+    
+    #if str( $master_variable_type.master_variable_type_selector ) in [ 'allPairs', 'adjacentPairs' ]:
+      --master_variable "${master_variable_type.master_variable_type_selector}"
+    #else:
+        --master_variable "${master_variable_type.master_variable}"
+    #end if
+    
+    --cv "${cv}"
+    
+    --exp "${exp}"
+    
+    --c "${c}"
+    
+    ##--gc ##skip
+    
+    
+    #if str( $master_variable_type.master_variable_type_selector ) != 'allPairs' and $master_variable_type.permute:
+      --permute
+    #end if
+    
+    --output_results "${output_results}"
+    
+    --output_log "${output_log}"
+  </command>
+  <inputs>
+    <param name="input_file" type="data" format="csv" label="CSV file" />
+    
+    <conditional name="master_variable_type">
+      <param name="master_variable_type_selector" type="select" label="Choose the master variable type">
+        <option value="allPairs">allPairs</option>
+        <option value="adjacentPairs">adjacentPairs</option>
+        <option value="compare_against_ith" selected="True">compare against i-th</option>
+      </param>
+      <when value="compare_against_ith">
+        <param type="integer" value="0" name="master_variable" />
+        <param type="boolean" truevalue="--permute" false_value="" name="permute" checked="False" />
+      </when>
+      <when value="adjacentPairs">
+        <param type="boolean" truevalue="--permute" false_value="" name="permute" checked="False" />
+      </when>
+    </conditional>
+    
+    <param type="float" value="0" name="cv" />
+    
+    <param type="float" value="0.6" name="exp" />
+    
+    <param type="float" value="15" name="c" />
+    
+  </inputs>
+  <outputs>
+    <data format="csv" name="output_results" label="${tool.name} on ${on_string} (Results)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <!-- TODO -->
+  </tests>
+  <help>
+**What it does**
+
+Applies the Maximal Information-based Nonparametric Exploration strategy to an input dataset.
+
+See http://www.exploredata.net/ for more information.
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `David N. Reshef, Yakir A. Reshef, Hilary K. Finucane5, Sharon R. Grossman, Gilean McVean, Peter J. Turnbaugh, Eric S. Lander, Michael Mitzenmacher, Pardis C. Sabeti Detecting Novel Associations in Large Data Sets. Science. 2011 Dec. &lt;http://www.sciencemag.org/content/334/6062/1518&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>

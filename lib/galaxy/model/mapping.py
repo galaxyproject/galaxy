@@ -148,6 +148,7 @@ ImplicitlyConvertedDatasetAssociation.table = Table( "implicitly_converted_datas
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
+    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
     Column( "hda_parent_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "ldda_parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
@@ -371,8 +372,23 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "description" , TEXT ),
     Column( "owner", TrimmedString( 255 ), index=True ),
+    Column( "installed_changeset_revision", TrimmedString( 255 ) ),
     Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "metadata", JSONType, nullable=True ),
+    Column( "includes_datatypes", Boolean, index=True, default=False ),
+    Column( "update_available", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ) )
+
+ToolIdGuidMap.table = Table( "tool_id_guid_map", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_id", String( 255 ) ),
+    Column( "tool_version", TEXT ),
+    Column( "tool_shed", TrimmedString( 255 ) ),
+    Column( "repository_owner", TrimmedString( 255 ) ),
+    Column( "repository_name", TrimmedString( 255 ) ),
+    Column( "guid", TEXT, index=True, unique=True ) )
 
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -467,11 +483,13 @@ Task.table = Table( "task", metadata,
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", TEXT ),
     Column( "stderr", TEXT ),
+    Column( "info", TrimmedString ( 255 ) ),
     Column( "traceback", TEXT ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True, nullable=False ),
-    Column( "part_file", String(1024)),
+    Column( "working_directory", String(1024)),
     Column( "task_runner_name", String( 255 ) ),
-    Column( "task_runner_external_id", String( 255 ) ) )
+    Column( "task_runner_external_id", String( 255 ) ),
+    Column( "prepare_input_files_cmd", TEXT ) )
 
 PostJobAction.table = Table("post_job_action", metadata,
     Column("id", Integer, primary_key=True),
@@ -1206,11 +1224,12 @@ assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvert
     properties=dict( parent_hda=relation( 
                         HistoryDatasetAssociation, 
                         primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
-                     
                      parent_ldda=relation( 
                         LibraryDatasetDatasetAssociation, 
                         primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
-                     
+                     dataset_ldda=relation( 
+                        LibraryDatasetDatasetAssociation, 
+                        primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.ldda_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
                      dataset=relation( 
                         HistoryDatasetAssociation, 
                         primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_id == HistoryDatasetAssociation.table.c.id ) ) ) )
@@ -1594,8 +1613,10 @@ assign_mapper( context, Page, Page.table,
                      annotations=relation( PageAnnotationAssociation, order_by=PageAnnotationAssociation.table.c.id, backref="pages" ),
                      ratings=relation( PageRatingAssociation, order_by=PageRatingAssociation.table.c.id, backref="pages" )  
                    ) )
-
+                   
 assign_mapper( context, ToolShedRepository, ToolShedRepository.table )
+
+assign_mapper( context, ToolIdGuidMap, ToolIdGuidMap.table )
 
 # Set up proxy so that 
 #   Page.users_shared_with
@@ -1770,10 +1791,12 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False ):
+def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
+    # Connect dataset to object store
+    Dataset.object_store = object_store
     # Load the appropriate db module
     load_egg_for_url( url )
     # Should we use the logging proxy?

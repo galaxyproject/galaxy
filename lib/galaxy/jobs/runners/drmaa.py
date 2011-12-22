@@ -33,7 +33,6 @@ drmaa_state = {
 }
 
 drm_template = """#!/bin/sh
-#$ -S /bin/sh
 GALAXY_LIB="%s"
 if [ "$GALAXY_LIB" != "None" ]; then
     if [ -n "$PYTHONPATH" ]; then
@@ -128,7 +127,7 @@ class DRMAAJobRunner( BaseJobRunner ):
             log.exception("failure running job %s" % job_wrapper.get_id_tag())
             return
 
-        runner_url = job_wrapper.tool.job_runner
+        runner_url = job_wrapper.get_job_runner()
         
         # This is silly, why would we queue a job with no command line?
         if not command_line:
@@ -138,7 +137,8 @@ class DRMAAJobRunner( BaseJobRunner ):
         # Check for deletion before we change state
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the queue" % job_wrapper.get_id_tag() )
-            job_wrapper.cleanup()
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                job_wrapper.cleanup()
             return
 
         # Change to queued state immediately
@@ -169,8 +169,9 @@ class DRMAAJobRunner( BaseJobRunner ):
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the queue" % job_wrapper.get_id_tag() )
-            self.cleanup( ( ofile, efile, jt.remoteCommand ) )
-            job_wrapper.cleanup()
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                self.cleanup( ( ofile, efile, jt.remoteCommand ) )
+                job_wrapper.cleanup()
             return
 
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
@@ -289,7 +290,8 @@ class DRMAAJobRunner( BaseJobRunner ):
             log.exception("Job wrapper finish method failed")
 
         # clean up the drm files
-        self.cleanup( ( ofile, efile, job_file ) )
+        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+            self.cleanup( ( ofile, efile, job_file ) )
 
     def fail_job( self, drm_job_state ):
         """
@@ -297,13 +299,15 @@ class DRMAAJobRunner( BaseJobRunner ):
         """
         self.stop_job( self.sa_session.query( self.app.model.Job ).get( drm_job_state.job_wrapper.job_id ) )
         drm_job_state.job_wrapper.fail( drm_job_state.fail_message )
-        self.cleanup( ( drm_job_state.ofile, drm_job_state.efile, drm_job_state.job_file ) )
+        if self.app.config.cleanup_job == "always":
+            self.cleanup( ( drm_job_state.ofile, drm_job_state.efile, drm_job_state.job_file ) )
 
     def cleanup( self, files ):
-        if not asbool( self.app.config.get( 'debug', False ) ):
-            for file in files:
-                if os.access( file, os.R_OK ):
-                    os.unlink( file )
+        for file in files:
+            try:
+                os.unlink( file )
+            except Exception, e:
+                log.warning( "Unable to cleanup: %s" % str( e ) )  
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
@@ -336,7 +340,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         drm_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.id)
         drm_job_state.job_file = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job.id)
         drm_job_state.job_id = str( job.job_runner_external_id )
-        drm_job_state.runner_url = job_wrapper.tool.job_runner
+        drm_job_state.runner_url = job_wrapper.get_job_runner()
         job_wrapper.command_line = job.command_line
         drm_job_state.job_wrapper = job_wrapper
         if job.state == model.Job.states.RUNNING:

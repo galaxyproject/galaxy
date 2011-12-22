@@ -15,15 +15,11 @@ from galaxy.security.validate_user_input import validate_email, validate_usernam
 log = logging.getLogger( __name__ )
 
 require_login_template = """
-<h1>Welcome to Galaxy</h1>
-
 <p>
-    This installation of Galaxy has been configured such that only users who are logged in may use it.%s
+    This %s has been configured such that only users who are logged in may use it.%s
 </p>
 <p/>
 """
-require_login_nocreation_template = require_login_template % ""
-require_login_creation_template = require_login_template % "  If you don't already have an account, <a href='%s'>you may create one</a>."
 
 OPENID_PROVIDERS = { 'Google' : 'https://www.google.com/accounts/o8/id',
                      'Yahoo!' : 'http://yahoo.com',
@@ -368,9 +364,17 @@ class User( BaseUIController, UsesFormDefinitions ):
                 redirect_url = url_for( '/' )
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
-                header = require_login_creation_template % web.url_for( action='create', cntrller='user' )
+                create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
+                    web.url_for( action='create', cntrller='user', webapp=webapp )
+                if webapp == 'galaxy':
+                    header = require_login_template % ( "Galaxy instance", create_account_str )
+                else:
+                    header = require_login_template % ( "Galaxy tool shed", create_account_str )
             else:
-                header = require_login_nocreation_template
+                if webapp == 'galaxy':
+                    header = require_login_template % ( "Galaxy instance", "" )
+                else:
+                    header = require_login_template % ( "Galaxy tool shed", "" )
         return trans.fill_template( '/user/login.mako',
                                     webapp=webapp,
                                     email=email,
@@ -405,11 +409,12 @@ class User( BaseUIController, UsesFormDefinitions ):
             status = 'error'
         else:
             trans.handle_user_login( user, webapp )
-            trans.log_event( "User logged in" )
-            message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                ( user.email, referer, url_for( '/' ) )
-            if trans.app.config.require_login:
-                message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
+            if webapp == 'galaxy':
+                trans.log_event( "User logged in" )
+                message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                    ( user.email, referer, url_for( '/' ) )
+                if trans.app.config.require_login:
+                    message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
             success = True
         return ( message, status, user, success )
     @web.expose
@@ -419,10 +424,10 @@ class User( BaseUIController, UsesFormDefinitions ):
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
             else:
                 refresh_frames = [ 'masthead', 'history' ]
+            # Since logging an event requires a session, we'll log prior to ending the session
+            trans.log_event( "User logged out" )
         else:
             refresh_frames = [ 'masthead' ]
-        # Since logging an event requires a session, we'll log prior to ending the session
-        trans.log_event( "User logged out" )
         trans.handle_user_logout( logout_all=logout_all )
         message = 'You have been logged out.<br>You can log in again, <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
             ( trans.request.referer, url_for( '/' ) )
@@ -471,10 +476,8 @@ class User( BaseUIController, UsesFormDefinitions ):
                                                                       cntrller,
                                                                       subscribe_checked,
                                                                       **kwd )
-                    if success and not is_admin and webapp != 'galaxy':
-                        # Must be logging into the community space webapp
-                        trans.handle_user_login( user, webapp )
-                        redirect_url = referer
+                    if webapp == 'community':
+                        redirect_url = url_for( '/' )
                     if success and not is_admin:
                         # The handle_user_login() method has a call to the history_set_default_permissions() method
                         # (needed when logging in with a history), user needs to have default permissions set before logging in
@@ -753,7 +756,7 @@ class User( BaseUIController, UsesFormDefinitions ):
             password = kwd.get( 'password', '' )
             confirm = kwd.get( 'confirm', '' )
             ok = True
-            if not webapp == 'galaxy' and not is_admin:
+            if not is_admin:
                 # If the current user is changing their own password, validate their current password
                 current = kwd.get( 'current', '' )
                 if not trans.user.check_password( current ):
@@ -768,10 +771,17 @@ class User( BaseUIController, UsesFormDefinitions ):
                 else:
                     # Save new password
                     user.set_password_cleartext( password )
+                    # Invalidate all other sessions
+                    for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
+                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id==trans.user.id,
+                                                                    trans.app.model.GalaxySession.table.c.is_valid==True,
+                                                                    trans.app.model.GalaxySession.table.c.id!=trans.galaxy_session.id ) ):
+                        other_galaxy_session.is_valid = False
+                        trans.sa_session.add( other_galaxy_session )
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
                     trans.log_event( "User change password" )
-                    message = 'The password has been changed.'
+                    message = 'The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).'
         elif user and params.get( 'edit_user_info_button', False ):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
@@ -1188,14 +1198,57 @@ class User( BaseUIController, UsesFormDefinitions ):
             # Add new custom build.
             name = kwds.get('name', '')
             key = kwds.get('key', '')
-            dataset_id = kwds.get('dataset_id', '')
-            if not name or not key or not dataset_id:
+            
+            # Look for build's chrom info in len_file and len_text.
+            len_file = kwds.get( 'len_file', None )
+            if getattr( len_file, "file", None ): # Check if it's a FieldStorage object
+                len_text = len_file.file.read()
+            else:
+                len_text = kwds.get( 'len_text', None )
+            
+            if not len_text:
+                # Using FASTA from history.
+                dataset_id = kwds.get('dataset_id', '')
+                
+            if not name or not key or not ( len_text or dataset_id ):
                 message = "You must specify values for all the fields."
             elif key in dbkeys:
                 message = "There is already a custom build with that key. Delete it first if you want to replace it."
             else:
-                dataset_id = trans.security.decode_id( dataset_id )
-                dbkeys[key] = { "name": name, "fasta": dataset_id }
+                # Have everything needed; create new build.
+                build_dict = { "name": name }
+                if len_text:
+                    # Create new len file
+                    new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
+                    trans.sa_session.add( new_len )
+                    new_len.name = name
+                    new_len.visible = False
+                    new_len.state = trans.app.model.Job.states.OK
+                    new_len.info = "custom build .len file"
+                    trans.sa_session.flush()
+                    counter = 0
+                    f = open(new_len.file_name, "w")
+                    # LEN files have format:
+                    #   <chrom_name><tab><chrom_length>
+                    for line in len_text.split("\n"):
+                        lst = line.strip().rsplit(None, 1) # Splits at the last whitespace in the line
+                        if not lst or len(lst) < 2:
+                            lines_skipped += 1
+                            continue
+                        chrom, length = lst[0], lst[1]
+                        try:
+                            length = int(length)
+                        except ValueError:
+                            lines_skipped += 1
+                            continue
+                        counter += 1
+                        f.write("%s\t%s\n" % (chrom, length))
+                    f.close()
+                    build_dict.update( { "len": new_len.id, "count": counter } )
+                else:
+                    dataset_id = trans.security.decode_id( dataset_id )
+                    build_dict[ "fasta" ] = dataset_id
+                dbkeys[key] = build_dict
         # Save builds.
         # TODO: use database table to save builds.
         user.preferences['dbkeys'] = to_json_string(dbkeys)

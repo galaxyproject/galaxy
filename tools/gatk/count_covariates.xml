@@ -1,7 +1,10 @@
-<tool id="gatk_count_covariates" name="Count Covariates" version="0.0.2">
+<tool id="gatk_count_covariates" name="Count Covariates" version="0.0.4">
   <description>on BAM files</description>
+  <requirements>
+      <requirement type="package" version="1.3">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
    -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
@@ -16,8 +19,8 @@
     #end if
     --recal_file "${output_recal}"
     ${standard_covs}
-    #if $covariates.value:
-        #for $cov in $covariates.value:
+    #if str( $covariates ) != "None":
+        #for $cov in str( $covariates ).split( ',' ):
             -cov "${cov}"
         #end for
     #end if
@@ -35,17 +38,18 @@
             #set $snp_dataset_provided = True
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
-        #end if
+        -d "--knownSites:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
     #end for
     
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
-        #for $sample_metadata in $gatk_param_type.sample_metadata:
-            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #for $pedigree in $gatk_param_type.pedigree:
+            -p '--pedigree "${pedigree.pedigree_file}"'
         #end for
+        #for $pedigree_string in $gatk_param_type.pedigree_string_repeat:
+            -p '--pedigreeString "${pedigree_string.pedigree_string}"'
+        #end for
+        -p '--pedigreeValidationType "${gatk_param_type.pedigree_validation_type}"'
         #for $read_filter in $gatk_param_type.read_filter:
             -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
             ###raise Exception( str( dir( $read_filter ) ) )
@@ -56,14 +60,16 @@
             #end for
             '
         #end for
-        #if str( $gatk_param_type.input_intervals ) != "None":
-            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
-        #end if
-        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
-            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
-        #end if
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
         
-        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
+        -p '--interval_set_rule "${gatk_param_type.interval_set_rule}"'
+        
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
             -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
@@ -75,11 +81,18 @@
         --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
         --validation_strictness "${gatk_param_type.validation_strictness}"
         --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
         '
-        #if str( $gatk_param_type.read_group_black_list ) != "None":
-            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
-        #end if
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
     #end if
+    
     #if str( $reference_source.reference_source_selector ) == "history":
         -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
     #end if
@@ -126,16 +139,20 @@
       <when value="cached">
         <param name="input_bam" type="data" format="bam" label="BAM file">
           <validator type="unspecified_build" />
-          <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+          <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+          <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
           </options>
+          <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_bam" type="data" format="bam" label="BAM file" />
+        <param name="input_bam" type="data" format="bam" label="BAM file" >
+          <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+        </param>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
@@ -167,24 +184,19 @@
 	      </param>
           <when value="dbsnp">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="indels">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="mask">
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
               <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
         </conditional>
     </repeat>
@@ -198,9 +210,16 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <repeat name="sample_metadata" title="Sample Metadata">
-            <param name="sample_metadata_file" type="data" format="txt" label="Sample file(s) in JSON format" />
+        <repeat name="pedigree" title="Pedigree file">
+            <param name="pedigree_file" type="data" format="txt" label="Pedigree files for samples" />
         </repeat>
+        <repeat name="pedigree_string_repeat" title="Pedigree string">
+            <param name="pedigree_string" type="text" value="" label="Pedigree string for samples" />
+        </repeat>
+        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
 		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
@@ -215,12 +234,18 @@
 	          </when>
             </conditional>
         </repeat>
-        <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
-        <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
-        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+        <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        
+        <param name="interval_set_rule" type="select" label="Interval set rule">
           <option value="UNION" selected="True">UNION</option>
           <option value="INTERSECTION">INTERSECTION</option>
         </param>
+        
         <conditional name="downsampling_type">
           <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
             <option value="NONE" selected="True">NONE</option>
@@ -237,7 +262,7 @@
 	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
 	              </param>
 	              <when value="downsample_to_fraction">
-	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
 	              </when>
 	              <when value="downsample_to_coverage">
 	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
@@ -251,7 +276,7 @@
 	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
 	              </param>
 	              <when value="downsample_to_fraction">
-	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
 	              </when>
 	              <when value="downsample_to_coverage">
 	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
@@ -264,19 +289,38 @@
           <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
           <option value="RECALCULATE">RECALCULATE</option>
         </param>
-        <param name="baq_gap_open_penalty" type="integer" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
         <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
         <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
         <param name="validation_strictness" type="select" label="How strict should we be with validation">
           <option value="STRICT" selected="True">STRICT</option>
           <option value="LENIENT">LENIENT</option>
           <option value="SILENT">SILENT</option>
+          <!-- <option value="DEFAULT_STRINGENCY">DEFAULT_STRINGENCY</option> listed in docs, but not valid value...-->
         </param>
         <param name="interval_merging" type="select" label="Interval merging rule">
           <option value="ALL" selected="True">ALL</option>
           <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
         </param>
-        <param name="read_group_black_list" type="data" format="txt" optional="True" label="Read group black list" />
+        
+        <repeat name="read_group_black_list_repeat" title="Read group black list">
+          <conditional name="read_group_black_list_type">
+            <param name="read_group_black_list_type_selector" type="select" label="Type of reads read group black list">
+              <option value="file" selected="True">Filters in file</option>
+              <option value="text">Specify filters as a string</option>
+            </param>
+            <when value="file">
+	          <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
+	        </when>
+            <when value="text">
+	          <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
+	        </when>
+          </conditional>
+        </repeat>
+        
+        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality." checked="False"/>
+        <param name="non_deterministic_random_seed" type="boolean" truevalue="--nonDeterministicRandomSeed" falsevalue="" label="Makes the GATK behave non deterministically, that is, the random numbers generated will be different in every run" checked="False" />
+        
       </when>
     </conditional>
     
@@ -365,7 +409,6 @@
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_bam" value="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam" />
           <param name="rod_bind_type_selector" value="dbsnp" />
-          <param name="rodToIntervalTrackName" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
           <param name="standard_covs" value="True" />
           <param name="covariates" value="ReadGroupCovariate,HomopolymerCovariate,MinimumNQSCovariate,PositionCovariate" />

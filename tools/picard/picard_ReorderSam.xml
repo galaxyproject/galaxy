@@ -1,10 +1,10 @@
-<tool name="Reorder SAM/BAM" id="picard_ReorderSam" version="0.3.0">
+<tool name="Reorder SAM/BAM" id="picard_ReorderSam" version="1.56.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
     picard_wrapper.py
       --input=$inputFile
       #if $source.indexSource == "built-in"
-        --ref="${ filter( lambda x: str( x[0] ) == str( $source.ref ), $__app__.tool_data_tables[ 'picard_indexes' ].get_fields() )[0][-1] }"
+        --ref="${source.ref.fields.path}"
       #else
         --ref-file=$refFile
         --species-name=$source.speciesName
@@ -15,7 +15,7 @@
       --allow-contig-len-discord=$allowContigLenDiscord
       --output-format=$outputFormat
       --output=$outFile
-      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/ReorderSam.jar"
+      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/ReorderSam.jar"
   </command>
   <inputs>
     <param format="bam,sam" name="inputFile" type="data" label="SAM/BAM dataset to be reordered"

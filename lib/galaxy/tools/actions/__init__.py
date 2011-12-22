@@ -43,13 +43,11 @@ class DefaultToolAction( object ):
                             data = converted_dataset
                         else:
                             #run converter here
-                            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, metadata_safe = False )
                             new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
                             new_data.hid = data.hid
                             new_data.name = data.name
                             trans.sa_session.add( new_data )
-                            trans.sa_session.flush()
-                            assoc.dataset = new_data
+                            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, dataset = new_data, metadata_safe = False )
                             trans.sa_session.add( assoc )
                             trans.sa_session.flush()
                             data = new_data
@@ -193,7 +191,16 @@ class DefaultToolAction( object ):
             db_datasets[ "chromInfo" ] = db_dataset
             incoming[ "chromInfo" ] = db_dataset.file_name
         else:
-            incoming[ "chromInfo" ] = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+            # For custom builds, chrom info resides in converted dataset; for built-in builds, chrom info resides in tool-data/shared.
+            if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in trans.user.preferences[ 'dbkeys' ] ):
+                # Custom build.
+                custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
+                build_fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( custom_build_dict[ 'fasta' ] )
+                chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
+            else:
+                # Default to built-in build.
+                chrom_info = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+            incoming[ "chromInfo" ] = chrom_info
         inp_data.update( db_datasets )
         
         # Determine output dataset permission/roles list
@@ -221,6 +228,8 @@ class DefaultToolAction( object ):
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
+        store_name = None
+        store_name_set = False  # this is needed since None is a valid value for store_name
         for name, output in tool.outputs.items():
             for filter in output.filters:
                 try:
@@ -277,14 +286,18 @@ class DefaultToolAction( object ):
                                             if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
                                                 ext = when_elem.get( 'format', ext )
                     data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                    if output.hidden:
+                        data.visible = False
                     # Commit the dataset immediately so it gets database assigned unique id
                     trans.sa_session.add( data )
                     trans.sa_session.flush()
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
                 # Create an empty file immediately
-                open( data.file_name, "w" ).close()
-                # Fix permissions
-                util.umask_fix_perms( data.file_name, trans.app.config.umask, 0666 )
+                trans.app.object_store.create( data.id, store_name=store_name )
+                if not store_name_set:
+                    # Ensure all other datasets in this job are created in the same store
+                    store_name = trans.app.object_store.store_name( data.id )
+                    store_name_set = True
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
                 # Copy metadata from one of the inputs if requested. 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Guruprasad Ananda
-# Refactored 2011, Kanwei Li
-# Refactored to use numpy instead of rpy
+# Refactored 2011 to use numpy instead of rpy, Kanwei Li
 """
 This tool provides the SQL "group by" functionality.
 """
@@ -83,7 +82,11 @@ def main():
     fout = open(sys.argv[1], "w")
     
     def is_new_item(line):
-        item = line.strip().split("\t")[group_col]
+        try:
+            item = line.strip().split("\t")[group_col]
+        except IndexError:
+            stop_err( "The following line didn't have %s columns: %s" % (group_col+1, line) )
+            
         if ignorecase == 1:
             return item.lower()
         return item

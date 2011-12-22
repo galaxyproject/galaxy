@@ -6,6 +6,7 @@ class BaseJobRunner( object ):
         Compose the sequence of commands necessary to execute a job. This will
         currently include:
             - environment settings corresponding to any requirement tags
+            - preparing input files
             - command line taken from job wrapper
             - commands to set metadata (if include_metadata is True)
         """
@@ -17,10 +18,13 @@ class BaseJobRunner( object ):
         # Prepend version string
         if job_wrapper.version_string_cmd:
             commands = "%s &> %s; " % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() ) + commands
+        # prepend getting input files (if defined)
+        if hasattr(job_wrapper, 'prepare_input_files_cmds') and job_wrapper.prepare_input_files_cmds is not None:
+            commands = "; ".join( job_wrapper.prepare_input_files_cmds + [ commands ] ) 
         # Prepend dependency injection
         if job_wrapper.dependency_shell_commands:
             commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] ) 
-        
+
         # Append metadata setting commands, we don't want to overwrite metadata
         # that was copied over in init_meta(), as per established behavior
         if include_metadata and self.app.config.set_metadata_externally:

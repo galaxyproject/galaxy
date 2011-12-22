@@ -107,10 +107,28 @@ def parse_xml(fname):
     ElementInclude.include(root)
     return tree
 
-def xml_to_string(elem):
-    """Returns an string from and xml tree"""
-    text = ElementTree.tostring(elem)
-    return text
+def xml_to_string( elem, pretty=False ):
+    """Returns a string from an xml tree"""
+    if pretty:
+        return ElementTree.tostring( pretty_print_xml( elem ) )
+    return ElementTree.tostring( elem )
+
+def pretty_print_xml( elem, level=0 ):
+    pad = '    '
+    i = "\n" + level * pad
+    if len( elem ):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + pad + pad
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for e in elem:
+            pretty_print_xml( e, level + 1 )
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and ( not elem.tail or not elem.tail.strip() ):
+            elem.tail = i + pad
+    return elem
 
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
@@ -133,6 +151,8 @@ mapped_chars = { '>' :'__gt__',
 
 def restore_text(text):
     """Restores sanitized text"""
+    if not text:
+        return text
     for key, value in mapped_chars.items():
         text = text.replace(value, key)
     return text
@@ -544,7 +564,7 @@ def nice_size(size):
 
 def size_to_bytes( size ):
     """
-    Returns a number of bytes if given a reasably formatted string with the size
+    Returns a number of bytes if given a reasonably formatted string with the size
     """
     # Assume input in bytes if we can convert directly to an int
     try:
@@ -572,11 +592,9 @@ def send_mail( frm, to, subject, body, config ):
     """
     Sends an email.
     """
-    header_to = to
-    if isinstance( to, list ):
-        header_to = ', '.join( to )
+    to = listify( to )
     msg = MIMEText( body )
-    msg[ 'To' ] = header_to
+    msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
     if config.smtp_server is None:
@@ -607,12 +625,10 @@ def send_mail( frm, to, subject, body, config ):
             log.error( "The server didn't accept the username/password combination: %s" % e )
             s.close()
             raise
-        except smtplib.SMTPError, e:
+        except smtplib.SMTPException, e:
             log.error( "No suitable authentication method was found: %s" % e )
             s.close()
             raise
-    if isinstance( to, basestring ):
-        to = [ to ]
     s.sendmail( frm, to, msg.as_string() )
     s.quit()
 
@@ -622,6 +638,9 @@ dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "
 ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
 gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
 genetrack_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "genetrack", "genetrack_sites.txt" ), check_builds=False )
+
+def galaxy_directory():
+    return os.path.abspath(galaxy_root_path)
 
 if __name__ == '__main__':
     import doctest, sys

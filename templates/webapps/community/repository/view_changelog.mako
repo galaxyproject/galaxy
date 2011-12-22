@@ -15,9 +15,9 @@
     can_upload = can_push
     can_download = not is_new and ( not is_malicious or can_push )
     if can_push:
-        browse_label = 'Browse or delete repository files'
+        browse_label = 'Browse or delete repository tip files'
     else:
-        browse_label = 'Browse repository files'
+        browse_label = 'Browse repository tip files'
 %>
 
 <%!
@@ -49,13 +49,13 @@
         %if can_manage:
             <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">Manage repository</a>
         %else:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">View repository</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, webapp='community' )}">View repository</a>
         %endif
         %if can_rate:
             <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
         %endif
         %if can_browse_contents:
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ), webapp='community' )}">${browse_label}</a>
         %endif
         %if can_contact_owner:
             <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
@@ -106,6 +106,10 @@
                         ctx_parent_str = 'None'
                     else:
                         ctx_parent_str = "%s:%s" % ( ctx_parent_rev, ctx_parent )
+                    if changeset[ 'has_metadata' ]:
+                        has_metadata_str = '<table border="0" bgcolor="#D8D8D8"><tr><td>Repository metadata is associated with this change set.</td></tr></table>'
+                    else:
+                        has_metadata_str = ''
                 %>
                 <% display_date = changeset[ 'display_date' ] %>
                 %if test_date != display_date:
@@ -113,6 +117,11 @@
                 %endif
                 <tr>
                     <td>
+                        %if is_admin and has_metadata_str:
+                            <div class="form-row">
+                                ${has_metadata_str}
+                            </div>
+                        %endif
                         <div class="form-row">
                             <label>Description:</label>
                             <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_str )}">${changeset[ 'description' ]}</a>

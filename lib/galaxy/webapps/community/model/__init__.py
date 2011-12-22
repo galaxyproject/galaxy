@@ -20,12 +20,21 @@ class User( object ):
         self.deleted = False
         self.purged = False
         self.username = None
+        self.new_repo_alert = False
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash( text_type=cleartext )
     def check_password( self, cleartext ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == new_secure_hash( text_type=cleartext )
+    def get_disk_usage( self, nice_size=False ):
+        return 0
+    def set_disk_usage( self, bytes ):
+        pass
+    total_disk_usage = property( get_disk_usage, set_disk_usage )
+    @property
+    def nice_total_disk_usage( self ):
+        return 0
 
 class Group( object ):
     def __init__( self, name = None ):
@@ -203,6 +212,34 @@ class ItemTagAssociation ( object ):
         self.user_tname = user_tname
         self.value = None
         self.user_value = None
+
+class Workflow( object ):
+    def __init__( self ):
+        self.user = None
+        self.name = None
+        self.has_cycles = None
+        self.has_errors = None
+        self.steps = []
+
+class WorkflowStep( object ):
+    def __init__( self ):
+        self.id = None
+        self.type = None
+        self.name = None
+        self.tool_id = None
+        self.tool_inputs = None
+        self.tool_errors = None
+        self.position = None
+        self.input_connections = []
+        #self.output_connections = []
+        self.config = None
+
+class WorkflowStepConnection( object ):
+    def __init__( self ):
+        self.output_step = None
+        self.output_name = None
+        self.input_step = None
+        self.input_name = None
 
 ## ---- Utility methods -------------------------------------------------------
 def sort_by_attr( seq, attr ):

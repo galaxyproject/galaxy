@@ -157,7 +157,7 @@ class TestLibrarySecurity( TwillTestCase ):
         assert ldda1 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda1 from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ ldda1.name, ldda1.message, admin_user.email ] )
+                             strings_displayed=[ ldda1.name, ldda1.message, 'bed' ] )
     def test_030_access_ldda1_with_private_role_restriction( self ):
         """Testing accessing ldda1 with a private role restriction"""
         # Logged in as admin_user
@@ -262,20 +262,20 @@ class TestLibrarySecurity( TwillTestCase ):
         assert ldda2 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda2 from the database'
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ ldda2.name, ldda2.message, admin_user.email ] )
+                             strings_displayed=[ ldda2.name, ldda2.message, 'bed' ] )
     def test_045_accessing_ldda2_with_role_associated_with_group_and_users( self ):
         """Testing accessing ldda2 with a role that is associated with a group and users"""
         # Logged in as admin_user
         # admin_user should be able to see 2.bed since she is associated with role2
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ ldda2.name, ldda2.message, admin_user.email ] )
+                             strings_displayed=[ ldda2.name, ldda2.message, 'bed' ] )
         self.logout()
         # regular_user1 should be able to see 2.bed since she is associated with group_two
         self.login( email = regular_user1.email )
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ folder1.name, ldda2.name, ldda2.message, admin_user.email ] )
+                             strings_displayed=[ folder1.name, ldda2.name, ldda2.message, 'bed' ] )
         # Check the permissions on the dataset 2.bed - they are as folows:
         # DATASET_MANAGE_PERMISSIONS = test@bx.psu.edu
         # DATASET_ACCESS = Role2
@@ -356,7 +356,7 @@ class TestLibrarySecurity( TwillTestCase ):
                                      strings_displayed=[ "Upload a directory of files" ] )
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ admin_user.email, ldda_message ] )
+                             strings_displayed=[ 'bed', ldda_message ] )
     def test_055_change_permissions_on_datasets_uploaded_from_library_dir( self ):
         """Testing changing the permissions on datasets uploaded from a directory from the Admin view"""
         # logged in as admin_user

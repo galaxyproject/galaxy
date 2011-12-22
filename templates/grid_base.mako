@@ -116,8 +116,8 @@
             async_ops['${operation.label.lower()}'] = "True";
         %endfor
         
-        // Initialize grid controls
-        function init_grid_controls() {
+        // Init operation buttons.
+        function init_operation_buttons() {
             // Initialize operation buttons.
             $('input[name=operation]:submit').each(function() {
                 $(this).click( function() {
@@ -132,6 +132,11 @@
                    do_operation(webapp, operation_name, item_ids); 
                 });
             });
+        };
+        
+        // Initialize grid controls
+        function init_grid_controls() {
+            init_operation_buttons();    
             
             // Initialize submit image elements.
             $('.submit-image').each( function() {
@@ -569,6 +574,7 @@
                     
                     // Init grid.
                     init_grid_elements();
+                    init_operation_buttons();
                     make_popup_menus();
                     
                     // Hide loading overlay.
@@ -577,7 +583,7 @@
                     // Show message if there is one.
                     var message = $.trim( parsed_response_text[2] );
                     if (message != "") {
-                        $('#grid-message').html( message );
+                        $('#grid-message').html( message ).show();
                         setTimeout( function() { $('#grid-message').hide(); }, 5000);
                     }
                 }
@@ -738,7 +744,7 @@
     
         %if grid.global_actions:
             <ul class="manage-table-actions">
-                %if len( grid.global_actions ) < 4:
+                %if len( grid.global_actions ) < 3:
                     %for action in grid.global_actions:
                         <li><a class="action-button" href="${h.url_for( **action.url_args )}">${action.label}</a></li>
                     %endfor
@@ -771,6 +777,7 @@
             show_item_checkboxes = True
     %>
     <form action="${url()}" method="post" onsubmit="return false;">
+        <input type="hidden" name="webapp" value="${webapp}"/>
         <table id="grid-table" class="grid">
             <thead id="grid-table-header">
                 <tr>

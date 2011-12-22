@@ -75,9 +75,9 @@ class LibraryContentsController( BaseAPIController, UsesLibrary, UsesLibraryItem
         """
         class_name, content_id = self.__decode_library_content_id( trans, id )
         if class_name == 'LibraryFolder':
-            content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessibility=True )
+            content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
         else:
-            content = self.get_library_dataset( trans, content_id, check_ownership=False, check_accessibility=True )
+            content = self.get_library_dataset( trans, content_id, check_ownership=False, check_accessible=True )
         return self.encode_all_ids( trans, content.get_api_value( view='element' ) )
 
     @web.expose_api
@@ -100,9 +100,10 @@ class LibraryContentsController( BaseAPIController, UsesLibrary, UsesLibraryItem
             return "Missing requred 'folder_id' parameter."
         else:
             folder_id = payload.pop( 'folder_id' )
+            class_name, folder_id = self.__decode_library_content_id( trans, folder_id )
         try:
             # security is checked in the downstream controller
-            parent = self.get_library_folder( trans, folder_id, check_ownership=False, check_accessibility=False )
+            parent = self.get_library_folder( trans, folder_id, check_ownership=False, check_accessible=False )
         except Exception, e:
             return str( e )
         # The rest of the security happens in the library_common controller.
@@ -127,6 +128,23 @@ class LibraryContentsController( BaseAPIController, UsesLibrary, UsesLibraryItem
                                    name = v.name,
                                    url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
             return rval
+
+    @web.expose_api
+    def update( self, trans, id,  library_id, payload, **kwd ):
+        """
+        PUT /api/libraries/{encoded_library_id}/contents/{encoded_content_type_and_id}
+        Sets relationships among items
+        """
+        if 'converted_dataset_id' in payload:
+            converted_id = payload.pop( 'converted_dataset_id' )
+            content = self.get_library_dataset( trans, id, check_ownership=False, check_accessible=False )
+            content_conv = self.get_library_dataset( trans, converted_id, check_ownership=False, check_accessible=False )
+            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = content.library_dataset_dataset_association,
+                dataset = content_conv.library_dataset_dataset_association,
+                file_type = content_conv.library_dataset_dataset_association.extension,
+                metadata_safe = True )
+            trans.sa_session.add( assoc )
+            trans.sa_session.flush()
 
     def __decode_library_content_id( self, trans, content_id ):
         if ( len( content_id ) % 16 == 0 ):

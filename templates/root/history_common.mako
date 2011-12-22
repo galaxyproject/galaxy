@@ -13,13 +13,13 @@
                     to_ext=data.ext )}">Download Dataset</a>
                 <a>Additional Files</a>
             %for file_type in meta_files:
-                <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', \
+                <a class="action-button" href="${h.url_for( controller='/dataset', action='get_metadata_file', \
                     hda_id=dataset_id, metadata_name=file_type )}">Download ${file_type}</a>
             %endfor
             </div>
             <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
         %endif
-        <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Download" class="icon-button disk tooltip"></a>
+        <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title='${_("Download")}' class="icon-button disk tooltip"></a>
         %if meta_files:
             </div>
         %endif
@@ -75,7 +75,7 @@
                 ## TODO: Make these CSS, just adding a "disabled" class to the normal
                 ## links should be enough. However the number of datasets being uploaded
                 ## at a time is usually small so the impact of these images is also small.
-                <span title='Display Data' class='icon-button display_disabled tooltip'></span>
+                <span title='${_("Display Data")}' class='icon-button display_disabled tooltip'></span>
                 %if for_editing:
                     <span title='Edit Attributes' class='icon-button edit_disabled tooltip'></span>
                 %endif
@@ -87,7 +87,7 @@
                         # Get URL for display only.
                         if data.history.user and data.history.user.username:
                             display_url = h.url_for( controller='dataset', action='display_by_username_and_slug',
-                                                     username=data.history.user.username, slug=dataset_id )
+                                                     username=data.history.user.username, slug=dataset_id, filename='' )
                         else:
                             # HACK: revert to for_editing display URL when there is no user/username. This should only happen when
                             # there's no user/username because dataset is being displayed by history/view after error reported.
@@ -96,9 +96,9 @@
                             display_url = h.url_for( controller='dataset', action='display', dataset_id=dataset_id, preview=True, filename='' )
                 %>
                 %if data.purged:
-                    <span class="icon-button display_disabled tooltip" title="Cannoy display datasets removed from disk"></span>
+                    <span class="icon-button display_disabled tooltip" title="Cannot display datasets removed from disk"></span>
                 %else:
-                    <a class="icon-button display tooltip" title="Display data in browser" href="${display_url}"
+                    <a class="icon-button display tooltip" dataset_id="${dataset_id}" title='${_("Display data in browser")}' href="${display_url}"
                     %if for_editing:
                         target="galaxy_main"
                     %endif
@@ -110,13 +110,13 @@
                     %elif data.purged:
                         <span title="Cannot edit attributes of datasets removed from disk" class="icon-button edit_disabled tooltip"></span>
                     %else:
-                        <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" target="galaxy_main"></a>
+                        <a class="icon-button edit tooltip" title='${_("Edit attributes")}' href="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" target="galaxy_main"></a>
                     %endif
                 %endif
             %endif
             %if for_editing:
                 %if can_edit:
-                    <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( controller='dataset', action='delete', dataset_id=dataset_id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${dataset_id}"></a>
+                    <a class="icon-button delete tooltip" title='${_("Delete")}' href="${h.url_for( controller='dataset', action='delete', dataset_id=dataset_id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${dataset_id}"></a>
                 %else:
                     <span title="Dataset is already deleted" class="icon-button delete_disabled tooltip"></span>
                 %endif
@@ -136,20 +136,23 @@
         %elif data_state == "queued":
             <div>${_('Job is waiting to run')}</div>
             <div>
-                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
                 %if for_editing:
-                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
                 %endif
             </div>
         %elif data_state == "running":
             <div>${_('Job is currently running')}</div>
             <div>
-                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
                 %if for_editing:
-                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
                 %endif
             </div>
         %elif data_state == "error":
+            %if not data.purged:
+                <div>${data.get_size( nice_size=True )}</div>
+            %endif
             <div>
                 An error occurred running this job: <i>${data.display_info().strip()}</i>
             </div>
@@ -160,9 +163,9 @@
                 %if data.has_data():
                     ${render_download_links( data, dataset_id )}
                 %endif
-                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
                 %if for_editing:
-                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
                 %endif
             </div>
         %elif data_state == "discarded":
@@ -174,9 +177,9 @@
         %elif data_state == "empty":
             <div>${_('No data: ')}<i>${data.display_info()}</i></div>
             <div>
-                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
                 %if for_editing:
-                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
                 %endif
             </div>
         %elif data_state in [ "ok", "failed_metadata" ]:
@@ -190,8 +193,8 @@
             %endif
             <div>
                 ${data.blurb}<br />
-                format: <span class="${data.ext}">${data.ext}</span>, 
-                database:
+                ${_("format: ")} <span class="${data.ext}">${data.ext}</span>, 
+                ${_("database: ")}
                 %if data.dbkey == '?' and can_edit:
                     <a href="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" target="galaxy_main">${_(data.dbkey)}</a>
                 %else:
@@ -205,10 +208,10 @@
                 %if data.has_data():
                     ${render_download_links( data, dataset_id )}
                     
-                    <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                    <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
                     
                     %if for_editing:
-                        <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                        <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
                         %if app.config.get_bool( 'enable_tracks', False ) and data.ext in app.datatypes_registry.get_available_tracks():
                             <%
                             if data.dbkey != '?':
@@ -263,7 +266,8 @@
                         <br />
                     %endfor
                 %elif for_editing:
-                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                    <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
                 %endif
     
                 </div>

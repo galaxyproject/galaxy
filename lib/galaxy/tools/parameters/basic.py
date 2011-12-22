@@ -75,6 +75,16 @@ class ToolParameter( object ):
         """
         return None
 
+    def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used ):
+        """
+        Get the starting value for the parameter, but if fetching from the history, try
+        to find a value that has not yet been used. already_used is a list of objects that
+        tools must manipulate (by adding to it) to store a memento that they can use to detect
+        if a value has already been chosen from the history. This is to support the capability to
+        choose each dataset once
+        """
+        return self.get_initial_value(trans, context);
+
     def get_required_enctype( self ):
         """
         If this parameter needs the form to have a specific encoding
@@ -154,9 +164,14 @@ class ToolParameter( object ):
     @classmethod
     def build( cls, tool, param ):
         """Factory method to create parameter of correct type"""
+        param_name = param.get( "name" )
+        if not param_name:
+            raise ValueError( "Tool parameter '%s' requires a 'name'" % (param_name ) )
         param_type = param.get("type")
-        if not param_type or param_type not in parameter_types:
-            raise ValueError( "Unknown tool parameter type '%s'" % param_type )
+        if not param_type:
+            raise ValueError( "Tool parameter '%s' requires a 'type'" % ( param_name ) )
+        elif param_type not in parameter_types:
+            raise ValueError( "Tool parameter '%s' uses an unknown type '%s'" % ( param_name, param_type ) )
         else:
             return parameter_types[param_type]( tool, param )
         
@@ -209,7 +224,7 @@ class IntegerToolParameter( TextToolParameter ):
                 int( self.value )
             except:
                 raise ValueError( "An integer is required" )
-        elif self.value is None:
+        elif self.value is None and not self.optional:
             raise ValueError( "The settings for the field named '%s' require a 'value' setting and optionally a default value which must be an integer" % self.name )
         self.min = elem.get( 'min' )
         self.max = elem.get( 'max' )
@@ -281,7 +296,7 @@ class FloatToolParameter( TextToolParameter ):
                 float( self.value )
             except:
                 raise ValueError( "A real number is required" )
-        elif self.value is None:
+        elif self.value is None and not self.optional:
             raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be a real number" )
         if self.min:
             try:
@@ -1292,7 +1307,9 @@ class DataToolParameter( ToolParameter ):
             if tool is None:
                 #This occurs for things such as unit tests
                 import galaxy.datatypes.registry
-                formats.append( galaxy.datatypes.registry.Registry().get_datatype_by_extension( extension.lower() ).__class__ )
+                datatypes_registry = galaxy.datatypes.registry.Registry()
+                datatypes_registry.load_datatypes()
+                formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
             else:
                 formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )
@@ -1389,6 +1406,9 @@ class DataToolParameter( ToolParameter ):
         return field
 
     def get_initial_value( self, trans, context ):
+        return self.get_initial_value_from_history_prevent_repeats(trans, context, None);
+
+    def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used ):
         """
         NOTE: This is wasteful since dynamic options and dataset collection
               happens twice (here and when generating HTML). 
@@ -1401,7 +1421,7 @@ class DataToolParameter( ToolParameter ):
         assert history is not None, "DataToolParameter requires a history"
         if self.optional:
             return None
-        most_recent_dataset = [None]
+        most_recent_dataset = []
         filter_value = None
         if self.options:
             try:
@@ -1427,15 +1447,19 @@ class DataToolParameter( ToolParameter ):
                             data = converted_dataset
                     if not is_valid or ( self.options and self._options_filter_attribute( data ) != filter_value ):
                         continue
-                    most_recent_dataset[0] = data
+                    most_recent_dataset.append(data)
                 # Also collect children via association object
                 dataset_collector( data.children )
         dataset_collector( history.datasets )
-        most_recent_dataset = most_recent_dataset.pop()
-        if most_recent_dataset is not None:
-            return most_recent_dataset
-        else:
-            return ''
+        most_recent_dataset.reverse()
+        if already_used is not None:
+            for val in most_recent_dataset:
+                if val is not None and val not in already_used:
+                    already_used.append(val)
+                    return val
+        if len(most_recent_dataset) > 0:
+            return most_recent_dataset[0]
+        return ''
 
     def from_html( self, value, trans, other_values={} ):
         # Can't look at history in workflow mode, skip validation and such,
@@ -1525,6 +1549,22 @@ class DataToolParameter( ToolParameter ):
         if call_attribute:
             ref = ref()
         return ref
+        
+class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
+    """
+    Hidden parameter that behaves as a DataToolParameter. As with all hidden 
+    parameters, this is a HACK.
+    """
+    def __init__( self, tool, elem ):
+        DataToolParameter.__init__( self, tool, elem )
+        self.value = "None"
+        
+    def get_initial_value( self, trans, context ):
+        return None
+        
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        return form_builder.HiddenField( self.name, self.value )
+        
 
 class LibraryDatasetToolParameter( ToolParameter ):
     """
@@ -1620,6 +1660,7 @@ parameter_types = dict( text            = TextToolParameter,
                         select          = SelectToolParameter,
                         data_column     = ColumnListParameter,
                         hidden          = HiddenToolParameter,
+                        hidden_data     = HiddenDataToolParameter,
                         baseurl         = BaseURLToolParameter,
                         file            = FileToolParameter,
                         ftpfile         = FTPFileToolParameter,

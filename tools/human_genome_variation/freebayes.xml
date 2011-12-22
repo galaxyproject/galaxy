@@ -5,11 +5,11 @@
   </requirements>
   <description>Bayesian genetic variant detector</description>
   <command>
-    ln -s $reference localref.fa;
-    ln -s $bamfile localbam.bam;
-    samtools faidx localref.fa;
-    samtools sort localbam.bam localbam.bam;
-    samtools index localbam.bam;
+    ln -s $reference localref.fa &amp;&amp;
+    ln -s $bamfile localbam.bam &amp;&amp;
+    samtools faidx localref.fa 2&gt;&amp;1 || echo "Error running samtools faidx for FreeBayes" &gt;&amp;2 &amp;&amp;
+    samtools sort localbam.bam localbam.bam 2&gt;&amp;1 || echo "Error running samtools sort for FreeBayes" &gt;&amp;2 &amp;&amp;
+    samtools index localbam.bam 2&gt;&amp;1 || echo "Error running samtools index for FreeBayes" &gt;&amp;2 &amp;&amp;
     freebayes --fasta-reference localref.fa localbam.bam --vcf $output
             #if $params.source_select == "full":
                 $params.showRefRepeats

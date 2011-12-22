@@ -192,27 +192,9 @@ class rgTabList(Tabular):
         Tabular.__init__( self, **kwd )
         self.column_names = []
 
-    def make_html_table( self, dataset, skipchars=[] ):
-        """
-        Create HTML table, used for displaying peek
-        """
-        out = ['<table cellspacing="0" cellpadding="3">']
-        comments = []
-        try:
-            # Generate column header
-            out.append( '<tr>' )
-            for i, name in enumerate( self.column_names ):
-                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
-            if dataset.metadata.columns - len( self.column_names ) > 0:
-                for i in range( len( self.column_names ), dataset.metadata.columns ):
-                    out.append( '<th>%s</th>' % str( i+1 ) )
-                out.append( '</tr>' )
-            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
-            out.append( '</table>' )
-            out = "".join( out )
-        except Exception, exc:
-            out = "Can't create peek %s" % exc
-        return out
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -636,7 +618,7 @@ class RexpBase( Html ):
     def set_peek( self, dataset, **kwd ):
         """
         expects a .pheno file in the extra_files_dir - ugh
-        note that R is wierd and does not include the row.name in
+        note that R is weird and does not include the row.name in
         the header. why?"""
         if not dataset.dataset.purged:
             pp = os.path.join(dataset.extra_files_path,'%s.pheno' % dataset.metadata.base_name)

@@ -1,4 +1,5 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
 ## Default title
 <%def name="title()">Galaxy Administration</%def>
@@ -45,6 +46,9 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users', webapp=webapp )}" target="galaxy_main">Manage users</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups', webapp=webapp )}" target="galaxy_main">Manage groups</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles', webapp=webapp )}" target="galaxy_main">Manage roles</a></div>
+                        %if trans.app.config.allow_user_impersonation:
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='impersonate', webapp=webapp )}" target="galaxy_main">Impersonate a user</a></div>
+                        %endif
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -63,7 +67,7 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='memdump' )}" target="galaxy_main">Profile memory usage</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='jobs' )}" target="galaxy_main">Manage jobs</a></div>
                         %if cloned_repositories:
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_repositories' )}" target="galaxy_main">Manage installed tool shed repositories</a></div>
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_repositories' )}" target="galaxy_main">Manage installed tool shed repositories</a></div>
                         %endif
                     </div>
                 </div>
@@ -72,10 +76,7 @@
                     <div class="toolSectionTitle">Tool sheds</div>
                     <div class="toolSectionBody">
                         <div class="toolSectionBg">                        
-                            %for name, url in trans.app.tool_shed_registry.tool_sheds.items():
-                                <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_tool_shed', tool_shed_url=url )}" target="galaxy_main">${name}</a></div>
-                            %endfor
-                            </div>
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_tool_sheds' )}" target="galaxy_main">Search and browse tool sheds</a></div>
                         </div>
                     </div>
                 %endif
@@ -102,6 +103,6 @@
 </%def>
 
 <%def name="center_panel()">
-    <% center_url = h.url_for( action='center', webapp='galaxy' ) %>
+    <% center_url = h.url_for( controller='admin', action='center', webapp='galaxy', message=message, status=status ) %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

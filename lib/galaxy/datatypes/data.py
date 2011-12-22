@@ -351,6 +351,22 @@ class Data( object ):
     @property
     def has_resolution(self):
         return False
+    
+    
+
+    def merge( split_files, output_file): 
+        """
+        TODO: Do we need to merge gzip files using gzjoin? cat seems to work,
+        but might be brittle. Need to revisit this.
+        """
+        if len(split_files) == 1:
+            cmd = 'mv -f %s %s' % ( split_files[0], output_file ) 
+        else:
+            cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file ) 
+        result = os.system(cmd)
+        if result != 0:
+            raise Exception('Result %s from %s' % (result, cmd))
+    merge = staticmethod(merge)
 
 class Text( Data ):
     file_ext = 'txt'
@@ -446,9 +462,84 @@ class Text( Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+    def split( cls, input_datasets, subdir_generator_function, split_params):
+        """
+        Split the input files by line.
+        """
+        if split_params is None:
+            return
+            
+        if len(input_datasets) > 1:
+            raise Exception("Text file splitting does not support multiple files")
+        input_files = [ds.file_name for ds in input_datasets]
+        
+        lines_per_file = None
+        chunk_size = None
+        if split_params['split_mode'] == 'number_of_parts':
+            lines_per_file = []
+            # Computing the length is expensive!
+            def _file_len(fname):
+                i = 0
+                f = open(fname)
+                for i, l in enumerate(f):
+                    pass
+                f.close()
+                return i + 1
+            length = _file_len(input_files[0])
+            parts = int(split_params['split_size'])
+            if length < parts:
+                parts = length
+            len_each, remainder = divmod(length, parts)
+            while length > 0:
+                chunk = len_each
+                if remainder > 0:
+                    chunk += 1
+                lines_per_file.append(chunk)
+                remainder=- 1
+                length -= chunk
+        elif split_params['split_mode'] == 'to_size':
+            chunk_size = int(split_params['split_size'])
+        else:
+            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+        
+        f = open(input_files[0], 'rt')
+        try:
+            chunk_idx = 0
+            file_done = False
+            part_file = None
+            while not file_done:
+                if lines_per_file is None:
+                    this_chunk_size = chunk_size
+                elif chunk_idx < len(lines_per_file):
+                    this_chunk_size = lines_per_file[chunk_idx]
+                    chunk_idx += 1
+                lines_remaining = this_chunk_size
+                part_file = None
+                while lines_remaining > 0:
+                    a_line = f.readline()
+                    if a_line == '':
+                        file_done = True
+                        break
+                    if part_file is None:
+                        part_dir = subdir_generator_function()
+                        part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
+                        part_file = open(part_path, 'w')
+                    part_file.write(a_line)
+                    lines_remaining -= 1
+                if part_file is not None:
+                    part_file.close()
+        except Exception,  e:
+            log.error('Unable to split files: %s' % str(e))
+            f.close()
+            if part_file is not None:
+                part_file.close()
+            raise
+        f.close()
+    split = classmethod(split)
+
 class LineCount( Text ):
-    """ 
-    Dataset contains a single line with a single integer that denotes the 
+    """
+    Dataset contains a single line with a single integer that denotes the
     line count for a related dataset. Used for custom builds.
     """
     pass

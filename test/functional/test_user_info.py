@@ -206,7 +206,7 @@ class TestUserInfo( TwillTestCase ):
         self.edit_user_info( cntrller='user',
                              password='testuser',
                              new_password='testuser#',\
-                             strings_displayed_after_submit=[ 'The password has been changed.' ] )
+                             strings_displayed_after_submit=[ 'The password has been changed' ] )
         self.logout()
         refresh( regular_user12 )
         # Test logging in with new email and password

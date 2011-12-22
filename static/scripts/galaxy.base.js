@@ -698,6 +698,8 @@ $(document).ready( function() {
     });
     // Tooltips
     if ( $.fn.tipsy ) {
+        // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
+        // initialize each separately.
         $(".tooltip").tipsy( { gravity: 's' } );
     }
     // Make popup menus.

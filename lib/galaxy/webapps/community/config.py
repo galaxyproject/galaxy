@@ -41,6 +41,7 @@ class Configuration( object ):
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # web API
         self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
+        self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
@@ -61,6 +62,7 @@ class Configuration( object ):
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
+        self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates/community" ), self.root )

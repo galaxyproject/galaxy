@@ -1,8 +1,8 @@
-<tool name="Paired Read Mate Fixer" id="rgPicFixMate" version="0.2.0">
+<tool name="Paired Read Mate Fixer" id="rgPicFixMate" version="1.56.0">
   <description>for paired data</description>
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -o "$out_file" --tmpdir "${__new_file_path__}" -n "$out_prefix" 
-   --output-format "$outputFormat" -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/FixMateInformation.jar" --sortorder "$sortOrder"
+   --output-format "$outputFormat" -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/FixMateInformation.jar" --sortorder "$sortOrder"
   </command>
   <requirements><requirement type="package">picard</requirement></requirements>
   <inputs>

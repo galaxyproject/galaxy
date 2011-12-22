@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<tool name="GenomeSpace import" id="genomespace_file_browser_prod" tool_type="data_source" add_galaxy_url="False" force_history_refresh="True" version="0.0.1">
+    <description>from file browser</description>
+    <command interpreter="python">genomespace_file_browser.py --json_parameter_file "${output}" --genomespace_site "prod"</command>
+    <inputs action="https://dm.genomespace.org/datamanager/defaultdirectory" check_values="False" method="post"> 
+        <display>go to GenomeSpace Data Manager </display>
+        <param name="appCallbackUrl" type="baseurl" value="/tool_runner?tool_id=genomespace_file_browser_prod&amp;runtool_btn=Execute" />
+        <param name="appName" type="hidden" value="Galaxy" />
+    </inputs>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="auto" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>

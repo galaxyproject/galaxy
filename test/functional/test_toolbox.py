@@ -59,7 +59,7 @@ class ToolTestCase( TwillTestCase ):
         # See if we have a grouping.Repeat element
         repeat_name = None
         for input_name, input_value in testdef.tool.inputs_by_page[0].items():
-            if isinstance( input_value, grouping.Repeat ):
+            if isinstance( input_value, grouping.Repeat ) and all_inputs.get( input_name, 1 ) not in [ 0, "0" ]: #default behavior is to test 1 repeat, for backwards compatibility
                 repeat_name = input_name
                 break
         #check if we need to verify number of outputs created dynamically by tool
@@ -93,7 +93,12 @@ class ToolTestCase( TwillTestCase ):
             self.assertTrue( elem is not None )
             elem_hid = elem.get( 'hid' )
             elem_index += 1
-            self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes )
+            try:
+                self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes )
+            except Exception, e:
+                print >>sys.stderr, self.get_job_stdout( elem.get( 'id' ), format=True )
+                print >>sys.stderr, self.get_job_stderr( elem.get( 'id' ), format=True )
+                raise
         self.delete_history( id=self.security.encode_id( latest_history.id ) )
 
     def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):

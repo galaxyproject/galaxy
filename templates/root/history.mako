@@ -147,6 +147,34 @@ $(function() {
                 return false;
             });
         });
+        
+        // Check to see if the dataset data is cached or needs to be pulled in
+        // via objectstore
+        $(this).find("a.display").each( function() {
+            var history_item = $(this).parents(".historyItem")[0];
+            var history_id = history_item.id.split( "-" )[1];
+            $(this).click(function() {
+                check_transfer_status($(this), history_id);
+            });
+        });
+        
+        // If dataset data is not cached, keep making ajax calls to check on the
+        // data status and update the dataset UI element accordingly
+        function check_transfer_status(link, history_id) {
+            $.getJSON("${h.url_for( controller='dataset', action='transfer_status', dataset_id='XXX' )}".replace( 'XXX', link.attr("dataset_id") ), 
+                function(ready) {
+                    if (ready === false) {
+                        // $("<div/>").text("Data is loading from S3... please be patient").appendTo(link.parent());
+                        $( '#historyItem-' + history_id).removeClass( "historyItem-ok" );
+                        $( '#historyItem-' + history_id).addClass( "historyItem-running" );
+                        setTimeout(function(){check_transfer_status(link, history_id)}, 1000);
+                    } else {
+                        $( '#historyItem-' + history_id).removeClass( "historyItem-running" );
+                        $( '#historyItem-' + history_id).addClass( "historyItem-ok" );
+                    }
+                }
+            );
+        }
 
         // Undelete link
         $(this).find("a.historyItemUndelete").each( function() {
@@ -432,7 +460,7 @@ div.form-row {
 <div id="top-links" class="historyLinks">
     
     <a title="${_('refresh')}" class="icon-button arrow-circle tooltip" href="${h.url_for('history', show_deleted=show_deleted)}"></a>
-    <a title='${_('collapse all')}' class='icon-button toggle tooltip' href='#' style="display: none;"></a>
+    <a title='${_('collapse all')}' class='icon-button toggle tooltip' href='#' style="display: none"></a>
     
     %if trans.get_user():
     <div style="width: 40px; float: right; white-space: nowrap;">

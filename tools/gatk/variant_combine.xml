@@ -1,12 +1,15 @@
-<tool id="gatk_variant_combine" name="Combine Variants" version="0.0.1">
+<tool id="gatk_variant_combine" name="Combine Variants" version="0.0.3">
   <description></description>
+  <requirements>
+      <requirement type="package" version="1.3">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    
    #set $priority_order = []
    #for $input_variant in $reference_source.input_variants:
-       -d "-B:${input_variant.input_variant_name},%(file_type)s" "${input_variant.input_variant}" "${input_variant.input_variant.ext}" "input_variant_${input_variant.input_variant_name}"
+       -d "--variant:${input_variant.input_variant_name},%(file_type)s" "${input_variant.input_variant}" "${input_variant.input_variant.ext}" "input_variant_${input_variant.input_variant_name}"
        #set $input_variant_name = str( $input_variant.input_variant_name )
        #assert $input_variant_name not in $priority_order, "Variant Names must be unique" ##this should be handled by a validator
        #silent $priority_order.append( $input_variant_name )
@@ -21,15 +24,19 @@
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"
     #end if
+   --genotypemergeoption "${genotype_merge_option}"
    --rod_priority_list "${ ','.join( $priority_order ) }"
    '
    
-   
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
-        #for $sample_metadata in $gatk_param_type.sample_metadata:
-            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #for $pedigree in $gatk_param_type.pedigree:
+            -p '--pedigree "${pedigree.pedigree_file}"'
         #end for
+        #for $pedigree_string in $gatk_param_type.pedigree_string_repeat:
+            -p '--pedigreeString "${pedigree_string.pedigree_string}"'
+        #end for
+        -p '--pedigreeValidationType "${gatk_param_type.pedigree_validation_type}"'
         #for $read_filter in $gatk_param_type.read_filter:
             -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
             ###raise Exception( str( dir( $read_filter ) ) )
@@ -40,13 +47,16 @@
             #end for
             '
         #end for
-        #if str( $gatk_param_type.input_intervals ) != "None":
-            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
-        #end if
-        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
-            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
-        #end if
-        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
+        
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
+        -p '--interval_set_rule "${gatk_param_type.interval_set_rule}"'
+        
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
             -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
@@ -58,11 +68,18 @@
         --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
         --validation_strictness "${gatk_param_type.validation_strictness}"
         --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
         '
-        #if str( $gatk_param_type.read_group_black_list ) != "None":
-            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
-        #end if
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
     #end if
+    
     #if $reference_source.reference_source_selector == "history":
         -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
     #end if
@@ -72,7 +89,6 @@
     ##start analysis specific options
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         -p '
-        --genotypemergeoption "${analysis_param_type.genotype_merge_option}"
         --filteredrecordsmergetype "${analysis_param_type.filtered_records_merge_type}"
         ${analysis_param_type.print_complex_merges}
         ${analysis_param_type.filtered_are_uncalled}
@@ -95,20 +111,21 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat min="1" name="input_variants" title="Variants to Merge">
+        <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here.">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
           <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
             <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
           </param>
         </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_variants.input_variant" column="dbkey"/> -->
           </options>
+          <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat min="1" name="input_variants" title="Variants to Merge">
+        <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here.">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
           <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
             <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
@@ -117,7 +134,14 @@
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
-        
+    
+    <param name="genotype_merge_option" type="select" label="How should we merge genotype records across records for samples shared across the ROD files" >
+      <option value="UNIQUIFY" />
+      <option value="PRIORITIZE" selected="true"/>
+      <option value="UNSORTED" />
+      <option value="REQUIRE_UNIQUE" />
+    </param>
+    
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
         <option value="basic" selected="True">Basic</option>
@@ -127,9 +151,16 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <repeat name="sample_metadata" title="Sample Metadata">
-            <param name="sample_metadata_file" type="data" format="txt" label="Sample file(s) in JSON format" />
+        <repeat name="pedigree" title="Pedigree file">
+            <param name="pedigree_file" type="data" format="txt" label="Pedigree files for samples" />
         </repeat>
+        <repeat name="pedigree_string_repeat" title="Pedigree string">
+            <param name="pedigree_string" type="text" value="" label="Pedigree string for samples" />
+        </repeat>
+        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
 		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
@@ -144,12 +175,18 @@
 	          </when>
             </conditional>
         </repeat>
-        <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
-        <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
-        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+        <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        
+        <param name="interval_set_rule" type="select" label="Interval set rule">
           <option value="UNION" selected="True">UNION</option>
           <option value="INTERSECTION">INTERSECTION</option>
         </param>
+        
         <conditional name="downsampling_type">
           <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
             <option value="NONE" selected="True">NONE</option>
@@ -166,7 +203,7 @@
 	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
 	              </param>
 	              <when value="downsample_to_fraction">
-	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
 	              </when>
 	              <when value="downsample_to_coverage">
 	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
@@ -180,7 +217,7 @@
 	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
 	              </param>
 	              <when value="downsample_to_fraction">
-	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
 	              </when>
 	              <when value="downsample_to_coverage">
 	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
@@ -193,19 +230,38 @@
           <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
           <option value="RECALCULATE">RECALCULATE</option>
         </param>
-        <param name="baq_gap_open_penalty" type="integer" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
         <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
         <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
         <param name="validation_strictness" type="select" label="How strict should we be with validation">
           <option value="STRICT" selected="True">STRICT</option>
           <option value="LENIENT">LENIENT</option>
           <option value="SILENT">SILENT</option>
+          <!-- <option value="DEFAULT_STRINGENCY">DEFAULT_STRINGENCY</option> listed in docs, but not valid value...-->
         </param>
         <param name="interval_merging" type="select" label="Interval merging rule">
           <option value="ALL" selected="True">ALL</option>
           <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
         </param>
-        <param name="read_group_black_list" type="data" format="txt" optional="True" label="Read group black list" />
+        
+        <repeat name="read_group_black_list_repeat" title="Read group black list">
+          <conditional name="read_group_black_list_type">
+            <param name="read_group_black_list_type_selector" type="select" label="Type of reads read group black list">
+              <option value="file" selected="True">Filters in file</option>
+              <option value="text">Specify filters as a string</option>
+            </param>
+            <when value="file">
+	          <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
+	        </when>
+            <when value="text">
+	          <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
+	        </when>
+          </conditional>
+        </repeat>
+        
+        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality." checked="False"/>
+        <param name="non_deterministic_random_seed" type="boolean" truevalue="--nonDeterministicRandomSeed" falsevalue="" label="Makes the GATK behave non deterministically, that is, the random numbers generated will be different in every run" checked="False" />
+        
       </when>
     </conditional>
     
@@ -219,16 +275,10 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="genotype_merge_option" type="select" label="How should we merge genotype records across records for samples shared across the ROD files" >
-          <option value="UNIQUIFY" />
-          <option value="PRIORITIZE" selected="true"/>
-          <option value="UNSORTED" />
-          <option value="REQUIRE_UNIQUE" />
-        </param> 
         <param name="filtered_records_merge_type" type="select" label="How should we deal with records seen at the same site in the VCF, but with different FILTER fields? " >
           <option value="KEEP_IF_ANY_UNFILTERED" selected="true"/>
           <option value="KEEP_IF_ALL_UNFILTERED" />
-        </param> 
+        </param>
         
         <param name="print_complex_merges" checked="false" type="boolean" truevalue="--printComplexMerges" falsevalue="" label="Print out interesting sites requiring complex compatibility merging" />
         <param name="filtered_are_uncalled" checked="false" type="boolean" truevalue="--filteredAreUncalled" falsevalue="" label="If true, then filtered VCFs are treated as uncalled, so that filtered set annotation don't appear in the combined VCF" />
@@ -253,9 +303,10 @@
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
           <param name="input_variant_name" value="from_variant_annotator" />
+          <param name="genotype_merge_option" value="PRIORITIZE" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="basic" />
-          <output name="output_variants" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.vcf" lines_diff="2" />
+          <output name="output_variants" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.vcf" lines_diff="4" />
           <output name="output_log" file="gatk/gatk_variant_combine/gatk_variant_combine_out_1.log.contains" compare="contains" />
       </test>
   </tests>

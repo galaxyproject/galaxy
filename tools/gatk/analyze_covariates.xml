@@ -1,16 +1,19 @@
-<tool id="gatk_analyze_covariates" name="Analyze Covariates" version="0.0.2">
+<tool id="gatk_analyze_covariates" name="Analyze Covariates" version="0.0.4">
   <description>- draw plots</description>
-<command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+  <requirements>
+      <requirement type="package" version="1.3">gatk</requirement>
+  </requirements>
+  <command interpreter="python">gatk_wrapper.py
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    --html_report_from_directory "${output_html}" "${output_html.files_path}"
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/AnalyzeCovariates.jar"
     -recalFile "${input_recal}"
     -outputDir "${output_html.files_path}"
+    ##--num_threads 4 ##hard coded, for now
     ##-log "${output_log}"
-    ##-Rscript,--path_to_Rscript path_to_Rscript; on path is good enough
-    -resources "${GALAXY_DATA_INDEX_DIR}/gatk/R"         
+    ##-Rscript,--path_to_Rscript path_to_Rscript; on path is good enough         
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         --ignoreQ "${analysis_param_type.ignore_q}"
         --numRG "${analysis_param_type.num_read_groups}"

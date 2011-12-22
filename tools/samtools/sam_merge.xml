@@ -3,12 +3,13 @@
   <requirements>
     <requirement type="package">picard</requirement>
   </requirements>
-  <command interpreter="python">hide_stderr.py 
-java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MSD=$mergeSD VALIDATION_STRINGENCY=LENIENT O=$output1 I=$input1 I=$input2 TMP_DIR=$__new_file_path__
+  <command>
+java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/MergeSamFiles.jar MSD=$mergeSD VALIDATION_STRINGENCY=LENIENT O=$output1 I=$input1 I=$input2 TMP_DIR=$__new_file_path__
       #for $i in $inputs
         I=${i.input}
       #end for 
-      &gt; $outlog
+    2&gt; $outlog
+    || echo "Error running Picard MergeSamFiles" >&amp;2
   </command>
   <inputs>
     <param name="title" label="Name for the output merged bam file" type="text" default="Merged.bam"
@@ -16,10 +17,10 @@ java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MSD=$mer
     <param name="mergeSD" value="true" type="boolean"  label="Merge all component bam file headers into the merged bam file"
       truevalue="true" falsevalue="false" checked="yes" 
       help="Control the MERGE_SEQUENCE_DICTIONARIES flag for Picard MergeSamFiles. Default (true) correctly propagates read groups and other important metadata" />
-    <param name="input1" label="First file" type="data" format="bam" />
-    <param name="input2" label="with file" type="data" format="bam" help="Need to add more files? Use controls below." />
+    <param name="input1" label="First file" type="data" format="bam,sam" />
+    <param name="input2" label="with file" type="data" format="bam,sam" help="Need to add more files? Use controls below." />
     <repeat name="inputs" title="Input Files">
-      <param name="input" label="Add file" type="data" format="bam" />
+      <param name="input" label="Add file" type="data" format="bam,sam" />
     </repeat>
   </inputs>
   <outputs>
@@ -36,7 +37,7 @@ java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MSD=$mer
       <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
       <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
       <output name="output1" file="sam_merge_out1.bam" ftype="bam" />
-      <output name="outlog" file="sam_merge_out1.log" ftype="txt" lines_diff="10"/>
+      <output name="outlog" file="sam_merge_out1.log" ftype="txt" lines_diff="11"/>
     </test>
     <test>
       <param name="title" value="test2" />
@@ -45,7 +46,7 @@ java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MSD=$mer
       <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
       <param name="input" value="sam_merge_in3.bam" ftype="bam" />
       <output name="output1" file="sam_merge_out2.bam" ftype="bam" />
-      <output name="outlog" file="sam_merge_out2.log" ftype="txt" lines_diff="10"/>
+      <output name="outlog" file="sam_merge_out2.log" ftype="txt" lines_diff="11"/>
     </test>
   </tests>
   <help>

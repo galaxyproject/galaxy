@@ -1,0 +1,17 @@
+<tool id="CONVERTER_sam_to_bam" name="Convert SAM to BAM" version="1.0.0">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <!-- FIXME: conversion will only work if headers for reference sequences are in input file.
+         To fix this: (a) merge sam_to_bam tool in tools with this conversion (like fasta_to_len 
+         conversion); and (b) define a datatype-specific way to set converter parameters.
+      -->
+    <command>samtools view -bS $input1 > $output 2> /dev/null </command>
+    <inputs>
+        <param name="input1" type="data" format="sam" label="SAM file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="bam"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

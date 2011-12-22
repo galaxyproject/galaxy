@@ -1,4 +1,4 @@
-<tool name="BAM Index Statistics" id="picard_BamIndexStats" version="0.2.0">
+<tool name="BAM Index Statistics" id="picard_BamIndexStats" version="1.56.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
     picard_wrapper.py
@@ -6,7 +6,7 @@
       --bai-file "$input_file.metadata.bam_index"
       -t "$htmlfile"
       -d "$htmlfile.files_path"
-      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/BamIndexStats.jar"
+      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/BamIndexStats.jar"
   </command>
   <inputs>
     <param format="bam" name="input_file" type="data"  label="BAM dataset to generate statistics for"

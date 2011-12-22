@@ -16,7 +16,7 @@
     <param name="input_file" type="data" format="fastq" label="File to groom" />
     <param name="input_type" type="select" label="Input FASTQ quality scores type">
       <option value="solexa">Solexa</option>
-      <option value="illumina">Illumina 1.3+</option>
+      <option value="illumina">Illumina 1.3-1.7</option>
       <option value="sanger" selected="True">Sanger</option>
       <option value="cssanger">Color Space Sanger</option>
     </param>
@@ -357,6 +357,10 @@ When converting between color space (csSanger) and base/sequence space (Sanger, 
    X - Solexa       Solexa+64, 67 values (-5, 62) (-5 to 40 expected in raw reads)
 
 Diagram adapted from http://en.wikipedia.org/wiki/FASTQ_format
+
+.. class:: infomark
+
+Output from Illumina 1.8+ pipelines are Sanger encoded.
 
 ------
 

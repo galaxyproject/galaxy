@@ -27,7 +27,7 @@ sequence will be removed, even if occuring multiple times.'''
 __author__ = 'Jose Blanca and Bastien Chevreux'
 __copyright__ = 'Copyright 2008, Jose Blanca, COMAV, and Bastien Chevreux'
 __license__ = 'GPLv3 or later'
-__version__ = '0.2.8'
+__version__ = '0.2.10'
 __email__ = 'jblanca@btc.upv.es'
 __status__ = 'beta'
 
@@ -298,7 +298,8 @@ def remove_last_xmltag_in_file(fname, tag=None):
     
     #we check that we're removing the asked tag
     if tag is not None and tag != last_tag:
-        raise RuntimeError("The given xml tag wasn't the last one in the file")
+        etxt=join('The given xml tag (',tag,') was not the last one in the file');
+        raise RuntimeError(etxt)
 
     # while we are at it: also remove all white spaces in that line :-)
     i -= 1
@@ -843,7 +844,7 @@ def split_paired_end(data, sff_fh, seq_fh, qual_fh, xml_fh):
             if len(boundaries) == 3:
                 # case: mask char on both sides of sequence
                 #print "bounds3"
-                data['clip_adapter_left']=1+boundaries[0][1]
+                data['clip_adapter_left']=boundaries[0][1]
                 data['clip_adapter_right']=boundaries[2][0]
             elif len(boundaries) == 2:
                 # case: mask char left or right of sequence
@@ -851,7 +852,7 @@ def split_paired_end(data, sff_fh, seq_fh, qual_fh, xml_fh):
                 if maskedseq[0] == maskchar :
                     # case: mask char left
                     #print "left"
-                    data['clip_adapter_left']=1+boundaries[0][1]
+                    data['clip_adapter_left']=boundaries[0][1]
                 else:
                     # case: mask char right
                     #print "right"
@@ -1192,7 +1193,11 @@ def sequence_case(data):
     '''
     left, right = return_merged_clips(data)
     seq = data['bases']
-    new_seq = ''.join((seq[:left-1].lower(), seq[left-1:right], seq[right:].lower()))
+    if left >= right:
+        new_seq = seq.lower()
+    else:
+        new_seq = ''.join((seq[:left-1].lower(), seq[left-1:right], seq[right:].lower()))
+
     return new_seq
 
 def clip_read(data):
@@ -1209,14 +1214,14 @@ def clip_read(data):
 
 
 
-def tests_for_ssaha(linker_fname):
+def tests_for_ssaha():
     '''Tests whether SSAHA2 can be successfully called.'''
     
     try:
         print "Testing whether SSAHA2 is installed and can be launched ... ",
         sys.stdout.flush()
         fh = open('/dev/null', 'w')
-        retcode = subprocess.call(["ssaha2", "-v"], stdout = fh)
+        retcode = subprocess.call(["ssaha2"], stdout = fh)
         fh.close()
         print "ok."
     except :
@@ -1246,6 +1251,8 @@ def load_linker_sequences(linker_fname):
 def launch_ssaha(linker_fname, query_fname, output_fh):
     '''Launches SSAHA2 on the linker and query file, string SSAHA2 output
     into the output filehandle'''
+
+    tests_for_ssaha()
 
     try:
         print "Searching linker sequences with SSAHA2 (this may take a while) ... ",

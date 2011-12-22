@@ -1,15 +1,19 @@
 """
 Contains functionality needed in every web interface
 """
-import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess
+import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess, binascii
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import config, tools, web, util
+from galaxy.util import inflector
+from galaxy.util.hash_util import *
+from galaxy.util.json import json_fix
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
+from galaxy.web.form_builder import WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
 from galaxy.visualization.tracks.data_providers import get_data_provider
 from galaxy.visualization.tracks.visual_analytics import get_tool_def
 from galaxy.security.validate_user_input import validate_username
@@ -17,10 +21,6 @@ from paste.httpexceptions import *
 from galaxy.exceptions import *
 
 from Cheetah.Template import Template
-
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
 
 log = logging.getLogger( __name__ )
 
@@ -232,16 +232,18 @@ class UsesHistoryDatasetAssociation:
             else:
                 error( "You are not allowed to access this dataset" )
         return data
-    def get_history_dataset_association( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
+    def get_history_dataset_association( self, trans, history, dataset_id, check_ownership=True, check_accessible=False ):
         """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
-        hda = self.get_object( trans, id, 'HistoryDatasetAssociation', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=False ) # check accessibility here
+        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
+        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
+        
         if check_accessible:
             if trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
                 if hda.state == trans.model.Dataset.states.UPLOAD:
                     error( "Please wait until this dataset finishes uploading before attempting to view it." )
             else:
                 error( "You are not allowed to access this dataset" )
+        return hda
     def get_data( self, dataset, preview=True ):
         """ Gets a dataset's data. """
         # Get data from file, truncating if necessary.
@@ -355,7 +357,18 @@ class UsesVisualization( SharableItemSecurity ):
                     'drawables': drawables,
                     'prefs': collection_dict.get( 'prefs', [] )
                 }
-
+                
+            def encode_dbkey( dbkey ):
+                """ 
+                Encodes dbkey as needed. For now, prepends user's public name 
+                to custom dbkey keys.
+                """
+                encoded_dbkey = dbkey
+                user = visualization.user
+                if 'dbkeys' in user.preferences and dbkey in user.preferences[ 'dbkeys' ]:
+                    encoded_dbkey = "%s:%s" % ( user.username, dbkey )
+                return encoded_dbkey
+                    
             # Set tracks.
             tracks = []
             if 'tracks' in latest_revision.config:
@@ -369,8 +382,12 @@ class UsesVisualization( SharableItemSecurity ):
                     else:
                         tracks.append( pack_collection( drawable_dict ) )
                 
-            config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ),
-                        "tracks": tracks, "bookmarks": bookmarks, "chrom": "", "dbkey": visualization.dbkey }
+            config = {  "title": visualization.title, 
+                        "vis_id": trans.security.encode_id( visualization.id ),
+                        "tracks": tracks, 
+                        "bookmarks": bookmarks, 
+                        "chrom": "", 
+                        "dbkey": encode_dbkey( visualization.dbkey ) }
 
             if 'viewport' in latest_revision.config:
                 config['viewport'] = latest_revision.config['viewport']
@@ -1294,14 +1311,16 @@ class Admin( object ):
     group_list_grid = None
     quota_list_grid = None
     repository_list_grid = None
+    delete_operation = None
+    undelete_operation = None
+    purge_operation = None
 
     @web.expose
     @web.require_admin
     def index( self, trans, **kwd ):
         webapp = kwd.get( 'webapp', 'galaxy' )
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
             cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ) \
                                                   .filter( trans.model.ToolShedRepository.deleted == False ) \
@@ -1320,10 +1339,16 @@ class Admin( object ):
     @web.require_admin
     def center( self, trans, **kwd ):
         webapp = kwd.get( 'webapp', 'galaxy' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
-            return trans.fill_template( '/webapps/galaxy/admin/center.mako' )
+            return trans.fill_template( '/webapps/galaxy/admin/center.mako',
+                                        message=message,
+                                        status=status )
         else:
-            return trans.fill_template( '/webapps/community/admin/center.mako' )
+            return trans.fill_template( '/webapps/community/admin/center.mako',
+                                        message=message,
+                                        status=status )
     @web.expose
     @web.require_admin
     def reload_tool( self, trans, **kwd ):
@@ -2003,28 +2028,28 @@ class Admin( object ):
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
         webapp = kwd.get( 'webapp', 'galaxy' )
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No user ids received for resetting passwords"
+        user_id = kwd.get( 'id', None )
+        if not user_id:
+            message = "No users received for resetting passwords."
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='users',
                                                        webapp=webapp,
                                                        message=message,
                                                        status='error' ) )
-        ids = util.listify( id )
+        user_ids = util.listify( user_id )
         if 'reset_user_password_button' in kwd:
             message = ''
             status = ''
-            for user_id in ids:
+            for user_id in user_ids:
                 user = get_user( trans, user_id )
                 password = kwd.get( 'password', None )
                 confirm = kwd.get( 'confirm' , None )
                 if len( password ) < 6:
-                    message = "Please use a password of at least 6 characters"
+                    message = "Use a password of at least 6 characters."
                     status = 'error'
                     break
                 elif password != confirm:
-                    message = "Passwords do not match"
+                    message = "Passwords do not match."
                     status = 'error'
                     break
                 else:
@@ -2032,18 +2057,18 @@ class Admin( object ):
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
             if not message and not status:
-                message = "Passwords reset for %d users" % len( ids )
+                message = "Passwords reset for %d %s." % ( len( user_ids ), inflector.cond_plural( len( user_ids ), 'user' ) )
                 status = 'done'
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='users',
                                                        webapp=webapp,
                                                        message=util.sanitize_text( message ),
                                                        status=status ) )
-        users = [ get_user( trans, user_id ) for user_id in ids ]
-        if len( ids ) > 1:
-            id=','.join( id )
+        users = [ get_user( trans, user_id ) for user_id in user_ids ]
+        if len( user_ids ) > 1:
+            user_id = ','.join( user_ids )
         return trans.fill_template( '/admin/user/reset_password.mako',
-                                    id=id,
+                                    id=user_id,
                                     users=users,
                                     password='',
                                     confirm='',
@@ -2208,6 +2233,13 @@ class Admin( object ):
                                                                       **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
+        if trans.app.config.allow_user_deletion:
+            if self.delete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.delete_operation )
+            if self.undelete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.undelete_operation )
+            if self.purge_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.purge_operation )
         # Render the list view
         return self.user_list_grid( trans, **kwd )
     @web.expose
@@ -2390,24 +2422,22 @@ class Admin( object ):
 
 ## ---- Utility methods -------------------------------------------------------
 
-def copy_sample_loc_file( trans, filename ):
+def copy_sample_loc_file( app, filename ):
     """Copy xxx.loc.sample to ~/tool-data/xxx.loc.sample and ~/tool-data/xxx.loc"""
     head, sample_loc_file = os.path.split( filename )
     loc_file = sample_loc_file.replace( '.sample', '' )
-    tool_data_path = os.path.abspath( trans.app.config.tool_data_path )
+    tool_data_path = os.path.abspath( app.config.tool_data_path )
     # It's ok to overwrite the .sample version of the file.
     shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
     # Only create the .loc file if it does not yet exist.  We don't  
     # overwrite it in case it contains stuff proprietary to the local instance.
     if not os.path.exists( os.path.join( tool_data_path, loc_file ) ):
         shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
-def get_user( trans, id ):
+def get_user( trans, user_id ):
     """Get a User from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id( id )
-    user = trans.sa_session.query( trans.model.User ).get( id )
+    user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
     if not user:
-        return trans.show_error_message( "User not found for id (%s)" % str( id ) )
+        return trans.show_error_message( "User not found for id (%s)" % str( user_id ) )
     return user
 def get_user_by_username( trans, username ):
     """Get a user from the database by username"""
@@ -2437,29 +2467,27 @@ def get_quota( trans, id ):
     id = trans.security.decode_id( id )
     quota = trans.sa_session.query( trans.model.Quota ).get( id )
     return quota
-def handle_sample_tool_data_table_conf_file( trans, filename ):
+def handle_sample_tool_data_table_conf_file( app, filename ):
     """
     Parse the incoming filename and add new entries to the in-memory
-    trans.app.tool_data_tables dictionary as well as appending them 
-    to the shed's tool_data_table_conf.xml file on disk.
+    app.tool_data_tables dictionary as well as appending them to the
+    shed's tool_data_table_conf.xml file on disk.
     """
-    # Parse the incoming file and add new entries to the in-memory 
-    # trans.app.tool_data_tables dictionary.
     error = False
     message = ''
     try:
-        new_table_elems = trans.app.tool_data_tables.add_new_entries_from_config_file( filename )
+        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename )
     except Exception, e:
         message = str( e )
         error = True
     if not error:
         # Add an entry to the end of the tool_data_table_conf.xml file.
-        tdt_config = "%s/tool_data_table_conf.xml" %  trans.app.config.root
+        tdt_config = "%s/tool_data_table_conf.xml" % app.config.root
         if os.path.exists( tdt_config ):
             # Make a backup of the file since we're going to be changing it.
             today = date.today()
             backup_date = today.strftime( "%Y_%m_%d" )
-            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( trans.app.config.root, backup_date )
+            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( app.config.root, backup_date )
             shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
             # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
             fh = tempfile.NamedTemporaryFile( 'wb' )
@@ -2479,3 +2507,32 @@ def handle_sample_tool_data_table_conf_file( trans, filename ):
             message = "The required file named tool_data_table_conf.xml does not exist in the Galaxy install directory."
             error = True
     return error, message
+def tool_shed_encode( val ):
+    if isinstance( val, dict ):
+        value = simplejson.dumps( val )
+    else:
+        value = val
+    a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+    b = binascii.hexlify( value )
+    return "%s:%s" % ( a, b )
+def tool_shed_decode( value ):
+    # Extract and verify hash
+    a, b = value.split( ":" )
+    value = binascii.unhexlify( b )
+    test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
+    assert a == test
+    # Restore from string
+    values = None
+    try:
+        values = simplejson.loads( value )
+    except Exception, e:
+        log.debug( "Decoding json value from tool shed threw exception: %s" % str( e ) )
+    if values is not None:
+        try:
+            return json_fix( values )
+        except Exception, e:
+            log.debug( "Fixing decoded json value from tool shed threw exception: %s" % str( e ) )
+            fixed_values = values
+    if values is None:
+        values = value
+    return values

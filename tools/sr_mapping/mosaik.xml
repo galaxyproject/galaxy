@@ -13,7 +13,7 @@
     #end if
     MosaikBuild -fr
     #if $genomeSource.refGenomeSource == 'indexed':
-        ${ filter( lambda x: str( x[0] ) == str( $genomeSource.indexReference ), $__app__.tool_data_tables[ 'mosaik_indexes' ].get_fields() )[0][-1] }
+        ${genomeSource.indexReference.fields.path}
     #else:
         $genomeSource.historyReference
     #end if

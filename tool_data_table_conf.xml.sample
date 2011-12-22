@@ -65,10 +65,25 @@
         <columns>value, name, path</columns>
         <file path="tool-data/perm_color_index.loc" />
     </table>
+    <!-- Location of SAMTools indexes and other files -->
+    <table name="sam_fa_indexes" comment_char="#">
+        <columns>line_type, value, path</columns>
+        <file path="tool-data/sam_fa_indices.loc" />
+    </table>
     <!-- Location of Picard dict file and other files -->
     <table name="picard_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/picard_index.loc" />
+    </table>
+    <!-- Location of Picard dict files valid for GATK -->
+    <table name="gatk_picard_indexes" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/gatk_sorted_picard_index.loc" />
+    </table>
+    <!-- Available of GATK references -->
+    <table name="gatk_annotations" comment_char="#">
+        <columns>value, name, gatk_value, tools_valid_for</columns>
+        <file path="tool-data/gatk_annotations.txt" />
     </table>
     <!-- Location of SRMA dict file and other files -->
     <table name="srma_indexes" comment_char="#">

@@ -1,12 +1,12 @@
-<tool name="SAM/BAM GC Bias Metrics" id="PicardGCBiasMetrics" version="0.02">
+<tool name="SAM/BAM GC Bias Metrics" id="PicardGCBiasMetrics" version="1.56.0">
   <command interpreter="python">
     picard_wrapper.py -i "$input_file" -d "$html_file.files_path" -t "$html_file"
     --windowsize "$windowsize" --mingenomefrac "$mingenomefrac" -n "$out_prefix" --tmpdir "${__new_file_path__}"
-    -j ${GALAXY_DATA_INDEX_DIR}/shared/jars/CollectGcBiasMetrics.jar
+    -j ${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/CollectGcBiasMetrics.jar
 #if $genomeSource.refGenomeSource == "history":
- --ref-file "$genomeSource.ownFile"
+ --ref-file "${genomeSource.ownFile}"
 #else:
- --ref "${ filter( lambda x: str( x[0] ) == str( $genomeSource.index ), $__app__.tool_data_tables[ 'all_fasta' ].get_fields() )[0][-1] }"
+ --ref "${genomeSource.index.fields.path}"
 #end if
   </command>
   <requirements><requirement type="package">picard</requirement></requirements>

@@ -1,8 +1,8 @@
-<tool name="Mark Duplicate reads" id="rgPicardMarkDups" version="0.01">
+<tool name="Mark Duplicate reads" id="rgPicardMarkDups" version="1.56.0">
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" -o "$out_file"
    --remdups "$remDups" --assumesorted "$assumeSorted" --readregex "$readRegex" --optdupdist "$optDupeDist"
-   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/MarkDuplicates.jar" -d "$html_file.files_path" -t "$html_file" -e "$input_file.ext"
+   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/MarkDuplicates.jar" -d "$html_file.files_path" -t "$html_file" -e "$input_file.ext"
   </command>
   <requirements><requirement type="package">picard</requirement></requirements>
   <inputs>

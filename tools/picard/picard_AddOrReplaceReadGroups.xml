@@ -1,4 +1,4 @@
-<tool name="Add or Replace Groups" id="picard_ARRG" version="0.2.0">
+<tool name="Add or Replace Groups" id="picard_ARRG" version="1.56.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
     picard_wrapper.py
@@ -15,7 +15,7 @@
       #end if
       --output-format=$outputFormat
       --output=$outFile
-      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/AddOrReplaceReadGroups.jar"
+      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/AddOrReplaceReadGroups.jar"
   </command>
   <inputs>
     <param format="bam,sam" name="inputFile" type="data" label="SAM/BAM dataset to add or replace read groups in"

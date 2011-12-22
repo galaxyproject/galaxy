@@ -1,15 +1,19 @@
-<tool id="gatk_variant_annotator" name="Variant Annotator" version="0.0.1">
+<tool id="gatk_variant_annotator" name="Variant Annotator" version="0.0.4">
   <description></description>
+  <requirements>
+      <requirement type="package" version="1.3">gatk</requirement>
+  </requirements>
   <command interpreter="python">gatk_wrapper.py
-   --max_jvm_heap_fraction "2"
+   --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    #if str( $reference_source.input_bam ) != "None":
        -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
        -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
    #end if
-   -d "-B:variant,%(file_type)s" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
+   -d "--variant" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
+    ##--list
     -T "VariantAnnotator"
     ##--num_threads 4 ##hard coded, for now
     -et "NO_ET" ##ET no phone home
@@ -21,47 +25,56 @@
     #if str( $annotations_type.annotations_type_selector ) == "use_all_annotations":
         --useAllAnnotations
     #else:
-        #if $annotations_type.annotations.value:
-            #for $annotation in str( $annotations_type.annotations ).split( ',' ):
+        #if str( $annotations_type.annotations ) != "None":
+            #for $annotation in str( $annotations_type.annotations.fields.gatk_value ).split( ',' ):
                 --annotation "${annotation}"
             #end for
         #end if
     #end if
-##    #for $additional_annotation in $additional_annotations:
-##        --annotation "${additional_annotation.additional_annotation_type.additional_annotation_type_selector}"
-##        #for $name, $param in $additional_annotation.additional_annotation_type.iteritems():
-##            #if $name not in [ "__current_case__", "additional_annotation_type_selector" ]:
-##                --${name} "${param}"
-##            #end if
-##        #end for
-##    #end for
-    #if str( $reference_source.input_variant_name ):
-        --sampleName "${reference_source.input_variant_name}"
+    #if str( $exclude_annotations ) != "None":
+        #for $annotation in str( $exclude_annotations.fields.gatk_value ).split( ',' ):
+            --excludeAnnotation "${annotation}"
+        #end for
     #end if
+    #for $additional_annotation in $additional_annotations:
+        --annotation "${additional_annotation.additional_annotation_name}"
+    #end for
     ${reference_source.input_variant_bti}
    '
     
-    #set $rod_binding_names = dict()
-    #for $rod_binding in $rod_bind:
-        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
-            #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
-        #elif str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'comp':
-            #set $rod_bind_name = "comp" + str( $rod_binding.rod_bind_type.custom_rod_name )
-        #else 
-            #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
-        #end if
-        #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
-        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
-        #end if
+    #for $rod_binding in $comp_rod_bind:
+        -d "--comp:${rod_binding.comp_rod_name},%(file_type)s" "${rod_binding.comp_input_rod}" "${rod_binding.comp_input_rod.ext}" "input_comp_${rod_binding.comp_rod_name}"
+    #end for
+    
+    #if str( $dbsnp_rod_bind_type.dbsnp_rod_bind_type_selector ) == 'set_dbsnp':
+        -d "--dbsnp:${dbsnp_rod_bind_type.dbsnp_rod_name},%(file_type)s" "${dbsnp_rod_bind_type.dbsnp_input_rod}" "${dbsnp_rod_bind_type.dbsnp_input_rod.ext}" "input_dbsnp_${dbsnp_rod_bind_type.dbsnp_rod_name}"
+    #end if
+    
+    
+    #for $rod_binding in $resource_rod_bind:
+        -d "--resource:${rod_binding.resource_rod_name},%(file_type)s" "${rod_binding.resource_input_rod}" "${rod_binding.resource_input_rod.ext}" "input_resource_${rod_binding.resource_rod_name}"
+    #end for
+    
+    #if str( $snpEff_rod_bind_type.snpEff_rod_bind_type_selector ) == 'set_snpEff':
+        -p '--annotation "SnpEff"'
+        -d "--snpEffFile:${snpEff_rod_bind_type.snpEff_rod_name},%(file_type)s" "${snpEff_rod_bind_type.snpEff_input_rod}" "${snpEff_rod_bind_type.snpEff_input_rod.ext}" "input_snpEff_${snpEff_rod_bind_type.snpEff_rod_name}"
+    #else:
+        -p '--excludeAnnotation "SnpEff"'
+    #end if
+    
+    #for $expression in $expressions:
+        -p '--expression "${expression.expression}"'
     #end for
     
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
-        #for $sample_metadata in $gatk_param_type.sample_metadata:
-            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #for $pedigree in $gatk_param_type.pedigree:
+            -p '--pedigree "${pedigree.pedigree_file}"'
         #end for
+        #for $pedigree_string in $gatk_param_type.pedigree_string_repeat:
+            -p '--pedigreeString "${pedigree_string.pedigree_string}"'
+        #end for
+        -p '--pedigreeValidationType "${gatk_param_type.pedigree_validation_type}"'
         #for $read_filter in $gatk_param_type.read_filter:
             -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
             ###raise Exception( str( dir( $read_filter ) ) )
@@ -72,14 +85,16 @@
             #end for
             '
         #end for
-        #if str( $gatk_param_type.input_intervals ) != "None":
-            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
-        #end if
-        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
-            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
-        #end if
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
         
-        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
+        -p '--interval_set_rule "${gatk_param_type.interval_set_rule}"'
+        
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
             -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
@@ -91,26 +106,33 @@
         --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
         --validation_strictness "${gatk_param_type.validation_strictness}"
         --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
         '
-        #if str( $gatk_param_type.read_group_black_list ) != "None":
-            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
-        #end if
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
     #end if
     #if str( $reference_source.reference_source_selector ) == "history":
         -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
     #end if
     ##end standard gatk options
     
-    ##start analysis specific options
-    #if $analysis_param_type.analysis_param_type_selector == "advanced":
-        -p '
-        #if $analysis_param_type.group.value:
-            #for $annotation_group in str( $analysis_param_type.group ).split( ',' ):
-                --group "${annotation_group}"
-            #end for
-        #end if
-        '
+    -p '
+    #if str( $annotation_group ) != "None":
+        #for $group in str( $annotation_group ).split( ',' ):
+            --group "${group}"
+        #end for
     #end if
+    #if str( $family_string ) != "":
+        --family_string "${family_string}"
+    #end if
+    --MendelViolationGenotypeQualityThreshold "${mendel_violation_genotype_quality_threshold}"
+        '
   </command>
   <inputs>
     <conditional name="reference_source">
@@ -119,24 +141,26 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variant" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
-        <param name="input_variant_name" type="text" value="" label="Variant Name" help="Not needed for VCF inputs."/>
+        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" />
         <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." />
         <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" help="Not needed for all annotations." >
           <validator type="unspecified_build" />
-          <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+          <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+          <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
         <param name="ref_file" type="select" label="Using reference genome">
-          <options from_data_table="picard_indexes">
+          <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
+          <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variant" type="data" format="vcf,gatk_dbsnp,bed" label="Variant file to annotate" />
-        <param name="input_variant_name" type="text" value="" label="Variant Name" help="Not needed for VCF inputs."/>
+        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" />
         <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." />
-        <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" />
+        <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" >
+          <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+        </param>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
@@ -150,91 +174,59 @@
       </when>
       <when value="choose">
         <param name="annotations" type="select" multiple="True" display="checkboxes" label="Annotations to apply" >
-          <!-- might we want to load the available annotations from an external configuration file, since additional ones can be added to local installs? -->
-          <option value="AlleleBalance" />
-          <option value="BaseQualityRankSumTest" />
-          <option value="DepthOfCoverage" />
-          <option value="HomopolymerRun" />
-          <option value="MappingQualityRankSumTest" />
-          <option value="MappingQualityZero" />
-          <option value="QualByDepth" />
-          <option value="RMSMappingQuality" />
-          <option value="SpanningDeletions" />
-          <option value="HaplotypeScore" />
-          <!-- annotations below were pulled from list option -->
-          <option value="ChromosomeCounts" />
-          <option value="IndelType" />
-          <option value="HardyWeinberg" />
-          <option value="BaseCounts" />
-          <option value="LowMQ" />
-          <option value="FisherStrand" />
-          <option value="GenomicAnnotation" />
-          <option value="GCContent" />
-          <option value="ReadPosRankSumTest" />
-          <option value="SBByDepth" />
-          <option value="ReadDepthAndAllelicFractionBySample" />
-          <option value="AlleleBalanceBySample" />
-          <option value="DepthPerAlleleBySample" />
-          <option value="MappingQualityZeroBySample" />
-          <option value="NBaseCount" />
-          <option value="GLstats" />
-          <option value="SampleList" />
-          <option value="MappingQualityZeroFraction" />
+          <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
+          <options from_data_table="gatk_annotations">
+            <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
+            <filter type="static_value" value="VariantAnnotator" column="tools_valid_for"/>
+          </options>
         </param>
       </when>
     </conditional>
-    <!-- <repeat name="additional_annotations" title="Additional annotation">
-        <conditional name="additional_annotation_type">
-          <param name="additional_annotation_type_selector" type="select" label="Choose annotation type">
-            <option value="SnpEff">snpEff</option>
-          </param>
-          <when value="SnpEff">
-            <param name="snpEffFile" type="data" format="snpEff" label="snpEff output file" />
-          </when>
-        </conditional>
-    </repeat> -->
-    <repeat name="rod_bind" title="Binding for reference-ordered data">
-        <conditional name="rod_bind_type">
-          <param name="rod_bind_type_selector" type="select" label="Binding Type">
-            <option value="variant">Variants</option>
-	        <option value="dbsnp">dbSNP</option>
-	        <option value="snps">SNPs</option>
-            <option value="comp" selected="True">Comps</option>
-            <option value="indels">INDELs</option>
-            <option value="mask">Mask</option>
-            <option value="custom">Custom</option>
-          </param>
-          <when value="variant">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="Variant ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="comp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp" label="ROD file" />
-              <param name="custom_rod_name" type="text" value="Unnamed" label="ROD Name"/>
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="dbsnp">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="snps">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="indels">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="mask">
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-          <when value="custom">
-              <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
-              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
-          </when>
-        </conditional>
+    
+    <repeat name="additional_annotations" title="Additional annotation">
+      <param name="additional_annotation_name" type="text" value="" label="Annotation name" />
+    </repeat>
+    
+    <repeat name="comp_rod_bind" title="Binding for reference-ordered comparison data">
+      <param name="comp_input_rod" type="data" format="vcf" label="ROD file" />
+      <param name="comp_rod_name" type="text" value="Unnamed" label="ROD Name"/>
+    </repeat>
+    
+    <conditional name="dbsnp_rod_bind_type">
+      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file">
+        <option value="set_dbsnp" selected="True">Set dbSNP</option>
+        <option value="exclude_dbsnp">Don't set dbSNP</option>
+      </param>
+      <when value="exclude_dbsnp">
+        <!-- Do nothing here -->
+      </when>
+      <when value="set_dbsnp">
+        <param name="dbsnp_input_rod" type="data" format="vcf" label="ROD file" />
+        <param name="dbsnp_rod_name" type="hidden" value="dbsnp" label="ROD Name"/>
+      </when>
+    </conditional>
+    
+    <repeat name="resource_rod_bind" title="Binding for reference-ordered resource data">
+      <param name="resource_input_rod" type="data" format="vcf" label="ROD file" />
+      <param name="resource_rod_name" type="text" value="Unnamed" label="ROD Name"/>
+    </repeat>
+    
+    <conditional name="snpEff_rod_bind_type">
+      <param name="snpEff_rod_bind_type_selector" type="select" label="Provide a snpEff reference-ordered data file">
+        <option value="set_snpEff">Set snpEff</option>
+        <option value="exclude_snpEff" selected="True">Don't set snpEff</option>
+      </param>
+      <when value="exclude_snpEff">
+        <!-- Do nothing here -->
+      </when>
+      <when value="set_snpEff">
+        <param name="snpEff_input_rod" type="data" format="vcf" label="ROD file" />
+        <param name="snpEff_rod_name" type="hidden" value="snpEff" label="ROD Name"/>
+      </when>
+    </conditional>
+    
+    <repeat name="expressions" title="Expression">
+      <param name="expression" type="text" value="" label="Expression"/>
     </repeat>
     
     <conditional name="gatk_param_type">
@@ -246,29 +238,42 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <repeat name="sample_metadata" title="Sample Metadata">
-            <param name="sample_metadata_file" type="data" format="txt" label="Sample file(s) in JSON format" />
+        <repeat name="pedigree" title="Pedigree file">
+            <param name="pedigree_file" type="data" format="txt" label="Pedigree files for samples" />
         </repeat>
+        <repeat name="pedigree_string_repeat" title="Pedigree string">
+            <param name="pedigree_string" type="text" value="" label="Pedigree string for samples" />
+        </repeat>
+        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
-              <param name="read_filter_type_selector" type="select" label="Read Filter Type">
-                <option value="MaxReadLength" selected="True">MaxReadLength</option>
-                <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
-              </param>
-              <when value="ZeroMappingQualityRead">
-                  <!-- no extra options -->
-              </when>
-              <when value="MaxReadLength">
-                  <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
-              </when>
+		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+		        <option value="MaxReadLength" selected="True">MaxReadLength</option>
+		        <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+		      </param>
+	          <when value="ZeroMappingQualityRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MaxReadLength">
+	              <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+	          </when>
             </conditional>
         </repeat>
-        <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
-        <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
-        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+        <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        
+        <param name="interval_set_rule" type="select" label="Interval set rule">
           <option value="UNION" selected="True">UNION</option>
           <option value="INTERSECTION">INTERSECTION</option>
         </param>
+        
         <conditional name="downsampling_type">
           <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
             <option value="NONE" selected="True">NONE</option>
@@ -276,75 +281,94 @@
             <option value="BY_SAMPLE">BY_SAMPLE</option>
           </param>
           <when value="NONE">
-              <!-- no more options here -->
-          </when>
+	          <!-- no more options here -->
+	      </when>
           <when value="ALL_READS">
-              <conditional name="downsample_to_type">
-                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
-                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
-                      <option value="downsample_to_coverage">Downsample by Coverage</option>
-                  </param>
-                  <when value="downsample_to_fraction">
-                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
-                  </when>
-                  <when value="downsample_to_coverage">
-                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
-                  </when>
-              </conditional>
-          </when>
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
           <when value="BY_SAMPLE">
-              <conditional name="downsample_to_type">
-                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
-                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
-                      <option value="downsample_to_coverage">Downsample by Coverage</option>
-                  </param>
-                  <when value="downsample_to_fraction">
-                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
-                  </when>
-                  <when value="downsample_to_coverage">
-                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
-                  </when>
-              </conditional>
-          </when>
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
         </conditional>
         <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
           <option value="OFF" selected="True">OFF</option>
           <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
           <option value="RECALCULATE">RECALCULATE</option>
         </param>
-        <param name="baq_gap_open_penalty" type="integer" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
         <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
         <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
         <param name="validation_strictness" type="select" label="How strict should we be with validation">
           <option value="STRICT" selected="True">STRICT</option>
           <option value="LENIENT">LENIENT</option>
           <option value="SILENT">SILENT</option>
+          <!-- <option value="DEFAULT_STRINGENCY">DEFAULT_STRINGENCY</option> listed in docs, but not valid value...-->
         </param>
         <param name="interval_merging" type="select" label="Interval merging rule">
           <option value="ALL" selected="True">ALL</option>
           <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
         </param>
-        <param name="read_group_black_list" type="data" format="txt" optional="True" label="Read group black list" />
+        
+        <repeat name="read_group_black_list_repeat" title="Read group black list">
+          <conditional name="read_group_black_list_type">
+            <param name="read_group_black_list_type_selector" type="select" label="Type of reads read group black list">
+              <option value="file" selected="True">Filters in file</option>
+              <option value="text">Specify filters as a string</option>
+            </param>
+            <when value="file">
+	          <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
+	        </when>
+            <when value="text">
+	          <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
+	        </when>
+          </conditional>
+        </repeat>
+        
+        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality." checked="False"/>
+        <param name="non_deterministic_random_seed" type="boolean" truevalue="--nonDeterministicRandomSeed" falsevalue="" label="Makes the GATK behave non deterministically, that is, the random numbers generated will be different in every run" checked="False" />
+        
       </when>
     </conditional>
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
-        <param name="group" type="select" multiple="True" display="checkboxes" label="annotation interfaces/groups to apply to variant calls">
-          <option value="Standard">Standard</option>
-          <option value="Experimental">Experimental</option>
-          <option value="WorkInProgress">WorkInProgress</option>
-        </param>
-
-      </when>
-    </conditional>
+    <param name="annotation_group" type="select" multiple="True" display="checkboxes" label="annotation interfaces/groups to apply to variant calls">
+      <option value="RodRequiringAnnotation">RodRequiringAnnotation</option>
+      <option value="Standard">Standard</option>
+      <option value="Experimental">Experimental</option>
+      <option value="WorkInProgress">WorkInProgress</option>
+      <option value="RankSumTest">RankSumTest</option>
+    </param>
+    <param name="family_string" type="text" value="" label="Family String"/>
+    <param name="mendel_violation_genotype_quality_threshold" type="float" value="0.0" label="genotype quality treshold in order to annotate mendelian violation ratio."/>
+    <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" >
+      <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
+      <options from_data_table="gatk_annotations">
+        <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
+        <filter type="static_value" value="VariantAnnotator" column="tools_valid_for"/>
+      </options>
+    </param>
+    
   </inputs>
   <outputs>
     <data format="vcf" name="output_vcf" label="${tool.name} on ${on_string} (Variant File)" />
@@ -356,17 +380,19 @@
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
           <param name="input_variant" value="gatk/gatk_unified_genotyper/gatk_unified_genotyper_out_1.vcf" ftype="vcf" />
+          <param name="input_variant_bti" />
           <param name="annotations_type_selector" value="choose" />
           <param name="annotations" value="AlleleBalance,BaseQualityRankSumTest,DepthOfCoverage,HomopolymerRun,MappingQualityRankSumTest,MappingQualityZero,QualByDepth,RMSMappingQuality,SpanningDeletions,HaplotypeScore" />
-          <!-- <param name="additional_annotation_type_selector" value="snpEff" />
-          <param name="snpEffFile" value="single_comment.dat" ftype="snpEff" /> -->
-          <param name="rod_bind_type_selector" value="dbsnp" />
-          <param name="rodToIntervalTrackName" />
-          <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <param name="dbsnp_rod_bind_type_selector" value="set_dbsnp" />
+          <param name="dbsnp_input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
+          <param name="snpEff_rod_bind_type_selector" value="exclude_snpEff" />
           <param name="gatk_param_type_selector" value="basic" />
-          <param name="analysis_param_type_selector" value="basic" />
-          <output name="output_vcf" file="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" lines_diff="2" /> 
+          <output name="output_vcf" file="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" lines_diff="4" /> 
           <output name="output_log" file="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.log.contains" compare="contains" />
+          <param name="comp_rod_bind" value="0" />
+          <param name="resource_rod_bind" value="0" />
+          <param name="expressions" value="0" />
+          <!-- <param name="annotation_group" /> -->
       </test>
   </tests>
   <help>

@@ -45,6 +45,7 @@ User.table = Table( "galaxy_user", metadata,
     Column( "username", String( 255 ), index=True ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
     Column( "external", Boolean, default=False ),
+    Column( "new_repo_alert", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
@@ -194,7 +195,7 @@ assign_mapper( context, Repository, Repository.table,
         categories=relation( RepositoryCategoryAssociation ),
         ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
         user=relation( User.mapper ),
-        downloadable_revisions=relation( RepositoryMetadata, order_by=desc( RepositoryMetadata.table.c.id ) ) ) )
+        downloadable_revisions=relation( RepositoryMetadata, order_by=desc( RepositoryMetadata.table.c.update_time ) ) ) )
 
 assign_mapper( context, RepositoryMetadata, RepositoryMetadata.table,
     properties=dict( repository=relation( Repository ) ) )

@@ -236,7 +236,7 @@ class LwrJobRunner( BaseJobRunner ):
         return  lwr_url 
 
     def get_client_from_wrapper(self, job_wrapper):
-        return self.get_client( job_wrapper.tool.job_runner, job_wrapper.job_id )
+        return self.get_client( job_wrapper.get_job_runner(), job_wrapper.job_id )
 
     def get_client(self, job_runner, job_id):
         lwr_url = self.determine_lwr_url( job_runner )
@@ -245,10 +245,16 @@ class LwrJobRunner( BaseJobRunner ):
     def run_job( self, job_wrapper ):
         stderr = stdout = command_line = ''
 
-        runner_url = job_wrapper.tool.job_runner
+        runner_url = job_wrapper.get_job_runner()
 
         try:
             job_wrapper.prepare()
+            if hasattr(job_wrapper, 'prepare_input_files_cmds') and job_wrapper.prepare_input_files_cmds is not None:
+                for cmd in job_wrapper.prepare_input_file_cmds: # run the commands to stage the input files
+                    #log.debug( 'executing: %s' % cmd )
+                    if 0 != os.system(cmd):
+                        raise Exception('Error running file staging command: %s' % cmd)
+                job_wrapper.prepare_input_files_cmds = None # prevent them from being used in-line
             command_line = self.build_command_line( job_wrapper, include_metadata=False )
         except:
             job_wrapper.fail( "failure preparing job", exception=True )

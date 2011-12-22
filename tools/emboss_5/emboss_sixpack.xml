@@ -2,8 +2,8 @@
   <!-- tool adds file description and timestamp to output data -->
   <description>Display a DNA sequence with 6-frame translation and ORFs</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>sixpack -sequence $input1 -outfile $ofile1 -outseq $ofile2 -table $table -firstorf $firstorf -lastorf $lastorf -mstart $mstart -reverse $reverse -orfminsize $orfminsize -uppercase
-  "$uppercase" -number $number -width "$width" -length "$length" -margin "$margin" -name $disp_name -description $description -offset "$offset" -html $html_out1 -osformat $out_format2 -auto</command>
+  <command>sixpack -sequence '$input1' -outfile '$ofile1' -outseq '$ofile2' -table '$table' -firstorf '$firstorf' -lastorf '$lastorf' -mstart '$mstart' -reverse '$reverse' -orfminsize '$orfminsize' -uppercase
+  '$uppercase' -number '$number' -width '$width' -length '$length' -margin '$margin' -name '$disp_name' -description '$description' -offset '$offset' -html '$html_out1' -osformat '$out_format2' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>
@@ -162,6 +162,8 @@ The input dataset needs to be sequences.
 ------
 
 **Citation**
+
+For the underlying tool, please cite `Rice P, Longden I, Bleasby A. EMBOSS: the European Molecular Biology Open Software Suite. Trends Genet. 2000 Jun;16(6):276-7. &lt;http://www.ncbi.nlm.nih.gov/pubmed/10827456&gt;`_
 
 If you use this tool in Galaxy, please cite `Blankenberg D, Taylor J, Schenck I, He J, Zhang Y, Ghent M, Veeraraghavan N, Albert I, Miller W, Makova KD, Hardison RC, Nekrutenko A. A framework for collaborative analysis of ENCODE data: making large-scale analyses biologist-friendly. Genome Res. 2007 Jun;17(6):960-4. &lt;http://www.ncbi.nlm.nih.gov/pubmed/17568012&gt;`_
   </help>

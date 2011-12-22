@@ -411,6 +411,7 @@ class FileParameter( MetadataParameter ):
             mf = galaxy.model.MetadataFile()
             mf.id = value #we assume this is a valid id, since we cannot check it
             return mf
+    
     def make_copy( self, value, target_context, source_context ):
         value = self.wrap( value )
         if value:
@@ -437,9 +438,12 @@ class FileParameter( MetadataParameter ):
             mf = parent.metadata.get( self.spec.name, None)
             if mf is None:
                 mf = self.new_file( dataset = parent, **value.kwds )
-            shutil.move( value.file_name, mf.file_name )
+            # Ensure the metadata file gets updated with content
+            parent.dataset.object_store.update_from_file( parent.dataset.id, file_name=value.file_name, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=os.path.basename(mf.file_name) )
+            os.unlink( value.file_name )
             value = mf.id
         return value
+    
     def to_external_value( self, value ):
         """
         Turns a value read from a metadata into its value to be pushed directly into the external dict.
@@ -461,7 +465,7 @@ class FileParameter( MetadataParameter ):
             #we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             #we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
             return MetadataTempFile( **kwds )
-
+    
 #This class is used when a database file connection is not available
 class MetadataTempFile( object ):
     tmp_dir = 'database/tmp' #this should be overwritten as necessary in calling scripts
@@ -540,6 +544,7 @@ class JobExternalOutputMetadataWrapper( object ):
         if config_root is None:
             config_root = os.path.abspath( os.getcwd() )
         if datatypes_config is None:
+            raise Exception( 'In setup_external_metadata, the received datatypes_config is None.' )
             datatypes_config = 'datatypes_conf.xml'
         metadata_files_list = []
         for dataset in datasets:

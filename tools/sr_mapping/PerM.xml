@@ -11,9 +11,9 @@
         $s.sourceOfRef.ref
       #else
         #if $s.space == "color"
-          "${ filter( lambda x: str( x[0] ) == str( $s.sourceOfRef.index ), $__app__.tool_data_tables[ 'perm_color_indexes' ].get_fields() )[0][-1] }"
+          "${s.sourceOfRef.index.fields.path}"
         #elif $s.space == "base"
-          "${ filter( lambda x: str( x[0] ) == str( $s.sourceOfRef.index ), $__app__.tool_data_tables[ 'perm_base_indexes' ].get_fields() )[0][-1] }"
+          "${s.sourceOfRef.index.fields.path}"
         #end if
       #end if
       #if $s.mate.singleOrPairs == "single":

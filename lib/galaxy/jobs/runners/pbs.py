@@ -204,7 +204,7 @@ class PBSJobRunner( BaseJobRunner ):
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
 
-        runner_url = job_wrapper.tool.job_runner
+        runner_url = job_wrapper.get_job_runner()
         
         # This is silly, why would we queue a job with no command line?
         if not command_line:
@@ -214,7 +214,8 @@ class PBSJobRunner( BaseJobRunner ):
         # Check for deletion before we change state
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
-            job_wrapper.cleanup()
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                job_wrapper.cleanup()
             return
 
         ( pbs_server_name, runner_url ) = self.determine_pbs_server( runner_url, rewrite = True )
@@ -277,8 +278,9 @@ class PBSJobRunner( BaseJobRunner ):
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
             pbs.pbs_disconnect(c)
-            self.cleanup( ( ofile, efile, job_file ) )
-            job_wrapper.cleanup()
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                self.cleanup( ( ofile, efile, job_file ) )
+                job_wrapper.cleanup()
             return
 
         # submit
@@ -292,7 +294,7 @@ class PBSJobRunner( BaseJobRunner ):
         if not job_id:
             errno, text = pbs.error()
             log.debug( "(%s) pbs_submit failed, PBS error %d: %s" % (galaxy_job_id, errno, text) )
-            job_wrapper.fail( "Unable to run this job due to a cluster error" )
+            job_wrapper.fail( "Unable to run this job due to a cluster error, please retry it later" )
             return
 
         if pbs_queue_name is None:
@@ -419,7 +421,7 @@ class PBSJobRunner( BaseJobRunner ):
                     assert int( status.exit_status ) == 0
                     log.debug("(%s/%s) PBS job has completed successfully" % ( galaxy_job_id, job_id ) )
                 except AssertionError:
-                    pbs_job_state.fail_message = 'Job cannot be completed due to a cluster error.  Please retry or'
+                    pbs_job_state.fail_message = 'Job cannot be completed due to a cluster error, please retry it later'
                     log.error( '(%s/%s) PBS job failed: %s' % ( galaxy_job_id, job_id, JOB_EXIT_STATUS.get( int( status.exit_status ), 'Unknown error: %s' % status.exit_status ) ) )
                     self.work_queue.put( ( 'fail', pbs_job_state ) )
                     continue
@@ -517,7 +519,8 @@ class PBSJobRunner( BaseJobRunner ):
             pbs_job_state.job_wrapper.fail("Unable to finish job", exception=True)
 
         # clean up the pbs files
-        self.cleanup( ( ofile, efile, job_file ) )
+        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+            self.cleanup( ( ofile, efile, job_file ) )
 
     def fail_job( self, pbs_job_state ):
         """
@@ -526,13 +529,15 @@ class PBSJobRunner( BaseJobRunner ):
         if pbs_job_state.stop_job:
             self.stop_job( self.sa_session.query( self.app.model.Job ).get( pbs_job_state.job_wrapper.job_id ) )
         pbs_job_state.job_wrapper.fail( pbs_job_state.fail_message )
-        self.cleanup( ( pbs_job_state.ofile, pbs_job_state.efile, pbs_job_state.job_file ) )
+        if self.app.config.cleanup_job == "always":
+            self.cleanup( ( pbs_job_state.ofile, pbs_job_state.efile, pbs_job_state.job_file ) )
 
     def cleanup( self, files ):
-        if not asbool( self.app.config.get( 'debug', False ) ):
-            for file in files:
-                if os.access( file, os.R_OK ):
-                    os.unlink( file )
+        for file in files:
+            try:
+                os.unlink( file )
+            except Exception, e:
+                log.warning( "Unable to cleanup: %s" % str( e ) )
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
@@ -581,7 +586,7 @@ class PBSJobRunner( BaseJobRunner ):
         pbs_job_state.efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.job_id = str( job.job_runner_external_id )
-        pbs_job_state.runner_url = job_wrapper.tool.job_runner
+        pbs_job_state.runner_url = job_wrapper.get_job_runner()
         job_wrapper.command_line = job.command_line
         pbs_job_state.job_wrapper = job_wrapper
         if job.state == model.Job.states.RUNNING:

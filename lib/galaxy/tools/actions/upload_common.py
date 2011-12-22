@@ -294,7 +294,7 @@ def create_paramfile( trans, uploaded_datasets ):
         json_file.write( to_json_string( json ) + '\n' )
     json_file.close()
     return json_file_path
-def create_job( trans, params, tool, json_file_path, data_list, folder=None, return_job=False ):
+def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     """
     Create the upload job.
     """
@@ -319,18 +319,20 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, ret
     for name, value in tool.params_to_strings( params, trans.app ).iteritems():
         job.add_parameter( name, value )
     job.add_parameter( 'paramfile', to_json_string( json_file_path ) )
-    if folder:
-        for i, dataset in enumerate( data_list ):
+    store_name = None
+    store_name_set = False  # this is needed since None is a valid value for store_name
+    for i, dataset in enumerate( data_list ):
+        if folder:
             job.add_output_library_dataset( 'output%i' % i, dataset )
-            # Create an empty file immediately
-            if not dataset.dataset.external_filename:
-                open( dataset.file_name, "w" ).close()
-    else:
-        for i, dataset in enumerate( data_list ):
+        else:
             job.add_output_dataset( 'output%i' % i, dataset )
-            # Create an empty file immediately
-            if not dataset.dataset.external_filename:
-                open( dataset.file_name, "w" ).close()
+        # Create an empty file immediately
+        if not dataset.dataset.external_filename:
+            trans.app.object_store.create( dataset.dataset.id, store_name=store_name )
+            # open( dataset.file_name, "w" ).close()
+            if not store_name_set:
+                store_name = trans.app.object_store.store_name( dataset.dataset.id )
+                store_name_set = True
     job.state = job.states.NEW
     trans.sa_session.add( job )
     trans.sa_session.flush()
@@ -341,10 +343,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, ret
     output = odict()
     for i, v in enumerate( data_list ):
         output[ 'output%i' % i ] = v
-    if return_job:
-        return job, output
-    else:
-        return output
+    return job, output
 def active_folders( trans, folder ):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the

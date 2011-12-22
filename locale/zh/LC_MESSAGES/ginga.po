@@ -1,0 +1,603 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: yinhe 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2011-10-15 13:58+0800\n"
+"PO-Revision-Date: 2011-11-04 19:13+0900\n"
+"Last-Translator: Hanfei Sun <hfsun.tju@gmail.com> Juan Wang <jinling8@gmail.com>\n"
+"Language-Team: Chinese\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#:
+msgid "iso-8859-1"
+msgstr "utf-8"
+
+#:
+msgid "lang=\"en\""
+msgstr "lang=\"zh\""
+
+
+#: templates/base_panels.mako:5
+msgid "Galaxy"
+msgstr "Galaxy"
+
+#: templates/history/options.mako:24
+msgid "Are you sure you want to delete the current history?"
+msgstr "确认要删除当前的历史记录吗？"
+
+#: templates/root/history.mako:38
+msgid "collapse all"
+msgstr "全部收缩"
+
+#: templates/root/index.mako:5
+msgid "Tools"
+msgstr "工具"
+ 
+
+#: tools/**.xml
+msgid "Get Data"
+msgstr "获取数据"
+
+msgid "Get ENCODE Data"
+msgstr "获取ENCODE数据"
+
+msgid "ENCODE Tools"
+msgstr "ENCODE工具"
+
+msgid "Lift-Over"
+msgstr "版本转换"
+
+msgid "Text Manipulation"
+msgstr "文本操作"
+
+msgid "Filter and Sort"
+msgstr "过滤和排序"
+
+msgid "Join, Subtract and Group"
+msgstr "结合，差集与分组"
+
+msgid "Convert Formats"
+msgstr "格式转换"
+
+msgid "Extract Features"
+msgstr "特征提取"
+
+msgid "Fetch Sequences"
+msgstr "获取序列"
+
+msgid "Fetch Alignments"
+msgstr "获取比对上的序列"
+
+msgid "Get Genomic Scores"
+msgstr "获得基因组分数"
+
+msgid "Operate on Genomic Intervals"
+msgstr "基因组区间操作"
+
+msgid "Statistics"
+msgstr "统计量"
+
+msgid "Graph/Display Data"
+msgstr "图形／数据"
+
+msgid "Regional Variation"
+msgstr "区域多态性"
+
+msgid "Evolution: HyPhy"
+msgstr "进化: HyPhy"
+
+msgid "Taxonomy manipulation"
+msgstr "分类处理"
+
+msgid "Solexa tools"
+msgstr "Solexa工具"
+
+msgid "FASTA manipulation"
+msgstr "FASTA处理"
+
+msgid "Short Read QC and Manipulation"
+msgstr "短片段数据质量控制及处理"
+
+msgid "Short Read Mapping"
+msgstr "短片段回贴"
+
+
+#: templates/admin_main.mako:3 templates/admin_main.mako:8
+msgid "Galaxy Administration"
+msgstr "Galaxy 管理"
+
+#: templates/admin_main.mako:17
+msgid "Admin password: "
+msgstr "管理员密码: "
+
+#: templates/admin_main.mako:19
+msgid "Reload tool: "
+msgstr "重新载入工具"
+
+#: templates/admin_main.mako:35
+msgid "Reload"
+msgstr "重新载入"
+
+#: templates/dataset/edit_attributes.mako:2
+msgid "History Item Attributes"
+msgstr "历史项目属性"
+
+#: templates/dataset/edit_attributes.mako:19
+msgid "Edit attributes"
+msgstr "编辑属性"
+
+#: templates/dataset/edit_attributes.mako:64
+msgid ""
+"This will inspect the dataset and attempt to correct the above column values "
+"if they are not accurate."
+msgstr "数据集检查，若有错误，更正上述栏中的值。"
+
+#: templates/dataset/edit_attributes.mako:68
+msgid ""
+"Required metadata values are missing. Some of these values may not be "
+"editable by the user. Selecting \"Auto-detect\" will attempt to fix these "
+"values."
+msgstr "缺少所需的metadata的值。用户可能无法对这些值进行编辑。选择“自动检测”来尝试修正这些值。"
+
+#: templates/dataset/edit_attributes.mako:78
+msgid "Convert to new format"
+msgstr "转换为新格式"
+
+#: templates/dataset/edit_attributes.mako:84
+msgid "Convert to"
+msgstr "转换为"
+
+#: templates/dataset/edit_attributes.mako:95
+msgid ""
+"This will create a new dataset with the contents of this dataset converted "
+"to a new format."
+msgstr "这将产生一个转换格式后的新数据集，"
+
+#: templates/dataset/edit_attributes.mako:111
+msgid "Change data type"
+msgstr "改变数据类型"
+
+#: templates/dataset/edit_attributes.mako:117
+msgid "New Type"
+msgstr "新类型"
+
+#: templates/dataset/edit_attributes.mako:124
+msgid ""
+"This will change the datatype of the existing dataset but <i>not</i> modify "
+"its contents. Use this if Galaxy has incorrectly guessed the type of your "
+"dataset."
+msgstr "这将改变已有数据集的数据类型，但<i>不</i>改变其内容。当Galaxy不能正确判断你的数据类型时，设置该参数。"
+
+#: templates/dataset/edit_attributes.mako:137
+msgid "Copy History Item"
+msgstr "复制历史记录项"
+
+#: templates/history/list.mako:3
+msgid "Saved Histories"
+msgstr "已保存的历史"
+
+
+#: templates/history/list.mako:21 templates/root/history.mako:239
+msgid "hide deleted"
+msgstr "隐藏已删除的数据"
+
+#: templates/history/list.mako:23
+msgid "show deleted"
+msgstr "显示已删除的数据"
+
+#: templates/history/list.mako:27
+msgid "Name"
+msgstr "名称"
+
+#: templates/history/list.mako:27
+msgid "Size"
+msgstr "大小"
+
+#: templates/history/list.mako:27
+msgid "Last modified"
+msgstr "最后修改时间"
+
+#: templates/history/list.mako:27
+msgid "Actions"
+msgstr "操作"
+
+#: templates/history/list.mako:45
+msgid "rename"
+msgstr "重命名"
+
+#: templates/history/list.mako:46
+msgid "switch to"
+msgstr "切换到"
+
+#: templates/history/list.mako:47
+msgid "delete"
+msgstr "删除"
+
+#: templates/history/list.mako:49
+msgid "undelete"
+msgstr "还原"
+
+#: templates/history/list.mako:55
+msgid "Action"
+msgstr "操作"
+
+#: templates/history/list.mako:56 templates/history/options.mako:21
+msgid "Share"
+msgstr "共享"
+
+#: templates/history/list.mako:56 templates/history/options.mako:15
+msgid "Rename"
+msgstr "重命名"
+
+#: templates/history/list.mako:56 templates/history/options.mako:24
+msgid "Delete"
+msgstr "删除"
+
+#: templates/history/list.mako:58
+msgid "Undelete"
+msgstr "还原"
+
+#: templates/history/list.mako:65
+msgid "You have no stored histories"
+msgstr "没有存储的历史记录"
+
+#: templates/history/options.mako:5
+msgid "History Options"
+msgstr "历史记录选项"
+
+#: templates/history/options.mako:9
+msgid "You must be "
+msgstr "你必须成为"
+
+#: templates/history/options.mako:9
+msgid "logged in"
+msgstr "登录"
+
+#: templates/history/options.mako:9
+msgid " to store or switch histories."
+msgstr "以存储或切换历史记录"
+
+#: templates/history/options.mako:15
+#, python-format
+msgid " current history (stored as \"%s\")"
+msgstr " 当前历史（以\"%s\"形式存储）"
+
+#: templates/history/options.mako:16
+msgid "List"
+msgstr "列表"
+
+#: templates/history/options.mako:16
+msgid " previously stored histories"
+msgstr " 以前存储的历史记录"
+
+#: templates/history/options.mako:18
+msgid "Create"
+msgstr "创建"
+
+#: templates/history/options.mako:18
+msgid " a new empty history"
+msgstr " 一个新的空白历史记录"
+
+#: templates/history/options.mako:20
+msgid "Construct workflow"
+msgstr "构建工作流程"
+
+#: templates/history/options.mako:20
+msgid " from the current history"
+msgstr " 来源于当前历史"
+
+#: templates/history/options.mako:21 templates/history/options.mako:24
+msgid " current history"
+msgstr " 当前历史"
+
+#: templates/history/options.mako:23
+msgid "Show deleted"
+msgstr "显示已删除"
+
+#: templates/history/options.mako:23
+msgid " datasets in history"
+msgstr " 历史中的数据集"
+
+#: templates/history/rename.mako:3 templates/history/rename.mako:6
+msgid "Rename History"
+msgstr "重命名历史"
+
+
+msgid "Rename Histories"
+msgstr "重命名历史记录"
+
+msgid "Perform Action"
+msgstr "运行操作"
+
+msgid "Submit"
+msgstr "提交"
+
+
+
+#: templates/history/rename.mako:10
+msgid "Current Name"
+msgstr "当前名称"
+
+#: templates/history/rename.mako:10
+msgid "New Name"
+msgstr "新名称"
+
+#: templates/history/share.mako:3
+msgid "Share histories"
+msgstr "共享历史记录"
+
+#: templates/history/share.mako:6
+msgid "Share Histories"
+msgstr "共享历史记录"
+
+#: templates/history/share.mako:9
+msgid "History Name:"
+msgstr "历史名称"
+
+#: templates/history/share.mako:9
+msgid "Number of Datasets:"
+msgstr "数据集数量"
+
+#: templates/history/share.mako:9
+msgid "Share Link"
+msgstr "共享链接"
+
+#: templates/history/share.mako:15
+msgid "This history contains no data."
+msgstr "这项历史中没有数据"
+
+#: templates/history/share.mako:21
+msgid "copy link to share"
+msgstr "复制链接以共享"
+
+#: templates/history/share.mako:24
+msgid "Email of User to share with:"
+msgstr "发送到这些Email地址进行分享"
+
+#: templates/root/history.mako:7
+msgid "Galaxy History"
+msgstr "Galaxy 历史"
+
+#: templates/root/history.mako:237
+msgid "refresh"
+msgstr "刷新"
+
+#: templates/root/history.mako:245
+msgid "You are currently viewing a deleted history!"
+msgstr "正在查看已删除的历史"
+
+#: templates/root/history.mako:289
+msgid "Your history is empty. Click 'Get Data' on the left pane to start"
+msgstr "历史已空，请单击左边窗格中‘获取数据’"
+
+#: templates/root/history_common.mako:41
+msgid "Job is waiting to run"
+msgstr "等待运行的进程"
+
+#: templates/root/history_common.mako:43
+msgid "Job is currently running"
+msgstr "正在运行的进程"
+
+#: templates/root/history_common.mako:46
+msgid "An error occurred running this job: "
+msgstr "进程运行时出错 "
+
+#: templates/root/history_common.mako:47
+msgid "report this error"
+msgstr "报告错误"
+
+#: templates/root/history_common.mako:54
+msgid "No data: "
+msgstr "没有数据： "
+
+#: templates/root/history_common.mako:58
+msgid "format: "
+msgstr "格式： "
+
+#: templates/root/history_common.mako:59
+msgid "database: "
+msgstr "数据库： "
+
+#: templates/root/history_common.mako:66 templates/root/masthead.mako:20
+msgid "Info: "
+msgstr "信息： "
+
+#: templates/root/history_common.mako:85
+#, python-format
+msgid "Error: unknown dataset state \"%s\"."
+msgstr "错误：未知的数据集状态 \"%s\"。"
+
+
+msgid "Options"
+msgstr "选项"
+
+msgid "History"
+msgstr "历史"
+
+#: templates/root/masthead.mako:20
+msgid "report bugs"
+msgstr "错误报告"
+
+#: templates/root/masthead.mako:21
+msgid "wiki"
+msgstr "wiki"
+
+#: templates/root/masthead.mako:22
+msgid "screencasts"
+msgstr "演示视频"
+
+
+#: templates/root/masthead.mako:23
+msgid "blog"
+msgstr "博客"
+
+#: templates/root/masthead.mako:31
+#, python-format
+msgid "Logged in as %s: "
+msgstr "以%s的身份登录: "
+
+#: templates/root/masthead.mako:31
+msgid "manage"
+msgstr "管理"
+
+#: templates/root/masthead.mako:32
+msgid "logout"
+msgstr "注销"
+
+#: templates/root/masthead.mako:34
+msgid "Account: "
+msgstr "帐户: "
+
+#: templates/root/masthead.mako:34
+msgid "create"
+msgstr "创建"
+
+#: templates/root/masthead.mako:35
+msgid "login"
+msgstr "登录"
+
+#: templates/root/tool_menu.mako:52
+msgid "Galaxy Tools"
+msgstr "Galaxy 工具"
+
+#: templates/root/tool_menu.mako:129
+msgid "Workflow"
+msgstr "工作流程"
+
+#: templates/root/tool_menu.mako:134
+msgid "Manage"
+msgstr "管理"
+
+#: templates/root/tool_menu.mako:134
+msgid "workflows"
+msgstr "工作流程"
+
+#: templates/user/index.mako:2 templates/user/index.mako:4
+msgid "Account settings"
+msgstr "帐户设置"
+
+#: templates/user/index.mako:7
+#, python-format
+msgid "You are currently logged in as %s."
+msgstr "当前以%s的身份登录"
+
+#: templates/user/index.mako:9
+msgid "Change your password"
+msgstr "修改密码"
+
+#: templates/user/index.mako:10
+msgid "Update your email address"
+msgstr "更新电子邮件地址"
+
+#: templates/user/index.mako:11
+msgid "Logout"
+msgstr "注销"
+
+#: templates/user/index.mako:16
+msgid "Login"
+msgstr "登录"
+
+#: templates/user/index.mako:17
+msgid "Create new account"
+msgstr "创建新帐户"
+
+msgid "Show Tool Search"
+msgstr "显示工具搜索"
+
+msgid "Analyze Data"
+msgstr "分析数据"
+
+msgid "analysis"
+msgstr "分析"
+
+msgid "History Lists"
+msgstr "历史记录清单"
+
+msgid "Histories Shared with Me"
+msgstr "共享的数据"
+
+msgid "Current History"
+msgstr "当前历史记录"
+
+msgid "Create New"
+msgstr "创建"
+
+msgid "Clone"
+msgstr "复制"
+
+msgid "Share or Publish"
+msgstr "共享或发布"
+
+msgid "Extract Workflow"
+msgstr "提取工作流程"
+
+msgid "Dataset Security"
+msgstr "数据安全性"
+
+
+msgid "Show Deleted Datasets"
+msgstr "显示已删除的数据"
+
+msgid "Show Hidden Datasets"
+msgstr "显示隐藏的数据"
+
+msgid "Show Structure"
+msgstr "显示结构"
+
+msgid "Export to File"
+msgstr "导出为文件"
+
+msgid "Other Actions"
+msgstr "其他"
+
+msgid "Import from File"
+msgstr "导入文件"
+
+msgid "Shared Data"
+msgstr "数据共享"
+
+msgid "Data Libraries" 
+msgstr "数据仓库"
+
+msgid "Published Histories"
+msgstr "已发布的历史记录"
+
+msgid "Published Workflows"
+msgstr "已发布的工作流程"
+
+msgid "Published Pages"
+msgstr "已发布的页面"
+
+msgid "Help"
+msgstr "帮助"
+
+msgid "Email comments, bug reports, or suggestions"
+msgstr "发邮件进行意见反馈或错误报告"
+
+
+msgid "User"
+msgstr "用户"
+
+
+msgid "Register"
+msgstr "注册"
+
+msgid "Support"
+msgstr "技术支持"
+
+msgid "Galaxy Wiki"
+msgstr "Galaxy百科"
+
+msgid "Video tutorials (screencasts)"
+msgstr "视频教程（动画演示）"
+
+msgid "How to Cite Galaxy"
+msgstr "如何引用Galaxy"

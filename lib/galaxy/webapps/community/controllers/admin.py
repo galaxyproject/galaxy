@@ -332,13 +332,13 @@ class RepositoryMetadataListGrid( grids.Grid ):
                     if 'tools' in metadata:
                         metadata_str += '<b>Tools:</b><br/>'
                         for tool_metadata_dict in metadata[ 'tools' ]:
-                            metadata_str += '%s <b>%s</b><br/>' % \
-                                ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
+                            metadata_str += '%s <b>%s</b><br/>' % ( tool_metadata_dict[ 'id' ],
+                                                                    tool_metadata_dict[ 'version' ] )
                     if 'workflows' in metadata:
                         metadata_str += '<b>Workflows:</b><br/>'
                         for workflow_metadata_dict in metadata[ 'workflows' ]:
-                            metadata_str += '%s <b>%s</b><br/>' % \
-                                ( workflow_metadata_dict[ 'name' ], workflow_metadata_dict[ 'format-version' ] )
+                            metadata_str += '%s <b>%s</b><br/>' % ( workflow_metadata_dict[ 'name' ],
+                                                                    workflow_metadata_dict[ 'format-version' ] )
             return metadata_str
     class MaliciousColumn( grids.BooleanColumn ):
         def get_value( self, trans, grid, repository_metadata ):
@@ -475,6 +475,7 @@ class AdminController( BaseUIController, Admin ):
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
                 if kwd[ 'id' ]:
+                    kwd[ 'caller' ] = 'browse_repositories'
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='set_email_alerts',
                                                                       **kwd ) )

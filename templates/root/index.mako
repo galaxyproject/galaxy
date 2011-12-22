@@ -11,61 +11,71 @@
         // Init history options.
         $("#history-options-button").css( "position", "relative" );
         make_popupmenu( $("#history-options-button"), {
-            "History Lists": null,
-            "Saved Histories": function() {
+            "${_("History Lists")}": null,
+            "${_("Saved Histories")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list')}";
             },
-            "Histories Shared with Me": function() {
+            "${_("Histories Shared with Me")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list_shared')}";
             },
-            "Current History": null,
-            "Create New": function() {
+            "${_("Current History")}": null,
+            "${_("Create New")}": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history_new' )}";
             },
-            "Clone": function() {
+            "${_("Clone")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='clone')}";
             },
-            "Copy Datasets": function() {
+            "${_("Copy Datasets")}": function() {
                 galaxy_main.location = "${h.url_for( controller='dataset', action='copy_datasets' )}";
             },
-            "Share or Publish": function() {
+            "${_("Share or Publish")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='sharing' )}";
             },
-            "Extract Workflow": function() {
+            "${_("Extract Workflow")}": function() {
                 galaxy_main.location = "${h.url_for( controller='workflow', action='build_from_current_history' )}";
             },
-            "Dataset Security": function() {
+            "${_("Dataset Security")}": function() {
                 galaxy_main.location = "${h.url_for( controller='root', action='history_set_default_permissions' )}";
             },
-            "Show Deleted Datasets": function() {
+            "${_("Show Deleted Datasets")}": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
             },
-            "Show Hidden Datasets": function() {
+            "${_("Show Hidden Datasets")}": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_hidden=True)}";
             },
-            "Show Structure": function() {
+            "${_("Purge Deleted Datasets")}": function() {
+                if ( confirm( "Really delete all deleted datasets permanently? This cannot be undone." ) ) {
+                    galaxy_main.location = "${h.url_for( controller='history', action='purge_deleted_datasets' )}";
+                }
+            },
+            "${_("Show Structure")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
             },
-            "Export to File": function() {
+            "${_("Export to File")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
             },
-            "Delete": function() {
+            "${_("Delete")}": function() {
                 if ( confirm( "Really delete the current history?" ) ) {
                     galaxy_main.location = "${h.url_for( controller='history', action='delete_current' )}";
                 }
             },
-            "Other Actions": null,
-            "Import from File": function() {
+            "${_("Delete Permanently")}": function() {
+                if ( confirm( "Really delete the current history permanently? This cannot be undone." ) ) {
+                    galaxy_main.location = "${h.url_for( controller='history', action='delete_current', purge=True )}";
+                }
+            },
+            "${_("Other Actions")}": null,
+            "${_("Import from File")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
             }
         });
         
         var menu_options = {}; // Holds dictionary of { label: toggle_fn }
         
-        SHOW_TOOL = "Show Tool Search";
-        HIDE_TOOL = "Hide Tool Search";
-        SHOW_RECENT = "Show Recently Used";
-        HIDE_RECENT = "Hide Recently Used";
+        SHOW_TOOL = "${_("Show Tool Search")}";
+        HIDE_TOOL = "${_("Hide Tool Search")}";
+        SHOW_RECENT = "${_("Show Recently Used")}";
+        HIDE_RECENT = "${_("Hide Recently Used")}";
         
         var toggle_tool_search_fn = function() {
             // Show/hide menu and update vars, user preferences.

@@ -62,5 +62,11 @@ This tool outputs counts of specified attributes (lines, words, characters) of a
   #lines  words  characters
   7499	  41376	 624971
 
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
     </help>
 </tool>

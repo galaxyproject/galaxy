@@ -21,12 +21,30 @@
             </div>
             <div class="form-row">
                 <label>Public name:</label>
-                <input type="text" name="username" size="40" value="${username}"/>
-                <div class="toolParamHelp" style="clear: both;">
-                    Your public name is an optional identifier that will be used to generate addresses for information
-                    you share publicly. Public names must be at least four characters in length and contain only lower-case
-                    letters, numbers, and the '-' character.
-                </div>
+                %if webapp == 'community':
+                    %if user.active_repositories:
+                        <input type="hidden" name="username" value="${username}"/>
+                        ${username}
+                        <div class="toolParamHelp" style="clear: both;">
+                            You cannot change your public name after you have created a repository in this tool shed.
+                        </div>
+                    %else:
+                        <input type="text" name="username" size="40" value="${username}"/>
+                        <div class="toolParamHelp" style="clear: both;">
+                            Your public name provides a means of identifying you publicly within this tool shed. Public
+                            names must be at least four characters in length and contain only lower-case letters, numbers,
+                            and the '-' character.  You cannot change your public name after you have created a repository
+                            in this tool shed.
+                        </div>
+                    %endif
+                %else:
+                    <input type="text" name="username" size="40" value="${username}"/>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Your public name is an optional identifier that will be used to generate addresses for information
+                        you share publicly. Public names must be at least four characters in length and contain only lower-case
+                        letters, numbers, and the '-' character.
+                    </div>
+                %endif
             </div>
             <div class="form-row">
                 <input type="submit" name="login_info_button" value="Save"/>

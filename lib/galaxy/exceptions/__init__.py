@@ -18,3 +18,7 @@ class ItemAccessibilityException( MessageException ):
 
 class ItemOwnershipException( MessageException ):
     pass
+
+class ObjectNotFound( Exception ):
+    """ Accessed object was not found """
+    pass

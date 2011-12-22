@@ -1,8 +1,8 @@
 <tool id="EMBOSS: epestfind29" name="epestfind" version="5.0.0">
   <description>Finds PEST motifs as potential proteolytic cleavage sites</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl epestfind -sequence $input1 -goutfile $ofile2 -outfile $ofile1 -window $window -order $order -potential $potential -poor $poor
-  -invalid $invalid -map $map -graph png -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl epestfind -sequence '$input1' -goutfile '$ofile2' -outfile '$ofile1' -window '$window' -order '$order' -potential '$potential' -poor '$poor'
+  -invalid '$invalid' -map '$map' -graph png -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>
@@ -65,6 +65,8 @@
 ------
 
 **Citation**
+
+For the underlying tool, please cite `Rice P, Longden I, Bleasby A. EMBOSS: the European Molecular Biology Open Software Suite. Trends Genet. 2000 Jun;16(6):276-7. &lt;http://www.ncbi.nlm.nih.gov/pubmed/10827456&gt;`_
 
 If you use this tool in Galaxy, please cite `Blankenberg D, Taylor J, Schenck I, He J, Zhang Y, Ghent M, Veeraraghavan N, Albert I, Miller W, Makova KD, Hardison RC, Nekrutenko A. A framework for collaborative analysis of ENCODE data: making large-scale analyses biologist-friendly. Genome Res. 2007 Jun;17(6):960-4. &lt;http://www.ncbi.nlm.nih.gov/pubmed/17568012&gt;`_
   </help>

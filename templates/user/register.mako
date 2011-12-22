@@ -50,11 +50,20 @@
             <div class="form-row">
                 <label>Public name:</label>
                 <input type="text" name="username" size="40" value="${username}"/>
-                <div class="toolParamHelp" style="clear: both;">
-                    Your public name is an identifier that will be used to generate addresses for information
-                    you share publicly. Public names must be at least four characters in length and contain only lower-case
-                    letters, numbers, and the '-' character.
-                </div>
+                %if webapp == 'galaxy':
+                    <div class="toolParamHelp" style="clear: both;">
+                        Your public name is an identifier that will be used to generate addresses for information
+                        you share publicly. Public names must be at least four characters in length and contain only lower-case
+                        letters, numbers, and the '-' character.
+                    </div>
+                %else:
+                    <div class="toolParamHelp" style="clear: both;">
+                        Your public name provides a means of identifying you publicly within this tool shed. Public
+                        names must be at least four characters in length and contain only lower-case letters, numbers,
+                        and the '-' character.  You cannot change your public name after you have created a repository
+                        in this tool shed.
+                    </div>
+                %endif
             </div>
             %if trans.app.config.smtp_server:
                 <div class="form-row">
@@ -65,7 +74,7 @@
                     ${subscribe_check_box.get_html()}
                 </div>
             %endif
-            %if user_type_fd_id_select_field:
+            %if user_type_fd_id_select_field and len( user_type_fd_id_select_field.options ) > 1:
                 <div class="form-row">
                     <label>User type</label>
                     ${user_type_fd_id_select_field.get_html()}

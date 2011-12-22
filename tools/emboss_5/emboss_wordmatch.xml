@@ -1,8 +1,8 @@
 <tool id="EMBOSS: wordmatch110" name="wordmatch" version="5.0.0">
   <description>Finds all exact matches of a given size between 2 sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>wordmatch -asequence $input1 -bsequence $input2 -outfile $out_file1 -aoutfeat $out_file2 -boutfeat $out_file3 -wordsize "$wordsize" -aformat3 $out_format1 -offormat4 $out_format2
-  -offormat5 $out_format3 -auto</command>
+  <command>wordmatch -asequence '$input1' -bsequence '$input2' -outfile '$out_file1' -aoutfeat '$out_file2' -boutfeat '$out_file3' -wordsize '$wordsize' -aformat3 '$out_format1' -offormat4 '$out_format2'
+  -offormat5 '$out_format3' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequence 1</label>
@@ -74,6 +74,8 @@ The input datasets need to be sequences.
 ------
 
 **Citation**
+
+For the underlying tool, please cite `Rice P, Longden I, Bleasby A. EMBOSS: the European Molecular Biology Open Software Suite. Trends Genet. 2000 Jun;16(6):276-7. &lt;http://www.ncbi.nlm.nih.gov/pubmed/10827456&gt;`_
 
 If you use this tool in Galaxy, please cite `Blankenberg D, Taylor J, Schenck I, He J, Zhang Y, Ghent M, Veeraraghavan N, Albert I, Miller W, Makova KD, Hardison RC, Nekrutenko A. A framework for collaborative analysis of ENCODE data: making large-scale analyses biologist-friendly. Genome Res. 2007 Jun;17(6):960-4. &lt;http://www.ncbi.nlm.nih.gov/pubmed/17568012&gt;`_
   </help>

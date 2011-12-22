@@ -124,12 +124,35 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #new_file_path = database/tmp
 
 # Tool config files, defines what tools are available in Galaxy.
-# Tools can be locally developed or installed from tool sheds.
-#tool_config_file = tool_conf.xml
+# Tools can be locally developed or installed from Galaxy tool sheds.
+#tool_config_file = tool_conf.xml,shed_tool_conf.xml
 
 # Default path to the directory containing the tools defined in tool_conf.xml.
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
 #tool_path = tools
+
+# Enable automatic installation of tools that used to be in the Galaxy
+# distribution but are now in the main Galaxy tool shed.  The tools
+# that will be installed are configured in the config file named
+# tool_shed_install.xml, which is located in the Galaxy install directory.
+# Tools already installed will not be re-installed even if they are
+# referenced in the tool_shed_install.xml file.
+#enable_tool_shed_install = False
+#tool_shed_install_config_file = tool_shed_install.xml
+
+# CRITICAL NOTE: the location in which the tools will be installed is the
+# location pointed to by the "tool_path" attribute in the following file.
+# The default location setting in shed_tool_conf.xml ("../shed_tools") may
+# be problematic for some cluster environments, so make sure to change it
+# if appropriate or use a different file name for the setting.
+#install_tool_config_file = shed_tool_conf.xml
+
+# Enable automatic polling of relative tool sheds to see if any updates
+# are available for installed repositories.  Ideally only one Galaxy 
+# server process should be able to check for repository updates.  The
+# setting for hours_between_check should be an integer between 1 and 24.
+#enable_tool_shed_check = False
+#hours_between_check = 12
 
 # Directory where data used by tools is located, see the samples in that
 # directory and the wiki for help:
@@ -231,6 +254,7 @@ static_images_dir = %(here)s/static/images
 static_favicon_dir = %(here)s/static/favicon.ico
 static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
+static_robots_txt = %(here)s/static/robots.txt
 
 # -- Advanced proxy features
 
@@ -405,6 +429,9 @@ use_interactive = True
 # Allow administrators to delete accounts.
 #allow_user_deletion = False
 
+# Allow administrators to log in as other users (useful for debugging)
+#allow_user_impersonation = False
+
 # Allow users to remove their datasets from disk immediately (otherwise,
 # datasets will be removed after a time period specified by an administrator in
 # the cleanup scripts run via cron)
@@ -417,6 +444,17 @@ use_interactive = True
 #new_user_dataset_access_role_default_private = False
 
 # -- Beta features
+
+# Object store mode (valid options are: disk, s3, distributed, hierarchical)
+#object_store = s3
+#aws_access_key = <AWS access key>
+#aws_secret_key = <AWS secret key>
+#s3_bucket = <name of an existing S3 bucket>
+#use_reduced_redundancy = True
+# Size (in GB) that the cache used by object store should be limited to.
+# If the value is not specified, the cache size will be limited only by the file
+# system size.
+#object_store_cache_size = 100
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
@@ -461,6 +499,15 @@ use_interactive = True
 # Enable enforcement of quotas.  Quotas can be set from the Admin interface.
 #enable_quotas = False
 
+# Enable a feature when running workflows. When enabled, default datasets
+# are selected for "Set at Runtime" inputs from the history such that the
+# same input will not be selected twice, unless there are more inputs than
+# compatible datasets in the history.
+# When False, the most recently added compatible item in the history will
+# be used for each "Set at Runtime" input, independent of others in the Workflow
+#enable_unique_workflow_defaults = False
+
+
 # -- Job Execution
 
 # If running multiple Galaxy processes, one can be designated as the job
@@ -501,6 +548,12 @@ use_interactive = True
 # will move the outputs to their proper place in the dataset directory on the
 # Galaxy server after the job completes.
 #outputs_to_working_directory = False
+
+# Clean up various bits of jobs left on the filesystem after completion.  These
+# bits include the job working directory, external metadata temporary files,
+# and DRM stdout and stderr files (if using a DRM).  Possible values are:
+# always, onsuccess, never
+#cleanup_job = always
 
 # Number of concurrent jobs to run (local job runner)
 #local_job_queue_workers = 5
