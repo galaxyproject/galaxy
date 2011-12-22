@@ -1053,5 +1053,5 @@ def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
                 payload.append( feature.attributes[col] )
         else:
             # Dummy value.
-            payload.append( "na" )
+            payload.append( 0 )
     return payload
