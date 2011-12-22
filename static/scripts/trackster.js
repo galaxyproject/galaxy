@@ -946,6 +946,20 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         return false;
     },
     /**
+     * Replace one drawable with another.
+     */
+    replace_drawable: function(old_drawable, new_drawable, update_html) {
+        var index = this.drawables.indexOf(old_drawable);
+        if (index !== -1) {
+            this.drawables[index] = new_drawable;
+            if (update_html) {
+                old_drawable.container_div.replaceWith(new_drawable.container_div);
+            }
+            return true;
+        }
+        return false;
+    },
+    /**
      * Remove drawable from this collection.
      */
     remove_drawable: function(drawable) {
@@ -1002,7 +1016,11 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
     }
     ].concat(Drawable.prototype.action_icons_def),
     build_container_div: function() {
-        return $("<div/>").addClass("group").attr("id", "group_" + this.id).appendTo(this.container.content_div);
+        var container_div = $("<div/>").addClass("group").attr("id", "group_" + this.id);
+        if (this.container) {
+            this.container.content_div.append(container_div);
+        }
+        return container_div;
     },
     build_header_div: function() {
         var header_div = $("<div/>").addClass("track-header");
@@ -1787,8 +1805,9 @@ extend(Tool.prototype, {
         // If track not in a group, create a group for it and add new track to group. If track 
         // already in group, add track to group.
         if (current_track.container === view) {
-            var group = new DrawableGroup(this.name, this.track.view, this.track.container);
-            current_track.container.add_drawable(group);
+            // Create new group.
+            var group = new DrawableGroup(this.name, this.track.view);
+            current_track.container.replace_drawable(current_track, group, true);
             // TODO: this is ugly way to move track from one container to another -- make this easier via
             // a Drawable or DrawableCollection function.
             current_track.container.remove_drawable(current_track);
@@ -1797,6 +1816,7 @@ extend(Tool.prototype, {
             container = group;
         }
         else {
+            // Use current group.
             container = current_track.container;
         }
         
