@@ -153,6 +153,15 @@ var get_random_color = function(colors) {
     return '#' + ( 0x1000000 + new_color ).toString(16).substr(1,6);
 };
 
+/**
+ * Creates an action icon.
+ */
+var create_action_icon =  function(title, css_class, on_click_fn) {
+    return $("<a/>").attr("href", "javascript:void(0);").attr("title", title)
+                    .addClass("icon-button").addClass(css_class).tipsy( {gravity: 's'} )
+                    .click(on_click_fn);
+};
+
 // Encapsulate -- anything to be availabe outside this block is added to exports
 var trackster_module = function(require, exports) {
 
@@ -2100,19 +2109,18 @@ var FiltersManager = function(track, filters_list) {
     });
     
     //
-    // Create sliders div.
+    // Create sliders.
     //
-    var sliders_div = $("<div/>").addClass("sliders").appendTo(this.parent_div);
     var manager = this;
     $.each(this.filters, function(index, filter) {
-        filter.container = $("<div/>").addClass("filter-row slider-row").appendTo(sliders_div);
+        filter.container = $("<div/>").addClass("filter-row slider-row").appendTo(manager.parent_div);
         
         // Set up filter label (name, values).
         var filter_label = $("<div/>").addClass("elt-label").appendTo(filter.container)
         var name_span = $("<span/>").addClass("slider-name").text(filter.name + "  ").appendTo(filter_label);
         var values_span = $("<span/>");
         var values_span_container = $("<span/>").addClass("slider-value").appendTo(filter_label).append("[").append(values_span).append("]");
-        
+                
         // Set up slider for filter.
         var slider_div = $("<div/>").addClass("slider").appendTo(filter.container);
         filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
@@ -2142,59 +2150,71 @@ var FiltersManager = function(track, filters_list) {
         // Enable users to edit slider values via text box.
         edit_slider_values(values_span_container, values_span, filter.control_element);
         
+        // Set up filter display controls.
+        var 
+            display_controls_div = $("<div/>").addClass("display-controls").appendTo(filter.container),
+            transparency_icon = create_action_icon("Use filter for data transparency", "layer-transparent", 
+                                                    function() {
+                                                        if (manager.alpha_filter !== filter) {
+                                                            // Setting this filter as the alpha filter.
+                                                            manager.alpha_filter = filter;
+                                                            // Update UI for new filter.
+                                                            $(".layer-transparent").removeClass("active").hide();
+                                                            transparency_icon.addClass("active").show();
+                                                        }
+                                                        else {
+                                                            // Clearing filter as alpha filter.
+                                                            manager.alpha_filter = null;
+                                                            transparency_icon.removeClass("active");
+                                                        }
+                                                        manager.track.request_draw(true, true);
+                                                    } )
+                                                    .appendTo(display_controls_div).hide(),
+            height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", 
+                                                    function() {
+                                                        if (manager.height_filter !== filter) {
+                                                            // Setting this filter as the height filter.
+                                                            manager.height_filter = filter;
+                                                            // Update UI for new filter.
+                                                            $(".arrow-resize-090").removeClass("active").hide();
+                                                            height_icon.addClass("active").show();
+                                                        }
+                                                        else {
+                                                            // Clearing filter as alpha filter.
+                                                            manager.height_filter = null;
+                                                            height_icon.removeClass("active");
+                                                        }
+                                                        manager.track.request_draw(true, true);
+                                                    } )
+                                                    .appendTo(display_controls_div).hide();
+                                                    
+        filter.container.hover( function() { 
+                                    transparency_icon.show();
+                                    height_icon.show(); 
+                                },
+                                function() {
+                                    if (manager.alpha_filter !== filter) {
+                                        transparency_icon.hide();
+                                    }
+                                    if (manager.height_filter !== filter) {
+                                        height_icon.hide();
+                                    }
+                                } );
+        
         // Add to clear floating layout.
         $("<div style='clear: both;'/>").appendTo(filter.container);
     });
     
     // Add button to filter complete dataset.
     if (this.filters.length !== 0) {
-        var run_buttons_row = $("<div/>").addClass("param-row").appendTo(sliders_div);
+        var run_buttons_row = $("<div/>").addClass("param-row").appendTo(this.parent_div);
         var run_on_dataset_button = $("<input type='submit'/>").attr("value", "Run on complete dataset").appendTo(run_buttons_row);
         var filter_manager = this;
         run_on_dataset_button.click( function() {
             filter_manager.run_on_dataset();
         });
     }
-    
-    //
-    // Create filtering display controls.
-    //
-    var 
-        display_controls_div = $("<div/>").addClass("display-controls").appendTo(this.parent_div),
-        formatting_div,
-        header_text,
-        select,
-        // TODO: find better way to specify and change control filters.
-        filter_controls_dict = { 
-            "Transparency": function(new_filter) { manager.alpha_filter = new_filter; },
-            "Height" : function(new_filter) { manager.height_filter = new_filter; }
-        };
         
-    $.each(filter_controls_dict, function(control_name, filter) {
-        // Display name and select option.
-        formatting_div = $("<div/>").addClass("filter-row").appendTo(display_controls_div),
-        header_text = $("<span/>").addClass("elt-label").text(control_name + ":").appendTo(formatting_div),
-        select = $("<select/>").attr("name", control_name + "_dropdown").css("float", "right").appendTo(formatting_div);
-
-        // Dropdown for selecting filter.
-        $("<option/>").attr("value", -1).text("== None ==").appendTo(select);
-        for (var i = 0; i < manager.filters.length; i++) {
-            $("<option/>").attr("value", i).text(manager.filters[i].name).appendTo(select);
-        }
-        select.change(function() {
-            $(this).children("option:selected").each(function() {
-                var filterIndex = parseInt($(this).val());
-                filter_controls_dict[control_name]( (filterIndex >= 0 ? manager.filters[filterIndex] : null) );
-                manager.track.request_draw(true, true);
-            })
-        });
-        
-        // Clear floating.
-        $("<div style='clear: both;'/>").appendTo(formatting_div);
-    });
-    
-    // Clear floating.
-    $("<div style='clear: both;'/>").appendTo(this.parent_div);
 };
 
 extend(FiltersManager.prototype, {
