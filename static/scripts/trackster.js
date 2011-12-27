@@ -83,6 +83,13 @@ var is_overlap = function(first_region, second_region) {
 };
 
 /**
+ * Helper to determine if object is jQuery deferred.
+ */
+var is_deferred = function ( d ) {
+    return ( 'isResolved' in d );
+};
+
+/**
  * Returns a random color in hexadecimal format that is sufficiently different from a single color
  * or set of colors.
  * @param colors a color or list of colors in the format '#RRGGBB'
@@ -486,7 +493,7 @@ extend(DataManager.prototype, Cache.prototype, {
         // Do request.
         var manager = this;
         return $.getJSON(this.track.data_url, params, function (result) {
-            manager.set_data(low, high, mode, result);
+            manager.set_data(low, high, result);
         });
     },
     /**
@@ -502,9 +509,12 @@ extend(DataManager.prototype, Cache.prototype, {
         }
         */
         
-        // Look for entry and return if found.
-        var entry = this.get_data_from_cache(low, high, mode);
-        if (entry) { return entry; }
+        // Look for entry and return if it's a deferred or if data available is compatible with mode.
+        var entry = this.get(low, high);
+        if ( entry && 
+             ( is_deferred(entry) || this.track.data_and_mode_compatible(entry, mode) ) ) {
+            return entry; 
+        }
 
         //
         // If data supports subsetting:
@@ -541,7 +551,7 @@ extend(DataManager.prototype, Cache.prototype, {
         // Load data from server. The deferred is immediately saved until the
         // data is ready, it then replaces itself with the actual data
         entry = this.load_data(low, high, mode, resolution, extra_params);
-        this.set_data(low, high, mode, entry);
+        this.set_data(low, high, entry);
         return entry;
     },
     /** "Deep" data request; used as a parameter for DataManager.get_more_data() */
@@ -555,8 +565,8 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         // Get current data from cache and mark as stale.
         //
-        var cur_data = this.get_data_from_cache(low, high, mode);
-        if (!cur_data) {
+        var cur_data = this.get(low, high);
+        if ( !(cur_data && this.track.data_and_mode_compatible(cur_data, mode)) ) {
             console.log("ERROR: no current data for: ", this.track, low, high, mode, resolution, extra_params);
             return;
         }
@@ -586,7 +596,7 @@ extend(DataManager.prototype, Cache.prototype, {
             new_data_available = $.Deferred();
         // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
         // is all data, not just new data.
-        this.set_data(low, high, mode, new_data_available);
+        this.set_data(low, high, new_data_available);
         $.when(new_data_request).then(function(result) {
             // Update data and message.
             if (result.data) {
@@ -599,23 +609,23 @@ extend(DataManager.prototype, Cache.prototype, {
                     result.message = result.message.replace(/[0-9]+/, result.data.length);
                 }
             }
-            data_manager.set_data(low, high, mode, result);
+            data_manager.set_data(low, high, result);
             new_data_available.resolve(result);
         });
         return new_data_available;
     },
     /**
-     * Gets data from the cache.
+     * Get data from the cache.
      */
-    get_data_from_cache: function(low, high, mode) {
-        return this.get(this.gen_key(low, high, mode));
+    get: function(low, high) {
+        return Cache.prototype.get.call( this, this.gen_key(low, high) );
     },
     /**
      * Sets data in the cache.
      */
-    set_data: function(low, high, mode, result) {
-        //console.log("set_data", low, high, mode, result);
-        return this.set(this.gen_key(low, high, mode), result);
+    set_data: function(low, high, result) {
+        //console.log("set_data", low, high, result);
+        return this.set(this.gen_key(low, high), result);
     },
     /**
      * Generate key for cache.
@@ -624,12 +634,12 @@ extend(DataManager.prototype, Cache.prototype, {
     // manager does not need to be cleared when changing chroms.
     // TODO: use resolution in key b/c summary tree data is dependent on resolution -- is this 
     // necessary, i.e. will resolution change but not low/high/mode?
-    gen_key: function(low, high, mode) {
-        var key = low + "_" + high + "_" + mode;
+    gen_key: function(low, high) {
+        var key = low + "_" + high;
         return key;
     },
     /**
-     * Split key from cache into array with format [low, high, mode]
+     * Split key from cache into array with format [low, high]
      */
     split_key: function(key) {
         return key.split("_");
@@ -3124,11 +3134,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             return tile;
         }
                 
-        // Helper to determine if object is jQuery deferred
-        var is_deferred = function ( d ) {
-            return ( 'isResolved' in d );
-        };
-        
         // Flag to track whether we can draw everything now 
         var can_draw_now = true
         
@@ -3269,6 +3274,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             region = (chrom !== undefined && low !== undefined && high !== undefined ?
                       chrom + ":" + low + "-" + high : "all");
         return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
+    },
+    /**
+     * Returns true if data is compatible with a given mode.
+     */
+    data_and_mode_compatible: function(data, mode) {
+        return false;
     },
     /**
      * Set up track to receive tool data.
@@ -3430,11 +3441,6 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             return tile;
         }
                 
-        // Helper to determine if object is jQuery deferred
-        var is_deferred = function ( d ) {
-            return ( 'isResolved' in d );
-        };
-        
         // Try to get drawables' data.
         var all_data = [],
             track,
@@ -3699,7 +3705,14 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         painter.draw(ctx, canvas.width, canvas.height);
         
         return new Tile(this.track, tile_index, resolution, canvas, result.data);
-    }
+    },
+    /**
+     * Returns true if data is compatible with a given mode. NOTE: for LineTrack, always
+     * returns true because all data is compatible with all modes.
+     */
+    data_and_mode_compatible: function(data, mode) {
+        return true;
+    },
 });
 
 var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
@@ -4106,7 +4119,23 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         
         return new FeatureTrackTile(track, tile_index, resolution, canvas, result.data, mode, result.message, feature_mapper);        
-    }
+    },
+    /**
+     * Returns true if data is compatible with a given mode.
+     */
+    data_and_mode_compatible: function(data, mode) {
+        // Only handle modes that user can set.
+        if (mode === "Auto") { 
+            return true; 
+        }
+        // All other modes--Histogram, Dense, Squish, Pack--require data + details.
+        else if (data.extra_info === "no_detail" || data.dataset_type === "summary_tree") {
+            return false;
+        }
+        else {
+            return true;
+        }
+    },
 });
 
 var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
