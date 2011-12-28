@@ -3734,7 +3734,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // HACK: this is needed for compositing tracks. This should be a config setting somewhere; also,
         // "darker" may not be included in future canvas implementations.
         ctx.globalCompositeOperation = "darker";
-        painter.draw(ctx, canvas.width, canvas.height);
+        painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
         return new Tile(this.track, tile_index, resolution, canvas, result.data);
     }
@@ -4093,7 +4093,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             var ctx = canvas.getContext("2d");
             // Deal with left_offset by translating.
             ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
-            painter.draw(ctx, canvas.width, canvas.height);
+            painter.draw(ctx, canvas.width, canvas.height, w_scale);
             return new SummaryTreeTile(track, tile_index, resolution, canvas, result.data, result.max);
         }
 
@@ -4139,7 +4139,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             // Draw features.
             slots = this.inc_slots[w_scale].slots;
             ctx.translate(left_offset, 0);
-            feature_mapper = painter.draw(ctx, canvas.width, canvas.height, slots);
+            feature_mapper = painter.draw(ctx, canvas.width, canvas.height, w_scale, slots);
             feature_mapper.translation = -left_offset;
         }
         
@@ -4489,6 +4489,13 @@ var Painter = function(data, view_start, view_end, prefs, mode) {
 Painter.prototype.default_prefs = {};
 
 /**
+ * Draw on the context using a rectangle of width x height. w_scale is 
+ * needed because it cannot be computed from width and view size alone
+ * as a left_offset may be present.
+ */
+Painter.prototype.draw = function(ctx, width, height, w_scale) {};
+
+/**
  * SummaryTreePainter, a histogram showing number of intervals in a region
  */
 var SummaryTreePainter = function(data, view_start, view_end, prefs, mode) {
@@ -4497,11 +4504,10 @@ var SummaryTreePainter = function(data, view_start, view_end, prefs, mode) {
 
 SummaryTreePainter.prototype.default_prefs = { show_counts: false };
 
-SummaryTreePainter.prototype.draw = function(ctx, width, height) {
+SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
     
     var view_start = this.view_start,
-        view_range = this.view_end - this.view_start,
-        w_scale = width / view_range;
+        view_range = this.view_end - this.view_start;
     
     var points = this.data.data, delta = this.data.delta, max = this.data.max,
         // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
@@ -4554,7 +4560,7 @@ var LinePainter = function(data, view_start, view_end, prefs, mode) {
 
 LinePainter.prototype.default_prefs = { min_value: undefined, max_value: undefined, mode: "Histogram", color: "#000", overflow_color: "#F66" };
 
-LinePainter.prototype.draw = function(ctx, width, height) {
+LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     var 
         in_path = false,
         min_value = this.prefs.min_value,
@@ -4563,7 +4569,6 @@ LinePainter.prototype.draw = function(ctx, width, height) {
         height_px = height,
         view_start = this.view_start,
         view_range = this.view_end - this.view_start,
-        w_scale = width / view_range,
         mode = this.mode,
         data = this.data;
 
@@ -4758,7 +4763,7 @@ extend(FeaturePainter.prototype, {
      * Draw data on ctx using slots and within the rectangle defined by width and height. Returns
      * a FeaturePositionMapper object with information about where features were drawn.
      */
-    draw: function(ctx, width, height, slots) {
+    draw: function(ctx, width, height, w_scale, slots) {
         var data = this.data, view_start = this.view_start, view_end = this.view_end;
 
         ctx.save();
@@ -4767,7 +4772,6 @@ extend(FeaturePainter.prototype, {
         ctx.textAlign = "right";
 
         var view_range = this.view_end - this.view_start,
-            w_scale = width / view_range,
             y_scale = this.get_row_height(),
             feature_mapper = new FeaturePositionMapper(y_scale),
             x_draw_coords;
