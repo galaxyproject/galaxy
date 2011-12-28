@@ -624,7 +624,6 @@ extend(DataManager.prototype, Cache.prototype, {
      * Sets data in the cache.
      */
     set_data: function(low, high, result) {
-        //console.log("set_data", low, high, result);
         return this.set(this.gen_key(low, high), result);
     },
     /**
@@ -650,6 +649,7 @@ var ReferenceTrackDataManager = function(num_elements, track, subset) {
     DataManager.call(this, num_elements, track, subset);
 };
 extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototype, {
+    get: DataManager.prototype.get,
     load_data: function(low, high, mode, resolution, extra_params) {
         if (resolution > 1) {
             // Now that data is pre-fetched before draw, we don't load reference tracks
@@ -3276,10 +3276,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
     },
     /**
-     * Returns true if data is compatible with a given mode.
+     * Returns true if data is compatible with a given mode. Defaults to true because, for many tracks,
+     * all data is compatible with all modes.
      */
     data_and_mode_compatible: function(data, mode) {
-        return false;
+        return true;
     },
     /**
      * Set up track to receive tool data.
@@ -3736,14 +3737,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         painter.draw(ctx, canvas.width, canvas.height);
         
         return new Tile(this.track, tile_index, resolution, canvas, result.data);
-    },
-    /**
-     * Returns true if data is compatible with a given mode. NOTE: for LineTrack, always
-     * returns true because all data is compatible with all modes.
-     */
-    data_and_mode_compatible: function(data, mode) {
-        return true;
-    },
+    }
 });
 
 var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
