@@ -3473,19 +3473,18 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             // Set up and draw tile.
             extend(tile_data, more_tile_data);
             
+            this.tile_predraw_init();
+            
             var 
                 canvas = track.view.canvas_manager.new_canvas(),
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
                 tile_low = tile_bounds[0],
                 tile_high = tile_bounds[1],
                 width = Math.ceil( (tile_high - tile_low) * w_scale ),
-                height = track.get_canvas_height(tile_data, mode, w_scale, width);
+                // FIXME: need to set height to be max for all tracks.
+                height = track.get_canvas_height(tile_data, track.mode, w_scale, width);
             
-            // FIXME: 
-            // (a) right now, only LineTracks respect width/height setting and do not set it in draw_tile; 
-            // however, other track types be modified to work this way. This is necessary b/c setting the width/height 
-            // clears the canvas and hence prevents non-compliant tracks from being used in CompositeTracks.
-            // (b) need to normalize across tracks before displaying, e.g. set LineTracks' min/max appropriately.
+            // Draw all tracks on a single tile.
             canvas.width = width;
             canvas.height = height;
             var all_data_index = 0
@@ -3512,6 +3511,38 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         
         // Returned Deferred that is resolved when tile can be drawn.
         return can_draw;
+    },
+    /**
+     * Actions taken before drawing a tile.
+     */
+    tile_predraw_init: function() {
+        //
+        // Set min, max for LineTracks to be largest min, max.
+        //
+        
+        // Get smallest min, biggest max.
+        var 
+            min = Number.MAX_VALUE,
+            max = -min,
+            track;
+        for (var i = 0; i < this.drawables.length; i++) {
+            track = this.drawables[i];
+            if (track instanceof LineTrack) {
+                if (track.prefs.min_value < min) {
+                    min = track.prefs.min_value
+                }
+                if (track.prefs.max_value > max) {
+                    max = track.prefs.max_value
+                }
+            }
+        }
+        
+        // Set all tracks to smallest min, biggest max.
+        for (var i = 0; i < this.drawables.length; i++) {
+            track = this.drawables[i];
+            track.prefs.min_value = min;
+            track.prefs.max_value = max;
+        }
     }
 });
 
