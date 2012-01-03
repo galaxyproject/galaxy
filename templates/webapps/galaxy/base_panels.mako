@@ -98,7 +98,7 @@
     %if app.config.get_bool( 'enable_tracks', False ):
         <%
             menu_options = [
-                             [_('New Track Browser'), h.url_for( controller='/tracks', action='index' ) ],
+                             [_('New Visualization'), h.url_for( controller='/tracks', action='index' ) ],
                              [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' ) ]
                            ]
             tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list'), menu_options=menu_options )

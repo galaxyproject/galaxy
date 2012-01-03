@@ -161,7 +161,7 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.disk{background:url(fugue.png) no-repeat 0px -208px;}
 .icon-button.information{background:url(fugue.png) no-repeat 0px -234px;}
 .icon-button.annotate{background:url(fugue.png) no-repeat 0px -260px;}
-.icon-button.vis-chart{background:url(fugue.png) no-repeat 0px -286px;}
+.icon-button.chart_curve{background:url(../images/silk/chart_curve.png) no-repeat;}
 .icon-button.go-to-full-screen{background:url(fugue.png) no-repeat 0px -312px;}
 .icon-button.import{background:url(fugue.png) no-repeat 0px -338px;}
 .icon-button.plus-button{background:url(fugue.png) no-repeat 0px -364px;}

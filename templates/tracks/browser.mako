@@ -187,7 +187,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 data: {},
                 error: function() { alert( "Couldn't create new browser" ) },
                 success: function(form_html) {
-                    show_modal("New Track Browser", form_html, {
+                    show_modal("New Visualization", form_html, {
                         "Cancel": function() { window.location = "${h.url_for( controller='visualization', action='list' )}"; },
                         "Continue": function() { $(document).trigger("convert_to_values"); continue_fn(); }
                     });

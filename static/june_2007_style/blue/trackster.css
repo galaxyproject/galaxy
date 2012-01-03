@@ -89,7 +89,6 @@ input{font:10px verdana;}
 .icon{display:inline-block;width:16px;height:16px;}
 .icon.more-down{background:url('../images/fugue/arrow-transition-270-bw.png') no-repeat 0px 0px;}
 .icon.more-across{background:url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;}
-.intro{padding:1em;}
-.intro > .action-button{background-color:#CCC;padding:1em;}
+.intro > .action-button{margin:1em;padding:1em;text-decoration:underline;}
 .feature-popup{position:absolute;z-index:1000;padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);background-position:top center;}
 .feature-popup-inner{padding:5px 8px 4px 8px;background-color:black;color:white;}

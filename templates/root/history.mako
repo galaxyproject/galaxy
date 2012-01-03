@@ -244,17 +244,27 @@ $(function() {
                 error: function() { alert( "Could not add this dataset to browser." ); },
                 success: function(table_html) {
                     var parent = window.parent;
-                    parent.show_modal("Add to Browser:", table_html, {
+                    
+                    parent.show_modal("View Data in a New or Saved Visualization", "", {
                         "Cancel": function() {
                             parent.hide_modal();
                         },
-                        "Insert into selected": function() {
-                            $(parent.document).find('input[name=id]:checked').each(function() {
-                                var vis_id = $(this).val();
-                                parent.location = dataset_jquery.attr("action-url") + "&id=" + vis_id;
+                        "View in saved visualization": function() {
+                            // Show new modal with saved visualizations.
+                            parent.hide_modal();
+                            parent.show_modal("Add Data to Saved Visualization", table_html, {
+                                "Cancel": function() {
+                                    parent.hide_modal();
+                                },
+                                "Add to visualization": function() {
+                                    $(parent.document).find('input[name=id]:checked').each(function() {
+                                        var vis_id = $(this).val();
+                                        parent.location = dataset_jquery.attr("action-url") + "&id=" + vis_id;
+                                    });
+                                }, 
                             });
                         },
-                        "Insert into new browser": function() {
+                        "View in new visualization": function() {
                             parent.location = dataset_jquery.attr("new-url");
                         }
                     });
