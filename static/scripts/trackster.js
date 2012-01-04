@@ -2825,6 +2825,8 @@ extend(Track.prototype, Drawable.prototype, {
             track.content_div.text(DATA_LOADING);
         }
         */
+        // Remove old track content (e.g. tiles, messages).
+        track.content_div.children().remove();
         track.container_div.removeClass("nodata error pending");
         
         //
