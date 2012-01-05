@@ -1,4 +1,4 @@
-import os, tempfile, shutil, subprocess, logging
+import os, sys, tempfile, shutil, subprocess, threading, logging
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import util
@@ -439,14 +439,20 @@ def handle_tool_dependencies( current_working_dir, repo_files_dir, repository_to
                         error = tmp_stderr.read()
                         tmp_stderr.close()
                         log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
-def load_datatypes( app, datatypes_config, relative_intall_dir ):
+def load_datatypes( app, datatypes_config, relative_install_dir ):
     # This method is used by the InstallManager, which does not have access to trans.
-    imported_module = None
+    def __import_module( relative_path, datatype_module ):
+        sys.path.insert( 0, relative_path )
+        imported_module = __import__( datatype_module )
+        sys.path.pop( 0 )
+        return imported_module
+    imported_modules = []
     # Parse datatypes_config.
     tree = util.parse_xml( datatypes_config )
     datatypes_config_root = tree.getroot()
     relative_path_to_datatype_file_name = None
     datatype_files = datatypes_config_root.find( 'datatype_files' )
+    datatype_class_modules = []
     if datatype_files:
         # Currently only a single datatype_file is supported.  For example:
         # <datatype_files>
@@ -456,40 +462,47 @@ def load_datatypes( app, datatypes_config, relative_intall_dir ):
             datatype_file_name = elem.get( 'name', None )
             if datatype_file_name:
                 # Find the file in the installed repository.
-                for root, dirs, files in os.walk( relative_intall_dir ):
+                for root, dirs, files in os.walk( relative_install_dir ):
                     if root.find( '.hg' ) < 0:
                         for name in files:
                             if name == datatype_file_name:
-                                relative_path_to_datatype_file_name = os.path.join( root, name )
+                                datatype_class_modules.append( os.path.join( root, name ) )
                                 break
                 break
-        if relative_path_to_datatype_file_name:
-            relative_head, relative_tail = os.path.split( relative_path_to_datatype_file_name )
-            registration = datatypes_config_root.find( 'registration' )
-            # Get the module by parsing the <datatype> tag.
-            for elem in registration.findall( 'datatype' ):
-                # A 'type' attribute is currently required.  The attribute
-                # should be something like: type="gmap:GmapDB".
-                dtype = elem.get( 'type', None )
-                if dtype:
-                    fields = dtype.split( ':' )
-                    datatype_module = fields[0]
-                    datatype_class_name = fields[1]
-                    # Since we currently support only a single datatype_file,
-                    #  we have what we need.
-                    break
-            try:
-                sys.path.insert( 0, relative_head )
-                imported_module = __import__( datatype_module )
-                sys.path.pop( 0 )
-            except Exception, e:
-                log.debug( "Exception importing datatypes code file included in installed repository: %s" % str( e ) )
+        if datatype_class_modules:
+            for relative_path_to_datatype_file_name in datatype_class_modules:
+                relative_head, relative_tail = os.path.split( relative_path_to_datatype_file_name )
+                registration = datatypes_config_root.find( 'registration' )
+                # Get the module by parsing the <datatype> tag.
+                for elem in registration.findall( 'datatype' ):
+                    # A 'type' attribute is currently required.  The attribute
+                    # should be something like one of the following: 
+                    # type="gmap:GmapDB"
+                    # type="galaxy.datatypes.gmap:GmapDB"
+                    dtype = elem.get( 'type', None )
+                    if dtype:
+                        fields = dtype.split( ':' )
+                        datatype_module = fields[ 0 ]
+                        if datatype_module.find( '.' ) >= 0:
+                            # Handle the case where datatype_module is "galaxy.datatypes.gmap"
+                            datatype_module = datatype_module.split( '.' )[ -1 ]
+                        datatype_class_name = fields[ 1 ]
+                    # We need to change the value of sys.path, so do it in a way that is thread-safe.
+                    lock = threading.Lock()
+                    lock.acquire( True )
+                    try:
+                        imported_module = __import_module( relative_head, datatype_module )
+                        imported_modules.append( imported_module )
+                    except Exception, e:
+                        log.debug( "Exception importing datatypes code file %s: %s" % ( str( relative_path_to_datatype_file_name ), str( e ) ) )
+                    finally:
+                        lock.release()
     else:
-        # The repository includes a datayptes_conf.xml file, but no code file that
+        # The repository includes a dataypes_conf.xml file, but no code file that
         # contains data type classes.  This implies that the data types in datayptes_conf.xml
         # are all subclasses of data types that are in the distribution.
-        imported_module = None
-    app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_module=imported_module )
+        imported_modules = []
+    app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_modules=imported_modules )
 def load_repository_contents( app, name, description, owner, changeset_revision, tool_path, repository_clone_url, relative_install_dir,
                               current_working_dir, tmp_name, tool_section=None, shed_tool_conf=None, new_install=True ):
     # This method is used by the InstallManager, which does not have access to trans.

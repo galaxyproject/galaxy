@@ -71,7 +71,7 @@ class UniverseApplication( object ):
         # Manage installed tool shed repositories
         self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
         # Add additional datatypes from installed tool shed repositories to the datatypes registry.
-        self.installed_repository_manager.load_datatypes()
+        self.installed_repository_manager.load_proprietary_datatypes()
         # Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load history import/export tools

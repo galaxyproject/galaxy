@@ -36,7 +36,7 @@ class Registry( object ):
         self.datatype_elems = []
         self.sniffer_elems = []
         self.xml_filename = None
-    def load_datatypes( self, root_dir=None, config=None, imported_module=None ):
+    def load_datatypes( self, root_dir=None, config=None, imported_modules=None ):
         if root_dir and config:
             inherit_display_application_by_class = []
             # Parse datatypes_conf.xml
@@ -81,8 +81,11 @@ class Registry( object ):
                             fields = dtype.split( ':' )
                             datatype_module = fields[0]
                             datatype_class_name = fields[1]
-                            if imported_module:
-                                datatype_class = getattr( imported_module, datatype_class_name )
+                            if imported_modules:
+                                for imported_module in imported_modules:
+                                    if hasattr( imported_module, datatype_class_name ):
+                                        datatype_class = getattr( imported_module, datatype_class_name )
+                                        break
                             else:
                                 fields = datatype_module.split( '.' )
                                 module = __import__( fields.pop(0) )
