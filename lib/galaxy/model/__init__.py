@@ -685,7 +685,10 @@ class Dataset( object ):
     def set_size( self ):
         """Returns the size of the data on disk"""
         if not self.file_size:
-            self.file_size = self.object_store.size(self.id)
+            if self.external_filename:
+                self.file_size = os.path.getsize(self.external_filename)
+            else:
+                self.file_size = self.object_store.size(self.id)
     def get_total_size( self ):
         if self.total_size is not None:
             return self.total_size
