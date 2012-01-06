@@ -1057,7 +1057,14 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         this.request_draw();
     },
     update_icons: function() {
-        // Only show composite icon if all tracks are the same type.
+        //
+        // Determine if a composite track can be created. Current criteria:
+        // (a) all tracks are the same;
+        //      OR
+        // (b) there is a LineTrack and a FeatureTrack.
+        //
+
+        /// All tracks the same?
         var can_composite = true,
             a_type = this.drawables[0].get_type();
         for (var i = 0; i < this.drawables.length; i++) {
@@ -1067,13 +1074,26 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             }
         }
         
+        if (!can_composite) {
+            if ( this.drawables.length == 2 && 
+                 (
+                     (this.drawables[0] instanceof FeatureTrack && 
+                      this.drawables[1] instanceof LineTrack)
+                      ||
+                     (this.drawables[0] instanceof LineTrack && 
+                      this.drawables[1] instanceof FeatureTrack)
+                 )
+               )
+                can_composite = true;
+        }
+        
         if (can_composite) {
             this.action_icons.composite_icon.show();
         }
         else {
             this.action_icons.composite_icon.hide();
             $(".tipsy").remove();
-        }        
+        }       
     },
     /**
      * Add composite track to group that includes all of group's tracks.
@@ -2930,7 +2950,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Create copy.
         var new_track = new this.constructor(this.name, this.view, container, this.hda_ldda, this.dataset_id, this.prefs, 
                                              this.filters, this.tool, this.data_manager);
-        // Misc. init and return.                            
+        // Misc. init and return.
+        new_track.change_mode(this.mode);
         new_track.enabled = this.enabled;
         return new_track;
     },
@@ -3178,7 +3199,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             
             canvas.width = width;
             canvas.height = height;
-            var tile = track.draw_tile(tile_data, canvas, mode, resolution, tile_index, w_scale, seq_data);
+            var ctx = canvas.getContext('2d');
+            ctx.translate(this.left_offset, 0);
+            var tile = track.draw_tile(tile_data, ctx, mode, resolution, tile_index, w_scale, seq_data);
             
             // Don't cache, show if no tile.
             if (tile !== undefined) {
@@ -3208,14 +3231,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Draw a track tile.
      * @param result result from server
-     * @param canvas canvas to draw on
+     * @param ctx canvas context to draw on
      * @param mode mode to draw in
      * @param resolution view resolution
      * @param tile_index index of tile to be drawn
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale, ref_seq) {
+    draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale, ref_seq) {
         console.log("Warning: TiledTrack.draw_tile() not implemented.");
     },
     /**
@@ -3356,12 +3379,13 @@ extend(LabelTrack.prototype, Track.prototype, {
 var CompositeTrack = function(name, view, container, drawables) {
     // HACK: modes should be static class vars for most tracks and should update as
     // needed for CompositeTracks
-    this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
+    this.display_modes = drawables[0].display_modes;
     TiledTrack.call(this, name, view, container);
     
     // Init drawables; each drawable is a copy so that config/preferences 
-    // are independent of each other.
+    // are independent of each other. Also init left offset.
     this.drawables = [];
+    this.left_offset = 0;
     if (drawables) {
         var 
             ids = [],
@@ -3370,6 +3394,11 @@ var CompositeTrack = function(name, view, container, drawables) {
             drawable = drawables[i];
             ids.push(drawable.dataset_id);
             this.drawables[i] = drawable.copy();
+            
+            // Track's left offset is the max of all tracks.
+            if (drawable.left_offset > this.left_offset) {
+                this.left_offset = drawable.left_offset;
+            }
         }
         this.enabled = true;
     }
@@ -3483,24 +3512,46 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
                 tile_low = tile_bounds[0],
                 tile_high = tile_bounds[1],
-                width = Math.ceil( (tile_high - tile_low) * w_scale ),
-                // FIXME: need to set height to be max for all tracks.
-                height = track.get_canvas_height(tile_data, track.mode, w_scale, width);
+                all_data_index = 0,
+                width = Math.ceil( (tile_high - tile_low) * w_scale ) + this.left_offset,
+                height = 0,
+                track_modes = [];
+                
+            // Set height to be the max height for all tracks. Also, record track modes.
+            var track_canvas_height = 0;
+            for (var i = 0; i < this.drawables.length; i++, all_data_index += 2) {
+                track = this.drawables[i];
+                tile_data = all_data[ all_data_index ];
+
+                // HACK: this is FeatureTrack-specific.
+                // If track mode is Auto, determine mode and update.
+                var mode = track.mode;
+                if (mode === "Auto") {
+                    mode = track.get_mode(tile_data);
+                    track.update_auto_mode(mode);
+                }
+                track_modes.push(mode)
+
+                track_canvas_height = track.get_canvas_height(tile_data, mode, w_scale, width);
+                if (track_canvas_height > height) { height = track_canvas_height; }
+            }
             
             // Draw all tracks on a single tile.
             canvas.width = width;
             canvas.height = height;
-            var all_data_index = 0
+            all_data_index = 0;
+            var ctx = canvas.getContext('2d');
+            ctx.translate(this.left_offset, 0);
             for (var i = 0; i < this.drawables.length; i++, all_data_index += 2) {
                 track = this.drawables[i];
                 tile_data = all_data[ all_data_index ];
                 seq_data = all_data[ all_data_index + 1 ];
-                tile = track.draw_tile(tile_data, canvas, track.mode, resolution, tile_index, w_scale, seq_data);
+                tile = track.draw_tile(tile_data, ctx, track_modes[i], resolution, tile_index, w_scale, seq_data);
             }
             
             // Don't cache, show if no tile.
-            track.tile_cache.set(key, tile);
-            track.show_tile(tile, parent_element, w_scale);
+            this.tile_cache.set(key, tile);
+            this.show_tile(tile, parent_element, w_scale);
             return tile;
         }
          
@@ -3546,6 +3597,15 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             track.prefs.min_value = min;
             track.prefs.max_value = max;
         }
+    },
+    /**
+     * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
+     * drawn/fetched and shown.
+     */
+    postdraw_actions: function(tiles, width, w_scale, clear_after) {
+        TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
+        
+        // TODO: all tiles must be the same size in order to draw LineTracks.
     }
 });
 
@@ -3573,7 +3633,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(seq, canvas, mode, resolution, tile_index, w_scale) {
+    draw_tile: function(seq, ctx, mode, resolution, tile_index, w_scale) {
         var track = this;
         
         if (w_scale > this.view.canvas_manager.char_width_px) {
@@ -3581,7 +3641,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 track.content_div.css("height", "0px");
                 return;
             }
-            var ctx = canvas.getContext("2d");            
+            var canvas = ctx.canvas;
             ctx.font = ctx.canvas.manager.default_font;
             ctx.textAlign = "center";
             seq = seq.data;
@@ -3720,7 +3780,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw LineTrack tile.
      */
-    draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale) {
+    draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale) {
         // FIXME: is this needed?
         if (this.vertical_range === undefined) {
             return;
@@ -3728,7 +3788,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         // Paint onto canvas.        
         var 
-            ctx = canvas.getContext("2d"),
+            canvas = ctx.canvas,
             tile_bounds = this._get_tile_bounds(tile_index, resolution),
             tile_low = tile_bounds[0],
             tile_high = tile_bounds[1],
@@ -4057,15 +4117,16 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw FeatureTrack tile.
      * @param result result from server
-     * @param canvas canvas to draw on
+     * @param cxt canvas context to draw on
      * @param mode mode to draw in
      * @param resolution view resolution
      * @param tile_index index of tile to be drawn
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, canvas, mode, resolution, tile_index, w_scale, ref_seq) {
+    draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
+            canvas = ctx.canvas,
             tile_bounds = this._get_tile_bounds(tile_index, resolution),
             tile_low = tile_bounds[0],
             tile_high = tile_bounds[1],
@@ -4092,9 +4153,9 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             }
             // Paint summary tree into canvas
             var painter = new painters.SummaryTreePainter(result, tile_low, tile_high, this.prefs);
-            var ctx = canvas.getContext("2d");
-            // Deal with left_offset by translating.
-            ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
+            // FIXME: it shouldn't be necessary to build in padding.
+            ctx.translate(0, SUMMARY_TREE_TOP_PADDING);
+            ctx.globalCompositeOperation = "darker";
             painter.draw(ctx, canvas.width, canvas.height, w_scale);
             return new SummaryTreeTile(track, tile_index, resolution, canvas, result.data, result.max);
         }
@@ -4131,7 +4192,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var feature_mapper = null;
 
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
-        var ctx = canvas.getContext("2d");
+        ctx.globalCompositeOperation = "darker";
         ctx.fillStyle = this.prefs.block_color;
         ctx.font = ctx.canvas.manager.default_font;
         ctx.textAlign = "right";
@@ -4140,7 +4201,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         if (result.data) {
             // Draw features.
             slots = this.inc_slots[w_scale].slots;
-            ctx.translate(left_offset, 0);
             feature_mapper = painter.draw(ctx, canvas.width, canvas.height, w_scale, slots);
             feature_mapper.translation = -left_offset;
         }
