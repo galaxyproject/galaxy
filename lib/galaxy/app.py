@@ -70,16 +70,18 @@ class UniverseApplication( object ):
             self.update_manager = update_manager.UpdateManager( self )
         # Manage installed tool shed repositories
         self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
-        # Add additional datatypes from installed tool shed repositories to the datatypes registry.
-        self.installed_repository_manager.load_proprietary_datatypes()
-        # Load datatype converters
+        # Load datatype converters defined in local datatypes_conf.xml
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load history import/export tools
         load_history_imp_exp_tools( self.toolbox )
         #load external metadata tool
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
-        # Load datatype indexers
+        # Load datatype indexers defined in local datatypes_conf.xml
         self.datatypes_registry.load_datatype_indexers( self.toolbox )
+        # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool
+        # shed repositories.  This will also load all proprietary datatype converters, indexers
+        # and  display_applications.
+        self.installed_repository_manager.load_proprietary_datatypes()
         #Load security policy
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )

@@ -19,19 +19,31 @@ class Registry( object ):
         self.mimetypes_by_extension = {}
         self.datatype_converters = odict()
         self.datatype_indexers = odict()
+        # Converters defined in local datatypes_conf.xml
         self.converters = []
+        # Converters defined in datatypes_conf.xml included
+        # in installed tool shed repositories.
+        self.proprietary_converters = []
         self.converter_deps = {}
         self.available_tracks = []
         self.set_external_metadata_tool = None
+        # Indexers defined in local datatypes_conf.xml
         self.indexers = []
+        # Indexers defined in datatypes_conf.xml included
+        # in installed tool shed repositories.
+        self.proprietary_indexers = []
         self.sniff_order = []
         self.upload_file_formats = []
-        self.display_applications = odict() #map a display application id to a display application
+        # Map a display application id to a display application
+        self.display_applications = odict()
         self.converters_path_attr = None
+        # The 'default' converters_path defined in local datatypes_conf.xml
         self.datatype_converters_path = None
         self.indexers_path_attr = None
+        # The 'default' indexers_path defined in local datatypes_conf.xml
         self.datatype_indexers_path = None
         self.display_path_attr = None
+        # The 'default' display_path defined in local datatypes_conf.xml
         self.display_applications_path = None
         self.datatype_elems = []
         self.sniffer_elems = []
@@ -45,11 +57,7 @@ class Registry( object ):
             # Load datatypes and converters from config
             self.log.debug( 'Loading datatypes from %s' % config )
             registration = root.find( 'registration' )
-            # The following implementation implies that only the first datatypes_conf.xml parsed will
-            # define the various paths.  This is probably ok, since we can justifiably require that the
-            # local datatypes_conf.xml file sets the standard, and all additional datatypes_conf.xml
-            # files installed with repositories from tool sheds must use the same paths.  However, we
-            # may discover at some future time that allowing for multiple paths is more optimal.
+            # Set default paths defined in local datatypes_conf.xml.
             if not self.datatype_converters_path:
                 self.converters_path_attr = registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' )
                 self.datatype_converters_path = os.path.join( root_dir, self.converters_path_attr )
@@ -81,12 +89,16 @@ class Registry( object ):
                             fields = dtype.split( ':' )
                             datatype_module = fields[0]
                             datatype_class_name = fields[1]
+                            datatype_class = None
                             if imported_modules:
+                                # See if one of the imported modules contains the datatype class name.
                                 for imported_module in imported_modules:
                                     if hasattr( imported_module, datatype_class_name ):
                                         datatype_class = getattr( imported_module, datatype_class_name )
                                         break
-                            else:
+                            if datatype_class is None:
+                                # The datatype class name must be contained in one of the datatype
+                                # modules in the Galaxy distribution.
                                 fields = datatype_module.split( '.' )
                                 module = __import__( fields.pop(0) )
                                 for mod in fields:
@@ -105,7 +117,7 @@ class Registry( object ):
                             self.available_tracks.append( extension )
                         if display_in_upload:
                             self.upload_file_formats.append( extension )
-                        #max file size cut off for setting optional metadata
+                        # Max file size cut off for setting optional metadata
                         self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
                         for converter in elem.findall( 'converter' ):
                             # Build the list of datatype converters which will later be loaded 
@@ -118,7 +130,10 @@ class Registry( object ):
                                     self.converter_deps[extension] = {}
                                 self.converter_deps[extension][target_datatype] = depends_on.split(',')
                             if converter_config and target_datatype:
-                                self.converters.append( ( converter_config, extension, target_datatype ) )
+                                if imported_modules:
+                                    self.proprietary_converters.append( ( converter_config, extension, target_datatype ) )
+                                else:
+                                    self.converters.append( ( converter_config, extension, target_datatype ) )
                         for indexer in elem.findall( 'indexer' ):
                             # Build the list of datatype indexers for track building
                             indexer_config = indexer.get( 'file', None )
@@ -328,22 +343,32 @@ class Registry( object ):
             setattr(newdata, key, value)
         newdata.ext = ext
         return newdata
-    def load_datatype_converters( self, toolbox ):
-        """Adds datatype converters from self.converters to the calling app's toolbox"""     
-        for elem in self.converters:
+    def load_datatype_converters( self, toolbox, converter_path=None ):
+        """Adds datatype converters from self.converters to the calling app's toolbox"""   
+        if converter_path:
+            # Load converters defined by datatypes_conf.xml
+            # included in installed tool shed repository.
+            converters = self.proprietary_converters
+        else:
+            # Load converters defined by local datatypes_conf.xml.
+            converters = self.converters
+        for elem in converters:
             tool_config = elem[0]
             source_datatype = elem[1]
             target_datatype = elem[2]
-            converter_path = os.path.join( self.datatype_converters_path, tool_config )
+            if converter_path:
+                config_path = os.path.join( converter_path, tool_config )
+            else:
+                config_path = os.path.join( self.datatype_converters_path, tool_config )
             try:
-                converter = toolbox.load_tool( converter_path )
-                toolbox.tools_by_id[converter.id] = converter
+                converter = toolbox.load_tool( config_path )
+                toolbox.tools_by_id[ converter.id ] = converter
                 if source_datatype not in self.datatype_converters:
-                    self.datatype_converters[source_datatype] = odict()
-                self.datatype_converters[source_datatype][target_datatype] = converter
+                    self.datatype_converters[ source_datatype ] = odict()
+                self.datatype_converters[ source_datatype ][ target_datatype ] = converter
                 self.log.debug( "Loaded converter: %s", converter.id )
-            except:
-                self.log.exception( "error reading converter from path: %s" % converter_path )
+            except Exception, e:
+                self.log.exception( "Error loading converter (%s): %s" % ( converter_path, str( e ) ) )
     def load_external_metadata_tool( self, toolbox ):
         """Adds a tool which is used to set external metadata"""
         #we need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated tool.
@@ -368,14 +393,25 @@ class Registry( object ):
         toolbox.tools_by_id[ set_meta_tool.id ] = set_meta_tool
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
-    def load_datatype_indexers( self, toolbox ):
+    def load_datatype_indexers( self, toolbox, indexer_path=None ):
         """Adds indexers from self.indexers to the toolbox from app"""
-        for elem in self.indexers:
+        if indexer_path:
+            # Load indexers defined by datatypes_conf.xml
+            # included in installed tool shed repository.
+            indexers = self.proprietary_indexers
+        else:
+            # Load indexers defined by local datatypes_conf.xml.
+            indexers = self.indexers
+        for elem in indexers:
             tool_config = elem[0]
             datatype = elem[1]
-            indexer = toolbox.load_tool( os.path.join( self.datatype_indexers_path, tool_config ) )
-            toolbox.tools_by_id[indexer.id] = indexer
-            self.datatype_indexers[datatype] = indexer
+            if indexer_path:
+                config_path = os.path.join( indexer_path, tool_config )
+            else:
+                config_path = os.path.join( self.datatype_indexers_path, tool_config )
+            indexer = toolbox.load_tool( config_path )
+            toolbox.tools_by_id[ indexer.id ] = indexer
+            self.datatype_indexers[ datatype ] = indexer
             self.log.debug( "Loaded indexer: %s", indexer.id )
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""

@@ -450,13 +450,16 @@ def load_datatypes( app, datatypes_config, relative_install_dir ):
     # Parse datatypes_config.
     tree = util.parse_xml( datatypes_config )
     datatypes_config_root = tree.getroot()
+    converter_path = None
+    indexer_path = None
     relative_path_to_datatype_file_name = None
     datatype_files = datatypes_config_root.find( 'datatype_files' )
     datatype_class_modules = []
     if datatype_files:
-        # Currently only a single datatype_file is supported.  For example:
+        # The <datatype_files> tag set contains any number of <datatype_file> tags.
         # <datatype_files>
         #    <datatype_file name="gmap.py"/>
+        #    <datatype_file name="metagenomics.py"/>
         # </datatype_files>
         for elem in datatype_files.findall( 'datatype_file' ):
             datatype_file_name = elem.get( 'name', None )
@@ -470,6 +473,7 @@ def load_datatypes( app, datatypes_config, relative_install_dir ):
                                 break
                 break
         if datatype_class_modules:
+            # Import each of the datatype class modules.
             for relative_path_to_datatype_file_name in datatype_class_modules:
                 relative_head, relative_tail = os.path.split( relative_path_to_datatype_file_name )
                 registration = datatypes_config_root.find( 'registration' )
@@ -492,17 +496,57 @@ def load_datatypes( app, datatypes_config, relative_install_dir ):
                     lock.acquire( True )
                     try:
                         imported_module = __import_module( relative_head, datatype_module )
-                        imported_modules.append( imported_module )
+                        if imported_module not in imported_modules:
+                            imported_modules.append( imported_module )
                     except Exception, e:
                         log.debug( "Exception importing datatypes code file %s: %s" % ( str( relative_path_to_datatype_file_name ), str( e ) ) )
                     finally:
                         lock.release()
+        # Handle data type converters and indexers.
+        for elem in registration.findall( 'datatype' ):
+            if not converter_path:
+                # If any of the <datatype> tag sets contain <converter> tags, set the converter_path
+                # if it is not already set.  This requires repsitories to place all converters in the
+                # same subdirectory within the repository hierarchy.
+                for converter in elem.findall( 'converter' ):
+                    converter_path = None
+                    converter_config = converter.get( 'file', None )
+                    if converter_config:
+                        for root, dirs, files in os.walk( relative_install_dir ):
+                            if root.find( '.hg' ) < 0:
+                                for name in files:
+                                    if name == converter_config:
+                                        converter_path = root
+                                        break
+                    if converter_path:
+                        break
+            if not indexer_path:
+                # If any of the <datatype> tag sets contain <indexer> tags, set the indexer_path
+                # if it is not already set.  This requires repsitories to place all indexers in the
+                # same subdirectory within the repository hierarchy.
+                for indexer in elem.findall( 'indexer' ):
+                    indexer_path = None
+                    indexer_config = indexer.get( 'file', None )
+                    if indexer_config:
+                        for root, dirs, files in os.walk( relative_install_dir ):
+                            if root.find( '.hg' ) < 0:
+                                for name in files:
+                                    if name == indexer_config:
+                                        indexer_path = root
+                                        break
+                    if indexer_path:
+                        break
+            if converter_path and indexer_path:
+                break
+        # TODO: handle display_applications
     else:
         # The repository includes a dataypes_conf.xml file, but no code file that
         # contains data type classes.  This implies that the data types in datayptes_conf.xml
         # are all subclasses of data types that are in the distribution.
         imported_modules = []
+    # Load proprietary datatypes
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_modules=imported_modules )
+    return converter_path, indexer_path
 def load_repository_contents( app, name, description, owner, changeset_revision, tool_path, repository_clone_url, relative_install_dir,
                               current_working_dir, tmp_name, tool_section=None, shed_tool_conf=None, new_install=True ):
     # This method is used by the InstallManager, which does not have access to trans.
@@ -518,7 +562,14 @@ def load_repository_contents( app, name, description, owner, changeset_revision,
     if 'datatypes_config' in metadata_dict:
         datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
         # Load data types required by tools.
-        load_datatypes( app, datatypes_config, relative_install_dir )
+        converter_path, indexer_path = load_datatypes( app, datatypes_config, relative_install_dir )
+        if converter_path:
+            # Load proprietary datatype converters
+            app.datatypes_registry.load_datatype_converters( app.toolbox, converter_path=converter_path )
+        if indexer_path:
+            # Load proprietary datatype indexers
+            app.datatypes_registry.load_datatype_indexers( app.toolbox, indexer_path=indexer_path )
+        # TODO: handle display_applications
     if 'tools' in metadata_dict:
         repository_tools_tups = []
         for tool_dict in metadata_dict[ 'tools' ]:
