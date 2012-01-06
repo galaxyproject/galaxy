@@ -1061,33 +1061,26 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         // Determine if a composite track can be created. Current criteria:
         // (a) all tracks are the same;
         //      OR
-        // (b) there is a LineTrack and a FeatureTrack.
+        // (b) there is a single FeatureTrack.
         //
 
         /// All tracks the same?
-        var can_composite = true,
-            a_type = this.drawables[0].get_type();
+        var drawable,
+            same_type = true,
+            a_type = this.drawables[0].get_type(),
+            num_feature_tracks = 0;
         for (var i = 0; i < this.drawables.length; i++) {
-            if ( this.drawables[i].get_type() !== a_type ) {
+            drawable = this.drawables[i]
+            if (drawable.get_type() !== a_type) {
                 can_composite = false;
                 break;
             }
+            if (drawable instanceof FeatureTrack) {
+                num_feature_tracks++;
+            }
         }
         
-        if (!can_composite) {
-            if ( this.drawables.length == 2 && 
-                 (
-                     (this.drawables[0] instanceof FeatureTrack && 
-                      this.drawables[1] instanceof LineTrack)
-                      ||
-                     (this.drawables[0] instanceof LineTrack && 
-                      this.drawables[1] instanceof FeatureTrack)
-                 )
-               )
-                can_composite = true;
-        }
-        
-        if (can_composite) {
+        if (same_type || num_feature_tracks === 1) {
             this.action_icons.composite_icon.show();
         }
         else {
