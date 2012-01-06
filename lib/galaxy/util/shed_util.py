@@ -109,7 +109,6 @@ def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     Update the received metadata_dict with changes that have been applied
     to the received datatypes_config.  This method is used by the InstallManager,
     which does not have access to trans.
-    TODO: Handle converters, indexers, sniffers, etc...
     """
     # Parse datatypes_config.
     tree = ElementTree.parse( datatypes_config )
@@ -451,7 +450,6 @@ def load_datatypes( app, datatypes_config, relative_install_dir ):
     tree = util.parse_xml( datatypes_config )
     datatypes_config_root = tree.getroot()
     converter_path = None
-    indexer_path = None
     relative_path_to_datatype_file_name = None
     datatype_files = datatypes_config_root.find( 'datatype_files' )
     datatype_class_modules = []
@@ -502,7 +500,7 @@ def load_datatypes( app, datatypes_config, relative_install_dir ):
                         log.debug( "Exception importing datatypes code file %s: %s" % ( str( relative_path_to_datatype_file_name ), str( e ) ) )
                     finally:
                         lock.release()
-        # Handle data type converters and indexers.
+        # Handle data type converters.
         for elem in registration.findall( 'datatype' ):
             if not converter_path:
                 # If any of the <datatype> tag sets contain <converter> tags, set the converter_path
@@ -520,23 +518,7 @@ def load_datatypes( app, datatypes_config, relative_install_dir ):
                                         break
                     if converter_path:
                         break
-            if not indexer_path:
-                # If any of the <datatype> tag sets contain <indexer> tags, set the indexer_path
-                # if it is not already set.  This requires repsitories to place all indexers in the
-                # same subdirectory within the repository hierarchy.
-                for indexer in elem.findall( 'indexer' ):
-                    indexer_path = None
-                    indexer_config = indexer.get( 'file', None )
-                    if indexer_config:
-                        for root, dirs, files in os.walk( relative_install_dir ):
-                            if root.find( '.hg' ) < 0:
-                                for name in files:
-                                    if name == indexer_config:
-                                        indexer_path = root
-                                        break
-                    if indexer_path:
-                        break
-            if converter_path and indexer_path:
+            else:
                 break
         # TODO: handle display_applications
     else:
@@ -546,7 +528,7 @@ def load_datatypes( app, datatypes_config, relative_install_dir ):
         imported_modules = []
     # Load proprietary datatypes
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_modules=imported_modules )
-    return converter_path, indexer_path
+    return converter_path
 def load_repository_contents( app, name, description, owner, changeset_revision, tool_path, repository_clone_url, relative_install_dir,
                               current_working_dir, tmp_name, tool_section=None, shed_tool_conf=None, new_install=True ):
     # This method is used by the InstallManager, which does not have access to trans.
@@ -562,13 +544,10 @@ def load_repository_contents( app, name, description, owner, changeset_revision,
     if 'datatypes_config' in metadata_dict:
         datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
         # Load data types required by tools.
-        converter_path, indexer_path = load_datatypes( app, datatypes_config, relative_install_dir )
+        converter_path = load_datatypes( app, datatypes_config, relative_install_dir )
         if converter_path:
             # Load proprietary datatype converters
             app.datatypes_registry.load_datatype_converters( app.toolbox, converter_path=converter_path )
-        if indexer_path:
-            # Load proprietary datatype indexers
-            app.datatypes_registry.load_datatype_indexers( app.toolbox, indexer_path=indexer_path )
         # TODO: handle display_applications
     if 'tools' in metadata_dict:
         repository_tools_tups = []

@@ -74,15 +74,12 @@ class UniverseApplication( object ):
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load history import/export tools
         load_history_imp_exp_tools( self.toolbox )
-        #load external metadata tool
+        # Load external metadata tool
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
-        # Load datatype indexers defined in local datatypes_conf.xml
-        self.datatypes_registry.load_datatype_indexers( self.toolbox )
-        # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool
-        # shed repositories.  This will also load all proprietary datatype converters, indexers
-        # and  display_applications.
+        # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed
+        # repositories.  This will also load all proprietary datatype converters and display_applications.
         self.installed_repository_manager.load_proprietary_datatypes()
-        #Load security policy
+        # Load security policy
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
         # Load quota management

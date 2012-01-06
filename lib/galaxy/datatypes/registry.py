@@ -18,7 +18,6 @@ class Registry( object ):
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = odict()
-        self.datatype_indexers = odict()
         # Converters defined in local datatypes_conf.xml
         self.converters = []
         # Converters defined in datatypes_conf.xml included
@@ -27,11 +26,6 @@ class Registry( object ):
         self.converter_deps = {}
         self.available_tracks = []
         self.set_external_metadata_tool = None
-        # Indexers defined in local datatypes_conf.xml
-        self.indexers = []
-        # Indexers defined in datatypes_conf.xml included
-        # in installed tool shed repositories.
-        self.proprietary_indexers = []
         self.sniff_order = []
         self.upload_file_formats = []
         # Map a display application id to a display application
@@ -39,10 +33,6 @@ class Registry( object ):
         self.converters_path_attr = None
         # The 'default' converters_path defined in local datatypes_conf.xml
         self.datatype_converters_path = None
-        self.indexers_path_attr = None
-        # The 'default' indexers_path defined in local datatypes_conf.xml
-        self.datatype_indexers_path = None
-        self.display_path_attr = None
         # The 'default' display_path defined in local datatypes_conf.xml
         self.display_applications_path = None
         self.datatype_elems = []
@@ -63,11 +53,6 @@ class Registry( object ):
                 self.datatype_converters_path = os.path.join( root_dir, self.converters_path_attr )
                 if not os.path.isdir( self.datatype_converters_path ):
                     raise ConfigurationError( "Directory does not exist: %s" % self.datatype_converters_path )
-            if not self.datatype_indexers_path:
-                self.indexers_path_attr = registration.get( 'indexers_path', 'lib/galaxy/datatypes/indexers' )
-                self.datatype_indexers_path = os.path.join( root_dir, self.indexers_path_attr )
-                if not os.path.isdir( self.datatype_indexers_path ):
-                    raise ConfigurationError( "Directory does not exist: %s" % self.datatype_indexers_path )
             if not self.display_applications_path:
                 self.display_path_attr = registration.get( 'display_path', 'display_applications' )
                 self.display_applications_path = os.path.join( root_dir, self.display_path_attr )
@@ -134,11 +119,6 @@ class Registry( object ):
                                     self.proprietary_converters.append( ( converter_config, extension, target_datatype ) )
                                 else:
                                     self.converters.append( ( converter_config, extension, target_datatype ) )
-                        for indexer in elem.findall( 'indexer' ):
-                            # Build the list of datatype indexers for track building
-                            indexer_config = indexer.get( 'file', None )
-                            if indexer_config:
-                                self.indexers.append( (indexer_config, extension) )
                         for composite_file in elem.findall( 'composite_file' ):
                             # add composite files
                             name = composite_file.get( 'name', None )
@@ -393,26 +373,6 @@ class Registry( object ):
         toolbox.tools_by_id[ set_meta_tool.id ] = set_meta_tool
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
-    def load_datatype_indexers( self, toolbox, indexer_path=None ):
-        """Adds indexers from self.indexers to the toolbox from app"""
-        if indexer_path:
-            # Load indexers defined by datatypes_conf.xml
-            # included in installed tool shed repository.
-            indexers = self.proprietary_indexers
-        else:
-            # Load indexers defined by local datatypes_conf.xml.
-            indexers = self.indexers
-        for elem in indexers:
-            tool_config = elem[0]
-            datatype = elem[1]
-            if indexer_path:
-                config_path = os.path.join( indexer_path, tool_config )
-            else:
-                config_path = os.path.join( self.datatype_indexers_path, tool_config )
-            indexer = toolbox.load_tool( config_path )
-            toolbox.tools_by_id[ indexer.id ] = indexer
-            self.datatype_indexers[ datatype ] = indexer
-            self.log.debug( "Loaded indexer: %s", indexer.id )
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
         converters = odict()
@@ -425,18 +385,6 @@ class Registry( object ):
         if ext in self.datatype_converters.keys():
             converters.update(self.datatype_converters[ext])
         return converters
-    def get_indexers_by_datatype( self, ext ):
-        """Returns indexers based on datatype"""
-        class_chain = list()
-        source_datatype = type(self.get_datatype_by_extension(ext))
-        for ext_spec in self.datatype_indexers.keys():
-            datatype = type(self.get_datatype_by_extension(ext_spec))
-            if issubclass( source_datatype, datatype ):
-                class_chain.append( ext_spec )
-        # Prioritize based on class chain
-        ext2type = lambda x: self.get_datatype_by_extension(x)
-        class_chain = sorted(class_chain, lambda x,y: issubclass(ext2type(x),ext2type(y)) and -1 or 1)
-        return [self.datatype_indexers[x] for x in class_chain]
     def get_converter_by_target_type(self, source_ext, target_ext):
         """Returns a converter based on source and target datatypes"""
         converters = self.get_converters_by_datatype(source_ext)
@@ -494,17 +442,13 @@ class Registry( object ):
             converters_path_str = ' converters_path="%s"' % self.converters_path_attr
         else:
             converters_path_str = ''
-        if self.indexers_path_attr:
-            indexers_path_str = ' indexers_path="%s"' % self.indexers_path_attr
-        else:
-            indexers_path_str = ''
         if self.display_path_attr:
             display_path_str = ' display_path="%s"' % self.display_path_attr
         else:
             display_path_str = ''
         os.write( fd, '<?xml version="1.0"?>\n' )
         os.write( fd, '<datatypes>\n' )
-        os.write( fd, '<registration%s%s%s>\n' % ( converters_path_str, indexers_path_str, display_path_str ) )
+        os.write( fd, '<registration%s%s>\n' % ( converters_path_str, display_path_str ) )
         for elem in self.datatype_elems:
             os.write( fd, '%s' % galaxy.util.xml_to_string( elem ) )
         os.write( fd, '</registration>\n' )

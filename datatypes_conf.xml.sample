@@ -35,12 +35,6 @@
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigwig.xml" />
     </datatype>
-    <datatype extension="coverage" type="galaxy.datatypes.coverage:LastzCoverage" display_in_upload="true">
-      <indexer file="coverage.xml" />
-    </datatype>
-    <datatype extension="coverage" type="galaxy.datatypes.coverage:LastzCoverage" display_in_upload="true">
-      <indexer file="coverage.xml" />
-    </datatype>
     <!-- MSI added Datatypes -->
     <datatype extension="csv" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true" /> <!-- FIXME: csv is 'tabular'ized data, but not 'tab-delimited'; the class used here is intended for 'tab-delimited' -->
     <!-- End MSI added Datatypes -->
@@ -95,7 +89,6 @@
       <converter file="interval_to_bedstrict_converter.xml" target_datatype="bedstrict"/>
       <converter file="interval_to_bed6_converter.xml" target_datatype="bed6"/>
       <converter file="interval_to_bed12_converter.xml" target_datatype="bed12"/>
-      <indexer file="interval_awk.xml" />
       <!-- <display file="ucsc/interval_as_bed.xml" inherit="True" /> -->
       <display file="genetrack.xml" inherit="True"/>
       <display file="ensembl/ensembl_interval_as_bed.xml" inherit="True"/>

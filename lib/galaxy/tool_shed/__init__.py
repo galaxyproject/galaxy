@@ -23,12 +23,9 @@ class InstalledRepositoryManager( object ):
             path_items = datatypes_config.split( 'repos' )
             relative_install_dir = '%srepos/%s/%s/%s' % \
                 ( path_items[0], tool_shed_repository.owner, tool_shed_repository.name, tool_shed_repository.installed_changeset_revision )
-            converter_path, indexer_path = load_datatypes( self.app, datatypes_config, relative_install_dir )
+            converter_path = load_datatypes( self.app, datatypes_config, relative_install_dir )
             if converter_path:
                 # Load proprietary datatype converters
                 self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, converter_path=converter_path )
-            if indexer_path:
-                # Load proprietary datatype indexers
-                self.app.datatypes_registry.load_datatype_indexers( self.app.toolbox, indexer_path=indexer_path )
             # TODO: handle display_applications
             
