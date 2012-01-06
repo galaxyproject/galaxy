@@ -3144,11 +3144,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Retrieves from cache, draws, or sets up drawing for a single tile. Returns either a Tile object or a 
      * jQuery.Deferred object that is fulfilled when tile can be drawn again.
      */ 
-    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, more_tile_data) {
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
             tile_low = tile_index * DENSITY * resolution,
             tile_high = tile_low + DENSITY * resolution;
+            
+        // Init kwargs if necessary to avoid having to check if kwargs defined.
+        if (!kwargs) { kwargs = {}; }
                        
         // Check tile cache, if found show existing tile in correct position
         var tile = (force ? undefined : track.tile_cache.get(key));
@@ -3178,7 +3181,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // If we can draw now, do so.
         if ( can_draw_now ) {
             // Set up and draw tile.
-            extend(tile_data, more_tile_data);
+            extend(tile_data, kwargs[ 'more_tile_data' ] );
             
             // HACK: this is FeatureTrack-specific.
             // If track mode is Auto, determine mode and update.
@@ -3459,12 +3462,15 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         this.action_icons.tools_icon.hide();  
     },
     can_draw: Drawable.prototype.can_draw,
-    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, more_tile_data) {
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
             tile_low = tile_index * DENSITY * resolution,
             tile_high = tile_low + DENSITY * resolution;
+            
+        // Init kwargs if necessary to avoid having to check if kwargs defined.
+        if (!kwargs) { kwargs = {}; }
                        
         // Check tile cache, if found show existing tile in correct position
         var tile = (force ? undefined : track.tile_cache.get(key));
@@ -3503,7 +3509,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // If we can draw now, do so.
         if ( can_draw_now ) {
             // Set up and draw tile.
-            extend(tile_data, more_tile_data);
+            extend(tile_data, kwargs[ 'more_tile_data' ] );
             
             this.tile_predraw_init();
             
@@ -3517,7 +3523,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 height = 0,
                 track_modes = [];
                 
-            // Set height to be the max height for all tracks. Also, record track modes.
+            // Get max height for all tracks and record track modes.
             var track_canvas_height = 0;
             for (var i = 0; i < this.drawables.length; i++, all_data_index += 2) {
                 track = this.drawables[i];
@@ -3536,9 +3542,12 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 if (track_canvas_height > height) { height = track_canvas_height; }
             }
             
+            //
             // Draw all tracks on a single tile.
+            //
             canvas.width = width;
-            canvas.height = height;
+            // Height is specified in kwargs or is the height found above.
+            canvas.height = (kwargs['height'] ? kwargs['height'] : height);
             all_data_index = 0;
             var ctx = canvas.getContext('2d');
             ctx.translate(this.left_offset, 0);
@@ -3605,7 +3614,22 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
         
-        // TODO: all tiles must be the same size in order to draw LineTracks.
+        // All tiles must be the same height in order to draw LineTracks, so redraw tiles as needed.
+        var max_height = -1;
+        for (var i = 0; i < tiles.length; i++) {
+            var height = tiles[i].html_elt.find("canvas").height();
+            if (height > max_height) {
+                max_height = height;
+            }
+        }
+        
+        for (var i = 0; i < tiles.length; i++) {
+            var tile = tiles[i];
+            if (tile.html_elt.find("canvas").height() !== max_height) {
+                this.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { height: max_height } );
+                tile.html_elt.remove();
+            }
+        }        
     }
 });
 
@@ -3905,7 +3929,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 var tile = tiles[i];
                 if (tile.max_val !== global_max) {
                     tile.html_elt.remove();
-                    track.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { max: global_max });
+                    track.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { more_tile_data: { max: global_max } } );
                 }
             }
         }                
