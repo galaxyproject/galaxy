@@ -2411,25 +2411,33 @@ extend(DrawableConfig.prototype, {
                     var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
                     // Color picker in tool tip style float
                     var tip = $( "<div class='tipsy tipsy-west' style='position: absolute;' />" ).hide();
-                    // Inner div for padding purposes
-                    var tip_inner = $("<div style='background-color: black; padding: 10px;'></div>").appendTo(tip);
-                    var farb_container = $("<div/>")
-                            .appendTo(tip_inner)
-                            .farbtastic( { width: 100, height: 100, callback: input, color: value });
-                    // Outer div container input and tip for hover to work
-                    $("<div />").append( input ).append( tip ).appendTo( row ).bind( "click", function ( e ) { 
-                        tip.css( { 
-                            // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                            // top: $(this).position().top + $(this.height) 
-                            left: $(this).position().left + $(input).width() + 5,
-                            top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(input).height() / 2 )
-                            } ).show();
-                        $(document).bind( "click.color-picker", function() {
-                            tip.hide();
-                            $(document).unbind( "click.color-picker" );
-                        }); 
-                        e.stopPropagation();
-                    });
+
+                    // Use function to fix values of input and tip.
+                    (function(fixed_input, fixed_tip) {
+                        // Inner div for padding purposes
+                        var tip_inner = $("<div style='background-color: black; padding: 10px;'></div>").appendTo(fixed_tip);
+                        var farb_container = $("<div/>")
+                                .appendTo(tip_inner)
+                                .farbtastic( { width: 100, height: 100, callback: fixed_input, color: value });
+                        // Outer div container input and tip for hover to work
+                        $("<div />").append( fixed_input ).append( fixed_tip ).appendTo( row ).bind( "click", function ( e ) {
+                            // Hide other pickers.
+                            $(".tipsy").hide();
+                            
+                            // Show current picker.
+                            fixed_tip.css( { 
+                                // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                                // top: $(this).position().top + $(this.height) 
+                                left: $(this).position().left + $(fixed_input).width() + 5,
+                                top: $(this).position().top - ( $(fixed_tip).height() / 2 ) + ( $(fixed_input).height() / 2 )
+                                } ).show();
+                            $(document).bind( "click.color-picker", function() {
+                                fixed_tip.hide();
+                                $(document).unbind( "click.color-picker" );
+                            });
+                            e.stopPropagation();
+                        });
+                    })(input, tip);
                 } 
                 else {
                     row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) ); 
