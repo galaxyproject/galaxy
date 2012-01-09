@@ -28,19 +28,28 @@ class Registry( object ):
         self.set_external_metadata_tool = None
         self.sniff_order = []
         self.upload_file_formats = []
+        # Datatype elements defined in local datatypes_conf.xml
+        # that contain display applications
+        self.display_app_containers = []
+        # Datatype elements in datatypes_conf.xml included in installed
+        # tool shed repositories that contain display applications
+        self.proprietary_display_app_containers = []
         # Map a display application id to a display application
         self.display_applications = odict()
+        # The following 2 attributes are used in the to_xml_file()
+        # method to persist the current state into an xml file.
+        self.display_path_attr = None
         self.converters_path_attr = None
         # The 'default' converters_path defined in local datatypes_conf.xml
-        self.datatype_converters_path = None
+        self.converters_path = None
         # The 'default' display_path defined in local datatypes_conf.xml
         self.display_applications_path = None
+        self.inherit_display_application_by_class = []
         self.datatype_elems = []
         self.sniffer_elems = []
         self.xml_filename = None
     def load_datatypes( self, root_dir=None, config=None, imported_modules=None ):
         if root_dir and config:
-            inherit_display_application_by_class = []
             # Parse datatypes_conf.xml
             tree = galaxy.util.parse_xml( config )
             root = tree.getroot()
@@ -48,11 +57,11 @@ class Registry( object ):
             self.log.debug( 'Loading datatypes from %s' % config )
             registration = root.find( 'registration' )
             # Set default paths defined in local datatypes_conf.xml.
-            if not self.datatype_converters_path:
+            if not self.converters_path:
                 self.converters_path_attr = registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' )
-                self.datatype_converters_path = os.path.join( root_dir, self.converters_path_attr )
-                if not os.path.isdir( self.datatype_converters_path ):
-                    raise ConfigurationError( "Directory does not exist: %s" % self.datatype_converters_path )
+                self.converters_path = os.path.join( root_dir, self.converters_path_attr )
+                if not os.path.isdir( self.converters_path ):
+                    raise ConfigurationError( "Directory does not exist: %s" % self.converters_path )
             if not self.display_applications_path:
                 self.display_path_attr = registration.get( 'display_path', 'display_applications' )
                 self.display_applications_path = os.path.join( root_dir, self.display_path_attr )
@@ -60,7 +69,7 @@ class Registry( object ):
                 # Keep an in-memory list of datatype elems to enable persistence.
                 self.datatype_elems.append( elem )
                 try:
-                    extension = elem.get( 'extension', None ) 
+                    extension = elem.get( 'extension', None )
                     dtype = elem.get( 'type', None )
                     type_extension = elem.get( 'type_extension', None )
                     mimetype = elem.get( 'mimetype', None )
@@ -128,30 +137,14 @@ class Registry( object ):
                             mimetype = composite_file.get( 'mimetype', None )
                             self.datatypes_by_extension[extension].add_composite_file( name, optional=optional, mimetype=mimetype )
                         for display_app in elem.findall( 'display' ):
-                            display_file = os.path.join( self.display_applications_path, display_app.get( 'file', None ) )
-                            try:
-                                inherit = galaxy.util.string_as_bool( display_app.get( 'inherit', 'False' ) )
-                                display_app = DisplayApplication.from_file( display_file, self )
-                                if display_app:
-                                    if display_app.id in self.display_applications:
-                                        #if we already loaded this display application, we'll use the first one again
-                                        display_app = self.display_applications[ display_app.id ]
-                                    self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s" % ( display_app.id, extension, inherit ) )
-                                    self.display_applications[ display_app.id ] = display_app #Display app by id
-                                    self.datatypes_by_extension[ extension ].add_display_application( display_app )
-                                    if inherit and ( self.datatypes_by_extension[extension], display_app ) not in inherit_display_application_by_class:
-                                        #subclass inheritance will need to wait until all datatypes have been loaded
-                                        inherit_display_application_by_class.append( ( self.datatypes_by_extension[extension], display_app ) )
-                            except:
-                                self.log.exception( "error reading display application from path: %s" % display_file )
+                            if imported_modules:
+                                if elem not in self.proprietary_display_app_containers:
+                                    self.proprietary_display_app_containers.append( elem )
+                            else:
+                                if elem not in self.display_app_containers:
+                                    self.display_app_containers.append( elem )
                 except Exception, e:
                     self.log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
-            # Handle display_application subclass inheritance here:
-            for ext, d_type1 in self.datatypes_by_extension.iteritems():
-                for d_type2, display_app in inherit_display_application_by_class:
-                    current_app = d_type1.get_display_application( display_app.id, None )
-                    if current_app is None and isinstance( d_type1, type( d_type2 ) ):
-                        d_type1.add_display_application( display_app )
             # Load datatype sniffers from the config
             sniffers = root.find( 'sniffers' )
             if sniffers:
@@ -339,7 +332,7 @@ class Registry( object ):
             if converter_path:
                 config_path = os.path.join( converter_path, tool_config )
             else:
-                config_path = os.path.join( self.datatype_converters_path, tool_config )
+                config_path = os.path.join( self.converters_path, tool_config )
             try:
                 converter = toolbox.load_tool( config_path )
                 toolbox.tools_by_id[ converter.id ] = converter
@@ -348,7 +341,44 @@ class Registry( object ):
                 self.datatype_converters[ source_datatype ][ target_datatype ] = converter
                 self.log.debug( "Loaded converter: %s", converter.id )
             except Exception, e:
-                self.log.exception( "Error loading converter (%s): %s" % ( converter_path, str( e ) ) )
+                self.log.exception( "Error loading converter (%s): %s" % ( config_path, str( e ) ) )
+    def load_display_applications( self, display_path=None ):
+        if display_path:
+            # Load display applications defined by datatypes_conf.xml
+            # included in installed tool shed repository.
+            datatype_elems = self.proprietary_display_app_containers
+        else:
+            # Load display applications defined by local datatypes_conf.xml.
+            datatype_elems = self.display_app_containers
+        for elem in datatype_elems:
+            extension = elem.get( 'extension', None )
+            for display_app in elem.findall( 'display' ):
+                display_file = display_app.get( 'file', None )
+                if display_path:
+                    config_path = os.path.join( display_path, display_file )
+                else:
+                    config_path = os.path.join( self.display_applications_path, display_file )
+                try:
+                    inherit = galaxy.util.string_as_bool( display_app.get( 'inherit', 'False' ) )
+                    display_app = DisplayApplication.from_file( config_path, self )
+                    if display_app:
+                        if display_app.id in self.display_applications:
+                            # If we already loaded this display application, we'll use the first one loaded.
+                            display_app = self.display_applications[ display_app.id ]
+                        self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s" % ( display_app.id, extension, inherit ) )
+                        self.display_applications[ display_app.id ] = display_app
+                        self.datatypes_by_extension[ extension ].add_display_application( display_app )
+                        if inherit and ( self.datatypes_by_extension[ extension ], display_app ) not in self.inherit_display_application_by_class:
+                            self.inherit_display_application_by_class.append( ( self.datatypes_by_extension[extension], display_app ) )
+                except Exception, e:
+                    self.log.exception( "Error loading display application (%s): %s" % ( config_path, str( e ) ) )
+        # Handle display_application subclass inheritance.
+        for extension, d_type1 in self.datatypes_by_extension.iteritems():
+            for d_type2, display_app in self.inherit_display_application_by_class:
+                current_app = d_type1.get_display_application( display_app.id, None )
+                if current_app is None and isinstance( d_type1, type( d_type2 ) ):
+                    self.log.debug( "Adding inherited display application '%s' to datatype '%s'" % ( display_app.id, extension ) )
+                    d_type1.add_display_application( display_app )
     def load_external_metadata_tool( self, toolbox ):
         """Adds a tool which is used to set external metadata"""
         #we need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated tool.
