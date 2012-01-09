@@ -2518,11 +2518,13 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, me
     if (this.message) {
         var 
             canvas = this.html_elt.children()[0],
-            message_div = $("<div/>").addClass("tile-message").text(this.message).
+            message_div = $("<div/>").addClass("tile-message").text(this.message)
                             // -1 to account for border.
-                            css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt),
-            more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
-            more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
+                            .css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt),
+            more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
+                                .attr("title", "Get more data including depth").tipsy( {gravity: 's'} ).appendTo(message_div),
+            more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across")
+                                .attr("title", "Get more data excluding depth").tipsy( {gravity: 's'} ).appendTo(message_div);
 
         // Set up actions for icons.
         var tile = this;
@@ -2530,6 +2532,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, me
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
             track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+            $(".tipsy").hide();
             track.request_draw();
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
@@ -2540,6 +2543,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, me
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
             track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+            $(".tipsy").hide();
             track.request_draw();
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
