@@ -3871,7 +3871,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.summary_draw_height = 30;
-    this.inc_slots = {};
+    this.slotters = {};
     this.start_end_dct = {};
     this.left_offset = 200;
 
@@ -3988,10 +3988,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     },
     /**
      * Place features in slots for drawing (i.e. pack features).
-     * this.inc_slots[level] is created in this method. this.inc_slots[level]
-     * is a dictionary of slotted features; key is feature uid, value is a dictionary
-     * with keys 'slot' and 'text'.
-     * Returns the number of slots used to pack features.
+     * this.slotters[level] is created in this method. this.slotters[level]
+     * is a Slotter object. Returns the number of slots used to pack features.
      */
     incremental_slots: function(level, features, mode) {
         
@@ -3999,14 +3997,13 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // need to create new slots.
         
         var dummy_context = this.view.canvas_manager.dummy_context,
-            inc_slots = this.inc_slots[level];
-        if (!inc_slots || (inc_slots.mode !== mode)) {
-            inc_slots = new (slotting.FeatureSlotter)( level, mode === "Pack", MAX_FEATURE_DEPTH, function ( x ) { return dummy_context.measureText( x ) } );
-            inc_slots.mode = mode;
-            this.inc_slots[level] = inc_slots;
+            slotter = this.slotters[level];
+        if (!slotter || (slotter.mode !== mode)) {
+            slotter = new (slotting.FeatureSlotter)( level, mode === "Pack", MAX_FEATURE_DEPTH, function ( x ) { return dummy_context.measureText( x ) } );
+            this.slotters[level] = slotter;
         }
 
-        return inc_slots.slot_features( features );
+        return slotter.slot_features( features );
     },
     /**
      * Given feature data, returns summary tree data. Feature data must be sorted by start 
@@ -4225,7 +4222,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         if (result.data) {
             // Draw features.
-            slots = this.inc_slots[w_scale].slots;
+            slots = this.slotters[w_scale].slots;
             feature_mapper = painter.draw(ctx, canvas.width, canvas.height, w_scale, slots);
             feature_mapper.translation = -left_offset;
         }
@@ -4341,7 +4338,7 @@ var LABEL_SPACING = 2,
  * This implementation is incremental, any feature assigned a slot will be
  * retained for slotting future features.
  */
-exports.FeatureSlotter = function ( w_scale, include_label, max_rows, measureText ) {
+exports.FeatureSlotter = function (w_scale, include_label, max_rows, measureText) {
     this.slots = {};
     this.start_end_dct = {};
     this.w_scale = w_scale;
@@ -4356,8 +4353,12 @@ exports.FeatureSlotter = function ( w_scale, include_label, max_rows, measureTex
  */
 extend( exports.FeatureSlotter.prototype, {
     slot_features: function( features ) {
-        var w_scale = this.w_scale, inc_slots = this.slots, start_end_dct = this.start_end_dct,
-            undone = [], slotted = [], highest_slot = 0, max_rows = this.max_rows;
+        var w_scale = this.w_scale, 
+            start_end_dct = this.start_end_dct,
+            undone = [], 
+            slotted = [], 
+            highest_slot = 0, 
+            max_rows = this.max_rows;
         
         // If feature already exists in slots (from previously seen tiles), use the same slot,
         // otherwise if not seen, add to "undone" list for slot calculation.
@@ -4368,9 +4369,9 @@ extend( exports.FeatureSlotter.prototype, {
         for (var i = 0, len = features.length; i < len; i++) {
             var feature = features[i],
                 feature_uid = feature[0];
-            if (inc_slots[feature_uid] !== undefined) {
-                highest_slot = Math.max(highest_slot, inc_slots[feature_uid]);
-                slotted.push(inc_slots[feature_uid]);
+            if (this.slots[feature_uid] !== undefined) {
+                highest_slot = Math.max(highest_slot, this.slots[feature_uid]);
+                slotted.push(this.slots[feature_uid]);
             } else {
                 undone.push(i);
             }
@@ -4462,7 +4463,7 @@ extend( exports.FeatureSlotter.prototype, {
                     start_end_dct[slot_num] = [];
                 }
                 start_end_dct[slot_num].push([f_start, f_end]);
-                inc_slots[feature_uid] = slot_num;
+                this.slots[feature_uid] = slot_num;
                 highest_slot = Math.max(highest_slot, slot_num);
             }
             else {
