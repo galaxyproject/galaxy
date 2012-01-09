@@ -664,6 +664,11 @@ class Dataset( object ):
     @property
     def extra_files_path( self ):
         return self.object_store.get_filename( self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id )
+    def _calculate_size( self ):
+        if self.external_filename:
+            return os.path.getsize(self.external_filename)
+        else:
+            return self.object_store.size(self)
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
         if self.file_size:
@@ -673,16 +678,13 @@ class Dataset( object ):
                 return self.file_size
         else:
             if nice_size:
-                return galaxy.datatypes.data.nice_size( self.object_store.size(self) )
+                return galaxy.datatypes.data.nice_size( self._calculate_size() )
             else:
-                return self.object_store.size(self)
+                return self._calculate_size()
     def set_size( self ):
         """Returns the size of the data on disk"""
         if not self.file_size:
-            if self.external_filename:
-                self.file_size = os.path.getsize(self.external_filename)
-            else:
-                self.file_size = self.object_store.size(self)
+            self.file_size = self._calculate_size()
     def get_total_size( self ):
         if self.total_size is not None:
             return self.total_size
