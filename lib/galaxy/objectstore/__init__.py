@@ -18,7 +18,9 @@ from galaxy import util
 from galaxy.jobs import Sleeper
 from galaxy.model import directory_hash_id
 from galaxy.objectstore.s3_multipart_upload import multipart_upload
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import ObjectNotFound, ObjectInvalid
+
+from sqlalchemy.orm import object_session
 
 from boto.s3.key import Key
 from boto.s3.connection import S3Connection
@@ -40,14 +42,15 @@ class ObjectStore(object):
         self.running = False
         self.extra_dirs = {}
     
-    def exists(self, dataset_id, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def exists(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
-        Returns True if the object identified by `dataset_id` exists in this 
-        file store, False otherwise.
+        Returns True if the object identified by `obj` exists in this file
+        store, False otherwise.
         
         FIELD DESCRIPTIONS (these apply to all the methods in this class):
-        :type dataset_id: int
-        :param dataset_id: Galaxy-assigned database ID of the dataset to be checked.
+        :type obj: object
+        :param obj: A Galaxy object with an assigned database ID accessible via
+                    the .id attribute.
         
         :type base_dir: string
         :param base_dir: A key in self.extra_dirs corresponding to the base
@@ -56,21 +59,21 @@ class ObjectStore(object):
 
         :type dir_only: bool
         :param dir_only: If True, check only the path where the file
-                         identified by `dataset_id` should be located, not the
-                         dataset itself. This option applies to `extra_dir`
-                         argument as well.
+                         identified by `obj` should be located, not the dataset
+                         itself. This option applies to `extra_dir` argument as
+                         well.
         
         :type extra_dir: string
         :param extra_dir: Append `extra_dir` to the directory structure where
-                          the dataset identified by `dataset_id` should be located.
-                          (e.g., 000/extra_dir/dataset_id)
+                          the dataset identified by `obj` should be located.
+                          (e.g., 000/extra_dir/obj.id)
         
         :type extra_dir_at_root: bool
         :param extra_dir_at_root: Applicable only if `extra_dir` is set.
                                   If True, the `extra_dir` argument is placed at
                                   root of the created directory structure rather
-                                  than at the end (e.g., extra_dir/000/dataset_id
-                                  vs. 000/extra_dir/dataset_id)
+                                  than at the end (e.g., extra_dir/000/obj.id
+                                  vs. 000/extra_dir/obj.id)
         
         :type alt_name: string
         :param alt_name: Use this name as the alternative name for the created
@@ -78,53 +81,39 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def store_name(self, dataset_id, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
-        """
-        Returns the name of the store in which the object identified by
-        `dataset_id` exists, or None if it does not exist or the store is the
-        default store.
-        """
-        return None
-    
-    def file_ready(self, dataset_id, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def file_ready(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """ A helper method that checks if a file corresponding to a dataset 
         is ready and available to be used. Return True if so, False otherwise."""
         return True
     
-    def create(self, dataset_id, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, store_name=None):
+    def create(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
-        Mark the object identified by `dataset_id` as existing in the store, but
-        with no content. This method will create a proper directory structure for
+        Mark the object identified by `obj` as existing in the store, but with
+        no content. This method will create a proper directory structure for
         the file if the directory does not already exist.
         See `exists` method for the description of other fields.
-
-        :type store_name: string
-        :param store_name: Backend store in which to create the dataset, if
-                           this store contains more than one backend.  If the
-                           named backend does not exist, a backend will be
-                           chosen by the store.
         """
         raise NotImplementedError()
-    
-    def empty(self, dataset_id, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+
+    def empty(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
-        Test if the object identified by `dataset_id` has content.
+        Test if the object identified by `obj` has content.
         If the object does not exist raises `ObjectNotFound`.
         See `exists` method for the description of the fields.
         """
         raise NotImplementedError()
     
-    def size(self, dataset_id, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
-        Return size of the object identified by `dataset_id`.
+        Return size of the object identified by `obj`.
         If the object does not exist, return 0.
         See `exists` method for the description of the fields.
         """
         raise NotImplementedError()
     
-    def delete(self, dataset_id, entire_dir=False, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def delete(self, obj, entire_dir=False, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
-        Deletes the object identified by `dataset_id`.
+        Deletes the object identified by `obj`.
         See `exists` method for the description of other fields.
         :type entire_dir: bool
         :param entire_dir: If True, delete the entire directory pointed to by 
@@ -133,10 +122,10 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def get_data(self, dataset_id, start=0, count=-1, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def get_data(self, obj, start=0, count=-1, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
         Fetch `count` bytes of data starting at offset `start` from the
-        object identified uniquely by `dataset_id`.
+        object identified uniquely by `obj`.
         If the object does not exist raises `ObjectNotFound`.
         See `exists` method for the description of other fields.
         
@@ -148,15 +137,15 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
     
-    def get_filename(self, dataset_id, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
         Get the expected filename (including the absolute path) which can be used
-        to access the contents of the object uniquely identified by `dataset_id`.
+        to access the contents of the object uniquely identified by `obj`.
         See `exists` method for the description of the fields.
         """
         raise NotImplementedError()
     
-    def update_from_file(self, dataset_id, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, file_name=None, create=False):
+    def update_from_file(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, file_name=None, create=False):
         """
         Inform the store that the file associated with the object has been
         updated. If `file_name` is provided, update from that file instead
@@ -166,14 +155,14 @@ class ObjectStore(object):
         
         :type file_name: string
         :param file_name: Use file pointed to by `file_name` as the source for 
-                         updating the dataset identified by `dataset_id`
+                          updating the dataset identified by `obj`
         
         :type create: bool
         :param create: If True and the default dataset does not exist, create it first.
         """
         raise NotImplementedError()
     
-    def get_object_url(self, dataset_id, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
         If the store supports direct URL access, return a URL. Otherwise return
         None.
@@ -210,22 +199,24 @@ class DiskObjectStore(ObjectStore):
         super(DiskObjectStore, self).__init__()
         self.file_path = file_path or config.file_path
         self.config = config
+        self.extra_dirs['job_work'] = config.job_working_directory
+        self.extra_dirs['temp'] = config.new_file_path
         if extra_dirs is not None:
-            self.extra_dirs = extra_dirs
+            self.extra_dirs.update( extra_dirs )
     
-    def _get_filename(self, dataset_id, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def _get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """Class method that returns the absolute path for the file corresponding
-        to the `dataset_id` regardless of whether the file exists. 
+        to the `obj`.id regardless of whether the file exists. 
         """
-        path = self._construct_path(dataset_id, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name, old_style=True)
+        path = self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name, old_style=True)
         # For backward compatibility, check the old style root path first; otherwise, 
         # construct hashed path
         if not os.path.exists(path):
-            return self._construct_path(dataset_id, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
+            return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
     
-    def _construct_path(self, dataset_id, old_style=False, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def _construct_path(self, obj, old_style=False, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """ Construct the expected absolute path for accessing the object
-            identified by `dataset_id`.
+            identified by `obj`.id.
         
         :type base_dir: string
         :param base_dir: A key in self.extra_dirs corresponding to the base
@@ -234,13 +225,13 @@ class DiskObjectStore(ObjectStore):
 
         :type dir_only: bool
         :param dir_only: If True, check only the path where the file
-                         identified by `dataset_id` should be located, not the
+                         identified by `obj` should be located, not the
                          dataset itself. This option applies to `extra_dir`
                          argument as well.
         
         :type extra_dir: string
         :param extra_dir: Append the value of this parameter to the expected path
-                          used to access the object identified by `dataset_id`
+                          used to access the object identified by `obj`
                           (e.g., /files/000/<extra_dir>/dataset_10.dat).
         
         :type alt_name: string
@@ -252,16 +243,16 @@ class DiskObjectStore(ObjectStore):
                          the composed directory structure does not include a hash id
                          (e.g., /files/dataset_10.dat (old) vs. /files/000/dataset_10.dat (new))
         """
-        base = self.file_path
-        if base_dir in self.extra_dirs:
-            base = self.extra_dirs.get(base_dir)
+        base = self.extra_dirs.get(base_dir, self.file_path)
         if old_style:
             if extra_dir is not None:
                 path = os.path.join(base, extra_dir)
             else:
                 path = base
         else:
-            rel_path = os.path.join(*directory_hash_id(dataset_id))
+            # Construct hashed path
+            rel_path = os.path.join(*directory_hash_id(obj.id))
+            # Optionally append extra_dir
             if extra_dir is not None:
                 if extra_dir_at_root:
                     rel_path = os.path.join(extra_dir, rel_path)
@@ -269,103 +260,86 @@ class DiskObjectStore(ObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
             path = os.path.join(base, rel_path)
         if not dir_only:
-            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % dataset_id)
+            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
         return os.path.abspath(path)
 
-    def exists(self, dataset_id, **kwargs):
-        path = self._construct_path(dataset_id, old_style=True, **kwargs)
+    def exists(self, obj, **kwargs):
+        path = self._construct_path(obj, old_style=True, **kwargs)
         # For backward compatibility, check root path first; otherwise, construct 
         # and check hashed path
-        if not os.path.exists(path):
-            path = self._construct_path(dataset_id, **kwargs)
-        return os.path.exists(path)
+        if os.path.exists(path):
+            return True
+        else:
+            path = self._construct_path(obj, **kwargs)
+            return os.path.exists(path)
 
-    def create(self, dataset_id, **kwargs):
-        kwargs.pop('store_name', None)
-        if not self.exists(dataset_id, **kwargs):
-            # Pull out locally used fields
-            extra_dir = kwargs.get('extra_dir', None)
-            extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
+    def create(self, obj, **kwargs):
+        if not self.exists(obj, **kwargs):
+            path = self._construct_path(obj, **kwargs)
             dir_only = kwargs.get('dir_only', False)
-            alt_name = kwargs.get('alt_name', None)
-            base_dir_key = kwargs.get('base_dir', None)
-            # Construct hashed path
-            path = os.path.join(*directory_hash_id(dataset_id))
-            # Optionally append extra_dir
-            if extra_dir is not None:
-                if extra_dir_at_root:
-                    path = os.path.join(extra_dir, path)
-                else:
-                    path = os.path.join(path, extra_dir)
-            # Combine the constructted path with the root dir for all files
-            base_dir = self.extra_dirs.get(base_dir_key, self.file_path)
-            path = os.path.join(base_dir, path)
             # Create directory if it does not exist
-            if not os.path.exists(path):
-                os.makedirs(path)
+            dir = path if dir_only else os.path.dirname(path)
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            # Create the file if it does not exist
             if not dir_only:
-                path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % dataset_id)
                 open(path, 'w').close() 
-                util.umask_fix_perms( path, self.config.umask, 0666 )
+                util.umask_fix_perms(path, self.config.umask, 0666)
 
-    def empty(self, dataset_id, **kwargs):
-        return os.path.getsize(self.get_filename(dataset_id, **kwargs)) > 0
+    def empty(self, obj, **kwargs):
+        return os.path.getsize(self.get_filename(obj, **kwargs)) > 0
     
-    def size(self, dataset_id, **kwargs):
-        if self.exists(dataset_id, **kwargs):
+    def size(self, obj, **kwargs):
+        if self.exists(obj, **kwargs):
             try:
-                return os.path.getsize(self.get_filename(dataset_id, **kwargs))
+                return os.path.getsize(self.get_filename(obj, **kwargs))
             except OSError:
                 return 0
         else:
             return 0
     
-    def delete(self, dataset_id, entire_dir=False, **kwargs):
-        path = self.get_filename(dataset_id, **kwargs)
+    def delete(self, obj, entire_dir=False, **kwargs):
+        path = self.get_filename(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
         try:
             if entire_dir and extra_dir:
                 shutil.rmtree(path)
                 return True
-            if self.exists(dataset_id, **kwargs):
+            if self.exists(obj, **kwargs):
                     os.remove(path)
                     return True
         except OSError, ex:
-            log.critical('%s delete error %s' % (self._get_filename(dataset_id, **kwargs), ex))
+            log.critical('%s delete error %s' % (self._get_filename(obj, **kwargs), ex))
         return False
 
-    def get_data(self, dataset_id, start=0, count=-1, **kwargs):
-        data_file = open(self.get_filename(dataset_id, **kwargs), 'r')
+    def get_data(self, obj, start=0, count=-1, **kwargs):
+        data_file = open(self.get_filename(obj, **kwargs), 'r')
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()
         return content
     
-    def get_filename(self, dataset_id, **kwargs):
-        path = self._construct_path(dataset_id, old_style=True, **kwargs)
+    def get_filename(self, obj, **kwargs):
+        path = self._construct_path(obj, old_style=True, **kwargs)
         # For backward compatibility, check root path first; otherwise, construct 
-        # and check hashed path
+        # and return hashed path
         if os.path.exists(path):
             return path
         else:
-            path = self._construct_path(dataset_id, **kwargs)
-        if os.path.exists(path):
-            return path
-        else:
-            raise ObjectNotFound()
+            return self._construct_path(obj, **kwargs)
     
-    def update_from_file(self, dataset_id, file_name=None, create=False, **kwargs):
+    def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """ `create` parameter is not used in this implementation """
         if create:
-            self.create(dataset_id, **kwargs)
-        if file_name and self.exists(dataset_id, **kwargs):
+            self.create(obj, **kwargs)
+        if file_name and self.exists(obj, **kwargs):
             try:
-                shutil.copy(file_name, self.get_filename(dataset_id, **kwargs))
+                shutil.copy(file_name, self.get_filename(obj, **kwargs))
             except IOError, ex:
                 log.critical('Error copying %s to %s: %s' % (file_name, 
-                    self._get_filename(dataset_id, **kwargs), ex))
+                    self._get_filename(obj, **kwargs), ex))
     
-    def get_object_url(self, dataset_id, **kwargs):
+    def get_object_url(self, obj, **kwargs):
         return None
     
 
@@ -494,8 +468,8 @@ class S3ObjectStore(ObjectStore):
                     continue 
                 util.umask_fix_perms( path, self.config.umask, 0666, self.config.gid )
     
-    def _construct_path(self, dataset_id, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
-        rel_path = os.path.join(*directory_hash_id(dataset_id))
+    def _construct_path(self, obj, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+        rel_path = os.path.join(*directory_hash_id(obj.id))
         if extra_dir is not None:
             if extra_dir_at_root:
                 rel_path = os.path.join(extra_dir, rel_path)
@@ -504,7 +478,7 @@ class S3ObjectStore(ObjectStore):
         # S3 folders are marked by having trailing '/' so add it now
         rel_path = '%s/' % rel_path
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % dataset_id)
+            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -665,18 +639,18 @@ class S3ObjectStore(ObjectStore):
             log.error("Trouble pushing S3 key '%s' from file '%s': %s" % (rel_path, source_file, ex))
         return False
     
-    def file_ready(self, dataset_id, **kwargs):
+    def file_ready(self, obj, **kwargs):
         """ A helper method that checks if a file corresponding to a dataset 
         is ready and available to be used. Return True if so, False otherwise."""
-        rel_path = self._construct_path(dataset_id, **kwargs)
+        rel_path = self._construct_path(obj, **kwargs)
         # Make sure the size in cache is available in its entirety
         if self._in_cache(rel_path) and os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_s3(rel_path):
             return True
         return False
     
-    def exists(self, dataset_id, **kwargs):
+    def exists(self, obj, **kwargs):
         in_cache = in_s3 = False
-        rel_path = self._construct_path(dataset_id, **kwargs)
+        rel_path = self._construct_path(obj, **kwargs)
         # Check cache
         if self._in_cache(rel_path):
             in_cache = True
@@ -699,9 +673,8 @@ class S3ObjectStore(ObjectStore):
         else:
             return False
     
-    def create(self, dataset_id, **kwargs):
-        kwargs.pop('store_name', None)
-        if not self.exists(dataset_id, **kwargs):
+    def create(self, obj, **kwargs):
+        if not self.exists(obj, **kwargs):
             #print "S3 OS creating a dataset with ID %s" % dataset_id
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
@@ -710,7 +683,7 @@ class S3ObjectStore(ObjectStore):
             alt_name = kwargs.get('alt_name', None)
             # print "---- Processing: %s; %s" % (alt_name, locals())
             # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(dataset_id))
+            rel_path = os.path.join(*directory_hash_id(obj))
             # Optionally append extra_dir
             if extra_dir is not None:
                 if extra_dir_at_root:
@@ -728,30 +701,30 @@ class S3ObjectStore(ObjectStore):
             # self._push_to_s3(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % dataset_id)
+                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_s3(rel_path, from_string='')
     
-    def empty(self, dataset_id, **kwargs):
-        if self.exists(dataset_id, **kwargs):
-            return bool(self.size(dataset_id, **kwargs) > 0)
+    def empty(self, obj, **kwargs):
+        if self.exists(obj, **kwargs):
+            return bool(self.size(obj, **kwargs) > 0)
         else:
             raise ObjectNotFound()
     
-    def size(self, dataset_id, **kwargs):
-        rel_path = self._construct_path(dataset_id, **kwargs)
+    def size(self, obj, **kwargs):
+        rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError, ex:
                 log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s" % (rel_path, ex))
-        elif self.exists(dataset_id, **kwargs):
+        elif self.exists(obj, **kwargs):
             return self._get_size_in_s3(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size" % rel_path)
         return 0
     
-    def delete(self, dataset_id, entire_dir=False, **kwargs):
-        rel_path = self._construct_path(dataset_id, **kwargs)
+    def delete(self, obj, entire_dir=False, **kwargs):
+        rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
         try:
             # For the case of extra_files, because we don't have a reference to
@@ -777,11 +750,11 @@ class S3ObjectStore(ObjectStore):
         except S3ResponseError, ex:
             log.error("Could not delete key '%s' from S3: %s" % (rel_path, ex))
         except OSError, ex:
-            log.error('%s delete error %s' % (self._get_filename(dataset_id, **kwargs), ex))
+            log.error('%s delete error %s' % (self._get_filename(obj, **kwargs), ex))
         return False
     
-    def get_data(self, dataset_id, start=0, count=-1, **kwargs):
-        rel_path = self._construct_path(dataset_id, **kwargs)
+    def get_data(self, obj, start=0, count=-1, **kwargs):
+        rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
@@ -794,10 +767,10 @@ class S3ObjectStore(ObjectStore):
         data_file.close()
         return content
     
-    def get_filename(self, dataset_id, **kwargs):
+    def get_filename(self, obj, **kwargs):
         #print "S3 get_filename for dataset: %s" % dataset_id
         dir_only = kwargs.get('dir_only', False)
-        rel_path = self._construct_path(dataset_id, **kwargs)
+        rel_path = self._construct_path(obj, **kwargs)
         cache_path = self._get_cache_path(rel_path)
         # S3 does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
@@ -811,7 +784,7 @@ class S3ObjectStore(ObjectStore):
         if self._in_cache(rel_path):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
-        elif self.exists(dataset_id, **kwargs):
+        elif self.exists(obj, **kwargs):
             if dir_only: # Directories do not get pulled into cache
                 return cache_path
             else:
@@ -824,11 +797,11 @@ class S3ObjectStore(ObjectStore):
         raise ObjectNotFound()
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
     
-    def update_from_file(self, dataset_id, file_name=None, create=False, **kwargs): 
+    def update_from_file(self, obj, file_name=None, create=False, **kwargs): 
         if create:
-            self.create(dataset_id, **kwargs)
-        if self.exists(dataset_id, **kwargs):
-            rel_path = self._construct_path(dataset_id, **kwargs)
+            self.create(obj, **kwargs)
+        if self.exists(obj, **kwargs):
+            rel_path = self._construct_path(obj, **kwargs)
             # Chose whether to use the dataset file itself or an alternate file
             if file_name:
                 source_file = os.path.abspath(file_name)
@@ -848,9 +821,9 @@ class S3ObjectStore(ObjectStore):
         else:
             raise ObjectNotFound()
     
-    def get_object_url(self, dataset_id, **kwargs):
-        if self.exists(dataset_id, **kwargs):
-            rel_path = self._construct_path(dataset_id, **kwargs)
+    def get_object_url(self, obj, **kwargs):
+        if self.exists(obj, **kwargs):
+            rel_path = self._construct_path(obj, **kwargs)
             try:
                 key = Key(self.bucket, rel_path)
                 return key.generate_url(expires_in = 86400) # 24hrs
@@ -873,7 +846,7 @@ class DistributedObjectStore(ObjectStore):
                                                     "requires a config file, please set one in " \
                                                     "'distributed_object_store_config_file')"
         self.backends = {}
-        self.weighted_backend_names = []
+        self.weighted_backend_ids = []
 
         random.seed()
 
@@ -884,7 +857,7 @@ class DistributedObjectStore(ObjectStore):
         root = tree.getroot()
         log.debug('Loading backends for distributed object store from %s' % self.distributed_config)
         for elem in [ e for e in root if e.tag == 'backend' ]:
-            name = elem.get('name')
+            id = elem.get('id')
             weight = int(elem.get('weight', 1))
             if elem.get('type', 'disk'):
                 path = None
@@ -895,94 +868,90 @@ class DistributedObjectStore(ObjectStore):
                     elif sub.tag == 'extra_dir':
                         type = sub.get('type')
                         extra_dirs[type] = sub.get('path')
-                self.backends[name] = DiskObjectStore(config, file_path=path, extra_dirs=extra_dirs)
-                log.debug("Loaded disk backend '%s' with weight %s and file_path: %s" % (name, weight, path))
+                self.backends[id] = DiskObjectStore(config, file_path=path, extra_dirs=extra_dirs)
+                log.debug("Loaded disk backend '%s' with weight %s and file_path: %s" % (id, weight, path))
                 if extra_dirs:
                     log.debug("    Extra directories:")
                     for type, dir in extra_dirs.items():
                         log.debug("        %s: %s" % (type, dir))
             for i in range(0, weight):
-                # The simplest way to do weighting: add backend names to a
+                # The simplest way to do weighting: add backend ids to a
                 # sequence the number of times equalling weight, then randomly
                 # choose a backend from that sequence at creation
-                self.weighted_backend_names.append(name)
+                self.weighted_backend_ids.append(id)
 
-    def exists(self, dataset_id, **kwargs):
-        store = self.__get_store_for(dataset_id, **kwargs)
-        return store is not None
+    def exists(self, obj, **kwargs):
+        return self.__call_method('exists', obj, False, False, **kwargs)
 
-    def store_name(self, dataset_id, **kwargs):
-        for name, store in self.backends.items():
-            if store.exists(dataset_id, **kwargs):
-                return name
-        return None
+    #def store_id(self, obj, **kwargs):
+    #    return self.__get_store_id_for(obj, **kwargs)[0]
 
-    def file_ready(self, dataset_id, **kwargs):
-        store = self.__get_store_for(dataset_id, **kwargs)
-        if store is not None:
-            return store.file_ready(dataset_id, **kwargs)
-        return False
+    def file_ready(self, obj, **kwargs):
+        return self.__call_method('file_ready', obj, False, False, **kwargs)
 
-    def create(self, dataset_id, **kwargs):
-        store_name = kwargs.pop('store_name', None)
-        if not self.exists(dataset_id, **kwargs):
-            if store_name is None or store_name not in self.backends:
-                store_name = random.choice(self.weighted_backend_names)
-                log.debug("Selected backend '%s' for creation of dataset %s" % (store_name, dataset_id))
+    def create(self, obj, **kwargs):
+        """
+        create() is the only method in which obj.object_store_id may be None
+        """
+        if obj.object_store_id is None or not self.exists(obj, **kwargs):
+            if obj.object_store_id is None or obj.object_store_id not in self.backends:
+                obj.object_store_id = random.choice(self.weighted_backend_ids)
+                object_session( obj ).add( obj )
+                object_session( obj ).flush()
+                log.debug("Selected backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
             else:
-                log.debug("Using preferred backend '%s' for creation of dataset %s" % (store_name, dataset_id))
-            return self.backends[store_name].create(dataset_id, **kwargs)
+                log.debug("Using preferred backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
+            self.backends[obj.object_store_id].create(obj, **kwargs)
 
-    def empty(self, dataset_id, **kwargs):
-        store = self.__get_store_for(dataset_id, **kwargs)
-        if store is not None:
-            return store.empty(dataset_id, **kwargs)
-        return True
+    def empty(self, obj, **kwargs):
+        return self.__call_method('empty', obj, True, False, **kwargs)
 
-    def size(self, dataset_id, **kwargs):
-        store = self.__get_store_for(dataset_id, **kwargs)
-        if store is not None:
-            return store.size(dataset_id, **kwargs)
-        return 0
+    def size(self, obj, **kwargs):
+        return self.__call_method('size', obj, 0, False, **kwargs)
 
-    def delete(self, dataset_id, entire_dir=False, **kwargs):
-        store = self.__get_store_for(dataset_id, **kwargs)
-        if store is not None:
-            return store.delete(dataset_id, entire_dir=entire_dir, **kwargs)
-        return False
+    def delete(self, obj, entire_dir=False, **kwargs):
+        return self.__call_method('delete', obj, False, False, **kwargs)
 
-    def get_data(self, dataset_id, start=0, count=-1, **kwargs):
-        store = self.__get_store_for(dataset_id, **kwargs)
-        if store is not None:
-            return store.get_data(dataset_id, start=0, count=-1, **kwargs)
-        raise ObjectNotFound()
+    def get_data(self, obj, start=0, count=-1, **kwargs):
+        return self.__call_method('get_data', obj, ObjectNotFound, True, **kwargs)
 
-    def get_filename(self, dataset_id, **kwargs):
-        store = self.__get_store_for(dataset_id, **kwargs)
-        if store is not None:
-            return store.get_filename(dataset_id, **kwargs)
-        raise ObjectNotFound()
+    def get_filename(self, obj, **kwargs):
+        return self.__call_method('get_filename', obj, ObjectNotFound, True, **kwargs)
 
-    def update_from_file(self, dataset_id, file_name=None, create=False, **kwargs):
-        store = self.__get_store_for(dataset_id, **kwargs)
-        if store is not None:
-            return store.update_from_file(dataset_id, file_name=file_name, create=create, **kwargs)
-        if create:
-            store_name = random.choice(self.weighted_backend_names)
-            return self.backends[store_name].update_from_file(dataset_id, file_name=file_name, create=create, **kwargs)
-        raise ObjectNotFound()
+    def update_from_file(self, obj, file_name=None, create=False, **kwargs):
+        # can raise ObjectLocationMismatch
+        # TODO: handling create=True here?  probably not since create() is called from w/in, so a store will be selected there
+        #if create and not self.exists(obj, **kwargs):
+        #    store_id = random.choice(self.weighted_backend_names)
+        return self.__call_method('update_from_file', obj, ObjectNotFound, True, **kwargs)
 
-    def get_object_url(self, dataset_id, **kwargs):
-        # FIXME: dir_only
-        store = self.__get_store_for(dataset_id, **kwargs)
-        if store is not None:
-            return store.get_object_url(dataset_id, **kwargs)
-        return None
+    def get_object_url(self, obj, **kwargs):
+        return self.__call_method('get_object_url', obj, None, False, **kwargs)
 
-    def __get_store_for(self, dataset_id, **kwargs):
-        for store in self.backends.values():
-            if store.exists(dataset_id, **kwargs):
-                return store
+    def __call_method(self, method, obj, default, default_is_exception, **kwargs):
+        object_store_id = self.__get_store_id_for(obj, **kwargs)
+        if object_store_id is not None:
+            return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
+        if default_is_exception:
+            raise default()
+        else:
+            return default
+
+    def __get_store_id_for(self, obj, **kwargs):
+        if obj.object_store_id is not None and obj.object_store_id in self.backends:
+            return obj.object_store_id
+        else:
+            # if this instance has been switched from a non-distributed to a
+            # distributed object store, or if the object's store id is invalid,
+            # try to locate the object
+            log.warning('The backend object store ID (%s) for %s object with ID %s is invalid' % (obj.object_store_id, obj.__class__.__name__, obj.id))
+            for id, store in self.backends.items():
+                if store.exists(obj, **kwargs):
+                    log.warning('%s object with ID %s found in backend object store with ID %s' % (obj.__class__.__name__, obj.id, id))
+                    obj.object_store_id = id
+                    object_session( obj ).add( obj )
+                    object_session( obj ).flush()
+                    return id
         return None
 
 class HierarchicalObjectStore(ObjectStore):

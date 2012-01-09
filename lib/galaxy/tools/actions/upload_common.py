@@ -319,8 +319,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     for name, value in tool.params_to_strings( params, trans.app ).iteritems():
         job.add_parameter( name, value )
     job.add_parameter( 'paramfile', to_json_string( json_file_path ) )
-    store_name = None
-    store_name_set = False  # this is needed since None is a valid value for store_name
+    object_store_id = None
     for i, dataset in enumerate( data_list ):
         if folder:
             job.add_output_library_dataset( 'output%i' % i, dataset )
@@ -328,11 +327,12 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
             job.add_output_dataset( 'output%i' % i, dataset )
         # Create an empty file immediately
         if not dataset.dataset.external_filename:
-            trans.app.object_store.create( dataset.dataset.id, store_name=store_name )
+            dataset.dataset.object_store_id = object_store_id
+            trans.app.object_store.create( dataset.dataset )
+            object_store_id = dataset.dataset.object_store_id
+            trans.sa_session.add( dataset )
             # open( dataset.file_name, "w" ).close()
-            if not store_name_set:
-                store_name = trans.app.object_store.store_name( dataset.dataset.id )
-                store_name_set = True
+    job.object_store_id = object_store_id
     job.state = job.states.NEW
     trans.sa_session.add( job )
     trans.sa_session.flush()

@@ -130,6 +130,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "purgable", Boolean, default=True ),
+    Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "external_filename" , TEXT ),
     Column( "_extra_files_path", TEXT ),
     Column( 'file_size', Numeric( 15, 0 ) ),
@@ -410,6 +411,7 @@ Job.table = Table( "job", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=True ),
     Column( "job_runner_name", String( 255 ) ),
     Column( "job_runner_external_id", String( 255 ) ), 
+    Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "imported", Boolean, default=False, index=True ) )
     
 JobParameter.table = Table( "job_parameter", metadata,
@@ -641,6 +643,7 @@ MetadataFile.table = Table( "metadata_file", metadata,
     Column( "lda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+    Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 

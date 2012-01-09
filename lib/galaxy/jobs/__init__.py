@@ -320,19 +320,9 @@ class JobWrapper( object ):
         # With job outputs in the working directory, we need the working
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
-        # Attempt to put the working directory in the same store as the output dataset(s)
-        store_name = None
-        da = None
-        if job.output_datasets:
-            da = job.output_datasets[0]
-        elif job.output_library_datasets:
-            da = job.output_library_datasets[0]
-        if da is not None:
-            store_name = self.app.object_store.store_name(da.dataset.id)
         # Create the working dir if necessary
-        if not self.app.object_store.exists(self.job_id, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id)):
-            self.app.object_store.create(self.job_id, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id), store_name=store_name)
-        self.working_directory = self.app.object_store.get_filename(self.job_id, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
+        self.app.object_store.create(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
+        self.working_directory = self.app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
         log.debug('(%s) Working directory for job is: %s' % (self.job_id, self.working_directory))
         self.output_paths = None
         self.output_dataset_paths = None
@@ -482,7 +472,7 @@ class JobWrapper( object ):
                     dataset.extension = 'data'
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.id, create=True)
+                    self.app.object_store.update_from_file(dataset.dataset, create=True)
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
             job.state = job.states.ERROR
@@ -606,7 +596,7 @@ class JobWrapper( object ):
                 dataset.set_size()
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.id, create=True)
+                    self.app.object_store.update_from_file(dataset.dataset, create=True)
                 if context['stderr']:
                     dataset.blurb = "error"
                 elif dataset.has_data():
@@ -719,8 +709,7 @@ class JobWrapper( object ):
         try:
             for fname in self.extra_filenames:
                 os.remove( fname )
-            if self.working_directory is not None and os.path.isdir( self.working_directory ):
-                shutil.rmtree( self.working_directory )
+            self.app.object_store.delete(self.get_job(), base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
             if self.app.config.set_metadata_externally:
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )

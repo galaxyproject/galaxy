@@ -228,8 +228,7 @@ class DefaultToolAction( object ):
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        store_name = None
-        store_name_set = False  # this is needed since None is a valid value for store_name
+        object_store_id = None
         for name, output in tool.outputs.items():
             for filter in output.filters:
                 try:
@@ -292,12 +291,12 @@ class DefaultToolAction( object ):
                     trans.sa_session.add( data )
                     trans.sa_session.flush()
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
-                # Create an empty file immediately
-                trans.app.object_store.create( data.id, store_name=store_name )
-                if not store_name_set:
-                    # Ensure all other datasets in this job are created in the same store
-                    store_name = trans.app.object_store.store_name( data.id )
-                    store_name_set = True
+                # Create an empty file immediately.  The first dataset will be
+                # created in the "default" store, all others will be created in
+                # the same store as the first.
+                data.dataset.object_store_id = object_store_id
+                trans.app.object_store.create( data.dataset )
+                object_store_id = data.dataset.object_store_id      # these will be the same thing after the first output
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
                 # Copy metadata from one of the inputs if requested. 
@@ -382,6 +381,7 @@ class DefaultToolAction( object ):
                 job.add_input_dataset( name, None )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
+        job.object_store_id = object_store_id
         trans.sa_session.add( job )
         trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).

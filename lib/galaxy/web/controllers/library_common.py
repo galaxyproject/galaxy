@@ -1647,6 +1647,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
             for ldda_id in ldda_ids:
                 try:
                     ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+                    assert not ldda.dataset.purged
                     lddas.append( ldda )
                 except:
                     ldda = None
