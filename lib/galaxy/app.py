@@ -70,6 +70,8 @@ class UniverseApplication( object ):
             self.update_manager = update_manager.UpdateManager( self )
         # Manage installed tool shed repositories
         self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
+        # Load datatype display applications defined in local datatypes_conf.xml
+        self.datatypes_registry.load_display_applications()
         # Load datatype converters defined in local datatypes_conf.xml
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load history import/export tools
