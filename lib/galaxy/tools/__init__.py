@@ -1859,7 +1859,7 @@ class Tool:
                 a_files = os.listdir( temp_file_path )
                 if len( a_files ) > 0:
                     for f in a_files:
-                        self.app.object_store.update_from_file(hda.dataset.id,
+                        self.app.object_store.update_from_file(hda.dataset,
                             extra_dir="dataset_%d_files" % hda.dataset.id, 
                             alt_name = f,
                             file_name = os.path.join(temp_file_path, f),
@@ -1899,7 +1899,7 @@ class Tool:
                                                                           sa_session=self.sa_session )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(child_dataset.dataset.id, filename, create=True)
+                self.app.object_store.update_from_file(child_dataset.dataset, filename, create=True)
                 self.sa_session.add( child_dataset )
                 self.sa_session.flush()
                 child_dataset.set_size()
@@ -1967,7 +1967,7 @@ class Tool:
                 self.sa_session.add( primary_data )
                 self.sa_session.flush()
                 # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(primary_data.dataset.id, filename, create=True)
+                self.app.object_store.update_from_file(primary_data.dataset, filename, create=True)
                 primary_data.set_size()
                 primary_data.name = "%s (%s)" % ( outdata.name, designation )
                 primary_data.info = outdata.info

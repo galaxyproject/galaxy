@@ -16,7 +16,6 @@ from galaxy.security import RBACAgent, get_permitted_actions
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
-from galaxy.exceptions import ObjectNotFound
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
 import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
@@ -650,12 +649,7 @@ class Dataset( object ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
-            try:
-                filename = self.object_store.get_filename( self.id )
-            except ObjectNotFound, e:
-                # Create file if it does not exist
-                self.object_store.create( self.id )
-                filename = self.object_store.get_filename( self.id )
+            filename = self.object_store.get_filename( self )
             return filename
         else:
             filename = self.external_filename
@@ -669,7 +663,7 @@ class Dataset( object ):
     file_name = property( get_file_name, set_file_name )
     @property
     def extra_files_path( self ):
-        return self.object_store.get_filename( self.id, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id)
+        return self.object_store.get_filename( self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id )
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
         if self.file_size:
@@ -679,16 +673,16 @@ class Dataset( object ):
                 return self.file_size
         else:
             if nice_size:
-                return galaxy.datatypes.data.nice_size( self.object_store.size(self.id) )
+                return galaxy.datatypes.data.nice_size( self.object_store.size(self) )
             else:
-                return self.object_store.size(self.id)
+                return self.object_store.size(self)
     def set_size( self ):
         """Returns the size of the data on disk"""
         if not self.file_size:
             if self.external_filename:
                 self.file_size = os.path.getsize(self.external_filename)
             else:
-                self.file_size = self.object_store.size(self.id)
+                self.file_size = self.object_store.size(self)
     def get_total_size( self ):
         if self.total_size is not None:
             return self.total_size
@@ -703,7 +697,7 @@ class Dataset( object ):
         if self.file_size is None:
             self.set_size()
         self.total_size = self.file_size or 0
-        if self.object_store.exists(self.id, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
             for root, dirs, files in os.walk( self.extra_files_path ):
                 self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files ] )
     def has_data( self ):
@@ -721,7 +715,7 @@ class Dataset( object ):
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""
-        self.object_store.delete(self.id)
+        self.object_store.delete(self)
     @property
     def user_can_purge( self ):
         return self.purged == False \
@@ -730,9 +724,9 @@ class Dataset( object ):
     def full_delete( self ):
         """Remove the file and extra files, marks deleted and purged"""
         # os.unlink( self.file_name )
-        self.object_store.delete(self.id)
-        if self.object_store.exists(self.id, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
-            self.object_store.delete(self.id, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        self.object_store.delete(self)
+        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
         # if os.path.exists( self.extra_files_path ):
         #     shutil.rmtree( self.extra_files_path )
         # TODO: purge metadata files
@@ -1798,8 +1792,11 @@ class MetadataFile( object ):
         assert self.id is not None, "ID must be set before filename used (commit the object)"
         # Ensure the directory structure and the metadata file object exist
         try:
-            self.history_dataset.dataset.object_store.create( self.id, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
-            path = self.history_dataset.dataset.object_store.get_filename( self.id, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
+            da = self.history_dataset or self.library_dataset
+            if self.object_store_id is None and da is not None:
+                self.object_store_id = da.dataset.object_store_id
+            da.dataset.object_store.create( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
+            path = da.dataset.object_store.get_filename( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
             return path
         except AttributeError:
             # In case we're not working with the history_dataset

@@ -360,16 +360,16 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         data = self._check_dataset(trans, dataset_id)
         if isinstance( data, basestring ):
             return data
-        log.debug( "dataset.py -> transfer_status: Checking transfer status for dataset %s..." % data.id )
+        log.debug( "Checking transfer status for dataset %s..." % data.dataset.id )
         
         # Pulling files in extra_files_path into cache is not handled via this
         # method but that's primarily because those files are typically linked to
         # through tool's output page anyhow so tying a JavaScript event that will
         # call this method does not seem doable?
-        if trans.app.object_store.file_ready(data.id):
+        if data.dataset.external_filename:
             return True
         else:
-            return False
+            return trans.app.object_store.file_ready(data.dataset)
     
     @web.expose
     def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
@@ -382,7 +382,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = trans.app.object_store.get_filename(data.dataset.id, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
+            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
                     return trans.show_error_message( "Directory listing is not allowed." ) #TODO: Reconsider allowing listing of directories?

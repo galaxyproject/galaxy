@@ -439,7 +439,7 @@ class FileParameter( MetadataParameter ):
             if mf is None:
                 mf = self.new_file( dataset = parent, **value.kwds )
             # Ensure the metadata file gets updated with content
-            parent.dataset.object_store.update_from_file( parent.dataset.id, file_name=value.file_name, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=os.path.basename(mf.file_name) )
+            parent.dataset.object_store.update_from_file( parent.dataset, file_name=value.file_name, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=os.path.basename(mf.file_name) )
             os.unlink( value.file_name )
             value = mf.id
         return value
