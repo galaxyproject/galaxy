@@ -2507,7 +2507,7 @@ var SummaryTreeTile = function(track, index, resolution, canvas, data, max_val) 
 };
 extend(SummaryTreeTile.prototype, Tile.prototype);
 
-var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, message, feature_mapper) {
+var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale, mode, message, all_slotted, feature_mapper) {
     // Attribute init.
     Tile.call(this, track, index, resolution, canvas, data);
     this.mode = mode;
@@ -2515,40 +2515,60 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, mode, me
     this.feature_mapper = feature_mapper;
     
     // Add message + action icons to tile's html.
-    if (this.message) {
+    if (this.message || !all_slotted) {
         var 
+            tile = this;
             canvas = this.html_elt.children()[0],
-            message_div = $("<div/>").addClass("tile-message").text(this.message)
+            message_div = $("<div/>").addClass("tile-message")
                             // -1 to account for border.
-                            .css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt),
-            more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
-                                .attr("title", "Get more data including depth").tipsy( {gravity: 's'} ).appendTo(message_div),
-            more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across")
-                                .attr("title", "Get more data excluding depth").tipsy( {gravity: 's'} ).appendTo(message_div);
+                            .css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt);
+                            
+        // Handle when not all elements are slotted.
+        if (!all_slotted) {
+            var icon = $("<a href='javascript:void(0);'/>").addClass("icon exclamation")
+                            .attr("title", "To minimize track height, not all features in this region are displayed. Click to display more.")
+                            .tipsy( {gravity: 's'} ).appendTo(message_div)
+                            .click(function () {
+                                $(".tipsy").hide();
+                                tile.track.slotters[w_scale].max_rows *= 2;
+                                tile.track.request_draw(true);
+                            });
+        }
+                            
+        // Handle message; only message currently is that only the first N elements are displayed.
+        if (this.message) {
+            var 
+                num_features = data.length,
+                more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
+                                    .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data including depth")
+                                    .tipsy( {gravity: 's'} ).appendTo(message_div),
+                more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across")
+                                    .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data excluding depth")
+                                    .tipsy( {gravity: 's'} ).appendTo(message_div);
 
-        // Set up actions for icons.
-        var tile = this;
-        more_down_icon.click(function() {
-            // Mark tile as stale, request more data, and redraw track.
-            tile.stale = true;
-            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
-            $(".tipsy").hide();
-            track.request_draw();
-        }).dblclick(function(e) {
-            // Do not propogate as this would normally zoom in.
-            e.stopPropagation();
-        });
+            // Set up actions for icons.
+            more_down_icon.click(function() {
+                // Mark tile as stale, request more data, and redraw track.
+                tile.stale = true;
+                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+                $(".tipsy").hide();
+                track.request_draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normally zoom in.
+                e.stopPropagation();
+            });
 
-        more_across_icon.click(function() {
-            // Mark tile as stale, request more data, and redraw track.
-            tile.stale = true;
-            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
-            $(".tipsy").hide();
-            track.request_draw();
-        }).dblclick(function(e) {
-            // Do not propogate as this would normally zoom in.
-            e.stopPropagation();
-        });
+            more_across_icon.click(function() {
+                // Mark tile as stale, request more data, and redraw track.
+                tile.stale = true;
+                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+                $(".tipsy").hide();
+                track.request_draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normally zoom in.
+                e.stopPropagation();
+            });
+        }
     }
 };
 extend(FeatureTrackTile.prototype, Tile.prototype);
@@ -4003,7 +4023,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var dummy_context = this.view.canvas_manager.dummy_context,
             slotter = this.slotters[level];
         if (!slotter || (slotter.mode !== mode)) {
-            slotter = new (slotting.FeatureSlotter)( level, mode === "Pack", MAX_FEATURE_DEPTH, function ( x ) { return dummy_context.measureText( x ) } );
+            slotter = new (slotting.FeatureSlotter)( level, mode, MAX_FEATURE_DEPTH, function ( x ) { return dummy_context.measureText( x ) } );
             this.slotters[level] = slotter;
         }
 
@@ -4188,8 +4208,11 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         // Handle row-by-row tracks
 
-        // Filter features.
-        var filtered = [];
+        // Preprocessing: filter features and determine whether all unfiltered features have been slotted.
+        var 
+            filtered = [],
+            slots = this.slotters[w_scale].slots;
+            all_slotted = true;
         if ( result.data ) {
             var filters = this.filters_manager.filters;
             for (var i = 0, len = result.data.length; i < len; i++) {
@@ -4205,7 +4228,12 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     }
                 }
                 if (!hide_feature) {
+                    // Feature visible.
                     filtered.push(feature);
+                    // Set flag if not slotted.
+                    if ( !(feature[0] in slots) ) {
+                        all_slotted = false;
+                    }
                 }
             }
         }        
@@ -4226,12 +4254,11 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         if (result.data) {
             // Draw features.
-            slots = this.slotters[w_scale].slots;
             feature_mapper = painter.draw(ctx, canvas.width, canvas.height, w_scale, slots);
             feature_mapper.translation = -left_offset;
         }
         
-        return new FeatureTrackTile(track, tile_index, resolution, canvas, result.data, mode, result.message, feature_mapper);        
+        return new FeatureTrackTile(track, tile_index, resolution, canvas, result.data, w_scale, mode, result.message, all_slotted, feature_mapper);        
     },
     /**
      * Returns true if data is compatible with a given mode.
@@ -4342,11 +4369,12 @@ var LABEL_SPACING = 2,
  * This implementation is incremental, any feature assigned a slot will be
  * retained for slotting future features.
  */
-exports.FeatureSlotter = function (w_scale, include_label, max_rows, measureText) {
+exports.FeatureSlotter = function (w_scale, mode, max_rows, measureText) {
     this.slots = {};
     this.start_end_dct = {};
     this.w_scale = w_scale;
-    this.include_label = include_label;
+    this.mode = mode;
+    this.include_label = (mode === "Pack");
     this.max_rows = max_rows;
     this.measureText = measureText;
 };
