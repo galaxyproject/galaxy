@@ -110,6 +110,7 @@ class LocalJobRunner( BaseJobRunner ):
         if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and self.app.config.set_metadata_externally and job_wrapper.output_paths:
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames = job_wrapper.get_output_fnames(),
                                                                             set_extension = True,
+                                                                            tmp_dir = job_wrapper.working_directory,
                                                                             kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args = external_metadata_script, 

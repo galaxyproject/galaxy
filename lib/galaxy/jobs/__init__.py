@@ -709,11 +709,11 @@ class JobWrapper( object ):
         try:
             for fname in self.extra_filenames:
                 os.remove( fname )
-            self.app.object_store.delete(self.get_job(), base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
             if self.app.config.set_metadata_externally:
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
+            self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
 
