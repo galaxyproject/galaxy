@@ -97,7 +97,7 @@
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         -p '
         #for $stratification in $analysis_param_type.stratifications:
-            --select_exps "${stratification.select_exps}" --select_names "${stratification.select_names}"
+            --select_exps "${stratification.select_exps}" --select_names "${stratification.select_name}"
         #end for
         
         #for $sample in $analysis_param_type.samples:
