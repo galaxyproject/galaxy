@@ -692,7 +692,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         session.add( vis_rev )
         session.flush()
         encoded_id = trans.security.encode_id(vis.id)
-        return { "id": encoded_id, "url": url_for( action='browser', id=encoded_id ) }
+        return { "vis_id": encoded_id, "url": url_for( action='browser', id=encoded_id ) }
         
     @web.expose
     @web.require_login( "see all available libraries" )
