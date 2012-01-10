@@ -336,7 +336,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         len_file = None
         len_ds = None
         user_keys = {}
-        if 'dbkeys' in dbkey_user.preferences:
+        if dbkey_user and 'dbkeys' in dbkey_user.preferences:
             user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
             if dbkey in user_keys:
                 dbkey_attributes = user_keys[ dbkey ]
