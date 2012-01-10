@@ -3576,6 +3576,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             all_data_index = 0;
             var ctx = canvas.getContext('2d');
             ctx.translate(this.left_offset, 0);
+            ctx.globalAlpha = 0.5;
+            ctx.globalCompositeOperation = "source-over";
             for (var i = 0; i < this.drawables.length; i++, all_data_index += 2) {
                 track = this.drawables[i];
                 tile_data = all_data[ all_data_index ];
@@ -3842,9 +3844,6 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             tile_low = tile_bounds[0],
             tile_high = tile_bounds[1],
             painter = new painters.LinePainter(result.data, tile_low, tile_high, this.prefs, mode);
-        // HACK: this is needed for compositing tracks. This should be a config setting somewhere; also,
-        // "darker" may not be included in future canvas implementations.
-        ctx.globalCompositeOperation = "darker";
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
         return new Tile(this.track, tile_index, resolution, canvas, result.data);
@@ -4201,7 +4200,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             var painter = new painters.SummaryTreePainter(result, tile_low, tile_high, this.prefs);
             // FIXME: it shouldn't be necessary to build in padding.
             ctx.translate(0, SUMMARY_TREE_TOP_PADDING);
-            ctx.globalCompositeOperation = "darker";
             painter.draw(ctx, canvas.width, canvas.height, w_scale);
             return new SummaryTreeTile(track, tile_index, resolution, canvas, result.data, result.max);
         }
@@ -4246,7 +4244,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var feature_mapper = null;
 
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
-        ctx.globalCompositeOperation = "darker";
         ctx.fillStyle = this.prefs.block_color;
         ctx.font = ctx.canvas.manager.default_font;
         ctx.textAlign = "right";
