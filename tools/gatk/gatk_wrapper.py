@@ -6,6 +6,7 @@ A wrapper script for running the GenomeAnalysisTK.jar commands.
 """
 
 import sys, optparse, os, tempfile, subprocess, shutil
+from binascii import unhexlify
 from string import Template
 
 GALAXY_EXT_TO_GATK_EXT = { 'gatk_interval':'intervals', 'bam_index':'bam.bai', 'gatk_dbsnp':'dbSNP', 'picard_interval_list':'interval_list' } #items not listed here will use the galaxy extension as-is
@@ -46,6 +47,7 @@ def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--pass_through', dest='pass_through_options', action='append', type="string", help='These options are passed through directly to GATK, without any modification.' )
+    parser.add_option( '-o', '--pass_through_options', dest='pass_through_options_encoded', action='append', type="string", help='These options are passed through directly to GATK, with decoding from binascii.unhexlify.' )
     parser.add_option( '-d', '--dataset', dest='datasets', action='append', type="string", nargs=4, help='"-argument" "original_filename" "galaxy_filetype" "name_prefix"' )
     parser.add_option( '', '--max_jvm_heap', dest='max_jvm_heap', action='store', type="string", default=None, help='If specified, the maximum java virtual machine heap size will be set to the provide value.' )
     parser.add_option( '', '--max_jvm_heap_fraction', dest='max_jvm_heap_fraction', action='store', type="int", default=None, help='If specified, the maximum java virtual machine heap size will be set to the provide value as a fraction of total physical memory.' )
@@ -59,6 +61,8 @@ def __main__():
         cmd = ' '.join( options.pass_through_options )
     else:
         cmd = ''
+    if options.pass_through_options_encoded:
+        cmd = '%s %s' % ( cmd, ' '.join( map( unhexlify, options.pass_through_options_encoded ) ) )
     if options.max_jvm_heap is not None:
         cmd = cmd.replace( 'java ', 'java -Xmx%s ' % ( options.max_jvm_heap ), 1 )
     elif options.max_jvm_heap_fraction is not None:
