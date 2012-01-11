@@ -757,7 +757,15 @@ class SelectToolParameter( ToolParameter ):
         # If we got this far, we can actually look at the dependencies
         # to see if their values will not be available until runtime.
         for dep_name in self.get_dependencies():
-            dep_value = context[ dep_name ]
+            if dep_name in context:
+                dep_value = context[ dep_name ]
+            else:
+                # Quick hack to check deeper in the context.
+                # TODO: Context should really be scoped and the correct subset passed along.
+                # This happens specifically in all the GATK tools, the way the reference genome is handled.
+                for layer in context.itervalues():
+                    if isinstance( layer, dict ) and self.name in layer and dep_name in layer:
+                        dep_value = layer[dep_name]
             # Dependency on a dataset that does not yet exist
             if isinstance( dep_value, DummyDataset ):
                 return True
