@@ -16,7 +16,7 @@ from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, Te
 from galaxy.web.form_builder import WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
 from galaxy.visualization.tracks.data_providers import get_data_provider
 from galaxy.visualization.tracks.visual_analytics import get_tool_def
-from galaxy.security.validate_user_input import validate_username
+from galaxy.security.validate_user_input import validate_publicname
 from paste.httpexceptions import *
 from galaxy.exceptions import *
 
@@ -1222,7 +1222,7 @@ class Sharable:
     def set_public_username( self, trans, id, username, **kwargs ):
         """ Set user's public username and delegate to sharing() """
         user = trans.get_user()
-        message = validate_username( trans, username, user )
+        message = validate_publicname( trans, username, user )
         if message:
             return trans.fill_template( '/sharing_base.mako', item=self.get_item( trans, id ), message=message, status='error' )
         user.username = username

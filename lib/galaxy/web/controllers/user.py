@@ -10,7 +10,7 @@ from random import choice
 from galaxy.web.form_builder import * 
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.framework.helpers import iff
-from galaxy.security.validate_user_input import validate_email, validate_username, validate_password
+from galaxy.security.validate_user_input import validate_email, validate_publicname, validate_password
 
 log = logging.getLogger( __name__ )
 
@@ -698,7 +698,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         if user and params.get( 'change_username_button', False ):
             username = kwd.get( 'username', '' )
             if username:
-                message = validate_username( trans, username, user )
+                message = validate_publicname( trans, username, user )
             if message:
                 status = 'error'
             else:
@@ -736,7 +736,7 @@ class User( BaseUIController, UsesFormDefinitions ):
             # Validate the new values for email and username
             message = validate_email( trans, email, user )
             if not message and username:
-                message = validate_username( trans, username, user )
+                message = validate_publicname( trans, username, user )
             if message:
                 status = 'error'
             else:
@@ -878,7 +878,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         if not message:
             message = validate_password( trans, password, confirm )
         if not message and username:
-            message = validate_username( trans, username )
+            message = validate_publicname( trans, username )
         if not message:
             if webapp == 'galaxy':
                 if self.get_all_forms( trans, 
