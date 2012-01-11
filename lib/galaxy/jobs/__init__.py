@@ -481,8 +481,8 @@ class JobWrapper( object ):
             self.sa_session.add( job )
             self.sa_session.flush()
         #Perform email action even on failure.
-        for pja in [x for x in job.post_job_actions if x.action_type == "EmailAction"]:
-            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job)
+        for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
+            ActionBox.execute(self.app, self.sa_session, pja, job)
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             self.tool.job_failed( self, message, exception )
