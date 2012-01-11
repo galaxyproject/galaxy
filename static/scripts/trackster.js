@@ -2511,11 +2511,13 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
     // Attribute init.
     Tile.call(this, track, index, resolution, canvas, data);
     this.mode = mode;
-    this.message = message;
     this.feature_mapper = feature_mapper;
+    this.has_icons = false;
     
     // Add message + action icons to tile's html.
     if (this.message || !all_slotted) {
+        this.has_icons = true;
+        
         var 
             tile = this;
             canvas = this.html_elt.children()[0],
@@ -3145,21 +3147,20 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var track = this;
                                 
         //
-        // If some tiles have messages, set padding of tiles without messages
-        // so features and rows align.
+        // If some tiles have icons, set padding of tiles without icons so features and rows align.
         //
-        var messages_to_show = false;
+        var icons_present = false;
         for (var tile_index = 0; tile_index < tiles.length; tile_index++) {
-            if (tiles[tile_index].message) {
-                messages_to_show = true;
+            if (tiles[tile_index].has_icons) {
+                icons_present = true;
                 break;
             }
         }
-        if (messages_to_show) {
+        if (icons_present) {
             for (var tile_index = 0; tile_index < tiles.length; tile_index++) {
                 tile = tiles[tile_index];
-                if (!tile.message) {
-                    // Need to align with other tile(s) that have message(s).
+                if (!tile.has_icons) {
+                    // Need to align with other tile(s) that have icons.
                     tile.html_elt.css("padding-top", ERROR_PADDING);
                 }
             }
