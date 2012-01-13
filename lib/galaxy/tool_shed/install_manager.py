@@ -38,13 +38,13 @@ class InstallManager( object ):
                 self.install_section( elem )
     def install_repository( self, elem, section_name='', section_id='' ):
         # Install a single repository into the tool config.  If outside of any sections, the entry looks something like:
-        # <repository name="cut_wrapper" description="Galaxy wrapper for the Cut tool" changeset_revision="f3ed6cfe6402">
+        # <repository name="cut_wrapper" description="Galaxy wrapper for the Cut tool" installed_changeset_revision="f3ed6cfe6402">
         #    <tool id="Cut1" version="1.0.1" />
         # </repository>
         name = elem.get( 'name' )
         description = elem.get( 'description' )
         changeset_revision = elem.get( 'changeset_revision' )
-        # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<changeset revision>
+        # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
         clone_dir = os.path.join( self.tool_path, self.tool_shed, 'repos', self.repository_owner, name, changeset_revision )
         if self.__isinstalled( elem, clone_dir ):
             log.debug( "Skipping automatic install of repository '%s' because it has already been installed in location '%s'" % ( name, clone_dir ) )
@@ -61,6 +61,7 @@ class InstallManager( object ):
                     new_section_elem = Element( 'section' )
                     new_section_elem.attrib[ 'name' ] = section_name
                     new_section_elem.attrib[ 'id' ] = section_id
+                    new_section_elem.attrib[ 'version' ] = ''
                     tool_section = ToolSection( new_section_elem )
                     self.app.toolbox.tool_panel[ section_key ] = tool_section
             else:
@@ -74,7 +75,7 @@ class InstallManager( object ):
                 returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, changeset_revision )
                 if returncode == 0:
                     metadata_dict = load_repository_contents( app=self.app,
-                                                              name=name,
+                                                              repository_name=name,
                                                               description=description,
                                                               owner=self.repository_owner,
                                                               changeset_revision=changeset_revision,
@@ -124,7 +125,7 @@ class InstallManager( object ):
     def install_section( self, elem ):
         # Install 1 or more repositories into a section in the tool config.  An entry looks something like:
         # <section name="EMBOSS" id="EMBOSSLite">
-        #    <repository name="emboss_5" description="Galaxy wrappers for EMBOSS version 5 tools" changeset_revision="bdd88ae5d0ac">
+        #    <repository name="emboss_5" description="Galaxy wrappers for EMBOSS version 5 tools" installed_changeset_revision="bdd88ae5d0ac">
         #        <tool file="emboss_5/emboss_antigenic.xml" id="EMBOSS: antigenic1" version="5.0.0" />
         #        ...
         #    </repository>

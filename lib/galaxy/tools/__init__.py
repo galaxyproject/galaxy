@@ -24,6 +24,7 @@ from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.deps import DependencyManager
 from galaxy.model import directory_hash_id
+from galaxy.model.orm import *
 from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
 from cgi import FieldStorage
@@ -37,15 +38,11 @@ class ToolNotFoundException( Exception ):
     pass
 
 class ToolBox( object ):
-    """
-    Container for a collection of tools
-    """
-
+    """Container for a collection of tools"""
     def __init__( self, config_filenames, tool_root_dir, app ):
         """
-        Create a toolbox from the config file names by `config_filename`,
-        using `tool_root_directory` as the base directory for finding 
-        individual tool config files.
+        Create a toolbox from the config files named by `config_filenames`, using
+        `tool_root_dir` as the base directory for finding individual tool config files.
         """
         # The shed_tool_confs dictionary contains shed_conf_filename : tool_path pairs.
         self.shed_tool_confs = {}
@@ -62,7 +59,7 @@ class ToolBox( object ):
             try:
                 self.init_tools( config_filename )
             except:
-                log.exception( "ToolBox error reading %s", config_filename )
+                log.exception( "Error loading tools defined in config %s", config_filename )
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.
@@ -82,7 +79,7 @@ class ToolBox( object ):
             log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")")
             self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
             self.sa_session.flush()
-        log.info( "parsing the tool configuration %s" % config_filename )
+        log.info( "Parsing the tool configuration %s" % config_filename )
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
         tool_path = root.get( 'tool_path' )
@@ -94,53 +91,107 @@ class ToolBox( object ):
             tool_path = self.tool_root_dir
         for elem in root:
             if elem.tag == 'tool':
-                self.load_tool_tag_set( elem, self.tool_panel, tool_path, guid=elem.get( 'guid' ) )
+                self.load_tool_tag_set( elem, self.tool_panel, tool_path, guid=elem.get( 'guid' ), section=None )
             elif elem.tag == 'workflow':
                 self.load_workflow_tag_set( elem, self.tool_panel )
-            elif elem.tag == 'section' :
+            elif elem.tag == 'section':
                 self.load_section_tag_set( elem, self.tool_panel, tool_path )
             elif elem.tag == 'label':
                 self.load_label_tag_set( elem, self.tool_panel )
-    def load_tool_tag_set( self, elem, panel_dict, tool_path, guid=None ):
+    def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        return self.sa_session.query( self.app.model.ToolShedRepository ) \
+                              .filter( and_( self.app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                             self.app.model.ToolShedRepository.table.c.name == name,
+                                             self.app.model.ToolShedRepository.table.c.owner == owner,
+                                             self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+                              .first()
+    def load_tool_tag_set( self, elem, panel_dict, tool_path, guid=None, section=None ):
         try:
             path = elem.get( "file" )
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
             if guid is not None:
-                # Tool was installed from a Galaxy tool shed.
-                tool.tool_shed = elem.find( "tool_shed" ).text
-                tool.repository_name = elem.find( "repository_name" ).text
-                tool.repository_owner = elem.find( "repository_owner" ).text
-                tool.changeset_revision = elem.find( "changeset_revision" ).text
-                tool.old_id = elem.find( "id" ).text
-                tool.version = elem.find( "version" ).text
-            if self.app.config.get_bool( 'enable_tool_tags', False ):
-                tag_names = elem.get( "tags", "" ).split( "," )
-                for tag_name in tag_names:
-                    if tag_name == '':
-                        continue
-                    tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
-                    if not tag:
-                        tag = self.app.model.Tag( name=tag_name )
-                        self.sa_session.add( tag )
-                        self.sa_session.flush()
-                        tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
-                        self.sa_session.add( tta )
-                        self.sa_session.flush()
-                    else:
-                        for tagged_tool in tag.tagged_tools:
-                            if tagged_tool.tool_id == tool.id:
-                                break
+                # The tool is contained in an installed tool shed repository, so load
+                # the tool only if the repository has not been marked deleted.
+                tool_shed = elem.find( "tool_shed" ).text
+                repository_name = elem.find( "repository_name" ).text
+                repository_owner = elem.find( "repository_owner" ).text
+                installed_changeset_revision_elem = elem.find( "installed_changeset_revision" )
+                if installed_changeset_revision_elem is None:
+                    # Backward compatibility issue - the tag used to be named 'changeset_revision'.
+                    installed_changeset_revision_elem = elem.find( "changeset_revision" )
+                installed_changeset_revision = installed_changeset_revision_elem.text
+                tool_shed_repository = self.__get_tool_shed_repository( tool_shed, repository_name, repository_owner, installed_changeset_revision )
+                if tool_shed_repository:
+                    # Only load tools if the repository is not deactivated or uninstalled.
+                    can_load = not tool_shed_repository.deleted
+                    if can_load:
+                        metadata = tool_shed_repository.metadata
+                        update_needed = False
+                        if 'tool_panel_section' in metadata:
+                            if section:
+                                # If the tool_panel_section dictionary is included in the metadata, update it if necessary.
+                                tool_panel_section = metadata[ 'tool_panel_section' ]
+                                if tool_panel_section [ 'id' ] != section.id or \
+                                    tool_panel_section [ 'version' ] != section.version or \
+                                    tool_panel_section [ 'name' ] != section.name:
+                                    tool_panel_section [ 'id' ] = section.id
+                                    tool_panel_section [ 'version' ] = section.version
+                                    tool_panel_section [ 'name' ] = section.name
+                                    update_needed = True
                         else:
+                            # The tool_panel_section was introduced late, so set it's value if its missing in the metadata.
+                            if section:
+                                tool_panel_section = dict( id=section.id, version=section.version, name=section.name )
+                                update_needed = True
+                            else:
+                                tool_panel_section = dict( id='', version='', name='' )
+                                update_needed = True
+                        if update_needed:
+                            metadata[ 'tool_panel_section' ] = tool_panel_section
+                            tool_shed_repository.metadata = metadata
+                            self.sa_session.add( tool_shed_repository )
+                            self.sa_session.flush()
+                else:
+                    # If there is not yet a tool_shed_repository record, we're in the process of installing
+                    # a new repository, so any included tools can be loaded into the tool panel.
+                    can_load = True
+            else:
+                can_load = True
+            if can_load:
+                tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+                if guid is not None:
+                    tool.tool_shed = tool_shed
+                    tool.repository_name = repository_name
+                    tool.repository_owner = repository_owner
+                    tool.installed_changeset_revision = installed_changeset_revision
+                    tool.old_id = elem.find( "id" ).text
+                    tool.version = elem.find( "version" ).text
+                if self.app.config.get_bool( 'enable_tool_tags', False ):
+                    tag_names = elem.get( "tags", "" ).split( "," )
+                    for tag_name in tag_names:
+                        if tag_name == '':
+                            continue
+                        tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
+                        if not tag:
+                            tag = self.app.model.Tag( name=tag_name )
+                            self.sa_session.add( tag )
+                            self.sa_session.flush()
                             tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
                             self.sa_session.add( tta )
                             self.sa_session.flush()
-            if tool.id not in self.tools_by_id:
-                # Allow for the same tool to be loaded into multiple places in the
-                # tool panel.
-                self.tools_by_id[ tool.id ] = tool
-            key = 'tool_' + tool.id
-            panel_dict[ key ] = tool
-            log.debug( "Loaded tool: %s %s" % ( tool.id, tool.version ) )
+                        else:
+                            for tagged_tool in tag.tagged_tools:
+                                if tagged_tool.tool_id == tool.id:
+                                    break
+                            else:
+                                tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
+                                self.sa_session.add( tta )
+                                self.sa_session.flush()
+                if tool.id not in self.tools_by_id:
+                    # Allow for the same tool to be loaded into multiple places in the tool panel.
+                    self.tools_by_id[ tool.id ] = tool
+                key = 'tool_' + tool.id
+                panel_dict[ key ] = tool
+                log.debug( "Loaded tool: %s %s" % ( tool.id, tool.version ) )
         except:
             log.exception( "error reading tool from path: %s" % path )
     def load_workflow_tag_set( self, elem, panel_dict ):
@@ -161,22 +212,23 @@ class ToolBox( object ):
     def load_section_tag_set( self, elem, panel_dict, tool_path ):
         key = 'section_' + elem.get( "id" )
         if key in panel_dict:
-            # Appending a tool to an existing section in self.tool_panel
-            elems = panel_dict[ key ].elems
-            log.debug( "Appending to section: %s" % elem.get( "name" ) )
+            # Loading an existing section in self.tool_panel
+            section = panel_dict[ key ]
+            elems = section.elems
+            log.debug( "Reloading section: %s" % elem.get( "name" ) )
         else:
-            # Appending a new section to self.tool_panel
+            # Adding a new section to self.tool_panel
             section = ToolSection( elem )
             elems = section.elems
             log.debug( "Loading section: %s" % section.name )
-        for section_elem in elem:
-            if section_elem.tag == 'tool':
-                self.load_tool_tag_set( section_elem, elems, tool_path, guid=section_elem.get( 'guid' ) )
-            elif section_elem.tag == 'workflow':
-                self.load_workflow_tag_set( section_elem, elems )
-            elif section_elem.tag == 'label':
-                self.load_label_tag_set( section_elem, elems )
-        if key not in panel_dict:
+        for sub_elem in elem:
+            if sub_elem.tag == 'tool':
+                self.load_tool_tag_set( sub_elem, elems, tool_path, guid=sub_elem.get( 'guid' ), section=section )
+            elif sub_elem.tag == 'workflow':
+                self.load_workflow_tag_set( sub_elem, elems )
+            elif sub_elem.tag == 'label':
+                self.load_label_tag_set( sub_elem, elems )
+        if key not in panel_dict and section.elems:
             panel_dict[ key ] = section
     def load_tool( self, config_file, guid=None ):
         """
@@ -409,7 +461,7 @@ class Tool:
         self.tool_shed = None
         self.repository_name = None
         self.repository_owner = None
-        self.changeset_revision = None
+        self.installed_changeset_revision = None
         self.old_id = None
         self.version = None
         # Parse XML element containing configuration

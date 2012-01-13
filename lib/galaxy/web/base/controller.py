@@ -1323,7 +1323,6 @@ class Admin( object ):
         status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
             cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                                  .filter( trans.model.ToolShedRepository.deleted == False ) \
                                                   .first()
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         webapp=webapp,
@@ -2422,17 +2421,6 @@ class Admin( object ):
 
 ## ---- Utility methods -------------------------------------------------------
 
-def copy_sample_loc_file( app, filename ):
-    """Copy xxx.loc.sample to ~/tool-data/xxx.loc.sample and ~/tool-data/xxx.loc"""
-    head, sample_loc_file = os.path.split( filename )
-    loc_file = sample_loc_file.replace( '.sample', '' )
-    tool_data_path = os.path.abspath( app.config.tool_data_path )
-    # It's ok to overwrite the .sample version of the file.
-    shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
-    # Only create the .loc file if it does not yet exist.  We don't  
-    # overwrite it in case it contains stuff proprietary to the local instance.
-    if not os.path.exists( os.path.join( tool_data_path, loc_file ) ):
-        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
 def get_user( trans, user_id ):
     """Get a User from the database by id."""
     user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )

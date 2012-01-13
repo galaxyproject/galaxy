@@ -4,7 +4,7 @@ from datetime import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-from galaxy.util.shed_util import generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
+from galaxy.util.shed_util import copy_sample_loc_file, generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
