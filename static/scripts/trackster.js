@@ -3699,7 +3699,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             seq = seq.data;
             for (var c = 0, str_len = seq.length; c < str_len; c++) {
                 var c_start = Math.round(c * w_scale);
-                ctx.fillText(seq[c], c_start + track.left_offset, 10);
+                ctx.fillText(seq[c], c_start, 10);
             }
             return new Tile(track, tile_index, resolution, canvas, seq);
         }
