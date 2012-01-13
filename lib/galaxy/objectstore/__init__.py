@@ -306,8 +306,8 @@ class DiskObjectStore(ObjectStore):
                 shutil.rmtree(path)
                 return True
             if self.exists(obj, **kwargs):
-                    os.remove(path)
-                    return True
+                os.remove(path)
+                return True
         except OSError, ex:
             log.critical('%s delete error %s' % (self._get_filename(obj, **kwargs), ex))
         return False
@@ -909,20 +909,16 @@ class DistributedObjectStore(ObjectStore):
     def size(self, obj, **kwargs):
         return self.__call_method('size', obj, 0, False, **kwargs)
 
-    def delete(self, obj, entire_dir=False, **kwargs):
+    def delete(self, obj, **kwargs):
         return self.__call_method('delete', obj, False, False, **kwargs)
 
-    def get_data(self, obj, start=0, count=-1, **kwargs):
+    def get_data(self, obj, **kwargs):
         return self.__call_method('get_data', obj, ObjectNotFound, True, **kwargs)
 
     def get_filename(self, obj, **kwargs):
         return self.__call_method('get_filename', obj, ObjectNotFound, True, **kwargs)
 
-    def update_from_file(self, obj, file_name=None, create=False, **kwargs):
-        # can raise ObjectLocationMismatch
-        # TODO: handling create=True here?  probably not since create() is called from w/in, so a store will be selected there
-        #if create and not self.exists(obj, **kwargs):
-        #    store_id = random.choice(self.weighted_backend_names)
+    def update_from_file(self, obj, **kwargs):
         return self.__call_method('update_from_file', obj, ObjectNotFound, True, **kwargs)
 
     def get_object_url(self, obj, **kwargs):
