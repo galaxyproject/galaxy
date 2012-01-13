@@ -169,21 +169,21 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def find_tools_in_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = url_for( '', qualified=True )
+        galaxy_url = url_for( '/', qualified=True )
         url = '%s/repository/find_tools?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
     def find_workflows_in_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = url_for( '', qualified=True )
+        galaxy_url = url_for( '/', qualified=True )
         url = '%s/repository/find_workflows?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = url_for( '', qualified=True )
+        galaxy_url = url_for( '/', qualified=True )
         url = '%s/repository/browse_valid_repositories?galaxy_url=%s&webapp=galaxy' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
