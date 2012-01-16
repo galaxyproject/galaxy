@@ -974,9 +974,8 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             if (update_html) {
                 old_drawable.container_div.replaceWith(new_drawable.container_div);
             }
-            return true;
         }
-        return false;
+        return index;
     },
     /**
      * Remove drawable from this collection.
@@ -1839,18 +1838,13 @@ extend(Tool.prototype, {
             // Create new group.
             var group = new DrawableGroup(this.name, this.track.view);
             
+            // Replace track with group.
+            var index = current_track.container.replace_drawable(current_track, group, false);
+            
+            // Update HTML.
             // FIXME: this is ugly way to replace a track with a group -- make this easier via
             // a Drawable or DrawableCollection function.
-            // NOTE: doing this:
-            // current_track.container.replace_drawable(current_track, group, true);
-            // causes problems with sliders, so it's not used right now.
-            
-            // Add group to view.
-            current_track.view.add_drawable(group);
-            current_track.view.content_div.append(group.container_div);
-            
-            // Move track from view to group.
-            current_track.container.remove_drawable(current_track);
+            group.container_div.insertBefore(current_track.view.content_div.children()[index]);
             group.add_drawable(current_track);
             current_track.container_div.appendTo(group.content_div);
             container = group;
