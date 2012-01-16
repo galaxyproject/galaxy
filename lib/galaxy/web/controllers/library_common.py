@@ -1956,7 +1956,12 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                 # to the lddas in order for the menu optin  to be available.
                 ldda = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                 source_lddas.append( ldda )
-        target_histories = [ current_history ]
+        if current_history is not None:
+            target_histories = [ current_history ]
+        else:
+            target_histories = []
+            message = 'You must have a history before you can import datasets.  You can do this by <a href="%s" target="_top">loading the analysis interface</a>.' % url_for(controller='root')
+            status = 'error'
         if user:
            target_histories = user.active_histories
         if action == 'import_to_current_history' and library_id:
