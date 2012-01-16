@@ -1142,7 +1142,11 @@ class Tool:
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
-                _, out_data = self.execute( trans, incoming=params, history=history )
+                try:
+                    _, out_data = self.execute( trans, incoming=params, history=history )
+                except Exception, e:
+                    log.exception('Exception caught while attempting tool execution:')
+                    return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
                 try:
                     assert isinstance( out_data, odict )
                     return 'tool_executed.mako', dict( out_data=out_data )

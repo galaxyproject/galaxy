@@ -5,6 +5,7 @@ from galaxy.util.odict import odict
 from galaxy.datatypes import sniff
 from galaxy.util.json import to_json_string
 from galaxy.model.orm import eagerload_all
+from galaxy.exceptions import ObjectInvalid
 
 import logging
 log = logging.getLogger( __name__ )
@@ -328,7 +329,10 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
         # Create an empty file immediately
         if not dataset.dataset.external_filename:
             dataset.dataset.object_store_id = object_store_id
-            trans.app.object_store.create( dataset.dataset )
+            try:
+                trans.app.object_store.create( dataset.dataset )
+            except ObjectInvalid:
+                raise Exception('Unable to create output dataset: object store is full')
             object_store_id = dataset.dataset.object_store_id
             trans.sa_session.add( dataset )
             # open( dataset.file_name, "w" ).close()

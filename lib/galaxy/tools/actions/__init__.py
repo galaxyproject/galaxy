@@ -6,6 +6,7 @@ from galaxy.tools.parameters.grouping import *
 from galaxy.util.template import fill_template
 from galaxy.util.none_like import NoneDataset
 from galaxy.web import url_for
+from galaxy.exceptions import ObjectInvalid
 import galaxy.tools
 from types import *
 
@@ -295,7 +296,10 @@ class DefaultToolAction( object ):
                 # created in the "default" store, all others will be created in
                 # the same store as the first.
                 data.dataset.object_store_id = object_store_id
-                trans.app.object_store.create( data.dataset )
+                try:
+                    trans.app.object_store.create( data.dataset )
+                except ObjectInvalid:
+                    raise Exception('Unable to create output dataset: object store is full')
                 object_store_id = data.dataset.object_store_id      # these will be the same thing after the first output
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name

@@ -8,6 +8,7 @@ import os
 import time
 import random
 import shutil
+import statvfs
 import logging
 import threading
 import subprocess
@@ -40,7 +41,6 @@ class ObjectStore(object):
     
     def shutdown(self):
         self.running = False
-        self.extra_dirs = {}
     
     def exists(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """
@@ -168,6 +168,12 @@ class ObjectStore(object):
         None.
         Note: need to be careful to to bypass dataset security with this.
         See `exists` method for the description of the fields.
+        """
+        raise NotImplementedError()
+
+    def get_store_usage_percent(self):
+        """
+        Return the percentage indicating how full the store is
         """
         raise NotImplementedError()
     
@@ -342,6 +348,9 @@ class DiskObjectStore(ObjectStore):
     def get_object_url(self, obj, **kwargs):
         return None
     
+    def get_store_usage_percent(self):
+        st = os.statvfs(self.file_path)
+        return (float(st.f_blocks - st.f_bavail)/st.f_blocks) * 100
 
 
 class CachingObjectStore(ObjectStore):
@@ -831,6 +840,9 @@ class S3ObjectStore(ObjectStore):
                 log.warning("Trouble generating URL for dataset '%s': %s" % (rel_path, ex))
         return None
 
+    def get_store_usage_percent(self):
+        return 0.0
+
 
 class DistributedObjectStore(ObjectStore):
     """
@@ -847,18 +859,29 @@ class DistributedObjectStore(ObjectStore):
                                                     "'distributed_object_store_config_file')"
         self.backends = {}
         self.weighted_backend_ids = []
+        self.original_weighted_backend_ids = []
+        self.max_percent_full = {}
+        self.global_max_percent_full = 0.0
 
         random.seed()
 
         self.__parse_distributed_config(config)
 
+        if self.global_max_percent_full or filter(lambda x: x is not None, self.max_percent_full.values()):
+            self.sleeper = Sleeper()
+            self.filesystem_monitor_thread = threading.Thread(target=self.__filesystem_monitor)
+            self.filesystem_monitor_thread.start()
+            log.info("Filesystem space monitor started")
+
     def __parse_distributed_config(self, config):
         tree = util.parse_xml(self.distributed_config)
         root = tree.getroot()
         log.debug('Loading backends for distributed object store from %s' % self.distributed_config)
+        self.global_max_percent_full = float(root.get('maxpctfull', 0))
         for elem in [ e for e in root if e.tag == 'backend' ]:
             id = elem.get('id')
             weight = int(elem.get('weight', 1))
+            maxpctfull = float(elem.get('maxpctfull', 0))
             if elem.get('type', 'disk'):
                 path = None
                 extra_dirs = {}
@@ -869,6 +892,7 @@ class DistributedObjectStore(ObjectStore):
                         type = sub.get('type')
                         extra_dirs[type] = sub.get('path')
                 self.backends[id] = DiskObjectStore(config, file_path=path, extra_dirs=extra_dirs)
+                self.max_percent_full[id] = maxpctfull
                 log.debug("Loaded disk backend '%s' with weight %s and file_path: %s" % (id, weight, path))
                 if extra_dirs:
                     log.debug("    Extra directories:")
@@ -879,12 +903,25 @@ class DistributedObjectStore(ObjectStore):
                 # sequence the number of times equalling weight, then randomly
                 # choose a backend from that sequence at creation
                 self.weighted_backend_ids.append(id)
+        self.original_weighted_backend_ids = self.weighted_backend_ids
+
+    def __filesystem_monitor(self):
+        while self.running:
+            new_weighted_backend_ids = self.original_weighted_backend_ids
+            for id, backend in self.backends.items():
+                maxpct = self.max_percent_full[id] or self.global_max_percent_full
+                pct = backend.get_store_usage_percent()
+                if pct > maxpct:
+                    new_weighted_backend_ids = filter(lambda x: x != id, new_weighted_backend_ids)
+            self.weighted_backend_ids = new_weighted_backend_ids
+            self.sleeper.sleep(120) # Test free space every 2 minutes
+
+    def shutdown(self):
+        super(DistributedObjectStore, self).shutdown()
+        self.sleeper.wake()
 
     def exists(self, obj, **kwargs):
         return self.__call_method('exists', obj, False, False, **kwargs)
-
-    #def store_id(self, obj, **kwargs):
-    #    return self.__get_store_id_for(obj, **kwargs)[0]
 
     def file_ready(self, obj, **kwargs):
         return self.__call_method('file_ready', obj, False, False, **kwargs)
@@ -894,8 +931,11 @@ class DistributedObjectStore(ObjectStore):
         create() is the only method in which obj.object_store_id may be None
         """
         if obj.object_store_id is None or not self.exists(obj, **kwargs):
-            if obj.object_store_id is None or obj.object_store_id not in self.backends:
-                obj.object_store_id = random.choice(self.weighted_backend_ids)
+            if obj.object_store_id is None or obj.object_store_id not in self.weighted_backend_ids:
+                try:
+                    obj.object_store_id = random.choice(self.weighted_backend_ids)
+                except IndexError:
+                    raise ObjectInvalid()
                 object_session( obj ).add( obj )
                 object_session( obj ).flush()
                 log.debug("Selected backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))

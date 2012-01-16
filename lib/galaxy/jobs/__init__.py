@@ -9,6 +9,7 @@ from galaxy.datatypes import metadata
 from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
 from galaxy.jobs.actions.post import ActionBox
+from galaxy.exceptions import ObjectInvalid
 
 from sqlalchemy.sql.expression import and_, or_
 
@@ -321,9 +322,12 @@ class JobWrapper( object ):
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
         # Create the working dir if necessary
-        self.app.object_store.create(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
-        self.working_directory = self.app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
-        log.debug('(%s) Working directory for job is: %s' % (self.job_id, self.working_directory))
+        try:
+            self.app.object_store.create(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
+            self.working_directory = self.app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
+            log.debug('(%s) Working directory for job is: %s' % (self.job_id, self.working_directory))
+        except ObjectInvalid:
+            raise Exception('Unable to create job working directory, job failure')
         self.output_paths = None
         self.output_dataset_paths = None
         self.tool_provided_job_metadata = None
