@@ -2515,7 +2515,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
     this.has_icons = false;
     
     // Add message + action icons to tile's html.
-    if (this.message || !all_slotted) {
+    if (message || !all_slotted) {
         this.has_icons = true;
         
         var 
@@ -2538,7 +2538,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
         }
                             
         // Handle message; only message currently is that only the first N elements are displayed.
-        if (this.message) {
+        if (message) {
             var 
                 num_features = data.length,
                 more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
