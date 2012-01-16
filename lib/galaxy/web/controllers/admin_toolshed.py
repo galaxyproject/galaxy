@@ -467,6 +467,7 @@ class AdminToolshed( AdminGalaxy ):
             tool.repository_name = repository.name
             tool.repository_owner = repository.owner
             tool.installed_changeset_revision = repository.installed_changeset_revision
+            tool.guid = guid
             # Set the tool's old_id to the id used before the tool shed existed.
             tool.old_id = tool.id
             # Set the tool's id to the tool shed guid.
@@ -610,7 +611,7 @@ class AdminToolshed( AdminGalaxy ):
             for tool_metadata_dict in repository.metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
                     metadata = tool_metadata_dict
-                    tool = trans.app.toolbox.load_tool( os.path.abspath( metadata[ 'tool_config' ] ) )
+                    tool = trans.app.toolbox.load_tool( os.path.abspath( metadata[ 'tool_config' ] ), guid=metadata[ 'guid' ] )
                     break
         return trans.fill_template( "/admin/tool_shed_repository/view_tool_metadata.mako",
                                     repository=repository,

@@ -347,7 +347,7 @@ def get_repository_tools_tups( app, metadata_dict ):
         for tool_dict in metadata_dict[ 'tools' ]:
             relative_path = tool_dict[ 'tool_config' ]
             guid = tool_dict[ 'guid' ]
-            tool = app.toolbox.load_tool( os.path.abspath( relative_path ) )
+            tool = app.toolbox.load_tool( os.path.abspath( relative_path ), guid=guid )
             repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
 def get_tool_id_guid_map( app, tool_id, version, tool_shed, repository_owner, repository_name ):
@@ -398,7 +398,7 @@ def handle_missing_data_table_entry( app, tool_path, sample_files, repository_to
             # TODO: Do more here than logging an exception.
             log.debug( exception_msg )
         # Reload the tool into the local list of repository_tools_tups.
-        repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ) )
+        repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, repository_tool )
     return repository_tools_tups
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups ):
@@ -425,7 +425,7 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
                         missing_files_handled.append( missing_tail )
                         break
         # Reload the tool into the local list of repository_tools_tups.
-        repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ) )
+        repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups
 def handle_tool_dependencies( current_working_dir, repo_files_dir, repository_tools_tups ):

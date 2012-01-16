@@ -163,6 +163,7 @@ class ToolBox( object ):
                     tool.repository_name = repository_name
                     tool.repository_owner = repository_owner
                     tool.installed_changeset_revision = installed_changeset_revision
+                    tool.guid = guid
                     tool.old_id = elem.find( "id" ).text
                     tool.version = elem.find( "version" ).text
                 if self.app.config.get_bool( 'enable_tool_tags', False ):
@@ -261,6 +262,15 @@ class ToolBox( object ):
         else:
             old_tool = self.tools_by_id[ tool_id ]
             new_tool = self.load_tool( old_tool.config_file )
+            # The tool may have been installed from a tool shed, so set the tool shed attributes.
+            # Since the tool version may have changed, we don't override it here.
+            new_tool.id = old_tool.id
+            new_tool.guid = old_tool.guid
+            new_tool.tool_shed = old_tool.tool_shed
+            new_tool.repository_name = old_tool.repository_name
+            new_tool.repository_owner = old_tool.repository_owner
+            new_tool.installed_changeset_revision = old_tool.installed_changeset_revision
+            new_tool.old_id = old_tool.old_id
             # Replace old_tool with new_tool in self.tool_panel
             tool_key = 'tool_' + tool_id
             for key, val in self.tool_panel.items():
@@ -268,11 +278,9 @@ class ToolBox( object ):
                     self.tool_panel[ key ] = new_tool
                     break
                 elif key.startswith( 'section' ):
-                    section = val
-                    for section_key, section_val in section.elems.items():
-                        if section_key == tool_key:
-                            self.tool_panel[ key ].elems[ section_key ] = new_tool
-                            break
+                    if tool_key in val.elems:
+                        self.tool_panel[ key ].elems[ tool_key ] = new_tool
+                        break
             self.tools_by_id[ tool_id ] = new_tool
             message = "Reloaded the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % old_tool.name
@@ -462,18 +470,19 @@ class Tool:
         self.repository_name = None
         self.repository_owner = None
         self.installed_changeset_revision = None
+        # The tool.id value will be the value of guid, but we'll keep the
+        # guid attribute since it is useful to have.
+        self.guid = guid
         self.old_id = None
         self.version = None
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
-    
     @property
     def sa_session( self ):
         """
         Returns a SQLAlchemy session
         """
         return self.app.model.context
-    
     def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -625,7 +634,6 @@ class Tool:
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
-            
     def parse_inputs( self, root ):
         """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
@@ -683,7 +691,6 @@ class Tool:
             if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
                 self.input_required = True
                 break
-                
     def parse_help( self, root ):
         """
         Parse the help text for the tool. Formatted in reStructuredText.
@@ -715,7 +722,6 @@ class Tool:
         # Pad out help pages to match npages ... could this be done better?
         while len( self.help_by_page ) < self.npages: 
             self.help_by_page.append( self.help )
-     
     def parse_outputs( self, root ):
         """
         Parse <outputs> elements and fill in self.outputs (keyed by name)
@@ -739,7 +745,6 @@ class Tool:
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
             self.outputs[ output.name ] = output
-
     def parse_tests( self, tests_elem ):
         """
         Parse any "<test>" elements, create a `ToolTestBuilder` for each and
@@ -853,7 +858,6 @@ class Tool:
                 test.error = True
                 test.exception = e
             self.tests.append( test )
-            
     def parse_input_page( self, input_elem, enctypes ):
         """
         Parse a page of inputs. This basically just calls 'parse_input_elem',
@@ -868,7 +872,6 @@ class Tool:
         else:
             display = None
         return display, inputs
-        
     def parse_input_elem( self, parent_elem, enctypes, context=None ):
         """
         Parse a parent element whose children are inputs -- these could be 
@@ -960,7 +963,6 @@ class Tool:
                     param.ref_input = context[ param.data_ref ]
                 self.input_params.append( param )
         return rval
-
     def parse_param_elem( self, input_elem, enctypes, context ):
         """
         Parse a single "<param>" element and return a ToolParameter instance. 
@@ -976,7 +978,6 @@ class Tool:
         for name in param.get_dependencies():
             context[ name ].refresh_on_change = True
         return param
-
     def parse_requirements( self, requirements_elem ):
         """
         Parse each requirement from the <requirements> element and add to
@@ -999,7 +1000,6 @@ class Tool:
                 method = None
             requirement = ToolRequirement( name=name, type=type, version=version, fabfile=fabfile, method=method )
             self.requirements.append( requirement )
-    
     def check_workflow_compatible( self ):
         """
         Determine if a tool can be used in workflows. External tools and the
@@ -1020,7 +1020,6 @@ class Tool:
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
-
     def new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
@@ -1037,7 +1036,6 @@ class Tool:
             inputs = self.inputs_by_page[ 0 ]
         self.fill_in_new_state( trans, inputs, state.inputs )
         return state
-
     def fill_in_new_state( self, trans, inputs, state, context=None ):
         """
         Fill in a tool state dictionary with default values for all parameters
@@ -1046,7 +1044,6 @@ class Tool:
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
             state[ input.name ] = input.get_initial_value( trans, context )
-
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
         Return a dictionary containing the HTML representation of each 
@@ -1062,14 +1059,12 @@ class Tool:
                 raise Exception( "'get_param_html_map' only supported for simple paramters" )
             rval[key] = param.get_html( trans, other_values=other_values )
         return rval
-
     def get_param( self, key ):
         """
         Returns the parameter named `key` or None if there is no such 
         parameter.
         """
         return self.inputs.get( key, None )
-
     def get_hook(self, name):
         """
         Returns an object from the code file referenced by `code_namespace`
@@ -1082,7 +1077,6 @@ class Tool:
             elif name in self.code_namespace:
                 return self.code_namespace[name]
         return None
-        
     def visit_inputs( self, value, callback ):
         """
         Call the function `callback` on each parameter of this tool. Visits
@@ -1099,7 +1093,6 @@ class Tool:
                 callback( "", input, value[input.name] )
             else:
                 input.visit_inputs( "", value[input.name], callback )
-
     def handle_input( self, trans, incoming, history=None ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -1177,7 +1170,6 @@ class Tool:
                 pass
             # Just a refresh, render the form with updated state and errors.
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
-      
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):
             raise InterruptedUpload( None )
@@ -1185,7 +1177,6 @@ class Tool:
             [ self.find_fieldstorage( y ) for y in x.values() ]
         elif type( x ) is types.ListType:
             [ self.find_fieldstorage( y ) for y in x ]
-
     def handle_interrupted( self, trans, inputs ):
         """
         Upon handling inputs, if it appears that we have received an incomplete
@@ -1216,7 +1207,6 @@ class Tool:
         return 'message.mako', dict( status='error', 
             message='Your upload was interrupted. If this was uninentional, please retry it.', 
             refresh_frames=[], cont=None )
-
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):
         """
@@ -1458,7 +1448,6 @@ class Tool:
             else:
                 raise Exception( "Unexpected parameter type" )
         return args
-            
     def execute( self, trans, incoming={}, set_output_hid=True, history=None, **kwargs ):
         """
         Execute the tool using parameter values in `incoming`. This just
@@ -1467,13 +1456,10 @@ class Tool:
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
         return self.tool_action.execute( self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs )
-        
     def params_to_strings( self, params, app ):
         return params_to_strings( self.inputs, params, app )
-        
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
-            
     def check_and_update_param_values( self, values, trans ):
         """
         Check that all parameters have values, and fill in with default
@@ -1483,7 +1469,6 @@ class Tool:
         messages = {}
         self.check_and_update_param_values_helper( self.inputs, values, trans, messages )
         return messages
-        
     def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="" ):
         """
         Recursive helper for `check_and_update_param_values_helper`
@@ -1529,7 +1514,6 @@ class Tool:
                 else:
                     # Regular tool parameter, no recursion needed
                     pass        
-    
     def handle_unvalidated_param_values( self, input_values, app ):
         """
         Find any instances of `UnvalidatedValue` within input_values and
@@ -1540,7 +1524,6 @@ class Tool:
         if not self.check_values:
             return
         self.handle_unvalidated_param_values_helper( self.inputs, input_values, app )
-
     def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None, prefix="" ):
         """
         Recursive helper for `handle_unvalidated_param_values`
@@ -1582,7 +1565,6 @@ class Tool:
                             % ( prefix, input.label, e )
                         raise LateValidationError( message )
                     input_values[ input.name ] = value
-    
     def handle_job_failure_exception( self, e ):
         """
         Called by job.fail when an exception is generated to allow generation
@@ -1594,7 +1576,6 @@ class Tool:
         if isinstance( e, LateValidationError ):
             message = e.message
         return message
-    
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths, job_working_directory ):
         """
         Build the dictionary of parameters for substituting into the command
@@ -1734,7 +1715,6 @@ class Tool:
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         # Return the dictionary of parameters
         return param_dict
-    
     def build_param_file( self, param_dict, directory=None ):
         """
         Build temporary file for file based parameter transfer if needed
@@ -1754,7 +1734,6 @@ class Tool:
             return param_filename
         else:
             return None
-            
     def build_config_files( self, param_dict, directory=None ):
         """
         Build temporary file for file based parameter transfer if needed
@@ -1775,7 +1754,6 @@ class Tool:
             param_dict[name] = config_filename
             config_filenames.append( config_filename )
         return config_filenames
-        
     def build_command_line( self, param_dict ):
         """
         Build command line to invoke this tool given a populated param_dict
@@ -1799,7 +1777,6 @@ class Tool:
             command_line = command_line.replace(executable, abs_executable, 1)
             command_line = self.interpreter + " " + command_line
         return command_line
-
     def build_dependency_shell_commands( self ):
         """
         Return a list of commands to be run to populate the current 
@@ -1820,7 +1797,6 @@ class Tool:
                 else:
                     commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, script_file ) )
         return commands
-
     def build_redirect_url_params( self, param_dict ):
         """
         Substitute parameter values into self.redirect_url_params
@@ -1833,7 +1809,6 @@ class Tool:
         # Remove newlines
         redirect_url_params = redirect_url_params.replace( "\n", " " ).replace( "\r", " " )
         return redirect_url_params
-
     def parse_redirect_url( self, data, param_dict ):
         """
         Parse the REDIRECT_URL tool param. Tools that send data to an external 
@@ -1873,7 +1848,6 @@ class Tool:
             USERNAME = 'Anonymous'
         redirect_url += "&USERNAME=%s" % USERNAME
         return redirect_url
-
     def call_hook( self, hook_name, *args, **kwargs ):
         """
         Call the custom code hook function identified by 'hook_name' if any,
@@ -1886,19 +1860,15 @@ class Tool:
         except Exception, e:
             e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ) )
             raise
-
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
         pass
-
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         pass
-
     def job_failed( self, job_wrapper, message, exception = False ):
         """
         Called when a job has failed
         """
         pass
-
     def collect_associated_files( self, output, job_working_directory ):
         """
         Find extra files in the job working directory and move them into
@@ -1922,7 +1892,6 @@ class Tool:
                     shutil.rmtree(temp_file_path)
             except:
                 continue
-    
     def collect_child_datasets( self, output):
         """
         Look for child dataset files, create HDA and attach to parent.
@@ -1983,7 +1952,6 @@ class Tool:
                     self.sa_session.add( child_dataset )
                     self.sa_session.flush()
         return children
-        
     def collect_primary_datasets( self, output):
         """
         Find any additional datasets generated by a tool and attach (for 
@@ -2062,12 +2030,10 @@ class DataSourceTool( Tool ):
     
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )
-    
     def parse_inputs( self, root ):
         Tool.parse_inputs( self, root )
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
-    
     def _prepare_datasource_json_list( self, param_list ):
         rval = []
         for value in param_list:
@@ -2088,7 +2054,6 @@ class DataSourceTool( Tool ):
             else:
                 rval[ key ] = str( value )
         return rval
-    
     def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
         if param_dict is None:
             param_dict = {}
@@ -2111,7 +2076,6 @@ class DataSourceTool( Tool ):
             cur_dbkey = param_dict.get( cur_base_param_name + 'dkey', dbkey )
             cur_info = param_dict.get( cur_base_param_name + 'info', info )
             cur_data_type = param_dict.get( cur_base_param_name + 'data_type', data_type )
-            
             if cur_name:
                 data.name = cur_name
             if not data.info and cur_info:
@@ -2122,16 +2086,13 @@ class DataSourceTool( Tool ):
                 data.extension = cur_data_type
             file_name = str( wrapped_data )
             extra_files_path = str( wrapped_data.files_path )
-            
             data_dict = dict( out_data_name = out_name,
                               ext = data.ext,
                               dataset_id = data.dataset.id,
                               hda_id = data.id,
                               file_name = file_name,
                               extra_files_path = extra_files_path )
-            
             json_params[ 'output_data' ].append( data_dict )
-            
             if json_filename is None:
                 json_filename = file_name
         out = open( json_filename, 'w' )
@@ -2176,7 +2137,6 @@ class SetMetadataTool( Tool ):
             dataset.set_peek() 
             self.sa_session.add( dataset )
             self.sa_session.flush()
-    
     def job_failed( self, job_wrapper, message, exception = False ):
         job = job_wrapper.sa_session.query( model.Job ).get( job_wrapper.job_id )
         if job:
@@ -2334,19 +2294,16 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
         self.false_path = false_path
-
     def __str__( self ):
         if self.false_path is not None:
             return self.false_path
         else:
             return self.dataset.file_name
-
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
             return self.false_path
         else:
             return getattr( self.dataset, key )
-    
     def __nonzero__( self ):
         return bool( self.dataset )
         
