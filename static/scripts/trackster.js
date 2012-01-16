@@ -1738,8 +1738,7 @@ var Tool = function(track, tool_dict) {
         // Param label.
         var label_div = $("<div>").addClass("param-label").text(param.label).appendTo(param_div);
         // Param HTML.
-        // TODO: either generalize .slider CSS attributes or create new rule for tool input div.
-        var html_div = $("<div/>").addClass("slider").html(param.html).appendTo(param_div);
+        var html_div = $("<div/>").addClass("param-input").html(param.html).appendTo(param_div);
         // Set initial value.
         html_div.find(":input").val(param.value);
         
@@ -1839,9 +1838,18 @@ extend(Tool.prototype, {
         if (current_track.container === view) {
             // Create new group.
             var group = new DrawableGroup(this.name, this.track.view);
-            current_track.container.replace_drawable(current_track, group, true);
-            // TODO: this is ugly way to move track from one container to another -- make this easier via
+            
+            // FIXME: this is ugly way to replace a track with a group -- make this easier via
             // a Drawable or DrawableCollection function.
+            // NOTE: doing this:
+            // current_track.container.replace_drawable(current_track, group, true);
+            // causes problems with sliders, so it's not used right now.
+            
+            // Add group to view.
+            current_track.view.add_drawable(group);
+            current_track.view.content_div.append(group.container_div);
+            
+            // Move track from view to group.
             current_track.container.remove_drawable(current_track);
             group.add_drawable(current_track);
             current_track.container_div.appendTo(group.content_div);
@@ -2210,7 +2218,6 @@ var FiltersManager = function(track, filters_list) {
                                                         manager.track.request_draw(true, true);
                                                     } )
                                                     .appendTo(display_controls_div).hide();
-                                                    
         filter.container.hover( function() { 
                                     transparency_icon.show();
                                     height_icon.show(); 
