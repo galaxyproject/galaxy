@@ -109,7 +109,7 @@ class Configuration( object ):
         self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None )
         self.drmaa_external_killjob_script = kwargs.get('drmaa_external_killjob_script', None)
         self.external_chown_script = kwargs.get('external_chown_script', None)
-        self.TMPDIR = kwargs.get('TMPDIR', None)
+        self.environment_setup_file = kwargs.get( 'environment_setup_file', None )
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
         self.use_memdump = string_as_bool( kwargs.get( 'use_memdump', 'False' ) )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )

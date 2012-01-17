@@ -551,29 +551,27 @@ use_interactive = True
 # currently available are 'pbs' and 'drmaa'.
 #start_job_runners = None
 
-# Uncomment drmaa_external_runjob_script , drmaa_external_killjob_script, and external_chown_script pameters and have them point to the
-# absolute path for scripts/drmaa_external_runner.py and scripts/drmaa_external_killer.py.
-# The scripts directory is located in the top level galaxy directory. The parameters when
-# uncommented allow for submission to the drmaa queue with the user name of the user submitting
-# the job and not the galaxy user. In order for this to work the actual user must log into galaxy
-# and the galaxy authentication must be consistent with the authentication on the server in which the
-# drmaa queue is running (i.e. the username must have an account on the server and be allowed to
-# submit jobs to the queue). The galaxy user must also be given sudo permission to execute
-# scripts/drmaa_external_runner.py and scripts/drmaa_external_killer.py in /etc/sudoers
-# Example:
-# galaxy  ALL = (root) NOPASSWD: SETENV: /opt/galaxy/scripts/drmaa_external_runner.py
-# galaxy  ALL = (root) NOPASSWD: SETENV: /opt/galaxy/scripts/drmaa_external_killer.py
-# Also the
-# Defaults    requiretty
-# in /etc/sudoers must be commented out
+# For sites where all users in Galaxy match users on the system on which Galaxy
+# runs, the DRMAA job runner can be configured to submit jobs to the DRM as the
+# actual user instead of as the user running the Galaxy server process.  For
+# details on these options, see the documentation at:
+#
+# http://galaxyproject.org/wiki/Admin/Config/Performance/Cluster
+#
 #drmaa_external_runjob_script = scripts/drmaa_external_runner.py
 #drmaa_external_killjob_script = scripts/drmaa_external_killer.py
 #external_chown_script = scripts/external_chown_script.py
 
-#important if running as actual user since enviromental variables are not passed
-#will supercede an other definition of TMPDIR if using drmaa
-#TMPDIR = /opt/galaxy/database/tmp
-
+# File to source to set up the environment when running jobs.  By default, the
+# environment in which the Galaxy server starts is used when running jobs
+# locally, and the environment set up per the DRM's submission method and
+# policy is used when running jobs on a cluster (try testing with `qsub` on the
+# command line).  environment_setup_file can be set to the path of a file on
+# the cluster that should be sourced by the user to set up the environment
+# prior to running tools.  This can be especially useful for running jobs as
+# the actual user, to remove the need to configure each user's environment
+# individually.  This only affects cluster jobs, not local jobs.
+#environment_setup_file = None
 
 # The URL for the default runner to use when a tool doesn't explicitly define a
 # runner below.

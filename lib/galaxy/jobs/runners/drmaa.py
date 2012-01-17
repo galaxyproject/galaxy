@@ -52,7 +52,6 @@ fi
 %s
 cd %s
 %s
-%s
 """
 def __lineno__():
     """Returns the current line number in our program."""
@@ -112,8 +111,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         # external_runJob_script can be None, in which case it's not used.
         self.external_runJob_script = app.config.drmaa_external_runjob_script
         self.external_killJob_script = app.config.drmaa_external_killjob_script
-        self.TMPDIR  =  app.config.TMPDIR
-        self.userid = []
+        self.userid = None
 
     def get_native_spec( self, url ):
         """Get any native DRM arguments specified by the site configuration"""
@@ -176,26 +174,22 @@ class DRMAAJobRunner( BaseJobRunner ):
         native_spec = self.get_native_spec( runner_url )
         if native_spec is not None:
             jt.nativeSpecification = native_spec
-        #set and export galaxy user PATH enviroment to actual user if submitting jobs as actual user
+
+        # fill in the DRM's job run template
+        script = drm_template % ( job_wrapper.galaxy_lib_dir,
+                                  job_wrapper.get_env_setup_clause(),
+                                  os.path.abspath( job_wrapper.working_directory ),
+                                  command_line )
+
         try:
-            if self.external_runJob_script:
-               export_path = 'export PATH=%s:$PATH' %(os.environ['PATH'])
-            else:
-               export_path = ''
+            fh = file( jt.remoteCommand, "w" )
+            fh.write( script )
+            fh.close()
+            os.chmod( jt.remoteCommand, 0755 )
         except:
-            export_path = ''
-        
-        if self.TMPDIR:
-            export_tmp = 'export TMPDIR=%s' %self.TMPDIR
-        else:
-            export_tmp = ''	   
-
-        script = drm_template % ( job_wrapper.galaxy_lib_dir, export_path, os.path.abspath( job_wrapper.working_directory ), export_tmp, command_line )
-
-        fh = file( jt.remoteCommand, "w" )
-        fh.write( script )
-        fh.close()
-        os.chmod( jt.remoteCommand, 0755 )
+            job_wrapper.fail( "failure preparing job script", exception=True )
+            log.exception( "failure running job %s" % job_wrapper.get_id_tag() )
+            return     
 
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:

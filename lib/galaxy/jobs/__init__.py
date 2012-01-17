@@ -733,6 +733,11 @@ class JobWrapper( object ):
     def get_session_id( self ):
         return self.session_id
 
+    def get_env_setup_clause( self ):
+        if self.app.config.environment_setup_file is None:
+            return ''
+        return '[ -f "%s" ] && . %s' % ( self.app.config.environment_setup_file, self.app.config.environment_setup_file )
+
     def get_input_dataset_fnames( self,  ds ):
         filenames = []
         filenames = [ ds.file_name ]

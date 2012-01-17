@@ -42,6 +42,7 @@ if [ "$GALAXY_LIB" != "None" ]; then
         export PYTHONPATH="$GALAXY_LIB"
     fi
 fi
+%s
 cd %s
 %s
 """
@@ -61,6 +62,7 @@ for dataset in %s; do
     [ ! -d $dir ] && mkdir -p $dir
     [ ! -e $dataset ] && ln -s %s/$file $dataset
 done
+%s
 cd %s
 %s
 """
@@ -265,9 +267,17 @@ class PBSJobRunner( BaseJobRunner ):
 
         # write the job script
         if self.app.config.pbs_stage_path != '':
-            script = pbs_symlink_template % (job_wrapper.galaxy_lib_dir, " ".join(job_wrapper.get_input_fnames() + output_files), self.app.config.pbs_stage_path, exec_dir, command_line)
+            script = pbs_symlink_template % ( job_wrapper.galaxy_lib_dir,
+                                              " ".join( job_wrapper.get_input_fnames() + output_files ),
+                                              self.app.config.pbs_stage_path,
+                                              job_wrapper.get_env_setup_clause(),
+                                              exec_dir,
+                                              command_line )
         else:
-            script = pbs_template % ( job_wrapper.galaxy_lib_dir, exec_dir, command_line )
+            script = pbs_template % ( job_wrapper.galaxy_lib_dir,
+                                      job_wrapper.get_env_setup_clause(),
+                                      exec_dir,
+                                      command_line )
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)
