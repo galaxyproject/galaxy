@@ -258,6 +258,7 @@ class AdminToolshed( AdminGalaxy ):
                         returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, changeset_revision )
                         if returncode == 0:
                             owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
+                            tool_shed = clean_tool_shed_url( tool_shed_url )
                             metadata_dict = load_repository_contents( app=trans.app,
                                                                       repository_name=name,
                                                                       description=description,
@@ -268,6 +269,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                       relative_install_dir=relative_install_dir,
                                                                       current_working_dir=current_working_dir,
                                                                       tmp_name=tmp_name,
+                                                                      tool_shed=tool_shed,
                                                                       tool_section=tool_section,
                                                                       shed_tool_conf=shed_tool_conf,
                                                                       new_install=True )
@@ -328,6 +330,7 @@ class AdminToolshed( AdminGalaxy ):
         remove_from_disk_checked = CheckboxField.is_checked( remove_from_disk )
         repository = get_repository( trans, kwd[ 'id' ] )
         if params.get( 'deactivate_or_uninstall_repository_button', False ):
+            # Deatcivate repository tools.
             shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
             metadata = repository.metadata
             repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
@@ -366,6 +369,8 @@ class AdminToolshed( AdminGalaxy ):
                                              tool_path=tool_path,
                                              owner=repository.owner,
                                              add_to_config=False )
+            # Deactivate proprietary datatypes.
+            load_datatype_items( trans.app, repository, relative_install_dir, deactivate=True )
             if remove_from_disk_checked:
                 # TODO: Remove repository from disk and alter the shed tool config.
                 message = 'The repository named <b>%s</b> has been uninstalled.' % repository.name
@@ -413,10 +418,6 @@ class AdminToolshed( AdminGalaxy ):
         repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
         tool_panel_section = metadata[ 'tool_panel_section' ]
         section_id = tool_panel_section[ 'id' ]
-        # Generate the list of tool panel keys derived from the tools included in the repository.
-        #repository_tool_panel_keys = []
-        #if repository_tools_tups:
-        #    repository_tool_panel_keys = [ 'tool_%s' % repository_tools_tup[ 1 ] for repository_tools_tup in repository_tools_tups ]
         if section_id in [ '' ]:
             # If the repository includes tools, reload them into the tool panel outside of any sections.
             self.__activate( trans, repository, repository_tools_tups, tool_section=None, section_key=None )
@@ -447,11 +448,14 @@ class AdminToolshed( AdminGalaxy ):
                                     id_attr = elem.get( 'id' )
                                     if id_attr == section_id:
                                         tool_section = elem
+                                        # Load the tools.
                                         trans.app.toolbox.load_section_tag_set( tool_section, trans.app.toolbox.tool_panel, tool_path )
                                         section_loaded = True
                                         break
                     if section_loaded:
                         break
+                # Load proprietary datatypes.
+                load_datatype_items( trans.app, repository, relative_install_dir )
         message = 'The repository named <b>%s</b> has been activated.' % repository.name
         status = 'done'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -459,6 +463,7 @@ class AdminToolshed( AdminGalaxy ):
                                                           message=message,
                                                           status=status ) )
     def __activate( self, trans, repository, repository_tools_tups, tool_section=None, section_key=None ):
+        # Load tools.
         if tool_section:
             elems = tool_section.elems
         for repository_tools_tup in repository_tools_tups:
@@ -475,16 +480,18 @@ class AdminToolshed( AdminGalaxy ):
             if tool_section:
                 if tool.id not in elems:
                     elems[ 'tool_%s' % tool.id ] = tool
-                    log.debug( "Reactivated tool: %s %s" % ( tool.id, tool.version ) )
+                    log.debug( "Reactivated tool id: %s, version: %s" % ( tool.id, tool.version ) )
             else:
                 if tool.id not in trans.app.toolbox.tools_by_id:
                     # Allow for the same tool to be loaded into multiple places in the tool panel.
                     trans.app.toolbox.tools_by_id[ tool.id ] = tool
                 trans.app.toolbox.tool_panel[ 'tool_%s' % tool.id ] = tool
-                log.debug( "Reactivated tool: %s %s" % ( tool.id, tool.version ) )
+                log.debug( "Reactivated tool id: %s, version: %s" % ( tool.id, tool.version ) )
         if tool_section:
             trans.app.toolbox.tool_panel[ section_key ] = tool_section
             log.debug( "Appended reactivated tool to section: %s" % tool_section.name )
+        shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
+        load_datatype_items( trans.app, repository, relative_install_dir )
     @web.expose
     @web.require_admin
     def manage_repository( self, trans, **kwd ):
@@ -556,6 +563,7 @@ class AdminToolshed( AdminGalaxy ):
                         if returncode == 0:
                             # Update the repository metadata.
                             repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
+                            tool_shed = clean_tool_shed_url( tool_shed_url )
                             metadata_dict = load_repository_contents( app=trans.app,
                                                                       name=name,
                                                                       description=repository.description,
@@ -566,6 +574,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                       relative_install_dir=relative_install_dir,
                                                                       current_working_dir=current_working_dir,
                                                                       tmp_name=tmp_name,
+                                                                      tool_shed=tool_shed,
                                                                       tool_section=None,
                                                                       shed_tool_conf=None,
                                                                       new_install=False )

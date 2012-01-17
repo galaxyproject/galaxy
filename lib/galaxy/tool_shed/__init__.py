@@ -2,7 +2,7 @@
 Classes encapsulating the management of repositories installed from Galaxy tool sheds.
 """
 import os, logging
-from galaxy.util.shed_util import load_datatypes
+from galaxy.util.shed_util import create_repository_dict_for_proprietary_datatypes, load_datatype_items
 from galaxy.model.orm import *
 
 log = logging.getLogger(__name__)
@@ -23,11 +23,5 @@ class InstalledRepositoryManager( object ):
             path_items = datatypes_config.split( 'repos' )
             relative_install_dir = '%srepos/%s/%s/%s' % \
                 ( path_items[0], tool_shed_repository.owner, tool_shed_repository.name, tool_shed_repository.installed_changeset_revision )
-            converter_path, display_path = load_datatypes( self.app, datatypes_config, relative_install_dir )
-            if converter_path:
-                # Load proprietary datatype converters
-                self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, converter_path=converter_path )
-            if display_path:
-                # Load proprietary datatype display applications
-                app.datatypes_registry.load_display_applications( display_path=display_path )
+            load_datatype_items( self.app, tool_shed_repository, relative_install_dir )
            

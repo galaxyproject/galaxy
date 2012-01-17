@@ -84,6 +84,7 @@ class InstallManager( object ):
                                                               relative_install_dir=relative_install_dir,
                                                               current_working_dir=current_working_dir,
                                                               tmp_name=tmp_name,
+                                                              tool_shed=self.tool_shed,
                                                               tool_section=tool_section,
                                                               shed_tool_conf=self.install_tool_config,
                                                               new_install=True )

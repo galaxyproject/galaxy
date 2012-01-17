@@ -88,6 +88,14 @@ def copy_sample_loc_file( app, filename ):
     # overwrite it in case it contains stuff proprietary to the local instance.
     if not os.path.exists( os.path.join( tool_data_path, loc_file ) ):
         shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
+def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, installed_changeset_revision, tool_dicts, converter_path=None, display_path=None ):
+    return dict( tool_shed=tool_shed,
+                 repository_name=name,
+                 repository_owner=owner,
+                 installed_changeset_revision=installed_changeset_revision,
+                 tool_dicts=tool_dicts,
+                 converter_path=converter_path,
+                 display_path=display_path )
 def create_or_update_tool_shed_repository( app, name, description, changeset_revision, repository_clone_url, metadata_dict, owner='' ):
     # This method is used by the InstallManager, which does not have access to trans.
     sa_session = app.model.context.current
@@ -464,7 +472,28 @@ def handle_tool_dependencies( current_working_dir, repo_files_dir, repository_to
                         error = tmp_stderr.read()
                         tmp_stderr.close()
                         log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
-def load_datatypes( app, datatypes_config, relative_install_dir ):
+def load_datatype_items( app, repository, relative_install_dir, deactivate=False ):
+    # Load proprietary datatypes.
+    metadata = repository.metadata
+    datatypes_config = metadata.get( 'datatypes_config', None )
+    if datatypes_config:
+        converter_path, display_path = load_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
+        if converter_path or display_path:
+            # Create a dictionary of tool shed repository related information.
+            repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=repository.tool_shed,
+                                                                                name=repository.name,
+                                                                                owner=repository.owner,
+                                                                                installed_changeset_revision=repository.installed_changeset_revision,
+                                                                                tool_dicts=metadata.get( 'tools', [] ),
+                                                                                converter_path=converter_path,
+                                                                                display_path=display_path )
+        if converter_path:
+            # Load or deactivate proprietary datatype converters
+            app.datatypes_registry.load_datatype_converters( app.toolbox, installed_repository_dict=repository_dict, deactivate=deactivate )
+        if display_path:
+            # Load or deactivate proprietary datatype display applications
+            app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict, deactivate=deactivate )
+def load_datatypes( app, datatypes_config, relative_install_dir, deactivate=False ):
     # This method is used by the InstallManager, which does not have access to trans.
     def __import_module( relative_path, datatype_module ):
         sys.path.insert( 0, relative_path )
@@ -569,10 +598,10 @@ def load_datatypes( app, datatypes_config, relative_install_dir ):
         # are all subclasses of data types that are in the distribution.
         imported_modules = []
     # Load proprietary datatypes
-    app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_modules=imported_modules )
+    app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_modules=imported_modules, deactivate=deactivate )
     return converter_path, display_path
 def load_repository_contents( app, repository_name, description, owner, changeset_revision, tool_path, repository_clone_url, relative_install_dir,
-                              current_working_dir, tmp_name, tool_section=None, shed_tool_conf=None, new_install=True ):
+                              current_working_dir, tmp_name, tool_shed=None, tool_section=None, shed_tool_conf=None, new_install=True ):
     # This method is used by the InstallManager, which does not have access to trans.
     # Generate the metadata for the installed tool shed repository.  It is imperative that
     # the installed repository is updated to the desired changeset_revision before metadata
@@ -592,16 +621,6 @@ def load_repository_contents( app, repository_name, description, owner, changese
         section_name = ''
     tool_section_dict = dict( id=section_id, version=section_version, name=section_name )
     metadata_dict = generate_metadata( app.toolbox, relative_install_dir, repository_clone_url, tool_section_dict=tool_section_dict )
-    if 'datatypes_config' in metadata_dict:
-        datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
-        # Load data types required by tools.
-        converter_path, display_path = load_datatypes( app, datatypes_config, relative_install_dir )
-        if converter_path:
-            # Load proprietary datatype converters
-            app.datatypes_registry.load_datatype_converters( app.toolbox, converter_path=converter_path )
-        if display_path:
-            # Load proprietary datatype display applications
-            app.datatypes_registry.load_display_applications( display_path=display_path )
     if 'tools' in metadata_dict:
         repository_tools_tups = get_repository_tools_tups( app, metadata_dict )
         if repository_tools_tups:
@@ -632,6 +651,25 @@ def load_repository_contents( app, repository_name, description, owner, changese
                 os.unlink( tmp_name )
             except:
                 pass
+    if 'datatypes_config' in metadata_dict:
+        datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
+        # Load data types required by tools.
+        converter_path, display_path = load_datatypes( app, datatypes_config, relative_install_dir )
+        if converter_path or display_path:
+            # Create a dictionary of tool shed repository related information.
+            repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
+                                                                                name=repository_name,
+                                                                                owner=owner,
+                                                                                installed_changeset_revision=changeset_revision,
+                                                                                tool_dicts=metadata_dict.get( 'tools', [] ),
+                                                                                converter_path=converter_path,
+                                                                                display_path=display_path )
+        if converter_path:
+            # Load proprietary datatype converters
+            app.datatypes_registry.load_datatype_converters( app.toolbox, installed_repository_dict=repository_dict )
+        if display_path:
+            # Load proprietary datatype display applications
+            app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
     # Add a new record to the tool_shed_repository table if one doesn't
     # already exist.  If one exists but is marked deleted, undelete it.
     log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % repository_name )
