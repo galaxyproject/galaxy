@@ -857,7 +857,7 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
             reader = GFFReaderWrapper( source, fix_strand=True )
             feature = reader.next()
             for interval in feature.intervals:
-                out.write(interval.raw_line + '\n')
+                out.write( '\t'.join( interval.fields ) + '\n' )
         out.close()
         
     def get_iterator( self, chrom, start, end ):
