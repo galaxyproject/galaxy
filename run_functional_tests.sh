@@ -1,7 +1,6 @@
 #!/bin/sh
 
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
-export PATH=/usr/local/bin:$PATH
 rm -f run_functional_tests.log 
 
 if [ ! $1 ]; then
