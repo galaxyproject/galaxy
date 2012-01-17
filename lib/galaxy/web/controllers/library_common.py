@@ -965,7 +965,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
         # Set up the traditional tool state/params
         tool_id = 'upload1'
-        tool = trans.app.toolbox.tools_by_id[ tool_id ]
+        tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
         errors = tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd )
         tool_params = state.inputs

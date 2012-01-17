@@ -925,7 +925,7 @@ class User( BaseUIController, UsesFormDefinitions ):
                                         filter( self.app.model.History.user==trans.user ). \
                                         order_by( self.app.model.Job.create_time.desc() ).limit(1)
         tool_id = query[0][0] # Get first element in first row of query.
-        tool = self.get_toolbox().tools_by_id[ tool_id ]
+        tool = self.get_toolbox().get_tool( tool_id )
         
         # Return tool info.
         tool_info = { 

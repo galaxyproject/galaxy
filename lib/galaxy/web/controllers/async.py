@@ -42,7 +42,7 @@ class ASync( BaseUIController ):
 
         # initialize the tool
         toolbox = self.get_toolbox()
-        tool    = toolbox.tools_by_id.get(tool_id, '')
+        tool = toolbox.get_tool( tool_id )
         if not tool:
             return "Tool with id %s not found" % tool_id
         

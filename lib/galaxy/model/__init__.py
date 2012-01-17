@@ -156,7 +156,7 @@ class Job( object ):
         dict of tool parameter values.
         """
         param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
-        tool = app.toolbox.tools_by_id[self.tool_id]
+        tool = app.toolbox.get_tool( self.tool_id )
         param_dict = tool.params_from_strings( param_dict, app, ignore_errors=ignore_errors )
         return param_dict
     def check_if_output_datasets_deleted( self ):
@@ -228,7 +228,7 @@ class Task( object ):
         dict of tool parameter values.
         """
         param_dict = dict( [ ( p.name, p.value ) for p in self.parent_job.parameters ] )
-        tool = app.toolbox.tools_by_id[self.tool_id]
+        tool = app.toolbox.get_tool( self.tool_id )
         param_dict = tool.params_from_strings( param_dict, app )
         return param_dict
 

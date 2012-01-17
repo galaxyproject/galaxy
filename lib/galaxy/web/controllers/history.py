@@ -613,7 +613,7 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                     #.add_input( "file", "Archived History File", "archive_file", value=None, error=None )
                                 )
         # Run job to do import.
-        history_imp_tool = trans.app.toolbox.tools_by_id[ '__IMPORT_HISTORY__' ]
+        history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
         incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
         history_imp_tool.execute( trans, incoming=incoming )
         return trans.show_message( "Importing history from '%s'. \
@@ -669,7 +669,7 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                         % ( { 'n' : history.name, 's' : url_for( action="export_archive", id=id, qualified=True ) } ) )
 
         # Run job to do export.
-        history_exp_tool = trans.app.toolbox.tools_by_id[ '__EXPORT_HISTORY__' ]
+        history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
         params = {
             'history_to_export' : history,
             'compress' : gzip,

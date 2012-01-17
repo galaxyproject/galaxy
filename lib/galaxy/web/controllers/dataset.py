@@ -1116,7 +1116,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                 try:
                     # Load the tool
                     toolbox = self.get_toolbox()
-                    tool = toolbox.tools_by_id.get( job.tool_id, None )
+                    tool = toolbox.get_tool( job.tool_id )
                     assert tool is not None, 'Requested tool has not been loaded.'
                     params_objects = job.get_param_values( trans.app )
                 except:

@@ -98,6 +98,44 @@ class ToolBox( object ):
                 self.load_section_tag_set( elem, self.tool_panel, tool_path )
             elif elem.tag == 'label':
                 self.load_label_tag_set( elem, self.tool_panel )
+    def get_tool( self, tool_id, tool_version=None ):
+        # Attempt to locate the tool in our in-memory dictionary.
+        if tool_id in self.tools_by_id:
+            tool = self.tools_by_id[ tool_id ]
+            if tool_version and tool.version == tool_version:
+                return tool
+            else:
+                return tool
+        # Handle the case where the tool was used when the tool was included in the Galaxy distribution,
+        # but now the tool is contained in an installed tool shed repository.  In this case, the original
+        # tool id can be mapped to the new tool id, which is the tool's guid in the tool shed repository.
+        # This scenarios can occur in workflows and in a history item when the rerun icon is clicked.
+        # The weakness here is that workflows currently handle only tool ids and not versions.
+        tool_id_guid_map = self.__get_tool_id_guid_map( tool_id, tool_version=tool_version )
+        if tool_id_guid_map:
+            guid = tool_id_guid_map.guid
+            if guid in self.tools_by_id:
+                return self.tools_by_id[ guid ]
+        # Handle the case where a proprietary tool was initially developed and hosted in a local Galaxy
+        # instance, but the developer later uploaded the tool to a Galaxy tool shed, removed the original
+        # tool from the local Galaxy instance and installed the tool's repository from the tool shed.
+        for k, tool in self.tools_by_id.items():
+            if tool_id == tool.old_id:
+                if tool_version and tool.version == tool_version:
+                    return tool
+                else:
+                    return tool
+        return None
+    def __get_tool_id_guid_map( self, tool_id, tool_version=None ):
+        if tool_version:
+            return self.sa_session.query( self.app.model.ToolIdGuidMap ) \
+                                  .filter( and_( self.app.model.ToolIdGuidMap.table.c.tool_id == tool_id,
+                                                 self.app.model.ToolIdGuidMap.table.c.tool_version == tool_version ) ) \
+                                  .first()
+        else:
+            return self.sa_session.query( self.app.model.ToolIdGuidMap ) \
+                                  .filter( self.app.model.ToolIdGuidMap.table.c.tool_id == tool_id ) \
+                                  .first()
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         return self.sa_session.query( self.app.model.ToolShedRepository ) \
                               .filter( and_( self.app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
@@ -192,7 +230,7 @@ class ToolBox( object ):
                     self.tools_by_id[ tool.id ] = tool
                 key = 'tool_' + tool.id
                 panel_dict[ key ] = tool
-                log.debug( "Loaded tool: %s %s" % ( tool.id, tool.version ) )
+                log.debug( "Loaded tool id: %s, version: %s: %s" % ( tool.id, tool.version ) )
         except:
             log.exception( "error reading tool from path: %s" % path )
     def load_workflow_tag_set( self, elem, panel_dict ):

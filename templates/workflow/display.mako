@@ -83,15 +83,7 @@
             <tr><td>
             %if step.type == 'tool' or step.type is None:
               <% 
-                try:
-                    tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
-                except KeyError, e:
-                    # The id value of tools installed from a Galaxy tool shed is a guid, but
-                    # these tool's old_id attribute should contain what we're looking for.
-                    for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
-                        if step.tool_id == available_tool.old_id:
-                            tool = available_tool
-                            break
+                tool = trans.app.toolbox.get_tool( step.tool_id )
               %>
               <div class="toolForm">
                   <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>

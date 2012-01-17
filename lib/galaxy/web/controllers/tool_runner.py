@@ -49,7 +49,7 @@ class ToolRunner( BaseUIController ):
         else:
             tool_ids = [ tool_id ]
         for tool_id in tool_ids:
-            tool = toolbox.tools_by_id.get( tool_id, None )
+            tool = toolbox.get_tool( tool_id )
             if tool:
                 break
         # No tool matching the tool id, display an error (shouldn't happen)
@@ -112,7 +112,7 @@ class ToolRunner( BaseUIController ):
         try:
             # Load the tool
             toolbox = self.get_toolbox()
-            tool = toolbox.tools_by_id.get( tool_id, None )
+            tool = toolbox.get_tool( tool_id )
             assert tool is not None, 'Requested tool has not been loaded.'
         except:
             #this is expected, so not an exception
@@ -202,7 +202,7 @@ class ToolRunner( BaseUIController ):
             else:
                 library_bunch = None
             return upload_common.new_upload( trans, cntrller, ud, library_bunch=library_bunch, state=trans.app.model.HistoryDatasetAssociation.states.UPLOAD )
-        tool = self.get_toolbox().tools_by_id.get( tool_id, None )
+        tool = self.get_toolbox().get_tool( tool_id )
         if not tool:
             return False # bad tool_id
         nonfile_params = util.Params( kwd, sanitize=False )
