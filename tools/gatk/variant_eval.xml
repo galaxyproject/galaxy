@@ -1,4 +1,4 @@
-<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.4">
+<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.5">
   <description></description>
   <requirements>
       <requirement type="package" version="1.3">gatk</requirement>
@@ -329,11 +329,12 @@
       <when value="advanced">
         <repeat name="stratifications" title="Stratification">
           <param name="select_exps" value="" type="text" label="Stratification Expression">
-              <sanitizer>
-                <valid>
-                 <add value="&quot;"/>
-                </valid>
-              </sanitizer>
+            <sanitizer>
+              <valid initial="string.printable">
+               <remove value="&apos;"/>
+             </valid>
+              <mapping initial="none"/>
+            </sanitizer>
           </param>
           <param name="select_name" value="" type="text" label="Name"/>
         </repeat>
