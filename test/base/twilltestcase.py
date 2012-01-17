@@ -831,12 +831,12 @@ class TwillTestCase( unittest.TestCase ):
                 previously_created = True
             except:
                 try:
-                    self.check_page_for_string( 'This user name is not available' )
+                    self.check_page_for_string( 'Public name is taken; please choose another' )
                     username_taken = True
                 except:
                     try:
                         # Note that we're only checking if the usr name is >< 4 chars here...
-                        self.check_page_for_string( 'User name must be at least 4 characters in length' )
+                        self.check_page_for_string( 'Public name must be at least 4 characters in length' )
                         invalid_username = True
                     except:
                         pass
@@ -1218,12 +1218,12 @@ class TwillTestCase( unittest.TestCase ):
                 previously_created = True
             except:
                 try:
-                    self.check_page_for_string( 'This user name is not available' )
+                    self.check_page_for_string( 'Public name is taken; please choose another' )
                     username_taken = True
                 except:
                     try:
                         # Note that we're only checking if the usr name is >< 4 chars here...
-                        self.check_page_for_string( 'User name must be at least 4 characters in length' )
+                        self.check_page_for_string( 'Public name must be at least 4 characters in length' )
                         invalid_username = True
                     except:
                         pass
