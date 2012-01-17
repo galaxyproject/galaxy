@@ -230,7 +230,7 @@ class ToolBox( object ):
                     self.tools_by_id[ tool.id ] = tool
                 key = 'tool_' + tool.id
                 panel_dict[ key ] = tool
-                log.debug( "Loaded tool id: %s, version: %s: %s" % ( tool.id, tool.version ) )
+                log.debug( "Loaded tool id: %s, version: %s." % ( tool.id, tool.version ) )
         except:
             log.exception( "error reading tool from path: %s" % path )
     def load_workflow_tag_set( self, elem, panel_dict ):
