@@ -98,8 +98,9 @@ elif entity_name == "WorkflowInvocation":
 
     <div class="tool toolForm">
         <%
-            if job.tool_id in trans.app.toolbox.tools_by_id:
-                tool_name = trans.app.toolbox.tools_by_id[job.tool_id].name
+            tool = trans.app.toolbox.get_tool( job.tool_id )
+            if tool:
+                tool_name = tool.name
             else:
                 tool_name = "Unknown tool with id '%s'" % job.tool_id       
         %>

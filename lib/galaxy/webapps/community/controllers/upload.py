@@ -156,15 +156,21 @@ class UploadController( BaseUIController ):
                                 message += "  %d files were removed from the repository root." % len( files_to_remove )
                     else:
                         message = 'No changes to repository.'      
-                    # Set metadata on the repository tip
+                    # Set metadata on the repository tip.
                     error_message, status = set_repository_metadata( trans, repository_id, repository.tip, content_alert_str=content_alert_str, **kwd )
                     if error_message:
+                        # If there is an error, display it.
                         message = '%s<br/>%s' % ( message, error_message )
                         return trans.response.send_redirect( web.url_for( controller='repository',
                                                                           action='manage_repository',
                                                                           id=repository_id,
                                                                           message=message,
                                                                           status=status ) )
+                    else:
+                        # If no error occurred in setting metadata on the repository tip, reset metadata on all
+                        # changeset revisions for the repository.  This will result in a more standardized set of
+                        # valid repository revisions that can be installed.
+                        reset_all_repository_metadata( trans, repository_id, **kwd )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                id=repository_id,
@@ -261,7 +267,7 @@ class UploadController( BaseUIController ):
                     # file is being uploaded by parsing the file and adding new entries
                     # to the in-memory trans.app.tool_data_tables dictionary as well as
                     # appending them to the shed's tool_data_table_conf.xml file on disk.
-                    error, message = handle_sample_tool_data_table_conf_file( trans, filename_in_archive )
+                    error, message = handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
                     if error:
                         return False, message, files_to_remove, content_alert_str
                 if filename_in_archive.endswith( '.loc.sample' ):

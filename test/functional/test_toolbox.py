@@ -149,7 +149,7 @@ def build_tests():
     # Push all the toolbox tests to module level
     G = globals()
     for i, tool_id in enumerate( toolbox.tools_by_id ):
-        tool = toolbox.tools_by_id[ tool_id ]
+        tool = toolbox.get_tool( tool_id )
         if tool.tests:
             # Create a new subclass of ToolTestCase dynamically adding methods
             # names test_tool_XXX that run each test defined in the tool.

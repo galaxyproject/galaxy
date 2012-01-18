@@ -4,6 +4,7 @@ at some point included in the Galaxy distribution, but are now hosted in the mai
 shed.  Tools included in tool_shed_install.xml that have already been installed will not be
 re-installed.
 """
+from galaxy.tools import ToolSection
 from galaxy.util.shed_util import *
 
 log = logging.getLogger( __name__ )

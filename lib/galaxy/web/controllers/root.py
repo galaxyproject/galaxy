@@ -39,7 +39,7 @@ class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
                                                             filter( self.app.model.Job.user==trans.user ). \
                                                             order_by( self.app.model.Job.create_time.desc() ):
                     tool_id = row[0]
-                    a_tool = toolbox.tools_by_id.get( tool_id, None )
+                    a_tool = toolbox.get_tool( tool_id )
                     if a_tool and not a_tool.hidden and a_tool not in recent_tools:
                         recent_tools.append( a_tool )
                         ## TODO: make number of recently used tools a user preference.
@@ -78,7 +78,7 @@ class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
     def tool_help( self, trans, id ):
         """Return help page for tool identified by 'id' if available"""
         toolbox = self.get_toolbox()
-        tool = toolbox.tools_by_id.get(id, '')
+        tool = toolbox.get_tool( id )
         yield "<html><body>"
         if not tool:
             yield "Unknown tool id '%d'" % id
@@ -179,7 +179,7 @@ class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
                         job_hda = job_hda.copied_from_history_dataset_association
                     force_history_refresh = False
                     if job_hda.creating_job_associations:
-                        tool = trans.app.toolbox.tools_by_id.get( job_hda.creating_job_associations[ 0 ].job.tool_id, None )
+                        tool = trans.app.toolbox.get_tool( job_hda.creating_job_associations[ 0 ].job.tool_id )
                         if tool:
                             force_history_refresh = tool.force_history_refresh
                     if not job_hda.visible:

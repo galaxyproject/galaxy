@@ -1,4 +1,4 @@
-<tool id="gops_concat_1" name="Concatenate">
+<tool id="gops_concat_1" name="Concatenate" version="1.0.1">
   <description>two datasets into one dataset</description>
   <command interpreter="python">gops_concat.py $input1 $input2 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -2 ${input2.metadata.chromCol},${input2.metadata.startCol},${input2.metadata.endCol},${input2.metadata.strandCol} $sameformat</command>
   <inputs>

@@ -166,17 +166,7 @@ class ToolModule( WorkflowModule ):
     def __init__( self, trans, tool_id ):
         self.trans = trans
         self.tool_id = tool_id
-        try:
-            self.tool = trans.app.toolbox.tools_by_id[ tool_id ]
-        except KeyError, e:
-            # Handle the case where the workflow requires a tool not available in the local Galaxy instance.
-            self.tool = None
-            # The id value of tools installed from a Galaxy tool shed is a guid, but
-            # these tool's old_id attribute should contain what we're looking for.
-            for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
-                if tool_id == available_tool.old_id:
-                    self.tool = available_tool
-                    break
+        self.tool = trans.app.toolbox.get_tool( tool_id )
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
@@ -206,12 +196,14 @@ class ToolModule( WorkflowModule ):
         tool_id = step.tool_id
         install_tool_id = None
         if trans.app.toolbox and tool_id not in trans.app.toolbox.tools_by_id:
-            # The id value of tools installed from a Galaxy tool shed is a guid, but
-            # these tool's old_id attribute should contain what we're looking for.
-            for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
-                if tool_id == available_tool.old_id:
-                    install_tool_id = available_tool_id
-                    break
+            # Handle the case where the tool was used when the tool was included in the Galaxy distribution,
+            # but now the tool is contained in an installed tool shed repository.  In this case, the original
+            # tool id can be mapped to the new tool id, which is the tool's guid in the tool shed repository.
+            tool_id_guid_map = trans.sa_session.query( trans.model.ToolIdGuidMap ) \
+                                               .filter( trans.model.ToolIdGuidMap.table.c.tool_id == tool_id ) \
+                                               .first()
+            if tool_id_guid_map:
+                install_tool_id = tool_id_guid_map.guid
         if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ) or install_tool_id:
             module = Class( trans, tool_id )
             module.state = DefaultToolState()

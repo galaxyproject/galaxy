@@ -48,7 +48,7 @@
                     Info:
                 </label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="info" value="${data.info}" size="40"/>
+                    <textarea name="info" cols="40" rows="2">${data.info | h}</textarea>
                 </div>
                 <div style="clear: both"></div>
             </div>
@@ -58,7 +58,7 @@
                         Annotation / Notes:
                     </label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <textarea name="annotation" cols="40" rows="2">${data_annotation}</textarea>
+                        <textarea name="annotation" cols="40" rows="2">${data_annotation | h}</textarea>
                     </div>
                     <div style="clear: both"></div>
                     <div class="toolParamHelp">Add an annotation or notes to a dataset; annotations are available when a history is viewed.</div>

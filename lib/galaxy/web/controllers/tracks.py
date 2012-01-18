@@ -787,7 +787,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         #        
         # Execute tool.
         #
-        tool = trans.app.toolbox.tools_by_id.get( tool_id, None )
+        tool = trans.app.toolbox.get_tool( tool_id )
         if not tool:
             return messages.NO_TOOL
         
@@ -829,7 +829,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         # have priority.
         #
         original_job = get_dataset_job( original_dataset )
-        tool = trans.app.toolbox.tools_by_id.get( original_job.tool_id, None )
+        tool = trans.app.toolbox.get_tool( original_job.tool_id )
         if not tool:
             return messages.NO_TOOL
         tool_params = dict( [ ( p.name, p.value ) for p in original_job.parameters ] )

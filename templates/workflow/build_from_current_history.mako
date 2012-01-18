@@ -103,7 +103,7 @@ into a workflow will be shown in gray.</p>
         cls += " toolFormDisabled"
         disabled = True
     else:    
-        tool = app.toolbox.tools_by_id.get( job.tool_id, None )
+        tool = app.toolbox.get_tool( job.tool_id )
         if tool:
             tool_name = tool.name
         if tool is None or not( tool.is_workflow_compatible ):

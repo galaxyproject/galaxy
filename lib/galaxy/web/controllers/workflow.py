@@ -1306,16 +1306,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             for job_id in job_ids:
                 assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
                 job = jobs_by_id[ job_id ]
-                try:
-                    tool = trans.app.toolbox.tools_by_id[ job.tool_id ]
-                except KeyError, e:
-                    # Handle the case where the workflow requires a tool not available in the local Galaxy instance.
-                    # The id value of tools installed from a Galaxy tool shed is a guid, but these tool's old_id 
-                    # attribute should contain what we're looking for.
-                    for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
-                        if job.tool_id == available_tool.old_id:
-                            tool = available_tool
-                            break
+                tool = trans.app.toolbox.get_tool( job.tool_id )
                 param_values = job.get_param_values( trans.app )
                 associations = cleanup_param_values( tool.inputs, param_values )
                 # Doing it this way breaks dynamic parameters, backed out temporarily.
@@ -1482,16 +1473,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             # Execute module
                             job = None
                             if step.type == 'tool' or step.type is None:
-                                try:
-                                    tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
-                                except KeyError, e:
-                                    # Handle the case where the workflow requires a tool not available in the local Galaxy instance.
-                                    # The id value of tools installed from a Galaxy tool shed is a guid, but these tool's old_id
-                                    # attribute should contain what we're looking for.
-                                    for available_tool_id, available_tool in trans.app.toolbox.tools_by_id.items():
-                                        if step.tool_id == available_tool.old_id:
-                                            tool = available_tool
-                                            break
+                                tool = trans.app.toolbox.get_tool( step.tool_id )
                                 input_values = step.state.inputs
                                 # Connect up
                                 def callback( input, value, prefixed_name, prefixed_label ):

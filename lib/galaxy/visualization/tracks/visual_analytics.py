@@ -44,7 +44,7 @@ def get_tool_def( trans, hda ):
     # assert job is not None, 'Requested job has not been loaded.'
     if not job:
         return {}
-    tool = trans.app.toolbox.tools_by_id.get( job.tool_id, None )
+    tool = trans.app.toolbox.get_tool( job.tool_id )
     # TODO: could use this assertion to provide more information.
     # assert tool is not None, 'Requested tool has not been loaded.'
     if not tool:
