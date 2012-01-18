@@ -455,16 +455,27 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Functions associated with datasets (history items) and meta data
-    def get_job_stderr( self, id ):
-        self.visit_page( "dataset/stderr?id=%s" % id )
-        return self.last_page()
+    def _get_job_stream_output( self, hda_id, stream, format ):
+        self.visit_page( "datasets/%s/%s" % ( self.security.encode_id( hda_id ), stream ) )
+        output = self.last_page()
+        if format:
+            msg =  "---------------------- >> begin tool %s << -----------------------\n" % stream
+            msg += output + "\n"
+            msg += "----------------------- >> end tool %s << ------------------------\n" % stream
+        else:
+            msg = output
+        return msg
+
+    def get_job_stdout( self, hda_id, format=False ):
+        return self._get_job_stream_output( hda_id, 'stdout', format )
+
+    def get_job_stderr( self, hda_id, format=False ):
+        return self._get_job_stream_output( hda_id, 'stderr', format )
 
     def _assert_dataset_state( self, elem, state ):
         if elem.get( 'state' ) != state:
             errmsg = "Expecting dataset state '%s', but state is '%s'. Dataset blurb: %s\n\n" % ( state, elem.get('state'), elem.text.strip() )
-            errmsg += "---------------------- >> begin tool stderr << -----------------------\n"
-            errmsg += self.get_job_stderr( elem.get( 'id' ) ) + "\n"
-            errmsg += "----------------------- >> end tool stderr << ------------------------\n"
+            errmsg += self.get_job_stderr( elem.get( 'id' ), format=True )
             raise AssertionError( errmsg )
 
     def check_metadata_for_string( self, patt, hid=None ):
@@ -820,12 +831,12 @@ class TwillTestCase( unittest.TestCase ):
                 previously_created = True
             except:
                 try:
-                    self.check_page_for_string( 'This user name is not available' )
+                    self.check_page_for_string( 'Public name is taken; please choose another' )
                     username_taken = True
                 except:
                     try:
                         # Note that we're only checking if the usr name is >< 4 chars here...
-                        self.check_page_for_string( 'User name must be at least 4 characters in length' )
+                        self.check_page_for_string( 'Public name must be at least 4 characters in length' )
                         invalid_username = True
                     except:
                         pass
@@ -1207,12 +1218,12 @@ class TwillTestCase( unittest.TestCase ):
                 previously_created = True
             except:
                 try:
-                    self.check_page_for_string( 'This user name is not available' )
+                    self.check_page_for_string( 'Public name is taken; please choose another' )
                     username_taken = True
                 except:
                     try:
                         # Note that we're only checking if the usr name is >< 4 chars here...
-                        self.check_page_for_string( 'User name must be at least 4 characters in length' )
+                        self.check_page_for_string( 'Public name must be at least 4 characters in length' )
                         invalid_username = True
                     except:
                         pass
@@ -1224,7 +1235,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "password", password )
         tc.fv( "1", "confirm", password )
         tc.submit( "reset_user_password_button" )
-        self.check_page_for_string( "Passwords reset for 1 users" )
+        self.check_page_for_string( "Passwords reset for 1 user." )
         self.home()
     def mark_user_deleted( self, user_id, email='' ):
         """Mark a user as deleted"""
@@ -2278,7 +2289,7 @@ class TwillTestCase( unittest.TestCase ):
             item_desc = 'Dataset'
         else:
             item_desc = item_type.capitalize()
-        check_str = "%s '%s' has been marked deleted" % ( item_desc, item_name )
+        check_str = "marked deleted"
         self.check_page_for_string( check_str )
         self.home()
     def undelete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
@@ -2290,7 +2301,7 @@ class TwillTestCase( unittest.TestCase ):
             item_desc = 'Dataset'
         else:
             item_desc = item_type.capitalize()
-        check_str = "%s '%s' has been marked undeleted" % ( item_desc, item_name )
+        check_str = "marked undeleted"
         self.check_page_for_string( check_str )
         self.home()
     def purge_library( self, library_id, library_name ):

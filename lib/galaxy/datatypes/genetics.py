@@ -618,7 +618,7 @@ class RexpBase( Html ):
     def set_peek( self, dataset, **kwd ):
         """
         expects a .pheno file in the extra_files_dir - ugh
-        note that R is wierd and does not include the row.name in
+        note that R is weird and does not include the row.name in
         the header. why?"""
         if not dataset.dataset.purged:
             pp = os.path.join(dataset.extra_files_path,'%s.pheno' % dataset.metadata.base_name)

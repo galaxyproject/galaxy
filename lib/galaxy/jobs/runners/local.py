@@ -58,8 +58,8 @@ class LocalJobRunner( BaseJobRunner ):
             job_wrapper.prepare()
             command_line = self.build_command_line( job_wrapper )
         except:
-            job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
+            job_wrapper.fail( "failure preparing job", exception=True )
             return
         # If we were able to get a command line, run the job
         if command_line:
@@ -110,6 +110,7 @@ class LocalJobRunner( BaseJobRunner ):
         if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and self.app.config.set_metadata_externally and job_wrapper.output_paths:
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames = job_wrapper.get_output_fnames(),
                                                                             set_extension = True,
+                                                                            tmp_dir = job_wrapper.working_directory,
                                                                             kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args = external_metadata_script, 
@@ -118,7 +119,7 @@ class LocalJobRunner( BaseJobRunner ):
                                          preexec_fn = os.setpgrp )
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
-            log.debug( 'execution of external set_meta finished for job %d' % job_wrapper.job_id )
+            log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
         
         # Finish the job                
         try:

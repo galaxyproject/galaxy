@@ -29,61 +29,33 @@ var add_bookmark = function(position, annotation) {
 };
 
 /**
+ * Create object from a dictionary.
+ */
+var object_from_dict = function(track_dict, container) {
+    var
+       drawable_type = track_dict['obj_type'];
+    // For backward compatibility:
+    if (!drawable_type) {
+        drawable_type = track_dict['track_type']; 
+    }
+    return addable_objects[ drawable_type ].prototype.from_dict(track_dict, container);
+};
+
+/**
  * Objects that can be added to a view.
  */
-var addable_objects = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "VcfTrack": VcfTrack, "ReadTrack": ReadTrack, "DrawableGroup": DrawableGroup };
-
-/**
- * Decode a track from a dictionary.
- */
-var track_from_dict = function(track_dict, container) {
-    var track = new addable_objects[track_dict.track_type]( 
-                        track_dict.name, view, container, track_dict.hda_ldda, track_dict.dataset_id,
-                        track_dict.prefs, track_dict.filters, track_dict.tool);
-    if (track_dict.mode) {
-        track.change_mode(track_dict.mode);
-    }
-    return track;
-};
-
-/**
- * Decode a drawable collection from a dictionary.
- */
-var drawable_collection_from_dict = function(collection_dict, container) {
-    var collection = new addable_objects[collection_dict.obj_type](collection_dict.name, view, container, collection_dict.prefs, view.viewport_container, view);
-    for (var i = 0; i < collection_dict.drawables.length; i++) {
-        var 
-            drawable_dict = collection_dict.drawables[i],
-            drawable;
-        if (drawable_dict['track_type']) {
-            drawable = track_from_dict(drawable_dict, collection);
-        }
-        else {
-            drawable = drawable_collection_from_dict(drawable_dict);
-        }
-        collection.add_drawable(drawable);
-        // HACK: move track from view to collection's content_div. 
-        // FIX: Tracks should be able to be be added to arbitrary containers; 
-        // every moveable should have a container_div, and every container should have 
-        // a content_div (though perhaps name changes are needed).
-        collection.content_div.append(drawable.container_div);
-    }
-    return collection;
-};
-
-/**
- * Decode a drawable from a dict.
- */
-var drawable_from_dict = function(drawable_dict, container) {
-    return (drawable_dict['track_type'] ? 
-            track_from_dict(drawable_dict, container) :
-            drawable_collection_from_dict(drawable_dict, container));
-};
+var addable_objects = { 
+    "LineTrack": LineTrack,
+    "FeatureTrack": FeatureTrack,
+    "VcfTrack": VcfTrack,
+    "ReadTrack": ReadTrack,
+    "CompositeTrack": CompositeTrack,
+    "DrawableGroup": DrawableGroup };
 
 /**
  * Create a complete Trackster visualization. Returns view.
  */
-var create_visualization = function(parent_elt, title, id, dbkey, viewport_config, tracks_config, bookmarks_config) {
+var create_visualization = function(parent_elt, title, id, dbkey, viewport_config, drawables_config, bookmarks_config) {
     
     // Create view.
     view = new View(parent_elt, title, id, dbkey);
@@ -95,7 +67,7 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
                 chrom = viewport_config.chrom,
                 start = viewport_config.start,
                 end = viewport_config.end,
-                overview_track_name = viewport_config.overview;
+                overview_drawable_name = viewport_config.overview;
         
             if (chrom && (start !== undefined) && end) {
                 view.change_chrom(chrom, start, end);
@@ -103,11 +75,13 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
         }
         
         // Add drawables to view.
-        if (tracks_config) {
-            var track_config;
-            for (var i = 0; i < tracks_config.length; i++) {
-                track_config = tracks_config[i];
-                view.add_drawable( drawable_from_dict(track_config, view) );
+        if (drawables_config) {
+            // FIXME: can from_dict() be used to create view and add drawables?
+            var drawable_config,
+                drawable_type,
+                drawable;
+            for (var i = 0; i < drawables_config.length; i++) {
+                view.add_drawable( object_from_dict( drawables_config[i], view ) );
             }
         }
         
@@ -115,9 +89,9 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
         view.update_intro_div();
         
         // Set overview.
-        var overview_track;
+        var overview_drawable;
         for (var i = 0; i < view.drawables.length; i++) {
-            if (view.drawables[i].name === overview_track_name) {
+            if (view.drawables[i].name === overview_drawable_name) {
                 view.set_overview(view.drawables[i]);
                 break;
             }

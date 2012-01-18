@@ -1,7 +1,7 @@
 <tool id="EMBOSS: backtranseq2" name="backtranseq" version="5.0.0">
   <description>Back translate a protein sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>backtranseq -sequence $input1 -outfile $out_file1 -cfile $cfile -osformat2 $out_format1 -auto</command>
+  <command>backtranseq -sequence '$input1' -outfile '$out_file1' -cfile '$cfile' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>

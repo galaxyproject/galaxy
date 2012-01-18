@@ -1,6 +1,7 @@
 <tool id="picard_FastqToSam" name="FASTQ to BAM" version="1.56.0">
   <description>creates an unaligned BAM file</description>
-  <requirements><requirement type="package">picard</requirement></requirements>
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <!-- Dan Blankenberg -->
   <command>java  -XX:DefaultMaxRAMFraction=1 -XX:+UseParallelGC
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/FastqToSam.jar"
     FASTQ="${input_fastq1}"

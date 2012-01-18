@@ -1,7 +1,7 @@
 <tool id="EMBOSS: digest23" name="digest" version="5.0.0">
   <description>Protein proteolytic enzyme or reagent cleavage digest</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>digest -seqall $input1 -outfile $out_file1 -menu $menu -unfavoured $unfavoured -overlap $overlap -allpartials $allpartials -rformat2 $out_format1 -auto</command>
+  <command>digest -seqall '$input1' -outfile '$out_file1' -menu '$menu' -unfavoured '$unfavoured' -overlap '$overlap' -allpartials '$allpartials' -rformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

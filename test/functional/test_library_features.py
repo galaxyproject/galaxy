@@ -137,7 +137,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda2 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda2 from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ ldda2.name, ldda2.message, admin_user.email ] )
+                             strings_displayed=[ ldda2.name, ldda2.message, 'bed' ] )
     def test_050_add_2nd_public_dataset_to_folder2( self ):
         """Testing adding a 2nd public dataset folder2"""
         # Logged in as admin_user
@@ -156,7 +156,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda3 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda3 from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ ldda3.name, ldda3.message, admin_user.email ] )
+                             strings_displayed=[ ldda3.name, ldda3.message, 'bed' ] )
     def test_055_copy_dataset_from_history_to_subfolder( self ):
         """Testing copying a dataset from the current history to a subfolder"""
         # logged in as admin_user
@@ -176,7 +176,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert ldda4 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda4 from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ ldda4.name, ldda4.message, admin_user.email ] )
+                             strings_displayed=[ ldda4.name, ldda4.message, 'bed' ] )
     def test_060_editing_dataset_attribute_info( self ):
         """Testing editing a library dataset's attribute information"""
         # logged in as admin_user
@@ -299,11 +299,11 @@ class TestLibraryFeatures( TwillTestCase ):
         ldda_message = 'Uploaded all files in test-data/users/test1...'
         self.browse_library( 'library',
                              self.security.encode_id( library1.id ),
-                             strings_displayed=[ regular_user1.email, ldda_message, '1.fasta' ] )
+                             strings_displayed=[ 'fasta', ldda_message, '1.fasta' ] )
         ldda_message = 'Uploaded all files in test-data/users/test3.../run1'
         self.browse_library( 'library',
                              self.security.encode_id( library1.id ),
-                             strings_displayed=[ regular_user3.email, ldda_message, '2.fasta' ] )
+                             strings_displayed=[ 'fasta', ldda_message, '2.fasta' ] )
     def test_085_mark_ldda2_deleted( self ):
         """Testing marking ldda2 as deleted"""
         # Logged in as admin_user

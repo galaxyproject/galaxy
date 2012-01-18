@@ -2,7 +2,6 @@ import logging, threading, sys, os, time, traceback, shutil
 
 import galaxy
 from galaxy import util, model
-from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
 # tabular/interval imports appear to be unused.  Clean up?
@@ -11,6 +10,8 @@ from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
 from galaxy.jobs.actions.post import ActionBox
 import subprocess, pwd
+from galaxy.exceptions import ObjectInvalid
+
 from sqlalchemy.sql.expression import and_, or_
 
 import pkg_resources
@@ -114,7 +115,7 @@ class JobQueue( object ):
             else:
                 log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
                 self.queue.put( ( job.id, job.tool_id ) )
-        for job in self.sa_session.query( model.Job ).options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ).filter( ( model.Job.state == model.Job.states.RUNNING ) | ( model.Job.state == model.Job.states.QUEUED ) ):
+        for job in self.sa_session.query( model.Job ).enable_eagerloads( False ).filter( ( model.Job.state == model.Job.states.RUNNING ) | ( model.Job.state == model.Job.states.QUEUED ) ):
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "Tool '%s' removed from tool config, unable to recover job: %s" % ( job.tool_id, job.id ) )
                 JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
@@ -161,8 +162,7 @@ class JobQueue( object ):
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
             # Fetch all new jobs
-            jobs_to_check = self.sa_session.query( model.Job ) \
-                                .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+            jobs_to_check = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
                                 .filter( model.Job.state == model.Job.states.NEW ).all()
         else:
             # Get job objects and append to watch queue for any which were
@@ -210,7 +210,7 @@ class JobQueue( object ):
                     log.error( "unknown job state '%s' for job %d" % ( job_state, job.id ) )
                     if not self.track_jobs_in_database:
                         new_waiting_jobs.append( job.id )
-            except Exception, e:
+            except Exception:
                 log.exception( "failure running job %d" % job.id )
         # Update the waiting list
         self.waiting_jobs = new_waiting_jobs
@@ -264,21 +264,19 @@ class JobQueue( object ):
         if not self.app.config.user_job_limit:
             return JOB_READY
         if job.user:
-            user_jobs = self.sa_session.query( model.Job ) \
-                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
-                            .filter( and_( model.Job.user_id == job.user.id,
-                                           or_( model.Job.state == model.Job.states.RUNNING,
-                                                model.Job.state == model.Job.states.QUEUED ) ) ).all()
+            count = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                        .filter( and_( model.Job.user_id == job.user.id,
+                                       or_( model.Job.state == model.Job.states.RUNNING,
+                                            model.Job.state == model.Job.states.QUEUED ) ) ).count()
         elif job.galaxy_session:
-            user_jobs = self.sa_session.query( model.Job ) \
-                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
-                            .filter( and_( model.Job.session_id == job.galaxy_session.id,
-                                           or_( model.Job.state == model.Job.states.RUNNING,
-                                                model.Job.state == model.Job.states.QUEUED ) ) ).all()
+            count = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                        .filter( and_( model.Job.session_id == job.galaxy_session.id,
+                                       or_( model.Job.state == model.Job.states.RUNNING,
+                                            model.Job.state == model.Job.states.QUEUED ) ) ).count()
         else:
             log.warning( 'Job %s is not associated with a user or session so job concurrency limit cannot be checked.' % job.id )
             return JOB_READY
-        if len( user_jobs ) >= self.app.config.user_job_limit:
+        if count >= self.app.config.user_job_limit:
             return JOB_WAIT
         return JOB_READY
 
@@ -324,8 +322,13 @@ class JobWrapper( object ):
         # With job outputs in the working directory, we need the working
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
-        self.working_directory = \
-            os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
+        # Create the working dir if necessary
+        try:
+            self.app.object_store.create(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
+            self.working_directory = self.app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
+            log.debug('(%s) Working directory for job is: %s' % (self.job_id, self.working_directory))
+        except ObjectInvalid:
+            raise Exception('Unable to create job working directory, job failure')
         self.output_paths = None
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
@@ -449,7 +452,7 @@ class JobWrapper( object ):
         job = self.get_job()
         self.sa_session.refresh( job )
         # if the job was deleted, don't fail it
-        if not job.state == model.Job.states.DELETED:
+        if not job.state == job.states.DELETED:
             # Check if the failure is due to an exception
             if exception:
                 # Save the traceback immediately in case we generate another
@@ -478,17 +481,24 @@ class JobWrapper( object ):
                 dataset.dataset.set_total_size()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
+                # Update (non-library) job output datasets through the object store
+                if dataset not in job.output_library_datasets:
+                    self.app.object_store.update_from_file(dataset.dataset, create=True)
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
-            job.state = model.Job.states.ERROR
+            job.state = job.states.ERROR
             job.command_line = self.command_line
             job.info = message
             self.sa_session.add( job )
             self.sa_session.flush()
+        #Perform email action even on failure.
+        for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
+            ActionBox.execute(self.app, self.sa_session, pja, job)
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             self.tool.job_failed( self, message, exception )
-        self.cleanup()
+        if self.app.config.cleanup_job == 'always' or (self.app.config.cleanup_job == 'onsuccess' and job.state == job.states.DELETED):
+            self.cleanup()
 
     def change_state( self, state, info = False ):
         job = self.get_job()
@@ -537,13 +547,9 @@ class JobWrapper( object ):
             log.exception( '(%s) Failed to change ownership of %s, failing' % ( job.id, self.working_directory ) )
 
         # if the job was deleted, don't finish it
-        if job.state == job.states.DELETED:
-            self.cleanup()
-            return
-        elif job.state == job.states.ERROR:
-            # Job was deleted by an administrator
-            self.fail( job.info )
-            return
+        if job.state == job.states.DELETED or job.state == job.states.ERROR:
+            #ERROR at this point means the job was deleted by an administrator.
+            return self.fail( job.info )
         if stderr:
             job.state = job.states.ERROR
         else:
@@ -566,8 +572,7 @@ class JobWrapper( object ):
                     if os.path.exists( dataset_path.real_path ) and os.stat( dataset_path.real_path ).st_size > 0:
                         log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead" % ( dataset_path.false_path, dataset_path.real_path ) )
                     else:
-                        self.fail( "Job %s's output dataset(s) could not be read" % job.id )
-                        return
+                        return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
         job_context = ExpressionContext( dict( stdout = stdout, stderr = stderr ) )
         job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
         def in_directory( file, directory ):
@@ -607,6 +612,9 @@ class JobWrapper( object ):
                 dataset.info = ( dataset.info  or '' ) + context['stdout'] + context['stderr']
                 dataset.tool_version = self.version_string
                 dataset.set_size()
+                # Update (non-library) job output datasets through the object store
+                if dataset not in job.output_library_datasets:
+                    self.app.object_store.update_from_file(dataset.dataset, create=True)
                 if context['stderr']:
                     dataset.blurb = "error"
                 elif dataset.has_data():
@@ -711,7 +719,8 @@ class JobWrapper( object ):
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
         self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
-        self.cleanup()
+        if self.app.config.cleanup_job == 'always' or ( not stderr and self.app.config.cleanup_job == 'onsuccess' ):
+            self.cleanup()
 
     def cleanup( self ):
         # remove temporary files
@@ -720,10 +729,9 @@ class JobWrapper( object ):
                 os.remove( fname )
             if self.app.config.set_metadata_externally:
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
-            if self.working_directory is not None and os.path.isdir( self.working_directory ):
-                shutil.rmtree( self.working_directory )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
+            self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
 
@@ -872,7 +880,7 @@ class JobWrapper( object ):
         if config_root is None:
             config_root = self.app.config.root
         if datatypes_config is None:
-            datatypes_config = self.app.config.datatypes_config
+            datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
         return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ],
                                                                       self.sa_session,
                                                                       exec_dir = exec_dir,
@@ -1103,7 +1111,8 @@ class TaskWrapper(JobWrapper):
         task = self.get_task()
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:
-            self.cleanup()
+            if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
+                self.cleanup()
             return
         elif task.state == task.states.ERROR:
             # Job was deleted by an administrator
@@ -1284,8 +1293,7 @@ class JobStopQueue( object ):
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
             # Fetch all new jobs
-            newly_deleted_jobs = self.sa_session.query( model.Job ) \
-                                     .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+            newly_deleted_jobs = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
                                      .filter( model.Job.state == model.Job.states.DELETED_NEW ).all()
             for job in newly_deleted_jobs:
                 jobs_to_check.append( ( job, None ) )

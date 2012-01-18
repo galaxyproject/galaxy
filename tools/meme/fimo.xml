@@ -32,7 +32,7 @@
   #if str( $fasta_type.fasta_type_selector ) == 'history':
     "${fasta_type.input_database}"
   #else:
-    "${ filter( lambda x: str( x[0] ) == str( $fasta_type.input_database ), $__app__.tool_data_tables[ 'all_fasta' ].get_fields() )[0][3] }"
+    "${fasta_type.input_database.fields.path}"
   #end if
 
   '

@@ -1,7 +1,7 @@
 <tool id="EMBOSS: newcpgreport57" name="newcpgreport" version="5.0.0">
   <description>Report CpG rich areas</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>newcpgreport -sequence $input1 -window $window -shift $shift -minlen $minlen -minpc $minpc -outfile $out_file1 -minoe $minoe -auto</command>
+  <command>newcpgreport -sequence '$input1' -window '$window' -shift '$shift' -minlen '$minlen' -minpc '$minpc' -outfile '$out_file1' -minoe '$minoe' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

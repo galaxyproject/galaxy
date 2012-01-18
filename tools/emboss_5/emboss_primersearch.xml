@@ -1,7 +1,7 @@
 <tool id="EMBOSS: primersearch81" name="primersearch" version="5.0.0">
   <description>Searches DNA sequences for matches with primer pairs</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>primersearch -seqall $input1 -infile $input2 -outfile $out_file1 -mismatchpercent $mismatchpercent -auto</command>
+  <command>primersearch -seqall '$input1' -infile '$input2' -outfile '$out_file1' -mismatchpercent '$mismatchpercent' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Main sequences</label>

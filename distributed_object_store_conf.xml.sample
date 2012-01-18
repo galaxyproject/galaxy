@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<backends>
+    <backend id="files1" type="disk" weight="1">
+        <files_dir path="database/files1"/>
+        <extra_dir type="temp" path="database/tmp1"/>
+        <extra_dir type="job_work" path="database/job_working_directory1"/>
+    </backend>
+    <backend id="files2" type="disk" weight="1">
+        <files_dir path="database/files2"/>
+        <extra_dir type="temp" path="database/tmp2"/>
+        <extra_dir type="job_work" path="database/job_working_directory2"/>
+    </backend>
+</backends>

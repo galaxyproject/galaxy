@@ -353,6 +353,25 @@ class Sam( Tabular ):
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
 
+    def merge( split_files, output_file):
+        """
+        Multiple SAM files may each have headers. Since the headers should all be the same, remove
+        the headers from files 1-n, keeping them in the first file only
+        """
+        cmd = 'mv %s %s' % ( split_files[0], output_file )
+        result = os.system(cmd)
+        if result != 0:
+            raise Exception('Result %s from %s' % (result, cmd))
+        if len(split_files) > 1:
+            cmd = 'egrep -v "^@" %s >> %s' % ( ' '.join(split_files[1:]), output_file )
+        result = os.system(cmd)
+        if result != 0:
+            raise Exception('Result %s from %s' % (result, cmd))
+    merge = staticmethod(merge)
+    
+    def get_track_type( self ):
+        return "ReadTrack", {"data": "bam", "index": "summary_tree"}
+    
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"

@@ -182,6 +182,37 @@ class RepositoryListGrid( grids.Grid ):
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
 
+class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
+    columns = [
+        RepositoryListGrid.NameColumn( "Name",
+                                       key="name",
+                                       link=( lambda item: dict( operation="view_or_manage_repository",
+                                                                 id=item.id,
+                                                                 webapp="community" ) ),
+                                       attach_popup=False ),
+        RepositoryListGrid.DescriptionColumn( "Synopsis",
+                                              key="description",
+                                              attach_popup=False ),
+        RepositoryListGrid.UserColumn( "Owner",
+                                       model_class=model.User,
+                                       link=( lambda item: dict( operation="repositories_by_user", id=item.id, webapp="community" ) ),
+                                       attach_popup=False,
+                                       key="User.username" ),
+        RepositoryListGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
+        # Columns that are valid for filtering but are not visible.
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
+    ]
+    operations = [ grids.GridOperation( "Receive email alerts",
+                                        allow_multiple=True,
+                                        condition=( lambda item: not item.deleted ),
+                                        async_compatible=False ) ]
+    global_actions = [
+            grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository', webapp='community' ) )
+        ]
+
 class ValidRepositoryListGrid( RepositoryListGrid ):
     class RevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
@@ -290,6 +321,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
     matched_repository_list_grid = MatchedRepositoryListGrid()
     valid_repository_list_grid = ValidRepositoryListGrid()
     repository_list_grid = RepositoryListGrid()
+    email_alerts_repository_list_grid = EmailAlertsRepositoryListGrid()
     category_list_grid = CategoryListGrid()
 
     @web.expose
@@ -404,10 +436,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                       **kwd ) )
                 if operation == "install":
                     galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-                    encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
-                    # TODO: support https in the following url.
-                    url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
-                        ( galaxy_url, trans.request.host, webapp, encoded_repo_info_dict )
+                    encoded_repo_info_dict, includes_tools = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
+                    url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s&includes_tools=%s' % \
+                        ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
                     return trans.response.send_redirect( url )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
@@ -481,10 +512,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                       **kwd ) )
                 if operation == "install":
                     galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-                    encoded_repo_info_dict = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
-                    # TODO: support https in the following url.
-                    url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s' % \
-                        ( galaxy_url, trans.request.host, webapp, encoded_repo_info_dict )
+                    encoded_repo_info_dict, includes_tools = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
+                    url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s&includes_tools=%s' % \
+                        ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
                     return trans.response.send_redirect( url )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
@@ -677,14 +707,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return match_tuples
     def __encode_repo_info_dict( self, trans, webapp, repository_metadata_ids ):
         repo_info_dict = {}
+        includes_tools = False
         for repository_metadata_id in repository_metadata_ids:
             repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+            if not includes_tools and 'tools' in repository_metadata.metadata:
+                includes_tools = True
             repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
             repository_id = trans.security.encode_id( repository.id )
             changeset_revision = repository_metadata.changeset_revision
             repository_clone_url = generate_clone_url( trans, repository_id )
             repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
-        return encode( repo_info_dict )
+        return encode( repo_info_dict ), includes_tools
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
@@ -725,33 +758,45 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository_clone_url = generate_clone_url( trans, repository_id )        
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        # Tell the caller if the repository includes Galaxy tools so the page
+        # enabling selection of the tool panel section can be displayed.
+        includes_tools = 'tools' in repository_metadata.metadata
         repo_info_dict = {}
         repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
         encoded_repo_info_dict = encode( repo_info_dict )
         # Redirect back to local Galaxy to perform install.
-        # TODO: support https in the following url.
-        url = 'http://%s/admin/install_tool_shed_repository?tool_shed_url=%s&repo_info_dict=%s' % \
-            ( galaxy_url, trans.request.host, encoded_repo_info_dict )
+        url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s' % \
+            ( galaxy_url, url_for( '', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
         return trans.response.send_redirect( url )
     @web.expose
     def check_for_updates( self, trans, **kwd ):
+        # Handle a request from a local Galaxy instance.  If the request originated with the
+        # Galaxy instances' UpdateManager, the value of 'webapp' will be 'update_manager'.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = kwd[ 'galaxy_url' ]
+        # If the request originated with the UpdateManager, it will not include a galaxy_url.
+        galaxy_url = kwd.get( 'galaxy_url', '' )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         webapp = params.get( 'webapp', 'community' )
-        # Start building up the url to redirect back to the calling Galaxy instance.
-        # TODO: support https in the following url.
-        url = 'http://%s/admin/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, trans.request.host )
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
-            ( repository.name, repository.user.username, changeset_revision )
+        from_update_manager = webapp == 'update_manager'
+        if from_update_manager:
+            update = 'true'
+            no_update = 'false'
+        else:
+            # Start building up the url to redirect back to the calling Galaxy instance.
+            url = '%sadmin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '', qualified=True ) )
+            url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
+                ( repository.name, repository.user.username, changeset_revision )
         if changeset_revision == repository.tip:
             # If changeset_revision is the repository tip, then
             # we know there are no additional updates for the tools.
+            if from_update_manager:
+                return no_update
             url += repository.tip
         else:
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
@@ -760,6 +805,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if repository_metadata:
                 # If changeset_revision is in the repository_metadata table for this
                 # repository, then we know there are no additional updates for the tools.
+                if from_update_manager:
+                    return no_update
                 url += changeset_revision
             else:
                 # The changeset_revision column in the repository_metadata table has been
@@ -808,15 +855,21 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             if tool_guids == metadata_tool_guids:
                                 # We've found the repository_metadata record whose changeset_revision
                                 # value has been updated.
+                                if from_update_manager:
+                                    return update
                                 url += repository_metadata.changeset_revision
                                 found = True
                                 break
                         if not found:
                             # There must be a problem in the data, so we'll just send back the received changeset_revision.
                             log.debug( "Possible data corruption - updated repository_metadata cannot be found for repository id %d." % repository.id )
+                            if from_update_manager:
+                                return no_update
                             url += changeset_revision
                     else:
                         # There are not tools in the changeset_revision, so no tool updates are possible.
+                        if from_update_manager:
+                            return no_update
                         url += changeset_revision
         return trans.response.send_redirect( url )
     @web.expose
@@ -876,6 +929,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             elif operation == "receive email alerts":
                 if trans.user:
                     if kwd[ 'id' ]:
+                        kwd[ 'caller' ] = 'browse_repositories'
                         return trans.response.send_redirect( web.url_for( controller='repository',
                                                                           action='set_email_alerts',
                                                                           **kwd ) )
@@ -1006,7 +1060,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         hgweb_config = "%s/hgweb.config" %  trans.app.config.root
         if repository_path.startswith( './' ):
             repository_path = repository_path.replace( './', '', 1 )
-        entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
+        entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path )
         tmp_fd, tmp_fname = tempfile.mkstemp()
         if os.path.exists( hgweb_config ):
             # Make a backup of the hgweb.config file since we're going to be changing it.
@@ -1311,15 +1365,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if params.get( 'edit_repository_button', False ):
             flush_needed = False
             # TODO: add a can_manage in the security agent.
-            if user != repository.user or not trans.user_is_admin():
+            if not ( user.email == repository.user.email or trans.user_is_admin() ):
                 message = "You are not the owner of this repository, so you cannot manage it."
-                status = error
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_repository',
                                                                   id=id,
                                                                   webapp='community',
                                                                   message=message,
-                                                                  status=status ) )
+                                                                  status='error' ) )
             if description != repository.description:
                 repository.description = description
                 flush_needed = True
@@ -1447,6 +1500,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changesets = []
         for changeset in repo.changelog:
             ctx = repo.changectx( changeset )
+            if get_repository_metadata_by_changeset_revision( trans, id, str( ctx ) ):
+                has_metadata = True
+            else:
+                has_metadata = False
             t, tz = ctx.date()
             date = datetime( *time.gmtime( float( t ) - tz )[:6] )
             display_date = date.strftime( "%Y-%m-%d" )
@@ -1457,7 +1514,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             'description' : ctx.description(),
                             'files' : ctx.files(),
                             'user' : ctx.user(),
-                            'parent' : ctx.parents()[0] }
+                            'parent' : ctx.parents()[0],
+                            'has_metadata' : has_metadata }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
         is_malicious = change_set_is_malicious( trans, id, repository.tip )
@@ -1546,7 +1604,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
     @web.require_login( "set email alerts" )
     def set_email_alerts( self, trans, **kwd ):
         # Set email alerts for selected repositories
-        params = util.Params( kwd )
+        # This method is called from multiple grids, so
+        # the caller must be passed.
+        caller = kwd[ 'caller' ]
         user = trans.user
         if user:
             repository_ids = util.listify( kwd.get( 'id', '' ) )
@@ -1578,8 +1638,62 @@ class RepositoryController( BaseUIController, ItemRatings ):
             kwd[ 'status' ] = 'done'
         del kwd[ 'operation' ]
         return trans.response.send_redirect( web.url_for( controller='repository',
-                                                          action='browse_repositories',
+                                                          action=caller,
                                                           **kwd ) )
+    @web.expose
+    @web.require_login( "manage email alerts" )
+    def manage_email_alerts( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        new_repo_alert = params.get( 'new_repo_alert', '' )
+        new_repo_alert_checked = CheckboxField.is_checked( new_repo_alert )
+        user = trans.user
+        if params.get( 'new_repo_alert_button', False ):
+            user.new_repo_alert = new_repo_alert_checked
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
+            if new_repo_alert_checked:
+                message = 'You will receive email alerts for all new valid tool shed repositories.'
+            else:
+                message = 'You will not receive any email alerts for new valid tool shed repositories.'
+        checked = new_repo_alert_checked or ( user and user.new_repo_alert )
+        new_repo_alert_check_box = CheckboxField( 'new_repo_alert', checked=checked )
+        email_alert_repositories = []
+        for repository in trans.sa_session.query( trans.model.Repository ) \
+                                          .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                         trans.model.Repository.table.c.email_alerts != None ) ) \
+                                          .order_by( trans.model.Repository.table.c.name ):
+            if user.email in repository.email_alerts:
+                email_alert_repositories.append( repository )
+        return trans.fill_template( "/webapps/community/user/manage_email_alerts.mako",
+                                    webapp='community',
+                                    new_repo_alert_check_box=new_repo_alert_check_box,
+                                    email_alert_repositories=email_alert_repositories,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_login( "manage email alerts" )
+    def multi_select_email_alerts( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if 'webapp' not in kwd:
+            kwd[ 'webapp' ] = 'community'
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "receive email alerts":
+                if trans.user:
+                    if kwd[ 'id' ]:
+                        kwd[ 'caller' ] = 'multi_select_email_alerts'
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='set_email_alerts',
+                                                                          **kwd ) )
+                else:
+                    kwd[ 'message' ] = 'You must be logged in to set email alerts.'
+                    kwd[ 'status' ] = 'error'
+                    del kwd[ 'operation' ]
+        return self.email_alerts_repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_login( "set repository metadata" )
     def set_metadata( self, trans, id, ctx_str, **kwd ):
@@ -1608,52 +1722,215 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                           message=message,
                                                           status=status ) )
     @web.expose
+    def reset_all_metadata( self, trans, id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, id )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        if len( repo ) == 1:
+            message, status = set_repository_metadata( trans, id, repository.tip, **kwd )
+        else:
+            # The list of changeset_revisions refers to repository_metadata records that have been
+            # created or updated.  When the following loop completes, we'll delete all repository_metadata
+            # records for this repository that do not have a changeset_revision value in this list.
+            changeset_revisions = []
+            ancestor_changeset_revision = None
+            ancestor_metadata_dict = None
+            for changeset in repo.changelog:
+                current_changeset_revision = str( repo.changectx( changeset ) )
+                ctx = get_changectx_for_changeset( trans, repo, current_changeset_revision )
+                if current_changeset_revision == repository.tip:
+                    current_metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, current_changeset_revision, repo_dir )
+                else:
+                    current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, current_changeset_revision, repo_dir )
+                if current_metadata_dict:
+                    if ancestor_changeset_revision:
+                        # Compare metadata from ancestor and current.  The value of comparsion will be one of:
+                        # 'no metadata' - no metadata for either ancestor or current, so continue from current
+                        # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
+                        # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
+                        # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current
+                        #                              metadata, so persist ancestor metadata.
+                        comparison = self.__compare_changeset_revisions( ancestor_changeset_revision,
+                                                                         ancestor_metadata_dict,
+                                                                         current_changeset_revision,
+                                                                         current_metadata_dict )
+                        if comparison in [ 'no metadata', 'equal', 'subset' ]:
+                            ancestor_changeset_revision = current_changeset_revision
+                            ancestor_metadata_dict = current_metadata_dict
+                        elif comparison == 'not equal and not subset':
+                            self.__create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
+                            # Keep track of the changeset_revisions that we've persisted.
+                            changeset_revisions.append( ancestor_changeset_revision )
+                            ancestor_changeset_revision = None
+                            ancestor_metadata_dict = None
+                    else:
+                        # We're either at the first change set in the change log or we have just created or updated
+                        # a repository_metadata record.  At this point we set the ancestor changeset to the current
+                        # changeset for comparison in the next iteration.
+                        ancestor_changeset_revision = current_changeset_revision
+                        ancestor_metadata_dict = current_metadata_dict
+                    if not ctx.children():
+                        # We're at the end of the change log.
+                        self.__create_or_update_repository_metadata( trans, id, repository, current_changeset_revision, current_metadata_dict )
+                        changeset_revisions.append( current_changeset_revision )
+                        ancestor_changeset_revision = None
+                        ancestor_metadata_dict = None
+                elif ancestor_metadata_dict:
+                    # Our current change set has no metadata, but our ancestor change set has metadata, so save it.
+                    self.__create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
+                    # Keep track of the changeset_revisions that we've persisted.
+                    changeset_revisions.append( ancestor_changeset_revision )
+                    ancestor_changeset_revision = None
+                    ancestor_metadata_dict = None
+            self.__clean_repository_metadata( trans, id, changeset_revisions )
+        if not message:                     
+            message = "Repository metadata has been reset."
+            status = 'done'
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='manage_repository',
+                                                          id=id,
+                                                          message=message,
+                                                          status=status ) )
+    def __clean_repository_metadata( self, trans, id, changeset_revisions ):
+        # Delete all repository_metadata reecords associated with the repository
+        # that have a changeset_revision that is not in changeset_revisions.
+        for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                                   .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ):
+            if repository_metadata.changeset_revision not in changeset_revisions:
+                trans.sa_session.delete( repository_metadata )
+                trans.sa_session.flush()
+    def __create_or_update_repository_metadata( self, trans, id, repository, changeset_revision, metadata_dict ):
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        if repository_metadata:
+            # Update RepositoryMetadata.metadata.
+            repository_metadata.metadata = metadata_dict
+            trans.sa_session.add( repository_metadata )
+            trans.sa_session.flush()
+        else:
+            # Create a new repository_metadata table row.
+            repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
+            trans.sa_session.add( repository_metadata )
+            trans.sa_session.flush()
+    def __compare_changeset_revisions( self, ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
+        # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision
+        # is an ancestor of current_changeset_revision which is associated with current_metadata_dict.
+        #
+        # TODO: a new repository_metadata record will be created only when this method returns the string
+        # 'not equal and not subset'.  However, we're currently also returning the strings 'no metadata',
+        # 'equal' and 'subset', depending upon how the 2 change sets compare.  We'll leave things this way
+        # for the current time in case we discover a use for these additional result strings.
+        #
+        # Get information about tools.
+        if 'tools' in ancestor_metadata_dict:
+            ancestor_tools = ancestor_metadata_dict[ 'tools' ]
+        else:
+            ancestor_tools = []
+        if 'tools' in current_metadata_dict:
+            current_tools = current_metadata_dict[ 'tools' ]
+        else:
+            current_tools = []
+        ancestor_guids = []
+        for tool_dict in ancestor_tools:
+            ancestor_guids.append( tool_dict[ 'guid' ] )
+        ancestor_guids.sort()
+        current_guids = []
+        for tool_dict in current_tools:
+            current_guids.append( tool_dict[ 'guid' ] )
+        current_guids.sort()
+        # Get information about workflows.
+        if 'workflows' in ancestor_metadata_dict:
+            ancestor_workflows = ancestor_metadata_dict[ 'workflows' ]
+        else:
+            ancestor_workflows = []
+        if 'workflows' in current_metadata_dict:
+            current_workflows = current_metadata_dict[ 'workflows' ]
+        else:
+            current_workflows = []
+        # Get information about datatypes.
+        if 'datatypes' in ancestor_metadata_dict:
+            ancestor_datatypes = ancestor_metadata_dict[ 'datatypes' ]
+        else:
+            ancestor_datatypes = []
+        if 'datatypes' in current_metadata_dict:
+            current_datatypes = current_metadata_dict[ 'datatypes' ]
+        else:
+            current_datatypes = []
+        # Handle case where no metadata exists for either changeset.
+        if not ancestor_guids and not current_guids and not ancestor_workflows and not current_workflows and not ancestor_datatypes and not current_datatypes:
+            return 'no metadata'
+        workflow_comparison = self.__compare_workflows( ancestor_workflows, current_workflows )
+        datatype_comparison = self.__compare_datatypes( ancestor_datatypes, current_datatypes )
+        # Handle case where all metadata is the same.
+        if ancestor_guids == current_guids and workflow_comparison == 'equal' and datatype_comparison == 'equal':
+            return 'equal'
+        if workflow_comparison == 'subset' and datatype_comparison == 'subset':
+            is_subset = True
+            for guid in ancestor_guids:
+                if guid not in current_guids:
+                    is_subset = False
+                    break
+            if is_subset:
+                return 'subset'
+        return 'not equal and not subset'
+    def __compare_workflows( self, ancestor_workflows, current_workflows ):
+        # Determine if ancestor_workflows is the same as current_workflows
+        # or if ancestor_workflows is a subset of current_workflows.
+        if len( ancestor_workflows ) <= len( current_workflows ):
+            for ancestor_workflow in ancestor_workflows:
+                # Currently the only way to differentiate workflows is by name.
+                ancestor_workflow_name = ancestor_workflow[ 'name' ]
+                num_ancestor_workflow_steps = len( ancestor_workflow[ 'steps' ] )
+                found_in_current = False
+                for current_workflow in current_workflows:
+                    # Assume that if the name and number of steps are euqal,
+                    # then the workflows are the same.  Of course, this may
+                    # not be true...
+                    if current_workflow[ 'name' ] == ancestor_workflow_name and len( current_workflow[ 'steps' ] ) == num_ancestor_workflow_steps:
+                        found_in_current = True
+                        break
+                if not found_in_current:
+                    return 'not equal and not subset'
+            if len( ancestor_workflows ) == len( current_workflows ):
+                return 'equal'
+            else:
+                return 'subset'
+        return 'not equal and not subset'
+    def __compare_datatypes( self, ancestor_datatypes, current_datatypes ):
+        # Determine if ancestor_datatypes is the same as current_datatypes
+        # or if ancestor_datatypes is a subset of current_datatypes.  Each
+        # datatype dict looks something like:
+        # {"dtype": "galaxy.datatypes.images:Image", "extension": "pdf", "mimetype": "application/pdf"}
+        if len( ancestor_datatypes ) <= len( current_datatypes ):
+            for ancestor_datatype in ancestor_datatypes:
+                # Currently the only way to differentiate datatypes is by name.
+                ancestor_datatype_dtype = ancestor_datatype[ 'dtype' ]
+                ancestor_datatype_extension = ancestor_datatype[ 'extension' ]
+                ancestor_datatype_mimetype = ancestor_datatype[ 'mimetype' ]
+                found_in_current = False
+                for current_datatype in current_datatypes:
+                    if current_datatype[ 'dtype' ] == ancestor_datatype_dtype and \
+                        current_datatype[ 'extension' ] == ancestor_datatype_extension and \
+                        current_datatype[ 'mimetype' ] == ancestor_datatype_mimetype:
+                        found_in_current = True
+                        break
+                if not found_in_current:
+                    return 'not equal and not subset'
+            if len( ancestor_datatypes ) == len( current_datatypes ):
+                return 'equal'
+            else:
+                return 'subset'
+        return 'not equal and not subset'
+    @web.expose
     def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, repository_id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
-        valid = True
-        if changeset_revision == repository.tip:
-            try:
-                tool = load_tool( trans, os.path.abspath( tool_config ) )
-            except Exception, e:
-                tool = None
-                valid = False
-                message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
-        else:
-            # Get the tool config file name from the hgweb url, something like:
-            # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
-            old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
-            ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
-            fctx = None
-            for filename in ctx:
-                filename_head, filename_tail = os.path.split( filename )
-                if filename_tail == old_tool_config_file_name:
-                    fctx = ctx[ filename ]
-                    break
-            if fctx:
-                # Write the contents of the old tool config to a temporary file.
-                fh = tempfile.NamedTemporaryFile( 'w' )
-                tmp_filename = fh.name
-                fh.close()
-                fh = open( tmp_filename, 'w' )
-                fh.write( fctx.data() )
-                fh.close()
-                try:
-                    tool = load_tool( trans, tmp_filename )
-                except Exception, e:
-                    tool = None
-                    valid = False
-                    message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
-                try:
-                    os.unlink( tmp_filename )
-                except:
-                    pass
-            else:
-                tool = None
+        tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
         try:

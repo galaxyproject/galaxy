@@ -1,7 +1,7 @@
 <tool id="EMBOSS: etandem33" name="etandem" version="5.0.0">
   <description>Looks for tandem repeats in a nucleotide sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>etandem -sequence $input1 -outfile $out_file1 -origfile $ofile2 -minrepeat $minrepeat -maxrepeat $maxrepeat -threshold $threshold -mismatch $mismatch -uniform $uniform -rformat2 $out_format1 -auto</command>
+  <command>etandem -sequence '$input1' -outfile '$out_file1' -origfile '$ofile2' -minrepeat '$minrepeat' -maxrepeat '$maxrepeat' -threshold '$threshold' -mismatch '$mismatch' -uniform '$uniform' -rformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequence</label>

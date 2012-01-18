@@ -663,7 +663,7 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                     trans.response.set_content_type( 'application/x-gzip' )
                 else:
                     trans.response.set_content_type( 'application/x-tar' )
-                return open( jeha.dataset.file_name )
+                return trans.app.object_store.get_data(jeha.dataset)
             elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
                         % ( { 'n' : history.name, 's' : url_for( action="export_archive", id=id, qualified=True ) } ) )

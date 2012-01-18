@@ -1,8 +1,8 @@
 <tool id="EMBOSS: dan19" name="dan" version="5.0.0">
   <description>Calculates DNA RNA/DNA melting temperature</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl dan -sequence $input1 -windowsize $window -goutfile $out_file1 -graph png -plot $plot1 -shiftincrement $shift -dnaconc $dnaconc
-  -saltconc $saltconc -product $product -formamide $formamide -mismatch $mismatch -prodlen $prodlen -thermo $thermo -temperature $temperature -rna $rna -outfile $out_file1 -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl dan -sequence '$input1' -windowsize '$window' -goutfile '$out_file1' -graph png -plot '$plot1' -shiftincrement '$shift' -dnaconc '$dnaconc'
+  -saltconc '$saltconc' -product '$product' -formamide '$formamide' -mismatch '$mismatch' -prodlen '$prodlen' -thermo '$thermo' -temperature '$temperature' -rna '$rna' -outfile '$out_file1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>On query</label>

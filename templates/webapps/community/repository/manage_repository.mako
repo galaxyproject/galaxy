@@ -20,6 +20,7 @@
     else:
         browse_label = 'Browse repository tip files'
     can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip
+    can_reset_all_metadata = is_admin and len( repo ) > 0
 %>
 
 <%!
@@ -88,6 +89,9 @@
             %if can_contact_owner:
                 <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp='community' )}">Contact repository owner</a>
             %endif
+            %if can_reset_all_metadata:
+                <a class="action-button" href="${h.url_for( controller='repository', action='reset_all_metadata', id=trans.security.encode_id( repository.id ), webapp='community' )}">Reset all repository metadata</a>
+            %endif
             %if can_download:
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
@@ -135,7 +139,14 @@
             %endif
             <div class="form-row">
                 <label>Name:</label>
-                <input name="repo_name" type="textfield" value="${repo_name}" size="40"/>
+                %if repository.times_downloaded > 0:
+                    ${repo_name}
+                %else:
+                    <input name="repo_name" type="textfield" value="${repo_name}" size="40"/>
+                %endif
+                <div class="toolParamHelp" style="clear: both;">
+                    Repository names cannot be changed if the repository has been cloned.
+                </div>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">

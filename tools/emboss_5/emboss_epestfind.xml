@@ -1,8 +1,8 @@
 <tool id="EMBOSS: epestfind29" name="epestfind" version="5.0.0">
   <description>Finds PEST motifs as potential proteolytic cleavage sites</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl epestfind -sequence $input1 -goutfile $ofile2 -outfile $ofile1 -window $window -order $order -potential $potential -poor $poor
-  -invalid $invalid -map $map -graph png -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl epestfind -sequence '$input1' -goutfile '$ofile2' -outfile '$ofile1' -window '$window' -order '$order' -potential '$potential' -poor '$poor'
+  -invalid '$invalid' -map '$map' -graph png -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

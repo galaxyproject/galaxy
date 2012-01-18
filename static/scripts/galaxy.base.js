@@ -204,7 +204,7 @@ function replace_big_select_inputs(min_length, max_length) {
         }
             
         // Skip multi-select because widget cannot handle multi-select.
-        if (select_elt.attr('multiple') === true) {
+        if (select_elt.attr('multiple') === 'multiple') {
             return;
         }
             

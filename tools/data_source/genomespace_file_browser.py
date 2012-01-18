@@ -8,32 +8,16 @@ import pkg_resources
 pkg_resources.require( "simplejson" )
 import simplejson
 
+GENOMESPACE_API_VERSION_STRING = "v1.0"
+GENOMESPACE_SERVER_URL_PROPERTIES = "http://www.genomespace.org/sites/genomespacefiles/config/serverurl.properties"
+
 CHUNK_SIZE = 2**20 #1mb
 
 DEFAULT_GALAXY_EXT = "data"
 
 #genomespace format identifier is the URL
-GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT = { 'http://www.genomespace.org/datamanager/dataformat/res/0.0.0': 'res', 
-                                               'http://www.genomespace.org/datamanager/dataformat/cbs/0.0.0': 'CBS', 
-                                               'http://www.genomespace.org/datamanager/dataformat/lowercasetxt/0.0.0': 'lowercasetxt', 
-                                               'http://www.genomespace.org/datamanager/dataformat/gff/0.0.0': 'GFF', 
-                                               'http://www.genomespace.org/datamanager/dataformat/reversedtxt/0.0.0': 'reversedtxt', 
-                                               'http://www.genomespace.org/datamanager/dataformat/gxp/0.0.0': 'gxp', 
-                                               'http://www.genomespace.org/datamanager/dataformat/unknown/0.0.0': 'unknown', 
-                                               'http://www.genomespace.org/datamanager/dataformat/gtf/0.0.0': 'GTF', 
-                                               'http://www.genomespace.org/datamanager/dataformat/cn/0.0.0': 'cn', 
-                                               'http://www.genomespace.org/datamanager/dataformat/gct/0.0.0': 'gct', 
-                                               'http://www.genomespace.org/datamanager/dataformat/nowhitespace/0.0.0': 'nowhitespace', 
-                                               'http://www.genomespace.org/datamanager/dataformat/gistic/0.0.0': 'GISTIC', 
-                                               'http://www.genomespace.org/datamanager/dataformat/rifles/0.0.0': 'rifles', 
-                                               'http://www.genomespace.org/datamanager/dataformat/bed/0.0.0': 'bed', 
-                                               'http://www.genomespace.org/datamanager/dataformat/txt/0.0.0': 'txt', 
-                                               'http://www.genomespace.org/datamanager/dataformat/uppercasetxt/0.0.0': 'uppercasetxt', 
-                                               'http://www.genomespace.org/datamanager/dataformat/xcn/0.0.0': 'xcn', 
-                                               'http://www.genomespace.org/datamanager/dataformat/gmt/0.0.0': 'gmt', 
-                                               'http://www.genomespace.org/datamanager/dataformat/genomicatab/0.0.0': 'genomicatab', 
-                                               'http://www.genomespace.org/datamanager/dataformat/lifes/0.0.0': 'lifes' }
-
+GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT = {} #TODO: fix this so it is not a global variable
+#TODO: we should use a better way to set up this mapping
 GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles', 
                                  'lifes': 'lifes', 
                                  'cn': 'cn', 
@@ -48,28 +32,12 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'reversedtxt': 'reversedtxt', 
                                  'nowhitespace': 'nowhitespace', 
                                  'unknown': 'unknown', 
-                                 'txt': 'txt', 'uppercasetxt': 
-                                 'uppercasetxt', 
+                                 'txt': 'txt', 
+                                 'uppercasetxt': 'uppercasetxt', 
                                  'GISTIC': 'gistic', 
                                  'GFF': 'gff', 
                                  'gmt': 'gmt', 
                                  'gct': 'gct'}
-
-'''
-https://dmdev.genomespace.org:8444/datamanager/dataformat/list
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "simplejson" )
-import simplejson
-formats = simplejson.loads( '[{"name":"GISTIC","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gistic\/0.0.0","fileExtension":"gistic"},{"name":"GFF","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gff\/0.0.0","fileExtension":"seg"},{"name":"gct","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gct\/0.0.0","fileExtension":"gct"},{"name":"lifes","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/lifes\/0.0.0","fileExtension":"lifes"},{"name":"GTF","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gtf\/0.0.0","fileExtension":"gtf"},{"name":"rifles","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/rifles\/0.0.0","fileExtension":"rifles"},{"name":"CBS","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/cbs\/0.0.0","fileExtension":"cbs"},{"name":"unknown","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/unknown\/0.0.0"},{"name":"reversedtxt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/reversedtxt\/0.0.0","fileExtension":"reversedtxt"},{"name":"res","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/res\/0.0.0","fileExtension":"res"},{"name":"cn","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/cn\/0.0.0","fileExtension":"cn"},{"name":"gmt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gmt\/0.0.0","fileExtension":"gmt"},{"name":"bed","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/bed\/0.0.0","fileExtension":"bed"},{"name":"gxp","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gxp\/0.0.0","fileExtension":"gxp"},{"name":"uppercasetxt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/uppercasetxt\/0.0.0","fileExtension":"uppertxt"},{"name":"lowercasetxt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/lowercasetxt\/0.0.0","fileExtension":"lowertxt"},{"name":"genomicatab","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/genomicatab\/0.0.0","fileExtension":"tab"},{"name":"nowhitespace","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/nowhitespace\/0.0.0","fileExtension":"nowhitespace"},{"name":"xcn","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/xcn\/0.0.0","fileExtension":"xcn"},{"name":"txt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/txt\/0.0.0","fileExtension":"txt"}]' )
-formats = [{"name":"GISTIC","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gistic\/0.0.0","fileExtension":"gistic"},{"name":"GFF","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gff\/0.0.0","fileExtension":"seg"},{"name":"gct","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gct\/0.0.0","fileExtension":"gct"},{"name":"lifes","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/lifes\/0.0.0","fileExtension":"lifes"},{"name":"GTF","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gtf\/0.0.0","fileExtension":"gtf"},{"name":"rifles","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/rifles\/0.0.0","fileExtension":"rifles"},{"name":"CBS","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/cbs\/0.0.0","fileExtension":"cbs"},{"name":"unknown","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/unknown\/0.0.0"},{"name":"reversedtxt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/reversedtxt\/0.0.0","fileExtension":"reversedtxt"},{"name":"res","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/res\/0.0.0","fileExtension":"res"},{"name":"cn","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/cn\/0.0.0","fileExtension":"cn"},{"name":"gmt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gmt\/0.0.0","fileExtension":"gmt"},{"name":"bed","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/bed\/0.0.0","fileExtension":"bed"},{"name":"gxp","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/gxp\/0.0.0","fileExtension":"gxp"},{"name":"uppercasetxt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/uppercasetxt\/0.0.0","fileExtension":"uppertxt"},{"name":"lowercasetxt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/lowercasetxt\/0.0.0","fileExtension":"lowertxt"},{"name":"genomicatab","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/genomicatab\/0.0.0","fileExtension":"tab"},{"name":"nowhitespace","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/nowhitespace\/0.0.0","fileExtension":"nowhitespace"},{"name":"xcn","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/xcn\/0.0.0","fileExtension":"xcn"},{"name":"txt","version":"0.0.0","url":"http:\/\/www.genomespace.org\/datamanager\/dataformat\/txt\/0.0.0","fileExtension":"txt"}]
-GENOMESPACE_FORMAT_IDENTIFIER_TO_GALAXY_EXT = {}
-for format in formats:
-    GENOMESPACE_FORMAT_IDENTIFIER_TO_GALAXY_EXT[ format[ 'url' ] ] = format['name']
-
-print GENOMESPACE_FORMAT_IDENTIFIER_TO_GALAXY_EXT
-#do manual change to galaxy exts
-'''
 
 
 def chunk_write( source_stream, target_stream, source_method = "read", target_method="write" ):
@@ -101,7 +69,28 @@ def get_galaxy_ext_from_genomespace_format_url( url_opener, file_format_url ):
         ext = DEFAULT_GALAXY_EXT
     return ext
 
-def download_from_genomespace_file_browser( json_parameter_file ):
+def get_genomespace_site_urls():
+    genomespace_sites = {}
+    for line in urllib2.urlopen( GENOMESPACE_SERVER_URL_PROPERTIES ).read().split( '\n' ):
+        line = line.rstrip()
+        if not line or line.startswith( "#" ):
+            continue
+        server, line = line.split( '.', 1 )
+        if server not in genomespace_sites:
+            genomespace_sites[server] = {}
+        line = line.split( "=", 1 )
+        genomespace_sites[server][line[0]] = line[1]
+    return genomespace_sites
+
+def set_genomespace_format_identifiers( url_opener, dm_site ):
+    gs_request = urllib2.Request( "%s/%s/dataformat/list" % ( dm_site, GENOMESPACE_API_VERSION_STRING ) )
+    gs_request.get_method = lambda: 'GET'
+    opened_gs_request = url_opener.open( gs_request )
+    genomespace_formats = simplejson.loads( opened_gs_request.read() )
+    for format in genomespace_formats:
+        GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT[ format['url'] ] = format['name']
+
+def download_from_genomespace_file_browser( json_parameter_file, genomespace_site ):
     json_params = simplejson.loads( open( json_parameter_file, 'r' ).read() )
     datasource_params = json_params.get( 'param_dict' )
     username = datasource_params.get( "gs-username", None )
@@ -111,6 +100,10 @@ def download_from_genomespace_file_browser( json_parameter_file ):
     dataset_id = json_params['output_data'][0]['dataset_id']
     hda_id = json_params['output_data'][0]['hda_id']
     url_opener = get_cookie_opener( username, token )
+    #load and set genomespace format ids to galaxy exts
+    genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
+    set_genomespace_format_identifiers( url_opener, genomespace_site_dict['dmServer'] )
+    
     file_url_prefix = "fileUrl"
     file_type_prefix = "fileFormat"
     metadata_parameter_file = open( json_params['job_config']['TOOL_PROVIDED_JOB_METADATA_FILE'], 'wb' )
@@ -149,6 +142,7 @@ if __name__ == '__main__':
     #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--json_parameter_file', dest='json_parameter_file', action='store', type="string", default=None, help='json_parameter_file' )
+    parser.add_option( '-s', '--genomespace_site', dest='genomespace_site', action='store', type="string", default=None, help='genomespace_site' )
     (options, args) = parser.parse_args()
     
-    download_from_genomespace_file_browser( options.json_parameter_file )
+    download_from_genomespace_file_browser( options.json_parameter_file, options.genomespace_site )

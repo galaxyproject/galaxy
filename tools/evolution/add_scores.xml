@@ -1,8 +1,8 @@
 <tool id="hgv_add_scores" name="phyloP" version="1.0.0">
   <description>interspecies conservation scores</description>
 
-  <command>
-    add_scores $input1 ${input1.metadata.dbkey} ${input1.metadata.chromCol} ${input1.metadata.startCol} ${GALAXY_DATA_INDEX_DIR}/add_scores.loc $out_file1
+  <command interpreter="python">
+    add_scores.py "$input1" "$out_file1" "${GALAXY_DATA_INDEX_DIR}/add_scores.loc" "${input1.metadata.dbkey}" "${input1.metadata.chromCol}" "${input1.metadata.startCol}"
   </command>
 
   <inputs>
@@ -34,7 +34,7 @@
   <help>
 .. class:: warningmark
 
-This currently works only for build hg18.
+This currently works only for builds hg18 and hg19.
 
 -----
 

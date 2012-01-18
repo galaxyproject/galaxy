@@ -27,6 +27,9 @@ galaxy.datatypes.metadata.DATABASE_CONNECTION_AVAILABLE = False #Let metadata kn
 from galaxy.util import stringify_dictionary_keys
 from galaxy.util.json import from_json_string
 from sqlalchemy.orm import clear_mappers
+from galaxy.objectstore import build_object_store_from_config
+from galaxy import config
+import ConfigParser
 
 def __main__():
     file_path = sys.argv.pop( 1 )
@@ -34,10 +37,33 @@ def __main__():
     galaxy.model.Dataset.file_path = file_path
     galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tmp_dir
     
+    # Set up reference to object store
+    # First, read in the main config file for Galaxy; this is required because
+    # the object store configuration is stored there
+    conf = ConfigParser.ConfigParser()
+    config_file_name = 'universe_wsgi.ini' # Safe assumption?
+    conf.read(config_file_name)
+    conf_dict = {}
+    for section in conf.sections():
+        for option in conf.options(section):
+            try:
+                conf_dict[option] = conf.get(section, option)
+            except ConfigParser.InterpolationMissingOptionError:
+                # Because this is not called from Paste Script, %(here)s variable
+                # is not initialized in the config file so skip those fields -
+                # just need not to use any such fields for the object store conf...
+                log.debug("Did not load option %s from %s" % (option, config_file_name))
+    # config object is required by ObjectStore class so create it now
+    universe_config = config.Configuration(**conf_dict)
+    object_store = build_object_store_from_config(universe_config)
+    galaxy.model.Dataset.object_store = object_store
+    
     # Set up datatypes registry
     config_root = sys.argv.pop( 1 )
     datatypes_config = sys.argv.pop( 1 )
-    galaxy.model.set_datatypes_registry( galaxy.datatypes.registry.Registry( config_root, datatypes_config ) )
+    datatypes_registry = galaxy.datatypes.registry.Registry()
+    datatypes_registry.load_datatypes( root_dir=config_root, config=datatypes_config )
+    galaxy.model.set_datatypes_registry( datatypes_registry )
 
     job_metadata = sys.argv.pop( 1 )
     ext_override = dict()
@@ -83,5 +109,7 @@ def __main__():
         except Exception, e:
             simplejson.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) ) #setting metadata has failed somehow
     clear_mappers()
+    # Shut down any additional threads that might have been created via the ObjectStore
+    object_store.shutdown()
 
 __main__()

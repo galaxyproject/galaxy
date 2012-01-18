@@ -1,8 +1,8 @@
 <tool id="EMBOSS: diffseq22" name="diffseq" version="5.0.0">
   <description>Find differences between nearly identical sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>diffseq -asequence $input1 -bsequence $input2 -outfile $out_file1 -aoutfeat $out_file2 -boutfeat $out_file3 -wordsize $wordsize -globaldifferences $globaldifferences -rformat3
-  $out_format1 -offormat4 $out_format2 -offormat5 $out_format3 -auto</command>
+  <command>diffseq -asequence '$input1' -bsequence '$input2' -outfile '$out_file1' -aoutfeat '$out_file2' -boutfeat '$out_file3' -wordsize '$wordsize' -globaldifferences '$globaldifferences' -rformat3
+  '$out_format1' -offormat4 '$out_format2' -offormat5 '$out_format3' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence 1</label>

@@ -1,4 +1,3 @@
-import os
 from __init__ import ToolAction
 from galaxy.tools.actions import upload_common
 

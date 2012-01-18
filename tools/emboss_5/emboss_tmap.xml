@@ -1,7 +1,7 @@
 <tool id="EMBOSS: tmap99" name="tmap" version="5.0.0">
   <description>Displays membrane spanning regions</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl tmap -sequences $input1 -outfile $out_file1 -goutfile $out_file2 -graph png -rformat $out_format1 -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl tmap -sequences '$input1' -outfile '$out_file1' -goutfile '$out_file2' -graph png -rformat '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

@@ -1,7 +1,7 @@
 <tool id="EMBOSS: megamerger53" name="megamerger" version="5.0.0">
   <description>Merge two large overlapping nucleic acid sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>megamerger -asequence $input1 -bsequence $input2 -outseq $out_file1 -outfile $out_file2 -wordsize $wordsize -prefer $prefer -osformat3 $out_format1 -auto</command>
+  <command>megamerger -asequence '$input1' -bsequence '$input2' -outseq '$out_file1' -outfile '$out_file2' -wordsize '$wordsize' -prefer '$prefer' -osformat3 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence 1</label>

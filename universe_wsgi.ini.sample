@@ -131,6 +131,29 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
 #tool_path = tools
 
+# Enable automatic installation of tools that used to be in the Galaxy
+# distribution but are now in the main Galaxy tool shed.  The tools
+# that will be installed are configured in the config file named
+# tool_shed_install.xml, which is located in the Galaxy install directory.
+# Tools already installed will not be re-installed even if they are
+# referenced in the tool_shed_install.xml file.
+#enable_tool_shed_install = False
+#tool_shed_install_config_file = tool_shed_install.xml
+
+# CRITICAL NOTE: the location in which the tools will be installed is the
+# location pointed to by the "tool_path" attribute in the following file.
+# The default location setting in shed_tool_conf.xml ("../shed_tools") may
+# be problematic for some cluster environments, so make sure to change it
+# if appropriate or use a different file name for the setting.
+#install_tool_config_file = shed_tool_conf.xml
+
+# Enable automatic polling of relative tool sheds to see if any updates
+# are available for installed repositories.  Ideally only one Galaxy 
+# server process should be able to check for repository updates.  The
+# setting for hours_between_check should be an integer between 1 and 24.
+#enable_tool_shed_check = False
+#hours_between_check = 12
+
 # Directory where data used by tools is located, see the samples in that
 # directory and the wiki for help:
 # http://wiki.g2.bx.psu.edu/Admin/Data%20Integration
@@ -231,6 +254,7 @@ static_images_dir = %(here)s/static/images
 static_favicon_dir = %(here)s/static/favicon.ico
 static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
+static_robots_txt = %(here)s/static/robots.txt
 
 # -- Advanced proxy features
 
@@ -421,6 +445,22 @@ use_interactive = True
 
 # -- Beta features
 
+# Object store mode (valid options are: disk, s3, distributed, hierarchical)
+#object_store = disk
+#aws_access_key = <AWS access key>
+#aws_secret_key = <AWS secret key>
+#s3_bucket = <name of an existing S3 bucket>
+#use_reduced_redundancy = True
+
+# Size (in GB) that the cache used by object store should be limited to.
+# If the value is not specified, the cache size will be limited only by the file
+# system size.
+#object_store_cache_size = 100
+
+# Configuration file for the distributed object store, if object_store =
+# distributed.  See the sample at distributed_object_store_conf.xml.sample
+#distributed_object_store_config_file = None
+
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
@@ -528,6 +568,12 @@ use_interactive = True
 # waiting 1 second between tries.  For NFS, you may want to try the -noac mount
 # option (Linux) or -actimeo=0 (Solaris).
 #retry_job_output_collection = 0
+
+# Clean up various bits of jobs left on the filesystem after completion.  These
+# bits include the job working directory, external metadata temporary files,
+# and DRM stdout and stderr files (if using a DRM).  Possible values are:
+# always, onsuccess, never
+#cleanup_job = always
 
 # Number of concurrent jobs to run (local job runner)
 #local_job_queue_workers = 5

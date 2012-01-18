@@ -47,6 +47,8 @@ class DependencyManager( object ):
             script = os.path.join( path, 'env.sh' )
             if os.path.exists( script ):
                 return script, path, version
+            elif os.path.exists( os.path.join( path, 'bin' ) ):
+                return None, path, version
         else:
             return None, None, None
     def _find_dep_default( self, name ):
@@ -55,9 +57,12 @@ class DependencyManager( object ):
             path = os.path.join( base_path, name, 'default' )
             if os.path.islink( path ):
                 real_path = os.path.realpath( path )
+                real_bin = os.path.join( real_path, 'bin' )
                 real_version = os.path.basename( real_path )
                 script = os.path.join( real_path, 'env.sh' )
                 if os.path.exists( script ):
                     return script, real_path, real_version
+                elif os.path.exists( os.path.join( real_path, 'bin' ) ):
+                    return None, real_path, real_version
         else:
             return None, None, None

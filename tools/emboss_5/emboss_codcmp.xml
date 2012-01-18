@@ -1,7 +1,7 @@
 <tool id="EMBOSS: codcmp12" name="codcmp" version="5.0.0">
   <description>Codon usage table comparison</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>codcmp -first $cfile1 -second $cfile2 -outfile $out_file1 -auto</command>
+  <command>codcmp -first '$cfile1' -second '$cfile2' -outfile '$out_file1' -auto</command>
   <inputs>
     <param name="cfile1" type="select">
       <label>Codon Usage File 1</label>

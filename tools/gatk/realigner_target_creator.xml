@@ -1,7 +1,7 @@
-<tool id="gatk_realigner_target_creator" name="Realigner Target Creator" version="0.0.3">
+<tool id="gatk_realigner_target_creator" name="Realigner Target Creator" version="0.0.4">
   <description>for use in local realignment</description>
   <requirements>
-      <requirement type="package" version="1.2">gatk</requirement>
+      <requirement type="package" version="1.3">gatk</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "1"
@@ -28,16 +28,17 @@
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
         -d "-known:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
-        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
-            -p '--rodToIntervalTrackName "${rod_bind_name}"'
-        #end if
     #end for
    
     ##start standard gatk options
     #if $gatk_param_type.gatk_param_type_selector == "advanced":
-        #for $sample_metadata in $gatk_param_type.sample_metadata:
-            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #for $pedigree in $gatk_param_type.pedigree:
+            -p '--pedigree "${pedigree.pedigree_file}"'
         #end for
+        #for $pedigree_string in $gatk_param_type.pedigree_string_repeat:
+            -p '--pedigreeString "${pedigree_string.pedigree_string}"'
+        #end for
+        -p '--pedigreeValidationType "${gatk_param_type.pedigree_validation_type}"'
         #for $read_filter in $gatk_param_type.read_filter:
             -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
             ###raise Exception( str( dir( $read_filter ) ) )
@@ -56,7 +57,7 @@
             -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
         #end for
 
-        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        -p '--interval_set_rule "${gatk_param_type.interval_set_rule}"'
         
         -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
         #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
@@ -111,6 +112,7 @@
           <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
           </options>
+          <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
         </param>
       </when>
       <when value="history">
@@ -135,20 +137,16 @@
 	      </param>
           <when value="dbsnp">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="snps">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="indels">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
           <when value="custom">
               <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
-              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
           </when>
         </conditional>
     </repeat>
@@ -162,9 +160,16 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <repeat name="sample_metadata" title="Sample Metadata">
-            <param name="sample_metadata_file" type="data" format="txt" label="Sample file in JSON format" />
+        <repeat name="pedigree" title="Pedigree file">
+            <param name="pedigree_file" type="data" format="txt" label="Pedigree files for samples" />
         </repeat>
+        <repeat name="pedigree_string_repeat" title="Pedigree string">
+            <param name="pedigree_string" type="text" value="" label="Pedigree string for samples" />
+        </repeat>
+        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
 		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
@@ -186,7 +191,7 @@
           <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
         </repeat>
         
-        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+        <param name="interval_set_rule" type="select" label="Interval set rule">
           <option value="UNION" selected="True">UNION</option>
           <option value="INTERSECTION">INTERSECTION</option>
         </param>
@@ -295,7 +300,6 @@
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
           <param name="input_bam" value="gatk/fake_phiX_reads_1.bam" ftype="bam" />
           <param name="rod_bind_type_selector" value="dbsnp" />
-          <param name="rodToIntervalTrackName" />
           <param name="input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="advanced" />

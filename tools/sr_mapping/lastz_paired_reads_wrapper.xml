@@ -12,7 +12,7 @@
         --input1=$source.input1
         --ref_sequences=$input1.metadata.sequences 
       #else:
-        --input1="${ filter( lambda x: str( x[0] ) == str( $source.input1_2bit ), $__app__.tool_data_tables[ 'lastz_seqs' ].get_fields() )[0][-1] }"
+        --input1="${source.input1_2bit.fields.path}"
       #end if
       --output=$output1
       --lastz_seqs_file_dir=${GALAXY_DATA_INDEX_DIR}

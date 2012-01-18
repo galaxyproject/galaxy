@@ -1,7 +1,7 @@
 <tool id="EMBOSS: sirna89" name="sirna" version="5.0.0">
   <description>Finds siRNA duplexes in mRNA</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>sirna -sequence $input1 -outfile $ofile1 -outseq $ofile2 -poliii $poliii -aa $aa -tt $tt -polybase $polybase -context $context -rformat2 $out_format1 -osformat3 $out_format2
+  <command>sirna -sequence '$input1' -outfile '$ofile1' -outseq '$ofile2' -poliii '$poliii' -aa '$aa' -tt '$tt' -polybase '$polybase' -context '$context' -rformat2 '$out_format1' -osformat3 '$out_format2'
   -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">

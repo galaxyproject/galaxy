@@ -1,7 +1,7 @@
 <tool id="EMBOSS: dotpath25" name="dotpath" version="5.0.0">
   <description>Non-overlapping wordmatch dotplot of two sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl dotpath -asequence $input1 -bsequence $input2 -goutfile $out_file1 -wordsize $wordsize -overlaps $overlaps -boxit $boxit -graph png
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl dotpath -asequence '$input1' -bsequence '$input2' -goutfile '$out_file1' -wordsize '$wordsize' -overlaps '$overlaps' -boxit '$boxit' -graph png
   -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">

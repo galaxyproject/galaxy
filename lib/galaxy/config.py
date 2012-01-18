@@ -47,11 +47,14 @@ class Configuration( object ):
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
         self.tool_sheds_config = kwargs.get( 'tool_sheds_config_file', 'tool_sheds_conf.xml' )
-        self.enable_unique_workflow_defaults = string_as_bool ( kwargs.get ('enable_unique_workflow_defaults', False ) )
+        self.enable_unique_workflow_defaults = string_as_bool( kwargs.get( 'enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.len_file_path = kwargs.get( "len_file_path", resolve_path(os.path.join(self.tool_data_path, 'shared','ucsc','chrom'), self.root) )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
+        self.enable_tool_shed_install = string_as_bool( kwargs.get( 'enable_tool_shed_install', False ) )
+        self.tool_shed_install_config = resolve_path( kwargs.get( "tool_shed_install_config_file", "tool_shed_install.xml" ), self.root )
+        self.install_tool_config = resolve_path( kwargs.get( "install_tool_config_file", "shed_tool_conf.xml" ), self.root )
         if 'tool_config_file' in kwargs:
             tcf = kwargs[ 'tool_config_file' ]
         elif 'tool_config_files' in kwargs:
@@ -60,6 +63,13 @@ class Configuration( object ):
             tcf = 'tool_conf.xml'
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ] 
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
+        self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
+        try:
+            self.hours_between_check = int( kwargs.get( 'hours_between_check', 12 ) )
+            if self.hours_between_check < 1 or self.hours_between_check > 24:
+                self.hours_between_check = 12
+        except:
+            self.hours_between_check = 12
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
@@ -80,6 +90,7 @@ class Configuration( object ):
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
+        self.cleanup_job = kwargs.get( "cleanup_job", "always" )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
@@ -151,6 +162,13 @@ class Configuration( object ):
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
+        self.object_store = kwargs.get( 'object_store', 'disk' )
+        self.aws_access_key = kwargs.get( 'aws_access_key', None )
+        self.aws_secret_key = kwargs.get( 'aws_secret_key', None )
+        self.s3_bucket = kwargs.get( 's3_bucket', None)
+        self.use_reduced_redundancy = kwargs.get( 'use_reduced_redundancy', False )
+        self.object_store_cache_size = float(kwargs.get( 'object_store_cache_size', -1 ))
+        self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()

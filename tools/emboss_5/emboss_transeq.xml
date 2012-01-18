@@ -1,7 +1,7 @@
 <tool id="EMBOSS: transeq101" name="transeq" version="5.0.0">
   <description>Translate nucleic acid sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>transeq -sequence $input1 -outseq $out_file1 -frame $frame -table $table -regions "$regions" -trim $trim -clean $clean -alternative $alternative -osformat2 $out_format1 -auto</command>
+  <command>transeq -sequence '$input1' -outseq '$out_file1' -frame '$frame' -table '$table' -regions '$regions' -trim '$trim' -clean '$clean' -alternative '$alternative' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>

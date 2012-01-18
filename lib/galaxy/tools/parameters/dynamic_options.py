@@ -525,13 +525,18 @@ class DynamicOptions( object ):
         """
         Get contents of field by name for specified value.
         """
+        rval = []
         if isinstance( field_name, int ):
             field_index = field_name
         else:
             assert field_name in self.columns, "Requested '%s' column missing from column def" % field_name
             field_index = self.columns[ field_name ]
-        for fields in self.get_fields_by_value( value, trans, other_values ):
-            return fields[ field_index ]
+        if not isinstance( value, list ):
+            value = [value]
+        for val in value:
+            for fields in self.get_fields_by_value( val, trans, other_values ):
+                rval.append( fields[ field_index ] )
+        return rval
     
     def get_options( self, trans, other_values ):
         rval = []

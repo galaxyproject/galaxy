@@ -1,7 +1,7 @@
 <tool id="EMBOSS: maskfeat50" name="maskfeat" version="5.0.0">
   <description>Mask off features of a sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>maskfeat -sequence $input1 -outseq $out_file1 -type "$type" -tolower $tolower -maskchar "$maskchar" -osformat2 $out_format1 -auto</command>
+  <command>maskfeat -sequence '$input1' -outseq '$out_file1' -type '$type' -tolower '$tolower' -maskchar '$maskchar' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

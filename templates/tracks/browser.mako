@@ -63,7 +63,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
      */
     var add_tracks = function() {
         $.ajax({
-            url: "${h.url_for( action='list_histories' )}",
+            url: "${h.url_for( action='list_current_history_datasets' )}",
             data: { "f-dbkey": view.dbkey },
             error: function() { alert( "Grid failed" ); },
             success: function(table_html) {
@@ -100,7 +100,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                                    [ arguments[0] ]
                                                    );
                                  for (var i= 0; i < track_defs.length; i++) {
-                                     view.add_drawable( track_from_dict(track_defs[i], view) ); 
+                                     view.add_drawable( object_from_dict(track_defs[i], view) ); 
                                  }
                             });
                             hide_modal();
@@ -187,7 +187,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 data: {},
                 error: function() { alert( "Couldn't create new browser" ) },
                 success: function(form_html) {
-                    show_modal("New Track Browser", form_html, {
+                    show_modal("New Visualization", form_html, {
                         "Cancel": function() { window.location = "${h.url_for( controller='visualization', action='list' )}"; },
                         "Continue": function() { $(document).trigger("convert_to_values"); continue_fn(); }
                     });
@@ -214,7 +214,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     url: "${h.url_for( action='add_track_async' )}",
                     data: { hda_id: "${add_dataset}" },
                     dataType: "json",
-                    success: function(track_data) { view.add_drawable( track_from_dict(track_data, view) ) }
+                    success: function(track_data) { view.add_drawable( object_from_dict(track_data, view) ) }
                 });
                 
             %endif
@@ -230,7 +230,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             
             $("#save-icon").click( function() {                
                 // Show saving dialog box
-                show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
+                show_modal("Saving...", "progress");
                                     
                 // Save bookmarks.
                 var bookmarks = [];
@@ -244,7 +244,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 // FIXME: give unique IDs to Drawables and save overview as ID.
                 var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null);
                 var payload = { 
-                    'view': view.to_json(), 
+                    'view': view.to_dict(), 
                     'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
                     'bookmarks': bookmarks
                 };
@@ -267,7 +267,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                         // Needed to set URL when first saving a visualization.
                         window.history.pushState({}, "", vis_info.url);
                     },
-                    error: function() { alert("Could not save visualization"); }
+                    error: function() { 
+                        show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
+                                    { "Close" : hide_modal } );
+                    }
                 });
             });
             

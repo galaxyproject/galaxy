@@ -1,7 +1,7 @@
 <tool id="EMBOSS: seqret84" name="seqret" version="5.0.0">
   <description>Reads and writes sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>seqret -sequence $input1 -outseq $out_file1 -feature $feature -firstonly $firstonly -osformat2 $out_format1 -auto</command>
+  <command>seqret -sequence '$input1' -outseq '$out_file1' -feature '$feature' -firstonly '$firstonly' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

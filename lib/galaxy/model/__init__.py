@@ -25,7 +25,9 @@ if sys.version_info[:2] < ( 2, 5 ):
 
 log = logging.getLogger( __name__ )
 
-datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
+datatypes_registry = galaxy.datatypes.registry.Registry()
+# Default Value Required for unit tests
+datatypes_registry.load_datatypes()
 
 class NoConverterException(Exception):
     def __init__(self, value):
@@ -631,6 +633,7 @@ class Dataset( object ):
                     FAILED_METADATA = 'failed_metadata' )
     permitted_actions = get_permitted_actions( filter='DATASET' )
     file_path = "/tmp/"
+    object_store = None # This get initialized in mapping.py (method init) by app.py
     engine = None
     def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
         self.id = id
@@ -641,20 +644,13 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        
     def get_file_name( self ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
-            # First try filename directly under file_path
-            filename = os.path.join( self.file_path, "dataset_%d.dat" % self.id )
-            # Only use that filename if it already exists (backward compatibility),
-            # otherwise construct hashed path
-            if not os.path.exists( filename ):
-                dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
-                # Create directory if it does not exist
-                if not os.path.exists( dir ):
-                    os.makedirs( dir )
-                # Return filename inside hashed directory
-                return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
+            assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
+            filename = self.object_store.get_filename( self )
+            return filename
         else:
             filename = self.external_filename
         # Make filename absolute
@@ -667,15 +663,12 @@ class Dataset( object ):
     file_name = property( get_file_name, set_file_name )
     @property
     def extra_files_path( self ):
-        if self._extra_files_path:
-            path = self._extra_files_path
+        return self.object_store.get_filename( self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id )
+    def _calculate_size( self ):
+        if self.external_filename:
+            return os.path.getsize(self.external_filename)
         else:
-            path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
-            #only use path directly under self.file_path if it exists
-            if not os.path.exists( path ):
-                path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
-        # Make path absolute
-        return os.path.abspath( path )
+            return self.object_store.size(self)
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
         if self.file_size:
@@ -684,20 +677,14 @@ class Dataset( object ):
             else:
                 return self.file_size
         else:
-            try:
-                if nice_size:
-                    return galaxy.datatypes.data.nice_size( os.path.getsize( self.file_name ) )
-                else:
-                    return os.path.getsize( self.file_name )
-            except OSError:
-                return 0
+            if nice_size:
+                return galaxy.datatypes.data.nice_size( self._calculate_size() )
+            else:
+                return self._calculate_size()
     def set_size( self ):
         """Returns the size of the data on disk"""
-        try:
-            if not self.file_size:
-                self.file_size = os.path.getsize( self.file_name )
-        except OSError:
-            self.file_size = 0
+        if not self.file_size:
+            self.file_size = self._calculate_size()
     def get_total_size( self ):
         if self.total_size is not None:
             return self.total_size
@@ -712,8 +699,9 @@ class Dataset( object ):
         if self.file_size is None:
             self.set_size()
         self.total_size = self.file_size or 0
-        for root, dirs, files in os.walk( self.extra_files_path ):
-            self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files ] )
+        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+            for root, dirs, files in os.walk( self.extra_files_path ):
+                self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files ] )
     def has_data( self ):
         """Detects whether there is any data"""
         return self.get_size() > 0
@@ -729,10 +717,7 @@ class Dataset( object ):
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""
-        try:
-            os.remove(self.data.file_name)
-        except OSError, e:
-            log.critical('%s delete error %s' % (self.__class__.__name__, e))
+        self.object_store.delete(self)
     @property
     def user_can_purge( self ):
         return self.purged == False \
@@ -740,9 +725,12 @@ class Dataset( object ):
                 and len( self.history_associations ) == len( self.purged_history_associations )
     def full_delete( self ):
         """Remove the file and extra files, marks deleted and purged"""
-        os.unlink( self.file_name )
-        if os.path.exists( self.extra_files_path ):
-            shutil.rmtree( self.extra_files_path )
+        # os.unlink( self.file_name )
+        self.object_store.delete(self)
+        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        # if os.path.exists( self.extra_files_path ):
+        #     shutil.rmtree( self.extra_files_path )
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
@@ -926,7 +914,10 @@ class DatasetInstance( object ):
             depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
         except KeyError:
             depends_list = []
-        # See if converted dataset already exists
+        # See if converted dataset already exists, either in metadata in conversions.
+        converted_dataset = self.get_metadata_dataset( trans, target_ext )
+        if converted_dataset:
+            return converted_dataset
         converted_dataset = self.get_converted_files_by_type( target_ext )
         if converted_dataset:
             return converted_dataset
@@ -956,6 +947,21 @@ class DatasetInstance( object ):
         session.add( assoc )
         session.flush()
         return None
+    def get_metadata_dataset( self, trans, dataset_ext ):
+        """ 
+        Returns an HDA that points to a metadata file which contains a 
+        converted data with the requested extension.
+        """
+        for name, value in self.metadata.items():
+            # HACK: MetadataFile objects do not have a type/ext, so need to use metadata name
+            # to determine type.
+            if dataset_ext == 'bai' and name == 'bam_index' and isinstance( value, trans.app.model.MetadataFile ):
+                # HACK: MetadataFile objects cannot be used by tools, so return 
+                # a fake HDA that points to metadata file.
+                fake_dataset = trans.app.model.Dataset( state=trans.app.model.Dataset.states.OK, 
+                                                        external_filename=value.file_name )
+                fake_hda = trans.app.model.HistoryDatasetAssociation( dataset=fake_dataset )
+                return fake_hda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         raise 'Unimplemented'
     def get_child_by_designation(self, designation):
@@ -1786,16 +1792,28 @@ class MetadataFile( object ):
     @property
     def file_name( self ):
         assert self.id is not None, "ID must be set before filename used (commit the object)"
-        path = os.path.join( Dataset.file_path, '_metadata_files', *directory_hash_id( self.id ) )
-        # Create directory if it does not exist
+        # Ensure the directory structure and the metadata file object exist
         try:
-            os.makedirs( path )
-        except OSError, e:
-            # File Exists is okay, otherwise reraise
-            if e.errno != errno.EEXIST:
-                raise
-        # Return filename inside hashed directory
-        return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
+            da = self.history_dataset or self.library_dataset
+            if self.object_store_id is None and da is not None:
+                self.object_store_id = da.dataset.object_store_id
+            da.dataset.object_store.create( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
+            path = da.dataset.object_store.get_filename( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
+            return path
+        except AttributeError:
+            # In case we're not working with the history_dataset
+            # print "Caught AttributeError"
+            path = os.path.join( Dataset.file_path, '_metadata_files', *directory_hash_id( self.id ) )
+            # Create directory if it does not exist
+            try:
+                os.makedirs( path )
+            except OSError, e:
+                # File Exists is okay, otherwise reraise
+                if e.errno != errno.EEXIST:
+                    raise
+            # Return filename inside hashed directory
+            return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
+    
 
 class FormDefinition( object, APIItem ):
     # The following form_builder classes are supported by the FormDefinition class.
@@ -2644,15 +2662,31 @@ class APIKeys( object ):
     pass
 
 class ToolShedRepository( object ):
-    def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, changeset_revision=None, deleted=False ):
+    def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
+                  changeset_revision=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False ):
         self.id = id
         self.create_time = create_time
         self.tool_shed = tool_shed
         self.name = name
         self.description = description
         self.owner = owner
+        self.installed_changeset_revision = installed_changeset_revision
         self.changeset_revision = changeset_revision
+        self.metadata = metadata
+        self.includes_datatypes = includes_datatypes
+        self.update_available = update_available
         self.deleted = deleted
+
+class ToolIdGuidMap( object ):
+    def __init__( self, id=None, create_time=None, tool_id=None, tool_version=None, tool_shed=None, repository_owner=None, repository_name=None, guid=None ):
+        self.id = id
+        self.create_time = create_time
+        self.tool_id = tool_id
+        self.tool_version = tool_version
+        self.tool_shed = tool_shed
+        self.repository_owner = repository_owner
+        self.repository_name = repository_name
+        self.guid = guid
 
 ## ---- Utility methods -------------------------------------------------------
 

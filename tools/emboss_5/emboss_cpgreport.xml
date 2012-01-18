@@ -1,7 +1,7 @@
 <tool id="EMBOSS: cpgreport16" name="cpgreport" version="5.0.0">
   <description>Reports all CpG rich regions</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>cpgreport -sequence $input1 -outfile $out_file1 -outfeat $out_file2 -offormat3 $out_format2 -score $score -auto</command>
+  <command>cpgreport -sequence '$input1' -outfile '$out_file1' -outfeat '$out_file2' -offormat3 '$out_format2' -score '$score' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>

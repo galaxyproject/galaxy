@@ -50,6 +50,8 @@
         <tr><td>Dbkey:</td><td>${hda.dbkey}</td></tr>
         <tr><td>Format:</td><td>${hda.ext}</td></tr>
         <tr><td>Tool Version:</td><td>${hda.tool_version}</td></tr>
+        <tr><td>Tool Standard Output:</td><td><a href="${h.url_for( controller='dataset', action='stdout')}">stdout</a></td></tr>
+        <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr')}">stderr</a></td></tr>
 </table>
 <br />
 <table class="tabletip">

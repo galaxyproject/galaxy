@@ -211,7 +211,7 @@ function _show_modal( title, body, buttons, extra_buttons, init_fn ) {
     }
     var body_elt = $( ".dialog-box" ).find( ".body" );
     // Clear min-width to allow for modal to take size of new body.
-    body_elt.css("min-width", "");
+    body_elt.css("min-width", "0px");
     $( ".dialog-box" ).find( ".body" ).html( body );
     if ( ! $(".dialog-box-container").is( ":visible" ) ) {
         $("#overlay").show();

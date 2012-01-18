@@ -370,7 +370,8 @@ def __main__():
     output_paths = parse_outputs( sys.argv[4:] )
     json_file = open( 'galaxy.json', 'w' )
 
-    registry = Registry( sys.argv[1], sys.argv[2] )
+    registry = Registry()
+    registry.load_datatypes( root_dir=sys.argv[1], config=sys.argv[2] )
 
     for line in open( sys.argv[3], 'r' ):
         dataset = from_json_string( line )

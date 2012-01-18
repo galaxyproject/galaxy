@@ -166,7 +166,7 @@ class ToolParameter( object ):
         """Factory method to create parameter of correct type"""
         param_name = param.get( "name" )
         if not param_name:
-            raise ValueError( "Tool parameters require a 'name'" )
+            raise ValueError( "Tool parameter '%s' requires a 'name'" % (param_name ) )
         param_type = param.get("type")
         if not param_type:
             raise ValueError( "Tool parameter '%s' requires a 'type'" % ( param_name ) )
@@ -224,7 +224,7 @@ class IntegerToolParameter( TextToolParameter ):
                 int( self.value )
             except:
                 raise ValueError( "An integer is required" )
-        elif self.value is None:
+        elif self.value is None and not self.optional:
             raise ValueError( "The settings for the field named '%s' require a 'value' setting and optionally a default value which must be an integer" % self.name )
         self.min = elem.get( 'min' )
         self.max = elem.get( 'max' )
@@ -296,7 +296,7 @@ class FloatToolParameter( TextToolParameter ):
                 float( self.value )
             except:
                 raise ValueError( "A real number is required" )
-        elif self.value is None:
+        elif self.value is None and not self.optional:
             raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be a real number" )
         if self.min:
             try:
@@ -757,7 +757,15 @@ class SelectToolParameter( ToolParameter ):
         # If we got this far, we can actually look at the dependencies
         # to see if their values will not be available until runtime.
         for dep_name in self.get_dependencies():
-            dep_value = context[ dep_name ]
+            if dep_name in context:
+                dep_value = context[ dep_name ]
+            else:
+                # Quick hack to check deeper in the context.
+                # TODO: Context should really be scoped and the correct subset passed along.
+                # This happens specifically in all the GATK tools, the way the reference genome is handled.
+                for layer in context.itervalues():
+                    if isinstance( layer, dict ) and self.name in layer and dep_name in layer:
+                        dep_value = layer[dep_name]
             # Dependency on a dataset that does not yet exist
             if isinstance( dep_value, DummyDataset ):
                 return True
@@ -1307,7 +1315,9 @@ class DataToolParameter( ToolParameter ):
             if tool is None:
                 #This occurs for things such as unit tests
                 import galaxy.datatypes.registry
-                formats.append( galaxy.datatypes.registry.Registry().get_datatype_by_extension( extension.lower() ).__class__ )
+                datatypes_registry = galaxy.datatypes.registry.Registry()
+                datatypes_registry.load_datatypes()
+                formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
             else:
                 formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )
@@ -1547,6 +1557,22 @@ class DataToolParameter( ToolParameter ):
         if call_attribute:
             ref = ref()
         return ref
+        
+class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
+    """
+    Hidden parameter that behaves as a DataToolParameter. As with all hidden 
+    parameters, this is a HACK.
+    """
+    def __init__( self, tool, elem ):
+        DataToolParameter.__init__( self, tool, elem )
+        self.value = "None"
+        
+    def get_initial_value( self, trans, context ):
+        return None
+        
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        return form_builder.HiddenField( self.name, self.value )
+        
 
 class LibraryDatasetToolParameter( ToolParameter ):
     """
@@ -1642,6 +1668,7 @@ parameter_types = dict( text            = TextToolParameter,
                         select          = SelectToolParameter,
                         data_column     = ColumnListParameter,
                         hidden          = HiddenToolParameter,
+                        hidden_data     = HiddenDataToolParameter,
                         baseurl         = BaseURLToolParameter,
                         file            = FileToolParameter,
                         ftpfile         = FTPFileToolParameter,

@@ -18,3 +18,11 @@ class ItemAccessibilityException( MessageException ):
 
 class ItemOwnershipException( MessageException ):
     pass
+
+class ObjectNotFound( Exception ):
+    """ Accessed object was not found """
+    pass
+
+class ObjectInvalid( Exception ):
+    """ Accessed object store ID is invalid """
+    pass

@@ -1,6 +1,6 @@
 import re
 
-VALID_USERNAME_RE = re.compile( "^[a-z0-9\-]+$" )
+VALID_PUBLICNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 
 def validate_email( trans, email, user=None, check_dup=True ):
     message = ''
@@ -14,21 +14,21 @@ def validate_email( trans, email, user=None, check_dup=True ):
         message = "User with that email already exists"
     return message
 
-def validate_username( trans, username, user=None ):
+def validate_publicname( trans, publicname, user=None ):
     # User names must be at least four characters in length and contain only lower-case
     # letters, numbers, and the '-' character.
-    if username in [ 'None', None, '' ]:
+    if publicname in [ 'None', None, '' ]:
         return ''
-    if user and user.username == username:
+    if user and user.username == publicname:
         return ''
-    if len( username ) < 4:
-        return "User name must be at least 4 characters in length"
-    if len( username ) > 255:
-        return "User name cannot be more than 255 characters in length"
-    if not( VALID_USERNAME_RE.match( username ) ):
-        return "User name must contain only lower-case letters, numbers and '-'"
-    if trans.sa_session.query( trans.app.model.User ).filter_by( username=username ).first():
-        return "This user name is not available"
+    if len( publicname ) < 4:
+        return "Public name must be at least 4 characters in length"
+    if len( publicname ) > 255:
+        return "Public name cannot be more than 255 characters in length"
+    if not( VALID_PUBLICNAME_RE.match( publicname ) ):
+        return "Public name must contain only lower-case letters, numbers and '-'"
+    if trans.sa_session.query( trans.app.model.User ).filter_by( username=publicname ).first():
+        return "Public name is taken; please choose another"
     return ''
 
 def validate_password( trans, password, confirm ):

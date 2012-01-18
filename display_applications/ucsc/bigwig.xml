@@ -10,7 +10,7 @@
         <filter>${dataset.dbkey in $builds}</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
         <url>${ucsc_link}db=${qp($bigwig_file.dbkey)}&amp;hgt.customText=${qp($track.url)}</url>
-        <param type="data" name="bigwig_file" url="galaxy_${DATASET_HASH}.bigwig" strip_https="True" />
-        <param type="template" name="track" viewable="True" strip_https="True">track type=bigWig name="${bigwig_file.name}" bigDataUrl=${bigwig_file.url} db=${bigwig_file.dbkey}</param>
+        <param type="data" name="bigwig_file" url="galaxy_${DATASET_HASH}.bigwig" />
+        <param type="template" name="track" viewable="True">track type="bigWig" name="${bigwig_file.name.replace( '\\', '\\\\' ).replace( '"', '\\"' )}" bigDataUrl="${bigwig_file.url}" db="${bigwig_file.dbkey}"</param>
     </dynamic_links>
 </display>

@@ -2,8 +2,8 @@
   <!-- tool tested with documentation, functional test not designed due to empty files resulting from test input sequences -->  
   <description>Extract features from a sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>extractfeat -sequence $input1 -outseq $out_file1 -before $before -after $after -source "$source" -type "$type" -sense $sense -minscore $minscore -maxscore $maxscore -tag "$tag" -value
-  "$value" -join $join -featinname $featinname -describe "$describe" -osformat2 $out_format1 -auto</command>
+  <command>extractfeat -sequence '$input1' -outseq '$out_file1' -before '$before' -after '$after' -source '$source' -type '$type' -sense '$sense' -minscore '$minscore' -maxscore '$maxscore' -tag '$tag' -value
+  '$value' -join '$join' -featinname '$featinname' -describe '$describe' -osformat2 '$out_format1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

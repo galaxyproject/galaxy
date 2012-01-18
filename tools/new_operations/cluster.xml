@@ -82,9 +82,15 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 -----
 
-**Example**
+**Examples**
 
-.. image:: ./static/operation_icons/gops_cluster.gif
+Find Clusters:
+
+.. image:: ./static/operation_icons/gops_clusterFind.gif
+
+Merge Clusters:
+
+.. image:: ./static/operation_icons/gops_clusterMerge.gif
 
 </help>
 </tool>

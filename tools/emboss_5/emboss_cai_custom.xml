@@ -1,7 +1,7 @@
 <tool id="EMBOSS: cai_custom6" name="cai custom" version="5.0.0">
   <description>CAI codon adaptation index using custom codon usage file</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>cai -seqall $input1 -outfile $out_file1 -cfile $input2 -auto</command>
+  <command>cai -seqall '$input1' -outfile '$out_file1' -cfile '$input2' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>

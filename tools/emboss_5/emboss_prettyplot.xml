@@ -2,9 +2,9 @@
   <!-- produces png output with file name -->
   <description>Displays aligned sequences, with colouring and boxing</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>prettyplot -sequences $input1 -graph png -goutfile $out_file1 -residuesperline $residuesperline -resbreak $resbreak -ccolours $ccolours -cidentity $cidentity -csimilarity $csimilarity
-  -cother $cother -docolour $docolour -gtitle $title -pair $pair -identity $identity -box $box -boxcol $boxcol -boxcolval $boxcolval -name $name -maxnamelen $maxnamelen -number $number -listoptions
-  $listoptions -consensus $consensus -collision $collision -alternative $alternative -showscore $showscore -portrait $portrait -auto</command>
+  <command>prettyplot -sequences '$input1' -graph png -goutfile '$out_file1' -residuesperline '$residuesperline' -resbreak '$resbreak' -ccolours '$ccolours' -cidentity '$cidentity' -csimilarity '$csimilarity'
+  -cother '$cother' -docolour '$docolour' -gtitle '$title' -pair '$pair' -identity '$identity' -box '$box' -boxcol '$box'col -boxcolval '$box'colval -name '$name' -maxnamelen '$maxnamelen' -number '$number' -listoptions
+  '$listoptions' -consensus '$consensus' -collision '$collision' -alternative '$alternative' -showscore '$showscore' -portrait '$portrait' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

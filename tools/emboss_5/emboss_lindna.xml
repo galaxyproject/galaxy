@@ -2,9 +2,9 @@
   <!-- tool produces memory error in ajmem.c -->
   <description>Draws linear maps of DNA constructs</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>lindna -infile $input1 -graphout png -goutfile $out_file1 -ruler $ruler -blocktype $blocktype -maxgroups $maxgroups -maxlabels $maxlabels -intersymbol $intersymbol -intercolour $intercolour
-  -interticks $interticks -gapsize $gapsize -ticklines $ticklines -textheight $textheight -textlength $textlength -margin $margin -tickheight $tickheight -blockheight $blockheight -rangeheight
-  $rangeheight -gapgroup $gapgroup -postext $postext -auto</command>
+  <command>lindna -infile '$input1' -graphout png -goutfile '$out_file1' -ruler '$ruler' -blocktype '$blocktype' -maxgroups '$maxgroups' -maxlabels '$maxlabels' -intersymbol '$intersymbol' -intercolour '$intercolour'
+  -interticks '$interticks' -gapsize '$gapsize' -ticklines '$ticklines' -textheight '$textheight' -textlength '$textlength' -margin '$margin' -tickheight '$tickheight' -blockheight '$blockheight' -rangeheight
+  '$rangeheight' -gapgroup '$gapgroup' -postext '$postext' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequences</label>

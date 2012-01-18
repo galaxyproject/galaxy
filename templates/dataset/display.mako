@@ -9,11 +9,11 @@
 
 <%def name="init()">
 <%
-	self.has_left_panel=False
-	self.has_right_panel=True
-	self.message_box_visible=False
-	self.active_view="user"
-	self.overlay_visible=False
+    self.has_left_panel=False
+    self.has_right_panel=True
+    self.message_box_visible=False
+    self.active_view="user"
+    self.overlay_visible=False
 %>
 </%def>
 
@@ -44,10 +44,10 @@
 
 <%def name="center_panel()">
     <div class="unified-panel-header" unselectable="on">
-		<div class="unified-panel-header-inner">
-				${get_class_display_name( item.__class__ )}
-			| ${get_item_name( item ) | h}
-	    </div>
+        <div class="unified-panel-header-inner">
+                ${get_class_display_name( item.__class__ )}
+            | ${get_item_name( item ) | h}
+        </div>
     </div>
     
     <div class="unified-panel-body">

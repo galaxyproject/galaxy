@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import optparse, os, shutil, subprocess, sys, tempfile
+from galaxy import eggs
+from galaxy.datatypes.util.gff_util import parse_gff_attributes, gff_attributes_to_str
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
@@ -50,6 +52,9 @@ def __main__():
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
     parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
     parser.add_option( '', '--ref_file', dest='ref_file', help='The reference dataset from the history' )
+    
+    # Global model.
+    parser.add_option( '', '--global_model', dest='global_model_file', help='Global model used for computing on local data' )
     
     (options, args) = parser.parse_args()
     
@@ -122,7 +127,9 @@ def __main__():
     # Add input files.
     cmd += " " + options.input
     
+    #
     # Run command.
+    #
     try:
         tmp_name = tempfile.NamedTemporaryFile( dir="." ).name
         tmp_stderr = open( tmp_name, 'wb' )
@@ -130,7 +137,60 @@ def __main__():
         returncode = proc.wait()
         tmp_stderr.close()
         
-        # Get stderr, allowing for case where it's very large.
+        # Read standard error to get total map/upper quartile mass.
+        total_map_mass = -1
+        tmp_stderr = open( tmp_name, 'r' )
+        for line in tmp_stderr:
+            if line.lower().find( "total map mass" ) >= 0 or line.lower().find( "upper quartile" ) >= 0:
+                total_map_mass = float( line.split(":")[1].strip() )
+                break
+        tmp_stderr.close()
+        
+        #
+        # If there's a global model provided, use model's total map mass
+        # to adjust FPKM + confidence intervals.
+        #
+        if options.global_model_file:        
+            # Global model is simply total map mass from original run.
+            global_model_file = open( options.global_model_file, 'r' )
+            global_model_total_map_mass = float( global_model_file.readline() )
+            global_model_file.close()
+        
+            # Ratio of global model's total map mass to original run's map mass is
+            # factor used to adjust FPKM.
+            fpkm_map_mass_ratio = total_map_mass / global_model_total_map_mass
+        
+            # Update FPKM values in transcripts.gtf file.
+            transcripts_file = open( "transcripts.gtf", 'r' )
+            tmp_transcripts = tempfile.NamedTemporaryFile( dir="." ).name
+            new_transcripts_file = open( tmp_transcripts, 'w' )
+            for line in transcripts_file:
+                fields = line.split( '\t' )
+                attrs = parse_gff_attributes( fields[8] )
+                attrs[ "FPKM" ] = str( float( attrs[ "FPKM" ] ) * fpkm_map_mass_ratio )
+                attrs[ "conf_lo" ] = str( float( attrs[ "conf_lo" ] ) * fpkm_map_mass_ratio )
+                attrs[ "conf_hi" ] = str( float( attrs[ "conf_hi" ] ) * fpkm_map_mass_ratio )
+                fields[8] = gff_attributes_to_str( attrs, "GTF" )
+                new_transcripts_file.write( "%s\n" % '\t'.join( fields ) )
+            transcripts_file.close()
+            new_transcripts_file.close()
+            shutil.copyfile( tmp_transcripts, "transcripts.gtf" )
+            
+        # TODO: update expression files as well.
+            
+        # Set outputs. Transcript and gene expression handled by wrapper directives.
+        shutil.copyfile( "transcripts.gtf" , options.assembled_isoforms_output_file )
+        if total_map_mass > -1:
+            f = open( "global_model.txt", 'w' )
+            f.write( "%f\n" % total_map_mass )
+            f.close()
+
+        # Error checking.
+        if returncode != 0:
+            raise Exception, stderr
+    except Exception, e:
+        raise e
+        # Read stderr so that it can be reported:
         tmp_stderr = open( tmp_name, 'rb' )
         stderr = ''
         buffsize = 1048576
@@ -142,14 +202,7 @@ def __main__():
         except OverflowError:
             pass
         tmp_stderr.close()
-
-        # Copy outputs.
-        shutil.copyfile( "transcripts.gtf" , options.assembled_isoforms_output_file )
         
-        # Error checking.
-        if returncode != 0:
-            raise Exception, stderr            
-    except Exception, e:
         stop_err( 'Error running cufflinks. ' + str( e ) )
 
 if __name__=="__main__": __main__()

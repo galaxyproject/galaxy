@@ -1,6 +1,7 @@
 import sys, logging, copy, shutil, weakref, cPickle, tempfile, os
+from os.path import abspath
 
-from galaxy.util import string_as_bool, relpath, stringify_dictionary_keys, listify
+from galaxy.util import string_as_bool, stringify_dictionary_keys, listify
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 import galaxy.model
@@ -411,6 +412,7 @@ class FileParameter( MetadataParameter ):
             mf = galaxy.model.MetadataFile()
             mf.id = value #we assume this is a valid id, since we cannot check it
             return mf
+    
     def make_copy( self, value, target_context, source_context ):
         value = self.wrap( value )
         if value:
@@ -437,9 +439,12 @@ class FileParameter( MetadataParameter ):
             mf = parent.metadata.get( self.spec.name, None)
             if mf is None:
                 mf = self.new_file( dataset = parent, **value.kwds )
-            shutil.move( value.file_name, mf.file_name )
+            # Ensure the metadata file gets updated with content
+            parent.dataset.object_store.update_from_file( mf, file_name=value.file_name, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=os.path.basename(mf.file_name) )
+            os.unlink( value.file_name )
             value = mf.id
         return value
+    
     def to_external_value( self, value ):
         """
         Turns a value read from a metadata into its value to be pushed directly into the external dict.
@@ -461,7 +466,7 @@ class FileParameter( MetadataParameter ):
             #we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             #we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
             return MetadataTempFile( **kwds )
-
+    
 #This class is used when a database file connection is not available
 class MetadataTempFile( object ):
     tmp_dir = 'database/tmp' #this should be overwritten as necessary in calling scripts
@@ -472,7 +477,7 @@ class MetadataTempFile( object ):
     def file_name( self ):
         if self._filename is None:
             #we need to create a tmp file, accessable across all nodes/heads, save the name, and return it
-            self._filename = relpath( tempfile.NamedTemporaryFile( dir = self.tmp_dir, prefix = "metadata_temp_file_" ).name )
+            self._filename = abspath( tempfile.NamedTemporaryFile( dir = self.tmp_dir, prefix = "metadata_temp_file_" ).name )
             open( self._filename, 'wb+' ) #create an empty file, so it can't be reused using tempfile
         return self._filename
     def to_JSON( self ):
@@ -540,6 +545,7 @@ class JobExternalOutputMetadataWrapper( object ):
         if config_root is None:
             config_root = os.path.abspath( os.getcwd() )
         if datatypes_config is None:
+            raise Exception( 'In setup_external_metadata, the received datatypes_config is None.' )
             datatypes_config = 'datatypes_conf.xml'
         metadata_files_list = []
         for dataset in datasets:
@@ -558,7 +564,7 @@ class JobExternalOutputMetadataWrapper( object ):
                 #is located differently, i.e. on a cluster node with a different filesystem structure
                 
                 #file to store existing dataset
-                metadata_files.filename_in = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_in_%s_" % key ).name )
+                metadata_files.filename_in = abspath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_in_%s_" % key ).name )
                 
                 #FIXME: HACK
                 #sqlalchemy introduced 'expire_on_commit' flag for sessionmaker at version 0.5x
@@ -569,17 +575,17 @@ class JobExternalOutputMetadataWrapper( object ):
                 
                 cPickle.dump( dataset, open( metadata_files.filename_in, 'wb+' ) )
                 #file to store metadata results of set_meta()
-                metadata_files.filename_out = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_out_%s_" % key ).name )
+                metadata_files.filename_out = abspath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_out_%s_" % key ).name )
                 open( metadata_files.filename_out, 'wb+' ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 #file to store a 'return code' indicating the results of the set_meta() call
                 #results code is like (True/False - if setting metadata was successful/failed , exception or string of reason of success/failure )
-                metadata_files.filename_results_code = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_results_%s_" % key ).name )
+                metadata_files.filename_results_code = abspath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_results_%s_" % key ).name )
                 simplejson.dump( ( False, 'External set_meta() not called' ), open( metadata_files.filename_results_code, 'wb+' ) ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 #file to store kwds passed to set_meta()
-                metadata_files.filename_kwds = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_kwds_%s_" % key ).name )
+                metadata_files.filename_kwds = abspath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_kwds_%s_" % key ).name )
                 simplejson.dump( kwds, open( metadata_files.filename_kwds, 'wb+' ), ensure_ascii=True )
                 #existing metadata file parameters need to be overridden with cluster-writable file locations
-                metadata_files.filename_override_metadata = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_override_%s_" % key ).name )
+                metadata_files.filename_override_metadata = abspath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_override_%s_" % key ).name )
                 open( metadata_files.filename_override_metadata, 'wb+' ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 override_metadata = []
                 for meta_key, spec_value in dataset.metadata.spec.iteritems():

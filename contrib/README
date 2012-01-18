@@ -19,6 +19,12 @@ galaxy.debian-init:
     paths, and configure for start at boot with `update-rc.d galaxy defaults`.
     Also written and submitted by James Casbon.
 
+galaxy.fedora-init:
+
+    init script for Fedora/RedHat/Scientific Linux/CentOS.  Copy to
+    /etc/init.d/galaxy, modify paths, and configure for start at boot with
+    `chkconfig galaxy on`.  Written and submitted by Brad Chapman.
+
 galaxy.solaris-smf.xml:
 
     SMF Manifest for Solaris 10 and OpenSolaris.  Import with `svccfg import

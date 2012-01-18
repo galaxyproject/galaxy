@@ -154,10 +154,24 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
     @web.expose
-    def stderr( self, trans, id ):
-        dataset = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        job = dataset.creating_job_associations[0].job
+    def stdout( self, trans, dataset_id=None, **kwargs ):
         trans.response.set_content_type( 'text/plain' )
+        try:
+            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+            assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+            job = hda.creating_job_associations[0].job
+        except:
+            return "Invalid dataset ID or you are not allowed to access this dataset"
+        return job.stdout
+    @web.expose
+    def stderr( self, trans, dataset_id=None, **kwargs ):
+        trans.response.set_content_type( 'text/plain' )
+        try:
+            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+            assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+            job = hda.creating_job_associations[0].job
+        except:
+            return "Invalid dataset ID or you are not allowed to access this dataset"
         return job.stderr
     @web.expose
     def report_error( self, trans, id, email='', message="" ):
@@ -301,8 +315,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream
         return trans.show_error_message( msg )
-
-
+    
     @web.expose
     def get_metadata_file(self, trans, hda_id, metadata_name):
         """ Allows the downloading of metadata files associated with datasets (eg. bai index for bam files) """
@@ -317,12 +330,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, file_ext)
         return open(data.metadata.get(metadata_name).file_name)
-        
-    @web.expose
-    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
-        """Catches the dataset id and displays file contents as directed"""
-        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
-        composite_extensions.append('html') # for archiving composite datatypes
+    
+    def _check_dataset(self, trans, dataset_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
             data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
@@ -337,13 +346,43 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
-        
+
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
         
+        return data
+    
+    @web.expose
+    @web.json
+    def transfer_status(self, trans, dataset_id, filename=None):
+        """ Primarily used for the S3ObjectStore - get the status of data transfer
+        if the file is not in cache """
+        data = self._check_dataset(trans, dataset_id)
+        if isinstance( data, basestring ):
+            return data
+        log.debug( "Checking transfer status for dataset %s..." % data.dataset.id )
+        
+        # Pulling files in extra_files_path into cache is not handled via this
+        # method but that's primarily because those files are typically linked to
+        # through tool's output page anyhow so tying a JavaScript event that will
+        # call this method does not seem doable?
+        if data.dataset.external_filename:
+            return True
+        else:
+            return trans.app.object_store.file_ready(data.dataset)
+    
+    @web.expose
+    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
+        """Catches the dataset id and displays file contents as directed"""
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+        composite_extensions.append('html') # for archiving composite datatypes
+        data = self._check_dataset(trans, dataset_id)
+        if isinstance( data, basestring ):
+            return data
+        
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = os.path.join( data.extra_files_path, filename )
+            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
                     return trans.show_error_message( "Directory listing is not allowed." ) #TODO: Reconsider allowing listing of directories?
@@ -357,14 +396,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                 return open( file_path )
             else:
                 return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
-        
+
         trans.response.set_content_type(data.get_mime())
         trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
-        
+
         if to_ext or isinstance(data.datatype, datatypes.binary.Binary): # Saving the file, or binary file
             if data.extension in composite_extensions:
                 return self.archive_composite_dataset( trans, data, **kwd )
-            else:                    
+            else:
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
                 if not to_ext:
                     to_ext = data.extension
@@ -375,11 +414,13 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
-        
         max_peek_size = 1000000 # 1 MB
         if isinstance(data.datatype, datatypes.images.Html):
             max_peek_size = 10000000 # 10 MB for html
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
+            if trans.response.get_content_type() == "text/html":
+                # Sanitize anytime we respond with plain text/html content.
+                return sanitize_html(open( data.file_name ).read())
             return open( data.file_name )
         else:
             trans.response.set_content_type( "text/html" )
@@ -683,10 +724,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         return self.get_ave_item_rating_data( trans.sa_session, dataset )
         
     @web.expose
-    def display_by_username_and_slug( self, trans, username, slug, preview=True ):
+    def display_by_username_and_slug( self, trans, username, slug, filename=None, preview=True ):
         """ Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id. """
         dataset = self.get_dataset( trans, slug, False, True )
         if dataset:
+            # Filename used for composite types.
+            if filename:
+                return self.display( trans, dataset_id=slug, filename=filename)
+                
             truncated, dataset_data = self.get_data( dataset, preview )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             

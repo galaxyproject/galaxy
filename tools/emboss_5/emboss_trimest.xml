@@ -1,7 +1,7 @@
 <tool id="EMBOSS: trimest102" name="trimest" version="5.0.0">
   <description>Trim poly-A tails off EST sequences</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>trimest -sequence $input1 -outseq $out_file1 -minlength "$minlength" -mismatches "$mismatches" -reverse $reverse -tolower $tolower -fiveprime $fiveprime -osformat2 $out_format1
+  <command>trimest -sequence '$input1' -outseq '$out_file1' -minlength '$minlength' -mismatches '$mismatches' -reverse '$reverse' -tolower '$tolower' -fiveprime '$fiveprime' -osformat2 '$out_format1'
   -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">

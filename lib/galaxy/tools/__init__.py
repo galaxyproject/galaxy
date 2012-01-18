@@ -24,6 +24,7 @@ from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.deps import DependencyManager
 from galaxy.model import directory_hash_id
+from galaxy.model.orm import *
 from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
 from cgi import FieldStorage
@@ -32,6 +33,7 @@ from galaxy.util import listify
 from galaxy.web import security 
 import socket
 
+from galaxy.visualization.tracks.visual_analytics import TracksterConfig
 
 log = logging.getLogger( __name__ )
 
@@ -39,15 +41,11 @@ class ToolNotFoundException( Exception ):
     pass
 
 class ToolBox( object ):
-    """
-    Container for a collection of tools
-    """
-
+    """Container for a collection of tools"""
     def __init__( self, config_filenames, tool_root_dir, app ):
         """
-        Create a toolbox from the config file names by `config_filename`,
-        using `tool_root_directory` as the base directory for finding 
-        individual tool config files.
+        Create a toolbox from the config files named by `config_filenames`, using
+        `tool_root_dir` as the base directory for finding individual tool config files.
         """
         # The shed_tool_confs dictionary contains shed_conf_filename : tool_path pairs.
         self.shed_tool_confs = {}
@@ -64,7 +62,7 @@ class ToolBox( object ):
             try:
                 self.init_tools( config_filename )
             except:
-                log.exception( "ToolBox error reading %s", config_filename )
+                log.exception( "Error loading tools defined in config %s", config_filename )
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.
@@ -84,7 +82,7 @@ class ToolBox( object ):
             log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")")
             self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
             self.sa_session.flush()
-        log.info( "parsing the tool configuration %s" % config_filename )
+        log.info( "Parsing the tool configuration %s" % config_filename )
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
         tool_path = root.get( 'tool_path' )
@@ -96,53 +94,108 @@ class ToolBox( object ):
             tool_path = self.tool_root_dir
         for elem in root:
             if elem.tag == 'tool':
-                self.load_tool_tag_set( elem, self.tool_panel, tool_path, guid=elem.get( 'guid' ) )
+                self.load_tool_tag_set( elem, self.tool_panel, tool_path, guid=elem.get( 'guid' ), section=None )
             elif elem.tag == 'workflow':
                 self.load_workflow_tag_set( elem, self.tool_panel )
-            elif elem.tag == 'section' :
+            elif elem.tag == 'section':
                 self.load_section_tag_set( elem, self.tool_panel, tool_path )
             elif elem.tag == 'label':
                 self.load_label_tag_set( elem, self.tool_panel )
-    def load_tool_tag_set( self, elem, panel_dict, tool_path, guid=None ):
+    def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        return self.sa_session.query( self.app.model.ToolShedRepository ) \
+                              .filter( and_( self.app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                             self.app.model.ToolShedRepository.table.c.name == name,
+                                             self.app.model.ToolShedRepository.table.c.owner == owner,
+                                             self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+                              .first()
+    def load_tool_tag_set( self, elem, panel_dict, tool_path, guid=None, section=None ):
         try:
             path = elem.get( "file" )
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
             if guid is not None:
-                # Tool was installed from a Galaxy tool shed.
-                tool.tool_shed = elem.find( "tool_shed" ).text
-                tool.repository_name = elem.find( "repository_name" ).text
-                tool.repository_owner = elem.find( "repository_owner" ).text
-                tool.changeset_revision = elem.find( "changeset_revision" ).text
-                tool.old_id = elem.find( "id" ).text
-                tool.version = elem.find( "version" ).text
-            if self.app.config.get_bool( 'enable_tool_tags', False ):
-                tag_names = elem.get( "tags", "" ).split( "," )
-                for tag_name in tag_names:
-                    if tag_name == '':
-                        continue
-                    tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
-                    if not tag:
-                        tag = self.app.model.Tag( name=tag_name )
-                        self.sa_session.add( tag )
-                        self.sa_session.flush()
-                        tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
-                        self.sa_session.add( tta )
-                        self.sa_session.flush()
-                    else:
-                        for tagged_tool in tag.tagged_tools:
-                            if tagged_tool.tool_id == tool.id:
-                                break
+                # The tool is contained in an installed tool shed repository, so load
+                # the tool only if the repository has not been marked deleted.
+                tool_shed = elem.find( "tool_shed" ).text
+                repository_name = elem.find( "repository_name" ).text
+                repository_owner = elem.find( "repository_owner" ).text
+                installed_changeset_revision_elem = elem.find( "installed_changeset_revision" )
+                if installed_changeset_revision_elem is None:
+                    # Backward compatibility issue - the tag used to be named 'changeset_revision'.
+                    installed_changeset_revision_elem = elem.find( "changeset_revision" )
+                installed_changeset_revision = installed_changeset_revision_elem.text
+                tool_shed_repository = self.__get_tool_shed_repository( tool_shed, repository_name, repository_owner, installed_changeset_revision )
+                if tool_shed_repository:
+                    # Only load tools if the repository is not deactivated or uninstalled.
+                    can_load = not tool_shed_repository.deleted
+                    if can_load:
+                        metadata = tool_shed_repository.metadata
+                        update_needed = False
+                        if 'tool_panel_section' in metadata:
+                            if section:
+                                # If the tool_panel_section dictionary is included in the metadata, update it if necessary.
+                                tool_panel_section = metadata[ 'tool_panel_section' ]
+                                if tool_panel_section [ 'id' ] != section.id or \
+                                    tool_panel_section [ 'version' ] != section.version or \
+                                    tool_panel_section [ 'name' ] != section.name:
+                                    tool_panel_section [ 'id' ] = section.id
+                                    tool_panel_section [ 'version' ] = section.version
+                                    tool_panel_section [ 'name' ] = section.name
+                                    update_needed = True
                         else:
+                            # The tool_panel_section was introduced late, so set it's value if its missing in the metadata.
+                            if section:
+                                tool_panel_section = dict( id=section.id, version=section.version, name=section.name )
+                                update_needed = True
+                            else:
+                                tool_panel_section = dict( id='', version='', name='' )
+                                update_needed = True
+                        if update_needed:
+                            metadata[ 'tool_panel_section' ] = tool_panel_section
+                            tool_shed_repository.metadata = metadata
+                            self.sa_session.add( tool_shed_repository )
+                            self.sa_session.flush()
+                else:
+                    # If there is not yet a tool_shed_repository record, we're in the process of installing
+                    # a new repository, so any included tools can be loaded into the tool panel.
+                    can_load = True
+            else:
+                can_load = True
+            if can_load:
+                tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+                if guid is not None:
+                    tool.tool_shed = tool_shed
+                    tool.repository_name = repository_name
+                    tool.repository_owner = repository_owner
+                    tool.installed_changeset_revision = installed_changeset_revision
+                    tool.guid = guid
+                    tool.old_id = elem.find( "id" ).text
+                    tool.version = elem.find( "version" ).text
+                if self.app.config.get_bool( 'enable_tool_tags', False ):
+                    tag_names = elem.get( "tags", "" ).split( "," )
+                    for tag_name in tag_names:
+                        if tag_name == '':
+                            continue
+                        tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
+                        if not tag:
+                            tag = self.app.model.Tag( name=tag_name )
+                            self.sa_session.add( tag )
+                            self.sa_session.flush()
                             tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
                             self.sa_session.add( tta )
                             self.sa_session.flush()
-            if tool.id not in self.tools_by_id:
-                # Allow for the same tool to be loaded into multiple places in the
-                # tool panel.
-                self.tools_by_id[ tool.id ] = tool
-            key = 'tool_' + tool.id
-            panel_dict[ key ] = tool
-            log.debug( "Loaded tool: %s %s" % ( tool.id, tool.version ) )
+                        else:
+                            for tagged_tool in tag.tagged_tools:
+                                if tagged_tool.tool_id == tool.id:
+                                    break
+                            else:
+                                tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
+                                self.sa_session.add( tta )
+                                self.sa_session.flush()
+                if tool.id not in self.tools_by_id:
+                    # Allow for the same tool to be loaded into multiple places in the tool panel.
+                    self.tools_by_id[ tool.id ] = tool
+                key = 'tool_' + tool.id
+                panel_dict[ key ] = tool
+                log.debug( "Loaded tool: %s %s" % ( tool.id, tool.version ) )
         except:
             log.exception( "error reading tool from path: %s" % path )
     def load_workflow_tag_set( self, elem, panel_dict ):
@@ -163,22 +216,23 @@ class ToolBox( object ):
     def load_section_tag_set( self, elem, panel_dict, tool_path ):
         key = 'section_' + elem.get( "id" )
         if key in panel_dict:
-            # Appending a tool to an existing section in self.tool_panel
-            elems = panel_dict[ key ].elems
-            log.debug( "Appending to section: %s" % elem.get( "name" ) )
+            # Loading an existing section in self.tool_panel
+            section = panel_dict[ key ]
+            elems = section.elems
+            log.debug( "Reloading section: %s" % elem.get( "name" ) )
         else:
-            # Appending a new section to self.tool_panel
+            # Adding a new section to self.tool_panel
             section = ToolSection( elem )
             elems = section.elems
             log.debug( "Loading section: %s" % section.name )
-        for section_elem in elem:
-            if section_elem.tag == 'tool':
-                self.load_tool_tag_set( section_elem, elems, tool_path, guid=section_elem.get( 'guid' ) )
-            elif section_elem.tag == 'workflow':
-                self.load_workflow_tag_set( section_elem, elems )
-            elif section_elem.tag == 'label':
-                self.load_label_tag_set( section_elem, elems )
-        if key not in panel_dict:
+        for sub_elem in elem:
+            if sub_elem.tag == 'tool':
+                self.load_tool_tag_set( sub_elem, elems, tool_path, guid=sub_elem.get( 'guid' ), section=section )
+            elif sub_elem.tag == 'workflow':
+                self.load_workflow_tag_set( sub_elem, elems )
+            elif sub_elem.tag == 'label':
+                self.load_label_tag_set( sub_elem, elems )
+        if key not in panel_dict and section.elems:
             panel_dict[ key ] = section
     def load_tool( self, config_file, guid=None ):
         """
@@ -211,6 +265,15 @@ class ToolBox( object ):
         else:
             old_tool = self.tools_by_id[ tool_id ]
             new_tool = self.load_tool( old_tool.config_file )
+            # The tool may have been installed from a tool shed, so set the tool shed attributes.
+            # Since the tool version may have changed, we don't override it here.
+            new_tool.id = old_tool.id
+            new_tool.guid = old_tool.guid
+            new_tool.tool_shed = old_tool.tool_shed
+            new_tool.repository_name = old_tool.repository_name
+            new_tool.repository_owner = old_tool.repository_owner
+            new_tool.installed_changeset_revision = old_tool.installed_changeset_revision
+            new_tool.old_id = old_tool.old_id
             # Replace old_tool with new_tool in self.tool_panel
             tool_key = 'tool_' + tool_id
             for key, val in self.tool_panel.items():
@@ -218,11 +281,9 @@ class ToolBox( object ):
                     self.tool_panel[ key ] = new_tool
                     break
                 elif key.startswith( 'section' ):
-                    section = val
-                    for section_key, section_val in section.elems.items():
-                        if section_key == tool_key:
-                            self.tool_panel[ key ].elems[ section_key ] = new_tool
-                            break
+                    if tool_key in val.elems:
+                        self.tool_panel[ key ].elems[ tool_key ] = new_tool
+                        break
             self.tools_by_id[ tool_id ] = new_tool
             message = "Reloaded the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % old_tool.name
@@ -319,7 +380,7 @@ class ToolOutput( object ):
     """
 
     def __init__( self, name, format=None, format_source=None, metadata_source=None, 
-                  parent=None, label=None, filters = None, actions = None ):
+                  parent=None, label=None, filters = None, actions = None, hidden=False ):
         self.name = name
         self.format = format
         self.format_source = format_source
@@ -328,6 +389,7 @@ class ToolOutput( object ):
         self.label = label
         self.filters = filters or []
         self.actions = actions
+        self.hidden = hidden
 
     # Tuple emulation
 
@@ -389,6 +451,16 @@ class Tool:
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
+        #setup initial attribute values
+        self.inputs = odict()
+        self.inputs_by_page = list()
+        self.display_by_page = list()
+        self.action = '/tool_runner/index'
+        self.target = 'galaxy_main'
+        self.method = 'post'
+        self.check_values = True
+        self.nginx_upload = False
+        self.input_required = False
         # Define a place to keep track of all input parameters.  These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -400,7 +472,10 @@ class Tool:
         self.tool_shed = None
         self.repository_name = None
         self.repository_owner = None
-        self.changeset_revision = None
+        self.installed_changeset_revision = None
+        # The tool.id value will be the value of guid, but we'll keep the
+        # guid attribute since it is useful to have.
+        self.guid = guid
         self.old_id = None
         self.version = None
         # Parse XML element containing configuration
@@ -413,7 +488,6 @@ class Tool:
         Returns a SQLAlchemy session
         """
         return self.app.model.context
-    
     def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -561,8 +635,11 @@ class Tool:
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible()
         # Trackster configuration.
-        self.trackster_conf = ( root.find( "trackster_conf" ) is not None )
-            
+        trackster_conf = root.find( "trackster_conf" )
+        if trackster_conf:
+            self.trackster_conf = TracksterConfig.parse( trackster_conf )
+        else:
+            self.trackster_conf = None
     def parse_inputs( self, root ):
         """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
@@ -570,11 +647,12 @@ class Tool:
         """
         # Load parameters (optional)
         input_elem = root.find("inputs")
+        enctypes = set()
         if input_elem:
             # Handle properties of the input form
-            self.check_values = util.string_as_bool( input_elem.get("check_values", "true") )
-            self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", "false" ) )
-            self.action = input_elem.get( 'action', '/tool_runner/index' )
+            self.check_values = util.string_as_bool( input_elem.get("check_values", self.check_values ) )
+            self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
+            self.action = input_elem.get( 'action', self.action )
             # If we have an nginx upload, save the action as a tuple instead of
             # a string. The actual action needs to get url_for run to add any
             # prefixes, and we want to avoid adding the prefix to the
@@ -587,13 +665,9 @@ class Tool:
                                      'hidden POST parameters' )
                 self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
                         urllib.unquote_plus(self.action))
-            self.target = input_elem.get( "target", "galaxy_main" )
-            self.method = input_elem.get( "method", "post" )
+            self.target = input_elem.get( "target", self.target )
+            self.method = input_elem.get( "method", self.method )
             # Parse the actual parameters
-            self.inputs = odict()
-            self.inputs_by_page = list()
-            self.display_by_page = list()
-            enctypes = set()
             # Handle multiple page case
             pages = input_elem.findall( "page" )
             for page in ( pages or [ input_elem ] ):
@@ -601,27 +675,28 @@ class Tool:
                 self.inputs_by_page.append( inputs )
                 self.inputs.update( inputs )
                 self.display_by_page.append( display )
-            self.display = self.display_by_page[0]
-            self.npages = len( self.inputs_by_page )
-            self.last_page = len( self.inputs_by_page ) - 1
-            self.has_multiple_pages = bool( self.last_page )
-            # Determine the needed enctype for the form
-            if len( enctypes ) == 0:
-                self.enctype = "application/x-www-form-urlencoded"
-            elif len( enctypes ) == 1:
-                self.enctype = enctypes.pop()
-            else:
-                raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
+        else:
+            self.inputs_by_page.append( self.inputs )
+            self.display_by_page.append( None )
+        self.display = self.display_by_page[0]
+        self.npages = len( self.inputs_by_page )
+        self.last_page = len( self.inputs_by_page ) - 1
+        self.has_multiple_pages = bool( self.last_page )
+        # Determine the needed enctype for the form
+        if len( enctypes ) == 0:
+            self.enctype = "application/x-www-form-urlencoded"
+        elif len( enctypes ) == 1:
+            self.enctype = enctypes.pop()
+        else:
+            raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
         # Check if the tool either has no parameters or only hidden (and
         # thus hardcoded) parameters. FIXME: hidden parameters aren't
         # parameters at all really, and should be passed in a different
         # way, making this check easier.
-        self.input_required = False
         for param in self.inputs.values():
             if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
                 self.input_required = True
                 break
-                
     def parse_help( self, root ):
         """
         Parse the help text for the tool. Formatted in reStructuredText.
@@ -653,7 +728,6 @@ class Tool:
         # Pad out help pages to match npages ... could this be done better?
         while len( self.help_by_page ) < self.npages: 
             self.help_by_page.append( self.help )
-     
     def parse_outputs( self, root ):
         """
         Parse <outputs> elements and fill in self.outputs (keyed by name)
@@ -673,10 +747,10 @@ class Tool:
             output.count = int( data_elem.get("count", 1) )
             output.filters = data_elem.findall( 'filter' )
             output.from_work_dir = data_elem.get("from_work_dir", None)
+            output.hidden = util.string_as_bool( data_elem.get("hidden", "") )
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
             self.outputs[ output.name ] = output
-
     def parse_tests( self, tests_elem ):
         """
         Parse any "<test>" elements, create a `ToolTestBuilder` for each and
@@ -790,7 +864,6 @@ class Tool:
                 test.error = True
                 test.exception = e
             self.tests.append( test )
-            
     def parse_input_page( self, input_elem, enctypes ):
         """
         Parse a page of inputs. This basically just calls 'parse_input_elem',
@@ -805,7 +878,6 @@ class Tool:
         else:
             display = None
         return display, inputs
-        
     def parse_input_elem( self, parent_elem, enctypes, context=None ):
         """
         Parse a parent element whose children are inputs -- these could be 
@@ -897,7 +969,6 @@ class Tool:
                     param.ref_input = context[ param.data_ref ]
                 self.input_params.append( param )
         return rval
-
     def parse_param_elem( self, input_elem, enctypes, context ):
         """
         Parse a single "<param>" element and return a ToolParameter instance. 
@@ -913,7 +984,6 @@ class Tool:
         for name in param.get_dependencies():
             context[ name ].refresh_on_change = True
         return param
-
     def parse_requirements( self, requirements_elem ):
         """
         Parse each requirement from the <requirements> element and add to
@@ -936,7 +1006,6 @@ class Tool:
                 method = None
             requirement = ToolRequirement( name=name, type=type, version=version, fabfile=fabfile, method=method )
             self.requirements.append( requirement )
-    
     def check_workflow_compatible( self ):
         """
         Determine if a tool can be used in workflows. External tools and the
@@ -948,7 +1017,7 @@ class Tool:
             return False
         # This is probably the best bet for detecting external web tools
         # right now
-        if self.action != "/tool_runner/index":
+        if self.tool_type.startswith( 'data_source' ):
             return False
         # HACK: upload is (as always) a special case becuase file parameters
         #       can't be persisted.
@@ -957,7 +1026,6 @@ class Tool:
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
-
     def new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
@@ -974,7 +1042,6 @@ class Tool:
             inputs = self.inputs_by_page[ 0 ]
         self.fill_in_new_state( trans, inputs, state.inputs )
         return state
-
     def fill_in_new_state( self, trans, inputs, state, context=None ):
         """
         Fill in a tool state dictionary with default values for all parameters
@@ -983,7 +1050,6 @@ class Tool:
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
             state[ input.name ] = input.get_initial_value( trans, context )
-
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
         Return a dictionary containing the HTML representation of each 
@@ -999,14 +1065,12 @@ class Tool:
                 raise Exception( "'get_param_html_map' only supported for simple paramters" )
             rval[key] = param.get_html( trans, other_values=other_values )
         return rval
-
     def get_param( self, key ):
         """
         Returns the parameter named `key` or None if there is no such 
         parameter.
         """
         return self.inputs.get( key, None )
-
     def get_hook(self, name):
         """
         Returns an object from the code file referenced by `code_namespace`
@@ -1019,7 +1083,6 @@ class Tool:
             elif name in self.code_namespace:
                 return self.code_namespace[name]
         return None
-        
     def visit_inputs( self, value, callback ):
         """
         Call the function `callback` on each parameter of this tool. Visits
@@ -1036,7 +1099,6 @@ class Tool:
                 callback( "", input, value[input.name] )
             else:
                 input.visit_inputs( "", value[input.name], callback )
-
     def handle_input( self, trans, incoming, history=None ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -1086,7 +1148,11 @@ class Tool:
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
-                _, out_data = self.execute( trans, incoming=params, history=history )
+                try:
+                    _, out_data = self.execute( trans, incoming=params, history=history )
+                except Exception, e:
+                    log.exception('Exception caught while attempting tool execution:')
+                    return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
                 try:
                     assert isinstance( out_data, odict )
                     return 'tool_executed.mako', dict( out_data=out_data )
@@ -1114,7 +1180,6 @@ class Tool:
                 pass
             # Just a refresh, render the form with updated state and errors.
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
-      
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):
             raise InterruptedUpload( None )
@@ -1122,7 +1187,6 @@ class Tool:
             [ self.find_fieldstorage( y ) for y in x.values() ]
         elif type( x ) is types.ListType:
             [ self.find_fieldstorage( y ) for y in x ]
-
     def handle_interrupted( self, trans, inputs ):
         """
         Upon handling inputs, if it appears that we have received an incomplete
@@ -1153,7 +1217,6 @@ class Tool:
         return 'message.mako', dict( status='error', 
             message='Your upload was interrupted. If this was uninentional, please retry it.', 
             refresh_frames=[], cont=None )
-
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):
         """
@@ -1395,7 +1458,6 @@ class Tool:
             else:
                 raise Exception( "Unexpected parameter type" )
         return args
-            
     def execute( self, trans, incoming={}, set_output_hid=True, history=None, **kwargs ):
         """
         Execute the tool using parameter values in `incoming`. This just
@@ -1404,13 +1466,10 @@ class Tool:
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
         return self.tool_action.execute( self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs )
-        
     def params_to_strings( self, params, app ):
         return params_to_strings( self.inputs, params, app )
-        
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
-            
     def check_and_update_param_values( self, values, trans ):
         """
         Check that all parameters have values, and fill in with default
@@ -1420,7 +1479,6 @@ class Tool:
         messages = {}
         self.check_and_update_param_values_helper( self.inputs, values, trans, messages )
         return messages
-        
     def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="" ):
         """
         Recursive helper for `check_and_update_param_values_helper`
@@ -1466,7 +1524,6 @@ class Tool:
                 else:
                     # Regular tool parameter, no recursion needed
                     pass        
-    
     def handle_unvalidated_param_values( self, input_values, app ):
         """
         Find any instances of `UnvalidatedValue` within input_values and
@@ -1477,7 +1534,6 @@ class Tool:
         if not self.check_values:
             return
         self.handle_unvalidated_param_values_helper( self.inputs, input_values, app )
-
     def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None, prefix="" ):
         """
         Recursive helper for `handle_unvalidated_param_values`
@@ -1519,7 +1575,6 @@ class Tool:
                             % ( prefix, input.label, e )
                         raise LateValidationError( message )
                     input_values[ input.name ] = value
-    
     def handle_job_failure_exception( self, e ):
         """
         Called by job.fail when an exception is generated to allow generation
@@ -1531,7 +1586,6 @@ class Tool:
         if isinstance( e, LateValidationError ):
             message = e.message
         return message
-    
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths, job_working_directory ):
         """
         Build the dictionary of parameters for substituting into the command
@@ -1668,10 +1722,9 @@ class Tool:
         # For the upload tool, we need to know the root directory and the 
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.abspath( self.app.config.datatypes_config )
+        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         # Return the dictionary of parameters
         return param_dict
-    
     def build_param_file( self, param_dict, directory=None ):
         """
         Build temporary file for file based parameter transfer if needed
@@ -1691,7 +1744,6 @@ class Tool:
             return param_filename
         else:
             return None
-            
     def build_config_files( self, param_dict, directory=None ):
         """
         Build temporary file for file based parameter transfer if needed
@@ -1714,7 +1766,6 @@ class Tool:
             param_dict[name] = config_filename
             config_filenames.append( config_filename )
         return config_filenames
-        
     def build_command_line( self, param_dict ):
         """
         Build command line to invoke this tool given a populated param_dict
@@ -1738,7 +1789,6 @@ class Tool:
             command_line = command_line.replace(executable, abs_executable, 1)
             command_line = self.interpreter + " " + command_line
         return command_line
-
     def build_dependency_shell_commands( self ):
         """
         Return a list of commands to be run to populate the current 
@@ -1752,12 +1802,13 @@ class Tool:
             log.debug( "Dependency %s", requirement.name )
             if requirement.type == 'package':
                 script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
-                if script_file is None:
+                if script_file is None and base_path is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+                elif script_file is None:
+                    commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path ) )
                 else:
                     commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, script_file ) )
         return commands
-
     def build_redirect_url_params( self, param_dict ):
         """
         Substitute parameter values into self.redirect_url_params
@@ -1770,7 +1821,6 @@ class Tool:
         # Remove newlines
         redirect_url_params = redirect_url_params.replace( "\n", " " ).replace( "\r", " " )
         return redirect_url_params
-
     def parse_redirect_url( self, data, param_dict ):
         """
         Parse the REDIRECT_URL tool param. Tools that send data to an external 
@@ -1810,7 +1860,6 @@ class Tool:
             USERNAME = 'Anonymous'
         redirect_url += "&USERNAME=%s" % USERNAME
         return redirect_url
-
     def call_hook( self, hook_name, *args, **kwargs ):
         """
         Call the custom code hook function identified by 'hook_name' if any,
@@ -1823,44 +1872,38 @@ class Tool:
         except Exception, e:
             e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ) )
             raise
-
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
         pass
-
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         pass
-
     def job_failed( self, job_wrapper, message, exception = False ):
         """
         Called when a job has failed
         """
         pass
-
     def collect_associated_files( self, output, job_working_directory ):
         """
         Find extra files in the job working directory and move them into
         the appropriate dataset's files directory
         """
+        # print "Working in collect_associated_files"
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
             try:
-                if len( os.listdir( temp_file_path ) ) > 0:
-                    store_file_path = os.path.join(
-                        os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ),
-                        "dataset_%d_files" % hda.dataset.id )
-                    shutil.move( temp_file_path, store_file_path )
-                    # Fix permissions
-                    for basedir, dirs, files in os.walk( store_file_path ):
-                        util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
-                        for file in files:
-                            path = os.path.join( basedir, file )
-                            # Ignore symlinks
-                            if os.path.islink( path ):
-                                continue
-                            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+                a_files = os.listdir( temp_file_path )
+                if len( a_files ) > 0:
+                    for f in a_files:
+                        self.app.object_store.update_from_file(hda.dataset,
+                            extra_dir="dataset_%d_files" % hda.dataset.id, 
+                            alt_name = f,
+                            file_name = os.path.join(temp_file_path, f),
+                            create = True)
+                    # Clean up after being handled by object store. 
+                    # FIXME: If the object (e.g., S3) becomes async, this will 
+                    # cause issues so add it to the object store functionality?
+                    shutil.rmtree(temp_file_path)
             except:
                 continue
-    
     def collect_child_datasets( self, output):
         """
         Look for child dataset files, create HDA and attach to parent.
@@ -1889,7 +1932,7 @@ class Tool:
                                                                           sa_session=self.sa_session )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
-                shutil.move( filename, child_dataset.file_name )
+                self.app.object_store.update_from_file(child_dataset.dataset, filename, create=True)
                 self.sa_session.add( child_dataset )
                 self.sa_session.flush()
                 child_dataset.set_size()
@@ -1901,7 +1944,7 @@ class Tool:
                 job = None
                 for assoc in outdata.creating_job_associations:
                     job = assoc.job
-                    break   
+                    break
                 if job:
                     assoc = self.app.model.JobToOutputDatasetAssociation( '__new_child_file_%s|%s__' % ( name, designation ), child_dataset )
                     assoc.job = job
@@ -1921,7 +1964,6 @@ class Tool:
                     self.sa_session.add( child_dataset )
                     self.sa_session.flush()
         return children
-        
     def collect_primary_datasets( self, output):
         """
         Find any additional datasets generated by a tool and attach (for 
@@ -1957,7 +1999,7 @@ class Tool:
                 self.sa_session.add( primary_data )
                 self.sa_session.flush()
                 # Move data from temp location to dataset location
-                shutil.move( filename, primary_data.file_name )
+                self.app.object_store.update_from_file(primary_data.dataset, filename, create=True)
                 primary_data.set_size()
                 primary_data.name = "%s (%s)" % ( outdata.name, designation )
                 primary_data.info = outdata.info
@@ -1969,7 +2011,7 @@ class Tool:
                 job = None
                 for assoc in outdata.creating_job_associations:
                     job = assoc.job
-                    break   
+                    break
                 if job:
                     assoc = self.app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s|%s__' % ( name, designation ), primary_data )
                     assoc.job = job
@@ -2000,12 +2042,10 @@ class DataSourceTool( Tool ):
     
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )
-    
     def parse_inputs( self, root ):
         Tool.parse_inputs( self, root )
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
-    
     def _prepare_datasource_json_list( self, param_list ):
         rval = []
         for value in param_list:
@@ -2026,7 +2066,6 @@ class DataSourceTool( Tool ):
             else:
                 rval[ key ] = str( value )
         return rval
-    
     def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
         if param_dict is None:
             param_dict = {}
@@ -2049,7 +2088,6 @@ class DataSourceTool( Tool ):
             cur_dbkey = param_dict.get( cur_base_param_name + 'dkey', dbkey )
             cur_info = param_dict.get( cur_base_param_name + 'info', info )
             cur_data_type = param_dict.get( cur_base_param_name + 'data_type', data_type )
-            
             if cur_name:
                 data.name = cur_name
             if not data.info and cur_info:
@@ -2060,16 +2098,13 @@ class DataSourceTool( Tool ):
                 data.extension = cur_data_type
             file_name = str( wrapped_data )
             extra_files_path = str( wrapped_data.files_path )
-            
             data_dict = dict( out_data_name = out_name,
                               ext = data.ext,
                               dataset_id = data.dataset.id,
                               hda_id = data.id,
                               file_name = file_name,
                               extra_files_path = extra_files_path )
-            
             json_params[ 'output_data' ].append( data_dict )
-            
             if json_filename is None:
                 json_filename = file_name
         out = open( json_filename, 'w' )
@@ -2114,7 +2149,6 @@ class SetMetadataTool( Tool ):
             dataset.set_peek() 
             self.sa_session.add( dataset )
             self.sa_session.flush()
-    
     def job_failed( self, job_wrapper, message, exception = False ):
         job = job_wrapper.sa_session.query( model.Job ).get( job_wrapper.job_id )
         if job:
@@ -2140,7 +2174,14 @@ class BadValue( object ):
     def __init__( self, value ):
         self.value = value
 
-class RawObjectWrapper( object ):
+class ToolParameterValueWrapper( object ):
+    """
+    Base class for object that Wraps a Tool Parameter and Value.
+    """
+    def __nonzero__( self ):
+        return bool( self.value )
+
+class RawObjectWrapper( ToolParameterValueWrapper ):
     """
     Wraps an object so that __str__ returns module_name:class_name.
     """
@@ -2151,7 +2192,7 @@ class RawObjectWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.obj, key )
 
-class LibraryDatasetValueWrapper( object ):
+class LibraryDatasetValueWrapper( ToolParameterValueWrapper ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
@@ -2172,7 +2213,7 @@ class LibraryDatasetValueWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.value, key )
         
-class InputValueWrapper( object ):
+class InputValueWrapper( ToolParameterValueWrapper ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
@@ -2185,7 +2226,7 @@ class InputValueWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.value, key )
 
-class SelectToolParameterWrapper( object ):
+class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     """
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
     attributes are accessible.
@@ -2197,11 +2238,14 @@ class SelectToolParameterWrapper( object ):
         Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
         """
         def __init__( self, input, value, other_values ):
-            self.input = input
-            self.value = value
-            self.other_values = other_values
+            self._input = input
+            self._value = value
+            self._other_values = other_values
+            self._fields = {}
         def __getattr__( self, name ):
-            return self.input.options.get_field_by_name_for_value( name, self.value, None, self.other_values )
+            if name not in self._fields:
+                self._fields[ name ] = self._input.options.get_field_by_name_for_value( name, self._value, None, self._other_values )
+            return self._input.separator.join( map( str, self._fields[ name ] ) )
     
     def __init__( self, input, value, app, other_values={} ):
         self.input = input
@@ -2214,7 +2258,7 @@ class SelectToolParameterWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.input, key )
 
-class DatasetFilenameWrapper( object ):
+class DatasetFilenameWrapper( ToolParameterValueWrapper ):
     """
     Wraps a dataset so that __str__ returns the filename, but all other
     attributes are accessible.
@@ -2276,12 +2320,13 @@ class DatasetFilenameWrapper( object ):
             return self.false_path
         else:
             return self.dataset.file_name
-
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
             return self.false_path
         else:
             return getattr( self.dataset, key )
+    def __nonzero__( self ):
+        return bool( self.dataset )
         
 def json_fix( val ):
     if isinstance( val, list ):

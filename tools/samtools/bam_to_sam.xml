@@ -56,5 +56,11 @@ This tool uses the SAMTools_ toolkit to produce a SAM file from a BAM file.
 
 .. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
 
+------
+
+**Citation**
+
+For the underlying tool, please cite `Li H, Handsaker B, Wysoker A, Fennell T, Ruan J, Homer N, Marth G, Abecasis G, Durbin R; 1000 Genome Project Data Processing Subgroup. The Sequence Alignment/Map format and SAMtools. Bioinformatics. 2009 Aug 15;25(16):2078-9. &lt;http://www.ncbi.nlm.nih.gov/pubmed/19505943&gt;`_
+
   </help>
 </tool>

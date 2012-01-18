@@ -3,7 +3,7 @@ Data providers for tracks visualizations.
 """
 
 import sys, time
-from math import ceil, log, sqrt
+from math import ceil, log, sqrt, isnan
 import pkg_resources
 pkg_resources.require( "bx-python" )
 if sys.version_info[:2] == (2, 4):
@@ -84,7 +84,22 @@ class TracksDataProvider( object ):
         # Override.
         pass
         
-    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
+    def get_iterator( self, chrom, start, end ):
+        """
+        Returns an iterator that provides data in the region chrom:start-end
+        """
+        # Override.
+        pass
+        
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
+        Process data from an iterator to a format that can be provided to client.
+        """
+        # Override.
+        pass
+        
+        
+    def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
         """ 
         Returns data in region defined by chrom, start, and end. start_val and
         max_vals are used to denote the data to return: start_val is the first element to 
@@ -93,8 +108,8 @@ class TracksDataProvider( object ):
         Return value must be a dictionary with the following attributes:
             dataset_type, data
         """
-        # Override.
-        pass
+        iterator = self.get_iterator( chrom, start, end )
+        return self.process_data( iterator, start_val, max_vals, **kwargs )
         
     def get_filters( self ):
         """ 
@@ -236,8 +251,6 @@ class TabixDataProvider( FilterableMixin, TracksDataProvider ):
                     
         bgzip_fname = self.dependencies['bgzip'].file_name
         
-        # if os.path.getsize(self.converted_dataset.file_name) == 0:
-            # return { 'kind': messages.ERROR, 'message': "Tabix converted size was 0, meaning the input file had invalid values." }
         tabix = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
         
         # If chrom is not found in indexes, try removing the first three 
@@ -248,11 +261,7 @@ class TabixDataProvider( FilterableMixin, TracksDataProvider ):
             chrom = chrom[3:]
         
         return tabix.fetch(reference=chrom, start=start, end=end)
-        
-    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
-        iterator = self.get_iterator( chrom, start, end )
-        return self.process_data( iterator, start_val, max_vals, **kwargs )
-        
+                
     def write_data_to_file( self, chrom, start, end, filename ):
         iterator = self.get_iterator( chrom, start, end )
         out = open( filename, "w" )
@@ -273,11 +282,7 @@ class BedDataProvider( TracksDataProvider ):
     
     def get_iterator( self, chrom, start, end ):
         raise "Unimplemented Method"
-        
-    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
-        iterator = self.get_iterator( chrom, start, end )
-        return self.process_data( iterator, start_val, max_vals, **kwargs )
-    
+            
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
         Provides
@@ -392,14 +397,6 @@ class VcfDataProvider( TracksDataProvider ):
     
     col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
     
-
-    def get_iterator( self, chrom, start, end ):
-        raise "Unimplemented Method"
-
-    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
-        iterator = self.get_iterator( chrom, start, end )
-        return self.process_data( iterator, start_val, max_vals, **kwargs )
-
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
         Returns a dict with the following attributes:
@@ -607,11 +604,32 @@ class BamDataProvider( TracksDataProvider ):
         
         # Cleanup.
         bamfile.close()
-    
-    def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
-        """
-        Fetch reads in the region and additional metadata.
         
+    def get_iterator( self, chrom, start, end ):
+        """
+        Returns an iterator that provides data in the region chrom:start-end
+        """
+        start, end = int(start), int(end)
+        orig_data_filename = self.original_dataset.file_name
+        index_filename = self.converted_dataset.file_name
+        
+        # Attempt to open the BAM file with index
+        bamfile = csamtools.Samfile( filename=orig_data_filename, mode='rb', index_filename=index_filename )
+        try:
+            data = bamfile.fetch(start=start, end=end, reference=chrom)
+        except ValueError, e:
+            # Some BAM files do not prefix chromosome names with chr, try without
+            if chrom.startswith( 'chr' ):
+                try:
+                    data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
+                except ValueError:
+                    return None
+            else:
+                return None
+        return data
+                
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
         Returns a dict with the following attributes:
             data - a list of reads with the format 
                     [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
@@ -628,26 +646,6 @@ class BamDataProvider( TracksDataProvider ):
             max_high - highest coordinate for the returned reads
             message - error/informative message
         """
-        start, end = int(start), int(end)
-        orig_data_filename = self.original_dataset.file_name
-        index_filename = self.converted_dataset.file_name
-        no_detail = "no_detail" in kwargs
-        
-        # Attempt to open the BAM file with index
-        bamfile = csamtools.Samfile( filename=orig_data_filename, mode='rb', index_filename=index_filename )
-        message = None
-        try:
-            data = bamfile.fetch(start=start, end=end, reference=chrom)
-        except ValueError, e:
-            # Some BAM files do not prefix chromosome names with chr, try without
-            if chrom.startswith( 'chr' ):
-                try:
-                    data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
-                except ValueError:
-                    return None
-            else:
-                return None
-                
         # Decode strand from read flag.
         def decode_strand( read_flag, mask ):
             strand_flag = ( read_flag & mask == 0 )
@@ -660,7 +658,8 @@ class BamDataProvider( TracksDataProvider ):
         results = []
         paired_pending = {}
         unmapped = 0
-        for count, read in enumerate( data ):
+        message = None
+        for count, read in enumerate( iterator ):
             if count < start_val:
                 continue
             if ( count - start_val - unmapped ) >= max_vals:
@@ -720,12 +719,24 @@ class BamDataProvider( TracksDataProvider ):
 
             results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2 ] )
             
-        # Clean up.
-        bamfile.close()
+        # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
+        # bamfile.close()
         
         max_low, max_high = get_bounds( results, 1, 2 )
                 
         return { 'data': results, 'message': message, 'max_low': max_low, 'max_high': max_high }
+        
+class SamDataProvider( BamDataProvider ):
+    
+    def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None ):
+        """ Create SamDataProvider. """
+        
+        # HACK: to use BamDataProvider, original dataset must be BAM and 
+        # converted dataset must be BAI. Use BAI from BAM metadata.
+        if converted_dataset:
+            self.converted_dataset = converted_dataset.metadata.bam_index
+            self.original_dataset = converted_dataset
+        self.dependencies = dependencies
 
 class BBIDataProvider( TracksDataProvider ):
     """
@@ -846,15 +857,17 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
             reader = GFFReaderWrapper( source, fix_strand=True )
             feature = reader.next()
             for interval in feature.intervals:
-                out.write(interval.raw_line + '\n')
+                out.write( '\t'.join( interval.fields ) + '\n' )
         out.close()
-    
-    def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
+        
+    def get_iterator( self, chrom, start, end ):
+        """
+        Returns an array with values: (a) source file and (b) an iterator that
+        provides data in the region chrom:start-end
+        """
         start, end = int(start), int(end)
         source = open( self.original_dataset.file_name )
         index = Indexes( self.converted_dataset.file_name )
-        results = []
-        message = None
 
         # If chrom is not found in indexes, try removing the first three 
         # characters (e.g. 'chr') and see if that works. This enables the
@@ -862,6 +875,13 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
         chrom = str(chrom)
         if chrom not in index.indexes and chrom[3:] in index.indexes:
             chrom = chrom[3:]
+            
+        return index.find(chrom, start, end)
+
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        results = []
+        message = None
+        source = open( self.original_dataset.file_name )
 
         #
         # Build data to return. Payload format is:
@@ -872,7 +892,7 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
         #
         filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
-        for count, val in enumerate( index.find(chrom, start, end) ):
+        for count, val in enumerate( iterator ):
             start, end, offset = val[0], val[1], val[2]
             if count < start_val:
                 continue
@@ -899,23 +919,38 @@ class GFFDataProvider( TracksDataProvider ):
     NOTE: this data provider does not use indices, and hence will be very slow
     for large datasets.
     """
-    def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
+    
+    def get_iterator( self, chrom, start, end ):
+        """
+        Returns an iterator that provides data in the region chrom:start-end
+        """
         start, end = int( start ), int( end )
         source = open( self.original_dataset.file_name )
+        
+        def features_in_region_iter():
+            for feature in GFFReaderWrapper( source, fix_strand=True ):
+                # Only provide features that are in region.
+                feature_start, feature_end = convert_gff_coords_to_bed( [ feature.start, feature.end ] )
+                if feature.chrom != chrom or feature_start < start or feature_end > end:
+                    continue                
+                yield feature
+        return features_in_region_iter()
+        
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
+        Process data from an iterator to a format that can be provided to client.
+        """
         results = []
         message = None
         offset = 0
         
-        for count, feature in enumerate( GFFReaderWrapper( source, fix_strand=True ) ):
+        for count, feature in enumerate( iterator ):
             if count < start_val:
                 continue
             if count-start_val >= max_vals:
                 message = ERROR_MAX_VALS % ( max_vals, "reads" )
                 break
                 
-            feature_start, feature_end = convert_gff_coords_to_bed( [ feature.start, feature.end ] )
-            if feature.chrom != chrom or feature_start < start or feature_end > end:
-                continue
             payload = package_gff_feature( feature )
             payload.insert( 0, offset )
             results.append( payload )
@@ -934,6 +969,7 @@ dataset_type_name_to_data_provider = {
     "tabix": { Vcf: VcfTabixDataProvider, Bed: BedTabixDataProvider, "default" : TabixDataProvider },
     "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
+    "bam": SamDataProvider,
     "summary_tree": SummaryTreeDataProvider,
     "bigwig": BigWigDataProvider,
     "bigbed": BigBedDataProvider
@@ -1005,17 +1041,25 @@ def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
     # Add filter data to payload.
     for col in filter_cols:
         if col == "Score":
-            try: 
-                payload.append( float( feature.score ) )
+            try:
+                f = float( feature.score )
+                if not math.isnan( f ):
+                    payload.append( f )
+                else:
+                    payload.append( feature.score )
             except:
                 payload.append( feature.score )
         elif col in feature.attributes:
             try:
-                payload.append( float( feature.attributes[col] ) )
+                f = float( feature.attributes[col] )
+                if not math.isnan( f ):
+                    payload.append( f )
+                else:
+                    payload.append( feature.attributes[col] )
             except:
                 # Feature is not a float.
                 payload.append( feature.attributes[col] )
         else:
             # Dummy value.
-            payload.append( "na" )
+            payload.append( 0 )
     return payload

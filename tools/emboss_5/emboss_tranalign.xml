@@ -1,7 +1,7 @@
 <tool id="EMBOSS: tranalign100" name="tranalign" version="5.0.0">
   <description>Align nucleic coding regions given the aligned proteins</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>tranalign -asequence $input1 -bsequence $input2 -outseq $out_file1 -table $table -osformat3 $out_format1 -auto</command>
+  <command>tranalign -asequence '$input1' -bsequence '$input2' -outseq '$out_file1' -table '$table' -osformat3 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Nucleic Sequences</label>

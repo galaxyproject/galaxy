@@ -57,7 +57,8 @@ def __main__():
         enhanced_handling = True
         json_file = open( job_params[ 'job_config' ][ 'TOOL_PROVIDED_JOB_METADATA_FILE' ], 'w' ) #specially named file for output junk to pass onto set metadata
     
-    datatypes_registry = Registry( root_dir = job_params[ 'job_config' ][ 'GALAXY_ROOT_DIR' ], config = job_params[ 'job_config' ][ 'GALAXY_DATATYPES_CONF_FILE' ] )
+    datatypes_registry = Registry()
+    datatypes_registry.load_datatypes( root_dir = job_params[ 'job_config' ][ 'GALAXY_ROOT_DIR' ], config = job_params[ 'job_config' ][ 'GALAXY_DATATYPES_CONF_FILE' ] )
     
     URL = params.get( 'URL', None ) #using exactly URL indicates that only one dataset is being downloaded
     URL_method = params.get( 'URL_method', None )

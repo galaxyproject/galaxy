@@ -6,7 +6,7 @@
 #if $genomeSource.refGenomeSource == "history":
     --ref-file "$genomeSource.ownFile"
 #else
-    --ref "${ filter( lambda x: str( x[0] ) == str( $genomeSource.index ), $__app__.tool_data_tables[ 'all_fasta' ].get_fields() )[0][-1] }"
+    --ref "${genomeSource.index.fields.path}"
 #end if
   </command>
   <requirements><requirement type="package">picard</requirement></requirements>

@@ -106,6 +106,10 @@
                         ctx_parent_str = 'None'
                     else:
                         ctx_parent_str = "%s:%s" % ( ctx_parent_rev, ctx_parent )
+                    if changeset[ 'has_metadata' ]:
+                        has_metadata_str = '<table border="0" bgcolor="#D8D8D8"><tr><td>Repository metadata is associated with this change set.</td></tr></table>'
+                    else:
+                        has_metadata_str = ''
                 %>
                 <% display_date = changeset[ 'display_date' ] %>
                 %if test_date != display_date:
@@ -113,6 +117,11 @@
                 %endif
                 <tr>
                     <td>
+                        %if is_admin and has_metadata_str:
+                            <div class="form-row">
+                                ${has_metadata_str}
+                            </div>
+                        %endif
                         <div class="form-row">
                             <label>Description:</label>
                             <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_str )}">${changeset[ 'description' ]}</a>

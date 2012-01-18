@@ -1,7 +1,7 @@
 <tool id="EMBOSS: water107" name="water" version="5.0.0">
   <description>Smith-Waterman local alignment</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>water -asequence $input1 -bsequence $input2 -outfile $out_file1 -gapopen "$gapopen" -gapextend "$gapextend" -brief $brief -aformat3 $out_format1 -auto</command>
+  <command>water -asequence '$input1' -bsequence '$input2' -outfile '$out_file1' -gapopen '$gapopen' -gapextend '$gapextend' -brief '$brief' -aformat3 '$out_format1' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequence 1</label>

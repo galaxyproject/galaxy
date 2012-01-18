@@ -107,10 +107,28 @@ def parse_xml(fname):
     ElementInclude.include(root)
     return tree
 
-def xml_to_string(elem):
-    """Returns an string from and xml tree"""
-    text = ElementTree.tostring(elem)
-    return text
+def xml_to_string( elem, pretty=False ):
+    """Returns a string from an xml tree"""
+    if pretty:
+        return ElementTree.tostring( pretty_print_xml( elem ) )
+    return ElementTree.tostring( elem )
+
+def pretty_print_xml( elem, level=0 ):
+    pad = '    '
+    i = "\n" + level * pad
+    if len( elem ):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + pad + pad
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for e in elem:
+            pretty_print_xml( e, level + 1 )
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and ( not elem.tail or not elem.tail.strip() ):
+            elem.tail = i + pad
+    return elem
 
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")

@@ -32,7 +32,7 @@ class TestDataSecurity( TwillTestCase ):
                                                                                                  webapp='galaxy',
                                                                                                  referer='' )
         if not username_taken:
-            raise AssertionError, "The user name (%s) is already being used by another user, but no error was displayed" \
+            raise AssertionError, "The public name (%s) is already being used by another user, but no error was displayed" \
                 % 'admin-user'
         # Test setting the user name to an invalid one.  Note that the account must not exist in order
         # for this test to work as desired, so the email we're passing is important...
@@ -42,7 +42,7 @@ class TestDataSecurity( TwillTestCase ):
                                                                                                  webapp='galaxy',
                                                                                                  referer='' )
         if not invalid_username:
-            raise AssertionError, "The user name (%s) is is invalid, but no error was displayed" % username
+            raise AssertionError, "The public name (%s) is is invalid, but no error was displayed" % username
         previously_created, username_taken, invalid_username = self.create_new_account_as_admin( email=email,
                                                                                                  password=password,
                                                                                                  username='regular-user3',

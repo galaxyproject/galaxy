@@ -1,7 +1,7 @@
 <tool id="EMBOSS: btwisted5" name="btwisted" version="5.0.0">
   <description>Calculates the twisting in a B-DNA sequence</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>btwisted -sequence $input1 -outfile $out_file1 -auto</command>
+  <command>btwisted -sequence '$input1' -outfile '$out_file1' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>On query</label>

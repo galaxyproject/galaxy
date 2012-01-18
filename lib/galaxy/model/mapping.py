@@ -130,6 +130,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "purgable", Boolean, default=True ),
+    Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "external_filename" , TEXT ),
     Column( "_extra_files_path", TEXT ),
     Column( 'file_size', Numeric( 15, 0 ) ),
@@ -372,8 +373,23 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "description" , TEXT ),
     Column( "owner", TrimmedString( 255 ), index=True ),
+    Column( "installed_changeset_revision", TrimmedString( 255 ) ),
     Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "metadata", JSONType, nullable=True ),
+    Column( "includes_datatypes", Boolean, index=True, default=False ),
+    Column( "update_available", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ) )
+
+ToolIdGuidMap.table = Table( "tool_id_guid_map", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_id", String( 255 ) ),
+    Column( "tool_version", TEXT ),
+    Column( "tool_shed", TrimmedString( 255 ) ),
+    Column( "repository_owner", TrimmedString( 255 ) ),
+    Column( "repository_name", TrimmedString( 255 ) ),
+    Column( "guid", TEXT, index=True, unique=True ) )
 
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -395,6 +411,7 @@ Job.table = Table( "job", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=True ),
     Column( "job_runner_name", String( 255 ) ),
     Column( "job_runner_external_id", String( 255 ) ), 
+    Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "imported", Boolean, default=False, index=True ) )
     
 JobParameter.table = Table( "job_parameter", metadata,
@@ -626,6 +643,7 @@ MetadataFile.table = Table( "metadata_file", metadata,
     Column( "lda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+    Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
@@ -1601,6 +1619,8 @@ assign_mapper( context, Page, Page.table,
                    
 assign_mapper( context, ToolShedRepository, ToolShedRepository.table )
 
+assign_mapper( context, ToolIdGuidMap, ToolIdGuidMap.table )
+
 # Set up proxy so that 
 #   Page.users_shared_with
 # returns a list of users that page is shared with.
@@ -1774,10 +1794,12 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False ):
+def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
+    # Connect dataset to object store
+    Dataset.object_store = object_store
     # Load the appropriate db module
     load_egg_for_url( url )
     # Should we use the logging proxy?

@@ -20,7 +20,10 @@ class NoneDataset( RecursiveNone ):
     def __init__( self, datatypes_registry = None, ext = 'data', dbkey = '?' ):
         self.ext = self.extension = ext
         self.dbkey = dbkey
-        if datatypes_registry is None: datatypes_registry = Registry()
+        if datatypes_registry is None:
+            # Default Value Required for unit tests
+            datatypes_registry = Registry()
+            datatypes_registry.load_datatypes()
         self.datatype = datatypes_registry.get_datatype_by_extension( ext )
         self._metadata = None
         self.metadata = MetadataCollection( self )

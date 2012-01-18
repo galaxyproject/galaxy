@@ -38,7 +38,7 @@
 
             parent_li.find( 'span' ).wrapInner( '<a/>' ).find( 'a' ).click( function() {
                 sub_ul.toggle();
-                (this).html( sub_ul.is(":hidden") ? '[+]' : '[-]' );
+                $(this).html( sub_ul.is(":hidden") ? '[+]' : '[-]' );
             });
             parent_li.append( sub_ul );
         });

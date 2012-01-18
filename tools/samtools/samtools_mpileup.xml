@@ -1,0 +1,213 @@
+<tool id="samtools_mpileup" name="MPileup" version="0.0.1">
+  <description>SNP and indel caller</description>
+  <requirements>
+      <requirement type="package">samtools</requirement>
+  </requirements>
+  <command interpreter="python">samtools_wrapper.py
+    -p 'samtools mpileup'
+    --stdout "${output_log}"
+    #if $reference_source.reference_source_selector != "history":
+        -p '-f "${reference_source.ref_file.fields.path}"'
+    #else:
+        -d "-f" "${reference_source.ref_file}" "fa" "reference_input"
+    #end if
+    #for $i, $input_bam in enumerate( $reference_source.input_bams ):
+        -d " " "${input_bam.input_bam}" "${input_bam.input_bam.ext}" "bam_input_${i}"
+        -d "" "${input_bam.input_bam.metadata.bam_index}" "bam_index" "bam_input_${i}" ##hardcode galaxy ext type as bam_index
+    #end for
+    -p '
+    #if str( $advanced_options.advanced_options_selector ) == "advanced":
+        ${advanced_options.skip_anomalous_read_pairs}
+        ${advanced_options.disable_probabilistic_realignment}
+        -C "${advanced_options.coefficient_for_downgrading}"
+        -d "${advanced_options.max_reads_per_bam}"
+        ${advanced_options.extended_BAQ_computation}
+        #if str( $advanced_options.position_list ) != 'None':
+          -l "${advanced_options.position_list}"
+        #end if
+        -q "${advanced_options.minimum_mapping_quality}"
+        -Q "${advanced_options.minimum_base_quality}"
+        #if str( $advanced_options.region_string ):
+            -r "${advanced_options.region_string}"
+        #end if
+        ${advanced_options.output_per_sample_read_depth}
+        ${advanced_options.output_per_sample_strand_bias_p_value}
+    #end if
+    #if str( $genotype_likelihood_computation_type.genotype_likelihood_computation_type_selector ) == 'perform_genotype_likelihood_computation':
+        ##-g or -u
+        -g
+        -e "${genotype_likelihood_computation_type.gap_extension_sequencing_error_probability}"
+        -h "${genotype_likelihood_computation_type.coefficient_for_modeling_homopolymer_errors}"
+        #if str( $genotype_likelihood_computation_type.perform_indel_calling.perform_indel_calling_selector ) == 'perform_indel_calling':
+            -L "${genotype_likelihood_computation_type.perform_indel_calling.skip_indel_calling_above_sample_depth}"
+        #else:
+            -I
+        #end if
+        -o "${genotype_likelihood_computation_type.gap_open_sequencing_error_probability}"
+        #if len( $genotype_likelihood_computation_type.platform_list_repeat ):
+            -P "${ ",".join( [ str( platform.platform_entry ) for platform in $genotype_likelihood_computation_type.platform_list_repeat ] ) }"
+        #end if
+    #end if
+    &gt; "${output_mpileup}"
+    '
+  </command>
+  <inputs>
+    <conditional name="reference_source">
+      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <repeat name="input_bams" title="BAM file" min="1">
+            <param name="input_bam" type="data" format="bam" label="BAM file">
+              <validator type="unspecified_build" />
+              <validator type="dataset_metadata_in_data_table" table_name="sam_fa_indexes" metadata_name="dbkey" metadata_column="value" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+            </param>
+        </repeat>
+        <param name="ref_file" type="select" label="Using reference genome">
+          <options from_data_table="sam_fa_indexes">
+            <!-- <filter type="data_meta" key="dbkey" ref="input_bam" column="value"/> does not yet work in a repeat...--> 
+          </options>
+        </param>
+      </when>
+      <when value="history"> <!-- FIX ME!!!! -->
+        <repeat name="input_bams" title="BAM file" min="1">
+            <param name="input_bam" type="data" format="bam" label="BAM file" >
+              <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
+            </param>
+        </repeat>
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+      </when>
+    </conditional>
+
+    
+    <conditional name="genotype_likelihood_computation_type">
+      <param name="genotype_likelihood_computation_type_selector" type="select" label="Genotype Likelihood Computation">
+        <option value="perform_genotype_likelihood_computation">Perform genotype likelihood computation</option>
+        <option value="do_not_perform_genotype_likelihood_computation" selected="True">Do not perform genotype likelihood computation</option>
+      </param>
+      <when value="perform_genotype_likelihood_computation">
+          <param name="gap_extension_sequencing_error_probability" type="integer" value="20" label="Phred-scaled gap extension sequencing error probability" />
+          <param name="coefficient_for_modeling_homopolymer_errors" type="integer" value="100" label="Coefficient for modeling homopolymer errors." />
+          <conditional name="perform_indel_calling">
+            <param name="perform_indel_calling_selector" type="select" label="Perform INDEL calling">
+              <option value="perform_indel_calling" selected="True">Perform INDEL calling</option>
+              <option value="do_not_perform_indel_calling">Do not perform INDEL calling</option>
+            </param>
+            <when value="perform_indel_calling">
+              <param name="skip_indel_calling_above_sample_depth" type="integer" value="250" label="Skip INDEL calling if the average per-sample depth is above" />
+            </when>
+            <when value="do_no_perform_indel_calling" />
+          </conditional>
+          <param name="gap_open_sequencing_error_probability" type="integer" value="40" label="Phred-scaled gap open sequencing error probability" />
+          <repeat name="platform_list_repeat" title="Platform for INDEL candidates">
+            <param name="platform_entry" type="text" value="" label="Platform to use for INDEL candidates" />
+          </repeat>
+      </when>
+      <when value="do_not_perform_genotype_likelihood_computation">
+          <!-- Do nothing here -->
+      </when>
+    </conditional>
+    <conditional name="advanced_options">
+      <param name="advanced_options_selector" type="select" label="Set advanced options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="advanced">
+        <param name="skip_anomalous_read_pairs" type="boolean" truevalue="-A" falsevalue="" checked="False" label="Do not skip anomalous read pairs in variant calling" />
+        <param name="disable_probabilistic_realignment" type="boolean" truevalue="-B" falsevalue="" checked="False" label="	Disable probabilistic realignment for the computation of base alignment quality (BAQ)" />
+        <param name="coefficient_for_downgrading" type="integer" value="0" label="Coefficient for downgrading mapping quality for reads containing excessive mismatches" />
+        <param name="max_reads_per_bam" type="integer" value="250" label="Max reads per BAM" />
+        <param name="extended_BAQ_computation" type="boolean" truevalue="-E" falsevalue="" checked="False" label="Extended BAQ computation" />
+        <param name="position_list" type="data" format="bed" label="List of regions or sites on which to operate" optional="True" />
+        <param name="minimum_mapping_quality" type="integer" value="0" label="Minimum mapping quality for an alignment to be used" />
+        <param name="minimum_base_quality" type="integer" value="13" label="Minimum base quality for a base to be considered" />
+        <param name="region_string" type="text" value="" label="Only generate pileup in region" />
+        <param name="output_per_sample_read_depth" type="boolean" truevalue="-D" falsevalue="" checked="False" label="Output per-sample read depth" />
+        <param name="output_per_sample_strand_bias_p_value" type="boolean" truevalue="-S" falsevalue="" checked="False" label="Output per-sample Phred-scaled strand bias P-value" />
+      </when>
+      <when value="basic" />
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="pileup" name="output_mpileup" label="${tool.name} on ${on_string}">
+      <change_format>
+        <when input="genotype_likelihood_computation_type.genotype_likelihood_computation_type_selector" value="perform_genotype_likelihood_computation" format="bcf" />
+      </change_format>
+    </data>
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <test>
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
+          <param name="genotype_likelihood_computation_type_selector" value="do_not_perform_genotype_likelihood_computation" />
+          <param name="advanced_options_selector" value="basic" />
+          <output name="output_mpileup" file="samtools/mpileup/samtools_mpileup_out_1.pileup" /> 
+          <output name="output_log" file="samtools/mpileup/samtools_mpileup_out_1.log" />
+      </test>
+      <test>
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="input_bam" value="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" />
+          <param name="genotype_likelihood_computation_type_selector" value="perform_genotype_likelihood_computation" />
+          <param name="gap_extension_sequencing_error_probability" value="20" />
+          <param name="coefficient_for_modeling_homopolymer_errors" value="100" />
+          <param name="perform_indel_calling_selector" value="perform_indel_calling" />
+          <param name="skip_indel_calling_above_sample_depth" value="250" />
+          <param name="gap_open_sequencing_error_probability" value="40" />
+          <param name="platform_list_repeat" value="0" />
+          <param name="advanced_options_selector" value="basic" />
+          <output name="output_mpileup" file="samtools/mpileup/samtools_mpileup_out_2.bcf" /> 
+          <output name="output_log" file="samtools/mpileup/samtools_mpileup_out_1.log" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+ Generate BCF or pileup for one or multiple BAM files. Alignment records are grouped by sample identifiers in @RG header lines. If sample identifiers are absent, each input file is regarded as one sample. 
+
+------
+
+**Settings**::
+
+ Input Options:
+ -6 	Assume the quality is in the Illumina 1.3+ encoding.
+ -A Do not skip anomalous read pairs in variant calling.
+ -B 	Disable probabilistic realignment for the computation of base alignment quality (BAQ). BAQ is the Phred-scaled probability of a read base being misaligned. Applying this option greatly helps to reduce false SNPs caused by misalignments.
+ -b FILE 	List of input BAM files, one file per line [null]
+ -C INT 	Coefficient for downgrading mapping quality for reads containing excessive mismatches. Given a read with a phred-scaled probability q of being generated from the mapped position, the new mapping quality is about sqrt((INT-q)/INT)*INT. A zero value disables this functionality; if enabled, the recommended value for BWA is 50. [0]
+ -d INT 	At a position, read maximally INT reads per input BAM. [250]
+ -E 	Extended BAQ computation. This option helps sensitivity especially for MNPs, but may hurt specificity a little bit.
+ -f FILE 	The faidx-indexed reference file in the FASTA format. The file can be optionally compressed by razip. [null]
+ -l FILE 	BED or position list file containing a list of regions or sites where pileup or BCF should be generated [null]
+ -q INT 	Minimum mapping quality for an alignment to be used [0]
+ -Q INT 	Minimum base quality for a base to be considered [13]
+ -r STR 	Only generate pileup in region STR [all sites]
+ Output Options:
+ 	
+ -D 	Output per-sample read depth
+ -g 	Compute genotype likelihoods and output them in the binary call format (BCF).
+ -S 	Output per-sample Phred-scaled strand bias P-value
+ -u 	Similar to -g except that the output is uncompressed BCF, which is preferred for piping.
+ 
+ Options for Genotype Likelihood Computation (for -g or -u):
+  	
+ -e INT 	Phred-scaled gap extension sequencing error probability. Reducing INT leads to longer indels. [20]
+ -h INT 	Coefficient for modeling homopolymer errors. Given an l-long homopolymer run, the sequencing error of an indel of size s is modeled as INT*s/l. [100]
+ -I 	Do not perform INDEL calling
+ -L INT 	Skip INDEL calling if the average per-sample depth is above INT. [250]
+ -o INT 	Phred-scaled gap open sequencing error probability. Reducing INT leads to more indel calls. [40]
+ -P STR 	Comma dilimited list of platforms (determined by @RG-PL) from which indel candidates are obtained. It is recommended to collect indel candidates from sequencing technologies that have low indel error rate such as ILLUMINA. [all]
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `Li H, Handsaker B, Wysoker A, Fennell T, Ruan J, Homer N, Marth G, Abecasis G, Durbin R; 1000 Genome Project Data Processing Subgroup. The Sequence Alignment/Map format and SAMtools. Bioinformatics. 2009 Aug 15;25(16):2078-9. &lt;http://www.ncbi.nlm.nih.gov/pubmed/19505943&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>

@@ -6,6 +6,7 @@ from galaxy.tools.parameters.grouping import *
 from galaxy.util.template import fill_template
 from galaxy.util.none_like import NoneDataset
 from galaxy.web import url_for
+from galaxy.exceptions import ObjectInvalid
 import galaxy.tools
 from types import *
 
@@ -191,7 +192,16 @@ class DefaultToolAction( object ):
             db_datasets[ "chromInfo" ] = db_dataset
             incoming[ "chromInfo" ] = db_dataset.file_name
         else:
-            incoming[ "chromInfo" ] = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+            # For custom builds, chrom info resides in converted dataset; for built-in builds, chrom info resides in tool-data/shared.
+            if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in trans.user.preferences[ 'dbkeys' ] ):
+                # Custom build.
+                custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
+                build_fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( custom_build_dict[ 'fasta' ] )
+                chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
+            else:
+                # Default to built-in build.
+                chrom_info = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+            incoming[ "chromInfo" ] = chrom_info
         inp_data.update( db_datasets )
         
         # Determine output dataset permission/roles list
@@ -219,6 +229,7 @@ class DefaultToolAction( object ):
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
+        object_store_id = None
         for name, output in tool.outputs.items():
             for filter in output.filters:
                 try:
@@ -275,14 +286,21 @@ class DefaultToolAction( object ):
                                             if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
                                                 ext = when_elem.get( 'format', ext )
                     data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                    if output.hidden:
+                        data.visible = False
                     # Commit the dataset immediately so it gets database assigned unique id
                     trans.sa_session.add( data )
                     trans.sa_session.flush()
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
-                # Create an empty file immediately
-               	open( data.file_name, "w" ).close()
-                # Fix permissions
-                util.umask_fix_perms( data.file_name, trans.app.config.umask, 0666 )
+                # Create an empty file immediately.  The first dataset will be
+                # created in the "default" store, all others will be created in
+                # the same store as the first.
+                data.dataset.object_store_id = object_store_id
+                try:
+                    trans.app.object_store.create( data.dataset )
+                except ObjectInvalid:
+                    raise Exception('Unable to create output dataset: object store is full')
+                object_store_id = data.dataset.object_store_id      # these will be the same thing after the first output
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
                 # Copy metadata from one of the inputs if requested. 
@@ -367,6 +385,7 @@ class DefaultToolAction( object ):
                 job.add_input_dataset( name, None )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
+        job.object_store_id = object_store_id
         trans.sa_session.add( job )
         trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).

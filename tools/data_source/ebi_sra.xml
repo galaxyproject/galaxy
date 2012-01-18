@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<tool name="EBI SRA" id="ebi_sra_main" tool_type="data_source" version="1.0.1">
+    <description>ENA SRA</description>
+    <!-- This paython script imports the file into Galaxy -->
+    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <!-- The URL where Galaxy will forwards the user when this tool is accessed from the Get Data menu -->
+    <inputs action="http://www.ebi.ac.uk/ena/data/search" check_values="false" method="get">
+        <display>go to EBI SRA server $GALAXY_URL</display>
+    </inputs>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="fastq"/>
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>

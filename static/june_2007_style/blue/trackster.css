@@ -24,7 +24,7 @@
 .track{background:white;}
 .track-header{text-align:left;padding:4px 0px;color:#666;}
 .track-header .menubutton{margin-left:0px;}
-.track-content{text-align:center;border-top:1px solid #eee;border-bottom:2px solid #eee;background:#eee url('../images/tracks/diag_bg.gif');min-height:16px;}
+.track-content{text-align:center;border-top:1px solid #eee;border-bottom:2px solid #eee;background:#eee url('../images/tracks/diag_bg.gif');min-height:16px;position:relative;}
 .track-name{float:left;margin-top:2px;height:16px;}
 .label-track .track-content{background:white;}
 .track-tile{background:white;}
@@ -44,19 +44,22 @@
 input{font:10px verdana;}
 .dynamic-tool,.filters{margin-left:0.25em;padding-bottom:0.5em;}
 .dynamic-tool{width:410px;}
-.filters > .sliders,.display-controls{float:left;margin:1em;}
-.sliders{width:410px;}
-.display-controls{border-left:solid 2px #DDDDDD;padding-left:1em
-}
-.filter-row {
-    margin-top:0.4em;}
-.slider-row{margin-left:1em;}
-.elt-label{float:left;font-weight:bold;margin-right:1em;}
-.slider{float:right;width:200px;position:relative;}
+.filters{float:left;margin:1em;width:60%;position:relative;}
+.display-controls{float:left;margin-left:1em;}
+.slider-row{margin-left:1em;height:16px;}
+.elt-label{float:left;width:20%;font-weight:bold;margin-right:1em;}
+.slider{float:left;width:40%;position:relative;padding-top:2px;}
 .tool-name{font-size:110%;font-weight:bold;}
 .param-row{margin-top:0.2em;margin-left:1em;}
-.param-label{float:left;font-weight:bold;padding-top:0.2em;}
+.param-label{float:left;font-weight:bold;padding-top:0.2em;width:50%;}
 .menu-button{margin:0px 4px 0px 4px;}
+.layer-transparent{background:transparent url(../images/fugue/layer-transparent-bw.png) no-repeat;}
+.layer-transparent.active{background:transparent url(../images/fugue/layer-transparent.png) no-repeat;}
+.arrow-resize-090{background:transparent url(../images/fugue/arrow-resize-090-bw.png) no-repeat;}
+.arrow-resize-090.active{background:transparent url(../images/fugue/arrow-resize-090.png) no-repeat;}
+.exclamation{background:transparent url(../images/fugue/exclamation.png) no-repeat;}
+.layers-stack{background:transparent url(../images/fugue/layers-stack-bw.png) no-repeat;}
+.layers-stack:hover{background:transparent url(../images/fugue/layers-stack.png) no-repeat;}
 .chevron-expand{background:transparent url(../images/fugue/chevron-expand-bw.png) no-repeat;}
 .chevron-expand:hover{background:transparent url(../images/fugue/chevron-expand.png) no-repeat;}
 .settings-icon{background:transparent url(../images/fugue/gear-bw.png) no-repeat;}
@@ -87,7 +90,6 @@ input{font:10px verdana;}
 .icon{display:inline-block;width:16px;height:16px;}
 .icon.more-down{background:url('../images/fugue/arrow-transition-270-bw.png') no-repeat 0px 0px;}
 .icon.more-across{background:url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;}
-.intro{padding:1em;}
-.intro > .action-button{background-color:#CCC;padding:1em;}
+.intro > .action-button{margin:1em;padding:1em;text-decoration:underline;}
 .feature-popup{position:absolute;z-index:1000;padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);background-position:top center;}
 .feature-popup-inner{padding:5px 8px 4px 8px;background-color:black;color:white;}

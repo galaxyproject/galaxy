@@ -5,6 +5,7 @@ from galaxy.util.odict import odict
 from galaxy.datatypes import sniff
 from galaxy.util.json import to_json_string
 from galaxy.model.orm import eagerload_all
+from galaxy.exceptions import ObjectInvalid
 
 import logging
 log = logging.getLogger( __name__ )
@@ -339,19 +340,23 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     for name, value in tool.params_to_strings( params, trans.app ).iteritems():
         job.add_parameter( name, value )
     job.add_parameter( 'paramfile', to_json_string( json_file_path ) )
-    if folder:
-        for i, dataset in enumerate( data_list ):
+    object_store_id = None
+    for i, dataset in enumerate( data_list ):
+        if folder:
             job.add_output_library_dataset( 'output%i' % i, dataset )
-            # Create an empty file immediately
-            if not dataset.dataset.external_filename:
-                open( dataset.file_name, "w" ).close()
-    else:
-        for i, dataset in enumerate( data_list ):
+        else:
             job.add_output_dataset( 'output%i' % i, dataset )
-            # Create an empty file immediately
-            if not dataset.dataset.external_filename:
-                open( dataset.file_name, "w" ).close()
-
+        # Create an empty file immediately
+        if not dataset.dataset.external_filename:
+            dataset.dataset.object_store_id = object_store_id
+            try:
+                trans.app.object_store.create( dataset.dataset )
+            except ObjectInvalid:
+                raise Exception('Unable to create output dataset: object store is full')
+            object_store_id = dataset.dataset.object_store_id
+            trans.sa_session.add( dataset )
+            # open( dataset.file_name, "w" ).close()
+    job.object_store_id = object_store_id
     job.state = job.states.NEW
     trans.sa_session.add( job )
     trans.sa_session.flush()

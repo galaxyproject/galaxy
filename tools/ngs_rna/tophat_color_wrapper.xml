@@ -19,7 +19,7 @@
             #if $refGenomeSource.genomeSource == "history":
                 --own-file=$refGenomeSource.ownFile
             #else:
-                --indexes-path="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'tophat_indexes_color' ].get_fields() )[0][-1] }"
+                --indexes-path="${refGenomeSource.index.fields.path}"
             #end if
 
             ## Are reads single-end or paired?
@@ -40,15 +40,18 @@
                     -g $singlePaired.sParams.max_multihits
                     --min-segment-intron $singlePaired.sParams.min_segment_intron
                     --max-segment-intron $singlePaired.sParams.max_segment_intron
+                    --initial-read-mismatches=$singlePaired.sParams.initial_read_mismatches
                     --seg-mismatches=$singlePaired.sParams.seg_mismatches
                     --seg-length=$singlePaired.sParams.seg_length
                     --library-type=$singlePaired.sParams.library_type
                     
                     ## Indel search.
                     #if $singlePaired.sParams.indel_search.allow_indel_search == "Yes":
-                        --allow-indels
+                        ## --allow-indels
                         --max-insertion-length $singlePaired.sParams.indel_search.max_insertion_length
                         --max-deletion-length $singlePaired.sParams.indel_search.max_deletion_length
+                    #else:
+                        --no-novel-indels
                     #end if
 
                     ## Supplying junctions parameters.
@@ -99,15 +102,18 @@
                     -g $singlePaired.pParams.max_multihits
                     --min-segment-intron $singlePaired.pParams.min_segment_intron
                     --max-segment-intron $singlePaired.pParams.max_segment_intron
+                    --initial-read-mismatches=$singlePaired.pParams.initial_read_mismatches
                     --seg-mismatches=$singlePaired.pParams.seg_mismatches
                     --seg-length=$singlePaired.pParams.seg_length
                     --library-type=$singlePaired.pParams.library_type
                     
                     ## Indel search.
                     #if $singlePaired.pParams.indel_search.allow_indel_search == "Yes":
-                        --allow-indels
+                        ## --allow-indels
                         --max-insertion-length $singlePaired.pParams.indel_search.max_insertion_length
                         --max-deletion-length $singlePaired.pParams.indel_search.max_deletion_length
+                    #else:
+                        --no-novel-indels
                     #end if
 
                     ## Supplying junctions parameters.
@@ -190,8 +196,8 @@
                   <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
                   <conditional name="indel_search">
                       <param name="allow_indel_search" type="select" label="Allow indel search">
-                          <option value="No">No</option>
                           <option value="Yes">Yes</option>
+                          <option value="No">No</option>
                       </param>
                       <when value="No"/>
                       <when value="Yes">
@@ -203,6 +209,7 @@
                   <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
+                  <param name="initial_read_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in the initial read mapping" />
                   <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
                   <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
                   
@@ -296,8 +303,8 @@
                   <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
                   <conditional name="indel_search">
                       <param name="allow_indel_search" type="select" label="Allow indel search">
-                          <option value="No">No</option>
                           <option value="Yes">Yes</option>
+                          <option value="No">No</option>
                       </param>
                       <when value="No"/>
                       <when value="Yes">
@@ -309,6 +316,7 @@
                   <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
+                  <param name="initial_read_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in the initial read mapping" />
                   <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
                   <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
                   <!-- Options for supplying own junctions. -->

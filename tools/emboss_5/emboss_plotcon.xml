@@ -2,7 +2,7 @@
   <!-- produces png file -->
   <description>Plot quality of conservation of a sequence alignment</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command interpreter="perl">emboss_single_outputfile_wrapper.pl plotcon -sequences $input1 -graph png -goutfile $out_file1 -winsize $winsize -auto</command>
+  <command interpreter="perl">emboss_single_outputfile_wrapper.pl plotcon -sequences '$input1' -graph png -goutfile '$out_file1' -winsize '$winsize' -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">
       <label>Sequence</label>

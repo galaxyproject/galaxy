@@ -1,7 +1,7 @@
 <tool id="EMBOSS: einverted28" name="einverted" version="5.0.0">
   <description>Finds DNA inverted repeats</description>
   <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
-  <command>einverted -sequence $input1 -outfile $out_file1 -gap $gap -threshold $threshold -match $match -mismatch $mismatch -maxrepeat $maxrepeat -auto</command>
+  <command>einverted -sequence '$input1' -outfile '$out_file1' -gap '$gap' -threshold '$threshold' -match '$match' -mismatch '$mismatch' -maxrepeat '$maxrepeat' -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>On query</label>
