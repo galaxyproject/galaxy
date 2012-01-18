@@ -589,3 +589,4 @@ class Registry( object ):
         os.write( fd, '</sniffers>\n' )
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
+        os.chmod( self.xml_filename, 0644 )

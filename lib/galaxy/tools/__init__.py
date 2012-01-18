@@ -30,8 +30,6 @@ from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
-from galaxy.web import security 
-import socket
 
 from galaxy.visualization.tracks.visual_analytics import TracksterConfig
 
@@ -1637,13 +1635,13 @@ class Tool:
                                 DatasetFilenameWrapper( converted_dataset,
                                                         datatypes_registry = self.app.datatypes_registry,
                                                         tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ), 
-                                                        name = conversion_name, config_info = self.app.config )
+                                                        name = conversion_name )
                     # Wrap actual input dataset
                     input_values[ input.name ] = \
                         DatasetFilenameWrapper( input_values[ input.name ],
                                                 datatypes_registry = self.app.datatypes_registry,
                                                 tool = self,
-                                                name = input.name, config_info = self.app.config )
+                                                name = input.name )
                 elif isinstance( input, SelectToolParameter ):
                     input_values[ input.name ] = SelectToolParameterWrapper( 
                         input, input_values[ input.name ], self.app, other_values = param_dict )
@@ -1681,28 +1679,28 @@ class Tool:
             param_dict[name] = DatasetFilenameWrapper( data, 
                                                        datatypes_registry = self.app.datatypes_registry, 
                                                        tool = self, 
-                                                       name = name, config_info = self.app.config )
+                                                       name = name )
             if data:
                 for child in data.children:
-                    param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child,config_info = self.app.config )
+                    param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes) 
             # if desired.
             if self.app.config.outputs_to_working_directory:
                 try:
                     false_path = [ dp.false_path for dp in output_paths if dp.real_path == hda.file_name ][0]
-                    param_dict[name] = DatasetFilenameWrapper( hda, false_path = false_path, config_info = self.app.config )
+                    param_dict[name] = DatasetFilenameWrapper( hda, false_path = false_path )
                     open( false_path, 'w' ).close()
                 except IndexError:
                     log.warning( "Unable to determine alternate path for writing job outputs, outputs will be written to their real paths" )
-                    param_dict[name] = DatasetFilenameWrapper( hda, config_info = self.app.config )
+                    param_dict[name] = DatasetFilenameWrapper( hda )
             else:
-                param_dict[name] = DatasetFilenameWrapper( hda, config_info = self.app.config )
+                param_dict[name] = DatasetFilenameWrapper( hda )
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
             param_dict[name].files_path = os.path.abspath(os.path.join( job_working_directory, "dataset_%s_files" % (hda.dataset.id) ))
             for child in hda.children:
-                param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child, config_info = self.app.config )
+                param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for out_name, output in self.outputs.iteritems():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter 
@@ -2294,7 +2292,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         def items( self ):
             return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
     
-    def __init__( self, dataset, datatypes_registry = None, tool = None, name = None, false_path = None , config_info=None):
+    def __init__( self, dataset, datatypes_registry = None, tool = None, name = None, false_path = None ):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
@@ -2306,14 +2304,6 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
         self.false_path = false_path
-        
-        # create web_display_url attribute
-        sec = security.SecurityHelper( id_secret=config_info.id_secret )
-        try:
-            url = 'http://' + socket.getfqdn() + config_info.cookie_path + '/datasets/' + sec.encode_id(dataset.id) + '/display/?preview=True'
-            self.web_display_url = url 
-        except:
-            self.web_display_url = None      
 
     def __str__( self ):
         if self.false_path is not None:

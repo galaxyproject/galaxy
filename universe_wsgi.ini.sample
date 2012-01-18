@@ -640,6 +640,7 @@ use_interactive = True
 # run with the runner defined with default_cluster_job_runner.
 
 [galaxy:tool_runners]
+
 biomart = local:///
 encode_db1 = local:///
 hbvar = local:///

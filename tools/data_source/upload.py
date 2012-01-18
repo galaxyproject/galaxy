@@ -305,19 +305,19 @@ def add_file( dataset, registry, json_file, output_path ):
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
             file_err( err_msg, dataset, json_file )
             return
-    if link_data_only == 'copy_files' and converted_path is not None:
-        # Move the converted dataset to its "real" path
-        shutil.move( converted_path, output_path )
-    elif link_data_only == 'copy_files' and in_place:
-        # Dataset was not converted but should still be removed from original location
-        shutil.move( dataset.path, output_path )
+    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
+        # Move the dataset to its "real" path
+        if converted_path is not None:
+            shutil.copy( converted_path, output_path )
+            try:
+                os.remove( converted_path )
+            except:
+                pass
+        else:
+            # This should not happen, but it's here just in case
+            shutil.copy( dataset.path, output_path )
     elif link_data_only == 'copy_files':
-        shutil.copy( dataset.path, output_path )
-
-    if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
-        # Groom the dataset content if necessary
-        datatype.groom_dataset_content( output_path )
-
+        shutil.move( dataset.path, output_path )
     # Write the job info
     stdout = stdout or 'uploaded %s file' % data_type
     info = dict( type = 'dataset',
@@ -327,6 +327,10 @@ def add_file( dataset, registry, json_file, output_path ):
                  name = dataset.name,
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )
+
+    if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
+        # Groom the dataset content if necessary
+        datatype.groom_dataset_content( output_path )
 
 def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         if dataset.composite_files:

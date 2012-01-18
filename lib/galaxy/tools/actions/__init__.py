@@ -149,7 +149,7 @@ class DefaultToolAction( object ):
                         galaxy.tools.DatasetFilenameWrapper( input_values[ input.name ],
                                                              datatypes_registry = trans.app.datatypes_registry,
                                                              tool = tool,
-                                                             name = input.name, config_info = trans.app.config)
+                                                             name = input.name )
                 elif isinstance( input, SelectToolParameter ):
                     input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values = incoming )
                 else:
