@@ -43,6 +43,7 @@ def main():
                             chrom_col=chr_col_1,
                             start_col=start_col_1,
                             end_col=end_col_1,
+                            strand_col=strand_col_1,
                             fix_strand=True )
 
     g2 = NiceReaderWrapper( fileinput.FileInput( in_file_2 ),
@@ -51,9 +52,6 @@ def main():
                             end_col=end_col_2,
                             strand_col=strand_col_2,
                             fix_strand=True )
-
-    if strand_col_1 >= 0:
-        g1.strand_col = strand_col_1
 
     out_file = open( out_fname, "w" )
 
