@@ -210,6 +210,7 @@ def __main__():
         tmp_stdout = open( tmp_out, 'wb' )
         tmp_err = tempfile.NamedTemporaryFile().name
         tmp_stderr = open( tmp_err, 'wb' )
+        print cmd
         proc = subprocess.Popen( args=cmd, shell=True, cwd=".", stdout=tmp_stdout, stderr=tmp_stderr )
         returncode = proc.wait()
         tmp_stderr.close()
