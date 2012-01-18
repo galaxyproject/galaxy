@@ -476,6 +476,200 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
             message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )
         status = 'error'
     return message, status
+def reset_all_repository_metadata( trans, id, **kwd ):
+    params = util.Params( kwd )
+    message = util.restore_text( params.get( 'message', ''  ) )
+    status = params.get( 'status', 'done' )
+    repository = get_repository( trans, id )
+    log.debug( "Resetting all metadata on repository: %s" % repository.name )
+    repo_dir = repository.repo_path
+    repo = hg.repository( get_configured_ui(), repo_dir )
+    if len( repo ) == 1:
+        message, status = set_repository_metadata( trans, id, repository.tip, **kwd )
+    else:
+        # The list of changeset_revisions refers to repository_metadata records that have been
+        # created or updated.  When the following loop completes, we'll delete all repository_metadata
+        # records for this repository that do not have a changeset_revision value in this list.
+        changeset_revisions = []
+        ancestor_changeset_revision = None
+        ancestor_metadata_dict = None
+        for changeset in repo.changelog:
+            current_changeset_revision = str( repo.changectx( changeset ) )
+            ctx = get_changectx_for_changeset( trans, repo, current_changeset_revision )
+            if current_changeset_revision == repository.tip:
+                current_metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, current_changeset_revision, repo_dir )
+            else:
+                current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, current_changeset_revision, repo_dir )
+            if current_metadata_dict:
+                if ancestor_changeset_revision:
+                    # Compare metadata from ancestor and current.  The value of comparsion will be one of:
+                    # 'no metadata' - no metadata for either ancestor or current, so continue from current
+                    # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
+                    # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
+                    # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current
+                    #                              metadata, so persist ancestor metadata.
+                    comparison = compare_changeset_revisions( ancestor_changeset_revision,
+                                                              ancestor_metadata_dict,
+                                                              current_changeset_revision,
+                                                              current_metadata_dict )
+                    if comparison in [ 'no metadata', 'equal', 'subset' ]:
+                        ancestor_changeset_revision = current_changeset_revision
+                        ancestor_metadata_dict = current_metadata_dict
+                    elif comparison == 'not equal and not subset':
+                        create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
+                        # Keep track of the changeset_revisions that we've persisted.
+                        changeset_revisions.append( ancestor_changeset_revision )
+                        ancestor_changeset_revision = None
+                        ancestor_metadata_dict = None
+                else:
+                    # We're either at the first change set in the change log or we have just created or updated
+                    # a repository_metadata record.  At this point we set the ancestor changeset to the current
+                    # changeset for comparison in the next iteration.
+                    ancestor_changeset_revision = current_changeset_revision
+                    ancestor_metadata_dict = current_metadata_dict
+                if not ctx.children():
+                    # We're at the end of the change log.
+                    create_or_update_repository_metadata( trans, id, repository, current_changeset_revision, current_metadata_dict )
+                    changeset_revisions.append( current_changeset_revision )
+                    ancestor_changeset_revision = None
+                    ancestor_metadata_dict = None
+            elif ancestor_metadata_dict:
+                # Our current change set has no metadata, but our ancestor change set has metadata, so save it.
+                create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
+                # Keep track of the changeset_revisions that we've persisted.
+                changeset_revisions.append( ancestor_changeset_revision )
+                ancestor_changeset_revision = None
+                ancestor_metadata_dict = None
+        clean_repository_metadata( trans, id, changeset_revisions )
+def clean_repository_metadata( trans, id, changeset_revisions ):
+    # Delete all repository_metadata reecords associated with the repository
+    # that have a changeset_revision that is not in changeset_revisions.
+    for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                               .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ):
+        if repository_metadata.changeset_revision not in changeset_revisions:
+            trans.sa_session.delete( repository_metadata )
+            trans.sa_session.flush()
+def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    if repository_metadata:
+        # Update RepositoryMetadata.metadata.
+        repository_metadata.metadata = metadata_dict
+        trans.sa_session.add( repository_metadata )
+        trans.sa_session.flush()
+    else:
+        # Create a new repository_metadata table row.
+        repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
+        trans.sa_session.add( repository_metadata )
+        trans.sa_session.flush()
+def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
+    # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision
+    # is an ancestor of current_changeset_revision which is associated with current_metadata_dict.
+    #
+    # TODO: a new repository_metadata record will be created only when this method returns the string
+    # 'not equal and not subset'.  However, we're currently also returning the strings 'no metadata',
+    # 'equal' and 'subset', depending upon how the 2 change sets compare.  We'll leave things this way
+    # for the current time in case we discover a use for these additional result strings.
+    #
+    # Get information about tools.
+    if 'tools' in ancestor_metadata_dict:
+        ancestor_tools = ancestor_metadata_dict[ 'tools' ]
+    else:
+        ancestor_tools = []
+    if 'tools' in current_metadata_dict:
+        current_tools = current_metadata_dict[ 'tools' ]
+    else:
+        current_tools = []
+    ancestor_guids = []
+    for tool_dict in ancestor_tools:
+        ancestor_guids.append( tool_dict[ 'guid' ] )
+    ancestor_guids.sort()
+    current_guids = []
+    for tool_dict in current_tools:
+        current_guids.append( tool_dict[ 'guid' ] )
+    current_guids.sort()
+    # Get information about workflows.
+    if 'workflows' in ancestor_metadata_dict:
+        ancestor_workflows = ancestor_metadata_dict[ 'workflows' ]
+    else:
+        ancestor_workflows = []
+    if 'workflows' in current_metadata_dict:
+        current_workflows = current_metadata_dict[ 'workflows' ]
+    else:
+        current_workflows = []
+    # Get information about datatypes.
+    if 'datatypes' in ancestor_metadata_dict:
+        ancestor_datatypes = ancestor_metadata_dict[ 'datatypes' ]
+    else:
+        ancestor_datatypes = []
+    if 'datatypes' in current_metadata_dict:
+        current_datatypes = current_metadata_dict[ 'datatypes' ]
+    else:
+        current_datatypes = []
+    # Handle case where no metadata exists for either changeset.
+    if not ancestor_guids and not current_guids and not ancestor_workflows and not current_workflows and not ancestor_datatypes and not current_datatypes:
+        return 'no metadata'
+    workflow_comparison = compare_workflows( ancestor_workflows, current_workflows )
+    datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
+    # Handle case where all metadata is the same.
+    if ancestor_guids == current_guids and workflow_comparison == 'equal' and datatype_comparison == 'equal':
+        return 'equal'
+    if workflow_comparison == 'subset' and datatype_comparison == 'subset':
+        is_subset = True
+        for guid in ancestor_guids:
+            if guid not in current_guids:
+                is_subset = False
+                break
+        if is_subset:
+            return 'subset'
+    return 'not equal and not subset'
+def compare_workflows( ancestor_workflows, current_workflows ):
+    # Determine if ancestor_workflows is the same as current_workflows
+    # or if ancestor_workflows is a subset of current_workflows.
+    if len( ancestor_workflows ) <= len( current_workflows ):
+        for ancestor_workflow in ancestor_workflows:
+            # Currently the only way to differentiate workflows is by name.
+            ancestor_workflow_name = ancestor_workflow[ 'name' ]
+            num_ancestor_workflow_steps = len( ancestor_workflow[ 'steps' ] )
+            found_in_current = False
+            for current_workflow in current_workflows:
+                # Assume that if the name and number of steps are euqal,
+                # then the workflows are the same.  Of course, this may
+                # not be true...
+                if current_workflow[ 'name' ] == ancestor_workflow_name and len( current_workflow[ 'steps' ] ) == num_ancestor_workflow_steps:
+                    found_in_current = True
+                    break
+            if not found_in_current:
+                return 'not equal and not subset'
+        if len( ancestor_workflows ) == len( current_workflows ):
+            return 'equal'
+        else:
+            return 'subset'
+    return 'not equal and not subset'
+def compare_datatypes( ancestor_datatypes, current_datatypes ):
+    # Determine if ancestor_datatypes is the same as current_datatypes
+    # or if ancestor_datatypes is a subset of current_datatypes.  Each
+    # datatype dict looks something like:
+    # {"dtype": "galaxy.datatypes.images:Image", "extension": "pdf", "mimetype": "application/pdf"}
+    if len( ancestor_datatypes ) <= len( current_datatypes ):
+        for ancestor_datatype in ancestor_datatypes:
+            # Currently the only way to differentiate datatypes is by name.
+            ancestor_datatype_dtype = ancestor_datatype[ 'dtype' ]
+            ancestor_datatype_extension = ancestor_datatype[ 'extension' ]
+            ancestor_datatype_mimetype = ancestor_datatype[ 'mimetype' ]
+            found_in_current = False
+            for current_datatype in current_datatypes:
+                if current_datatype[ 'dtype' ] == ancestor_datatype_dtype and \
+                    current_datatype[ 'extension' ] == ancestor_datatype_extension and \
+                    current_datatype[ 'mimetype' ] == ancestor_datatype_mimetype:
+                    found_in_current = True
+                    break
+            if not found_in_current:
+                return 'not equal and not subset'
+        if len( ancestor_datatypes ) == len( current_datatypes ):
+            return 'equal'
+        else:
+            return 'subset'
+    return 'not equal and not subset'
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
     return trans.sa_session.query( trans.model.Repository ).filter_by( name=name ).one()
