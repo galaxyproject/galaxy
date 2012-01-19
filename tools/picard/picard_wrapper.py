@@ -283,9 +283,25 @@ class PicardBase():
         picard wants bait and target files to have the same header length as the incoming bam/sam 
         a meaningful (ie accurate) representation will fail because of this - so this hack
         it would be far better to be able to supply the original bed untouched
+        Additional checking added Ross Lazarus Dec 2011 to deal with two 'bug' reports on the list
         """
         assert inbed <> None
         bed = open(inbed,'r').readlines()
+        sbed = [x.split('\t') for x in bed] # lengths MUST be 5
+        lens = [len(x) for x in sbed]
+        strands = [x[3] for x in sbed if not x[3] in ['+','-']]
+        maxl = max(lens)
+        minl = min(lens)
+        e = []
+        if maxl <> minl:
+            e.append("## Input error: Inconsistent field count in %s - please read the documentation on bait/target format requirements, fix and try again" % inbed)
+        if maxl <> 5:
+            e.append("## Input error: %d fields found in %s, 5 required - please read the warning and documentation on bait/target format requirements, fix and try again" % (maxl,inbed))
+        if len(strands) > 0:
+            e.append("## Input error: Fourth column in %s is not the required strand (+ or -) - please read the warning and documentation on bait/target format requirements, fix and try again" % (inbed))
+        if len(e) > 0: # write to stderr and quit
+            print >> sys.stderr, '\n'.join(e)
+            sys.exit(1)
         thead = os.path.join(self.opts.outdir,'tempSamHead.txt')
         if self.opts.datatype == 'sam':
             cl = ['samtools view -H -S',self.opts.input,'>',thead]

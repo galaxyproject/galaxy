@@ -911,6 +911,8 @@ class ColumnListParameter( SelectToolParameter ):
         self.ref_input = None
         self.default_value = elem.get( "default_value", None )
         self.is_dynamic = True
+        self.usecolnames = string_as_bool( elem.get( "use_header_names", False ))
+
     def from_html( self, value, trans=None, context={} ):
         """
         Label convention prepends column number with a 'c', but tool uses the integer. This
@@ -940,6 +942,7 @@ class ColumnListParameter( SelectToolParameter ):
             else:
                 value = None
         return super( ColumnListParameter, self ).from_html( value, trans, context )
+
     def get_column_list( self, trans, other_values ):
         """
         Generate a select list containing the columns of the associated 
@@ -966,7 +969,7 @@ class ColumnListParameter( SelectToolParameter ):
         if not self.force_select:
             column_list.append( 'None' )
         if self.numerical:
-            # If numerical was requsted, filter columns based on metadata
+            # If numerical was requested, filter columns based on metadata
             for i, col in enumerate( dataset.metadata.column_types ):
                 if col == 'int' or col == 'float':
                     column_list.append( str( i + 1 ) )
@@ -974,15 +977,36 @@ class ColumnListParameter( SelectToolParameter ):
             for i in range(0, dataset.metadata.columns):
                 column_list.append( str( i + 1 ) )
         return column_list
+
     def get_options( self, trans, other_values ):
+        """ show column labels rather than c1..cn if use_header_names=True
+        """
         options = []
-        column_list = self.get_column_list( trans, other_values )
+        colnames = None
+        if self.usecolnames: # read first row - assume is a header with metadata useful for making good choices
+            dataset = other_values[ self.data_ref ]
+            try:
+                head = open(dataset.get_file_name(),'r').readline()
+                cnames = head.rstrip().split('\t')
+                column_list = [('%d' % (i+1),'c%d: %s' % (i+1,x)) for i,x in enumerate(cnames)]
+                if self.numerical: # If numerical was requested, filter columns based on metadata
+                    if len(dataset.metadata.column_types) >= len(cnames): 
+                        numerics = [i for i,x in enumerate(dataset.metadata.column_types) if x == 'int' or x == 'float']            
+                        column_list = [column_list[i] for i in numerics]
+            except:
+                column_list = self.get_column_list( trans, other_values )
+        else:
+           column_list = self.get_column_list( trans, other_values )
         if len( column_list ) > 0 and not self.force_select:
             options.append( ('?', 'None', False) )
         for col in column_list:
             if col != 'None':
-                options.append( ( 'c' + col, col, False ) )
+                if type(col) == type(()) and len(col) == 2: # fiddled
+                    options.append((col[1],'c' + col[0],False))
+                else:
+                    options.append( ( 'c' + col, col, False ) )
         return options
+
     def get_initial_value( self, trans, context ):
         if self.default_value is not None:
             # dataset not ready / in workflow / etc

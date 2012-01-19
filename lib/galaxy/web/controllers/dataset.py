@@ -292,19 +292,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                     if params.do_action == 'zip':
                         archive.close()
                         tmpfh = open( tmpf )
-                        # clean up now
-                        try:
-                            os.unlink( tmpf )
-                            os.rmdir( tmpd )
-                        except OSError:
-                            error = True
-                            msg = "Unable to remove temporary library download archive and directory"
-                            log.exception( msg )
-                            messagetype = 'error'
-                        if not error:
-                            trans.response.set_content_type( "application/x-zip-compressed" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.zip" % outfname 
-                            return tmpfh
+                        # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp 
+                        trans.response.set_content_type( "application/x-zip-compressed" )
+                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.zip" % outfname 
+                        return tmpfh
                     else:
                         trans.response.set_content_type( "application/x-tar" )
                         outext = 'tgz'
