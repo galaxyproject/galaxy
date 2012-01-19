@@ -403,6 +403,7 @@
     
     <label text="Filtration" id="gatk_filtration" />
     <tool file="gatk/variant_filtration.xml" />
+    <tool file="gatk/variant_select.xml" />
     
     <label text="Variant Quality Score Recalibration" id="gatk_variant_quality_score_recalibration" />
     <tool file="gatk/variant_recalibrator.xml" />

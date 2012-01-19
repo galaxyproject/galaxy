@@ -1,0 +1,482 @@
+<tool id="gatk_variant_select" name="Select Variants" version="0.0.1">
+  <description>from VCF files</description>
+  <requirements>
+      <requirement type="package" version="1.3">gatk</requirement>
+  </requirements>
+  <command interpreter="python">gatk_wrapper.py
+   #from binascii import hexlify
+   --max_jvm_heap_fraction "1"
+   --stdout "${output_log}"
+   -d "--variant:variant,%(file_type)s" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
+   -p 'java 
+    -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
+    -T "SelectVariants"
+    --num_threads 4 ##hard coded, for now
+    -et "NO_ET" ##ET no phone home
+    -o "${output_vcf}"
+    
+    #if $reference_source.reference_source_selector != "history":
+        -R "${reference_source.ref_file.fields.path}"
+    #end if
+    '
+    -p '
+    #if $input_concordance:
+        --concordance "${input_concordance}"
+    #end if
+    #if $input_discordance:
+        --discordance "${input_discordance}"
+    #end if
+    
+    #for $exclude_sample_name in $exclude_sample_name_repeat:
+        --exclude_sample_name "${exclude_sample_name.exclude_sample_name}"
+    #end for
+    
+    ${exclude_filtered}
+    
+    #for $sample_name in $sample_name_repeat:
+        --sample_name "${sample_name.sample_name}"
+    #end for
+    
+    '
+    
+    #for $select_expressions in $select_expressions_repeat:
+        #set $select_expression = "--select_expressions '%s'" % ( str( $select_expressions.select_expressions ) )
+        -o '${ hexlify( $select_expression ) }'
+    #end for
+    
+    ##start tool specific options
+    #if str( $analysis_param_type.analysis_param_type_selector ) == 'advanced':
+        -p '
+          #for $exclude_sample_file in $analysis_param_type.exclude_sample_file_repeat:
+              --exclude_sample_file "${exclude_sample_file.exclude_sample_file}"
+          #end for
+          
+          #for $sample_file in $analysis_param_type.sample_file_repeat:
+              --sample_file "${ample_file.sample_file}"
+          #end for
+          
+          #if $analysis_param_type.input_keep_ids:
+              --keepIDs "${analysis_param_type.input_keep_ids}"
+          #end if
+          
+          ${analysis_param_type.keep_original_AC}
+          
+          ${analysis_param_type.mendelian_violation}
+          
+          --mendelianViolationQualThreshold "${analysis_param_type.mendelian_violation_qual_threshold}"
+          
+          --remove_fraction_genotypes "${analysis_param_type.remove_fraction_genotypes}"
+          
+          --restrictAllelesTo "${analysis_param_type.restrict_alleles_to}"
+          
+          #if str( $analysis_param_type.select_random_type.select_random_type_selector ) == 'select_random_fraction':
+              --select_random_fraction "${analysis_param_type.select_random_type.select_random_fraction}"
+          #elif str( $analysis_param_type.select_random_type.select_random_type_selector ) == 'select_random_number':
+              --select_random_number "${analysis_param_type.select_random_type.select_random_number}"
+          #end if
+          
+          #if $analysis_param_type.select_type_to_include:
+              #for $type_to_include in str( $analysis_param_type.select_type_to_include ).split( ',' ):
+                  --selectTypeToInclude "${type_to_include}"
+              #end for
+          #end if
+          
+          ${analysis_param_type.exclude_non_variants}
+        '
+        
+        #for $sample_expressions in $analysis_param_type.sample_expressions_repeat:
+            #set $sample_expression = "--sample_expressions '%s'" % ( str( $sample_expressions.sample_expressions ) )
+            -o '${ hexlify( $sample_expression ) }'
+        #end for
+        
+    #end if
+    ##end tool specific options
+    
+    ##start standard gatk options
+    #if $gatk_param_type.gatk_param_type_selector == "advanced":
+        #for $pedigree in $gatk_param_type.pedigree:
+            -p '--pedigree "${pedigree.pedigree_file}"'
+        #end for
+        #for $pedigree_string in $gatk_param_type.pedigree_string_repeat:
+            -p '--pedigreeString "${pedigree_string.pedigree_string}"'
+        #end for
+        -p '--pedigreeValidationType "${gatk_param_type.pedigree_validation_type}"'
+        #for $read_filter in $gatk_param_type.read_filter:
+            -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
+            ###raise Exception( str( dir( $read_filter ) ) )
+            #for $name, $param in $read_filter.read_filter_type.iteritems():
+                #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
+                    --${name} "${param}"
+                #end if
+            #end for
+            '
+        #end for
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
+        
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
+        -p '--interval_set_rule "${gatk_param_type.interval_set_rule}"'
+        
+        -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
+        #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
+            -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
+        #end if
+        -p '
+        --baq "${gatk_param_type.baq}"
+        --baqGapOpenPenalty "${gatk_param_type.baq_gap_open_penalty}"
+        ${gatk_param_type.use_original_qualities}
+        --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
+        --validation_strictness "${gatk_param_type.validation_strictness}"
+        --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
+        '
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
+    #end if
+    
+    #if str( $reference_source.reference_source_selector ) == "history":
+        -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
+    #end if
+    ##end standard gatk options
+    
+    
+  </command>
+  <inputs>
+    <conditional name="reference_source">
+      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <param name="input_variant" type="data" format="vcf" label="Variant file to select" />
+        <param name="ref_file" type="select" label="Using reference genome">
+          <options from_data_table="gatk_picard_indexes">
+            <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
+          </options>
+          <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
+        </param>
+      </when>
+      <when value="history"> <!-- FIX ME!!!! -->
+        <param name="input_variant" type="data" format="vcf" label="Variant file to select" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+      </when>
+    </conditional>
+    
+    <repeat name="select_expressions_repeat" title="Criteria to use when selecting the data">
+        <param name="select_expressions" type="text" label="JEXL expression">
+            <sanitizer>
+              <valid initial="string.printable">
+               <remove value="&apos;"/>
+             </valid>
+              <mapping initial="none"/>
+            </sanitizer>
+        </param>
+    </repeat>
+    
+    <param name="input_concordance" type="data" format="vcf" label="Output variants that were also called in this comparison track" optional="True"/>
+    <param name="input_discordance" type="data" format="vcf" label="Output variants that were not called in this comparison track" optional="True"/>
+    
+    <repeat name="sample_name_repeat" title="Include Samples by name">
+        <param name="sample_name" type="text" label="Include genotypes from this sample"/>
+    </repeat>
+    
+    <repeat name="exclude_sample_name_repeat" title="Exclude Samples by name">
+        <param name="exclude_sample_name" type="text" label="Exclude genotypes from this sample"/>
+    </repeat>
+    
+    <param name="exclude_filtered" type="boolean" truevalue="--excludeFiltered" falsevalue="" label="Don't include filtered loci in the analysis" />
+    
+    <conditional name="gatk_param_type">
+      <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <repeat name="pedigree" title="Pedigree file">
+            <param name="pedigree_file" type="data" format="txt" label="Pedigree files for samples" />
+        </repeat>
+        <repeat name="pedigree_string_repeat" title="Pedigree string">
+            <param name="pedigree_string" type="text" value="" label="Pedigree string for samples" />
+        </repeat>
+        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
+        <repeat name="read_filter" title="Read Filter">
+            <conditional name="read_filter_type">
+              <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+                <option value="MaxReadLength" selected="True">MaxReadLength</option>
+                <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+              </param>
+              <when value="ZeroMappingQualityRead">
+                  <!-- no extra options -->
+              </when>
+              <when value="MaxReadLength">
+                  <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+              </when>
+            </conditional>
+        </repeat>
+        <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+        </repeat>
+        
+        <param name="interval_set_rule" type="select" label="Interval set rule">
+          <option value="UNION" selected="True">UNION</option>
+          <option value="INTERSECTION">INTERSECTION</option>
+        </param>
+        
+        <conditional name="downsampling_type">
+          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+            <option value="NONE" selected="True">NONE</option>
+            <option value="ALL_READS">ALL_READS</option>
+            <option value="BY_SAMPLE">BY_SAMPLE</option>
+          </param>
+          <when value="NONE">
+              <!-- no more options here -->
+          </when>
+          <when value="ALL_READS">
+              <conditional name="downsample_to_type">
+                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+                      <option value="downsample_to_coverage">Downsample by Coverage</option>
+                  </param>
+                  <when value="downsample_to_fraction">
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+                  </when>
+                  <when value="downsample_to_coverage">
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+                  </when>
+              </conditional>
+          </when>
+          <when value="BY_SAMPLE">
+              <conditional name="downsample_to_type">
+                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+                      <option value="downsample_to_coverage">Downsample by Coverage</option>
+                  </param>
+                  <when value="downsample_to_fraction">
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+                  </when>
+                  <when value="downsample_to_coverage">
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+                  </when>
+              </conditional>
+          </when>
+        </conditional>
+        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
+          <option value="OFF" selected="True">OFF</option>
+          <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
+          <option value="RECALCULATE">RECALCULATE</option>
+        </param>
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets"/>
+        <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
+        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
+        <param name="validation_strictness" type="select" label="How strict should we be with validation">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="LENIENT">LENIENT</option>
+          <option value="SILENT">SILENT</option>
+          <!-- <option value="DEFAULT_STRINGENCY">DEFAULT_STRINGENCY</option> listed in docs, but not valid value...-->
+        </param>
+        <param name="interval_merging" type="select" label="Interval merging rule">
+          <option value="ALL" selected="True">ALL</option>
+          <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
+        </param>
+        
+        <repeat name="read_group_black_list_repeat" title="Read group black list">
+          <conditional name="read_group_black_list_type">
+            <param name="read_group_black_list_type_selector" type="select" label="Type of reads read group black list">
+              <option value="file" selected="True">Filters in file</option>
+              <option value="text">Specify filters as a string</option>
+            </param>
+            <when value="file">
+              <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
+            </when>
+            <when value="text">
+              <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
+            </when>
+          </conditional>
+        </repeat>
+        
+        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality" checked="False"/>
+        <param name="non_deterministic_random_seed" type="boolean" truevalue="--nonDeterministicRandomSeed" falsevalue="" label="Makes the GATK behave non deterministically, that is, the random numbers generated will be different in every run" checked="False" />
+        
+      </when>
+    </conditional>
+    
+    
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        
+        <repeat name="exclude_sample_file_repeat" title="Exclude Samples by file">
+            <param name="exclude_sample_file" type="data" format="txt" label="File containing a list of samples (one per line) to exclude"/>
+        </repeat>
+        
+        <repeat name="sample_file_repeat" title="Samples by file">
+            <param name="sample_file" type="data" format="txt" label="File containing a list of samples (one per line) to include" />
+        </repeat>
+        
+        <param name="input_keep_ids" type="data" format="text" label="Only emit sites whose ID is found in this file" optional="True"/>
+        
+        <param name="keep_original_AC" type="boolean" truevalue="--keepOriginalAC" falsevalue="" label="Don't update the AC, AF, or AN values in the INFO field after selecting" />
+        
+        <param name="mendelian_violation" type="boolean" truevalue="--mendelianViolation" falsevalue="" label="output mendelian violation sites only" />
+        
+        <param name="mendelian_violation_qual_threshold" type="float" label="Minimum genotype QUAL score for each trio member required to accept a site as a mendelian violation" value="0" />
+        
+        <param name="remove_fraction_genotypes" type="float" label="Selects a fraction (a number between 0 and 1) of the total genotypes at random from the variant track and sets them to nocall" value="0" min="0" max="1" />
+        
+        <param name="restrict_alleles_to" type="select" label="Select only variants of a particular allelicity">
+            <option value="ALL" selected="True">ALL</option>
+            <option value="MULTIALLELIC">MULTIALLELIC</option>
+            <option value="BIALLELIC">BIALLELIC</option>
+        </param>
+        
+        <repeat name="sample_expressions_repeat" title="Regular expression to select many samples from the ROD tracks provided">
+            <param name="sample_expressions" type="text" label="Regular expression">
+                <sanitizer>
+                  <valid initial="string.printable">
+                   <remove value="&apos;"/>
+                 </valid>
+                  <mapping initial="none"/>
+                </sanitizer>
+            </param>
+        </repeat>
+        
+        <conditional name="select_random_type">
+          <param name="select_random_type_selector" type="select" label="Select a random subset of variants">
+            <option value="select_all" selected="True">Use all variants</option>
+            <option value="select_random_fraction">Select random fraction</option>
+            <option value="select_random_number">Select random number</option>
+          </param>
+          <when value="select_all">
+            <!-- Do nothing here -->
+          </when>
+          <when value="select_random_fraction">
+            <param name="select_random_fraction" type="float" value="0" label="Fraction" min="0" max="1"/>
+          </when>
+          <when value="select_random_number">
+            <param name="select_random_number" type="integer" value="0" label="Count" />
+          </when>
+        </conditional>
+        
+        <param name="exclude_non_variants" type="boolean" truevalue="--excludeNonVariants" falsevalue="" label="Don't include loci found to be non-variant after the subsetting procedure" />
+        
+        <param name="select_type_to_include" type="select" label="Select only a certain type of variants from the input file" multiple="True" display="checkboxes">
+            <option value="INDEL">INDEL</option>
+            <option value="SNP">SNP</option>
+            <option value="MIXED">MIXED</option>
+            <option value="MNP">MNP</option>
+            <option value="SYMBOLIC">SYMBOLIC</option>
+            <option value="NO_VARIATION">NO_VARIATION</option>
+        </param>
+        
+      </when>
+    </conditional>
+    
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output_vcf" label="${tool.name} on ${on_string} (Variant File)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <test>
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
+          <param name="select_expressions_repeat" value="0" />
+          <param name="input_concordance" />
+          <param name="input_discordance" />
+          <param name="exclude_sample_name_repeat" value="0" />
+          <param name="exclude_filtered" />
+          <param name="sample_name_repeat" value="0" />
+          <param name="gatk_param_type_selector" value="basic" />
+          <param name="analysis_param_type_selector" value="basic" />
+          <output name="output_vcf" file="gatk/gatk_variant_select/gatk_variant_select_out_1.vcf" lines_diff="4" /> 
+          <output name="output_log" file="gatk/gatk_variant_select/gatk_variant_select_out_1.log.contains" compare="contains" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+Often, a VCF containing many samples and/or variants will need to be subset in order to facilitate certain analyses (e.g. comparing and contrasting cases vs. controls; extracting variant or non-variant loci that meet certain requirements, displaying just a few samples in a browser like IGV, etc.). SelectVariants can be used for this purpose. Given a single VCF file, one or more samples can be extracted from the file (based on a complete sample name or a pattern match). Variants can be further selected by specifying criteria for inclusion, i.e. "DP &gt; 1000" (depth of coverage greater than 1000x), "AF &lt; 0.25" (sites with allele frequency less than 0.25). These JEXL expressions are documented in the Using JEXL expressions section (http://www.broadinstitute.org/gsa/wiki/index.php/Using_JEXL_expressions). One can optionally include concordance or discordance tracks for use in selecting overlapping variants. 
+
+For more information on using the SelectVariants module, see this `tool specific page &lt;http://www.broadinstitute.org/gsa/wiki/index.php/SelectVariants&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Best_Practice_Variant_Detection_with_the_GATK_v3&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Frequently_Asked_Questions&gt;`_.
+
+------
+
+**Inputs**
+
+GenomeAnalysisTK: SelectVariants accepts a VCF input file.
+
+
+**Outputs**
+
+The output is in VCF format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
+
+-------
+
+**Settings**::
+
+
+ out                         VCFWriter  stdout  File to which variants should be written
+ variant                     RodBinding[VariantContext]  NA  Input VCF file
+ concordance                 RodBinding[VariantContext]  none  Output variants that were also called in this comparison track
+ discordance                 RodBinding[VariantContext]  none  Output variants that were not called in this comparison track
+ exclude_sample_file         Set[File]  []  File containing a list of samples (one per line) to exclude. Can be specified multiple times
+ exclude_sample_name         Set[String]  []  Exclude genotypes from this sample. Can be specified multiple times
+ excludeFiltered             boolean  false  Don't include filtered loci in the analysis
+ excludeNonVariants          boolean  false  Don't include loci found to be non-variant after the subsetting procedure
+ keepIDs                     File  NA  Only emit sites whose ID is found in this file (one ID per line)
+ keepOriginalAC              boolean  false  Don't update the AC, AF, or AN values in the INFO field after selecting
+ mendelianViolation          Boolean  false  output mendelian violation sites only
+ mvq                         double  0.0  Minimum genotype QUAL score for each trio member required to accept a site as a violation
+ remove_fraction_genotypes   double  0.0  Selects a fraction (a number between 0 and 1) of the total genotypes at random from the variant track and sets them to nocall
+ restrictAllelesTo           NumberAlleleRestriction  ALL  Select only variants of a particular allelicity. Valid options are ALL (default), MULTIALLELIC or BIALLELIC
+ sample_expressions          Set[String]  NA  Regular expression to select many samples from the ROD tracks provided. Can be specified multiple times
+ sample_file                 Set[File]  NA  File containing a list of samples (one per line) to include. Can be specified multiple times
+ sample_name                 Set[String]  []  Include genotypes from this sample. Can be specified multiple times
+ select_expressions          ArrayList[String]  []  One or more criteria to use when selecting the data
+ select_random_fraction      double  0.0  Selects a fraction (a number between 0 and 1) of the total variants at random from the variant track
+ select_random_number        int  0  Selects a number of variants at random from the variant track
+ selectTypeToInclude         List[Type]  []  Select only a certain type of variants from the input file. Valid types are INDEL, SNP, MIXED, MNP, SYMBOLIC, NO_VARIATION. Can be specified multiple times
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>
