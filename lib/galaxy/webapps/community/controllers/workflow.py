@@ -250,7 +250,22 @@ class WorkflowController( BaseUIController ):
             boxes.append( svgfig.Rect( x - margin, y + 30, x + width - margin, y + 30 + box_height, fill="#ffffff" ).SVG() )
             for conn, output_dict in step_dict[ 'input_connections' ].iteritems():
                 in_coords = in_pos[ step_dict[ 'id' ] ][ conn ]
-                out_conn_pos = out_pos[ output_dict[ 'id' ] ][ output_dict[ 'output_name' ] ]
+                # out_pos_index will be a step number like 1, 2, 3...
+                out_pos_index = output_dict[ 'id' ]
+                # out_pos_name will be a string like 'o', 'o2', etc.
+                out_pos_name = output_dict[ 'output_name' ]
+                if out_pos_index in out_pos:
+                    # out_conn_index_dict will be something like:
+                    # 7: {'o': (824.5, 618)}
+                    out_conn_index_dict = out_pos[ out_pos_index ]
+                    if out_pos_name in out_conn_index_dict:
+                        out_conn_pos = out_pos[ out_pos_index ][ out_pos_name ]
+                    else:
+                        # Take any key / value pair available in out_conn_index_dict.
+                        # A problem will result if the dictionary is empty.
+                        if out_conn_index_dict.keys():
+                            key = out_conn_index_dict.keys()[0]
+                            out_conn_pos = out_pos[ out_pos_index ][ key ]
                 adjusted = ( out_conn_pos[ 0 ] + widths[ output_dict[ 'id' ] ], out_conn_pos[ 1 ] )
                 text.append( svgfig.SVG( "circle",
                                          cx=out_conn_pos[ 0 ] + widths[ output_dict[ 'id' ] ] - margin,
