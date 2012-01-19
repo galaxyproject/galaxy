@@ -148,6 +148,8 @@
                         <div style="clear: both"></div>
                     %endif
                     %if 'workflows' in metadata:
+                        ## metadata[ 'workflows' ] is a list of tuples where each contained tuple is
+                        ## [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
                         <div class="form-row">
                             <table width="100%">
                                 <tr bgcolor="#D8D8D8" width="100%">
@@ -157,7 +159,7 @@
                         </div>
                         <div style="clear: both"></div>
                         <div class="form-row">
-                            <% workflow_dicts = metadata[ 'workflows' ] %>
+                            <% workflow_tups = metadata[ 'workflows' ] %>
                             <table class="grid">
                                 <tr>
                                     <td><b>name</b></td>
@@ -165,14 +167,13 @@
                                     <td><b>format-version</b></td>
                                     <td><b>annotation</b></td>
                                 </tr>
-                                %for workflow_dict in workflow_dicts:
-                                    <% 
+                                %for workflow_tup in workflow_tups:
+                                    <%
+                                        relative_path = workflow_tup[0]
+                                        workflow_dict = workflow_tup[1]
                                         workflow_name = workflow_dict[ 'name' ]
-                                        if 'steps' in workflow_dict:
-                                            ## Initially steps were not stored in the metadata record.
-                                            steps = workflow_dict[ 'steps' ]
-                                        else:
-                                            steps = []
+                                        ## Initially steps were not stored in the metadata record.
+                                        steps = workflow_dict.get( 'steps', [] )
                                         format_version = workflow_dict[ 'format-version' ]
                                         annotation = workflow_dict[ 'annotation' ]
                                     %>

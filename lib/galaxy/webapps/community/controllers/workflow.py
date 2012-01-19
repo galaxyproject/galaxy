@@ -160,7 +160,10 @@ class WorkflowController( BaseUIController ):
         changeset_revision = repository_metadata.changeset_revision
         metadata = repository_metadata.metadata
         workflow_name = decode( workflow_name )
-        for workflow_dict in metadata[ 'workflows' ]:
+        # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
+        # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
+        for workflow_tup in metadata[ 'workflows' ]:
+            workflow_dict = workflow_tup[1]
             if workflow_dict[ 'name' ] == workflow_name:
                 break
         if 'tools' in metadata:
