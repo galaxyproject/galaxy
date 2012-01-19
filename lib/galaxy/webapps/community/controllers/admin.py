@@ -336,9 +336,12 @@ class RepositoryMetadataListGrid( grids.Grid ):
                                                                     tool_metadata_dict[ 'version' ] )
                     if 'workflows' in metadata:
                         metadata_str += '<b>Workflows:</b><br/>'
-                        for workflow_metadata_dict in metadata[ 'workflows' ]:
-                            metadata_str += '%s <b>%s</b><br/>' % ( workflow_metadata_dict[ 'name' ],
-                                                                    workflow_metadata_dict[ 'format-version' ] )
+                        # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
+                        # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
+                        workflow_tups = metadata[ 'workflows' ]
+                        workflow_metadata_dicts = [ workflow_tup[1] for workflow_tup in workflow_tups ]
+                        for workflow_metadata_dict in workflow_metadata_dicts:
+                            metadata_str += '%s <b>%s</b><br/>' % ( workflow_metadata_dict[ 'name' ], workflow_metadata_dict[ 'format-version' ] )
             return metadata_str
     class MaliciousColumn( grids.BooleanColumn ):
         def get_value( self, trans, grid, repository_metadata ):

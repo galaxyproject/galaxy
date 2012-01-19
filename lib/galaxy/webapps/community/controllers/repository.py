@@ -620,7 +620,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             ok = False
             elif workflow_names:
                 if 'workflows' in metadata:
-                    workflows = metadata[ 'workflows' ]
+                    # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
+                    # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
+                    workflow_tups = metadata[ 'workflows' ]
+                    workflows = [ workflow_tup[1] for workflow_tup in workflow_tups ]
                 else:
                     workflows = []
                 for workflow_dict in workflows:
