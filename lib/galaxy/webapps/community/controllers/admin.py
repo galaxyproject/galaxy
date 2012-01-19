@@ -323,26 +323,41 @@ class RepositoryMetadataListGrid( grids.Grid ):
             repo = hg.repository( get_configured_ui(), repository.repo_path )
             ctx = get_changectx_for_changeset( trans, repo, repository_metadata.changeset_revision )
             return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
-    class MetadataColumn( grids.TextColumn ):
+    class ToolsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
-            metadata_str = ''
+            tools_str = ''
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
                     if 'tools' in metadata:
-                        metadata_str += '<b>Tools:</b><br/>'
                         for tool_metadata_dict in metadata[ 'tools' ]:
-                            metadata_str += '%s <b>%s</b><br/>' % ( tool_metadata_dict[ 'id' ],
-                                                                    tool_metadata_dict[ 'version' ] )
+                            tools_str += '%s <b>%s</b><br/>' % ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
+            return tools_str
+    class DatatypesColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            datatypes_str = ''
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    if 'datatypes' in metadata:
+                        for datatype_metadata_dict in metadata[ 'datatypes' ]:
+                            datatypes_str += '%s<br/>' % datatype_metadata_dict[ 'extension' ]
+            return datatypes_str
+    class WorkflowsColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            workflows_str = ''
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
                     if 'workflows' in metadata:
-                        metadata_str += '<b>Workflows:</b><br/>'
+                        workflows_str += '<b>Workflows:</b><br/>'
                         # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
                         # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
                         workflow_tups = metadata[ 'workflows' ]
                         workflow_metadata_dicts = [ workflow_tup[1] for workflow_tup in workflow_tups ]
                         for workflow_metadata_dict in workflow_metadata_dicts:
-                            metadata_str += '%s <b>%s</b><br/>' % ( workflow_metadata_dict[ 'name' ], workflow_metadata_dict[ 'format-version' ] )
-            return metadata_str
+                            workflows_str += '%s<br/>' % workflow_metadata_dict[ 'name' ]
+            return workflows_str
     class MaliciousColumn( grids.BooleanColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.malicious
@@ -364,8 +379,12 @@ class RepositoryMetadataListGrid( grids.Grid ):
                     attach_popup=True ),
         RevisionColumn( "Revision",
                         attach_popup=False ),
-        MetadataColumn( "Metadata",
-                        attach_popup=False ),
+        ToolsColumn( "Tools",
+                     attach_popup=False ),
+        DatatypesColumn( "Datatypes",
+                         attach_popup=False ),
+        WorkflowsColumn( "Workflows",
+                         attach_popup=False ),
         MaliciousColumn( "Malicious",
                          attach_popup=False )
     ]
