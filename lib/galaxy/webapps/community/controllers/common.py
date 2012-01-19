@@ -628,16 +628,20 @@ def compare_workflows( ancestor_workflows, current_workflows ):
     # Determine if ancestor_workflows is the same as current_workflows
     # or if ancestor_workflows is a subset of current_workflows.
     if len( ancestor_workflows ) <= len( current_workflows ):
-        for ancestor_workflow in ancestor_workflows:
+        for ancestor_workflow_tup in ancestor_workflows:
+            # ancestor_workflows is a list of tuples where each contained tuple is
+            # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
+            ancestor_workflow_dict = ancestor_workflow_tup[1]
             # Currently the only way to differentiate workflows is by name.
-            ancestor_workflow_name = ancestor_workflow[ 'name' ]
-            num_ancestor_workflow_steps = len( ancestor_workflow[ 'steps' ] )
+            ancestor_workflow_name = ancestor_workflow_dict[ 'name' ]
+            num_ancestor_workflow_steps = len( ancestor_workflow_dict[ 'steps' ] )
             found_in_current = False
-            for current_workflow in current_workflows:
+            for current_workflow_tup in current_workflows:
+                current_workflow_dict = current_workflow_tup[1]
                 # Assume that if the name and number of steps are euqal,
                 # then the workflows are the same.  Of course, this may
                 # not be true...
-                if current_workflow[ 'name' ] == ancestor_workflow_name and len( current_workflow[ 'steps' ] ) == num_ancestor_workflow_steps:
+                if current_workflow_dict[ 'name' ] == ancestor_workflow_name and len( current_workflow_dict[ 'steps' ] ) == num_ancestor_workflow_steps:
                     found_in_current = True
                     break
             if not found_in_current:
