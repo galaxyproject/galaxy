@@ -1643,7 +1643,6 @@ extend( View.prototype, DrawableCollection.prototype, {
     },
     resize_window: function() {
         this.viewport_container.height( this.container.height() - this.top_container.height() - this.bottom_container.height() );
-        this.nav_container.width( this.container.width() );
         this.request_redraw();
     },
     /** Show a Drawable in the overview. */

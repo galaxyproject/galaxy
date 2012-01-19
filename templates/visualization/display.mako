@@ -7,8 +7,6 @@
     <!--[if lt IE 9]>
       <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
     <![endif]-->
-    
-    ${h.js( "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic" )}
 </%def>
 
 <%def name="stylesheets()">
@@ -79,9 +77,11 @@
             container_element = $("#${trans.security.encode_id( visualization.id )}");
         
         $(function() {
+            var is_embedded = (container_element.parents(".item-content").length > 0);
             
-            if (container_element.parents(".item-content").length > 0) { // Embedded viz
-                container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
+            // HTML setup.
+            if (is_embedded) {
+                container_element.css( { "position": "relative" } );
             } else { // Viewing just one shared viz
                 $("#right-border").click(function() { view.resize_window(); });
             }
@@ -100,6 +100,10 @@
             
             // Set up keyboard navigation.
             init_keyboard_nav(view);
+            
+            // HACK: set viewport height because it cannot be set automatically. Currently, max height for embedded
+            // elts is 25em, so use 20em.
+            view.viewport_container.height("20em");
         });
 
     </script>
