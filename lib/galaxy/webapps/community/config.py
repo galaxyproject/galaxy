@@ -87,6 +87,7 @@ class Configuration( object ):
         # Proxy features
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
+        self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
