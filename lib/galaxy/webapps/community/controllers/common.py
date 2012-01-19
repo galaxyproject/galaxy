@@ -410,6 +410,8 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
     ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+    metadata_dict = {}
+    invalid_files = []
     if ctx is not None:
         if changeset_revision == repository.tip:
             metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo_dir )
