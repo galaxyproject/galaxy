@@ -411,16 +411,15 @@ class DynamicOptions( object ):
             app = tool_param.tool.app
             if tool_data_table_name in app.tool_data_tables:
                 self.tool_data_table = app.tool_data_tables[ tool_data_table_name ]
+                # Column definitions are optional, but if provided override those from the table
+                if elem.find( "column" ) is not None:
+                    self.parse_column_definitions( elem )
+                else:
+                    self.columns = self.tool_data_table.columns
                 # Set self.missing_index_file if the index file to
                 # which the tool_data_table refers does not exist.
                 if self.tool_data_table.missing_index_file:
                     self.missing_index_file = self.tool_data_table.missing_index_file
-                else:
-                    # Column definitions are optional, but if provided override those from the table
-                    if elem.find( "column" ) is not None:
-                        self.parse_column_definitions( elem )
-                    else:
-                        self.columns = self.tool_data_table.columns
             else:
                 self.missing_tool_data_table_name = tool_data_table_name
                 log.warn( "Data table named '%s' is required by tool but not configured" % tool_data_table_name )
