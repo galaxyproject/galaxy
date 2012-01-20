@@ -195,11 +195,12 @@ class DiskObjectStore(ObjectStore):
     >>> from galaxy.util.bunch import Bunch
     >>> import tempfile
     >>> file_path=tempfile.mkdtemp()
-    >>> s = DiskObjectStore(Bunch(umask=077), file_path=file_path)
-    >>> s.create(1)
-    >>> s.exists(1)
+    >>> obj = Bunch(id=1)
+    >>> s = DiskObjectStore(Bunch(umask=077, job_working_directory=file_path, new_file_path=file_path), file_path=file_path)
+    >>> s.create(obj)
+    >>> s.exists(obj)
     True
-    >>> assert s.get_filename(1) == file_path + '/000/dataset_1.dat'
+    >>> assert s.get_filename(obj) == file_path + '/000/dataset_1.dat'
     """
     def __init__(self, config, file_path=None, extra_dirs=None):
         super(DiskObjectStore, self).__init__()
