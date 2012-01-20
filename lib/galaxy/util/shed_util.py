@@ -12,38 +12,21 @@ from elementtree.ElementTree import Element, SubElement
 
 log = logging.getLogger( __name__ )
 
-def add_shed_tool_conf_entry( app, shed_tool_conf, tool_panel_entry ):
-    """
-    Add an entry in the shed_tool_conf file. An entry looks something like:
-    <section name="Filter and Sort" id="filter">
-        <tool file="filter/filtering.xml" guid="toolshed.g2.bx.psu.edu/repos/test/filter/1.0.2"/>
-    </section>
-    This method is used by the InstallManager, which does not have access to trans.
-    """
-    # Make a backup of the hgweb.config file since we're going to be changing it.
-    if not os.path.exists( shed_tool_conf ):
-        output = open( shed_tool_conf, 'w' )
-        output.write( '<?xml version="1.0"?>\n' )
-        output.write( '<toolbox tool_path="%s">\n' % tool_path )
-        output.write( '</toolbox>\n' )
-        output.close()
-    # Make a backup of the shed_tool_conf file.
-    today = date.today()
-    backup_date = today.strftime( "%Y_%m_%d" )
-    shed_tool_conf_copy = '%s/%s_%s_backup' % ( app.config.root, shed_tool_conf, backup_date )
-    shutil.copy( os.path.abspath( shed_tool_conf ), os.path.abspath( shed_tool_conf_copy ) )
-    tmp_fd, tmp_fname = tempfile.mkstemp()
-    new_shed_tool_conf = open( tmp_fname, 'wb' )
-    for i, line in enumerate( open( shed_tool_conf ) ):
-        if line.startswith( '</toolbox>' ):
-            # We're at the end of the original config file, so add our entry.
-            new_shed_tool_conf.write( '    ' )
-            new_shed_tool_conf.write( util.xml_to_string( tool_panel_entry, pretty=True ) )
-            new_shed_tool_conf.write( line )
-        else:
-            new_shed_tool_conf.write( line )
-    new_shed_tool_conf.close()
-    shutil.move( tmp_fname, os.path.abspath( shed_tool_conf ) )
+def config_elems_to_xml_file( app, shed_tool_conf_dict ):
+    # Persist the current in-memory list of config_elems in the received shed_tool_conf_dict
+    # to a file named by the value of config_filename in the received shed_tool_conf_dict.  
+    config_filename = shed_tool_conf_dict[ 'config_filename' ]
+    tool_path = shed_tool_conf_dict[ 'tool_path' ]
+    config_elems = shed_tool_conf_dict[ 'config_elems' ]
+    fd, filename = tempfile.mkstemp()
+    os.write( fd, '<?xml version="1.0"?>\n' )
+    os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
+    for elem in config_elems:
+        os.write( fd, '%s' % util.xml_to_string( elem, pretty=True ) )
+    os.write( fd, '</toolbox>\n' )
+    os.close( fd )
+    shutil.move( filename, os.path.abspath( config_filename ) )
+    os.chmod( config_filename, 0644 )
 def clean_repository_clone_url( repository_clone_url ):
     if repository_clone_url.find( '@' ) > 0:
         # We have an url that includes an authenticated user, something like:
@@ -641,7 +624,7 @@ def load_repository_contents( app, repository_name, description, owner, changese
                                                  shed_tool_conf=shed_tool_conf,
                                                  tool_path=tool_path,
                                                  owner=owner,
-                                                 add_to_config=True )
+                                                 deactivate=False )
             else:
                 if app.toolbox_search.enabled:
                     # If search support for tools is enabled, index the new installed tools.
@@ -676,7 +659,20 @@ def load_repository_contents( app, repository_name, description, owner, changese
     create_or_update_tool_shed_repository( app, repository_name, description, changeset_revision, repository_clone_url, metadata_dict )
     return metadata_dict
 def load_altered_part_of_tool_panel( app, repository_name, repository_clone_url, changeset_revision, repository_tools_tups,
-                                     tool_section, shed_tool_conf, tool_path, owner, add_to_config=True ):
+                                     tool_section, shed_tool_conf, tool_path, owner, deactivate=False ):
+    # We'll be changing the contents of the shed_tool_conf file on disk, so we need to
+    # make the same changes to the in-memory version of that file, which is stored in
+    # the config_elems entry in the shed_tool_conf_dict associated with the file.
+    for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
+        config_filename = shed_tool_conf_dict[ 'config_filename' ]
+        if config_filename == shed_tool_conf:
+            config_elems = shed_tool_conf_dict[ 'config_elems' ]
+            break
+        else:
+            head, tail = os.path.split( config_filename )
+            if tail == shed_tool_conf:
+                config_elems = shed_tool_conf_dict[ 'config_elems' ]
+                break
     # Generate a new entry for the tool config.
     elem_list = generate_tool_panel_elem_list( repository_name,
                                                repository_clone_url,
@@ -693,10 +689,14 @@ def load_altered_part_of_tool_panel( app, repository_name, repository_clone_url,
         for tool_elem in elem_list:
             guid = tool_elem.get( 'guid' )
             app.toolbox.load_tool_tag_set( tool_elem, app.toolbox.tool_panel, tool_path=tool_path, guid=guid )
-    if add_to_config:
-        # Append the new entry (either section or list of tools) to the shed_tool_config file.
+    if not deactivate:
+        # Append the new entry (either section or list of tools) to the shed_tool_config file,
+        # and add the xml element to the in-memory list of config_elems.
         for elem_entry in elem_list:
-            add_shed_tool_conf_entry( app, shed_tool_conf, elem_entry )
+            config_elems.append( elem_entry )
+        shed_tool_conf_dict[ 'config_elems' ] = config_elems
+        app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
+        config_elems_to_xml_file( app, shed_tool_conf_dict )
     if app.toolbox_search.enabled:
         # If search support for tools is enabled, index the new installed tools.
         app.toolbox_search = ToolBoxSearch( app.toolbox )

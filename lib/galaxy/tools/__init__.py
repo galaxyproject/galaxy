@@ -45,8 +45,11 @@ class ToolBox( object ):
         Create a toolbox from the config files named by `config_filenames`, using
         `tool_root_dir` as the base directory for finding individual tool config files.
         """
-        # The shed_tool_confs dictionary contains shed_conf_filename : tool_path pairs.
-        self.shed_tool_confs = {}
+        # The shed_tool_confs list contains dictionaries storing information about
+        # the tools defined in the tool config xml files used when installing tool
+        # shed repositories (see the init_tools() method below).  The config_elems
+        # list contains the in-memory elements resulting from parsing the xml config.
+        self.shed_tool_confs = []
         self.tools_by_id = {}
         self.workflows_by_id = {}
         self.tool_panel = odict()
@@ -85,12 +88,17 @@ class ToolBox( object ):
         root = tree.getroot()
         tool_path = root.get( 'tool_path' )
         if tool_path:
-            # We're parsing a shed_tool_conf file since we have a tool_path attribute.
-            self.shed_tool_confs[ config_filename ] = tool_path
+            # We're parsing a shed_tool_conf file since we have a tool_path attribute.  
+            parsing_shed_tool_conf = True
+            # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
+            config_elems=[] 
         else:
+            parsing_shed_tool_conf = False
             # Default to backward compatible config setting.
             tool_path = self.tool_root_dir
         for elem in root:
+            if parsing_shed_tool_conf:
+                config_elems.append( elem )
             if elem.tag == 'tool':
                 self.load_tool_tag_set( elem, self.tool_panel, tool_path, guid=elem.get( 'guid' ), section=None )
             elif elem.tag == 'workflow':
@@ -99,6 +107,10 @@ class ToolBox( object ):
                 self.load_section_tag_set( elem, self.tool_panel, tool_path )
             elif elem.tag == 'label':
                 self.load_label_tag_set( elem, self.tool_panel )
+        shed_tool_conf_dict = dict( config_filename=config_filename,
+                                    tool_path=tool_path,
+                                    config_elems=config_elems )
+        self.shed_tool_confs.append( shed_tool_conf_dict )
     def get_tool( self, tool_id, tool_version=None ):
         # Attempt to locate the tool in our in-memory dictionary.
         if tool_id in self.tools_by_id:

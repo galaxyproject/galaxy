@@ -213,10 +213,18 @@ class AdminToolshed( AdminGalaxy ):
                 # tool_path from the file to which the install_tool_config_file config
                 # setting points.
                 shed_tool_conf = trans.app.config.install_tool_config
-            # Get the tool path.
-            for k, tool_path in trans.app.toolbox.shed_tool_confs.items():
-                if k == shed_tool_conf:
+            # Get the tool path by searching the list of shed_tool_confs for the dictionary
+            # that contains the information about shed_tool_conf.
+            for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+                config_filename = shed_tool_conf_dict[ 'config_filename' ]
+                if config_filename == shed_tool_conf:
+                    tool_path = shed_tool_conf_dict[ 'tool_path' ]
                     break
+                else:
+                    head, tail = os.path.split( config_filename )
+                    if tail == shed_tool_conf:
+                        tool_path = shed_tool_conf_dict[ 'tool_path' ]
+                        break
             if includes_tools and ( new_tool_panel_section or tool_panel_section ):
                 if new_tool_panel_section:
                     section_id = new_tool_panel_section.lower().replace( ' ', '_' )
@@ -302,11 +310,13 @@ class AdminToolshed( AdminGalaxy ):
                                                               action='browse_repositories',
                                                               message=message,
                                                               status=status ) )
-        if len( trans.app.toolbox.shed_tool_confs.keys() ) > 1:
+        if len( trans.app.toolbox.shed_tool_confs ) > 1:
             shed_tool_conf_select_field = build_shed_tool_conf_select_field( trans )
             shed_tool_conf = None
         else:
-            shed_tool_conf = trans.app.toolbox.shed_tool_confs.keys()[0].lstrip( './' )
+            shed_tool_conf_dict = trans.app.toolbox.shed_tool_confs[0]
+            shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
+            shed_tool_conf = shed_tool_conf.replace( './', '', 1 )
             shed_tool_conf_select_field = None
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
         return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
@@ -368,7 +378,7 @@ class AdminToolshed( AdminGalaxy ):
                                              shed_tool_conf=shed_tool_conf,
                                              tool_path=tool_path,
                                              owner=repository.owner,
-                                             add_to_config=False )
+                                             deactivate=True )
             # Deactivate proprietary datatypes.
             load_datatype_items( trans.app, repository, relative_install_dir, deactivate=True )
             if remove_from_disk_checked:
@@ -634,10 +644,10 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed = clean_tool_shed_url( repository.tool_shed )
         partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
         # Get the relative tool installation paths from each of the shed tool configs.
-        shed_tool_confs = trans.app.toolbox.shed_tool_confs
         relative_install_dir = None
-        # The shed_tool_confs dictionary contains { shed_tool_conf : tool_path } pairs.
-        for shed_tool_conf, tool_path in shed_tool_confs.items():
+        for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+            shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
+            tool_path = shed_tool_conf_dict[ 'tool_path' ]
             relative_install_dir = os.path.join( tool_path, partial_install_dir )
             if os.path.isdir( relative_install_dir ):
                 break
@@ -666,7 +676,8 @@ class AdminToolshed( AdminGalaxy ):
 def build_shed_tool_conf_select_field( trans ):
     """Build a SelectField whose options are the keys in trans.app.toolbox.shed_tool_confs."""
     options = []
-    for shed_tool_conf_filename, tool_path in trans.app.toolbox.shed_tool_confs.items():
+    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+        shed_tool_conf_filename = shed_tool_conf_dict[ 'config_filename' ]
         if shed_tool_conf_filename.startswith( './' ):
             option_label = shed_tool_conf_filename.replace( './', '', 1 )
         else:

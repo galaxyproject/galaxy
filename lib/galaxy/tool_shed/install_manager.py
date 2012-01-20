@@ -23,7 +23,8 @@ class InstallManager( object ):
         tree = util.parse_xml( install_tool_config )
         root = tree.getroot()
         self.tool_path = root.get( 'tool_path' )
-        self.app.toolbox.shed_tool_confs[ install_tool_config ] = self.tool_path
+        # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
+        config_elems = []
         # Parse tool_shed_install_config to check each of the tools.
         log.debug( "Parsing tool shed install configuration %s" % tool_shed_install_config )
         self.tool_shed_install_config = tool_shed_install_config
@@ -33,10 +34,15 @@ class InstallManager( object ):
         log.debug( "Repositories will be installed from tool shed '%s' into configured tool_path location '%s'" % ( str( self.tool_shed ), str( self.tool_path ) ) )
         self.repository_owner = 'devteam'
         for elem in root:
+            config_elems.append( elem )
             if elem.tag == 'repository':
                 self.install_repository( elem )
             elif elem.tag == 'section':
                 self.install_section( elem )
+        shed_tool_conf_dict = dict( config_filename=install_tool_config,
+                                    tool_path=self.tool_path,
+                                    config_elems=config_elems )
+        self.app.toolbox.shed_tool_confs.append( shed_tool_conf_dict )
     def install_repository( self, elem, section_name='', section_id='' ):
         # Install a single repository into the tool config.  If outside of any sections, the entry looks something like:
         # <repository name="cut_wrapper" description="Galaxy wrapper for the Cut tool" installed_changeset_revision="f3ed6cfe6402">
