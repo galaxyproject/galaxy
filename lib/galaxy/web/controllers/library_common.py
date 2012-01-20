@@ -1052,14 +1052,17 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         trans.sa_session.flush()
         return output
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
+        link_data_only = params.get( 'link_data_only', 'copy_files' )
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
-        # Remove compressed file extensions, if any
         new_name = name
-        if new_name.endswith( '.gz' ):
-            new_name = new_name.rstrip( '.gz' )
-        elif new_name.endswith( '.zip' ):
-            new_name = new_name.rstrip( '.zip' )
+        # Remove compressed file extensions, if any, but only if
+        # we're copying files into Galaxy's file space.
+        if link_data_only == 'copy_files':
+            if new_name.endswith( '.gz' ):
+                new_name = new_name.rstrip( '.gz' )
+            elif new_name.endswith( '.zip' ):
+                new_name = new_name.rstrip( '.zip' )
         uploaded_dataset.name = new_name
         uploaded_dataset.path = path
         uploaded_dataset.type = type
@@ -1070,7 +1073,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
-        link_data_only = params.get( 'link_data_only', 'copy_files' )
         uploaded_dataset.link_data_only = link_data_only
         if link_data_only == 'link_to_files':
             uploaded_dataset.data.file_name = os.path.abspath( path )
