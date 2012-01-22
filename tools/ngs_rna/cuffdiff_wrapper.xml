@@ -154,7 +154,7 @@
                 <param name="min_alignment_count" value="0" />
                 <param name="do_bias_correction" value="No" />
                 <param name="do_normalization" value="No" />
-                <param name="sPaired" value="single" ftype="sam" />
+                <param name="sPaired" value="single"/>
                 <!-- 
                     Line diffs are needed because cuffdiff does not produce deterministic output.
                     TODO: can we find datasets that lead to deterministic behavior?
