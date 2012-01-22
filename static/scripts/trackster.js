@@ -373,7 +373,6 @@ var
     CHAR_HEIGHT_PX = 9,
     // Padding at the top of tracks for error messages
     ERROR_PADDING = 20,
-    SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
     // Maximum number of rows un a slotted track
     MAX_FEATURE_DEPTH = 100,
     // Minimum width for window for squish to be used.
@@ -4149,7 +4148,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     get_canvas_height: function(result, mode, w_scale, canvas_width) {
         if (mode === "summary_tree" || mode === "Histogram") {
             // Extra padding at top of summary tree so label does not overlap data.
-            return this.summary_draw_height + SUMMARY_TREE_TOP_PADDING;
+            return this.summary_draw_height;
         }
         else {
             // All other modes require slotting.
@@ -4199,8 +4198,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             }
             // Paint summary tree into canvas
             var painter = new painters.SummaryTreePainter(result, tile_low, tile_high, this.prefs);
-            // FIXME: it shouldn't be necessary to build in padding.
-            ctx.translate(0, SUMMARY_TREE_TOP_PADDING);
             painter.draw(ctx, canvas.width, canvas.height, w_scale);
             return new SummaryTreeTile(track, tile_index, resolution, canvas, result.data, result.max);
         }
@@ -4623,16 +4620,15 @@ var SummaryTreePainter = function(data, view_start, view_end, prefs, mode) {
 SummaryTreePainter.prototype.default_prefs = { show_counts: false };
 
 SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
-    
     var view_start = this.view_start,
-        view_range = this.view_end - this.view_start;
-    
-    var points = this.data.data, delta = this.data.delta, max = this.data.max,
+        view_range = this.view_end - this.view_start,
+        points = this.data.data,
+        max = this.data.max,
         // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
         // start. However, height of each rectangle is relative to required_height; hence, the
         // max rectangle is required_height.
         base_y = height;
-        delta_x_px = Math.ceil(delta * w_scale);
+        delta_x_px = Math.ceil(this.data.delta * w_scale);
     ctx.save();
     
     for (var i = 0, len = points.length; i < len; i++) {
@@ -4640,10 +4636,10 @@ SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
         var y = points[i][1];
         
         if (!y) { continue; }
-        var y_px = y / max * height
+        var y_px = y / max * height;
         if (y !== 0 && y_px < 1) { y_px = 1; }
 
-        ctx.fillStyle = this.prefs.block_color;        
+        ctx.fillStyle = this.prefs.block_color;
         ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
         
         // Draw number count if it can fit the number with some padding, otherwise things clump up
