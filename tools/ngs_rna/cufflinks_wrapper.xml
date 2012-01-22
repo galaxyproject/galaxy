@@ -132,6 +132,7 @@
             <output name="genes_expression" format="tabular" lines_diff="2" file="cufflinks_out3.fpkm_tracking"/>
             <output name="transcripts_expression" format="tabular" lines_diff="2" file="cufflinks_out2.fpkm_tracking"/>
             <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>
+            <output name="global_model" file="cufflinks_out4.txt"/>
         </test>
     </tests>
 
