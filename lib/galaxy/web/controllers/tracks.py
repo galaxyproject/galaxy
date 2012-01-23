@@ -535,6 +535,8 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         if msg:
             return msg
             
+        # NOTE: finding valid chroms is prohibitive for large summary trees and is not currently used by
+        # the client.
         valid_chroms = None
         # Check for data in the genome window.
         if data_sources.get( 'index' ):
@@ -543,15 +545,14 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
             if not indexer.has_data( chrom ):
                 return messages.NO_DATA
-            valid_chroms = indexer.valid_chroms()
+            #valid_chroms = indexer.valid_chroms()
         else:
             # Standalone data provider
             standalone_provider = get_data_provider( data_sources['data_standalone']['name'] )( dataset )
             kwargs = {"stats": True}
             if not standalone_provider.has_data( chrom ):
                 return messages.NO_DATA
-            valid_chroms = standalone_provider.valid_chroms()
-
+            #valid_chroms = standalone_provider.valid_chroms()
             
         # Have data if we get here
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
