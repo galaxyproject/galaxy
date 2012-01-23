@@ -4,7 +4,7 @@
     <requirement type="package">picard</requirement>
   </requirements>
   <command>
-java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/MergeSamFiles.jar MSD=$mergeSD VALIDATION_STRINGENCY=LENIENT O=$output1 I=$input1 I=$input2 
+java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/MergeSamFiles.jar MSD=$mergeSD VALIDATION_STRINGENCY=LENIENT O=$output1 I=$input1 I=$input2 TMP_DIR=$__new_file_path__
       #for $i in $inputs
         I=${i.input}
       #end for 
