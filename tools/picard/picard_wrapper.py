@@ -140,6 +140,7 @@ class PicardBase():
         cl should be everything after the jar file name in the command
         """
         runme = ['java -Xmx%s' % self.opts.maxjheap]
+        runme.append(" -Djava.io.tmpdir='%s' " % self.opts.tmpdir)
         runme.append('-jar %s' % jar)
         runme += cl
         s,stdouts,rval = self.runCL(cl=runme, output_dir=self.opts.outdir)
