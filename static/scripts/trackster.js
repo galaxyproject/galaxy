@@ -3124,12 +3124,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // (a) mark all elements for removal using class 'remove'
         // (b) during tile drawing/placement, remove class for elements that are moved; 
         //     this occurs in show_tile()
-        // (c) after drawing all tiles, remove elements still marked for removal 
+        // (c) after drawing tiles, remove elements still marked for removal 
         //     (i.e. that still have class 'remove').
         //
         
         // Step (a) for (re)moving tiles.
-        if (!clear_after) { this.content_div.children().addClass("remove"); }
+        this.content_div.children().addClass("remove");
 
         this.max_height = 0;
         // Index of first tile that overlaps visible region
@@ -3151,12 +3151,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             tile_count++;
         }
         
-        // Step (c) for (re)moving tiles.
+        // Step (c) for (re)moving tiles when clear_after is false.
         if (!clear_after) { this.content_div.children(".remove").remove(); }
                 
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         var track = this;
         if (all_tiles_drawn) {
+            // Step (c) for (re)moving tiles when clear_after is true:
+            this.content_div.children(".remove").remove();
             track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);       
         } 
     },
@@ -3939,27 +3941,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, clear_after);
         
         var track = this;
-        
-        // Clear tiles?
-        if (clear_after) {
-            // Clear out track content in order to show the most recent content.
-            // Most recent content is the div with children (tiles) most recently appended to track.
-            // However, do not delete recently-appended empty content as calls to draw() may still be active
-            // and using these divs.
-            var track_content = track.content_div.children();
-            var remove = false;
-            for (var i = track_content.length-1, len = 0; i >= len; i--) {
-                var child = $(track_content[i]);
-                if (remove) {
-                    child.remove();
-                }
-                else if (child.children().length !== 0) {
-                    // Found most recent content with tiles: set remove to start removing old elements.
-                    remove = true;
-                }
-            }
-        }
-        
+                
         // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
         if (track.mode == "Histogram") {
             // Get global max.
