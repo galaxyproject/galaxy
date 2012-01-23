@@ -278,6 +278,9 @@ class DRMAAJobRunner( BaseJobRunner ):
                 log.debug("(%s/%s) job left DRM queue with following message: %s" % ( galaxy_job_id, job_id, e ) )
                 self.work_queue.put( ( 'finish', drm_job_state ) )
                 continue
+            except drmaa.DrmCommunicationException, e:
+                log.warning("(%s/%s) unable to communicate with DRM: %s" % ( galaxy_job_id, job_id, e ))
+                continue
             except Exception, e:
                 # so we don't kill the monitor thread
                 log.exception("(%s/%s) Unable to check job status" % ( galaxy_job_id, job_id ) )
