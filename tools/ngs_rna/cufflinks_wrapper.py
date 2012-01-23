@@ -128,14 +128,25 @@ def __main__():
     cmd += " " + options.input
     
     #
-    # Run command.
+    # Run command and handle output.
     #
     try:
+        #
+        # Run command.
+        #
         tmp_name = tempfile.NamedTemporaryFile( dir="." ).name
         tmp_stderr = open( tmp_name, 'wb' )
         proc = subprocess.Popen( args=cmd, shell=True, stderr=tmp_stderr.fileno() )
         returncode = proc.wait()
         tmp_stderr.close()
+        
+        # Error checking.
+        if returncode != 0:
+            raise Exception, "return code = %i" % returncode
+        
+        #
+        # Handle output.
+        # 
         
         # Read standard error to get total map/upper quartile mass.
         total_map_mass = -1
@@ -177,19 +188,14 @@ def __main__():
             shutil.copyfile( tmp_transcripts, "transcripts.gtf" )
             
         # TODO: update expression files as well.
-            
+                    
         # Set outputs. Transcript and gene expression handled by wrapper directives.
         shutil.copyfile( "transcripts.gtf" , options.assembled_isoforms_output_file )
         if total_map_mass > -1:
             f = open( "global_model.txt", 'w' )
             f.write( "%f\n" % total_map_mass )
             f.close()
-
-        # Error checking.
-        if returncode != 0:
-            raise Exception, stderr
     except Exception, e:
-        raise e
         # Read stderr so that it can be reported:
         tmp_stderr = open( tmp_name, 'rb' )
         stderr = ''
@@ -203,6 +209,6 @@ def __main__():
             pass
         tmp_stderr.close()
         
-        stop_err( 'Error running cufflinks. ' + str( e ) )
+        stop_err( 'Error running cufflinks.\n%s\n%s' % ( str( e ), stderr ) )
 
 if __name__=="__main__": __main__()
