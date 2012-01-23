@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import tempfile
 from Queue import Queue
 import threading
 
@@ -65,11 +66,13 @@ class LocalJobRunner( BaseJobRunner ):
         if command_line:
             try:
                 log.debug( 'executing: %s' % command_line )
+                stdout_file = tempfile.NamedTemporaryFile( suffix='_stdout', dir=job_wrapper.working_directory )
+                stderr_file = tempfile.NamedTemporaryFile( suffix='_stderr', dir=job_wrapper.working_directory )
                 proc = subprocess.Popen( args = command_line, 
                                          shell = True, 
                                          cwd = job_wrapper.working_directory, 
-                                         stdout = subprocess.PIPE, 
-                                         stderr = subprocess.PIPE,
+                                         stdout = stdout_file,
+                                         stderr = stderr_file,
                                          env = os.environ,
                                          preexec_fn = os.setpgrp )
                 job_wrapper.set_runner( 'local:///', proc.pid )
@@ -96,9 +99,13 @@ class LocalJobRunner( BaseJobRunner ):
                             if sleep_time < 8:
                                 # So we don't stat every second
                                 sleep_time *= 2
-                stdout = proc.stdout.read( 32768 )
-                stderr = proc.stderr.read( 32768 )
                 proc.wait() # reap
+                stdout_file.seek( 0 )
+                stderr_file.seek( 0 )
+                stdout = stdout_file.read( 32768 )
+                stderr = stderr_file.read( 32768 )
+                stdout_file.close()
+                stderr_file.close()
                 log.debug('execution finished: %s' % command_line)
             except Exception, exc:
                 job_wrapper.fail( "failure running job", exception=True )
