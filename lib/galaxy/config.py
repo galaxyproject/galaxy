@@ -258,7 +258,7 @@ class Configuration( object ):
         NOTE: This is temporary, admin users will likely be specified in the
               database in the future.
         """
-        admin_users = self.get( "admin_users", "" ).split( "," )
+        admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
         return ( user is not None and user.email in admin_users )
 
 def get_database_engine_options( kwargs ):
