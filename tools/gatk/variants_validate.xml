@@ -12,7 +12,7 @@
     -T "ValidateVariants"
     
     -et "NO_ET" ##ET no phone home
-    --num_threads 4 ##hard coded, for now
+    ##--num_threads 4 ##hard coded, for now
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"

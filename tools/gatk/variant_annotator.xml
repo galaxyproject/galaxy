@@ -25,13 +25,13 @@
     #if str( $annotations_type.annotations_type_selector ) == "use_all_annotations":
         --useAllAnnotations
     #else:
-        #if str( $annotations_type.annotations ) != "None":
+        #if $annotations_type.annotations:
             #for $annotation in str( $annotations_type.annotations.fields.gatk_value ).split( ',' ):
                 --annotation "${annotation}"
             #end for
         #end if
     #end if
-    #if str( $exclude_annotations ) != "None":
+    #if $exclude_annotations:
         #for $annotation in str( $exclude_annotations.fields.gatk_value ).split( ',' ):
             --excludeAnnotation "${annotation}"
         #end for
@@ -383,6 +383,7 @@
           <param name="input_variant_bti" />
           <param name="annotations_type_selector" value="choose" />
           <param name="annotations" value="AlleleBalance,BaseQualityRankSumTest,DepthOfCoverage,HomopolymerRun,MappingQualityRankSumTest,MappingQualityZero,QualByDepth,RMSMappingQuality,SpanningDeletions,HaplotypeScore" />
+          <param name="additional_annotations" value="0" />
           <param name="dbsnp_rod_bind_type_selector" value="set_dbsnp" />
           <param name="dbsnp_input_rod" value="gatk/fake_phiX_variant_locations.vcf" ftype="vcf" />
           <param name="snpEff_rod_bind_type_selector" value="exclude_snpEff" />
