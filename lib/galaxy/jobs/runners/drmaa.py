@@ -280,6 +280,7 @@ class DRMAAJobRunner( BaseJobRunner ):
                 continue
             except drmaa.DrmCommunicationException, e:
                 log.warning("(%s/%s) unable to communicate with DRM: %s" % ( galaxy_job_id, job_id, e ))
+                new_watched.append( drm_job_state )
                 continue
             except Exception, e:
                 # so we don't kill the monitor thread
