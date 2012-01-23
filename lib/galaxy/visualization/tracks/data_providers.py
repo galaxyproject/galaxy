@@ -3,7 +3,7 @@ Data providers for tracks visualizations.
 """
 
 import sys, time
-from math import ceil, log, sqrt, isnan
+from math import ceil, log, sqrt
 import pkg_resources
 pkg_resources.require( "bx-python" )
 if sys.version_info[:2] == (2, 4):
@@ -1041,24 +1041,23 @@ def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
     # Add filter data to payload.
     for col in filter_cols:
         if col == "Score":
-            try:
-                f = float( feature.score )
-                if not math.isnan( f ):
-                    payload.append( f )
-                else:
-                    payload.append( feature.score )
-            except:
+            if feature.score == 'nan':
                 payload.append( feature.score )
-        elif col in feature.attributes:
-            try:
-                f = float( feature.attributes[col] )
-                if not math.isnan( f ):
+            else:
+                try:
+                    f = float( feature.score )
                     payload.append( f )
-                else:
-                    payload.append( feature.attributes[col] )
-            except:
-                # Feature is not a float.
+                except:
+                    payload.append( feature.score )
+        elif col in feature.attributes:
+            if feature.attributes[col] == 'nan':
                 payload.append( feature.attributes[col] )
+            else:
+                try:
+                    f = float( feature.attributes[col] )
+                    payload.append( f )
+                except:
+                    payload.append( feature.attributes[col] )
         else:
             # Dummy value.
             payload.append( 0 )
