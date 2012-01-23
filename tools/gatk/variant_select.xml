@@ -1,7 +1,7 @@
-<tool id="gatk_variant_select" name="Select Variants" version="0.0.1">
+<tool id="gatk_variant_select" name="Select Variants" version="0.0.2">
   <description>from VCF files</description>
   <requirements>
-      <requirement type="package" version="1.3">gatk</requirement>
+      <requirement type="package" version="1.4">gatk</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    #from binascii import hexlify
@@ -106,7 +106,11 @@
             ###raise Exception( str( dir( $read_filter ) ) )
             #for $name, $param in $read_filter.read_filter_type.iteritems():
                 #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
-                    --${name} "${param}"
+                    #if hasattr( $param.input, 'truevalue' ):
+                        ${param}
+                    #else:
+                        --${name} "${param}"
+                    #end if
                 #end if
             #end for
             '
@@ -217,23 +221,111 @@
         </param>
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
-              <param name="read_filter_type_selector" type="select" label="Read Filter Type">
-                <option value="MaxReadLength" selected="True">MaxReadLength</option>
-                <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
-              </param>
-              <when value="ZeroMappingQualityRead">
-                  <!-- no extra options -->
-              </when>
-              <when value="MaxReadLength">
-                  <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
-              </when>
+		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+		        <option value="BadCigar">BadCigar</option>
+		        <option value="BadMate">BadMate</option>
+		        <option value="DuplicateRead">DuplicateRead</option>
+		        <option value="FailsVendorQualityCheck">FailsVendorQualityCheck</option>
+		        <option value="MalformedRead">MalformedRead</option>
+		        <option value="MappingQuality">MappingQuality</option>
+		        <option value="MappingQualityUnavailable">MappingQualityUnavailable</option>
+		        <option value="MappingQualityZero">MappingQualityZero</option>
+		        <option value="MateSameStrand">MateSameStrand</option>
+		        <option value="MaxInsertSize">MaxInsertSize</option>
+		        <option value="MaxReadLength" selected="True">MaxReadLength</option>
+		        <option value="MissingReadGroup">MissingReadGroup</option>
+		        <option value="NoOriginalQualityScores">NoOriginalQualityScores</option>
+		        <option value="NotPrimaryAlignment">NotPrimaryAlignment</option>
+		        <option value="Platform454">Platform454</option>
+		        <option value="Platform">Platform</option>
+		        <option value="PlatformUnit">PlatformUnit</option>
+		        <option value="ReadGroupBlackList">ReadGroupBlackList</option>
+		        <option value="ReadName">ReadName</option>
+		        <option value="ReadStrand">ReadStrand</option>
+		        <option value="ReassignMappingQuality">ReassignMappingQuality</option>
+		        <option value="Sample">Sample</option>
+		        <option value="SingleReadGroup">SingleReadGroup</option>
+		        <option value="UnmappedRead">UnmappedRead</option>
+		      </param>
+	          <when value="BadCigar">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="BadMate">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="DuplicateRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="FailsVendorQualityCheck">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MalformedRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MappingQuality">
+	              <param name="min_mapping_quality_score" type="integer" value="10" label="Minimum read mapping quality required to consider a read for calling"/>
+	          </when>
+	          <when value="MappingQualityUnavailable">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MappingQualityZero">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MateSameStrand">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MaxInsertSize">
+	              <param name="maxInsertSize" type="integer" value="1000000" label="Discard reads with insert size greater than the specified value"/>
+	          </when>
+	          <when value="MaxReadLength">
+	              <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+	          </when>
+	          <when value="MissingReadGroup">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="NoOriginalQualityScores">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="NotPrimaryAlignment">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="Platform454">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="Platform">
+	              <param name="PLFilterName" type="text" value="" label="Discard reads with RG:PL attribute containing this string"/>
+	          </when>
+	          <when value="PlatformUnit">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="ReadGroupBlackList">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="ReadName">
+	              <param name="readName" type="text" value="" label="Filter out all reads except those with this read name"/>
+	          </when>
+	          <when value="ReadStrand">
+	              <param name="filterPositive" type="boolean" truevalue="--filterPositive" falsevalue="" label="Discard reads on the forward strand"/>
+	          </when>
+	          <when value="ReassignMappingQuality">
+	              <param name="default_mapping_quality" type="integer" value="60" label="Default read mapping quality to assign to all reads"/>
+	          </when>
+	          <when value="Sample">
+	              <param name="sample_to_keep" type="text" value="" label="The name of the sample(s) to keep, filtering out all others"/>
+	          </when>
+	          <when value="SingleReadGroup">
+	              <param name="read_group_to_keep" type="integer" value="76" label="The name of the read group to keep, filtering out all others"/>
+	          </when>
+	          <when value="UnmappedRead">
+	              <!-- no extra options -->
+	          </when>
             </conditional>
         </repeat>
         <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
-          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
         </repeat>
         <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
-          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
         </repeat>
         
         <param name="interval_set_rule" type="select" label="Interval set rule">
@@ -248,43 +340,43 @@
             <option value="BY_SAMPLE">BY_SAMPLE</option>
           </param>
           <when value="NONE">
-              <!-- no more options here -->
-          </when>
+	          <!-- no more options here -->
+	      </when>
           <when value="ALL_READS">
-              <conditional name="downsample_to_type">
-                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
-                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
-                      <option value="downsample_to_coverage">Downsample by Coverage</option>
-                  </param>
-                  <when value="downsample_to_fraction">
-                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
-                  </when>
-                  <when value="downsample_to_coverage">
-                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
-                  </when>
-              </conditional>
-          </when>
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
           <when value="BY_SAMPLE">
-              <conditional name="downsample_to_type">
-                  <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
-                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
-                      <option value="downsample_to_coverage">Downsample by Coverage</option>
-                  </param>
-                  <when value="downsample_to_fraction">
-                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
-                  </when>
-                  <when value="downsample_to_coverage">
-                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
-                  </when>
-              </conditional>
-          </when>
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
         </conditional>
         <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
           <option value="OFF" selected="True">OFF</option>
           <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
           <option value="RECALCULATE">RECALCULATE</option>
         </param>
-        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets"/>
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
         <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
         <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
         <param name="validation_strictness" type="select" label="How strict should we be with validation">
@@ -305,15 +397,15 @@
               <option value="text">Specify filters as a string</option>
             </param>
             <when value="file">
-              <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
-            </when>
+	          <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
+	        </when>
             <when value="text">
-              <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
-            </when>
+	          <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
+	        </when>
           </conditional>
         </repeat>
         
-        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality" checked="False"/>
+        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality." checked="False"/>
         <param name="non_deterministic_random_seed" type="boolean" truevalue="--nonDeterministicRandomSeed" falsevalue="" label="Makes the GATK behave non deterministically, that is, the random numbers generated will be different in every run" checked="False" />
         
       </when>

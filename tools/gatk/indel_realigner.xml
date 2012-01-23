@@ -1,7 +1,7 @@
-<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.5">
+<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.6">
   <description>- perform local realignment</description>
   <requirements>
-      <requirement type="package" version="1.3">gatk</requirement>
+      <requirement type="package" version="1.4">gatk</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "1"
@@ -47,7 +47,11 @@
             ###raise Exception( str( dir( $read_filter ) ) )
             #for $name, $param in $read_filter.read_filter_type.iteritems():
                 #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
-                    --${name} "${param}"
+                    #if hasattr( $param.input, 'truevalue' ):
+                        ${param}
+                    #else:
+                        --${name} "${param}"
+                    #end if
                 #end if
             #end for
             '
@@ -187,22 +191,110 @@
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
 		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+		        <option value="BadCigar">BadCigar</option>
+		        <option value="BadMate">BadMate</option>
+		        <option value="DuplicateRead">DuplicateRead</option>
+		        <option value="FailsVendorQualityCheck">FailsVendorQualityCheck</option>
+		        <option value="MalformedRead">MalformedRead</option>
+		        <option value="MappingQuality">MappingQuality</option>
+		        <option value="MappingQualityUnavailable">MappingQualityUnavailable</option>
+		        <option value="MappingQualityZero">MappingQualityZero</option>
+		        <option value="MateSameStrand">MateSameStrand</option>
+		        <option value="MaxInsertSize">MaxInsertSize</option>
 		        <option value="MaxReadLength" selected="True">MaxReadLength</option>
-		        <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+		        <option value="MissingReadGroup">MissingReadGroup</option>
+		        <option value="NoOriginalQualityScores">NoOriginalQualityScores</option>
+		        <option value="NotPrimaryAlignment">NotPrimaryAlignment</option>
+		        <option value="Platform454">Platform454</option>
+		        <option value="Platform">Platform</option>
+		        <option value="PlatformUnit">PlatformUnit</option>
+		        <option value="ReadGroupBlackList">ReadGroupBlackList</option>
+		        <option value="ReadName">ReadName</option>
+		        <option value="ReadStrand">ReadStrand</option>
+		        <option value="ReassignMappingQuality">ReassignMappingQuality</option>
+		        <option value="Sample">Sample</option>
+		        <option value="SingleReadGroup">SingleReadGroup</option>
+		        <option value="UnmappedRead">UnmappedRead</option>
 		      </param>
-	          <when value="ZeroMappingQualityRead">
+	          <when value="BadCigar">
 	              <!-- no extra options -->
+	          </when>
+	          <when value="BadMate">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="DuplicateRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="FailsVendorQualityCheck">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MalformedRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MappingQuality">
+	              <param name="min_mapping_quality_score" type="integer" value="10" label="Minimum read mapping quality required to consider a read for calling"/>
+	          </when>
+	          <when value="MappingQualityUnavailable">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MappingQualityZero">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MateSameStrand">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MaxInsertSize">
+	              <param name="maxInsertSize" type="integer" value="1000000" label="Discard reads with insert size greater than the specified value"/>
 	          </when>
 	          <when value="MaxReadLength">
 	              <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
 	          </when>
+	          <when value="MissingReadGroup">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="NoOriginalQualityScores">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="NotPrimaryAlignment">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="Platform454">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="Platform">
+	              <param name="PLFilterName" type="text" value="" label="Discard reads with RG:PL attribute containing this string"/>
+	          </when>
+	          <when value="PlatformUnit">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="ReadGroupBlackList">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="ReadName">
+	              <param name="readName" type="text" value="" label="Filter out all reads except those with this read name"/>
+	          </when>
+	          <when value="ReadStrand">
+	              <param name="filterPositive" type="boolean" truevalue="--filterPositive" falsevalue="" label="Discard reads on the forward strand"/>
+	          </when>
+	          <when value="ReassignMappingQuality">
+	              <param name="default_mapping_quality" type="integer" value="60" label="Default read mapping quality to assign to all reads"/>
+	          </when>
+	          <when value="Sample">
+	              <param name="sample_to_keep" type="text" value="" label="The name of the sample(s) to keep, filtering out all others"/>
+	          </when>
+	          <when value="SingleReadGroup">
+	              <param name="read_group_to_keep" type="integer" value="76" label="The name of the read group to keep, filtering out all others"/>
+	          </when>
+	          <when value="UnmappedRead">
+	              <!-- no extra options -->
+	          </when>
             </conditional>
         </repeat>
         <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
-          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
         </repeat>
         <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
-          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
         </repeat>
         
         <param name="interval_set_rule" type="select" label="Interval set rule">
@@ -387,7 +479,6 @@ Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_th
  maxReadsForConsensuses       max reads used for finding the alternate consensuses (necessary to improve performance in deep coverage)
  maxReadsForRealignment       max reads allowed at an interval for realignment; if this value is exceeded, realignment is not attempted and the reads are passed to the output file(s) as-is
  noOriginalAlignmentTags      Don't output the original cigar or alignment start tags for each realigned read in the output bam.
- targetIntervalsAreNotSorted  This tool assumes that the target interval list is sorted; if the list turns out to be unsorted, it will throw an exception.  Use this argument when your interval list is not sorted to instruct the Realigner to first sort it in memory.
 
 ------
 

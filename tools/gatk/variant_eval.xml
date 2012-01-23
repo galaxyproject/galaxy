@@ -1,7 +1,7 @@
-<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.5">
+<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.6">
   <description></description>
   <requirements>
-      <requirement type="package" version="1.3">gatk</requirement>
+      <requirement type="package" version="1.4">gatk</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    #from binascii import hexlify
@@ -50,7 +50,11 @@
             ###raise Exception( str( dir( $read_filter ) ) )
             #for $name, $param in $read_filter.read_filter_type.iteritems():
                 #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
-                    --${name} "${param}"
+                    #if hasattr( $param.input, 'truevalue' ):
+                        ${param}
+                    #else:
+                        --${name} "${param}"
+                    #end if
                 #end if
             #end for
             '
@@ -138,13 +142,17 @@
         
         --mendelianViolationQualThreshold "${analysis_param_type.mendelian_violation_qual_threshold}"
         
-        #if str( $analysis_param_type.tranches_file ) != "None":
-            --tranchesFile "${analysis_param_type.tranches_file}"
-        #end if
         #if str( $analysis_param_type.ancestral_alignments ) != "None":
             --ancestralAlignments "${analysis_param_type.ancestral_alignments}"
         #end if
         '
+        #if str( $analysis_param_type.known_cnvs ) != "None":
+            -d "--knownCNVs" "${analysis_param_type.known_cnvs}" "${analysis_param_type.known_cnvs.ext}" "input_known_cnvs"
+        #end if
+        
+        #if str( $analysis_param_type.strat_intervals ) != "None":
+            -d "--stratIntervals" "${analysis_param_type.strat_intervals}" "${analysis_param_type.strat_intervals.ext}" "input_strat_intervals"
+        #end if
     #end if
   </command>
   <inputs>
@@ -216,22 +224,110 @@
         <repeat name="read_filter" title="Read Filter">
             <conditional name="read_filter_type">
 		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+		        <option value="BadCigar">BadCigar</option>
+		        <option value="BadMate">BadMate</option>
+		        <option value="DuplicateRead">DuplicateRead</option>
+		        <option value="FailsVendorQualityCheck">FailsVendorQualityCheck</option>
+		        <option value="MalformedRead">MalformedRead</option>
+		        <option value="MappingQuality">MappingQuality</option>
+		        <option value="MappingQualityUnavailable">MappingQualityUnavailable</option>
+		        <option value="MappingQualityZero">MappingQualityZero</option>
+		        <option value="MateSameStrand">MateSameStrand</option>
+		        <option value="MaxInsertSize">MaxInsertSize</option>
 		        <option value="MaxReadLength" selected="True">MaxReadLength</option>
-		        <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+		        <option value="MissingReadGroup">MissingReadGroup</option>
+		        <option value="NoOriginalQualityScores">NoOriginalQualityScores</option>
+		        <option value="NotPrimaryAlignment">NotPrimaryAlignment</option>
+		        <option value="Platform454">Platform454</option>
+		        <option value="Platform">Platform</option>
+		        <option value="PlatformUnit">PlatformUnit</option>
+		        <option value="ReadGroupBlackList">ReadGroupBlackList</option>
+		        <option value="ReadName">ReadName</option>
+		        <option value="ReadStrand">ReadStrand</option>
+		        <option value="ReassignMappingQuality">ReassignMappingQuality</option>
+		        <option value="Sample">Sample</option>
+		        <option value="SingleReadGroup">SingleReadGroup</option>
+		        <option value="UnmappedRead">UnmappedRead</option>
 		      </param>
-	          <when value="ZeroMappingQualityRead">
+	          <when value="BadCigar">
 	              <!-- no extra options -->
+	          </when>
+	          <when value="BadMate">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="DuplicateRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="FailsVendorQualityCheck">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MalformedRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MappingQuality">
+	              <param name="min_mapping_quality_score" type="integer" value="10" label="Minimum read mapping quality required to consider a read for calling"/>
+	          </when>
+	          <when value="MappingQualityUnavailable">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MappingQualityZero">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MateSameStrand">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MaxInsertSize">
+	              <param name="maxInsertSize" type="integer" value="1000000" label="Discard reads with insert size greater than the specified value"/>
 	          </when>
 	          <when value="MaxReadLength">
 	              <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
 	          </when>
+	          <when value="MissingReadGroup">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="NoOriginalQualityScores">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="NotPrimaryAlignment">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="Platform454">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="Platform">
+	              <param name="PLFilterName" type="text" value="" label="Discard reads with RG:PL attribute containing this string"/>
+	          </when>
+	          <when value="PlatformUnit">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="ReadGroupBlackList">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="ReadName">
+	              <param name="readName" type="text" value="" label="Filter out all reads except those with this read name"/>
+	          </when>
+	          <when value="ReadStrand">
+	              <param name="filterPositive" type="boolean" truevalue="--filterPositive" falsevalue="" label="Discard reads on the forward strand"/>
+	          </when>
+	          <when value="ReassignMappingQuality">
+	              <param name="default_mapping_quality" type="integer" value="60" label="Default read mapping quality to assign to all reads"/>
+	          </when>
+	          <when value="Sample">
+	              <param name="sample_to_keep" type="text" value="" label="The name of the sample(s) to keep, filtering out all others"/>
+	          </when>
+	          <when value="SingleReadGroup">
+	              <param name="read_group_to_keep" type="integer" value="76" label="The name of the read group to keep, filtering out all others"/>
+	          </when>
+	          <when value="UnmappedRead">
+	              <!-- no extra options -->
+	          </when>
             </conditional>
         </repeat>
         <repeat name="input_interval_repeat" title="Operate on Genomic intervals">
-          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
         </repeat>
         <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals">
-          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list" label="Genomic intervals" />
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
         </repeat>
         
         <param name="interval_set_rule" type="select" label="Interval set rule">
@@ -343,7 +439,7 @@
           <param name="sample" value="" type="text" label="Derive eval and comp contexts using only these sample genotypes, when genotypes are available in the original context"/>
         </repeat>
         
-        <param name="stratification_modules" type="select" multiple="True" display="checkboxes" label="Stratification modules to apply to the w track(s)" >
+        <param name="stratification_modules" type="select" multiple="True" display="checkboxes" label="Stratification modules to apply to the eval track(s)" >
           <!-- do these need individual options also? gatk wiki has little info -->
           <option value="AlleleFrequency" />
           <option value="AlleleCount" />
@@ -356,6 +452,7 @@
           <option value="FunctionalClass" />
           <option value="JexlExpression" />
           <option value="Sample" />
+          <option value="IntervalStratification" />
         </param>
         <param name="do_not_use_all_standard_stratifications" checked="false" type="boolean" truevalue="--doNotUseAllStandardStratifications" falsevalue="" label="Do not use the standard stratification modules by default" />
         
@@ -388,9 +485,9 @@
         <param name="min_phase_quality" type="float" label="Minimum phasing quality " value="10.0"/>
         <param name="family" type="text" value="" label="If provided, genotypes in will be examined for mendelian violations: this argument is a string formatted as dad+mom=child where these parameters determine which sample names are examined"/>
         <param name="mendelian_violation_qual_threshold" type="integer" label="Minimum genotype QUAL score for each trio member required to accept a site as a violation" value="50"/>
-        
-        <param name="tranches_file" type="data" format="gatk_tranche" optional="True" label="The input tranches file describing where to cut the data" />
         <param name="ancestral_alignments" type="data" format="fasta" optional="True" label="Fasta file with ancestral alleles" />
+        <param name="known_cnvs" type="data" format="bed,gatk_interval,picard_interval_list" optional="True" label="File containing tribble-readable features describing a known list of copy number variants" />
+        <param name="strat_intervals" type="data" format="bed,gatk_interval,picard_interval_list" optional="True" label="File containing tribble-readable features for the IntervalStratificiation" />
         
       </when>
     </conditional>
@@ -461,7 +558,6 @@ Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_th
  minPhaseQuality                       Minimum phasing quality
  family_structure                      If provided, genotypes in will be examined for mendelian violations: this argument is a string formatted as dad+mom=child where these parameters determine which sample names are examined
  mendelianViolationQualThreshold       Minimum genotype QUAL score for each trio member required to accept a site as a violation
- tranchesFile                          The input tranches file describing where to cut the data
  ancestralAlignments                   Fasta file with ancestral alleles
 
 ------
