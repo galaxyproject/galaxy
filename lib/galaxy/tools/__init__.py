@@ -107,10 +107,11 @@ class ToolBox( object ):
                 self.load_section_tag_set( elem, self.tool_panel, tool_path )
             elif elem.tag == 'label':
                 self.load_label_tag_set( elem, self.tool_panel )
-        shed_tool_conf_dict = dict( config_filename=config_filename,
-                                    tool_path=tool_path,
-                                    config_elems=config_elems )
-        self.shed_tool_confs.append( shed_tool_conf_dict )
+        if parsing_shed_tool_conf:
+            shed_tool_conf_dict = dict( config_filename=config_filename,
+                                        tool_path=tool_path,
+                                        config_elems=config_elems )
+            self.shed_tool_confs.append( shed_tool_conf_dict )
     def get_tool( self, tool_id, tool_version=None ):
         # Attempt to locate the tool in our in-memory dictionary.
         if tool_id in self.tools_by_id:
