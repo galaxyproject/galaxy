@@ -359,17 +359,17 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 # An existing session, make sure correct association exists
                 if galaxy_session.user is None:
                     # No user, associate
-                    galaxy_session.user = self.__get_or_create_remote_user( remote_user_email )
+                    galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
                     galaxy_session_requires_flush = True
                 elif galaxy_session.user.email != remote_user_email:
                     # Session exists but is not associated with the correct remote user
                     invalidate_existing_session = True
-                    user_for_new_session = self.__get_or_create_remote_user( remote_user_email )
+                    user_for_new_session = self.get_or_create_remote_user( remote_user_email )
                     log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
                                  remote_user_email, galaxy_session.user.email )
             else:
                 # No session exists, get/create user for new session
-                user_for_new_session = self.__get_or_create_remote_user( remote_user_email )
+                user_for_new_session = self.get_or_create_remote_user( remote_user_email )
         else:
             if galaxy_session is not None and galaxy_session.user and galaxy_session.user.external:
                 # Remote user support is not enabled, but there is an existing
@@ -461,11 +461,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # The new session should be associated with the user
             galaxy_session.user = user_for_new_session
         return galaxy_session
-    def __get_or_create_remote_user( self, remote_user_email ):
+    def get_or_create_remote_user( self, remote_user_email ):
         """
-        Return the user in $HTTP_REMOTE_USER and create if necessary
+        Create a remote user with the email remote_user_email and return it
         """
-        # remote_user middleware ensures HTTP_REMOTE_USER exists
+        if not self.app.config.use_remote_user:
+            return None
+        
         user = self.sa_session.query( self.app.model.User ) \
                               .filter( self.app.model.User.table.c.email==remote_user_email ) \
                               .first()

@@ -32,12 +32,11 @@ class UserAPIController( BaseAPIController ):
             # special case: user can see only their own user
             if not trans.user_is_admin():
                 item = trans.user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
-                item['url'] = url_for( route, id=encoded_id )
+                item['url'] = url_for( route, id=item['id'] )
                 return item
         for user in query:
             item = user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
-            encoded_id = trans.security.encode_id( user.id )
-            item['url'] = url_for( route, id=encoded_id )
+            item['url'] = url_for( route, id=item['id'] )
             rval.append( item )
         return rval
 
@@ -63,18 +62,25 @@ class UserAPIController( BaseAPIController ):
                                                                   'total_disk_usage': float } )    
         return item
     
-    @web.expose
-    def create( self, trans, **kwd ):
-        raise HTTPNotImplemented()
+    @web.expose_api
+    def create( self, trans, payload, **kwd ):
+        """
+         /api/users
+         Creates a remote user
+         """
+        user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
+        item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+                                                                  'total_disk_usage': float } )    
+        return item
 
-    @web.expose
+    @web.expose_api
     def update( self, trans, **kwd ):
         raise HTTPNotImplemented()
 
-    @web.expose
+    @web.expose_api
     def delete( self, trans, **kwd ):
         raise HTTPNotImplemented()
 
-    @web.expose
+    @web.expose_api
     def undelete( self, trans, **kwd ):
         raise HTTPNotImplemented()

@@ -77,7 +77,23 @@ class WorkflowsAPIController(BaseAPIController):
         """
         POST /api/workflows
         We're not creating workflows from the api.  Just execute for now.
+        However, we will import them if installed_repository_file is specified
         """
+        if 'workflow_id' not in payload:
+            # create new
+            if 'installed_repository_file' in payload:
+                workflow_controller = trans.webapp.controllers[ 'workflow' ]
+                result = workflow_controller.import_workflow( trans=trans, 
+                                                              cntrller='api',
+                                                              **payload)
+                return result
+            trans.response.status = 403
+            return "Either workflow_id or installed_repository_file must be specified"
+        
+        if 'installed_repository_file' in payload:
+            trans.response.status = 403
+            return "installed_repository_file may not be specified with workflow_id"
+
         stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(
                         trans.security.decode_id(payload['workflow_id']))
         if stored_workflow.user != trans.user and not trans.user_is_admin():
