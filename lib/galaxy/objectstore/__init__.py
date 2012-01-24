@@ -5,6 +5,7 @@ tools
 """
 
 import os
+import sys
 import time
 import random
 import shutil
@@ -12,20 +13,21 @@ import statvfs
 import logging
 import threading
 import subprocess
-import multiprocessing
 from datetime import datetime
 
 from galaxy import util
 from galaxy.jobs import Sleeper
 from galaxy.model import directory_hash_id
-from galaxy.objectstore.s3_multipart_upload import multipart_upload
 from galaxy.exceptions import ObjectNotFound, ObjectInvalid
 
 from sqlalchemy.orm import object_session
 
-from boto.s3.key import Key
-from boto.s3.connection import S3Connection
-from boto.exception import S3ResponseError
+if sys.version_info >= (2, 6):
+    import multiprocessing
+    from galaxy.objectstore.s3_multipart_upload import multipart_upload
+    from boto.s3.key import Key
+    from boto.s3.connection import S3Connection
+    from boto.exception import S3ResponseError
 
 log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO) # Otherwise boto is quite noisy
@@ -372,6 +374,7 @@ class S3ObjectStore(ObjectStore):
     Galaxy and S3.
     """
     def __init__(self, config):
+        assert sys.version_info >= (2, 6), 'S3 Object Store support requires Python >= 2.6'
         super(S3ObjectStore, self).__init__()
         self.config = config
         self.staging_path = self.config.file_path
@@ -564,7 +567,7 @@ class S3ObjectStore(ObjectStore):
         # # print "Checking cache for %s; returning %s" % (cache_path, exists)
         # return exists
         # # return False
-    
+
     def _pull_into_cache(self, rel_path):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
