@@ -360,6 +360,11 @@ class ColumnTypesParameter( MetadataParameter ):
     def to_string( self, value ):
         return ",".join( map( str, value ) )
         
+class ListParameter( MetadataParameter ):
+
+    def to_string( self, value ):
+        return ",".join( [str(x) for x in value] )
+
 class DictParameter( MetadataParameter ):
     
     def to_string( self, value ):
