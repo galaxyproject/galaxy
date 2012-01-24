@@ -1925,7 +1925,8 @@ var NumberParameter = function(name, label, html, value, min, max) {
 /**
  * Filters that enable users to show/hide data points dynamically.
  */
-var Filter = function(name, index, tool_id, tool_exp_name) {
+var Filter = function(manager, name, index, tool_id, tool_exp_name) {
+    this.manager = manager;
     this.name = name;
     // Index into payload to filter.
     this.index = index;
@@ -1937,8 +1938,11 @@ var Filter = function(name, index, tool_id, tool_exp_name) {
 /**
  * Number filters have a min, max as well as a low, high; low and high are used 
  */
-var NumberFilter = function(name, index, tool_id, tool_exp_name) {
-    Filter.call(this, name, index, tool_id, tool_exp_name);
+var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
+    //
+    // Attribute init.
+    //
+    Filter.call(this, manager, name, index, tool_id, tool_exp_name);
     // Filter low/high. These values are used to filter elements.
     this.low = -Number.MAX_VALUE;
     this.high = Number.MAX_VALUE;
@@ -1949,115 +1953,12 @@ var NumberFilter = function(name, index, tool_id, tool_exp_name) {
     this.container = null;
     this.slider = null;
     this.slider_label = null;
-};
-extend(NumberFilter.prototype, {
-    /** 
-     * Returns true if filter can be applied to element.
-     */
-    applies_to: function(element) {
-        if (element.length > this.index) {
-            return true;
-        }
-        return false;
-    },
-    /**
-     * Returns true if (a) element's value is in [low, high] (range is inclusive) 
-     * or (b) if value is non-numeric and hence unfilterable.
-     */
-    keep: function(element) {
-        if ( !this.applies_to( element ) ) {
-            // No element to filter on.
-            return true;
-        }
-        var val = element[this.index];
-        return (isNaN(val) || (val >= this.low && val <= this.high));
-    },
-    /**
-     * Update filter's min and max values based on element's values.
-     */
-    update_attrs: function(element) {
-        var updated = false;
-        if (!this.applies_to(element) ) {
-            return updated;
-        }
-        
-        // Update filter's min, max based on element values.
-        if (element[this.index] < this.min) {
-            this.min = Math.floor(element[this.index]);
-            updated = true;
-        }
-        if (element[this.index] > this.max) {
-            this.max = Math.ceil(element[this.index]);
-            updated = true;
-        }
-        return updated;
-    },
-    /**
-     * Update filter's slider.
-     */
-    update_ui_elt: function () {
-        // Only show filter if min != max because filter is not useful otherwise.
-        if (this.min != this.max) {
-            this.container.show();
-        }
-        else {
-            this.container.hide();
-        }
-        
-        var get_slider_step = function(min, max) {
-            var range = max - min;
-            return (range <= 2 ? 0.01 : 1);
-        };
-        
-        var 
-            slider_min = this.slider.slider("option", "min"),
-            slider_max = this.slider.slider("option", "max");
-        if (this.min < slider_min || this.max > slider_max) {
-            // Update slider min, max, step.
-            this.slider.slider("option", "min", this.min);
-            this.slider.slider("option", "max", this.max);
-            this.slider.slider("option", "step", get_slider_step(this.min, this.max));
-            // Refresh slider:
-            // TODO: do we want to keep current values or reset to min/max?
-            // Currently we reset values:
-            this.slider.slider("option", "values", [this.min, this.max]);
-            // To use the current values.
-            //var values = this.slider.slider( "option", "values" );
-            //this.slider.slider( "option", "values", values );
-        }
-    }
-});
-
-/**
- * Manages a set of filters.
- */
-var FiltersManager = function(track, filters_list) {
-    //
-    // Unpack filters from dict.
-    //
-    this.track = track;
-    this.filters = [];
-    for (var i = 0; i < filters_list.length; i++) {
-        var 
-            filter_dict = filters_list[i], 
-            name = filter_dict.name, 
-            type = filter_dict.type, 
-            index = filter_dict.index,
-            tool_id = filter_dict.tool_id,
-            tool_exp_name = filter_dict.tool_exp_name;
-        if (type === 'int' || type === 'float') {
-            this.filters[i] = 
-                new NumberFilter(name, index, tool_id, tool_exp_name);
-        } else {
-            console.log("ERROR: unsupported filter: ", name, type)
-        }
-    }
     
     //
-    // Init HTML elements for filters.
+    // Create HTML.
     //
     
-    // Function that supports inline text editing of slider values for tools, filters.
+    // Function that supports inline text editing of slider values.
     // Enable users to edit parameter's value via a text box.
     var edit_slider_values = function(container, span, slider) {
         container.click(function() {
@@ -2116,6 +2017,213 @@ var FiltersManager = function(track, filters_list) {
         });
     };
     
+    var filter = this;
+    
+    filter.parent_div = $("<div/>").addClass("filter-row slider-row");
+    
+    // Set up filter label (name, values).
+    var filter_label = $("<div/>").addClass("elt-label").appendTo(filter.parent_div),
+        name_span = $("<span/>").addClass("slider-name").text(filter.name + "  ").appendTo(filter_label),
+        values_span = $("<span/>"),
+        values_span_container = $("<span/>").addClass("slider-value").appendTo(filter_label).append("[").append(values_span).append("]");
+    filter.values_span = values_span;
+            
+    // Set up slider for filter.
+    var slider_div = $("<div/>").addClass("slider").appendTo(filter.parent_div);
+    filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
+    var prev_values = [0,0];
+    filter.control_element.slider({
+        range: true,
+        min: Number.MAX_VALUE,
+        max: -Number.MIN_VALUE,
+        values: [0, 0],
+        slide: function(event, ui) { filter.slide(event, ui); },
+        change: function(event, ui) {
+            filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
+        }
+    });
+    filter.slider = filter.control_element;
+    filter.slider_label = values_span;
+    
+    // Enable users to edit slider values via text box.
+    //edit_slider_values(values_span_container, values_span, filter.control_element);
+    
+    // Set up filter display controls.
+    var 
+        display_controls_div = $("<div/>").addClass("display-controls").appendTo(filter.parent_div),
+        transparency_icon = create_action_icon("Use filter for data transparency", "layer-transparent", 
+                                                function() {
+                                                    if (manager.alpha_filter !== filter) {
+                                                        // Setting this filter as the alpha filter.
+                                                        manager.alpha_filter = filter;
+                                                        // Update UI for new filter.
+                                                        $(".layer-transparent").removeClass("active").hide();
+                                                        transparency_icon.addClass("active").show();
+                                                    }
+                                                    else {
+                                                        // Clearing filter as alpha filter.
+                                                        manager.alpha_filter = null;
+                                                        transparency_icon.removeClass("active");
+                                                    }
+                                                    manager.track.request_draw(true, true);
+                                                } )
+                                                .appendTo(display_controls_div).hide(),
+        height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", 
+                                                function() {
+                                                    if (manager.height_filter !== filter) {
+                                                        // Setting this filter as the height filter.
+                                                        manager.height_filter = filter;
+                                                        // Update UI for new filter.
+                                                        $(".arrow-resize-090").removeClass("active").hide();
+                                                        height_icon.addClass("active").show();
+                                                    }
+                                                    else {
+                                                        // Clearing filter as alpha filter.
+                                                        manager.height_filter = null;
+                                                        height_icon.removeClass("active");
+                                                    }
+                                                    manager.track.request_draw(true, true);
+                                                } )
+                                                .appendTo(display_controls_div).hide();
+    filter.parent_div.hover( function() { 
+                                transparency_icon.show();
+                                height_icon.show(); 
+                            },
+                            function() {
+                                if (manager.alpha_filter !== filter) {
+                                    transparency_icon.hide();
+                                }
+                                if (manager.height_filter !== filter) {
+                                    height_icon.hide();
+                                }
+                            } );
+    
+    // Add to clear floating layout.
+    $("<div style='clear: both;'/>").appendTo(filter.parent_div);
+};
+extend(NumberFilter.prototype, {
+    /**
+     * Handle slide events.
+     */
+    slide: function(event, ui) {
+         var values = ui.values;
+         
+         // Set new values in UI.
+         this.values_span.text(values[0] + "-" + values[1]);
+         
+         // Set new values in filter.
+         this.low = values[0];
+         this.high = values[1];
+         
+         // Redraw track.
+         this.manager.track.request_draw(true, true);
+     },
+    /** 
+     * Returns true if filter can be applied to element.
+     */
+    applies_to: function(element) {
+        if (element.length > this.index) {
+            return true;
+        }
+        return false;
+    },
+    /**
+     * Returns true if (a) element's value is in [low, high] (range is inclusive) 
+     * or (b) if value is non-numeric and hence unfilterable.
+     */
+    keep: function(element) {
+        if ( !this.applies_to( element ) ) {
+            // No element to filter on.
+            return true;
+        }
+        var val = element[this.index];
+        return (isNaN(val) || (val >= this.low && val <= this.high));
+    },
+    /**
+     * Update filter's min and max values based on element's values.
+     */
+    update_attrs: function(element) {
+        var updated = false;
+        if (!this.applies_to(element) ) {
+            return updated;
+        }
+        
+        // Update filter's min, max based on element values.
+        if (element[this.index] < this.min) {
+            this.min = Math.floor(element[this.index]);
+            updated = true;
+        }
+        if (element[this.index] > this.max) {
+            this.max = Math.ceil(element[this.index]);
+            updated = true;
+        }
+        return updated;
+    },
+    /**
+     * Update filter's slider.
+     */
+    update_ui_elt: function () {
+        // Only show filter if min != max because filter is not useful otherwise.
+        if (this.min != this.max) {
+            this.parent_div.show();
+        }
+        else {
+            this.parent_div.hide();
+        }
+        
+        var get_slider_step = function(min, max) {
+            var range = max - min;
+            return (range <= 2 ? 0.01 : 1);
+        };
+        
+        var 
+            slider_min = this.slider.slider("option", "min"),
+            slider_max = this.slider.slider("option", "max");
+        if (this.min < slider_min || this.max > slider_max) {
+            // Update slider min, max, step.
+            this.slider.slider("option", "min", this.min);
+            this.slider.slider("option", "max", this.max);
+            this.slider.slider("option", "step", get_slider_step(this.min, this.max));
+            // Refresh slider:
+            // TODO: do we want to keep current values or reset to min/max?
+            // Currently we reset values:
+            this.slider.slider("option", "values", [this.min, this.max]);
+            // To use the current values.
+            //var values = this.slider.slider( "option", "values" );
+            //this.slider.slider( "option", "values", values );
+        }
+    }
+});
+
+/**
+ * Manages a set of filters.
+ */
+var FiltersManager = function(track, filters_list) {
+    //
+    // Unpack filters from dict.
+    //
+    this.track = track;
+    this.filters = [];
+    for (var i = 0; i < filters_list.length; i++) {
+        var 
+            filter_dict = filters_list[i], 
+            name = filter_dict.name, 
+            type = filter_dict.type, 
+            index = filter_dict.index,
+            tool_id = filter_dict.tool_id,
+            tool_exp_name = filter_dict.tool_exp_name;
+        if (type === 'int' || type === 'float') {
+            this.filters[i] = 
+                new NumberFilter(this, name, index, tool_id, tool_exp_name);
+        } else {
+            console.log("ERROR: unsupported filter: ", name, type)
+        }
+    }
+    
+    //
+    // Create HTML.
+    //
+        
     //
     // Create parent div.
     //
@@ -2135,97 +2243,9 @@ var FiltersManager = function(track, filters_list) {
     // Create sliders.
     //
     var manager = this;
-    $.each(this.filters, function(index, filter) {
-        filter.container = $("<div/>").addClass("filter-row slider-row").appendTo(manager.parent_div);
-        
-        // Set up filter label (name, values).
-        var filter_label = $("<div/>").addClass("elt-label").appendTo(filter.container)
-        var name_span = $("<span/>").addClass("slider-name").text(filter.name + "  ").appendTo(filter_label);
-        var values_span = $("<span/>");
-        var values_span_container = $("<span/>").addClass("slider-value").appendTo(filter_label).append("[").append(values_span).append("]");
-                
-        // Set up slider for filter.
-        var slider_div = $("<div/>").addClass("slider").appendTo(filter.container);
-        filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
-        var prev_values = [0,0];
-        filter.control_element.slider({
-            range: true,
-            min: Number.MAX_VALUE,
-            max: -Number.MIN_VALUE,
-            values: [0, 0],
-            slide: function(event, ui) {
-                var values = ui.values;
-                // Set new values in UI.
-                values_span.text(values[0] + "-" + values[1]);
-                // Set new values in filter.
-                filter.low = values[0];
-                filter.high = values[1];                    
-                // Redraw track.
-                manager.track.request_draw(true, true);
-            },
-            change: function(event, ui) {
-                filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
-            }
-        });
-        filter.slider = filter.control_element;
-        filter.slider_label = values_span;
-        
-        // Enable users to edit slider values via text box.
-        edit_slider_values(values_span_container, values_span, filter.control_element);
-        
-        // Set up filter display controls.
-        var 
-            display_controls_div = $("<div/>").addClass("display-controls").appendTo(filter.container),
-            transparency_icon = create_action_icon("Use filter for data transparency", "layer-transparent", 
-                                                    function() {
-                                                        if (manager.alpha_filter !== filter) {
-                                                            // Setting this filter as the alpha filter.
-                                                            manager.alpha_filter = filter;
-                                                            // Update UI for new filter.
-                                                            $(".layer-transparent").removeClass("active").hide();
-                                                            transparency_icon.addClass("active").show();
-                                                        }
-                                                        else {
-                                                            // Clearing filter as alpha filter.
-                                                            manager.alpha_filter = null;
-                                                            transparency_icon.removeClass("active");
-                                                        }
-                                                        manager.track.request_draw(true, true);
-                                                    } )
-                                                    .appendTo(display_controls_div).hide(),
-            height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", 
-                                                    function() {
-                                                        if (manager.height_filter !== filter) {
-                                                            // Setting this filter as the height filter.
-                                                            manager.height_filter = filter;
-                                                            // Update UI for new filter.
-                                                            $(".arrow-resize-090").removeClass("active").hide();
-                                                            height_icon.addClass("active").show();
-                                                        }
-                                                        else {
-                                                            // Clearing filter as alpha filter.
-                                                            manager.height_filter = null;
-                                                            height_icon.removeClass("active");
-                                                        }
-                                                        manager.track.request_draw(true, true);
-                                                    } )
-                                                    .appendTo(display_controls_div).hide();
-        filter.container.hover( function() { 
-                                    transparency_icon.show();
-                                    height_icon.show(); 
-                                },
-                                function() {
-                                    if (manager.alpha_filter !== filter) {
-                                        transparency_icon.hide();
-                                    }
-                                    if (manager.height_filter !== filter) {
-                                        height_icon.hide();
-                                    }
-                                } );
-        
-        // Add to clear floating layout.
-        $("<div style='clear: both;'/>").appendTo(filter.container);
-    });
+    for (var i = 0; i < this.filters.length; i++) {
+        this.parent_div.append(this.filters[i].parent_div);
+    }
     
     // Add button to filter complete dataset.
     if (this.filters.length !== 0) {
