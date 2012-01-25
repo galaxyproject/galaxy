@@ -148,6 +148,7 @@
   <section name="Regional Variation" id="regVar">
     <tool file="regVariation/windowSplitter.xml" />
     <tool file="regVariation/featureCounter.xml" />
+    <tool file="regVariation/WeightedAverage.xml" />
     <tool file="regVariation/quality_filter.xml" />
     <tool file="regVariation/maf_cpg_filter.xml" />
     <tool file="regVariation/getIndels_2way.xml" />
@@ -160,8 +161,10 @@
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />
+    <tool file="regVariation/logistic_regression_vif.xml" />
     <tool file="regVariation/best_regression_subsets.xml" />
     <tool file="regVariation/rcve.xml" />
+    <tool file="regVariation/partialR_square.xml" />
   </section>
   <section name="Multivariate Analysis" id="multVar">
     <tool file="multivariate_stats/pca.xml" />
