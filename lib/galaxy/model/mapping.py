@@ -378,7 +378,9 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "metadata", JSONType, nullable=True ),
     Column( "includes_datatypes", Boolean, index=True, default=False ),
     Column( "update_available", Boolean, default=False ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "uninstalled", Boolean, default=False ),
+    Column( "dist_to_shed", Boolean, default=False ) )
 
 ToolIdGuidMap.table = Table( "tool_id_guid_map", metadata,
     Column( "id", Integer, primary_key=True ),

@@ -94,9 +94,9 @@ class InstallManager( object ):
                                                               tool_shed=self.tool_shed,
                                                               tool_section=tool_section,
                                                               shed_tool_conf=self.install_tool_config,
-                                                              new_install=True )
-                    # Add a new record to the tool_id_guid_map table for each
-                    # tool in the repository if one doesn't already exist.
+                                                              new_install=True,
+                                                              dist_to_shed=True )
+                    # Add a new record to the tool_id_guid_map table for each tool in the repository if one doesn't already exist.
                     if 'tools' in metadata_dict:
                         tools_mapped = 0
                         for tool_dict in metadata_dict[ 'tools' ]:

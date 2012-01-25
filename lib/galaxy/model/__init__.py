@@ -2663,7 +2663,8 @@ class APIKeys( object ):
 
 class ToolShedRepository( object ):
     def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
-                  changeset_revision=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False ):
+                  changeset_revision=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False, uninstalled=False,
+                  dist_to_shed=False ):
         self.id = id
         self.create_time = create_time
         self.tool_shed = tool_shed
@@ -2676,6 +2677,14 @@ class ToolShedRepository( object ):
         self.includes_datatypes = includes_datatypes
         self.update_available = update_available
         self.deleted = deleted
+        self.uninstalled = uninstalled
+        self.dist_to_shed = dist_to_shed
+    @property
+    def includes_tools( self ):
+        return 'tools' in self.metadata
+    @property
+    def includes_workflows( self ):
+        return 'workflows' in self.metadata
 
 class ToolIdGuidMap( object ):
     def __init__( self, id=None, create_time=None, tool_id=None, tool_version=None, tool_shed=None, repository_owner=None, repository_name=None, guid=None ):

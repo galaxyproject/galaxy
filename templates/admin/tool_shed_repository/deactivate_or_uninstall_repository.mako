@@ -43,30 +43,52 @@
                 ${repository.deleted}
             </div>
             <div class="form-row">
-                ${remove_from_disk_check_box.get_html( disabled=True )}
-                <label for="repository" style="display: inline;font-weight:normal;">Check to uninstall (not yet implemented) or leave blank to deactivate</label>
+                ${remove_from_disk_check_box.get_html()}
+                <label for="repository" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
                 <br/><br/>
                 <label>Deactivating this repository will result in the following:</label>
                 <div class="toolParamHelp" style="clear: both;">
-                    1. This repository record's deleted column in the tool_shed_repository database table will be set to True.
+                    * The repository and all of it's contents will remain on disk.
                 </div>
+                %if repository.includes_tools:
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository's tools will not be loaded into the tool panel.
+                    </div>
+                %endif
+                %if repository.includes_datatypes:
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
+                    </div>
+                %endif
                 <div class="toolParamHelp" style="clear: both;">
-                    2. The repository and all of it's contents will remain on disk.
-                </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    3. If this repository includes tools, they will not be loaded into the tool panel, but the tool config file in which they are defined will not be altered.
+                    * The repository record's deleted column in the tool_shed_repository database table will be set to True.
                 </div>
                 <br/>
-                <label>Uninstalling (not yet implemented) this repository will result in the following:</label>
+                <label>Uninstalling this repository will result in the following:</label>
                 <div class="toolParamHelp" style="clear: both;">
-                    1. This repository record's deleted column in the tool_shed_repository database table will be set to True.
+                    * The repository and all of it's contents will be removed from disk.
                 </div>
+                %if repository.includes_tools:
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository's tool tag sets will be removed from the tool config file in which they are defined.
+                    </div>
+                %endif
+                %if repository.includes_datatypes:
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
+                    </div>
+                %endif
                 <div class="toolParamHelp" style="clear: both;">
-                    2. The repository and all of it's contents will be removed from disk.
+                    * The repository record's deleted column in the tool_shed_repository database table will be set to True.
                 </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    3. If this repository includes tools, they will be removed from the tool config file in which they are defined and they will not be loaded into the tool panel.
-                </div>
+                %if repository.dist_to_shed:
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository record's uninstalled column in the tool_shed_repository database table will be set to True.
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        * All records associated with this repository will be eliminated from the tool_id_guid_map database table.
+                    </div>
+                %endif
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">

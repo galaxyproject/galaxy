@@ -280,7 +280,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                       tool_shed=tool_shed,
                                                                       tool_section=tool_section,
                                                                       shed_tool_conf=shed_tool_conf,
-                                                                      new_install=True )
+                                                                      new_install=True,
+                                                                      dist_to_shed=False )
                             installed_repository_names.append( name )
                         else:
                             tmp_stderr = open( tmp_name, 'rb' )
@@ -332,57 +333,81 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def deactivate_or_uninstall_repository( self, trans, **kwd ):
-        # TODO: handle elimination of workflows loaded into the tool panel that are in the repository being deactivated.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         remove_from_disk = params.get( 'remove_from_disk', '' )
         remove_from_disk_checked = CheckboxField.is_checked( remove_from_disk )
         repository = get_repository( trans, kwd[ 'id' ] )
+        shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
         if params.get( 'deactivate_or_uninstall_repository_button', False ):
-            # Deatcivate repository tools.
-            shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
             metadata = repository.metadata
-            repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
-            # Generate the list of tool panel keys derived from the tools included in the repository.
-            repository_tool_panel_keys = []
-            if repository_tools_tups:
-                repository_tool_panel_keys = [ 'tool_%s' % repository_tools_tup[ 1 ] for repository_tools_tup in repository_tools_tups ]
-            tool_panel_section = metadata[ 'tool_panel_section' ]
-            section_id = tool_panel_section[ 'id' ]
-            if section_id in [ '' ]:
-                # If the repository includes tools, they were loaded into the tool panel outside of any sections.
-                tool_section = None
-                self.__deactivate( trans, repository_tool_panel_keys )
-            else:
-                # If the repository includes tools, they were loaded into the tool panel inside a section.
-                section_key = 'section_%s' % str( section_id )
-                if section_key in trans.app.toolbox.tool_panel:
-                    tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                    self.__deactivate( trans, repository_tool_panel_keys, tool_section=tool_section, section_key=section_key )
-                else:
-                    # The tool panel section could not be found, so handle deactivating tools
-                    # as if they were loaded into the tool panel outside of any sections.
+            if repository.includes_tools:
+                # Deactivate repository tools.
+                repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
+                # Generate the list of tool panel keys derived from the tools included in the repository.
+                repository_tool_panel_keys = []
+                if repository_tools_tups:
+                    repository_tool_panel_keys = [ 'tool_%s' % repository_tools_tup[ 1 ] for repository_tools_tup in repository_tools_tups ]
+                tool_panel_section = metadata[ 'tool_panel_section' ]
+                section_id = tool_panel_section[ 'id' ]
+                if section_id in [ '' ]:
+                    # If the repository includes tools, they were loaded into the tool panel outside of any sections.
                     tool_section = None
-                    self.__deactivate( trans, repository_tool_panel_keys )
+                    self.__remove_tools_from_tool_panel( trans, repository_tool_panel_keys )
+                else:
+                    # If the repository includes tools, they were loaded into the tool panel inside a section.
+                    section_key = 'section_%s' % str( section_id )
+                    if section_key in trans.app.toolbox.tool_panel:
+                        tool_section = trans.app.toolbox.tool_panel[ section_key ]
+                        self.__remove_tools_from_tool_panel( trans, repository_tool_panel_keys, tool_section=tool_section, section_key=section_key )
+                    else:
+                        # The tool panel section could not be found, so handle deactivating tools
+                        # as if they were loaded into the tool panel outside of any sections.
+                        tool_section = None
+                        self.__remove_tools_from_tool_panel( trans, repository_tool_panel_keys )
+                repository_clone_url = self.__generate_clone_url( trans, repository )
+                # The repository is either being deactivated or uninstalled, so handle tool panel alterations accordingly.
+                # If the repository is being uninstalled, the appropriate tools or tool sections will be removed from the
+                # appropriate tool config file on disk.
+                alter_tool_panel( app=trans.app,
+                                  repository_name=repository.name,
+                                  repository_clone_url=repository_clone_url,
+                                  changeset_revision=repository.installed_changeset_revision,
+                                  repository_tools_tups=repository_tools_tups,
+                                  tool_section=tool_section,
+                                  shed_tool_conf=shed_tool_conf,
+                                  tool_path=tool_path,
+                                  owner=repository.owner,
+                                  new_install=False,
+                                  deactivate=True,
+                                  uninstall=remove_from_disk_checked )
+            if repository.includes_datatypes:
+                # Deactivate proprietary datatypes.
+                load_datatype_items( trans.app, repository, relative_install_dir, deactivate=True )
+            if remove_from_disk_checked:
+                # Remove the repository from disk.
+                try:
+                    shutil.rmtree( relative_install_dir )
+                    log.debug( "Removed repository installation directory: %s" % str( relative_install_dir ) )
+                except Exception, e:
+                    log.debug( "Error removing repository installation directory %s: %s" % ( str( relative_install_dir ), str( e ) ) )
+                # If the repository was installed by the InstallManager, remove
+                # all appropriate rows from the tool_id_guid_map database table.
+                if repository.dist_to_shed:
+                    count = 0
+                    for tool_id_guid_map in trans.sa_session.query( trans.model.ToolIdGuidMap ) \
+                                                            .filter( and_( trans.model.ToolIdGuidMap.table.c.tool_shed==repository.tool_shed,
+                                                                           trans.model.ToolIdGuidMap.table.c.repository_owner==repository.owner,
+                                                                           trans.model.ToolIdGuidMap.table.c.repository_name==repository.name ) ):
+                        trans.sa_session.delete( tool_id_guid_map )
+                        count += 1
+                    log.debug( "Removed %d rows from the tool_id_guid_map database table." % count )
+                repository.uninstalled = True
             repository.deleted = True
             trans.sa_session.add( repository )
             trans.sa_session.flush()
-            repository_clone_url = self.__generate_clone_url( trans, repository )
-            load_altered_part_of_tool_panel( app=trans.app,
-                                             repository_name=repository.name,
-                                             repository_clone_url=repository_clone_url,
-                                             changeset_revision=repository.installed_changeset_revision,
-                                             repository_tools_tups=repository_tools_tups,
-                                             tool_section=tool_section,
-                                             shed_tool_conf=shed_tool_conf,
-                                             tool_path=tool_path,
-                                             owner=repository.owner,
-                                             deactivate=True )
-            # Deactivate proprietary datatypes.
-            load_datatype_items( trans.app, repository, relative_install_dir, deactivate=True )
             if remove_from_disk_checked:
-                # TODO: Remove repository from disk and alter the shed tool config.
                 message = 'The repository named <b>%s</b> has been uninstalled.' % repository.name
             else:
                 message = 'The repository named <b>%s</b> has been deactivated.' % repository.name
@@ -397,10 +422,10 @@ class AdminToolshed( AdminGalaxy ):
                                     remove_from_disk_check_box=remove_from_disk_check_box,
                                     message=message,
                                     status=status )
-    def __deactivate( self, trans, repository_tool_panel_keys, tool_section=None, section_key=None ):
-        # Delete tools loaded into the tool panel.  If the tool_panel is received,
-        # the tools were loaded into the tool panel outside of any sections.  If
-        # the tool_section is received, all tools were loaded into that section.
+    def __remove_tools_from_tool_panel( self, trans, repository_tool_panel_keys, tool_section=None, section_key=None ):
+        # Delete tools loaded into the tool panel by altering the in-memory tool_panel dictionary appropriately.  If the
+        # tool_section is not received, the tools were loaded into the tool_panel dictionary outside of any sections.
+        # Otherwise all tools were loaded into the received tool_section.
         if tool_section:
             # The tool_section.elems dictionary looks something like:
             # {'tool_gvk.bx.psu.edu:9009/repos/test/filter/Filter1/1.0.1': <galaxy.tools.Tool instance at 0x10769ae60>}
@@ -418,61 +443,146 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def activate_or_reinstall_repository( self, trans, **kwd ):
-        # TODO: handle re-introduction of workflows loaded into the tool panel that are in the repository being activated.
         repository = get_repository( trans, kwd[ 'id' ] )
-        repository.deleted = False
-        trans.sa_session.add( repository )
-        trans.sa_session.flush()
         shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
-        metadata = repository.metadata
-        repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
-        tool_panel_section = metadata[ 'tool_panel_section' ]
-        section_id = tool_panel_section[ 'id' ]
-        if section_id in [ '' ]:
-            # If the repository includes tools, reload them into the tool panel outside of any sections.
-            self.__activate( trans, repository, repository_tools_tups, tool_section=None, section_key=None )
-        else:
-            # If the repository includes tools, reload them into the appropriate tool panel section.
-            section_key = 'section_%s' % str( section_id )
-            if section_key in trans.app.toolbox.tool_panel:
-                # Load the repository tools into a section that still exists in the tool panel.
-                tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                self.__activate( trans, repository, repository_tools_tups, tool_section=tool_section, section_key=section_key )
+        uninstalled = repository.uninstalled
+        if uninstalled:
+            if repository.dist_to_shed:
+                href = '<a href="http://wiki.g2.bx.psu.edu/Tool%20Shed#Migrating_tools_from_the_Galaxy_distribution_to_the_Galaxy_main_tool_shed" '
+                href += 'target="_blank">in this section of the Galaxy Tool Shed wiki</a>'
+                message = "The <b>%s</b> repository should be reinstalled using the approach described %s.  " % ( repository.name, href )
+                message += "If <b>enable_tool_shed_install = True</b> and the contents of the file configured for the "
+                message += "<b>tool_shed_install_config_file</b> setting in your universe_wsgi.ini file enable installation of the "
+                message += "<b>%s</b> repository, then restarting your Galaxy server will reinstall the repository." % repository.name
+                new_kwd = {}
+                new_kwd[ 'sort' ] = 'name'
+                new_kwd[ 'f-deleted' ] = 'True'
+                new_kwd[ 'message' ] = message
+                new_kwd[ 'status' ] = 'error'
+                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                  action='browse_repositories',
+                                                                  **new_kwd ) )
             else:
-                # Load the repository tools into a section that no longer exists in the tool panel.
-                # We first see if the section exists in the tool config, which will be the case if
-                # the repository was only deactivated and not uninstalled.
-                section_loaded = False
-                for tcf in trans.app.config.tool_configs:
-                    # Only inspect tool configs that contain installed tool shed repositories.
-                    if tcf not in [ 'tool_conf.xml' ]:
-                        log.info( "Parsing the tool configuration %s" % tcf )
-                        tree = util.parse_xml( tcf )
-                        root = tree.getroot()
-                        tool_path = root.get( 'tool_path' )
-                        if tool_path is not None:
-                            # Tool configs that contain tools installed from tool shed repositories
-                            # must have a tool_path attribute.
-                            for elem in root:
-                                if elem.tag == 'section':
-                                    id_attr = elem.get( 'id' )
-                                    if id_attr == section_id:
-                                        tool_section = elem
-                                        # Load the tools.
-                                        trans.app.toolbox.load_section_tag_set( tool_section, trans.app.toolbox.tool_panel, tool_path )
-                                        section_loaded = True
+                current_working_dir = os.getcwd()
+                repository_clone_url = self.__generate_clone_url( trans, repository )
+                clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, repository.installed_changeset_revision ) )
+                relative_install_dir = os.path.join( clone_dir, repository.name )
+                returncode, tmp_name = clone_repository( repository.name, clone_dir, current_working_dir, repository_clone_url )
+                if returncode == 0:
+                    returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, repository.installed_changeset_revision )
+                    if returncode == 0:
+                        # Get the location in the tool panel in which the tool was originally loaded.
+                        metadata = repository.metadata
+                        tool_panel_section = metadata[ 'tool_panel_section' ]
+                        original_section_id = tool_panel_section[ 'id' ]
+                        original_section_name = tool_panel_section[ 'name' ]
+                        if original_section_id in [ '' ]:
+                            tool_section = None
+                        else:
+                            section_key = 'section_%s' % str( original_section_id )
+                            if section_key in trans.app.toolbox.tool_panel:
+                                tool_section = trans.app.toolbox.tool_panel[ section_key ]
+                            else:
+                                # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
+                                elem = Element( 'section' )
+                                elem.attrib[ 'name' ] = original_section_name
+                                elem.attrib[ 'id' ] = original_section_id
+                                elem.attrib[ 'version' ] = ''
+                                tool_section = tools.ToolSection( elem )
+                                trans.app.toolbox.tool_panel[ section_key ] = tool_section
+                        metadata_dict = load_repository_contents( app=trans.app,
+                                                                  repository_name=repository.name,
+                                                                  description=repository.description,
+                                                                  owner=repository.owner,
+                                                                  changeset_revision=repository.installed_changeset_revision,
+                                                                  tool_path=tool_path,
+                                                                  repository_clone_url=repository_clone_url,
+                                                                  relative_install_dir=relative_install_dir,
+                                                                  current_working_dir=current_working_dir,
+                                                                  tmp_name=tmp_name,
+                                                                  tool_shed=repository.tool_shed,
+                                                                  tool_section=tool_section,
+                                                                  shed_tool_conf=shed_tool_conf,
+                                                                  new_install=True,
+                                                                  dist_to_shed=False )
+                        repository.uninstalled = False
+            repository.deleted = False
+            trans.sa_session.add( repository )
+            trans.sa_session.flush()
+        else:
+            # The repository was deactivated, but not uninstalled.
+            repository.deleted = False
+            trans.sa_session.add( repository )
+            trans.sa_session.flush()
+            if repository.includes_tools:
+                metadata = repository.metadata
+                repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
+                guids_to_activate = [ repository_tool_tup[1] for repository_tool_tup in repository_tools_tups ]
+                tool_panel_section = metadata[ 'tool_panel_section' ]
+                original_section_id = tool_panel_section[ 'id' ]
+                if original_section_id in [ '' ]:
+                    # If the repository includes tools, reload them into the tool panel outside of any sections.
+                    self.__add_tools_to_tool_panel( trans, repository, repository_tools_tups, tool_section=None, section_key=None )
+                else:
+                    original_section_id = tool_panel_section[ 'id' ]
+                    original_section_name = tool_panel_section[ 'name' ]
+                    original_section_version = tool_panel_section[ 'version' ]
+                    # If the repository includes tools, reload them into the appropriate tool panel section.
+                    section_key = 'section_%s' % str( original_section_id )
+                    if section_key in trans.app.toolbox.tool_panel:
+                        # Load the repository tools into a section that still exists in the tool panel.
+                        tool_section = trans.app.toolbox.tool_panel[ section_key ]
+                        self.__add_tools_to_tool_panel( trans, repository, repository_tools_tups, tool_section=tool_section, section_key=section_key )
+                    else:
+                        # Load the repository tools into a section that no longer exists in the tool panel. The section must
+                        # still exist in the tool config since the repository was only deactivated and not uninstalled.
+                        sections_to_load = []
+                        tool_elems_found = 0
+                        # Only inspect tool configs that contain installed tool shed repositories.
+                        for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+                            config_filename = shed_tool_conf_dict[ 'config_filename' ]
+                            log.info( "Parsing the tool configuration %s" % config_filename )
+                            tree = util.parse_xml( config_filename )
+                            root = tree.getroot()
+                            tool_path = root.get( 'tool_path' )
+                            if tool_path is not None:
+                                # Tool configs that contain tools installed from tool shed repositories
+                                # must have a tool_path attribute.
+                                for elem in root:
+                                    if elem.tag == 'section' and \
+                                        elem.get( 'id' ) == original_section_id and \
+                                        elem.get( 'name' ) == original_section_name and \
+                                        elem.get( 'version' ) == original_section_version:
+                                            # We've found the section, but we have to make sure it contains the
+                                            # correct tool tag set.  This is necessary because the shed tool configs
+                                            # can include multiple sections of the same id, name and version, each
+                                            # containing one or more tool tag sets.
+                                            for tool_elem in elem:
+                                                if tool_elem.get( 'guid' ) in guids_to_activate:
+                                                    tool_elems_found += 1
+                                                    if elem not in sections_to_load:
+                                                        sections_to_load.append( elem )
+                                                if tool_elems_found == len( guids_to_activate ):
+                                                    break
+                                    if tool_elems_found == len( guids_to_activate ):
                                         break
-                    if section_loaded:
-                        break
-                # Load proprietary datatypes.
-                load_datatype_items( trans.app, repository, relative_install_dir )
-        message = 'The repository named <b>%s</b> has been activated.' % repository.name
+                            if tool_elems_found == len( guids_to_activate ):
+                                break
+                        for elem in sections_to_load:
+                            trans.app.toolbox.load_section_tag_set( elem, trans.app.toolbox.tool_panel, tool_path )
+        if repository.includes_datatypes:
+            # Load proprietary datatypes.
+            load_datatype_items( trans.app, repository, relative_install_dir )
+        if uninstalled:
+            message = 'The <b>%s</b> repository has been reinstalled.' % repository.name
+        else:
+            message = 'The <b>%s</b> repository has been activated.' % repository.name
         status = 'done'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='browse_repositories',
                                                           message=message,
                                                           status=status ) )
-    def __activate( self, trans, repository, repository_tools_tups, tool_section=None, section_key=None ):
+    def __add_tools_to_tool_panel( self, trans, repository, repository_tools_tups, tool_section=None, section_key=None ):
         # Load tools.
         if tool_section:
             elems = tool_section.elems
