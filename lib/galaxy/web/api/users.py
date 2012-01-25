@@ -65,12 +65,17 @@ class UserAPIController( BaseAPIController ):
     @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
-         /api/users
-         Creates a remote user
-         """
-        user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
-        item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                                  'total_disk_usage': float } )    
+        /api/users
+        Creates a new Galaxy user.
+        """
+        if not trans.app.config.allow_user_creation:
+            raise HTTPNotImplemented( detail='User creation is not allowed in this Galaxy instance' )
+        if trans.app.config.use_remote_user and trans.user_is_admin():
+            user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
+            item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+                                                                      'total_disk_usage': float } )    
+        else:
+            raise HTTPNotImplemented()
         return item
 
     @web.expose_api
