@@ -373,7 +373,7 @@
           <param name="sample_file_repeat" value="0" />
           <param name="sample_name_repeat" value="0" />
           <param name="gatk_param_type_selector" value="basic" />
-          <output name="output_bam" file="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" /> 
+          <output name="output_bam" file="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" sort="True"/> 
           <output name="output_log" file="gatk/gatk_print_reads/gatk_print_reads_out_1.log.contains" compare="contains" />
       </test>
   </tests>
