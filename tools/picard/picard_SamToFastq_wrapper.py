@@ -80,13 +80,13 @@ def __main__():
                     shutil.move( os.path.join( tmp_dir, filename ), fastq_1_name )
                     fastq_1_name = None
                 else:
-                    shutil.move( os.path.join( tmp_dir, filename ), os.path.join( options.new_files_path, 'primary_%s_%s - 1_visible_fastq' % ( file_id_1, filename[:-len( '_1.fastq' )] ) ) )
+                    shutil.move( os.path.join( tmp_dir, filename ), os.path.join( options.new_files_path, 'primary_%s_%s - 1_visible_fastqsanger' % ( file_id_1, filename[:-len( '_1.fastq' )] ) ) )
             elif filename.endswith( '_2.fastq' ):
                 if fastq_2_name:
                     shutil.move( os.path.join( tmp_dir, filename ), fastq_2_name )
                     fastq_2_name = None
                 else:
-                    shutil.move( os.path.join( tmp_dir, filename ), os.path.join( options.new_files_path, 'primary_%s_%s - 2_visible_fastq' % ( file_id_2, filename[:-len( '_2.fastq' )] ) ) )
+                    shutil.move( os.path.join( tmp_dir, filename ), os.path.join( options.new_files_path, 'primary_%s_%s - 2_visible_fastqsanger' % ( file_id_2, filename[:-len( '_2.fastq' )] ) ) )
     
     cleanup_before_exit( tmp_dir )
 
