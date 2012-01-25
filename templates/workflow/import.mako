@@ -26,24 +26,24 @@
         ${render_msg( message, status )}
     %endif
     <div class="toolForm"> 
-        <div class="toolFormTitle">Import an exported Galaxy workflow file</div>
+        <div class="toolFormTitle">Import Galaxy workflow</div>
         <div class="toolFormBody">
             <form name="import_workflow" id="import_workflow" action="${h.url_for( controller='workflow', action='import_workflow' )}" enctype="multipart/form-data" method="POST">
                 <div class="form-row">
-                    <label>URL for exported Galaxy workflow:</label> 
+                    <label>Galaxy workflow URL:</label> 
                     <input type="text" name="url" value="${url}" size="40">
                     <div class="toolParamHelp" style="clear: both;">
-                        If the workflow is accessible via an URL, enter the URL above and click the <b>Import</b> button.
+                        If the workflow is accessible via a URL, enter the URL above and click <b>Import</b>.
                     </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                    <label>Exported Galaxy workflow file:</label>
+                    <label>Galaxy workflow file:</label>
                     <div class="form-row-input">
                         <input type="file" name="file_data"/>
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
-                        If the workflow is stored locally in a file, browse and select it and then click the <b>Import</b> button.
+                        If the workflow is in a file on your computer, choose it and then click <b>Import</b>.
                     </div>
                     <div style="clear: both"></div>
                 </div>
