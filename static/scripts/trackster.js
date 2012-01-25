@@ -484,7 +484,7 @@ extend(DataManager.prototype, Cache.prototype, {
             var filter_names = [];
             var filters = this.track.filters_manager.filters;
             for (var i = 0; i < filters.length; i++) {
-                filter_names[filter_names.length] = filters[i].name;
+                filter_names.push(filters[i].name);
             }
             params.filter_cols = JSON.stringify(filter_names);
         }
@@ -731,6 +731,7 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
 
 Drawable.prototype.action_icons_def = [
     // Hide/show drawable content.
+    // FIXME: make this an odict for easier lookup.
     {
         name: "toggle_icon",
         title: "Hide/show content",
@@ -1018,20 +1019,71 @@ var DrawableGroup = function(name, view, container, prefs) {
     is_container(this.container_div, this);
     is_container(this.content_div, this);
     moveable(this.container_div, this.drag_handle_class, ".group", this);
+    
+    // Set up filters.
+    this.filters_manager = new FiltersManager(this);
+    this.filters_div = this.filters_manager.parent_div;
+    this.header_div.after(this.filters_div);
+    // For saving drawables' filter managers when group-level filtering is done:
+    this.saved_filters_managers = null;
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
     action_icons_def: [
-    // Create composite track from group's tracks.
-    {
-        name: "composite_icon",
-        title: "Show composite track",
-        css_class: "layers-stack",
-        on_click_fn: function(group) {
-            group.show_composite_track();
-        }
-    }
-    ].concat(Drawable.prototype.action_icons_def),
+        Drawable.prototype.action_icons_def[0],
+        Drawable.prototype.action_icons_def[1],
+        // Create composite track from group's tracks.
+        {
+            name: "composite_icon",
+            title: "Show composite track",
+            css_class: "layers-stack",
+            on_click_fn: function(group) {
+                group.show_composite_track();
+            }
+        },
+        // Toggle track filters.
+        {
+            name: "filters_icon",
+            title: "Filters",
+            css_class: "filters-icon",
+            on_click_fn: function(group) {
+                // TODO: update tipsy text.
+                if (group.filters_div.is(":visible")) {
+                    // Hiding filters.
+                    group.filters_manager.clear_filters();    
+                    
+                    // Restore filter managers. 
+                    // TODO: maintain current filter by restoring and setting saved manager's 
+                    // settings to current/shared manager's settings.
+                    // TODO: need to restore filter managers when moving drawable outside group.
+                    for (var i = 0; i < group.drawables.length; i++) {
+                        group.drawables[i].filters_manager = group.saved_filters_managers[i];
+                    }
+                    group.saved_filters_managers = null;
+                }
+                else {
+                    // Showing filters.
+                    
+                    // Save tracks' managers and set up shared manager.
+                    if (group.filters_manager.filters.length > 0) {
+                        // For all tracks, save current filter manager and set manager to shared (this object's) manager.
+                        group.saved_filters_managers = [];
+                        for (var i = 0; i < group.drawables.length; i++) {
+                            drawable = group.drawables[i];
+                            group.saved_filters_managers.push(drawable.filters_manager);
+                            drawable.filters_manager = group.filters_manager;
+                        }
+
+                        //TODO: hide filters icons for each drawable.
+                    }
+                    group.filters_manager.init_filters();
+                    group.request_draw(true);
+                }
+                group.filters_div.toggle();
+            }
+        },
+        Drawable.prototype.action_icons_def[2]
+    ],
     build_container_div: function() {
         var container_div = $("<div/>").addClass("group").attr("id", "group_" + this.id);
         if (this.container) {
@@ -1054,7 +1106,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         // Request a redraw of the content
         this.request_draw();
     },
-    update_icons: function() {
+    update_icons: function() {        
         //
         // Determine if a composite track can be created. Current criteria:
         // (a) all tracks are the same;
@@ -1084,7 +1136,67 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         else {
             this.action_icons.composite_icon.hide();
             $(".tipsy").remove();
-        }       
+        }
+        
+        //
+        // Set up group-level filtering and update filter icon.
+        //
+        if (num_feature_tracks > 1 && num_feature_tracks === this.drawables.length) {
+            //
+            // Find shared filters.
+            //
+            var 
+                shared_filters = {},
+                filter;
+            
+            // Init shared filters with filters from first drawable.
+            drawable = this.drawables[0];
+            for (var j = 0; j < drawable.filters_manager.filters.length; j++) {
+                filter = drawable.filters_manager.filters[j];
+                shared_filters[filter.name] = [filter];
+            }
+            
+            // Create lists of shared filters.
+            for (var i = 1; i < this.drawables.length; i++) {
+                drawable = this.drawables[i]
+                for (var j = 0; j < drawable.filters_manager.filters.length; j++) {
+                    filter = drawable.filters_manager.filters[j];
+                    if (filter.name in shared_filters) {
+                        shared_filters[filter.name].push(filter);
+                    }
+                }
+            }
+            
+            //
+            // Create filters for shared filters manager. Shared filters manager is group's
+            // manager.
+            //
+            this.filters_manager.remove_all();
+            var 
+                filters,
+                new_filter,
+                min,
+                max;
+            for (var filter_name in shared_filters) {
+                filters = shared_filters[filter_name];
+                if (filters.length === num_feature_tracks) {
+                    // Add new filter to represent shared filters.
+                    new_filter = new NumberFilter(filters[0].name, filters[0].index);
+                    this.filters_manager.add_filter(new_filter);
+                }
+            }
+            
+            // Show/hide icon based on filter availability.
+            if (this.filters_manager.filters.length > 0) {   
+                this.action_icons.filters_icon.show();
+            }
+            else {
+                this.action_icons.filters_icon.hide();
+            }
+        }
+        else {
+            this.action_icons.filters_icon.hide();
+        }
     },
     /**
      * Add composite track to group that includes all of group's tracks.
@@ -1113,6 +1225,11 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             group.content_div.append(group.drawables[i].container_div);   
         }
         return group;
+    },
+    request_draw: function(clear_after, force) {
+        for (var i = 0; i < this.drawables.length; i++) {
+            this.drawables[i].request_draw(clear_after, force);
+        }
     }
 });
 
@@ -1925,8 +2042,8 @@ var NumberParameter = function(name, label, html, value, min, max) {
 /**
  * Filters that enable users to show/hide data points dynamically.
  */
-var Filter = function(manager, name, index, tool_id, tool_exp_name) {
-    this.manager = manager;
+var Filter = function(name, index, tool_id, tool_exp_name) {
+    this.manager = null;
     this.name = name;
     // Index into payload to filter.
     this.index = index;
@@ -1938,11 +2055,11 @@ var Filter = function(manager, name, index, tool_id, tool_exp_name) {
 /**
  * Number filters have a min, max as well as a low, high; low and high are used 
  */
-var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
+var NumberFilter = function(name, index, tool_id, tool_exp_name) {
     //
     // Attribute init.
     //
-    Filter.call(this, manager, name, index, tool_id, tool_exp_name);
+    Filter.call(this, name, index, tool_id, tool_exp_name);
     // Filter low/high. These values are used to filter elements.
     this.low = -Number.MAX_VALUE;
     this.high = Number.MAX_VALUE;
@@ -1962,10 +2079,15 @@ var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
     // Enable users to edit parameter's value via a text box.
     var edit_slider_values = function(container, span, slider) {
         container.click(function() {
-            var cur_value = span.text();
+            var cur_value = span.text(),
                 max = parseFloat(slider.slider("option", "max")),
                 input_size = (max <= 1 ? 4 : max <= 1000000 ? max.toString().length : 6),
-                multi_value = false;
+                multi_value = false,
+                slider_row = $(this).parents(".slider-row");
+                
+            // Row now has input.
+            slider_row.addClass("input");
+                
             // Increase input size if there are two values.
             if (slider.slider("option", "values")) {
                 input_size = 2*input_size + 1;
@@ -1981,6 +2103,7 @@ var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
             }).blur(function() {
                 $(this).remove();
                 span.text(cur_value);
+                slider_row.removeClass("input");
             }).keyup(function(e) {
                 if (e.keyCode === 27) {
                     // Escape key.
@@ -2011,7 +2134,10 @@ var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
                             return $(this);
                         }
                     }
+                    
+                    // Updating the slider also updates slider values and removes input. 
                     slider.slider((multi_value ? "values" : "value"), new_value);
+                    slider_row.removeClass("input");
                 }
             });
         });
@@ -2037,7 +2163,9 @@ var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
         min: Number.MAX_VALUE,
         max: -Number.MIN_VALUE,
         values: [0, 0],
-        slide: function(event, ui) { filter.slide(event, ui); },
+        slide: function(event, ui) { 
+            filter.slide(event, ui); 
+        },
         change: function(event, ui) {
             filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
         }
@@ -2046,43 +2174,43 @@ var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
     filter.slider_label = values_span;
     
     // Enable users to edit slider values via text box.
-    //edit_slider_values(values_span_container, values_span, filter.control_element);
+    edit_slider_values(values_span_container, values_span, filter.control_element);
     
     // Set up filter display controls.
     var 
         display_controls_div = $("<div/>").addClass("display-controls").appendTo(filter.parent_div),
         transparency_icon = create_action_icon("Use filter for data transparency", "layer-transparent", 
                                                 function() {
-                                                    if (manager.alpha_filter !== filter) {
+                                                    if (filter.manager.alpha_filter !== filter) {
                                                         // Setting this filter as the alpha filter.
-                                                        manager.alpha_filter = filter;
+                                                        filter.manager.alpha_filter = filter;
                                                         // Update UI for new filter.
-                                                        $(".layer-transparent").removeClass("active").hide();
+                                                        filter.manager.parent_div.find(".layer-transparent").removeClass("active").hide();
                                                         transparency_icon.addClass("active").show();
                                                     }
                                                     else {
                                                         // Clearing filter as alpha filter.
-                                                        manager.alpha_filter = null;
+                                                        filter.manager.alpha_filter = null;
                                                         transparency_icon.removeClass("active");
                                                     }
-                                                    manager.track.request_draw(true, true);
+                                                    filter.manager.track.request_draw(true, true);
                                                 } )
                                                 .appendTo(display_controls_div).hide(),
         height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", 
                                                 function() {
-                                                    if (manager.height_filter !== filter) {
+                                                    if (filter.manager.height_filter !== filter) {
                                                         // Setting this filter as the height filter.
-                                                        manager.height_filter = filter;
+                                                        filter.manager.height_filter = filter;
                                                         // Update UI for new filter.
-                                                        $(".arrow-resize-090").removeClass("active").hide();
+                                                        filter.manager.parent_div.find(".arrow-resize-090").removeClass("active").hide();
                                                         height_icon.addClass("active").show();
                                                     }
                                                     else {
                                                         // Clearing filter as alpha filter.
-                                                        manager.height_filter = null;
+                                                        filter.manager.height_filter = null;
                                                         height_icon.removeClass("active");
                                                     }
-                                                    manager.track.request_draw(true, true);
+                                                    filter.manager.track.request_draw(true, true);
                                                 } )
                                                 .appendTo(display_controls_div).hide();
     filter.parent_div.hover( function() { 
@@ -2090,10 +2218,10 @@ var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
                                 height_icon.show(); 
                             },
                             function() {
-                                if (manager.alpha_filter !== filter) {
+                                if (filter.manager.alpha_filter !== filter) {
                                     transparency_icon.hide();
                                 }
-                                if (manager.height_filter !== filter) {
+                                if (filter.manager.height_filter !== filter) {
                                     height_icon.hide();
                                 }
                             } );
@@ -2102,6 +2230,14 @@ var NumberFilter = function(manager, name, index, tool_id, tool_exp_name) {
     $("<div style='clear: both;'/>").appendTo(filter.parent_div);
 };
 extend(NumberFilter.prototype, {
+    /**
+     * Get step for slider.
+     */
+    // FIXME: make this a "static" function.
+    get_slider_step: function(min, max) {
+        var range = max - min;
+        return (range <= 2 ? 0.01 : 1);
+    },
     /**
      * Handle slide events.
      */
@@ -2171,11 +2307,6 @@ extend(NumberFilter.prototype, {
             this.parent_div.hide();
         }
         
-        var get_slider_step = function(min, max) {
-            var range = max - min;
-            return (range <= 2 ? 0.01 : 1);
-        };
-        
         var 
             slider_min = this.slider.slider("option", "min"),
             slider_max = this.slider.slider("option", "max");
@@ -2183,7 +2314,7 @@ extend(NumberFilter.prototype, {
             // Update slider min, max, step.
             this.slider.slider("option", "min", this.min);
             this.slider.slider("option", "max", this.max);
-            this.slider.slider("option", "step", get_slider_step(this.min, this.max));
+            this.slider.slider("option", "step", this.get_slider_step(this.min, this.max));
             // Refresh slider:
             // TODO: do we want to keep current values or reset to min/max?
             // Currently we reset values:
@@ -2194,31 +2325,12 @@ extend(NumberFilter.prototype, {
         }
     }
 });
-
+ 
 /**
  * Manages a set of filters.
  */
-var FiltersManager = function(track, filters_list) {
-    //
-    // Unpack filters from dict.
-    //
+var FiltersManager = function(track, filters_dict) {
     this.track = track;
-    this.filters = [];
-    for (var i = 0; i < filters_list.length; i++) {
-        var 
-            filter_dict = filters_list[i], 
-            name = filter_dict.name, 
-            type = filter_dict.type, 
-            index = filter_dict.index,
-            tool_id = filter_dict.tool_id,
-            tool_exp_name = filter_dict.tool_exp_name;
-        if (type === 'int' || type === 'float') {
-            this.filters[i] = 
-                new NumberFilter(this, name, index, tool_id, tool_exp_name);
-        } else {
-            console.log("ERROR: unsupported filter: ", name, type)
-        }
-    }
     
     //
     // Create HTML.
@@ -2240,11 +2352,24 @@ var FiltersManager = function(track, filters_list) {
     });
     
     //
-    // Create sliders.
+    // Unpack filters from dict.
     //
-    var manager = this;
-    for (var i = 0; i < this.filters.length; i++) {
-        this.parent_div.append(this.filters[i].parent_div);
+    this.filters = [];
+    if (filters_dict) {
+        for (var i = 0; i < filters_dict.length; i++) {
+            var 
+                filter_dict = filters_dict[i], 
+                name = filter_dict.name, 
+                type = filter_dict.type, 
+                index = filter_dict.index,
+                tool_id = filter_dict.tool_id,
+                tool_exp_name = filter_dict.tool_exp_name;
+            if (type === 'int' || type === 'float') {
+                this.add_filter( new NumberFilter(name, index, tool_id, tool_exp_name) );
+            } else {
+                console.log("ERROR: unsupported filter: ", name, type)
+            }
+        }
     }
     
     // Add button to filter complete dataset.
@@ -2261,15 +2386,42 @@ var FiltersManager = function(track, filters_list) {
 
 extend(FiltersManager.prototype, {
     /**
-     * Reset filters so that they do not impact track display.
+     * Add a filter to the manager.
      */
-    reset_filters: function() {
+    add_filter: function(filter) {
+        filter.manager = this;
+        this.parent_div.append(filter.parent_div);
+        this.filters.push(filter);  
+    },
+    /**
+     * Remove all filters from manager.
+     */
+    remove_all: function() {
+        this.filters = [];
+        this.parent_div.children().remove();
+    },
+    /**
+     * Initialize filters.
+     */ 
+    init_filters: function() {
         for (var i = 0; i < this.filters.length; i++) {
-            filter = this.filters[i];
+            var filter = this.filters[i];
+            filter.update_ui_elt();
+        }
+    },
+    /**
+     * Clear filters so that they do not impact track display.
+     */
+    clear_filters: function() {
+        for (var i = 0; i < this.filters.length; i++) {
+            var filter = this.filters[i];
             filter.slider.slider("option", "values", [filter.min, filter.max]);
         }
         this.alpha_filter = null;
         this.height_filter = null;
+        
+        // Hide icons for setting filters.
+        this.parent_div.find(".icon-button").hide();
     },
     run_on_dataset: function() {
         // Get or create dictionary item.
@@ -2777,10 +2929,15 @@ extend(Track.prototype, Drawable.prototype, {
             name: "filters_icon",
             title: "Filters",
             css_class: "filters-icon",
-            on_click_fn: function(track) {
-                // TODO: update tipsy text.            
-                track.filters_div.toggle();
-                track.filters_manager.reset_filters();
+            on_click_fn: function(drawable) {
+                // TODO: update tipsy text.
+                if (drawable.filters_div.is(":visible")) {
+                    drawable.filters_manager.clear_filters();    
+                }
+                else {
+                    drawable.filters_manager.init_filters();
+                }
+                drawable.filters_div.toggle();
             }
         },
         // Toggle track tool.
@@ -2975,7 +3132,7 @@ extend(Track.prototype, Drawable.prototype, {
     predraw_init: function() {}
 });
 
-var TiledTrack = function(name, view, container, prefs, filters_list, tool_dict, data_manager) {
+var TiledTrack = function(name, view, container, prefs, filters_dict, tool_dict, data_manager) {
     Track.call(this, name, view, container, prefs, data_manager);
 
     var track = this,
@@ -2985,10 +3142,8 @@ var TiledTrack = function(name, view, container, prefs, filters_list, tool_dict,
     moveable(track.container_div, track.drag_handle_class, ".group", track);
     
     // Attribute init.
-    this.filters_manager = new FiltersManager( this, (filters_list !== undefined ? filters_list : {}) );
-    // filters_available is determined by data, filters_visible is set by user.
+    this.filters_manager = new FiltersManager(this, filters_dict);
     this.filters_available = false;
-    this.filters_visible = false;
     this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(this, tool_dict) : undefined);
     this.tile_cache = new Cache(TILE_CACHE_SIZE);
     
