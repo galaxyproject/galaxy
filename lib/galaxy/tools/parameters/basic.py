@@ -486,7 +486,7 @@ class FTPFileToolParameter( ToolParameter ):
             return value
     def get_initial_value( self, trans, context ):
         return None
-        
+
 class HiddenToolParameter( ToolParameter ):
     """
     Parameter that takes one of two values. 
@@ -816,7 +816,7 @@ class SelectToolParameter( ToolParameter ):
             for t, v, s in options:
                 if v in value:
                     rval.append( t )
-        return "\n".join( rval ) + suffix    
+        return "\n".join( rval ) + suffix
     def get_dependencies( self ):
         """
         Get the *names* of the other params this param depends on.
@@ -1326,7 +1326,7 @@ class DataToolParameter( ToolParameter ):
     Nate's next pass at the dataset security stuff will dramatically alter this anyway.
     """
 
-    def __init__( self, tool, elem ):
+    def __init__( self, tool, elem, trans=None):
         ToolParameter.__init__( self, tool, elem )
         # Add metadata validator
         if not string_as_bool( elem.get( 'no_validation', False ) ):
@@ -1337,11 +1337,16 @@ class DataToolParameter( ToolParameter ):
         for extension in self.extensions:
             extension = extension.strip()
             if tool is None:
-                #This occurs for things such as unit tests
-                import galaxy.datatypes.registry
-                datatypes_registry = galaxy.datatypes.registry.Registry()
-                datatypes_registry.load_datatypes()
-                formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
+                if trans:
+                    # Must account for "Input Dataset" types, which while not a tool still need access to the real registry.
+                    # A handle to the transaction (and thus app) will be given by the module.
+                    formats.append( trans.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
+                else:
+                    #This occurs for things such as unit tests
+                    import galaxy.datatypes.registry
+                    datatypes_registry = galaxy.datatypes.registry.Registry()
+                    datatypes_registry.load_datatypes()
+                    formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
             else:
                 formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )
