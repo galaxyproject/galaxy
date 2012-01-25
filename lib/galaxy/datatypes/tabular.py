@@ -428,11 +428,6 @@ class Pileup( Tabular ):
         except:
             return False
 
-class Eland( Tabular ):
-    file_ext = 'eland'
-    
-    def sniff( self, filename ):
-        return False
 
 class ElandMulti( Tabular ):
     file_ext = 'elandmulti'
@@ -459,3 +454,132 @@ class Vcf( Tabular ):
             
     def get_track_type( self ):
         return "VcfTrack", {"data": "tabix", "index": "summary_tree"}
+
+class Eland( Tabular ):
+    """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""
+    file_ext = '_export.txt.gz'
+    MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=[], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="comment_lines", default=0, desc="Number of comments", readonly=True, visible=False )
+    MetadataElement( name="tiles", default=[], param=metadata.ListParameter, desc="Set of tiles", readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="reads", default=[], param=metadata.ListParameter, desc="Set of reads", readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="lanes", default=[], param=metadata.ListParameter, desc="Set of lanes", readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="barcodes", default=[], param=metadata.ListParameter, desc="Set of barcodes", readonly=True, visible=False, no_value=[] )
+    def __init__(self, **kwd):
+        """Initialize taxonomy datatype"""
+        Tabular.__init__( self, **kwd )
+        self.column_names = ['MACHINE', 'RUN_NO', 'LANE', 'TILE', 'X', 'Y',
+                             'INDEX', 'READ_NO', 'SEQ', 'QUAL', 'CHROM', 'CONTIG',
+                             'POSITION', 'STRAND', 'DESC', 'SRAS', 'PRAS', 'PART_CHROM'
+                             'PART_CONTIG', 'PART_OFFSET', 'PART_STRAND', 'FILT'
+                             ]
+    def make_html_table( self, dataset, skipchars=[] ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        try:
+            # Generate column header
+            out.append( '<tr>' )
+            for i, name in enumerate( self.column_names ):
+                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
+            # This data type requires at least 11 columns in the data
+            if dataset.metadata.columns - len( self.column_names ) > 0:
+                for i in range( len( self.column_names ), dataset.metadata.columns ):
+                    out.append( '<th>%s</th>' % str( i+1 ) )
+                out.append( '</tr>' )
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % exc
+        return out
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in ELAND export format
+        
+        A file in ELAND export format consists of lines of tab-separated data.
+        There is no header.
+        
+        Rules for sniffing as True:
+            There must be 22 columns on each line
+            LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
+            We will only check that up to the first 5 alignments are correctly formatted.
+        """
+        import gzip
+        try:
+            compress = is_gzip(filename)
+            if compress:
+               fh = gzip.GzipFile(filename, 'r')
+            else:
+               fh = open( filename )
+            count = 0
+            while True:
+                line = fh.readline()
+                line = line.strip()
+                if not line:
+                    break #EOF
+                if line: 
+                    linePieces = line.split('\t')
+                    if len(linePieces) != 22:
+                        return False
+                    try:
+                        if long(linePieces[1]) < 0:
+                            raise Exception('Out of range')
+                        if long(linePieces[2]) < 0:
+                            raise Exception('Out of range')
+                        if long(linePieces[3]) < 0:
+                            raise Exception('Out of range')
+                        check = int(linePieces[4])
+                        check = int(linePieces[5])
+                        # can get a lot more specific
+                    except ValueError:
+                        fh.close()
+                        return False
+                    count += 1
+                    if count == 5:
+                        break
+            if count > 0:
+                fh.close()
+                return True
+        except:
+            pass
+        fh.close()
+        return False
+
+    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 5, **kwd ):
+        if dataset.has_data():
+            compress = is_gzip(dataset.file_name)
+            if compress:
+               dataset_fh = gzip.GzipFile(dataset.file_name, 'r')
+            else:
+               dataset_fh = open( dataset.file_name )
+            lanes = {}
+            tiles = {}
+            barcodes = {}
+            reads = {}
+            #    # Should always read the entire file (until we devise a more clever way to pass metadata on)
+            #if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            #    # If the dataset is larger than optional_metadata, just count comment lines.
+            #    dataset.metadata.data_lines = None
+            #else:
+            #    # Otherwise, read the whole thing and set num data lines.
+            for i, line in enumerate(dataset_fh):
+                if line: 
+                    linePieces = line.split('\t')
+                    if len(linePieces) != 22:
+                        raise Exception('%s:%d:Corrupt line!' % (dataset.file_name,i))
+                    lanes[linePieces[2]]=1
+                    tiles[linePieces[3]]=1
+                    barcodes[linePieces[6]]=1
+                    reads[linePieces[7]]=1
+                pass
+            dataset.metadata.data_lines = i + 1
+            dataset_fh.close()
+            dataset.metadata.comment_lines = 0
+            dataset.metadata.columns = 21
+            dataset.metadata.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'str', 'int', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str']
+            dataset.metadata.lanes = lanes.keys()
+            dataset.metadata.tiles = ["%04d" % int(t) for t in tiles.keys()]
+            dataset.metadata.barcodes = filter(lambda x: x != '0', barcodes.keys()) + ['NoIndex' for x in barcodes.keys() if x == '0']
+            dataset.metadata.reads = reads.keys()
+    
+    

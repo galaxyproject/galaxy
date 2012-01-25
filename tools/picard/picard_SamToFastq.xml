@@ -1,10 +1,13 @@
-<tool id="picard_SamToFastq" name="SAM to FASTQ" version="1.56.0">
+<tool id="picard_SamToFastq" name="SAM to FASTQ" version="1.56.1" force_history_refresh="True">
   <description>creates a FASTQ file</description>
   <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
   <!-- Dan Blankenberg -->
-  <command>java -XX:DefaultMaxRAMFraction=1 -XX:+UseParallelGC
+  <command interpreter="python">picard_SamToFastq_wrapper.py
+    -p '
+    java -XX:DefaultMaxRAMFraction=1 -XX:+UseParallelGC
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/SamToFastq.jar"
     INPUT="${input_sam}"
+    VALIDATION_STRINGENCY="LENIENT"
     RE_REVERSE=${re_reverse}
     INCLUDE_NON_PF_READS=${include_non_pf_reads}
     #if str( $clipping_attribute ):
@@ -34,13 +37,26 @@
                 READ2_MAX_BASES_TO_WRITE="${single_paired_end_type.read2_max_bases_to_write}"
             #end if
         #end if
+        '
     #else:
-        #raise Exception( 'Per Read Group not yet supported.' )
         OUTPUT_PER_RG=true
-        OUTPUT_DIR="./picard_sam_to_fastq_tmp_dir/"
+        #if str( $single_paired_end_type.single_paired_end_type_selector ) == 'paired':
+            ' 
+            --read_group_file_2 "${output_fastq2}"
+            --file_id_2 "${output_fastq2.id}"
+            -p '
+            #if str( $single_paired_end_type.read2_trim ): 
+                READ2_TRIM="${single_paired_end_type.read2_trim}"
+            #end if
+            #if str( $single_paired_end_type.read2_max_bases_to_write ):
+                READ2_MAX_BASES_TO_WRITE="${single_paired_end_type.read2_max_bases_to_write}"
+            #end if
+        #end if
+        '
+        --read_group_file_1 "${output_fastq1}"
+        --new_files_path "${$__new_file_path__}"
+        --file_id_1 "${output_fastq1.id}"
     #end if
-  2&gt;&amp;1 
-  || echo "Error running SamToFastq" >&amp;2
   </command>
   <inputs>
     <param name="input_sam" type="data" format="sam,bam" label="BAM/SAM file" />
@@ -48,8 +64,7 @@
     <param name="read1_max_bases_to_write" type="integer" optional="True" value="" label="The maximum number of bases to write from read 1 after trimming." />
     <param name="output_per_read_group_selector" type="select" label="Output per read group">
       <option value="per_sam_file" selected="True">Per BAM/SAM file</option>
-      <!-- <option value="per_read_group">Per Read Group</option> -->
-      <validator type="expression" message="Per Read Group selection is not yet implemented">value == 'per_sam_file'</validator>
+      <option value="per_read_group">Per Read Group</option>
     </param>
     <conditional name="single_paired_end_type">
       <param name="single_paired_end_type_selector" type="select" label="Single or Paired end">
@@ -94,6 +109,22 @@
       <test>
           <param name="input_sam" value="bwa_wrapper_out3.sam" ftype="sam" />
           <param name="output_per_read_group_selector" value="per_sam_file" />
+          <param name="single_paired_end_type_selector" value="paired" />
+          <param name="read1_trim" value="" />
+          <param name="read1_max_bases_to_write" value="" />
+          <param name="read2_trim" value="" />
+          <param name="read2_max_bases_to_write" value="" />
+          <param name="re_reverse" value="True" />
+          <param name="include_non_pf_reads" value="False" />
+          <param name="clipping_action" value="" />
+          <param name="clipping_attribute" value="" />
+          <param name="include_non_primary_alignments" value="False" />
+          <output name="output_fastq1" file="bwa_wrapper_in2.fastqsanger" lines_diff="64"/> <!-- 16 unaligned fastq blocks not present in original sam file -->
+          <output name="output_fastq2" file="bwa_wrapper_in3.fastqsanger" lines_diff="64"/> <!-- 16 unaligned fastq blocks not present in original sam file -->
+      </test>
+      <test>
+          <param name="input_sam" value="bwa_wrapper_out3.sam" ftype="sam" />
+          <param name="output_per_read_group_selector" value="per_read_group" />
           <param name="single_paired_end_type_selector" value="paired" />
           <param name="read1_trim" value="" />
           <param name="read1_max_bases_to_write" value="" />

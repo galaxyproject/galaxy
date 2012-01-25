@@ -385,6 +385,7 @@
   <section name="NGS: GATK Tools (beta)" id="gatk">
     <label text="Alignment Utilities" id="gatk_bam_utilities"/>
     <tool file="gatk/depth_of_coverage.xml" />
+    <tool file="gatk/print_reads.xml" />
     
     <label text="Realignment" id="gatk_realignment" />
     <tool file="gatk/realigner_target_creator.xml" />
