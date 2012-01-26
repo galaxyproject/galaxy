@@ -811,7 +811,8 @@ class BBIDataProvider( TracksDataProvider ):
         result = []
 
         if summary:
-            mean = summary.sum_data / summary.valid_count
+            #mean = summary.sum_data / summary.valid_count
+            
 
             ## Standard deviation by bin, not yet used
             ## var = summary.sum_squares - mean
@@ -822,9 +823,9 @@ class BBIDataProvider( TracksDataProvider ):
             step_size = (end - start) / num_points
 
             for i in range( num_points ):
-                result.append( (pos, float_nan( mean[i] ) ) )
+                result.append( (pos, float_nan( summary.sum_data[i] ) ) )
                 pos += step_size
-            
+        
         return { 'data': result }
 
 class BigBedDataProvider( BBIDataProvider ):
