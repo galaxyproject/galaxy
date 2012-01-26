@@ -1549,6 +1549,7 @@ extend( View.prototype, DrawableCollection.prototype, {
                         drawable.init();
                     }
                 }
+                view.reference_track.init();
             }
             if (low !== undefined && high !== undefined) {
                 view.low = Math.max(low, 0);
@@ -3876,8 +3877,9 @@ var ReferenceTrack = function (view) {
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     build_header_div: function() {},
     init: function() {
+        this.data_manager.clear();
         // Enable by default because there should always be data when drawing track.
-        this.enabled = true;  
+        this.enabled = true;
     },
     can_draw: Drawable.prototype.can_draw,
     /**
@@ -5444,9 +5446,15 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             // TODO: this can be made much more efficient by computing the complete sequence
                             // to draw and then drawing it.
                             for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                if (this.prefs.show_differences && this.ref_seq) {
-                                    var ref_char = this.ref_seq[seq_start - tile_low + c];
-                                    if (!ref_char || ref_char.toLowerCase() === seq[c].toLowerCase()) {
+                                if (this.prefs.show_differences) {
+                                    if (this.ref_seq) {
+                                        var ref_char = this.ref_seq[seq_start - tile_low + c];
+                                        if (!ref_char || ref_char.toLowerCase() === seq[c].toLowerCase()) {
+                                            continue;
+                                        }
+                                    }
+                                    else {
+                                        // No reference so cannot show differences.
                                         continue;
                                     }
                                 }
