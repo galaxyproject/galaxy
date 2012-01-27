@@ -4,13 +4,19 @@ Split large file into multiple pieces for upload to S3.
 This parallelizes the task over available cores using multiprocessing.
 Code mostly taken form CloudBioLinux.
 """
+from __future__ import with_statement
+
 import os
+import sys
 import glob
 import subprocess
 import contextlib
 import functools
-import multiprocessing
-from multiprocessing.pool import IMapIterator
+
+if sys.version_info >= (2, 6):
+    # this is just to prevent unit tests from failing
+    import multiprocessing
+    from multiprocessing.pool import IMapIterator
 
 from galaxy import eggs
 eggs.require('boto')
