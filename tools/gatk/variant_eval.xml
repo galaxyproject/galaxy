@@ -1,4 +1,4 @@
-<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.6">
+<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.7">
   <description></description>
   <requirements>
       <requirement type="package" version="1.4">gatk</requirement>
@@ -495,7 +495,7 @@
     
   </inputs>
   <outputs>
-    <data format="tabular" name="output_table" label="${tool.name} on ${on_string} (table)" />
+    <data format="gatkreport" name="output_table" label="${tool.name} on ${on_string} (table)" />
     <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
   </outputs>
   <tests>
