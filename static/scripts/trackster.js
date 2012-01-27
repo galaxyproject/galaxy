@@ -1032,12 +1032,13 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
     action_icons_def: [
         Drawable.prototype.action_icons_def[0],
         Drawable.prototype.action_icons_def[1],
-        // Create composite track from group's tracks.
+        // Replace group with composite track.
         {
             name: "composite_icon",
             title: "Show composite track",
             css_class: "layers-stack",
             on_click_fn: function(group) {
+                $(".tipsy").remove();
                 group.show_composite_track();
             }
         },
@@ -1106,104 +1107,128 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         // Request a redraw of the content
         this.request_draw();
     },
-    update_icons: function() {        
+    update_icons: function() {
         //
-        // Determine if a composite track can be created. Current criteria:
-        // (a) all tracks are the same;
-        //      OR
-        // (b) there is a single FeatureTrack.
+        // Handle update when there are no tracks.
         //
-
-        /// All tracks the same?
-        var drawable,
-            same_type = true,
-            a_type = this.drawables[0].get_type(),
-            num_feature_tracks = 0;
-        for (var i = 0; i < this.drawables.length; i++) {
-            drawable = this.drawables[i]
-            if (drawable.get_type() !== a_type) {
-                can_composite = false;
-                break;
-            }
-            if (drawable instanceof FeatureTrack) {
-                num_feature_tracks++;
-            }
-        }
-        
-        if (same_type || num_feature_tracks === 1) {
-            this.action_icons.composite_icon.show();
-        }
-        else {
+        var num_drawables = this.drawables.length
+        if (num_drawables === 0) {
             this.action_icons.composite_icon.hide();
-            $(".tipsy").remove();
+            this.action_icons.filters_icon.hide();
         }
-        
-        //
-        // Set up group-level filtering and update filter icon.
-        //
-        if (num_feature_tracks > 1 && num_feature_tracks === this.drawables.length) {
-            //
-            // Find shared filters.
-            //
-            var 
-                shared_filters = {},
-                filter;
-            
-            // Init shared filters with filters from first drawable.
-            drawable = this.drawables[0];
-            for (var j = 0; j < drawable.filters_manager.filters.length; j++) {
-                filter = drawable.filters_manager.filters[j];
-                shared_filters[filter.name] = [filter];
+        else if (num_drawables === 1) {
+            if (this.drawables[0] instanceof CompositeTrack) {
+                this.action_icons.composite_icon.show();
             }
-            
-            // Create lists of shared filters.
-            for (var i = 1; i < this.drawables.length; i++) {
+            this.action_icons.filters_icon.hide();
+        }
+        else { // There are 2 or more tracks.
+            //
+            // Determine if a composite track can be created. Current criteria:
+            // (a) all tracks are the same;
+            //      OR
+            // (b) there is a single FeatureTrack.
+            //
+
+            /// All tracks the same?
+            var drawable,
+                same_type = true,
+                a_type = this.drawables[0].get_type(),
+                num_feature_tracks = 0;
+            for (var i = 0; i < num_drawables; i++) {
                 drawable = this.drawables[i]
+                if (drawable.get_type() !== a_type) {
+                    can_composite = false;
+                    break;
+                }
+                if (drawable instanceof FeatureTrack) {
+                    num_feature_tracks++;
+                }
+            }
+        
+            if (same_type || num_feature_tracks === 1) {
+                this.action_icons.composite_icon.show();
+            }
+            else {
+                this.action_icons.composite_icon.hide();
+                $(".tipsy").remove();
+            }
+        
+            //
+            // Set up group-level filtering and update filter icon.
+            //
+            if (num_feature_tracks > 1 && num_feature_tracks === this.drawables.length) {
+                //
+                // Find shared filters.
+                //
+                var 
+                    shared_filters = {},
+                    filter;
+            
+                // Init shared filters with filters from first drawable.
+                drawable = this.drawables[0];
                 for (var j = 0; j < drawable.filters_manager.filters.length; j++) {
                     filter = drawable.filters_manager.filters[j];
-                    if (filter.name in shared_filters) {
-                        shared_filters[filter.name].push(filter);
+                    shared_filters[filter.name] = [filter];
+                }
+            
+                // Create lists of shared filters.
+                for (var i = 1; i < this.drawables.length; i++) {
+                    drawable = this.drawables[i];
+                    for (var j = 0; j < drawable.filters_manager.filters.length; j++) {
+                        filter = drawable.filters_manager.filters[j];
+                        if (filter.name in shared_filters) {
+                            shared_filters[filter.name].push(filter);
+                        }
                     }
                 }
-            }
             
-            //
-            // Create filters for shared filters manager. Shared filters manager is group's
-            // manager.
-            //
-            this.filters_manager.remove_all();
-            var 
-                filters,
-                new_filter,
-                min,
-                max;
-            for (var filter_name in shared_filters) {
-                filters = shared_filters[filter_name];
-                if (filters.length === num_feature_tracks) {
-                    // Add new filter to represent shared filters.
-                    new_filter = new NumberFilter(filters[0].name, filters[0].index);
-                    this.filters_manager.add_filter(new_filter);
+                //
+                // Create filters for shared filters manager. Shared filters manager is group's
+                // manager.
+                //
+                this.filters_manager.remove_all();
+                var 
+                    filters,
+                    new_filter,
+                    min,
+                    max;
+                for (var filter_name in shared_filters) {
+                    filters = shared_filters[filter_name];
+                    if (filters.length === num_feature_tracks) {
+                        // Add new filter to represent shared filters.
+                        new_filter = new NumberFilter(filters[0].name, filters[0].index);
+                        this.filters_manager.add_filter(new_filter);
+                    }
                 }
-            }
             
-            // Show/hide icon based on filter availability.
-            if (this.filters_manager.filters.length > 0) {   
-                this.action_icons.filters_icon.show();
+                // Show/hide icon based on filter availability.
+                if (this.filters_manager.filters.length > 0) {   
+                    this.action_icons.filters_icon.show();
+                }
+                else {
+                    this.action_icons.filters_icon.hide();
+                }
             }
             else {
                 this.action_icons.filters_icon.hide();
             }
         }
-        else {
-            this.action_icons.filters_icon.hide();
-        }
     },
     /**
-     * Add composite track to group that includes all of group's tracks.
+     * Replace group with a single composite track that includes all group's tracks.
      */
     show_composite_track: function() {
-        var composite_track = new CompositeTrack("Composite Track", this.view, this, this.drawables);
-        this.add_drawable(composite_track);
+        // Create composite track name.
+        var drawables_names = [];
+        for (var i = 0; i < this.drawables.length; i++) {
+            drawables_names.push(this.drawables[i].name);
+        }
+        var new_track_name = "Composite Track of " + this.drawables.length + " tracks (" + drawables_names.join(", ") + ")";
+        
+        // Replace this group with composite track.
+        var composite_track = new CompositeTrack(new_track_name, this.view, this.view, this.drawables);
+        var index = this.container.replace_drawable(this, composite_track, true);
         composite_track.request_draw();
     },
     add_drawable: function(drawable) {
@@ -1549,7 +1574,9 @@ extend( View.prototype, DrawableCollection.prototype, {
                         drawable.init();
                     }
                 }
-                view.reference_track.init();
+                if (view.reference_track) {
+                    view.reference_track.init();
+                }
             }
             if (low !== undefined && high !== undefined) {
                 view.low = Math.max(low, 0);
@@ -3639,6 +3666,19 @@ var CompositeTrack = function(name, view, container, drawables) {
 };
 
 extend(CompositeTrack.prototype, TiledTrack.prototype, {
+    action_icons_def:
+    [
+        // Create composite track from group's tracks.
+        {
+            name: "composite_icon",
+            title: "Show individual tracks",
+            css_class: "layers-stack",
+            on_click_fn: function(track) {
+                $(".tipsy").remove();
+                track.show_group();
+            }
+        }
+    ].concat(TiledTrack.prototype.action_icons_def),
     // HACK: CompositeTrack should inherit from DrawableCollection as well.
     /** 
      * Returns representation of object in a dictionary for easy saving. 
@@ -3801,6 +3841,25 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         
         // Returned Deferred that is resolved when tile can be drawn.
         return can_draw;
+    },
+    /**
+     * Replace this track with group that includes individual tracks.
+     */
+    show_group: function() {
+        // Create group with individual tracks.
+        var 
+            group = new DrawableGroup(this.name, this.view, this.container),
+            track;
+        for (var i = 0; i < this.drawables.length; i++) {
+            track = this.drawables[i]
+            group.add_drawable(track);
+            track.container = group;
+            group.content_div.append(track.container_div)
+        }
+        
+        // Replace track with group.
+        var index = this.container.replace_drawable(this, group, true);
+        group.request_draw();
     },
     /**
      * Actions taken before drawing a tile.
