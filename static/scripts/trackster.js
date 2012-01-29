@@ -3008,32 +3008,43 @@ extend(Track.prototype, Drawable.prototype, {
                         .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         return header_div;
     },
+    /**
+     * Set track's modes and update mode icon popup.
+     */
+    set_display_modes: function(new_modes, init_mode) {
+        // Set modes, init mode.
+        this.display_modes = new_modes;
+        this.mode = (init_mode ? init_mode : 
+                     (this.config && this.config.values['mode'] ? 
+                      this.config.values['mode'] : this.display_modes[0])
+                    );
+        
+        this.action_icons.mode_icon.attr("title", "Set display mode (now: " + this.mode + ")");
+
+        // Setup popup menu for changing modes.
+        var 
+            track = this,
+            mode_mapping = {};
+        for (var i = 0, len = track.display_modes.length; i < len; i++) {
+            var mode = track.display_modes[i];
+            mode_mapping[mode] = function(mode) {
+                return function() { 
+                    track.change_mode(mode);
+                    // HACK: the popup menu messes with the track's hover event, so manually show/hide
+                    // icons div for now.
+                    track.icons_div.show(); 
+                    track.container_div.mouseleave(function() { track.icons_div.hide(); } ); };
+            }(mode);
+        }
+
+        make_popupmenu(this.action_icons.mode_icon, mode_mapping);
+    },
     build_action_icons: function() {
         Drawable.prototype.build_action_icons.call(this, this.action_icons_def);
         
         // Set up behavior for modes popup.
-        var track = this;
-        if (track.display_modes !== undefined) {
-            var init_mode = (track.config && track.config.values['mode'] ? 
-                             track.config.values['mode'] : track.display_modes[0]);
-            track.mode = init_mode;
-            
-            this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
-
-            var mode_mapping = {};
-            for (var i = 0, len = track.display_modes.length; i < len; i++) {
-                var mode = track.display_modes[i];
-                mode_mapping[mode] = function(mode) {
-                    return function() { 
-                        track.change_mode(mode);
-                        // HACK: the popup menu messes with the track's hover event, so manually show/hide
-                        // icons div for now.
-                        track.icons_div.show(); 
-                        track.container_div.mouseleave(function() { track.icons_div.hide(); } ); };
-                }(mode);
-            }
-
-            make_popupmenu(this.action_icons.mode_icon, mode_mapping);
+        if (this.display_modes !== undefined) {
+            this.set_display_modes(this.display_modes);
         }
     },
     /**
@@ -3112,6 +3123,7 @@ extend(Track.prototype, Drawable.prototype, {
        
         // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
         // about track status.
+        var init_deferred = $.Deferred();
         $.getJSON(converted_datasets_state_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
                  function (result) {
             if (!result || result === "error" || result.kind === "error") {
@@ -3144,15 +3156,20 @@ extend(Track.prototype, Drawable.prototype, {
                     track.content_div.css( "height", track.height_px + "px" );
                     track.enabled = true;
                     // predraw_init may be asynchronous, wait for it and then draw
-                    $.when(track.predraw_init()).done(function() { 
+                    $.when(track.predraw_init()).done(function() {
+                        init_deferred.resolve();
                         track.container_div.removeClass("nodata error pending");
                         track.request_draw();
                     });
+                }
+                else {
+                    init_deferred.resolve();
                 }
             }
         });
         
         this.update_icons();
+        return init_deferred;
     },
     /**
      * Additional initialization required before drawing track for the first time.
@@ -3632,9 +3649,6 @@ extend(LabelTrack.prototype, Track.prototype, {
  * A tiled track composed of multiple other tracks.
  */
 var CompositeTrack = function(name, view, container, drawables) {
-    // HACK: modes should be static class vars for most tracks and should update as
-    // needed for CompositeTracks
-    this.display_modes = drawables[0].display_modes;
     TiledTrack.call(this, name, view, container);
     
     // Init drawables; each drawable is a copy so that config/preferences 
@@ -3656,6 +3670,12 @@ var CompositeTrack = function(name, view, container, drawables) {
             }
         }
         this.enabled = true;
+    }
+    
+    // HACK: modes should be static class vars for most tracks and should update as
+    // needed for CompositeTracks
+    if (this.drawables.length !== 0) {
+        this.set_display_modes(this.drawables[0].display_modes, this.drawables[0].mode);
     }
     
     this.update_icons();
@@ -3705,9 +3725,13 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 drawable_type = drawable_dict['track_type']; 
             }
             // No container for tracks so that it is not made visible.
-            drawable = addable_objects[ drawable_type ].prototype.from_dict( drawable_dict );
-            collection.add_drawable( drawable );
+            drawable = addable_objects[ drawable_type ].prototype.from_dict(drawable_dict);
+            collection.add_drawable(drawable);
         }
+        
+        //  HACKish: set mode using the first drawable. Should use config object and set mode from there.
+        collection.set_display_modes(collection.drawables[0].display_modes, collection.drawables[0].mode);
+        
         return collection;
     },
     change_mode: function(new_mode) {
@@ -3716,10 +3740,22 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             this.drawables[i].change_mode(new_mode);
         }
     },
+    /**
+     * Initialize component tracks and draw composite track when all components are initialized.
+     */
     init: function() {
-        // FIXME: probably should enable based on whether/how many drawaables are enabled.
-        this.enabled = true;
-        this.request_draw();
+        // Init components.
+        var init_deferreds = [];
+        for (var i = 0; i < this.drawables.length; i++) {
+            init_deferreds.push(this.drawables[i].init());
+        }
+        
+        // Draw composite when all tracks available.
+        var track = this;
+        $.when.apply($, init_deferreds).then(function() {
+            track.enabled = true;
+            track.request_draw();
+        });
     },
     update_icons: function() {
         // For now, hide filters and tool.
@@ -3854,7 +3890,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             track = this.drawables[i]
             group.add_drawable(track);
             track.container = group;
-            group.content_div.append(track.container_div)
+            group.content_div.append(track.container_div);
         }
         
         // Replace track with group.
@@ -4092,12 +4128,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Draw LineTrack tile.
      */
     draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale) {
-        // FIXME: is this needed?
-        if (this.vertical_range === undefined) {
-            return;
-        }
-
-        // Paint onto canvas.        
+        // Paint onto canvas.
         var 
             canvas = ctx.canvas,
             tile_bounds = this._get_tile_bounds(tile_index, resolution),
