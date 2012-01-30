@@ -284,9 +284,18 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
         owner = get_repository_owner( tmp_url )
     if tool_section:
         root_elem = Element( 'section' )
-        root_elem.attrib[ 'name' ] = tool_section.name
-        root_elem.attrib[ 'id' ] = tool_section.id
-        root_elem.attrib[ 'version' ] = tool_section.version
+        if tool_section.name is None:
+            root_elem.attrib[ 'name' ] = ''
+        else:
+            root_elem.attrib[ 'name' ] = tool_section.name
+        if tool_section.id is None:
+            root_elem.attrib[ 'id' ] = ''
+        else:
+            root_elem.attrib[ 'id' ] = tool_section.id
+        if tool_section.version is None:
+            root_elem.attrib[ 'version' ] = ''
+        else:
+            root_elem.attrib[ 'version' ] = tool_section.version
     for repository_tool_tup in repository_tools_tups:
         tool_file_path, guid, tool = repository_tool_tup
         if tool_section:
