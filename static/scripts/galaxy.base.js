@@ -345,7 +345,7 @@ function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish
     }
     
     // Create div for element.
-    var container = $("<div/>").addClass("editable-text").text(text).click(function() {
+    var container = $("<div/>").addClass("editable-text").text(text).click(function(e) {
         // If there's already an input element, editing is active, so do nothing.
         if ($(this).children(":input").length > 0) {
             return;
@@ -411,7 +411,10 @@ function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish
         }
         input_elt.focus();
         input_elt.select();
-    }); 
+        
+        // Do not propogate to elements below b/c that blurs input and prevents it from being used.
+        e.stopPropagation();
+    });
     return container;
 }
 

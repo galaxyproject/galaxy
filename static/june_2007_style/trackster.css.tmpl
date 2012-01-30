@@ -121,9 +121,15 @@
 }
 
 .yaxislabel {
-    color: #777;
-    z-index: 100;
+    /* Needs to be > canvas z-index. */
+    z-index: 101;
 }
+.yaxislabel.histogram-max {
+    position: absolute;
+    top: 24px;
+    left: 10px;
+}
+
 /* Line track needs borders to show range */
 .line-track .track-content {
     border-top: 1px solid #eee;

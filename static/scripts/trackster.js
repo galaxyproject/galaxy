@@ -4163,6 +4163,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
               help: 'Show the number of items in each bin when drawing summary histogram' },
+            { key: 'histogram_max', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
             { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
                 options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -4267,6 +4268,26 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 }
                 track.update_icons();
             }
+        }
+        
+        //
+        // If using SummaryTree tiles, show max and make it editable.
+        //
+        this.container_div.find(".yaxislabel").remove();
+        var first_tile = tiles[0];
+        if (first_tile instanceof SummaryTreeTile) {
+            var 
+                max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
+                max_label = 
+                    get_editable_text_elt(max_val, false, 12, 0, function(new_val) {
+                        var new_val = parseFloat(new_val);
+                        track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
+                        track.tile_cache.clear();
+                        track.request_draw();
+                    })
+                    .addClass('yaxislabel histogram-max')
+                    .css("color", this.prefs.label_color);
+            this.container_div.prepend(max_label);
         }
     },
     update_auto_mode: function( mode ) {
@@ -4450,15 +4471,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             left_offset = this.left_offset;
         
         // Drawing the summary tree (feature coverage histogram)
-        if (mode === "summary_tree" || mode === "Histogram") {
-            // Add label to container div showing maximum count
-            // TODO: this shouldn't be done at the tile level
-            this.container_div.find(".yaxislabel").remove();
-            var max_label = $("<div />").addClass('yaxislabel');
-            max_label.text(result.max);
-            max_label.css({ position: "absolute", top: "24px", left: "10px", color: this.prefs.label_color });
-            max_label.prependTo(this.container_div);
-            
+        if (mode === "summary_tree" || mode === "Histogram") {            
             // Get summary tree data if necessary and set max if there is one.
             if (result.dataset_type != "summary_tree") {
                 var st_data = this.get_summary_tree_data(result.data, tile_low, tile_high, 200);
@@ -4516,7 +4529,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         ctx.fillStyle = this.prefs.block_color;
         ctx.font = ctx.canvas.manager.default_font;
         ctx.textAlign = "right";
-        this.container_div.find(".yaxislabel").remove();
         
         if (result.data) {
             // Draw features.
@@ -4587,6 +4599,7 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+            { key: 'histogram_max', label: 'Histogram maximum', type: 'float', default_value: null, help: 'Clear value to set automatically' },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         ], 
         saved_values: prefs,
@@ -4894,7 +4907,7 @@ SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
     var view_start = this.view_start,
         view_range = this.view_end - this.view_start,
         points = this.data.data,
-        max = this.data.max,
+        max = (this.prefs.histogram_max ? this.prefs.histogram_max : this.data.max),
         // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
         // start. However, height of each rectangle is relative to required_height; hence, the
         // max rectangle is required_height.
