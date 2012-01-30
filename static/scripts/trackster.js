@@ -1852,7 +1852,7 @@ var Tool = function(track, tool_dict) {
             this.params[this.params.length] = 
                 new NumberParameter(name, label, html, value, param_dict.min, param_dict.max);
         }
-        else if (type == "select") {
+        else if (type === "select") {
             this.params[this.params.length] = new ToolParameter(name, label, html, value);
         }
         else {
@@ -2598,7 +2598,7 @@ extend(DrawableConfig.prototype, {
                 } else if ( param.type === 'text' ) {
                     row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select() }));
                 // Draw paramter as select area
-                } else if ( param.type == 'select' ) {
+                } else if ( param.type === 'select' ) {
                     var select = $('<select />').attr("id", id);
                     for ( var i = 0; i < param.options.length; i++ ) {
                         $("<option/>").text( param.options[i].label ).attr( "value", param.options[i].value ).appendTo( select );
@@ -2866,7 +2866,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
                     row = $("<tr/>").appendTo(table);
                     $("<th/>").appendTo(row).text(key);
                     $("<td/>").attr("align", "left").appendTo(row)
-                              .text(typeof(value) == 'number' ? round(value, 2) : value);
+                              .text(typeof(value) === 'number' ? round(value, 2) : value);
                 }
                 popup.append( $("<div class='feature-popup-inner'>").append( table ) ); 
                 popups[feature_uid] = popup;
@@ -4195,7 +4195,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
 };
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     set_painter_from_config: function() {
-        if ( this.config.values['connector_style'] == 'arcs' ) {
+        if ( this.config.values['connector_style'] === 'arcs' ) {
             this.painter = painters.ArcLinkedFeaturePainter;
         } else {
             this.painter = painters.LinkedFeaturePainter;
@@ -4211,7 +4211,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var track = this;
                 
         // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
-        if (track.mode == "Histogram") {
+        if (track.mode === "Histogram") {
             // Get global max.
             var global_max = -1;
             for (var i = 0; i < tiles.length; i++) {
@@ -4292,10 +4292,10 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     },
     update_auto_mode: function( mode ) {
         var mode;
-        if ( this.mode == "Auto" ) {
-            if ( mode == "no_detail" ) {
+        if ( this.mode === "Auto" ) {
+            if ( mode === "no_detail" ) {
                 mode = "feature spans";
-            } else if ( mode == "summary_tree" ) {
+            } else if ( mode === "summary_tree" ) {
                 mode = "coverage histogram";
             }
             this.action_icons.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
@@ -5184,7 +5184,7 @@ extend(FeaturePainter.prototype, {
                 slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
                 
             // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
-            if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode == "Dense" || slot !== null) ) {
+            if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode === "Dense" || slot !== null) ) {
                 x_draw_coords = this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, width);
                 feature_mapper.map_feature_data(feature, slot, x_draw_coords[0], x_draw_coords[1]);
             }
@@ -5389,7 +5389,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                         var block_thick_start = Math.max(block_start, thick_start),
                             block_thick_end = Math.min(block_end, thick_end);
                         ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
-                        if ( feature_blocks.length == 1 && mode == "Pack") {
+                        if ( feature_blocks.length === 1 && mode === "Pack") {
                             // Exactly one block means we have no introns, but do have a distinct "thick" region,
                             // draw arrows over it if in pack mode
                             if (feature_strand === "+") {
@@ -5678,7 +5678,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 ctx.fillText(data[0], data[1], data[2]);
                 ctx.restore();
             }
-            else if (type == "triangle") {
+            else if (type === "triangle") {
                 drawDownwardEquilateralTriangle(ctx, data[0], data[1], data[2]);
             }
         }
