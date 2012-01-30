@@ -958,7 +958,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
      */
     add_drawable_before: function(drawable, other) {
         var index = this.drawables.indexOf(other);
-        if (index != -1) {
+        if (index !== -1) {
             this.drawables.splice(index, 0, drawable);
             return true;
         }
@@ -982,7 +982,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
      */
     remove_drawable: function(drawable) {
         var index = this.drawables.indexOf(drawable);
-        if (index != -1) {
+        if (index !== -1) {
             // Found drawable to remove.
             this.drawables.splice(index, 1);
             drawable.container = null;
@@ -995,7 +995,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
      */
     move_drawable: function(drawable, new_position) {
         var index = this.drawables.indexOf(drawable);
-        if (index != -1) {
+        if (index !== -1) {
             // Remove from current position:
             this.drawables.splice(index, 1);
             // insert into new position:
@@ -2328,7 +2328,7 @@ extend(NumberFilter.prototype, {
      */
     update_ui_elt: function () {
         // Only show filter if min != max because filter is not useful otherwise.
-        if (this.min != this.max) {
+        if (this.min !== this.max) {
             this.parent_div.show();
         }
         else {
@@ -2473,11 +2473,11 @@ extend(FiltersManager.prototype, {
             filter = this.filters[i];
             if (filter.tool_id) {
                 // Add filtering conditions if filter low/high are set.
-                if (filter.min != filter.low) {
+                if (filter.min !== filter.low) {
                     tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
                     tool_filter_conditions[tool_filter_conditions.length] = filter.tool_exp_name + " >= " + filter.low;
                 }
-                if (filter.max != filter.high) {
+                if (filter.max !== filter.high) {
                     tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
                     tool_filter_conditions[tool_filter_conditions.length] = filter.tool_exp_name + " <= " + filter.high;
                 }
@@ -4473,7 +4473,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // Drawing the summary tree (feature coverage histogram)
         if (mode === "summary_tree" || mode === "Histogram") {            
             // Get summary tree data if necessary and set max if there is one.
-            if (result.dataset_type != "summary_tree") {
+            if (result.dataset_type !== "summary_tree") {
                 var st_data = this.get_summary_tree_data(result.data, tile_low, tile_high, 200);
                 if (result.max) {
                     st_data.max = result.max;
