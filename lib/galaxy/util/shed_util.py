@@ -166,6 +166,9 @@ def generate_metadata( toolbox, relative_install_dir, repository_clone_url, tool
     datatypes_config = None
     # Keep track of the section in the tool panel in which this repository's tools will be contained.
     if tool_section_dict:
+        for k, v in tool_section_dict.items():
+            if v is None:
+                tool_section_dict[ k ] = ''
         metadata_dict[ 'tool_panel_section' ] = tool_section_dict
     else:
         metadata_dict[ 'tool_panel_section' ] = dict( id='', version='', name='' )
@@ -604,9 +607,18 @@ def load_repository_contents( app, repository_name, description, owner, changese
     distribution but are now in the main Galaxy tool shed.
     """
     if tool_section:
-        section_id = tool_section.id
-        section_version = tool_section.version
-        section_name = tool_section.name
+        if tool_section.id is None:
+            section_id = ''
+        else:
+            section_id = tool_section.id
+        if tool_section.version is None:
+            section_version = ''
+        else:
+            section_version = tool_section.version
+        if tool_section.name is None:
+            section_name = ''
+        else:
+            section_name = tool_section.name
     else:
         section_id = ''
         section_version = ''

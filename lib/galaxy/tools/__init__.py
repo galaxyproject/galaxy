@@ -192,7 +192,19 @@ class ToolBox( object ):
                         else:
                             # The tool_panel_section was introduced late, so set it's value if its missing in the metadata.
                             if section:
-                                tool_panel_section = dict( id=section.id, version=section.version, name=section.name )
+                                if section.id is None:
+                                    section_id = ''
+                                else:
+                                    section_id = section.id
+                                if section.version is None:
+                                    section_version = ''
+                                else:
+                                    section_version = section.version
+                                if section.name is None:
+                                    section_name = ''
+                                else:
+                                    section_name = section.name
+                                tool_panel_section = dict( id=section_id, version=section_version, name=section_name )
                                 update_needed = True
                             else:
                                 tool_panel_section = dict( id='', version='', name='' )
