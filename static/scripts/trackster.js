@@ -4032,11 +4032,8 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
         onchange: function() {
             track.set_name(track.prefs.name);
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
-            // Update the y-axis
-            $('#linetrack_' + track.dataset_id + '_minval').text(track.prefs.min_value);
-            $('#linetrack_' + track.dataset_id + '_maxval').text(track.prefs.max_value);
-            track.tile_cache.clear();
-            track.request_draw();
+            track.set_min_value(track.prefs.min_value);
+            track.set_max_value(track.prefs.max_value);
         }
     });
 
@@ -4047,6 +4044,24 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.add_resize_handle();
 };
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    /**
+     * Set track minimum value.
+     */
+    set_min_value: function(new_val) {
+        this.prefs.min_value = new_val;
+        $('#linetrack_' + this.dataset_id + '_minval').text(this.prefs.min_value);
+        this.tile_cache.clear();
+        this.request_draw();
+    },
+    /**
+     * Set track maximum value.
+     */
+    set_max_value: function(new_val) {
+        this.prefs.max_value = new_val;
+        $('#linetrack_' + this.dataset_id + '_maxval').text(this.prefs.max_value);
+        this.tile_cache.clear();
+        this.request_draw();
+    },
     add_resize_handle: function () {
         // Add control for resizing
         // Trickery here to deal with the hovering drag handle, can probably be
@@ -4114,14 +4129,21 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             // Draw y-axis labels if necessary
             track.container_div.find(".yaxislabel").remove();
             
-            var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track.dataset_id + '_minval').text(round(track.prefs.min_value, 3));
-            var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track.dataset_id + '_maxval').text(round(track.prefs.max_value, 3));
-            
-            max_label.css({ position: "absolute", top: "24px", left: "10px" });
-            max_label.prependTo(track.container_div);
-    
-            min_label.css({ position: "absolute", bottom: "2px", left: "10px" });
-            min_label.prependTo(track.container_div);
+            // Add min, max labels.
+            var min_label = get_editable_text_elt(round(track.prefs.min_value, 3), false, 6, null, function(new_val) {
+                                var new_val = parseFloat(new_val);
+                                if (!isNaN(new_val)) {
+                                    track.set_min_value(new_val);
+                                }
+                            } ).addClass('yaxislabel bottom').attr("id", 'linetrack_' + track.dataset_id + '_minval')
+                               .prependTo(track.container_div),
+                max_label = get_editable_text_elt(round(track.prefs.max_value, 3), false, 6, null, function(new_val) {
+                                var new_val = parseFloat(new_val);
+                                if (!isNaN(new_val)) {
+                                    track.set_max_value(new_val);
+                                }
+                            } ).addClass('yaxislabel top').attr("id", 'linetrack_' + track.dataset_id + '_maxval')
+                               .prependTo(track.container_div);
         });
     },
     /**
@@ -4285,7 +4307,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                         track.tile_cache.clear();
                         track.request_draw();
                     })
-                    .addClass('yaxislabel histogram-max')
+                    .addClass('yaxislabel top')
                     .css("color", this.prefs.label_color);
             this.container_div.prepend(max_label);
         }
