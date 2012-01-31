@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
-import os, sys
+import os, sys, logging
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
+
+log = logging.getLogger()
+log.setLevel( 10 )
+log.addHandler( logging.StreamHandler( sys.stdout ) )
 
 from galaxy import eggs
 import pkg_resources  
@@ -15,9 +19,12 @@ from datetime import datetime, timedelta
 from time import strftime
 from optparse import OptionParser
 
+import galaxy.config
 import galaxy.model.mapping
 import sqlalchemy as sa
 from galaxy.model.orm import and_, eagerload
+from galaxy.objectstore import build_object_store_from_config
+from galaxy.exceptions import ObjectNotFound
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -83,18 +90,15 @@ def main():
     if options.remove_from_disk and options.info_only:
         parser.error( "remove_from_disk and info_only are mutually exclusive" )
     
-    conf_parser = ConfigParser.ConfigParser( {'here':os.getcwd()} )
-    conf_parser.read( ini_file )
-    configuration = {}
-    for key, value in conf_parser.items( "app:main" ):
-        configuration[key] = value
+    config_parser = ConfigParser.ConfigParser( {'here':os.getcwd()} )
+    config_parser.read( ini_file )
+    config_dict = {}
+    for key, value in config_parser.items( "app:main" ):
+        config_dict[key] = value
+
+    config = galaxy.config.Configuration( **config_dict )
     
-    if 'database_connection' in configuration:
-        database_connection = configuration['database_connection']
-    else:
-        database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % configuration["database_file"]
-    file_path = configuration.get('file_path', "database/files")
-    app = CleanupDatasetsApplication( database_connection=database_connection, file_path=file_path )
+    app = CleanupDatasetsApplication( config )
     cutoff_time = datetime.utcnow() - timedelta( days=options.days )
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     
@@ -121,6 +125,7 @@ def main():
     elif options.delete_datasets:
         delete_datasets( app, cutoff_time, options.remove_from_disk, info_only = options.info_only, force_retry = options.force_retry )
     
+    app.shutdown()
     sys.exit(0)
 
 def delete_userless_histories( app, cutoff_time, info_only = False, force_retry = False ):
@@ -474,6 +479,8 @@ def _purge_dataset( app, dataset, remove_from_disk, info_only = False ):
             dataset.purged = True
             app.sa_session.add( dataset )
             app.sa_session.flush()
+        except ObjectNotFound:
+            print "Dataset %i cannot be found in the object store" % dataset.id
         except Exception, exc:
             print "Error attempting to purge data file: ", dataset.file_name, " error: ", str( exc )
     else:
@@ -497,15 +504,12 @@ def _purge_folder( folder, app, remove_from_disk, info_only = False ):
 
 class CleanupDatasetsApplication( object ):
     """Encapsulates the state of a Universe application"""
-    def __init__( self, database_connection=None, file_path=None ):
-        if database_connection is None:
-            raise Exception( "CleanupDatasetsApplication requires a database_connection value" )
-        if file_path is None:
-            raise Exception( "CleanupDatasetsApplication requires a file_path value" )
-        self.database_connection = database_connection
-        self.file_path = file_path
+    def __init__( self, config ):
+        if config.database_connection is None:
+            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
+        self.object_store = build_object_store_from_config( config )
         # Setup the database engine and ORM
-        self.model = galaxy.model.mapping.init( self.file_path, self.database_connection, engine_options={}, create_tables=False )
+        self.model = galaxy.model.mapping.init( config.file_path, config.database_connection, engine_options={}, create_tables=False, object_store=self.object_store )
     @property
     def sa_session( self ):
         """
@@ -514,5 +518,7 @@ class CleanupDatasetsApplication( object ):
         to allow migration toward a more SQLAlchemy 0.4 style of use.
         """
         return self.model.context.current
+    def shutdown( self ):
+        self.object_store.shutdown()
 
 if __name__ == "__main__": main()
