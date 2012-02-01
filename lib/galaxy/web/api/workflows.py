@@ -11,6 +11,21 @@ from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.workflow.modules import module_factory
 from galaxy.jobs.actions.post import ActionBox
 
+# ---------------------------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------------------------- #
+# ---- RPARK EDITS ---- #
+import pkg_resources
+pkg_resources.require( "simplejson" )
+from galaxy import model
+from galaxy.web.controllers.workflow import attach_ordered_steps
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.workflow.modules import *
+from galaxy.model.item_attrs import *
+
+# ---------------------------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------------------------- # 
+
+
 log = logging.getLogger(__name__)
 
 class WorkflowsAPIController(BaseAPIController):
