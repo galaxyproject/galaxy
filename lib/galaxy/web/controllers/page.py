@@ -23,7 +23,7 @@ class PageListGrid( grids.Grid ):
     title = "Pages"
     model_class = model.Page
     default_filter = { "published" : "All", "tags" : "All", "title" : "All", "sharing" : "All" }
-    default_sort_key = "-create_time"
+    default_sort_key = "-update_time"
     columns = [
         grids.TextColumn( "Title", key="title", attach_popup=True, filterable="advanced" ),
         URLColumn( "Public URL" ),
