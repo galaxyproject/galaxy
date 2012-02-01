@@ -970,7 +970,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 
                 # Set metadata.
                 if trans.app.config.set_metadata_externally:
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':new_dataset } )
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':new_dataset }, overwrite=False )
                 else:
                     message = 'Attributes updated'
                     new_dataset.set_meta()
