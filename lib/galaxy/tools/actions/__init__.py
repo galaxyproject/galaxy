@@ -193,12 +193,15 @@ class DefaultToolAction( object ):
             incoming[ "chromInfo" ] = db_dataset.file_name
         else:
             # For custom builds, chrom info resides in converted dataset; for built-in builds, chrom info resides in tool-data/shared.
+            chrom_info = None
             if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in trans.user.preferences[ 'dbkeys' ] ):
                 # Custom build.
                 custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
-                build_fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( custom_build_dict[ 'fasta' ] )
-                chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
-            else:
+                if 'fasta' in custom_build_dict:
+                    build_fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( custom_build_dict[ 'fasta' ] )
+                    chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
+            
+            if not chrom_info:
                 # Default to built-in build.
                 chrom_info = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
             incoming[ "chromInfo" ] = chrom_info
