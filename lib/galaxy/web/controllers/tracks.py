@@ -961,6 +961,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 data_provider = data_provider_class( original_dataset=input_dataset, 
                                                      converted_dataset=converted_dataset,
                                                      dependencies=deps )
+                trans.app.object_store.create( new_dataset.dataset )
                 data_provider.write_data_to_file( chrom, low, high, new_dataset.file_name )
             
                 # TODO: (a) size not working; (b) need to set peek.
