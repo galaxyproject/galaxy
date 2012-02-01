@@ -285,8 +285,6 @@ class WorkflowsAPIController(BaseAPIController):
         GET /api/workflows/{encoded_workflow_id}/download
         Returns a selected workflow as a json dictionary. 
         """
-        print "workflow controller: workflow dict called"
-        print workflow_id
         
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
