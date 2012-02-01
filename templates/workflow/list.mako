@@ -69,6 +69,7 @@
                                 <a class="action-button" href="${h.url_for( controller='workflow', action='export', id=trans.security.encode_id( workflow.id ) )}">Download or Export</a>
                                 <a class="action-button" href="${h.url_for( controller='workflow', action='clone', id=trans.security.encode_id( workflow.id ) )}">Clone</a>
                                 <a class="action-button" href="${h.url_for( controller='workflow', action='rename', id=trans.security.encode_id( workflow.id ) )}">Rename</a>
+                                <a class="action-button" href="${h.url_for( controller='workflow', action='display_by_id', id=trans.security.encode_id( workflow.id ) )}" target="_top">View</a>
                                 <a class="action-button" confirm="Are you sure you want to delete workflow '${h.to_unicode( workflow.name ) | h}'?" href="${h.url_for( controller='workflow', action='delete', id=trans.security.encode_id( workflow.id ) )}">Delete</a>
                                 </div>
                             </td>

@@ -63,12 +63,14 @@
 
 
 <%def name="render_item_links( workflow )">
+    %if workflow.importable:
     <a 
         href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}"
         class="icon-button import" 
         ## Needed to overwide initial width so that link is floated left appropriately.
         style="width: 100%"
         title="Import workflow">Import workflow</a>
+    %endif
 </%def>
 
 <%def name="render_item( workflow, steps )">

@@ -222,6 +222,35 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                             user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     @web.expose
+    def display_by_id( self, trans, id ):
+        """ Display workflow based on a username and slug. """ 
+        # Get workflow.
+        stored_workflow = self.get_stored_workflow( trans, id )
+        if stored_workflow is None:
+           raise web.httpexceptions.HTTPNotFound()
+        # Security check raises error if user cannot access workflow.
+        self.security_check( trans, stored_workflow, False, True)
+
+        # Get data for workflow's steps.
+        self.get_stored_workflow_steps( trans, stored_workflow )
+        # Get annotations.
+        stored_workflow.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
+        for step in stored_workflow.latest_workflow.steps:
+            step.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step )
+
+        # Get rating data.
+        user_item_rating = 0
+        if trans.get_user():
+            user_item_rating = self.get_user_item_rating( trans.sa_session, trans.get_user(), stored_workflow )
+            if user_item_rating:
+                user_item_rating = user_item_rating.rating
+            else:
+                user_item_rating = 0
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, stored_workflow )
+        return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps,
+                                            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+
+    @web.expose
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
         
