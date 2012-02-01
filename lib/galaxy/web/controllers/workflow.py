@@ -126,7 +126,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             if operation == "sharing":
                 return self.sharing( trans, id=history_ids )
         return self.stored_list_grid( trans, **kwargs )
-                                   
+
     @web.expose
     @web.require_login( "use Galaxy workflows", use_panels=True )
     def list( self, trans ):
@@ -1490,7 +1490,10 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                         if prefixed_name in step.input_connections_by_name:
                                             conn = step.input_connections_by_name[ prefixed_name ]
                                             return outputs[ conn.output_step.id ][ conn.output_name ]
-                                visit_input_values( tool.inputs, step.state.inputs, callback )
+                                try:
+                                    visit_input_values( tool.inputs, step.state.inputs, callback )
+                                except KeyError, k:
+                                    error( "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow." % (tool.name, k.message))
                                 # Execute it
                                 job, out_data = tool.execute( trans, step.state.inputs, history=new_history)
                                 outputs[ step.id ] = out_data
