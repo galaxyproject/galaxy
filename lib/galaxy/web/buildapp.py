@@ -151,6 +151,20 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     #webapp.api_mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
 
+        # ---------------------------------------------- #
+        # ---------------------------------------------- #
+        # RPARK EDIT 
+        
+        # How to extend API: url_mapping 
+        # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
+        # Defines a named route "import_workflow".
+        webapp.api_mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
+        webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
+        
+        #import pdb; pdb.set_trace()       
+        # ---------------------------------------------- #
+        # ---------------------------------------------- #
+        
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
