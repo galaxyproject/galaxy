@@ -188,48 +188,30 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         else:
             # Render grid wrapped in panels
             return trans.fill_template( "workflow/list_published.mako", grid=grid )
-                                    
+
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
-        """ Display workflow based on a username and slug. """ 
-        
+        """ Display workflow based on a username and slug. """
+
         # Get workflow.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
         stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False ).first()
-        if stored_workflow is None:
-           raise web.httpexceptions.HTTPNotFound()
-        # Security check raises error if user cannot access workflow.
-        self.security_check( trans, stored_workflow, False, True)
-        
-        # Get data for workflow's steps.
-        self.get_stored_workflow_steps( trans, stored_workflow )
-        # Get annotations.
-        stored_workflow.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
-        for step in stored_workflow.latest_workflow.steps:
-            step.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step )
-
-        # Get rating data.
-        user_item_rating = 0
-        if trans.get_user():
-            user_item_rating = self.get_user_item_rating( trans.sa_session, trans.get_user(), stored_workflow )
-            if user_item_rating:
-                user_item_rating = user_item_rating.rating
-            else:
-                user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, stored_workflow )            
-        return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps,
-                                            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+        return self.display(trans, stored_workflow)
 
     @web.expose
     def display_by_id( self, trans, id ):
-        """ Display workflow based on a username and slug. """ 
+        """ Display workflow based on id. """
         # Get workflow.
         stored_workflow = self.get_stored_workflow( trans, id )
+        return self.display(trans, stored_workflow)
+
+    def display(self, trans, stored_workflow):
+        """ Base workflow display """
         if stored_workflow is None:
            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access workflow.
-        self.security_check( trans, stored_workflow, False, True)
+        self.security_check( trans, stored_workflow, False, True )
 
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored_workflow )
