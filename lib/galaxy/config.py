@@ -96,7 +96,7 @@ class Configuration( object ):
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
         self.job_walltime = kwargs.get( 'job_walltime', None )
         self.admin_users = kwargs.get( "admin_users", "" )
-        self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
+        self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )

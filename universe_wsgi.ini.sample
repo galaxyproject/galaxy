@@ -205,7 +205,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # On the user registration form, users may choose to join the mailing list.
 # This is the address of the list they'll be subscribed to.
-#mailing_join_addr = galaxy-user-join@bx.psu.edu
+#mailing_join_addr = galaxy-announce-join@bx.psu.edu
 
 # Datasets in an error state include a link to report the error.  Those reports
 # will be sent to this address.  Error reports are disabled if no address is set.

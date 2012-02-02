@@ -45,7 +45,7 @@ class Configuration( object ):
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates/demo_sequencer" ), self.root )
         self.admin_users = kwargs.get( "admin_users", "" )
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
-        self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
+        self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
