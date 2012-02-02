@@ -25,6 +25,8 @@ def __main__():
     parser = optparse.OptionParser()
     parser.add_option( '-g', dest='ref_annotation', help='An optional "reference" annotation GTF. Each sample is matched against this file, and sample isoforms are tagged as overlapping, matching, or novel where appropriate. See the refmap and tmap output file descriptions below.' )
     parser.add_option( '-s', dest='use_seq_data', action="store_true", help='Causes cuffmerge to look into for fasta files with the underlying genomic sequences (one file per contig) against which your reads were aligned for some optional classification functions. For example, Cufflinks transcripts consisting mostly of lower-case bases are classified as repeats. Note that <seq_dir> must contain one fasta file per reference chromosome, and each file must be named after the chromosome, and have a .fa or .fasta extension.')
+    parser.add_option( '-p', '--num-threads', dest='num_threads', help='Use this many threads to align reads. The default is 1.' )
+    
     
     # Wrapper / Galaxy options.
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
@@ -74,6 +76,8 @@ def __main__():
     cmd = "cuffmerge -o cm_output "
     
     # Add options.
+    if options.num_threads:
+        cmd += ( " -p %i" % int ( options.num_threads ) )
     if options.ref_annotation:
         cmd += " -g %s " % options.ref_annotation
     if options.use_seq_data:
