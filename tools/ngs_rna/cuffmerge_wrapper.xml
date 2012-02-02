@@ -1,5 +1,5 @@
 <tool id="cuffmerge" name="Cuffmerge" version="0.0.5">
-    <!-- Wrapper supports Cuffmerge versions v1.0.0-v1.0.3 -->
+    <!-- Wrapper supports Cuffmerge version v1.0.0 -->
     <description>merge together several Cufflinks assemblies</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>

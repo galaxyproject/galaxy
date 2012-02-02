@@ -1,5 +1,5 @@
 <tool id="cuffdiff" name="Cuffdiff" version="0.0.5">
-    <!-- Wrapper supports Cuffdiff versions v1.0.0-v1.0.3 -->
+    <!-- Wrapper supports Cuffdiff versions v1.0.0-v1.3.0 -->
     <description>find significant changes in transcript expression, splicing, and promoter use</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
