@@ -32,7 +32,7 @@
     
     ##advanced options
     #if str( $options_type.options_type_selector ) == "advanced":
-        #additional outputs
+        ##additional outputs
         #if $options_type.output_trace_option:
             --trace "${output_trace}"
         #end if
