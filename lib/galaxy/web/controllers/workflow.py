@@ -290,9 +290,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
     @web.require_login( "use Galaxy workflows" )
     def sharing( self, trans, id, **kwargs ):
         """ Handle workflow sharing. """
-
         session = trans.sa_session
-
         if 'unshare_me' in kwargs:
             # Remove self from shared associations with workflow.
             stored = self.get_stored_workflow(trans, id, False, True)
@@ -332,9 +330,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             if stored.importable and not stored.slug:
                 self._make_item_accessible( trans.sa_session, stored )
 
-        session.flush()
-
-        return trans.fill_template( "/workflow/sharing.mako", use_panels=True, item=stored )
+            session.flush()
+            return trans.fill_template( "/workflow/sharing.mako", use_panels=True, item=stored )
 
     @web.expose
     @web.require_login( "to import a workflow", use_panels=True )
