@@ -1,0 +1,126 @@
+<tool id="cuffmerge" name="Cuffmerge" version="0.0.5">
+    <!-- Wrapper supports Cuffmerge versions v1.0.0-v1.0.3 -->
+    <description>merge together several Cufflinks assemblies</description>
+    <requirements>
+        <requirement type="package">cufflinks</requirement>
+    </requirements>
+    <command interpreter="python">
+        cuffmerge_wrapper.py 
+            
+            ## Use annotation reference?
+            #if $annotation.use_ref_annotation == "Yes":
+                -g $annotation.reference_annotation
+            #end if
+            
+            ## Use sequence data?
+            #if $seq_data.use_seq_data == "Yes":
+	        -s
+                #if $seq_data.seq_source.index_source == "history":
+                    --ref_file=$seq_data.seq_source.ref_file
+                #else:
+                    --ref_file="None"
+                #end if
+                --dbkey=${first_input.metadata.dbkey} 
+                --index_dir=${GALAXY_DATA_INDEX_DIR}
+            #end if
+            
+            ## Outputs.
+            --merged-transcripts=${merged_transcripts}
+                        
+            ## Inputs.
+            ${first_input}
+            #for $input_file in $input_files:
+              ${input_file.additional_input}
+            #end for
+            
+    </command>
+    <inputs>
+        <param format="gtf" name="first_input" type="data" label="GTF file produced by Cufflinks" help=""/>
+        <repeat name="input_files" title="Additional GTF Input Files">
+            <param format="gtf" name="additional_input" type="data" label="GTF file produced by Cufflinks" help=""/>
+        </repeat>
+        <conditional name="annotation">
+            <param name="use_ref_annotation" type="select" label="Use Reference Annotation">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="Yes">
+                <param format="gtf" name="reference_annotation" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>    
+            </when>
+            <when value="No">
+            </when>
+        </conditional>
+        <conditional name="seq_data">
+            <param name="use_seq_data" type="select" label="Use Sequence Data" help="Use sequence data for some optional classification functions, including the addition of the p_id attribute required by Cuffdiff.">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="No"></when>
+            <when value="Yes">
+                <conditional name="seq_source">
+                  <param name="index_source" type="select" label="Choose the source for the reference list">
+                    <option value="cached">Locally cached</option>
+                    <option value="history">History</option>
+                  </param>
+                  <when value="cached"></when>
+                  <when value="history">
+                      <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+                  </when>
+                </conditional>
+            </when>
+        </conditional>
+    </inputs>
+
+    <outputs>
+        <data format="gtf" name="merged_transcripts" label="${tool.name} on ${on_string}: merged transcripts"/>
+    </outputs>
+
+    <tests>
+        <!-- 
+            cuffmerge -g cuffcompare_in3.gtf cuffcompare_in1.gtf cuffcompare_in2.gtf
+        -->
+        <test>
+            <param name="first_input" value="cuffcompare_in1.gtf" ftype="gtf"/>
+            <param name="additional_input" value="cuffcompare_in2.gtf" ftype="gtf"/>
+            <param name="use_ref_annotation" value="Yes"/>
+            <param name="reference_annotation" value="cuffcompare_in3.gtf" ftype="gtf"/>
+            <param name="use_seq_data" value="No"/>
+            <output name="merged_transcripts" file="cuffmerge_out1.gtf"/>
+        </test>
+    </tests>
+
+    <help>
+**Cuffmerge Overview**
+
+Cuffmerge is part of Cufflinks_. Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. Nature Biotechnology doi:10.1038/nbt.1621
+
+.. _Cufflinks: http://cufflinks.cbcb.umd.edu/
+        
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in expression analysis. It is all like stick-shift driving in San Francisco. In other words, running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://cufflinks.cbcb.umd.edu/manual.html#cuffmerge
+
+------
+
+**Input format**
+
+Cuffmerge takes Cufflinks' GTF output as input, and optionally can take a "reference" annotation (such as from Ensembl_)
+
+.. _Ensembl: http://www.ensembl.org 
+
+------
+
+**Outputs**
+
+Cuffmerge produces the following output files:
+
+Merged transcripts file:
+
+Cuffmerge produces a GTF file that contains an assembly that merges together the input assemblies.    </help>
+</tool>
