@@ -196,7 +196,6 @@ class DRMAAJobRunner( BaseJobRunner ):
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the queue" % job_wrapper.get_id_tag() )
             if self.app.config.cleanup_job in ( "always", "onsuccess" ):
-                self.cleanup( ( ofile, efile, jt.remoteCommand ) )
                 job_wrapper.cleanup()
             return
 
@@ -334,25 +333,12 @@ class DRMAAJobRunner( BaseJobRunner ):
         except:
             log.exception("Job wrapper finish method failed")
 
-        # clean up the drm files
-        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
-            self.cleanup( ( ofile, efile, job_file ) )
-
     def fail_job( self, drm_job_state ):
         """
         Seperated out so we can use the worker threads for it.
         """
         self.stop_job( self.sa_session.query( self.app.model.Job ).get( drm_job_state.job_wrapper.job_id ) )
         drm_job_state.job_wrapper.fail( drm_job_state.fail_message )
-        if self.app.config.cleanup_job == "always":
-            self.cleanup( ( drm_job_state.ofile, drm_job_state.efile, drm_job_state.job_file ) )
-
-    def cleanup( self, files ):
-        for file in files:
-            try:
-                os.unlink( file )
-            except Exception, e:
-                log.warning( "Unable to cleanup: %s" % str( e ) )  
 
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
@@ -440,6 +426,6 @@ class DRMAAJobRunner( BaseJobRunner ):
         # The expected output is a single line containing a single numeric value:
         # the DRMAA job-ID. If not the case, will throw an error.
         jobId = stdoutdata
-        return jobId;
+        return jobId
 
 

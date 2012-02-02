@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool id="freebayes" name="FreeBayes" version="0.0.1">
+<tool id="freebayes" name="FreeBayes" version="0.0.2">
   <requirements>
     <requirement type="package" version="0.9.4">freebayes</requirement>
     <requirement type="package">samtools</requirement>
@@ -29,11 +29,17 @@
     
     ##outputs
     --vcf "${output_vcf}"
-    --trace "${output_trace}"
-    --failed-alleles "${output_failed_alleles_bed}"
     
     ##advanced options
     #if str( $options_type.options_type_selector ) == "advanced":
+        ##additional outputs
+        #if $options_type.output_trace_option:
+            --trace "${output_trace}"
+        #end if
+        #if $options_type.output_failed_alleles_option:
+            --failed-alleles "${output_failed_alleles_bed}"
+        #end if
+        
         ##additional inputs
         #if str( $options_type.target_limit_type.target_limit_type_selector ) == "limit_by_target_file":
             --targets "${options_type.target_limit_type.input_target_bed}"
@@ -186,8 +192,13 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-      
-        <!-- input and output -->
+        
+        <!-- output -->
+        <param name="output_failed_alleles_option" type="boolean" truevalue="--failed-alleles" falsevalue="" checked="False" label="Write out failed alleles file" />
+        <param name="output_trace_option" type="boolean" truevalue="--trace" falsevalue="" checked="False" label="Write out algorithm trace file" />
+        
+        
+        <!-- input -->
         <conditional name="target_limit_type">
           <param name="target_limit_type_selector" type="select" label="Limit analysis to listed targets">
             <option value="do_not_limit" selected="True">Do not limit</option>
@@ -398,8 +409,12 @@
   </inputs>
   <outputs>
     <data format="vcf" name="output_vcf" label="${tool.name} on ${on_string} (variants)" />
-    <data format="txt" name="output_trace" label="${tool.name} on ${on_string} (trace)" />
-    <data format="bed" name="output_failed_alleles_bed" label="${tool.name} on ${on_string} (failed alleles)" />
+    <data format="bed" name="output_failed_alleles_bed" label="${tool.name} on ${on_string} (failed alleles)">
+        <filter>options_type['options_type_selector'] == "advanced" and options_type['output_failed_alleles_option'] is True</filter>
+    </data>
+    <data format="txt" name="output_trace" label="${tool.name} on ${on_string} (trace)">
+        <filter>options_type['options_type_selector'] == "advanced" and options_type['output_trace_option'] is True</filter>
+    </data>
   </outputs>
   <tests>
     <test>
@@ -408,8 +423,8 @@
       <param name="input_bam" ftype="bam" value="gatk/fake_phiX_reads_1.bam"/>
       <param name="options_type_selector" value="basic"/>
       <output name="output_vcf" file="variant_detection/freebayes/freebayes_out_1.vcf.contains" compare="contains"/>
-      <output name="output_trace" file="variant_detection/freebayes/freebayes_out_1.output_trace" />
-      <output name="output_failed_alleles_bed" file="empty_file.dat" />
+      <!-- <output name="output_failed_alleles_bed" file="empty_file.dat" />
+      <output name="output_trace" file="variant_detection/freebayes/freebayes_out_1.output_trace" /> -->
     </test>
   </tests>
   <help>

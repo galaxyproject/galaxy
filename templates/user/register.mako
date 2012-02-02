@@ -72,6 +72,8 @@
                         <% subscribe_check_box.checked = True %>
                     %endif
                     ${subscribe_check_box.get_html()}
+                    <p>See <a href="http://galaxyproject.org/wiki/Mailing%20Lists" target="_blank">
+                    all Galaxy project mailing lists</a>.</p>
                 </div>
             %endif
             %if user_type_fd_id_select_field and len( user_type_fd_id_select_field.options ) > 1:
