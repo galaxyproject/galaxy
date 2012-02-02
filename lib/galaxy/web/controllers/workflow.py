@@ -22,11 +22,11 @@ from galaxy.model.item_attrs import *
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.jobs.actions.post import ActionBox
 
-class StoredWorkflowListGrid( grids.Grid ):    
+class StoredWorkflowListGrid( grids.Grid ):
     class StepsColumn( grids.GridColumn ):
         def get_value(self, trans, grid, workflow):
             return len( workflow.latest_workflow.steps )
-    
+
     # Grid definition
     use_panels = True
     title = "Saved Workflows"
@@ -40,10 +40,10 @@ class StoredWorkflowListGrid( grids.Grid ):
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
-    columns.append( 
-        grids.MulticolFilterColumn(  
-        "Search", 
-        cols_to_filter=[ columns[0], columns[1] ], 
+    columns.append(
+        grids.MulticolFilterColumn(
+        "Search",
+        cols_to_filter=[ columns[0], columns[1] ],
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = [
@@ -67,14 +67,14 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         grids.PublicURLColumn( "Name", key="name", filterable="advanced" ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.StoredWorkflowAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced" ),
-        grids.CommunityRatingColumn( "Community Rating", key="rating" ), 
+        grids.CommunityRatingColumn( "Community Rating", key="rating" ),
         grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="PublicWorkflowListGrid" ),
         grids.ReverseSortColumn( "Last Updated", key="update_time", format=time_ago )
     ]
-    columns.append( 
-        grids.MulticolFilterColumn(  
-        "Search name, annotation, owner, and tags", 
-        cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ], 
+    columns.append(
+        grids.MulticolFilterColumn(
+        "Search name, annotation, owner, and tags",
+        cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ],
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = []
@@ -84,20 +84,20 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
     def apply_query_filter( self, trans, query, **kwargs ):
         # A public workflow is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
-        
+
 # Simple SGML parser to get all content in a single tag.
 class SingleTagContentsParser( sgmllib.SGMLParser ):
-    
+
     def __init__( self, target_tag ):
         sgmllib.SGMLParser.__init__( self )
         self.target_tag = target_tag
         self.cur_tag = None
         self.tag_content = ""
-        
+
     def unknown_starttag( self, tag, attrs ):
         """ Called for each start tag. """
         self.cur_tag = tag
-        
+
     def handle_data( self, text ):
         """ Called for each block of plain text. """
         if self.cur_tag == self.target_tag:
@@ -106,13 +106,13 @@ class SingleTagContentsParser( sgmllib.SGMLParser ):
 class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
-    
+
     __myexp_url = "www.myexperiment.org:80"
-    
+
     @web.expose
     def index( self, trans ):
         return self.list( trans )
-        
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def list_grid( self, trans, **kwargs ):
@@ -145,7 +145,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             .filter( model.StoredWorkflow.deleted == False ) \
             .order_by( desc( model.StoredWorkflow.update_time ) ) \
             .all()
-            
+
         # Legacy issue: all shared workflows must have slugs.
         slug_set = False
         for workflow_assoc in shared_by_others:
@@ -157,7 +157,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         return trans.fill_template( "workflow/list.mako",
                                     workflows = workflows,
                                     shared_by_others = shared_by_others )
-    
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def list_for_run( self, trans ):
@@ -179,7 +179,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         return trans.fill_template( "workflow/list_for_run.mako",
                                     workflows = workflows,
                                     shared_by_others = shared_by_others )
-                                    
+
     @web.expose
     def list_published( self, trans, **kwargs ):
         grid = self.published_list_grid( trans, **kwargs )
@@ -235,11 +235,11 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
     @web.expose
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
-        
+
         stored = self.get_stored_workflow( trans, id, False, True )
         if stored is None:
             raise web.httpexceptions.HTTPNotFound()
-            
+
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored )
         # Get annotations.
@@ -247,7 +247,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         for step in stored.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, step )
         return trans.stream_template_mako( "/workflow/item_content.mako", item = stored, item_data = stored.latest_workflow.steps )
-                              
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def share( self, trans, id, email="", use_panels=False ):
@@ -285,45 +285,55 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                     item=stored,
                                     email=email,
                                     use_panels=use_panels )
-    
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def sharing( self, trans, id, **kwargs ):
         """ Handle workflow sharing. """
-        
-        # Get session and workflow.
+
         session = trans.sa_session
-        stored = self.get_stored_workflow( trans, id )
-        session.add( stored )
-        
-        # Do operation on workflow.
-        if 'make_accessible_via_link' in kwargs:
-            self._make_item_accessible( trans.sa_session, stored )
-        elif 'make_accessible_and_publish' in kwargs:
-            self._make_item_accessible( trans.sa_session, stored )
-            stored.published = True
-        elif 'publish' in kwargs:
-            stored.published = True
-        elif 'disable_link_access' in kwargs:
-            stored.importable = False
-        elif 'unpublish' in kwargs:
-            stored.published = False
-        elif 'disable_link_access_and_unpublish' in kwargs:
-            stored.importable = stored.published = False
-        elif 'unshare_user' in kwargs:
-            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
-            if not user:
-                error( "User not found for provided id" )
+
+        if 'unshare_me' in kwargs:
+            # Remove self from shared associations with workflow.
+            stored = self.get_stored_workflow(trans, id, False, True)
             association = session.query( model.StoredWorkflowUserShareAssociation ) \
-                                 .filter_by( user=user, stored_workflow=stored ).one()
+                                 .filter_by( user=trans.user, stored_workflow=stored ).one()
             session.delete( association )
-            
-        # Legacy issue: workflows made accessible before recent updates may not have a slug. Create slug for any workflows that need them.
-        if stored.importable and not stored.slug:
-            self._make_item_accessible( trans.sa_session, stored )
-            
+            session.flush()
+            return self.list( trans )
+        else:
+            # Get session and workflow.
+            stored = self.get_stored_workflow( trans, id )
+            session.add( stored )
+
+            # Do operation on workflow.
+            if 'make_accessible_via_link' in kwargs:
+                self._make_item_accessible( trans.sa_session, stored )
+            elif 'make_accessible_and_publish' in kwargs:
+                self._make_item_accessible( trans.sa_session, stored )
+                stored.published = True
+            elif 'publish' in kwargs:
+                stored.published = True
+            elif 'disable_link_access' in kwargs:
+                stored.importable = False
+            elif 'unpublish' in kwargs:
+                stored.published = False
+            elif 'disable_link_access_and_unpublish' in kwargs:
+                stored.importable = stored.published = False
+            elif 'unshare_user' in kwargs:
+                user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
+                if not user:
+                    error( "User not found for provided id" )
+                association = session.query( model.StoredWorkflowUserShareAssociation ) \
+                                     .filter_by( user=user, stored_workflow=stored ).one()
+                session.delete( association )
+
+            # Legacy issue: workflows made accessible before recent updates may not have a slug. Create slug for any workflows that need them.
+            if stored.importable and not stored.slug:
+                self._make_item_accessible( trans.sa_session, stored )
+
         session.flush()
-        
+
         return trans.fill_template( "/workflow/sharing.mako", use_panels=True, item=stored )
 
     @web.expose
@@ -335,7 +345,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             referer_message = "<a href='%s'>return to the previous page</a>" % referer
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
-                    
+
         # Do import.
         session = trans.sa_session
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
@@ -353,19 +363,19 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             session = trans.sa_session
             session.add( imported_stored )
             session.flush()
-            
+
             # Copy annotations.
             self.copy_item_annotation( session, stored.user, stored, imported_stored.user, imported_stored )
             for order_index, step in enumerate( stored.latest_workflow.steps ):
                 self.copy_item_annotation( session, stored.user, step, \
                                             imported_stored.user, imported_stored.latest_workflow.steps[order_index] )
             session.flush()
-            
+
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
-                message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s.""" 
+                message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
                 % ( stored.name, web.url_for( controller='workflow' ), referer_message ), use_panels=True )
-            
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def edit_attributes( self, trans, id, **kwargs ):
@@ -382,11 +392,11 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
             self.add_item_annotation( trans.sa_session, trans.get_user(), stored,  annotation )
         trans.sa_session.flush()
-        return trans.fill_template( 'workflow/edit_attributes.mako', 
-                                    stored=stored, 
-                                    annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) 
+        return trans.fill_template( 'workflow/edit_attributes.mako',
+                                    stored=stored,
+                                    annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored )
                                     )
-    
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def rename( self, trans, id, new_name=None, **kwargs ):
@@ -403,10 +413,10 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             #message = "Workflow renamed to '%s'." % new_name
             #return self.list_grid( trans, message=message, status='done' )
         else:
-            return form( url_for( action='rename', id=trans.security.encode_id(stored.id) ), 
+            return form( url_for( action='rename', id=trans.security.encode_id(stored.id) ),
                          "Rename workflow", submit_text="Rename", use_panels=True ) \
                 .add_text( "new_name", "Workflow Name", value=to_unicode( stored.name ) )
-                
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def rename_async( self, trans, id, new_name=None, **kwargs ):
@@ -417,7 +427,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             return stored.name
-            
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
@@ -428,7 +438,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             self.add_item_annotation( trans.sa_session, trans.get_user(), stored, new_annotation )
             trans.sa_session.flush()
             return new_annotation
-            
+
     @web.expose
     @web.require_login( "rate items" )
     @web.json
@@ -443,7 +453,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         stored_rating = self.rate_item( trans.sa_session, trans.get_user(), stored, rating )
 
         return self.get_ave_item_rating_data( trans.sa_session, stored )
-            
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def set_accessible_async( self, trans, id=None, accessible=False ):
@@ -459,7 +469,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 stored.importable = importable
             trans.sa_session.flush()
         return
-        
+
     @web.expose
     @web.require_login( "modify Galaxy items" )
     def set_slug_async( self, trans, id, new_slug ):
@@ -468,7 +478,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             stored.slug = new_slug
             trans.sa_session.flush()
             return stored.slug
-            
+
     @web.expose
     def get_embed_html_async( self, trans, id ):
         """ Returns HTML for embedding a workflow in a page. """
@@ -477,7 +487,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         stored = self.get_stored_workflow( trans, id )
         if stored:
             return "Embedded Workflow '%s'" % stored.name
-        
+
     @web.expose
     @web.json
     @web.require_login( "use Galaxy workflows" )
@@ -489,33 +499,33 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             trans.sa_session.flush()
         return_dict = { "name" : stored.name, "link" : url_for( action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
         return return_dict
-    
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def gen_image( self, trans, id ):
         stored = self.get_stored_workflow( trans, id, check_ownership=True )
         session = trans.sa_session
-                
+
         workflow = stored.latest_workflow
         data = []
-        
+
         canvas = svgfig.canvas(style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left")
         text = svgfig.SVG("g")
         connectors = svgfig.SVG("g")
         boxes = svgfig.SVG("g")
         svgfig.Text.defaults["font-size"] = "10px"
-        
+
         in_pos = {}
         out_pos = {}
         margin = 5
         line_px = 16 # how much spacing between input/outputs
         widths = {} # store px width for boxes of each step
         max_width, max_x, max_y = 0, 0, 0
-        
+
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
-            
+
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
@@ -523,21 +533,21 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 'data_outputs': module.get_data_outputs(),
                 'position': step.position
             }
-            
+
             input_conn_dict = {}
             for conn in step.input_connections:
                 input_conn_dict[ conn.input_name ] = \
                     dict( id=conn.output_step.order_index, output_name=conn.output_name )
             step_dict['input_connections'] = input_conn_dict
-                    
+
             data.append(step_dict)
-            
+
             x, y = step.position['left'], step.position['top']
             count = 0
-            
+
             max_len = len(module.get_name()) * 1.5
             text.append( svgfig.Text(x, y + 20, module.get_name(), **{"font-size": "14px"} ).SVG() )
-            
+
             y += 45
             for di in module.get_data_inputs():
                 cur_y = y+count*line_px
@@ -547,11 +557,11 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 text.append( svgfig.Text(x, cur_y, di['label']).SVG() )
                 count += 1
                 max_len = max(max_len, len(di['label']))
-                
-            
+
+
             if len(module.get_data_inputs()) > 0:
                 y += 15
-                
+
             for do in module.get_data_outputs():
                 cur_y = y+count*line_px
                 if step.order_index not in out_pos:
@@ -560,12 +570,12 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 text.append( svgfig.Text(x, cur_y, do['name']).SVG() )
                 count += 1
                 max_len = max(max_len, len(do['name']))
-            
+
             widths[step.order_index] = max_len*5.5
             max_x = max(max_x, step.position['left'])
             max_y = max(max_y, step.position['top'])
             max_width = max(max_width, widths[step.order_index])
-            
+
         for step_dict in data:
             width = widths[step_dict['id']]
             x, y = step_dict['position']['left'], step_dict['position']['top']
@@ -576,18 +586,18 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             if len(step_dict['data_inputs']) > 0:
                 box_height += 15
                 sep_y = y + len(step_dict['data_inputs']) * line_px + 40
-                text.append( svgfig.Line(x-margin, sep_y, x+width-margin, sep_y).SVG() ) # 
-                
+                text.append( svgfig.Line(x-margin, sep_y, x+width-margin, sep_y).SVG() ) #
+
             # input/output box
             boxes.append( svgfig.Rect(x-margin, y+30, x+width-margin, y+30+box_height, fill="#ffffff").SVG() )
-                        
+
             for conn, output_dict in step_dict['input_connections'].iteritems():
                 in_coords = in_pos[step_dict['id']][conn]
                 out_conn_pos = out_pos[output_dict['id']][output_dict['output_name']]
                 adjusted = (out_conn_pos[0] + widths[output_dict['id']], out_conn_pos[1])
                 text.append( svgfig.SVG("circle", cx=out_conn_pos[0]+widths[output_dict['id']]-margin, cy=out_conn_pos[1]-margin, r=5, fill="#ffffff" ) )
                 connectors.append( svgfig.Line(adjusted[0], adjusted[1]-margin, in_coords[0]-10, in_coords[1], arrow_end="true" ).SVG() )
-            
+
         canvas.append(connectors)
         canvas.append(boxes)
         canvas.append(text)
@@ -597,8 +607,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         canvas['viewBox'] = "0 0 %s %s" % (width, height)
         trans.response.set_content_type("image/svg+xml")
         return canvas.standalone_xml()
-        
-        
+
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def clone( self, trans, id ):
@@ -612,7 +622,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     .filter_by( user=user, stored_workflow=stored ).count() == 0:
                 error( "Workflow is not owned by or shared with current user" )
             owner = False
-            
+
         # Clone.
         new_stored = model.StoredWorkflow()
         new_stored.name = "Clone of '%s'" % stored.name
@@ -629,7 +639,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             new_swta.user_tname = swta.user_tname
             new_swta.user_value = swta.user_value
             new_swta.value = swta.value
-            new_stored.tags.append( new_swta )         
+            new_stored.tags.append( new_swta )
         if not owner:
             new_stored.name += " shared by '%s'" % stored.user.email
         new_stored.user = user
@@ -640,7 +650,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # Display the management page
         trans.set_message( 'Clone created with name "%s"' % new_stored.name )
         return self.list( trans )
-    
+
     @web.expose
     @web.require_login( "create workflows" )
     def create( self, trans, workflow_name=None, workflow_annotation="" ):
@@ -672,12 +682,12 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             return form( url_for(), "Create New Workflow", submit_text="Create", use_panels=True ) \
                     .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" ) \
                     .add_text( "workflow_annotation", "Workflow Annotation", value="", help="A description of the workflow; annotation is shown alongside shared or published workflows." )
-    
+
     @web.expose
     def delete( self, trans, id=None ):
         """
         Mark a workflow as deleted
-        """        
+        """
         # Load workflow from database
         stored = self.get_stored_workflow( trans, id )
         # Marke as deleted and save
@@ -687,7 +697,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # Display the management page
         trans.set_message( "Workflow '%s' deleted" % stored.name )
         return self.list( trans )
-        
+
     @web.expose
     @web.require_login( "edit workflows" )
     def editor( self, trans, id=None ):
@@ -700,7 +710,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             error( "Invalid workflow id" )
         stored = self.get_stored_workflow( trans, id )
         return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
-        
+
     @web.json
     def editor_form_post( self, trans, type='tool', tool_id=None, annotation=None, **incoming ):
         """
@@ -709,7 +719,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         This is used for the form shown in the right pane when a node
         is selected.
         """
-        
+
         trans.workflow_building_mode = True
         module = module_factory.from_dict( trans, {
             'type': type,
@@ -717,7 +727,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             'tool_state': incoming.pop("tool_state")
         } )
         module.update_state( incoming )
-        
+
         if type=='tool':
             return {
                 'tool_state': module.get_state(),
@@ -737,7 +747,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 'form_html': module.get_config_form(),
                 'annotation': annotation
             }
-        
+
     @web.json
     def get_new_module_info( self, trans, type, **kwargs ):
         """
@@ -855,7 +865,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 # post_job_actions
                 pja_dict = {}
                 for pja in step.post_job_actions:
-                    pja_dict[pja.action_type+pja.output_name] = dict(action_type = pja.action_type, 
+                    pja_dict[pja.action_type+pja.output_name] = dict(action_type = pja.action_type,
                                             output_name = pja.output_name,
                                             action_arguments = pja.action_arguments)
                 step_dict['post_job_actions'] = pja_dict
@@ -961,7 +971,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             rval = dict( message="Workflow saved" )
         rval['name'] = workflow.name
         return rval
-        
+
     @web.expose
     @web.require_login( "use workflows" )
     def export( self, trans, id=None, **kwd ):
@@ -1014,27 +1024,27 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         """
         Exports a workflow to myExperiment website.
         """
-        
-        # Load encoded workflow from database        
+
+        # Load encoded workflow from database
         user = trans.get_user()
         id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
         stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
         self.security_check( trans, stored, False, True )
-        
+
         # Convert workflow to dict.
         workflow_dict = self._workflow_to_dict( trans, stored )
-        
+
         #
         # Create and submit workflow myExperiment request.
         #
-        
+
         # Create workflow content XML.
         workflow_dict_packed = simplejson.dumps( workflow_dict, indent=4, sort_keys=True )
         workflow_content = trans.fill_template( "workflow/myexp_export_content.mako", \
                                                  workflow_dict_packed=workflow_dict_packed, \
                                                  workflow_steps=workflow_dict['steps'] )
-                                                
+
         # Create myExperiment request.
         request_raw = trans.fill_template( "workflow/myexp_export.mako", \
                                             workflow_name=workflow_dict['name'], \
@@ -1043,7 +1053,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                             )
         # strip() b/c myExperiment XML parser doesn't allow white space before XML; utf-8 handles unicode characters.
         request = unicode( request_raw.strip(), 'utf-8' )
-        
+
         # Do request and get result.
         auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
         headers = { "Content-type": "text/xml", "Accept": "text/xml", "Authorization" : "Basic %s" % auth_header }
@@ -1053,7 +1063,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         response = conn.getresponse()
         response_data = response.read()
         conn.close()
-        
+
         # Do simple parse of response to see if export successful and provide user feedback.
         parser = SingleTagContentsParser( 'id' )
         parser.feed( response_data )
@@ -1062,13 +1072,13 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         if myexp_workflow_id:
             return trans.show_message( \
                 "Workflow '%s' successfully exported to myExperiment. %s" % \
-                ( stored.name, workflow_list_str ), 
+                ( stored.name, workflow_list_str ),
                 use_panels=True )
         else:
             return trans.show_error_message( \
                 "Workflow '%s' could not be exported to myExperiment. Error: %s. %s" % \
                 ( stored.name, response_data, workflow_list_str ), use_panels=True )
-            
+
     @web.json_pretty
     def for_direct_import( self, trans, id ):
         """
@@ -1087,15 +1097,15 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
-        
+
         This has slightly different information than the above. In particular,
         it does not attempt to decode forms and build UIs, it just stores
         the raw state.
         """
-        
+
         # Get workflow.
         stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
-        
+
         # Stream workflow to file.
         stored_dict = self._workflow_to_dict( trans, stored )
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -1146,7 +1156,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             workflow_data = None
             if url:
                 # Load workflow from external URL
-                # NOTE: blocks the web thread. 
+                # NOTE: blocks the web thread.
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
                 except Exception, e:
@@ -1204,9 +1214,9 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             # A required tool is not available in the local Galaxy instance.
                             # TODO: It would sure be nice to be able to redirect to a mako template here that displays a nice
                             # page including the links to the configured tool sheds instead of this message, but trying
-                            # to get the panels back is a nightmare since workflow eliminates the Galaxy panels.  Someone 
+                            # to get the panels back is a nightmare since workflow eliminates the Galaxy panels.  Someone
                             # involved in workflow development needs to figure out what it will take to be able to switch
-                            # back and forth between Galaxy (with panels ) and the workflow view (without panels ), having 
+                            # back and forth between Galaxy (with panels ) and the workflow view (without panels ), having
                             # the Galaxy panels displayed whenever in Galaxy.
                             message += "The workflow requires the following tools that are not available in this Galaxy instance."
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/><br/>"
@@ -1222,7 +1232,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                 message += '<a href="%s">%s</a><br/>' % ( url, shed_name )
                                 status = 'error'
                             if installed_repository_file or tool_shed_url:
-                                # Another Galaxy panels Hack: The request did not originate from the Galaxy 
+                                # Another Galaxy panels Hack: The request did not originate from the Galaxy
                                 # workflow view, so we don't need to render the Galaxy panels.
                                 action = 'center'
                             else:
@@ -1275,13 +1285,13 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 if issubclass( base, Data ):
                     types.add( base.__module__ + "." + base.__name__ )
                 visit_bases( types, base )
-        for c in classes:      
+        for c in classes:
             n =  c.__module__ + "." + c.__name__
             types = set( [ n ] )
             visit_bases( types, c )
             class_to_classes[ n ] = dict( ( t, True ) for t in types )
         return dict( ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes )
-    
+
     @web.expose
     def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, workflow_name=None ):
         user = trans.get_user()
@@ -1292,7 +1302,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             jobs, warnings = get_job_dict( trans )
             # Render
             return trans.fill_template(
-                        "workflow/build_from_current_history.mako", 
+                        "workflow/build_from_current_history.mako",
                         jobs=jobs,
                         warnings=warnings,
                         history=history )
@@ -1310,7 +1320,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             job_ids = [ int( id ) for id in job_ids ]
             dataset_ids = [ int( id ) for id in dataset_ids ]
             # Find each job, for security we (implicately) check that they are
-            # associated witha job in the current history. 
+            # associated witha job in the current history.
             jobs, warnings = get_job_dict( trans )
             jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
             steps = []
@@ -1351,7 +1361,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                         conn.output_step = other_step
                         conn.output_name = other_name
                 steps.append( step )
-                steps_by_job_id[ job_id ] = step                
+                steps_by_job_id[ job_id ] = step
                 # Store created dataset hids
                 for assoc in job.output_datasets:
                     hid_to_output_pair[ assoc.dataset.hid ] = ( step, assoc.name )
@@ -1380,8 +1390,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             # Index page with message
             return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
             ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
-            ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )       
-        
+            ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )
+
     @web.expose
     def run( self, trans, id, history_id=None, hide_fixed_params=False, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
@@ -1589,8 +1599,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 trans.set_history(saved_history)
 
     def get_item( self, trans, id ):
-        return self.get_stored_workflow( trans, id ) 
-        
+        return self.get_stored_workflow( trans, id )
+
     @web.expose
     def tag_outputs( self, trans, id, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
@@ -1644,7 +1654,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     has_upgrade_messages = True
                 # Any connected input needs to have value DummyDataset (these
                 # are not persisted so we need to do it every time)
-                step.module.add_dummy_datasets( connections=step.input_connections )                  
+                step.module.add_dummy_datasets( connections=step.input_connections )
                 # Store state with the step
                 step.state = step.module.state
                 # Error dict
@@ -1665,7 +1675,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     has_upgrade_messages=has_upgrade_messages,
                     errors=errors,
                     incoming=kwargs )
-    
+
     @web.expose
     def configure_menu( self, trans, workflow_ids=None ):
         user = trans.get_user()
@@ -1693,7 +1703,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 user.stored_workflow_menu_entries.append( m )
             sess.flush()
             return trans.show_message( "Menu updated", refresh_frames=['tools'] )
-        else:                
+        else:
             user = trans.get_user()
             ids_in_menu = set( [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ] )
             workflows = trans.sa_session.query( model.StoredWorkflow ) \
@@ -1709,7 +1719,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                         workflows=workflows,
                                         shared_by_others=shared_by_others,
                                         ids_in_menu=ids_in_menu )
-        
+
     def _workflow_to_dict( self, trans, stored ):
         """
         Converts a workflow to a dict of attributes suitable for exporting.
@@ -1734,7 +1744,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
             annotation_str = ""
             if step_annotation:
-                annotation_str = step_annotation.annotation     
+                annotation_str = step_annotation.annotation
             # Step info
             step_dict = {
                 'id': step.order_index,
@@ -1752,7 +1762,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             if module.type == 'tool':
                 pja_dict = {}
                 for pja in step.post_job_actions:
-                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type, 
+                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type,
                                                                       output_name = pja.output_name,
                                                                       action_arguments = pja.action_arguments )
                 step_dict[ 'post_job_actions' ] = pja_dict
@@ -1868,8 +1878,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             # Unpack and add post-job actions.
             post_job_actions = step_dict.get( 'post_job_actions', {} )
             for name, pja_dict in post_job_actions.items():
-                pja = PostJobAction( pja_dict[ 'action_type' ], 
-                                     step, pja_dict[ 'output_name' ], 
+                pja = PostJobAction( pja_dict[ 'action_type' ],
+                                     step, pja_dict[ 'output_name' ],
                                      pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
         for step in steps:
@@ -1894,7 +1904,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         trans.sa_session.add( stored )
         trans.sa_session.flush()
         return stored, missing_tool_tups
-    
+
 ## ---- Utility methods -------------------------------------------------------
 
 def attach_ordered_steps( workflow, steps ):
@@ -1937,13 +1947,13 @@ def order_workflow_steps( steps ):
         return [ steps[i] for i in node_order ]
     except CycleError:
         return None
-    
+
 def order_workflow_steps_with_levels( steps ):
     try:
         return topsort_levels( edgelist_for_workflow_steps( steps ) )
     except CycleError:
         return None
-    
+
 class FakeJob( object ):
     """
     Fake job object for datasets that have no creating_job_associations,
@@ -1952,7 +1962,7 @@ class FakeJob( object ):
     def __init__( self, dataset ):
         self.is_fake = True
         self.id = "fake_%s" % dataset.id
-    
+
 def get_job_dict( trans ):
     """
     Return a dictionary of Job -> [ Dataset ] mappings, for all finished
@@ -1967,22 +1977,22 @@ def get_job_dict( trans ):
         if dataset.state in ( 'new', 'running', 'queued' ):
             warnings.add( "Some datasets still queued or running were ignored" )
             continue
-        
+
         #if this hda was copied from another, we need to find the job that created the origial hda
         job_hda = dataset
         while job_hda.copied_from_history_dataset_association:
             job_hda = job_hda.copied_from_history_dataset_association
-        
+
         if not job_hda.creating_job_associations:
             jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
-        
+
         for assoc in job_hda.creating_job_associations:
             job = assoc.job
             if job in jobs:
                 jobs[ job ].append( ( assoc.name, dataset ) )
             else:
                 jobs[ job ] = [ ( assoc.name, dataset ) ]
-    return jobs, warnings    
+    return jobs, warnings
 
 def cleanup_param_values( inputs, values ):
     """
@@ -2015,7 +2025,7 @@ def cleanup_param_values( inputs, values ):
                 key = prefix + key + "_"
                 for k in root_values.keys():
                     if k.startswith( key ):
-                        del root_values[k]            
+                        del root_values[k]
             elif isinstance( input, Repeat ):
                 group_values = values[key]
                 for i, rep_values in enumerate( group_values ):
@@ -2029,4 +2039,4 @@ def cleanup_param_values( inputs, values ):
                 cleanup( prefix, input.cases[current_case].inputs, group_values )
     cleanup( "", inputs, values )
     return associations
-    
+

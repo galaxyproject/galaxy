@@ -103,6 +103,7 @@
                                     <a class="action-button" href="${h.url_for( controller='workflow', action='display_by_username_and_slug', username=workflow.user.username, slug=workflow.slug )}" target="_top">View</a>
                                     <a class="action-button" href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id( workflow.id ) )}">Run</a>
                                     <a class="action-button" href="${h.url_for( controller='workflow', action='clone', id=trans.security.encode_id( workflow.id ) )}">Clone</a>
+                                    <a class="action-button" confirm="Are you sure you want to remove the shared workflow '${h.to_unicode( workflow.name ) | h}'?" href="${h.url_for( controller='workflow', action='sharing', unshare_me=True, id=trans.security.encode_id( workflow.id ))}">Remove</a>
                                 </div>
                             </td>
                         </tr>
