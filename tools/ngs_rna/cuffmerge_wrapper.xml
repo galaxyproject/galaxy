@@ -5,7 +5,9 @@
         <requirement type="package">cufflinks</requirement>
     </requirements>
     <command interpreter="python">
-        cuffmerge_wrapper.py 
+        cuffmerge_wrapper.py
+        
+            --num-threads="4"
             
             ## Use annotation reference?
             #if $annotation.use_ref_annotation == "Yes":
