@@ -797,8 +797,9 @@ def build_shed_tool_conf_select_field( trans ):
 def build_tool_panel_section_select_field( trans ):
     """Build a SelectField whose options are the sections of the current in-memory toolbox."""
     options = []
-    for k, tool_section in trans.app.toolbox.tool_panel.items():
-        options.append( ( tool_section.name, tool_section.id ) )
+    for k, v in trans.app.toolbox.tool_panel.items():
+        if isinstance( v, tools.ToolSection ):
+            options.append( ( v.name, v.id ) )
     select_field = SelectField( name='tool_panel_section', display='radio' )
     for option_tup in options:
         select_field.add_option( option_tup[0], option_tup[1] )
