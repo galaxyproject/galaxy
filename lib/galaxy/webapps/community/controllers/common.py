@@ -488,6 +488,7 @@ def reset_all_repository_metadata( trans, id, **kwd ):
     repo = hg.repository( get_configured_ui(), repo_dir )
     if len( repo ) == 1:
         message, status = set_repository_metadata( trans, id, repository.tip, **kwd )
+        add_repository_metadata_tool_versions( trans, id, [ repository.tip ] )
     else:
         # The list of changeset_revisions refers to repository_metadata records that have been
         # created or updated.  When the following loop completes, we'll delete all repository_metadata
@@ -543,6 +544,7 @@ def reset_all_repository_metadata( trans, id, **kwd ):
                 ancestor_changeset_revision = None
                 ancestor_metadata_dict = None
         clean_repository_metadata( trans, id, changeset_revisions )
+        add_repository_metadata_tool_versions( trans, id, changeset_revisions )
 def clean_repository_metadata( trans, id, changeset_revisions ):
     # Delete all repository_metadata reecords associated with the repository
     # that have a changeset_revision that is not in changeset_revisions.
@@ -551,6 +553,47 @@ def clean_repository_metadata( trans, id, changeset_revisions ):
         if repository_metadata.changeset_revision not in changeset_revisions:
             trans.sa_session.delete( repository_metadata )
             trans.sa_session.flush()
+def add_repository_metadata_tool_versions( trans, id, changeset_revisions ):
+    # If a repository includes tools, build a dictionary of { 'tool id' : 'parent tool id' }
+    # pairs for each tool in each changeset revision.
+    for index, changeset_revision in enumerate( changeset_revisions ):
+        tool_versions_dict = {}
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        metadata = repository_metadata.metadata
+        tool_dicts = metadata.get( 'tools', [] )
+        if index == 0:
+            # The first changset_revision is a special case because it will have no ancestor
+            # changeset_revisions in which to match tools.  The parent tool id for tools in
+            # the first changeset_revision will be the "old_id" in the tool config.
+            for tool_dict in tool_dicts:
+                tool_versions_dict[ tool_dict[ 'guid' ] ] = tool_dict[ 'id' ]
+        else:
+            for tool_dict in tool_dicts:
+                # We have at least 2 changeset revisions to compare tool guids and tool ids.
+                parent_id = get_parent_id( trans, id, tool_dict[ 'id' ], tool_dict[ 'version' ], tool_dict[ 'guid' ], changeset_revisions[ 0:index ] )
+                tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
+        if tool_versions_dict:
+            repository_metadata.tool_versions = tool_versions_dict
+            trans.sa_session.add( repository_metadata )
+            trans.sa_session.flush()
+def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
+    parent_id = None
+    # Compare from most recent to oldest.
+    changeset_revisions.reverse()
+    for changeset_revision in changeset_revisions:
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        metadata = repository_metadata.metadata
+        tools_dicts = metadata.get( 'tools', [] )
+        for tool_dict in tools_dicts:
+            if tool_dict[ 'guid' ] == guid:
+                # The tool has not changed between the compared changeset revisions.
+                continue
+            if tool_dict[ 'id' ] == old_id and tool_dict[ 'version' ] != version:
+                # The tool version is different, so we've found the parent.
+                return tool_dict[ 'guid' ]
+    if parent_id is None:
+        # The tool did not change through all of the changeset revisions.
+        return old_id
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:

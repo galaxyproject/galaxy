@@ -120,36 +120,32 @@ class ToolBox( object ):
                 return tool
             else:
                 return tool
-        # Handle the case where the tool was used when the tool was included in the Galaxy distribution,
-        # but now the tool is contained in an installed tool shed repository.  In this case, the original
-        # tool id can be mapped to the new tool id, which is the tool's guid in the tool shed repository.
-        # This scenarios can occur in workflows and in a history item when the rerun icon is clicked.
-        # The weakness here is that workflows currently handle only tool ids and not versions.
-        tool_id_guid_map = self.__get_tool_id_guid_map( tool_id, tool_version=tool_version )
-        if tool_id_guid_map:
-            guid = tool_id_guid_map.guid
-            if guid in self.tools_by_id:
-                return self.tools_by_id[ guid ]
-        # Handle the case where a proprietary tool was initially developed and hosted in a local Galaxy
-        # instance, but the developer later uploaded the tool to a Galaxy tool shed, removed the original
-        # tool from the local Galaxy instance and installed the tool's repository from the tool shed.
-        for k, tool in self.tools_by_id.items():
-            if tool_id == tool.old_id:
-                if tool_version and tool.version == tool_version:
-                    return tool
-                else:
-                    return tool
+        # Handle the case where the received tool_id has a tool_version.  In this case, one of the following
+        # conditions is true.
+        # 1. The tool was used when it was included in the Galaxy distribution, but now the tool is contained
+        #    in an installed tool shed repository.  In this case, the original tool id can be mapped to the new
+        #    tool id, which is the tool's guid in the tool shed repository.  This scenarios can occur in
+        #    workflows and in a history item when the rerun icon is clicked.  The weakness here is that workflows
+        #    currently handle only tool ids and not versions.
+        # 2. A proprietary tool was initially developed and hosted in a local Galaxy instance, but the developer
+        #    later uploaded the tool to a Galaxy tool shed, removed the original tool from the local Galaxy
+        # instance and installed the tool's repository from the tool shed.
+        tv = self.__get_tool_version( tool_id )
+        if tv:
+            tool_version_ids = tv.get_version_ids( self.app )
+            for tool_version_id in tool_version_ids:
+                if tool_version_id in self.tools_by_id:
+                    tool = self.tools_by_id[ tool_version_id ]
+                    if tool_version and tool.version == tool_version:
+                        return tool
+                    else:
+                        return tool
         return None
-    def __get_tool_id_guid_map( self, tool_id, tool_version=None ):
-        if tool_version:
-            return self.sa_session.query( self.app.model.ToolIdGuidMap ) \
-                                  .filter( and_( self.app.model.ToolIdGuidMap.table.c.tool_id == tool_id,
-                                                 self.app.model.ToolIdGuidMap.table.c.tool_version == tool_version ) ) \
-                                  .first()
-        else:
-            return self.sa_session.query( self.app.model.ToolIdGuidMap ) \
-                                  .filter( self.app.model.ToolIdGuidMap.table.c.tool_id == tool_id ) \
-                                  .first()
+    def __get_tool_version( self, tool_id ):
+        """Return a ToolVersion if one exists for our tool_id"""
+        return self.sa_session.query( self.app.model.ToolVersion ) \
+                              .filter( self.app.model.ToolVersion.table.c.tool_id == tool_id ) \
+                              .first()
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         return self.sa_session.query( self.app.model.ToolShedRepository ) \
                               .filter( and_( self.app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
@@ -160,7 +156,10 @@ class ToolBox( object ):
     def load_tool_tag_set( self, elem, panel_dict, tool_path, guid=None, section=None ):
         try:
             path = elem.get( "file" )
-            if guid is not None:
+            if guid is None:
+                tool_shed_repository = None
+                can_load = True
+            else:
                 # The tool is contained in an installed tool shed repository, so load
                 # the tool only if the repository has not been marked deleted.
                 tool_shed = elem.find( "tool_shed" ).text
@@ -218,8 +217,6 @@ class ToolBox( object ):
                     # If there is not yet a tool_shed_repository record, we're in the process of installing
                     # a new repository, so any included tools can be loaded into the tool panel.
                     can_load = True
-            else:
-                can_load = True
             if can_load:
                 tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
                 if guid is not None:
@@ -230,6 +227,11 @@ class ToolBox( object ):
                     tool.guid = guid
                     tool.old_id = elem.find( "id" ).text
                     tool.version = elem.find( "version" ).text
+                # Make sure the tool has a tool_version.
+                if not self.__get_tool_version( tool.id ):
+                    tool_version = self.app.model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
+                    self.sa_session.add( tool_version )
+                    self.sa_session.flush()
                 if self.app.config.get_bool( 'enable_tool_tags', False ):
                     tag_names = elem.get( "tags", "" ).split( "," )
                     for tag_name in tag_names:
@@ -542,13 +544,30 @@ class Tool:
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
         self.external_runJob_script = app.config.drmaa_external_runjob_script
-    
     @property
     def sa_session( self ):
-        """
-        Returns a SQLAlchemy session
-        """
+        """Returns a SQLAlchemy session"""
         return self.app.model.context
+    @property
+    def tool_version( self ):
+        """Return a ToolVersion if one exists for our id"""
+        return self.sa_session.query( self.app.model.ToolVersion ) \
+                              .filter( self.app.model.ToolVersion.table.c.tool_id == self.id ) \
+                              .first()
+    @property
+    def tool_versions( self ):
+        # If we have versions, return them.
+        tool_version = self.tool_version
+        if tool_version:
+            return tool_version.get_versions( self.app )
+        return []
+    @property
+    def tool_version_ids( self ):
+        # If we have versions, return a list of their tool_ids.
+        tool_version = self.tool_version
+        if tool_version:
+            return tool_version.get_version_ids( self.app )
+        return []
     def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.

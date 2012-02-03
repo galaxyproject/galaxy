@@ -194,17 +194,19 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def from_workflow_step( Class, trans, step ):
         tool_id = step.tool_id
-        install_tool_id = None
         if trans.app.toolbox and tool_id not in trans.app.toolbox.tools_by_id:
-            # Handle the case where the tool was used when the tool was included in the Galaxy distribution,
-            # but now the tool is contained in an installed tool shed repository.  In this case, the original
-            # tool id can be mapped to the new tool id, which is the tool's guid in the tool shed repository.
-            tool_id_guid_map = trans.sa_session.query( trans.model.ToolIdGuidMap ) \
-                                               .filter( trans.model.ToolIdGuidMap.table.c.tool_id == tool_id ) \
-                                               .first()
-            if tool_id_guid_map:
-                install_tool_id = tool_id_guid_map.guid
-        if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ) or install_tool_id:
+            # See if we have access to a different version of the tool.
+            # TODO: If workflows are ever enhanced to use tool version
+            # in addition to tool id, enhance the selection process here
+            # to retrieve the correct version of the tool.
+            tool_version = self.__get_tool_version( trans, tool_id )
+            if tool_version:
+                tool_version_ids = tool_version.get_version_ids( trans.app )
+                for tool_version_id in tool_version_ids:
+                    if tool_version_id in trans.app.toolbox.tools_by_id:
+                        tool_id = tool_version_id
+                        break
+        if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ):
             module = Class( trans, tool_id )
             module.state = DefaultToolState()
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
@@ -217,6 +219,11 @@ class ToolModule( WorkflowModule ):
             module.post_job_actions = pjadict
             return module
         return None
+    def __get_tool_version( self, trans, tool_id ):
+        # Return a ToolVersion if one exists for tool_id.
+        return trans.sa_session.query( trans.app.model.ToolVersion ) \
+                               .filter( trans.app.model.ToolVersion.table.c.tool_id == tool_id ) \
+                               .first()
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = self.tool_id

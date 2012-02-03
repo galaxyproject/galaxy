@@ -110,6 +110,7 @@ def create_or_update_tool_shed_repository( app, name, description, changeset_rev
                                                              dist_to_shed=dist_to_shed )
     sa_session.add( tool_shed_repository )
     sa_session.flush()
+    return tool_shed_repository
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     """
     Update the received metadata_dict with changes that have been applied
@@ -358,15 +359,18 @@ def get_repository_tools_tups( app, metadata_dict ):
             tool = app.toolbox.load_tool( os.path.abspath( relative_path ), guid=guid )
             repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
-def get_tool_id_guid_map( app, tool_id, version, tool_shed, repository_owner, repository_name ):
+def get_tool_version( app, tool_id ):
     # This method is used by the InstallManager, which does not have access to trans.
     sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolIdGuidMap ) \
-                     .filter( and_( app.model.ToolIdGuidMap.table.c.tool_id == tool_id,
-                                    app.model.ToolIdGuidMap.table.c.tool_version == version,
-                                    app.model.ToolIdGuidMap.table.c.tool_shed == tool_shed,
-                                    app.model.ToolIdGuidMap.table.c.repository_owner == repository_owner,
-                                    app.model.ToolIdGuidMap.table.c.repository_name == repository_name ) ) \
+    return sa_session.query( app.model.ToolVersion ) \
+                     .filter( app.model.ToolVersion.table.c.tool_id == tool_id ) \
+                     .first()
+def get_tool_version_association( app, parent_tool_version, tool_version ):
+    """Return a ToolVersionAssociation if one exists that associates the two received tool_versions"""
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.ToolVersionAssociation ) \
+                     .filter( and_( app.model.ToolVersionAssociation.table.c.parent_id == parent_tool_version.id,
+                                    app.model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
                      .first()
 def get_url_from_repository_tool_shed( app, repository ):
     """
@@ -472,6 +476,33 @@ def handle_tool_dependencies( current_working_dir, repo_files_dir, repository_to
                         error = tmp_stderr.read()
                         tmp_stderr.close()
                         log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
+def handle_tool_versions( app, tool_versions, tool_shed_repository ):
+    """
+    This method is used by the InstallManager, which does not have access to trans.  Using
+    the tool_versions dictionary retrieved from the tool shed, create the parent / child pairs
+    of tool versions.  The tool_versions dictionary contains { tool id : parent tool id } pairs.
+    """
+    sa_session = app.model.context.current
+    for tool_guid, parent_id in tool_versions.items():
+        tool_version_using_tool_guid = get_tool_version( app, tool_guid )
+        tool_version_using_parent_id = get_tool_version( app, parent_id )
+        if not tool_version_using_tool_guid:
+            tool_version_using_tool_guid = app.model.ToolVersion( tool_id=tool_guid, tool_shed_repository=tool_shed_repository )
+            sa_session.add( tool_version_using_tool_guid )
+            sa_session.flush()
+        if not tool_version_using_parent_id:
+            tool_version_using_parent_id = app.model.ToolVersion( tool_id=parent_id, tool_shed_repository=tool_shed_repository )
+            sa_session.add( tool_version_using_parent_id )
+            sa_session.flush()
+        # Associate the two versions as parent / child.
+        tool_version_association = get_tool_version_association( app,
+                                                                 tool_version_using_parent_id,
+                                                                 tool_version_using_tool_guid )
+        if not tool_version_association:
+            tool_version_association = app.model.ToolVersionAssociation( tool_id=tool_version_using_tool_guid.id,
+                                                                         parent_id=tool_version_using_parent_id.id )
+            sa_session.add( tool_version_association )
+            sa_session.flush()
 def load_datatype_items( app, repository, relative_install_dir, deactivate=False ):
     # Load proprietary datatypes.
     metadata = repository.metadata
@@ -638,13 +669,13 @@ def load_repository_contents( app, repository_name, description, owner, changese
     # deleted, undelete it.  It is imperative that this happens before the call to alter_tool_panel() below because
     # tools will not be properly loaded if the repository is marked deleted.
     log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % repository_name )
-    create_or_update_tool_shed_repository( app,
-                                           repository_name,
-                                           description,
-                                           changeset_revision,
-                                           repository_clone_url,
-                                           metadata_dict,
-                                           dist_to_shed=dist_to_shed )
+    tool_shed_repository = create_or_update_tool_shed_repository( app,
+                                                                  repository_name,
+                                                                  description,
+                                                                  changeset_revision,
+                                                                  repository_clone_url,
+                                                                  metadata_dict,
+                                                                  dist_to_shed=dist_to_shed )
     if 'tools' in metadata_dict:
         repository_tools_tups = get_repository_tools_tups( app, metadata_dict )
         if repository_tools_tups:
@@ -696,7 +727,7 @@ def load_repository_contents( app, repository_name, description, owner, changese
         if display_path:
             # Load proprietary datatype display applications
             app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
-    return metadata_dict
+    return tool_shed_repository, metadata_dict
 def alter_tool_panel( app, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, tool_section,
                       shed_tool_conf, tool_path, owner, new_install=True, deactivate=False, uninstall=False ):
     """

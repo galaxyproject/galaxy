@@ -119,6 +119,7 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
     Column( "changeset_revision", TrimmedString( 255 ), index=True ),
     Column( "metadata", JSONType, nullable=True ),
+    Column( "tool_versions", JSONType, nullable=True ),
     Column( "malicious", Boolean, default=False ) )
 
 RepositoryRatingAssociation.table = Table( "repository_rating_association", metadata,

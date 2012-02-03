@@ -382,16 +382,17 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "uninstalled", Boolean, default=False ),
     Column( "dist_to_shed", Boolean, default=False ) )
 
-ToolIdGuidMap.table = Table( "tool_id_guid_map", metadata,
+ToolVersion.table = Table( "tool_version", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "tool_id", String( 255 ) ),
-    Column( "tool_version", TEXT ),
-    Column( "tool_shed", TrimmedString( 255 ) ),
-    Column( "repository_owner", TrimmedString( 255 ) ),
-    Column( "repository_name", TrimmedString( 255 ) ),
-    Column( "guid", TEXT, index=True, unique=True ) )
+    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=True ) )
+
+ToolVersionAssociation.table = Table( "tool_version_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "tool_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ),
+    Column( "parent_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ) )
 
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1619,9 +1620,20 @@ assign_mapper( context, Page, Page.table,
                      ratings=relation( PageRatingAssociation, order_by=PageRatingAssociation.table.c.id, backref="pages" )  
                    ) )
                    
-assign_mapper( context, ToolShedRepository, ToolShedRepository.table )
+assign_mapper( context, ToolShedRepository, ToolShedRepository.table,
+    properties=dict( tool_versions=relation( ToolVersion,
+                                             primaryjoin=( ToolShedRepository.table.c.id == ToolVersion.table.c.tool_shed_repository_id ),
+                                             backref='tool_shed_repository' ) ) )
 
-assign_mapper( context, ToolIdGuidMap, ToolIdGuidMap.table )
+assign_mapper( context, ToolVersion, ToolVersion.table )
+
+assign_mapper( context, ToolVersionAssociation, ToolVersionAssociation.table,
+    properties=dict( tool_version=relation( ToolVersion,
+                                            primaryjoin=( ToolVersionAssociation.table.c.tool_id == ToolVersion.table.c.id ),
+                                            backref='current_version' ),
+                     parent_version=relation( ToolVersion,
+                                              primaryjoin=( ToolVersionAssociation.table.c.parent_id == ToolVersion.table.c.id ),
+                                              backref='previous_version' ) ) )
 
 # Set up proxy so that 
 #   Page.users_shared_with

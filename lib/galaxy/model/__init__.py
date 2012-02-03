@@ -2687,16 +2687,46 @@ class ToolShedRepository( object ):
     def includes_workflows( self ):
         return 'workflows' in self.metadata
 
-class ToolIdGuidMap( object ):
-    def __init__( self, id=None, create_time=None, tool_id=None, tool_version=None, tool_shed=None, repository_owner=None, repository_name=None, guid=None ):
+class ToolVersion( object ):
+    def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
         self.id = id
         self.create_time = create_time
         self.tool_id = tool_id
-        self.tool_version = tool_version
-        self.tool_shed = tool_shed
-        self.repository_owner = repository_owner
-        self.repository_name = repository_name
-        self.guid = guid
+        self.tool_shed_repository = tool_shed_repository
+    def get_versions( self, app ):
+        sa_session = app.model.context.current
+        tool_versions = []
+        # Prepend ancestors.
+        def __ancestors( tool_version ):
+            # Should we handle multiple parents at each level?
+            previous_tva = tool_version.previous_version
+            if previous_tva:
+                parent_version = previous_tva[0].parent_version
+                if parent_version not in tool_versions:
+                    tool_versions.insert( 0, parent_version )
+                    __ancestors( parent_version )
+        # Append descendants.
+        def __descendants( tool_version ):
+            # Should we handle multiple child siblings at each level?
+            next_tva = sa_session.query( app.model.ToolVersionAssociation ) \
+                                 .filter( app.model.ToolVersionAssociation.table.c.parent_id == tool_version.id ) \
+                                 .first()
+            if next_tva:
+                current_version = next_tva.tool_version
+                if current_version not in tool_versions:
+                    tool_versions.append( current_version )
+                    __descendants( current_version )
+        __ancestors( self )
+        __descendants( self )
+        return tool_versions
+    def get_version_ids( self, app ):
+        return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
+
+class ToolVersionAssociation( object ):
+    def __init__( self, id=None, tool_id=None, parent_id=None ):
+        self.id = id
+        self.tool_id = tool_id
+        self.parent_id = parent_id
 
 ## ---- Utility methods -------------------------------------------------------
 

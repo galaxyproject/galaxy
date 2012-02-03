@@ -1,57 +1,10 @@
+import urllib2
 from galaxy.web.controllers.admin import *
+from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
 from galaxy import tools
 
 log = logging.getLogger( __name__ )
-
-class ToolIdGuidMapGrid( grids.Grid ):
-    class ToolIdColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool_id_guid_map ):
-            return tool_id_guid_map.tool_id
-    class ToolVersionColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool_id_guid_map ):
-            return tool_id_guid_map.tool_version
-    class ToolGuidColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool_id_guid_map ):
-            return tool_id_guid_map.guid
-    class ToolShedColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool_id_guid_map ):
-            return tool_id_guid_map.tool_shed
-    class RepositoryNameColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool_id_guid_map ):
-            return tool_id_guid_map.repository_name
-    class RepositoryOwnerColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool_id_guid_map ):
-            return tool_id_guid_map.repository_owner
-    # Grid definition
-    title = "Map tool id to guid"
-    model_class = model.ToolIdGuidMap
-    template='/admin/tool_shed_repository/grid.mako'
-    default_sort_key = "tool_id"
-    columns = [
-        ToolIdColumn( "Tool id" ),
-        ToolVersionColumn( "Version" ),
-        ToolGuidColumn( "Guid" ),
-        ToolShedColumn( "Tool shed" ),
-        RepositoryNameColumn( "Repository name" ),
-        RepositoryOwnerColumn( "Repository owner" )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
-                                                cols_to_filter=[ columns[0], columns[2], columns[4], columns[5] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-    global_actions = [
-        grids.GridAction( "Manage installed tool shed repositories", dict( controller='admin_toolshed', action='browse_repositories' ) )
-    ]
-    operations = []
-    standard_filters = []
-    default_filter = {}
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
-    def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class )
 
 class RepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
@@ -96,9 +49,7 @@ class RepositoryListGrid( grids.Grid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    global_actions = [
-        grids.GridAction( "View tool id guid map", dict( controller='admin_toolshed', action='browse_tool_id_guid_map' ) )
-    ]
+    global_actions = []
     operations = [ grids.GridOperation( "Get updates",
                                         allow_multiple=False,
                                         condition=( lambda item: not item.deleted ),
@@ -122,12 +73,7 @@ class RepositoryListGrid( grids.Grid ):
 class AdminToolshed( AdminGalaxy ):
     
     repository_list_grid = RepositoryListGrid()
-    tool_id_guid_map_grid = ToolIdGuidMapGrid()
 
-    @web.expose
-    @web.require_admin
-    def browse_tool_id_guid_map( self, trans, **kwd ):
-        return self.tool_id_guid_map_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def browse_repository( self, trans, **kwd ):
@@ -267,21 +213,38 @@ class AdminToolshed( AdminGalaxy ):
                         if returncode == 0:
                             owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
                             tool_shed = clean_tool_shed_url( tool_shed_url )
-                            metadata_dict = load_repository_contents( app=trans.app,
-                                                                      repository_name=name,
-                                                                      description=description,
-                                                                      owner=owner,
-                                                                      changeset_revision=changeset_revision,
-                                                                      tool_path=tool_path,
-                                                                      repository_clone_url=repository_clone_url,
-                                                                      relative_install_dir=relative_install_dir,
-                                                                      current_working_dir=current_working_dir,
-                                                                      tmp_name=tmp_name,
-                                                                      tool_shed=tool_shed,
-                                                                      tool_section=tool_section,
-                                                                      shed_tool_conf=shed_tool_conf,
-                                                                      new_install=True,
-                                                                      dist_to_shed=False )
+                            tool_shed_repository, metadata_dict = load_repository_contents( app=trans.app,
+                                                                                            repository_name=name,
+                                                                                            description=description,
+                                                                                            owner=owner,
+                                                                                            changeset_revision=changeset_revision,
+                                                                                            tool_path=tool_path,
+                                                                                            repository_clone_url=repository_clone_url,
+                                                                                            relative_install_dir=relative_install_dir,
+                                                                                            current_working_dir=current_working_dir,
+                                                                                            tmp_name=tmp_name,
+                                                                                            tool_shed=tool_shed,
+                                                                                            tool_section=tool_section,
+                                                                                            shed_tool_conf=shed_tool_conf,
+                                                                                            new_install=True,
+                                                                                            dist_to_shed=False )
+
+
+                            if 'tools' in metadata_dict:
+                                # Get the tool_versions from the tool shed for each tool in the installed change set.
+                                url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                                    ( tool_shed_url, name, owner, changeset_revision )
+                                response = urllib2.urlopen( url )
+                                text = response.read()
+                                response.close()
+                                if text:
+                                    tool_versions_dict = from_json_string( text )
+                                    handle_tool_versions( trans.app, tool_versions_dict, tool_shed_repository )
+                                else:
+                                    message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % name
+                                    message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
+                                    message += "from the installed repository's <b>Repository Actions</b> menu.  "
+                                    status = 'error'
                             installed_repository_names.append( name )
                         else:
                             tmp_stderr = open( tmp_name, 'rb' )
@@ -293,7 +256,7 @@ class AdminToolshed( AdminGalaxy ):
                         message += '%s<br/>' % tmp_stderr.read()
                         tmp_stderr.close()
                         status = 'error'
-            if installed_repository_names:
+            if installed_repository_names:                
                 installed_repository_names.sort()
                 num_repositories_installed = len( installed_repository_names )
                 if tool_section:
@@ -328,6 +291,35 @@ class AdminToolshed( AdminGalaxy ):
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
                                     new_tool_panel_section=new_tool_panel_section,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
+    def set_tool_versions( self, trans, **kwd ):
+        # Get the tool_versions from the tool shed for each tool in the installed change set.
+        repository = get_repository( trans, kwd[ 'id' ] )
+        tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
+        url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+            ( tool_shed_url, repository.name, repository.owner, repository.changeset_revision )
+        response = urllib2.urlopen( url )
+        text = response.read()
+        response.close()
+        if text:
+            tool_versions_dict = from_json_string( text )
+            handle_tool_versions( trans.app, tool_versions_dict, repository )
+            message = "Tool versions have been set for all included tools."
+            status = 'done'
+        else:
+            message = "Version information for the tools included in the <b>%s</b> repository is missing.  " % repository.name
+            message += "Reset all of this reppository's metadata in the tool shed, then set the installed tool versions "
+            message ++ "from the installed repository's <b>Repository Actions</b> menu.  "
+            status = 'error'
+        shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
+        repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
+        return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
+                                    repository=repository,
+                                    description=repository.description,
+                                    repo_files_dir=repo_files_dir,
                                     message=message,
                                     status=status )
     @web.expose
@@ -392,17 +384,6 @@ class AdminToolshed( AdminGalaxy ):
                     log.debug( "Removed repository installation directory: %s" % str( relative_install_dir ) )
                 except Exception, e:
                     log.debug( "Error removing repository installation directory %s: %s" % ( str( relative_install_dir ), str( e ) ) )
-                # If the repository was installed by the InstallManager, remove
-                # all appropriate rows from the tool_id_guid_map database table.
-                if repository.dist_to_shed:
-                    count = 0
-                    for tool_id_guid_map in trans.sa_session.query( trans.model.ToolIdGuidMap ) \
-                                                            .filter( and_( trans.model.ToolIdGuidMap.table.c.tool_shed==repository.tool_shed,
-                                                                           trans.model.ToolIdGuidMap.table.c.repository_owner==repository.owner,
-                                                                           trans.model.ToolIdGuidMap.table.c.repository_name==repository.name ) ):
-                        trans.sa_session.delete( tool_id_guid_map )
-                        count += 1
-                    log.debug( "Removed %d rows from the tool_id_guid_map database table." % count )
                 repository.uninstalled = True
             repository.deleted = True
             trans.sa_session.add( repository )
@@ -490,21 +471,21 @@ class AdminToolshed( AdminGalaxy ):
                                 elem.attrib[ 'version' ] = ''
                                 tool_section = tools.ToolSection( elem )
                                 trans.app.toolbox.tool_panel[ section_key ] = tool_section
-                        metadata_dict = load_repository_contents( app=trans.app,
-                                                                  repository_name=repository.name,
-                                                                  description=repository.description,
-                                                                  owner=repository.owner,
-                                                                  changeset_revision=repository.installed_changeset_revision,
-                                                                  tool_path=tool_path,
-                                                                  repository_clone_url=repository_clone_url,
-                                                                  relative_install_dir=relative_install_dir,
-                                                                  current_working_dir=current_working_dir,
-                                                                  tmp_name=tmp_name,
-                                                                  tool_shed=repository.tool_shed,
-                                                                  tool_section=tool_section,
-                                                                  shed_tool_conf=shed_tool_conf,
-                                                                  new_install=True,
-                                                                  dist_to_shed=False )
+                        tool_shed_repository, metadata_dict = load_repository_contents( app=trans.app,
+                                                                                        repository_name=repository.name,
+                                                                                        description=repository.description,
+                                                                                        owner=repository.owner,
+                                                                                        changeset_revision=repository.installed_changeset_revision,
+                                                                                        tool_path=tool_path,
+                                                                                        repository_clone_url=repository_clone_url,
+                                                                                        relative_install_dir=relative_install_dir,
+                                                                                        current_working_dir=current_working_dir,
+                                                                                        tmp_name=tmp_name,
+                                                                                        tool_shed=repository.tool_shed,
+                                                                                        tool_section=tool_section,
+                                                                                        shed_tool_conf=shed_tool_conf,
+                                                                                        new_install=True,
+                                                                                        dist_to_shed=False )
                         repository.uninstalled = False
             repository.deleted = False
             trans.sa_session.add( repository )
@@ -518,6 +499,22 @@ class AdminToolshed( AdminGalaxy ):
                 metadata = repository.metadata
                 repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
                 guids_to_activate = [ repository_tool_tup[1] for repository_tool_tup in repository_tools_tups ]
+                # Undelete the tool_version for each guid.
+                for guid_to_activate in guids_to_activate:
+                    tool_version = get_tool_version( trans.app, guid_to_activate )
+                    if tool_version:
+                        if tool_version.deleted:
+                            # This should not happen as we are currently not marking tool versions as deleted
+                            # upon deactivation.  We may decide to eliminate the tool_version.deleted column
+                            # at some point, but we'll keep it for now in case we decide its useful.
+                            tool_version.deleted = False
+                            trans.sa_session.add( tool_version )
+                            trans.sa_session.flush()
+                    else:
+                        # We're somehow missing a tool_version, so create a new one.
+                        tool_version = trans.model.ToolVersion( tool_id=guid_to_activate, tool_shed_repository=repository )
+                        trans.sa_session.add( tool_version )
+                        trans.sa_session.flush()
                 tool_panel_section = metadata[ 'tool_panel_section' ]
                 original_section_id = tool_panel_section[ 'id' ]
                 if original_section_id in [ '' ]:
@@ -653,8 +650,8 @@ class AdminToolshed( AdminGalaxy ):
         # Send a request to the relevant tool shed to see if there are any updates.
         repository = get_repository( trans, kwd[ 'id' ] )
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-        url = '%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-            ( tool_shed_url, url_for( '', qualified=True ), repository.name, repository.owner, repository.changeset_revision )
+        url = '%/srepository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+            ( tool_shed_url, url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
@@ -684,20 +681,20 @@ class AdminToolshed( AdminGalaxy ):
                             # Update the repository metadata.
                             repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
                             tool_shed = clean_tool_shed_url( tool_shed_url )
-                            metadata_dict = load_repository_contents( app=trans.app,
-                                                                      name=name,
-                                                                      description=repository.description,
-                                                                      owner=owner,
-                                                                      changeset_revision=changeset_revision,
-                                                                      tool_path=tool_path,
-                                                                      repository_clone_url=repository_clone_url,
-                                                                      relative_install_dir=relative_install_dir,
-                                                                      current_working_dir=current_working_dir,
-                                                                      tmp_name=tmp_name,
-                                                                      tool_shed=tool_shed,
-                                                                      tool_section=None,
-                                                                      shed_tool_conf=None,
-                                                                      new_install=False )
+                            tool_shed_repository, metadata_dict = load_repository_contents( app=trans.app,
+                                                                                            name=name,
+                                                                                            description=repository.description,
+                                                                                            owner=owner,
+                                                                                            changeset_revision=changeset_revision,
+                                                                                            tool_path=tool_path,
+                                                                                            repository_clone_url=repository_clone_url,
+                                                                                            relative_install_dir=relative_install_dir,
+                                                                                            current_working_dir=current_working_dir,
+                                                                                            tmp_name=tmp_name,
+                                                                                            tool_shed=tool_shed,
+                                                                                            tool_section=None,
+                                                                                            shed_tool_conf=None,
+                                                                                            new_install=False )
                             # Update the repository changeset_revision in the database.
                             repository.changeset_revision = latest_changeset_revision
                             repository.update_available = False

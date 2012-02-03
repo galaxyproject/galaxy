@@ -1220,7 +1220,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
                                 if shed_url.endswith( '/' ):
                                     shed_url = shed_url.rstrip( '/' )
-                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, url_for( '', qualified=True ), webapp )
+                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, url_for( '/', qualified=True ), webapp )
                                     if missing_tool_tups:
                                         url += '&tool_id='
                                     for missing_tool_tup in missing_tool_tups:

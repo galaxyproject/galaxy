@@ -4,7 +4,9 @@ at some point included in the Galaxy distribution, but are now hosted in the mai
 shed.  Tools included in tool_shed_install.xml that have already been installed will not be
 re-installed.
 """
+import urllib2
 from galaxy.tools import ToolSection
+from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
 
 log = logging.getLogger( __name__ )
@@ -53,7 +55,7 @@ class InstallManager( object ):
         changeset_revision = elem.get( 'changeset_revision' )
         # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
         clone_dir = os.path.join( self.tool_path, self.tool_shed, 'repos', self.repository_owner, name, changeset_revision )
-        if self.__isinstalled( elem, clone_dir ):
+        if self.__isinstalled( clone_dir ):
             log.debug( "Skipping automatic install of repository '%s' because it has already been installed in location '%s'" % ( name, clone_dir ) )
         else:
             if section_name and section_id:
@@ -81,47 +83,59 @@ class InstallManager( object ):
             if returncode == 0:
                 returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, changeset_revision )
                 if returncode == 0:
-                    metadata_dict = load_repository_contents( app=self.app,
-                                                              repository_name=name,
-                                                              description=description,
-                                                              owner=self.repository_owner,
-                                                              changeset_revision=changeset_revision,
-                                                              tool_path=self.tool_path,
-                                                              repository_clone_url=repository_clone_url,
-                                                              relative_install_dir=relative_install_dir,
-                                                              current_working_dir=current_working_dir,
-                                                              tmp_name=tmp_name,
-                                                              tool_shed=self.tool_shed,
-                                                              tool_section=tool_section,
-                                                              shed_tool_conf=self.install_tool_config,
-                                                              new_install=True,
-                                                              dist_to_shed=True )
-                    # Add a new record to the tool_id_guid_map table for each tool in the repository if one doesn't already exist.
+                    tool_shed_repository, metadata_dict = load_repository_contents( app=self.app,
+                                                                                    repository_name=name,
+                                                                                    description=description,
+                                                                                    owner=self.repository_owner,
+                                                                                    changeset_revision=changeset_revision,
+                                                                                    tool_path=self.tool_path,
+                                                                                    repository_clone_url=repository_clone_url,
+                                                                                    relative_install_dir=relative_install_dir,
+                                                                                    current_working_dir=current_working_dir,
+                                                                                    tmp_name=tmp_name,
+                                                                                    tool_shed=self.tool_shed,
+                                                                                    tool_section=tool_section,
+                                                                                    shed_tool_conf=self.install_tool_config,
+                                                                                    new_install=True,
+                                                                                    dist_to_shed=True )
                     if 'tools' in metadata_dict:
-                        tools_mapped = 0
-                        for tool_dict in metadata_dict[ 'tools' ]:
-                            flush_needed = False
-                            tool_id = tool_dict[ 'id' ]
-                            tool_version = tool_dict[ 'version' ]
-                            guid = tool_dict[ 'guid' ]
-                            tool_id_guid_map = get_tool_id_guid_map( self.app, tool_id, tool_version, self.tool_shed, self.repository_owner, name )
-                            if tool_id_guid_map:
-                                if tool_id_guid_map.guid != guid:
-                                    tool_id_guid_map.guid = guid
-                                    flush_needed = True
-                            else:
-                                tool_id_guid_map = self.app.model.ToolIdGuidMap( tool_id=tool_id,
-                                                                                 tool_version=tool_version,
-                                                                                 tool_shed=self.tool_shed,
-                                                                                 repository_owner=self.repository_owner,
-                                                                                 repository_name=name,
-                                                                                 guid=guid )
-                                flush_needed = True
-                            if flush_needed:
-                                self.sa_session.add( tool_id_guid_map )
-                                self.sa_session.flush()
-                                tools_mapped += 1
-                        log.debug( "Mapped tool ids to guids for %d tools included in repository '%s'." % ( tools_mapped, name ) )
+                        # Get the tool_versions from the tool shed for each tool in the installed change set.
+                        url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                            ( tool_shed_url, name, self.repository_owner, changeset_revision )
+                        response = urllib2.urlopen( url )
+                        text = response.read()
+                        response.close()
+                        if text:
+                            tool_versions_dict = from_json_string( text )
+                            handle_tool_versions( self.app, tool_versions_dict, tool_shed_repository )
+                        else:
+                            # Set the tool versions since they seem to be missing for this repository in the tool shed.
+                            for tool_dict in metadata_dict[ 'tools' ]:
+                                flush_needed = False
+                                tool_id = tool_dict[ 'guid' ]
+                                old_tool_id = tool_dict[ 'id' ]
+                                tool_version = tool_dict[ 'version' ]
+                                tool_version_using_old_id = get_tool_version( self.app, old_tool_id )
+                                tool_version_using_guid = get_tool_version( self.app, tool_id )
+                                if not tool_version_using_old_id:
+                                    tool_version_using_old_id = self.app.model.ToolVersion( tool_id=old_tool_id,
+                                                                                            tool_shed_repository=tool_shed_repository )
+                                    self.sa_session.add( tool_version_using_old_id )
+                                    self.sa_session.flush()
+                                if not tool_version_using_guid:
+                                    tool_version_using_guid = self.app.model.ToolVersion( tool_id=tool_id,
+                                                                                          tool_shed_repository=tool_shed_repository )
+                                    self.sa_session.add( tool_version_using_guid )
+                                    self.sa_session.flush()
+                                # Associate the two versions as parent / child.
+                                tool_version_association = get_tool_version_association( self.app,
+                                                                                         tool_version_using_old_id,
+                                                                                         tool_version_using_guid )
+                                if not tool_version_association:
+                                    tool_version_association = self.app.model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
+                                                                                                      parent_id=tool_version_using_old_id.id )
+                                    self.sa_session.add( tool_version_association )
+                                    self.sa_session.flush()
                 else:
                     tmp_stderr = open( tmp_name, 'rb' )
                     log.debug( "Error updating repository '%s': %s" % ( name, tmp_stderr.read() ) )
@@ -154,26 +168,11 @@ class InstallManager( object ):
         # The tool shed from which the repository was originally
         # installed must no longer be configured in tool_sheds_conf.xml.
         return None
-    def __isinstalled( self, repository_elem, clone_dir ):
-        name = repository_elem.get( 'name' )
-        installed = False
-        for tool_elem in repository_elem:
-            tool_config = tool_elem.get( 'file' )
-            tool_id = tool_elem.get( 'id' )
-            tool_version = tool_elem.get( 'version' )
-            tigm = get_tool_id_guid_map( self.app, tool_id, tool_version, self.tool_shed, self.repository_owner, name )
-            if tigm:
-                # A record exists in the tool_id_guid_map table, so see if the repository is installed.
-                if os.path.exists( clone_dir ):
-                    installed = True
-                    break
-        if not installed:
-            full_path = os.path.abspath( clone_dir )
-            # We may have a repository that contains no tools.
-            if os.path.exists( full_path ):
-                for root, dirs, files in os.walk( full_path ):
-                    if '.hg' in dirs:
-                        # Assume that the repository has been installed if we find a .hg directory.
-                        installed = True
-                        break
-        return installed
+    def __isinstalled( self, clone_dir ):
+        full_path = os.path.abspath( clone_dir )
+        if os.path.exists( full_path ):
+            for root, dirs, files in os.walk( full_path ):
+                if '.hg' in dirs:
+                    # Assume that the repository has been installed if we find a .hg directory.
+                    return True
+        return False

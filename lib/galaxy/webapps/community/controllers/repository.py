@@ -438,7 +438,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
                     encoded_repo_info_dict, includes_tools = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
                     url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s&includes_tools=%s' % \
-                        ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
+                        ( galaxy_url, url_for( '/', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
                     return trans.response.send_redirect( url )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
@@ -514,7 +514,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
                     encoded_repo_info_dict, includes_tools = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
                     url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s&includes_tools=%s' % \
-                        ( galaxy_url, url_for( '', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
+                        ( galaxy_url, url_for( '/', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
                     return trans.response.send_redirect( url )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
@@ -770,8 +770,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
         encoded_repo_info_dict = encode( repo_info_dict )
         # Redirect back to local Galaxy to perform install.
         url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s' % \
-            ( galaxy_url, url_for( '', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
+            ( galaxy_url, url_for( '/', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
         return trans.response.send_redirect( url )
+    @web.expose
+    def get_tool_versions( self, trans, **kwd ):
+        name = kwd[ 'name' ]
+        owner = kwd[ 'owner' ]
+        changeset_revision = kwd[ 'changeset_revision' ]
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+        if repository_metadata.tool_versions:
+            return to_json_string( repository_metadata.tool_versions )
+        return ''
     @web.expose
     def check_for_updates( self, trans, **kwd ):
         # Handle a request from a local Galaxy instance.  If the request originated with the
@@ -792,7 +802,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             no_update = 'false'
         else:
             # Start building up the url to redirect back to the calling Galaxy instance.
-            url = '%sadmin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '', qualified=True ) )
+            url = '%sadmin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '/', qualified=True ) )
             url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
                 ( repository.name, repository.user.username, changeset_revision )
         if changeset_revision == repository.tip:

@@ -84,11 +84,6 @@
                 <div class="toolParamHelp" style="clear: both;">
                     * The repository record's uninstalled column in the tool_shed_repository database table will be set to True.
                 </div>
-                %if repository.dist_to_shed:
-                    <div class="toolParamHelp" style="clear: both;">
-                        * All records associated with this repository will be eliminated from the tool_id_guid_map database table.
-                    </div>
-                %endif
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
