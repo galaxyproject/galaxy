@@ -559,23 +559,25 @@ def add_repository_metadata_tool_versions( trans, id, changeset_revisions ):
     for index, changeset_revision in enumerate( changeset_revisions ):
         tool_versions_dict = {}
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
-        metadata = repository_metadata.metadata
-        tool_dicts = metadata.get( 'tools', [] )
-        if index == 0:
-            # The first changset_revision is a special case because it will have no ancestor
-            # changeset_revisions in which to match tools.  The parent tool id for tools in
-            # the first changeset_revision will be the "old_id" in the tool config.
-            for tool_dict in tool_dicts:
-                tool_versions_dict[ tool_dict[ 'guid' ] ] = tool_dict[ 'id' ]
-        else:
-            for tool_dict in tool_dicts:
-                # We have at least 2 changeset revisions to compare tool guids and tool ids.
-                parent_id = get_parent_id( trans, id, tool_dict[ 'id' ], tool_dict[ 'version' ], tool_dict[ 'guid' ], changeset_revisions[ 0:index ] )
-                tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
-        if tool_versions_dict:
-            repository_metadata.tool_versions = tool_versions_dict
-            trans.sa_session.add( repository_metadata )
-            trans.sa_session.flush()
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata:
+                tool_dicts = metadata.get( 'tools', [] )
+                if index == 0:
+                    # The first changset_revision is a special case because it will have no ancestor
+                    # changeset_revisions in which to match tools.  The parent tool id for tools in
+                    # the first changeset_revision will be the "old_id" in the tool config.
+                    for tool_dict in tool_dicts:
+                        tool_versions_dict[ tool_dict[ 'guid' ] ] = tool_dict[ 'id' ]
+                else:
+                    for tool_dict in tool_dicts:
+                        # We have at least 2 changeset revisions to compare tool guids and tool ids.
+                        parent_id = get_parent_id( trans, id, tool_dict[ 'id' ], tool_dict[ 'version' ], tool_dict[ 'guid' ], changeset_revisions[ 0:index ] )
+                        tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
+                if tool_versions_dict:
+                    repository_metadata.tool_versions = tool_versions_dict
+                    trans.sa_session.add( repository_metadata )
+                    trans.sa_session.flush()
 def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
     parent_id = None
     # Compare from most recent to oldest.

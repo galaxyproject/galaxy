@@ -1,5 +1,5 @@
 """
-Migration script to add the new_repo_alert column to the galaxy_user table.
+Migration script to add the tool_versions column to the repository_metadata table.
 """
 
 from sqlalchemy import *
