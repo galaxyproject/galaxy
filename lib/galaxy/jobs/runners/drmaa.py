@@ -169,7 +169,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         ofile = "%s.drmout" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         efile = "%s.drmerr" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         jt = self.ds.createJobTemplate()
-        jt.remoteCommand = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job_wrapper.get_id_tag())
+        jt.remoteCommand = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
         jt.outputPath = ":%s" % ofile
         jt.errorPath = ":%s" % efile
         native_spec = self.get_native_spec( runner_url )
