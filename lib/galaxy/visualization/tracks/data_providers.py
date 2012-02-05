@@ -646,6 +646,10 @@ class BamDataProvider( TracksDataProvider ):
             max_high - highest coordinate for the returned reads
             message - error/informative message
         """
+        # No iterator indicates no reads.
+        if iterator is None:
+            return { 'data': [], 'message': None }
+        
         # Decode strand from read flag.
         def decode_strand( read_flag, mask ):
             strand_flag = ( read_flag & mask == 0 )
