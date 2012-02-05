@@ -2001,6 +2001,8 @@ extend(Tool.prototype, {
         var new_track = new current_track.constructor(track_name, view, container, "hda");
         new_track.init_for_tool_data();
         new_track.change_mode(current_track.mode);
+        new_track.set_filters_manager(current_track.filters_manager.copy(new_track));
+        new_track.update_icons();
         container.add_drawable(new_track);
         new_track.content_div.text("Starting job.");
         
@@ -2259,6 +2261,12 @@ var NumberFilter = function(name, index, tool_id, tool_exp_name) {
 };
 extend(NumberFilter.prototype, {
     /**
+     * Return a copy of filter.
+     */
+    copy: function() {
+        return new NumberFilter(this.name, this.index, this.tool_id, this.tool_exp_name);  
+    },
+    /**
      * Get step for slider.
      */
     // FIXME: make this a "static" function.
@@ -2413,6 +2421,16 @@ var FiltersManager = function(track, filters_dict) {
 };
 
 extend(FiltersManager.prototype, {
+    /**
+     * Return a copy of the manager.
+     */
+    copy: function(new_track) {
+        var copy = new FiltersManager(new_track);
+        for (var i = 0; i < this.filters.length; i++) {
+            copy.add_filter(this.filters[i].copy());
+        }
+        return copy;
+    },
     /**
      * Add a filter to the manager.
      */
@@ -3194,12 +3212,9 @@ var TiledTrack = function(name, view, container, prefs, filters_dict, tool_dict,
     
     if (this.header_div) {
         //
-        // Create filters div.
+        // Setup filters.
         //
-        if (this.filters_manager) {
-            this.filters_div = this.filters_manager.parent_div
-            this.header_div.after(this.filters_div);
-        }
+        this.set_filters_manager(this.filters_manager);
         
         //
         // Create dynamic tool div.
@@ -3222,6 +3237,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         new_track.change_mode(this.mode);
         new_track.enabled = this.enabled;
         return new_track;
+    },
+    /**
+     * Set filters manager + HTML elements.
+     */
+    set_filters_manager: function(filters_manager) {
+        this.filters_manager = filters_manager;
+        this.filters_div = this.filters_manager.parent_div;
+        this.header_div.after(this.filters_div);
     },
     /** 
      * Returns representation of object in a dictionary for easy saving. 

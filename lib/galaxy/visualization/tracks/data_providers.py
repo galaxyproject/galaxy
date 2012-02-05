@@ -945,6 +945,8 @@ class GFFDataProvider( TracksDataProvider ):
         """
         Process data from an iterator to a format that can be provided to client.
         """
+        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        no_detail = ( "no_detail" in kwargs )
         results = []
         message = None
         offset = 0
@@ -956,7 +958,7 @@ class GFFDataProvider( TracksDataProvider ):
                 message = ERROR_MAX_VALS % ( max_vals, "reads" )
                 break
                 
-            payload = package_gff_feature( feature )
+            payload = package_gff_feature( feature, no_detail=no_detail, filter_cols=filter_cols )
             payload.insert( 0, offset )
             results.append( payload )
             offset += feature.raw_size
