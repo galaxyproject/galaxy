@@ -295,7 +295,7 @@ class ToolBox( object ):
                 self.load_workflow_tag_set( sub_elem, elems )
             elif sub_elem.tag == 'label':
                 self.load_label_tag_set( sub_elem, elems )
-        if key not in panel_dict and section.elems:
+        if key not in panel_dict:
             panel_dict[ key ] = section
     def load_tool( self, config_file, guid=None ):
         """

@@ -365,22 +365,25 @@
                         ${render_workflow( key, val, False )}
                     %elif key.startswith( 'section' ):
                         <% section = val %>
-                        <div class="toolSectionTitle" id="title_${section.id}">
-                            <span>${section.name}</span>
-                        </div>
-                        <div id="${section.id}" class="toolSectionBody">
-                            <div class="toolSectionBg">
-                                %for section_key, section_val in section.elems.items():
-                                    %if section_key.startswith( 'tool' ):
-                                        ${render_tool( section_val, True )}
-                                    %elif section_key.startswith( 'workflow' ):
-                                        ${render_workflow( section_key, section_val, True )}
-                                    %elif section_key.startswith( 'label' ):
-                                        ${render_label( section_val )}
-                                    %endif
-                                %endfor
+                        ## Render the section only if it is not empty.
+                        %if section.elems:
+                            <div class="toolSectionTitle" id="title_${section.id}">
+                                <span>${section.name}</span>
                             </div>
-                        </div>
+                            <div id="${section.id}" class="toolSectionBody">
+                                <div class="toolSectionBg">
+                                    %for section_key, section_val in section.elems.items():
+                                        %if section_key.startswith( 'tool' ):
+                                            ${render_tool( section_val, True )}
+                                        %elif section_key.startswith( 'workflow' ):
+                                            ${render_workflow( section_key, section_val, True )}
+                                        %elif section_key.startswith( 'label' ):
+                                            ${render_label( section_val )}
+                                        %endif
+                                    %endfor
+                                </div>
+                            </div>
+                        %endif
                     %elif key.startswith( 'label' ):
                         ${render_label( val )}
                     %endif

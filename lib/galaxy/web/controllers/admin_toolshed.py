@@ -499,18 +499,9 @@ class AdminToolshed( AdminGalaxy ):
                 metadata = repository.metadata
                 repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
                 guids_to_activate = [ repository_tool_tup[1] for repository_tool_tup in repository_tools_tups ]
-                # Undelete the tool_version for each guid.
+                # Make sure we have a tool_version for each guid.
                 for guid_to_activate in guids_to_activate:
-                    tool_version = get_tool_version( trans.app, guid_to_activate )
-                    if tool_version:
-                        if tool_version.deleted:
-                            # This should not happen as we are currently not marking tool versions as deleted
-                            # upon deactivation.  We may decide to eliminate the tool_version.deleted column
-                            # at some point, but we'll keep it for now in case we decide its useful.
-                            tool_version.deleted = False
-                            trans.sa_session.add( tool_version )
-                            trans.sa_session.flush()
-                    else:
+                    if not get_tool_version( trans.app, guid_to_activate ):
                         # We're somehow missing a tool_version, so create a new one.
                         tool_version = trans.model.ToolVersion( tool_id=guid_to_activate, tool_shed_repository=repository )
                         trans.sa_session.add( tool_version )
