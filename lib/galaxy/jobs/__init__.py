@@ -577,8 +577,8 @@ class JobWrapper( object ):
         job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
         def in_directory( file, directory ):
             # Make both absolute.
-            directory = os.path.realpath( directory )
-            file = os.path.realpath( file )
+            directory = os.path.abspath( directory )
+            file = os.path.abspath( file )
 
             #Return true, if the common prefix of both is equal to directory
             #e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
