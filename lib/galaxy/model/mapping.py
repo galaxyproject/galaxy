@@ -1627,13 +1627,7 @@ assign_mapper( context, ToolShedRepository, ToolShedRepository.table,
 
 assign_mapper( context, ToolVersion, ToolVersion.table )
 
-assign_mapper( context, ToolVersionAssociation, ToolVersionAssociation.table,
-    properties=dict( tool_version=relation( ToolVersion,
-                                            primaryjoin=( ToolVersionAssociation.table.c.tool_id == ToolVersion.table.c.id ),
-                                            backref='current_version' ),
-                     parent_version=relation( ToolVersion,
-                                              primaryjoin=( ToolVersionAssociation.table.c.parent_id == ToolVersion.table.c.id ),
-                                              backref='previous_version' ) ) )
+assign_mapper( context, ToolVersionAssociation, ToolVersionAssociation.table )
 
 # Set up proxy so that 
 #   Page.users_shared_with

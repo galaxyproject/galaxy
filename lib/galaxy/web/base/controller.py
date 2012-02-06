@@ -1311,6 +1311,7 @@ class Admin( object ):
     group_list_grid = None
     quota_list_grid = None
     repository_list_grid = None
+    tool_version_list_grid = None
     delete_operation = None
     undelete_operation = None
     purge_operation = None
@@ -1362,6 +1363,12 @@ class Admin( object ):
                                     toolbox=toolbox,
                                     message=message,
                                     status=status )
+    @web.expose
+    @web.require_admin
+    def tool_versions( self, trans, **kwd ):
+        if 'message' not in kwd or not kwd[ 'message' ]:
+            kwd[ 'message' ] = 'Tool ids for tools that are currently loaded into the tool panel are highlighted in green (click to display).'
+        return self.tool_version_list_grid( trans, **kwd )
     # Galaxy Role Stuff
     @web.expose
     @web.require_admin

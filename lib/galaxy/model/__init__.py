@@ -2693,31 +2693,49 @@ class ToolVersion( object ):
         self.create_time = create_time
         self.tool_id = tool_id
         self.tool_shed_repository = tool_shed_repository
+    def get_previous_version( self, app ):
+        sa_session = app.model.context.current
+        tva = sa_session.query( app.model.ToolVersionAssociation ) \
+                        .filter( app.model.ToolVersionAssociation.table.c.tool_id == self.id ) \
+                        .first()
+        if tva:
+            return sa_session.query( app.model.ToolVersion ) \
+                             .filter( app.model.ToolVersion.table.c.id == tva.parent_id ) \
+                             .first()
+        return None
+    def get_next_version( self, app ):
+        sa_session = app.model.context.current
+        tva = sa_session.query( app.model.ToolVersionAssociation ) \
+                        .filter( app.model.ToolVersionAssociation.table.c.parent_id == self.id ) \
+                        .first()
+        if tva:
+            return sa_session.query( app.model.ToolVersion ) \
+                             .filter( app.model.ToolVersion.table.c.id == tva.tool_id ) \
+                             .first()     
+        return None
     def get_versions( self, app ):
         sa_session = app.model.context.current
         tool_versions = []
         # Prepend ancestors.
-        def __ancestors( tool_version ):
+        def __ancestors( app, tool_version ):
             # Should we handle multiple parents at each level?
-            previous_tva = tool_version.previous_version
-            if previous_tva:
-                parent_version = previous_tva[0].parent_version
-                if parent_version not in tool_versions:
-                    tool_versions.insert( 0, parent_version )
-                    __ancestors( parent_version )
+            previous_version = tool_version.get_previous_version( app )
+            if previous_version:
+                if previous_version not in tool_versions:
+                    tool_versions.insert( 0, previous_version )
+                    __ancestors( app, previous_version )
         # Append descendants.
-        def __descendants( tool_version ):
+        def __descendants( app, tool_version ):
             # Should we handle multiple child siblings at each level?
-            next_tva = sa_session.query( app.model.ToolVersionAssociation ) \
-                                 .filter( app.model.ToolVersionAssociation.table.c.parent_id == tool_version.id ) \
-                                 .first()
-            if next_tva:
-                current_version = next_tva.tool_version
-                if current_version not in tool_versions:
-                    tool_versions.append( current_version )
-                    __descendants( current_version )
-        __ancestors( self )
-        __descendants( self )
+            next_version = tool_version.get_next_version( app )
+            if next_version:
+                if next_version not in tool_versions:
+                    tool_versions.append( next_version )
+                    __descendants( app, next_version )
+        __ancestors( app, self )
+        if self not in tool_versions:
+            tool_versions.append( self )
+        __descendants( app, self )
         return tool_versions
     def get_version_ids( self, app ):
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]

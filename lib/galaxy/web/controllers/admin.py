@@ -383,12 +383,64 @@ class QuotaListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
+class ToolVersionListGrid( grids.Grid ):
+    class ToolIdColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_version ):
+            if tool_version.tool_id in trans.app.toolbox.tools_by_id:
+                link = url_for( controller='tool_runner', tool_id=tool_version.tool_id )
+                link_str = '<a href="%s">' % link
+                return '<div class="count-box state-color-ok">%s%s</a></div>' % ( link_str, tool_version.tool_id )
+            return tool_version.tool_id
+    class ToolVersionsColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_version ):
+            tool_ids_str = ''
+            for tool_id in tool_version.get_version_ids( trans.app ):
+                if tool_id in trans.app.toolbox.tools_by_id:
+                    link = url_for( controller='tool_runner', tool_id=tool_version.tool_id )
+                    link_str = '<a href="%s">' % link
+                    tool_ids_str += '<div class="count-box state-color-ok">%s%s</a></div><br/>' % ( link_str, tool_id )
+                else:
+                    tool_ids_str += '%s<br/>' % tool_id
+            return tool_ids_str
+    class ToolShedRepositoryColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool_version ):
+            if tool_version.tool_shed_repository:
+                return tool_version.tool_shed_repository.name
+            return ''
+    # Grid definition
+    title = "Tool versions"
+    model_class = model.ToolVersion
+    template='/admin/tool_version/grid.mako'
+    default_sort_key = "tool_id"
+    columns = [
+        ToolIdColumn( "Tool id",
+                      key='tool_id',
+                      attach_popup=False ),
+        ToolVersionsColumn( "Version lineage by tool id (parent/child ordered)" ),
+        ToolShedRepositoryColumn( "Tool shed repository" ),
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    global_actions = []
+    operations = []
+    standard_filters = []
+    default_filter = {}
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( self.model_class )
+
 class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamParser ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
+    tool_version_list_grid = ToolVersionListGrid()
     delete_operation = grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True )
     undelete_operation = grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
     purge_operation = grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
