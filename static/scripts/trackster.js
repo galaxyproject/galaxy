@@ -379,9 +379,9 @@ var
     MIN_SQUISH_VIEW_WIDTH = 12000,
     
     // Other constants.
-    DENSITY = 200,
-    RESOLUTION = 5,
-    FEATURE_LEVELS = 10,
+    
+    // Number of pixels per tile, not including left offset.
+    TILE_SIZE = 400,
     DEFAULT_DATA_QUERY_WAIT = 5000,
     // Maximum number of chromosomes that are selectable at any one time.
     MAX_CHROMS_SELECTABLE = 100,
@@ -1726,10 +1726,11 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.low = Math.floor(low);
         this.high = Math.ceil(high);
         
-        // 10^log10(range / DENSITY) Close approximation for browser window, assuming DENSITY = window width
-        this.resolution = Math.pow( RESOLUTION, Math.ceil( Math.log( (this.high - this.low) / DENSITY ) / Math.log(RESOLUTION) ) );
-        this.zoom_res = Math.pow( FEATURE_LEVELS, Math.max(0,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) )));
-        
+        // Calculate resolution in both pixels/base and bases/pixel; round bases/pixels for tile calculations.
+        // TODO: require minimum difference in new resolution to update?
+        this.resolution_b_px = Math.round( (this.high - this.low) / this.viewport_container.width() );
+        this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
+                    
         // Overview
         var left_px = ( this.low / (this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
         var width_px = ( (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
@@ -2726,8 +2727,9 @@ extend(DrawableConfig.prototype, {
 var Tile = function(track, index, resolution, canvas, data) {
     this.track = track;
     this.index = index;
-    this.low = index * DENSITY * resolution;
-    this.high = (index + 1) * DENSITY * resolution;
+    // FIXME: find better way to calculate low, high.
+    this.low = index * TILE_SIZE * resolution
+    this.high = (index + 1) * TILE_SIZE * resolution;
     this.resolution = resolution;
     // Wrap element in div for background.
     this.html_elt = $("<div class='track-tile'/>").append(canvas);
@@ -3348,17 +3350,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             high = this.view.high,
             range = high - low,
             width = this.view.container.width(),
-            // w_scale units are pixels per base.
-            w_scale = width / range,
-            resolution = this.view.resolution,
-            // FIXME: parent element is not currently needed, but it may be useful for multitrack drawing.
-            parent_element = this.content_div;
+            w_scale = this.view.resolution_px_b,
+            resolution = this.view.resolution_b_px;
 
         // For overview, adjust high, low, resolution, and w_scale.
         if (this.is_overview) {
             low = this.view.max_low;
             high = this.view.max_high;
-            resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) ));
+            resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / TILE_SIZE ) / Math.log(RESOLUTION) ));
             w_scale = width / (view.max_high - view.max_low);
         }
 
@@ -3375,23 +3374,22 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.content_div.children().addClass("remove");
 
         this.max_height = 0;
-        // Index of first tile that overlaps visible region
-        var tile_index = Math.floor( low / resolution / DENSITY );
-        // If any tile could not be drawn yet, this will be set to false
-        var all_tiles_drawn = true;
-        var drawn_tiles = [];
-        var tile_count = 0;
-        var is_tile = function(o) { return (o && 'track' in o) };
-        // Draw or fetch and show tiles.
-        while ( ( tile_index * DENSITY * resolution ) < high ) {
-            var draw_result = this.draw_helper( force, width, tile_index, resolution, parent_element, w_scale );
+        var 
+            // Index of first tile that overlaps visible region.
+            tile_index = Math.floor( low / (resolution * TILE_SIZE) ),
+            // If any tile could not be drawn yet, this will be set to false.
+            all_tiles_drawn = true,
+            drawn_tiles = [],
+            is_tile = function(o) { return (o && 'track' in o) };
+        // Draw tiles.
+        while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
+            var draw_result = this.draw_helper( force, width, tile_index, resolution, this.content_div, w_scale );
             if ( is_tile(draw_result) ) {
                 drawn_tiles.push( draw_result );
             } else {
                 all_tiles_drawn = false;
             }
             tile_index += 1;
-            tile_count++;
         }
         
         // Step (c) for (re)moving tiles when clear_after is false.
@@ -3402,7 +3400,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         if (all_tiles_drawn) {
             // Step (c) for (re)moving tiles when clear_after is true:
             this.content_div.children(".remove").remove();
-            track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);       
+            track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);
         } 
     },
     /**
@@ -3439,8 +3437,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
-            tile_low = tile_index * DENSITY * resolution,
-            tile_high = tile_low + DENSITY * resolution;
+            tile_bounds = this._get_tile_bounds(tile_index, resolution),
+            tile_low = tile_bounds[0],
+            tile_high = tile_bounds[1];
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
@@ -3578,8 +3577,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * with values tile_low and tile_high.
      */ 
     _get_tile_bounds: function(tile_index, resolution) {
-        var tile_low = tile_index * DENSITY * resolution,
-            tile_length = DENSITY * resolution,
+        var tile_low = tile_index * TILE_SIZE * resolution,
+            tile_length = TILE_SIZE * resolution,
             // Tile high cannot be larger than view.max_high, which the chromosome length.
             tile_high = (tile_low + tile_length <= this.view.max_high ? tile_low + tile_length : this.view.max_high);
         return [tile_low, tile_high];
@@ -3790,8 +3789,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
-            tile_low = tile_index * DENSITY * resolution,
-            tile_high = tile_low + DENSITY * resolution;
+            tile_low = tile_index * TILE_SIZE * resolution,
+            tile_high = tile_low + TILE_SIZE * resolution;
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
