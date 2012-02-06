@@ -170,6 +170,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         efile = "%s.drmerr" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         jt = self.ds.createJobTemplate()
         jt.remoteCommand = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
+        jt.jobName = "g%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user.replace( '@', '__at__' ) )
         jt.outputPath = ":%s" % ofile
         jt.errorPath = ":%s" % efile
         native_spec = self.get_native_spec( runner_url )
