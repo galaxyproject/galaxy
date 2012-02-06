@@ -1,4 +1,5 @@
 <tool id="clustalw" name="ClustalW" version="0.1">
+   <requirements><requirement type="package">clustalw2</requirement></requirements>
    <description>multiple sequence alignment program for DNA or proteins</description>
    <command interpreter="python"> 
     rgClustalw.py -i "$input" -o "$output" -s "$out_order" -l "$outlog" -t "$outname" -d "$dnarna"
