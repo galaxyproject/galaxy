@@ -1,4 +1,5 @@
 <tool id="rgGLM1" name="Linear Models:" version="0.2">
+    <requirements><requirement type="package">plink</requirement></requirements>
     <description>for genotype data</description>
     <code file="rgGLM_code.py"/>
     <command interpreter="python">

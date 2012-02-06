@@ -1,4 +1,5 @@
 <tool id="rgLDIndep1" name="LD Independent:">
+    <requirements><requirement type="package">plink</requirement></requirements>
     <code file="rgLDIndep_code.py"/>
 
     <description>filter high LD pairs - decrease redundancy</description>

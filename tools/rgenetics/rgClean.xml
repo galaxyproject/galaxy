@@ -1,4 +1,5 @@
 <tool id="rgClean1" name="Clean genotypes:">
+    <requirements><requirement type="package">plink</requirement></requirements>
     <description>filter markers, subjects</description>
 
     <command interpreter="python">
