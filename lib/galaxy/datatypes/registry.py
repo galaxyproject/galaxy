@@ -187,11 +187,21 @@ class Registry( object ):
                         try:
                             fields = dtype.split( ":" )
                             datatype_module = fields[0]
-                            datatype_class = fields[1]
-                            module = __import__( datatype_module )
-                            for comp in datatype_module.split( '.' )[ 1: ]:
-                                module = getattr( module, comp )
-                            aclass = getattr( module, datatype_class )()
+                            datatype_class_name = fields[1]
+                            module = None
+                            if imported_modules:
+                                # See if one of the imported modules contains the datatype class name.
+                                for imported_module in imported_modules:
+                                    if hasattr( imported_module, datatype_class_name ):
+                                        module = imported_module
+                                        break
+                            if module is None:
+                                # The datatype class name must be contained in one of the datatype
+                                # modules in the Galaxy distribution.
+                                module = __import__( datatype_module )
+                                for comp in datatype_module.split( '.' )[ 1: ]:
+                                    module = getattr( module, comp )
+                            aclass = getattr( module, datatype_class_name )()
                             if deactivate:
                                 self.sniff_order.remove( aclass )
                                 self.log.debug( 'Deactivated sniffer for datatype: %s' % dtype )
