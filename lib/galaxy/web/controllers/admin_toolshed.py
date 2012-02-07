@@ -435,9 +435,14 @@ class AdminToolshed( AdminGalaxy ):
         original_section_name = tool_panel_section[ 'name' ]
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
         no_changes_check_box = CheckboxField( 'no_changes', checked=True )
-        message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " % ( repository.name, original_section_name )
-        message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
-        message += "different section in the tool panel."
+        if original_section_name:
+            message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
+                % ( repository.name, original_section_name )
+            message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
+            message += "different section in the tool panel."
+        else:
+            message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % repository.name
+            message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section."
         status = 'done'
         return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',
                                     repository=repository,

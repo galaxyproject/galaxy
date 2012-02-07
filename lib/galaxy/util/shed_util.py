@@ -317,10 +317,10 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
         id_elem.text = tool.id
         version_elem = SubElement( tool_elem, 'version' )
         version_elem.text = tool.version
+        if not tool_section:
+            elem_list.append( tool_elem )
     if tool_section:
         elem_list.append( root_elem )
-    elif tool_elem:
-        elem_list.append( tool_elem )
     return elem_list
 def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict ):
     """
