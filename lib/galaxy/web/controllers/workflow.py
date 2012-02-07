@@ -1489,7 +1489,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             else:
                                 nh_name = "History from %s workflow" % workflow.name
                             if multiple_input_key:
-                                nh_name = '%s %d' % (nh_name, input_number + 1)
+                                mx_ds_name = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get( single_input ).name
+                                nh_name = '%s on %s' % (nh_name, mx_ds_name)
                             new_history = trans.app.model.History( user=trans.user, name=nh_name )
                             trans.sa_session.add( new_history )
                         # Run each step, connecting outputs to inputs
