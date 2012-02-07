@@ -520,8 +520,7 @@ extend(DataManager.prototype, Cache.prototype, {
         // Look in cache for data that can be used. Data can be reused if it
         // has the requested data and is not summary tree and has details.
         // TODO: this logic could be improved if the visualization knew whether
-        // the data was "index" or "data." Also could slice the data so that
-        // only data points in request are returned.
+        // the data was "index" or "data."
         //
         
         // TODO: can using resolution in the key enable LineTrack data to be subsetted appropriately?
@@ -534,9 +533,12 @@ extend(DataManager.prototype, Cache.prototype, {
                 entry_high = split_key[1];
             
                 if (low >= entry_low && high <= entry_high) {
-                    // This entry has requested data; return if compatible.
+                    // This entry has requested data; return if compatible and if entry does not 
+                    // have a message. If entry has a message, then not all data available and it
+                    // is better to fetch anew.
                     entry = this.obj_cache[key];
-                    if ( is_deferred(entry) || this.track.data_and_mode_compatible(entry, mode) ) {
+                    if ( is_deferred(entry) || 
+                        ( this.track.data_and_mode_compatible(entry, mode) && !entry.message ) ) {
                         // TODO: for fast lookup and processing, create new entry with only data subset?
                         // Entry is usable.
                         this.move_key_to_end(key, i);
