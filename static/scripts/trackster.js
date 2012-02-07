@@ -833,10 +833,11 @@ extend(Drawable.prototype, {
         this.changed();
         
         this.container.remove_drawable(this);
+        var view = this.view;
         this.container_div.hide(0, function() { 
             $(this).remove();
             // HACK: is there a better way to update the view?
-            drawable.view.update_intro_div();
+            view.update_intro_div();
         });
     },
     /**
