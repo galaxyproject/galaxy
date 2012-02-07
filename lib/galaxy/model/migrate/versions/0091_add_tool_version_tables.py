@@ -76,7 +76,7 @@ def upgrade():
     for row in result:
         if row[1]:
             tool_shed_repository_id = row[0]
-            repository_metadata = from_json_string( _sniffnfix_pg9_hex( row[1] ) )
+            repository_metadata = from_json_string( _sniffnfix_pg9_hex( str( row[1] ) ) )
             # Create a new row in the tool table for each tool included in repository.  We will NOT
             # handle tool_version_associaions because we do not have the information we need to do so.
             tools = repository_metadata.get( 'tools', [] )
