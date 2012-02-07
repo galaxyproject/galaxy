@@ -790,6 +790,9 @@ Drawable.prototype.action_icons_def = [
 
 extend(Drawable.prototype, {
     init: function() {},
+    changed: function() {
+        this.view.changed();
+    },
     can_draw: function() {
         if (this.enabled && this.content_visible) { 
             return true;
@@ -828,13 +831,13 @@ extend(Drawable.prototype, {
      * Remove drawable (a) from its container and (b) from the HTML.
      */
     remove: function() {
-        this.container.remove_drawable(this);
+        this.changed();
         
+        this.container.remove_drawable(this);
         this.container_div.hide(0, function() { 
             $(this).remove();
             // HACK: is there a better way to update the view?
-            view.update_intro_div();
-            view.has_changes = true;
+            drawable.view.update_intro_div();
         });
     },
     /**
@@ -952,11 +955,13 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     add_drawable: function(drawable) {
         this.drawables.push(drawable);
         drawable.container = this;
+        this.changed();
     },
     /**
      * Add a drawable before another drawable.
      */
     add_drawable_before: function(drawable, other) {
+        this.changed();
         var index = this.drawables.indexOf(other);
         if (index !== -1) {
             this.drawables.splice(index, 0, drawable);
@@ -974,6 +979,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             if (update_html) {
                 old_drawable.container_div.replaceWith(new_drawable.container_div);
             }
+            this.changed();
         }
         return index;
     },
@@ -986,6 +992,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             // Found drawable to remove.
             this.drawables.splice(index, 1);
             drawable.container = null;
+            this.changed();
             return true;        
         }
         return false;
@@ -1000,6 +1007,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             this.drawables.splice(index, 1);
             // insert into new position:
             this.drawables.splice(new_position, 0, drawable);
+            this.changed();
             return true;
         }
         return false;
@@ -1465,6 +1473,9 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.reset();
         $(window).trigger("resize");
     },
+    changed: function() {
+        this.has_changes = true;  
+    },
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
         if (this.drawables.length === 0) {
@@ -1636,7 +1647,7 @@ extend( View.prototype, DrawableCollection.prototype, {
     add_drawable: function(drawable) {
         DrawableCollection.prototype.add_drawable.call(this, drawable);
         drawable.init();
-        this.has_changes = true;
+        this.changed();
         this.update_intro_div();
     },
     add_label_track: function (label_track) {
@@ -1655,7 +1666,6 @@ extend( View.prototype, DrawableCollection.prototype, {
                 $(this).remove();
                 view.update_intro_div(); 
             });
-            this.has_changes = true;
         }
     },
     reset: function() {
@@ -1773,6 +1783,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         }
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
+        this.changed();
         this.request_redraw();
     },
     zoom_out: function () {
@@ -1784,6 +1795,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             new_half = (span * this.zoom_factor) / 2;
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
+        this.changed();
         this.request_redraw();
     },
     resize_window: function() {
@@ -1815,7 +1827,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             view.resize_window();
         };
         view.overview_drawable.request_draw();
-        view.has_changes = true;
+        this.changed();
     },
     /** Close and reset overview. */
     reset_overview: function() {
@@ -2717,6 +2729,7 @@ extend(DrawableConfig.prototype, {
         });
         if ( changed ) {
             this.onchange();
+            this.track.changed();
         }
     }
 });
