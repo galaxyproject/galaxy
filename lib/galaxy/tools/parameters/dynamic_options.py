@@ -500,7 +500,16 @@ class DynamicOptions( object ):
             dataset = other_values.get( self.dataset_ref_name, None )
             assert dataset is not None, "Required dataset '%s' missing from input" % self.dataset_ref_name
             if not dataset: return [] #no valid dataset in history
-            options = self.parse_file_fields( open( dataset.file_name ) )
+            # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
+            file_size = os.path.getsize( path )
+            if os.path.getsize( path ) < 1048576:
+                options = self.parse_file_fields( open( path ) )
+            else:
+                # Pass just the first megabyte to parse_file_fields. 
+                import StringIO
+                log.warn( "Attempting to load options from large file, reading just first megabyte" )
+                contents = open( path, 'r' ).read( megabyte )
+                options = self.parse_file_fields( StringIO.StringIO( contents ) )
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
         else:
