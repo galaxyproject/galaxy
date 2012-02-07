@@ -402,11 +402,6 @@ class ToolVersionListGrid( grids.Grid ):
                 else:
                     tool_ids_str += '%s<br/>' % tool_id
             return tool_ids_str
-    class ToolShedRepositoryColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool_version ):
-            if tool_version.tool_shed_repository:
-                return tool_version.tool_shed_repository.name
-            return ''
     # Grid definition
     title = "Tool versions"
     model_class = model.ToolVersion
@@ -416,10 +411,9 @@ class ToolVersionListGrid( grids.Grid ):
         ToolIdColumn( "Tool id",
                       key='tool_id',
                       attach_popup=False ),
-        ToolVersionsColumn( "Version lineage by tool id (parent/child ordered)" ),
-        ToolShedRepositoryColumn( "Tool shed repository" ),
+        ToolVersionsColumn( "Version lineage by tool id (parent/child ordered)" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search tool id", 
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
