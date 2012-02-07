@@ -936,7 +936,7 @@ class GFFDataProvider( TracksDataProvider ):
             for feature in GFFReaderWrapper( source, fix_strand=True ):
                 # Only provide features that are in region.
                 feature_start, feature_end = convert_gff_coords_to_bed( [ feature.start, feature.end ] )
-                if feature.chrom != chrom or feature_start < start or feature_end > end:
+                if feature.chrom != chrom or feature_end < start or feature_start > end:
                     continue                
                 yield feature
         return features_in_region_iter()
