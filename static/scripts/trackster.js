@@ -524,8 +524,7 @@ extend(DataManager.prototype, Cache.prototype, {
         // only data points in request are returned.
         //
         
-        /* Disabling for now, more detailed data is never loaded for line tracks
-        TODO: can using resolution in the key solve this problem?
+        // TODO: can using resolution in the key enable LineTrack data to be subsetted appropriately?
         if (this.subset) {
             var key, split_key, entry_low, entry_high, mode, entry;
             for (var i = 0; i < this.key_ary.length; i++) {
@@ -535,20 +534,20 @@ extend(DataManager.prototype, Cache.prototype, {
                 entry_high = split_key[1];
             
                 if (low >= entry_low && high <= entry_high) {
-                    // This track has the range of data needed; check other attributes.
+                    // This entry has requested data; return if compatible.
                     entry = this.obj_cache[key];
-                    if (entry.dataset_type !== "summary_tree" && entry.extra_info !== "no_detail") {
-                        // Data is usable.
+                    if ( is_deferred(entry) || this.track.data_and_mode_compatible(entry, mode) ) {
+                        // TODO: for fast lookup and processing, create new entry with only data subset?
+                        // Entry is usable.
                         this.move_key_to_end(key, i);
                         return entry;
                     }
                 }
             }
         }
-        */
                 
         // Load data from server. The deferred is immediately saved until the
-        // data is ready, it then replaces itself with the actual data
+        // data is ready, it then replaces itself with the actual data.
         entry = this.load_data(low, high, mode, resolution, extra_params);
         this.set_data(low, high, entry);
         return entry;
@@ -4042,6 +4041,10 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
     TiledTrack.call(this, name, view, container, prefs, filters, tool, data_manager);
+    
+    // Cannot subset LineTrack data right now; see note in DataManager about using resolution in key 
+    // to address this issue.
+    this.data_manager.subset = false;
    
     this.min_height_px = 16; 
     this.max_height_px = 400; 
