@@ -1738,7 +1738,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         
         // Calculate resolution in both pixels/base and bases/pixel; round bases/pixels for tile calculations.
         // TODO: require minimum difference in new resolution to update?
-        this.resolution_b_px = Math.round( (this.high - this.low) / this.viewport_container.width() );
+        this.resolution_b_px = (this.high - this.low) / this.viewport_container.width();
         this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
                     
         // Overview
@@ -3590,8 +3590,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * with values tile_low and tile_high.
      */ 
     _get_tile_bounds: function(tile_index, resolution) {
-        var tile_low = tile_index * TILE_SIZE * resolution,
-            tile_length = TILE_SIZE * resolution,
+        var tile_low = Math.floor( tile_index * TILE_SIZE * resolution ),
+            tile_length = Math.ceil( TILE_SIZE * resolution ),
             // Tile high cannot be larger than view.max_high, which the chromosome length.
             tile_high = (tile_low + tile_length <= this.view.max_high ? tile_low + tile_length : this.view.max_high);
         return [tile_low, tile_high];
