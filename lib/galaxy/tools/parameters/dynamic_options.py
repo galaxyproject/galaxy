@@ -509,7 +509,7 @@ class DynamicOptions( object ):
                 # Pass just the first megabyte to parse_file_fields. 
                 import StringIO
                 log.warn( "Attempting to load options from large file, reading just first megabyte" )
-                contents = open( path, 'r' ).read( megabyte )
+                contents = open( path, 'r' ).read( 1048576 )
                 options = self.parse_file_fields( StringIO.StringIO( contents ) )
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
