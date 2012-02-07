@@ -95,6 +95,10 @@ class AdminToolshed( AdminGalaxy ):
             if operation == "get updates":
                 return self.check_for_updates( trans, **kwd )
             if operation == "activate or reinstall":
+                repository = get_repository( trans, kwd[ 'id' ] )
+                if repository.uninstalled and repository.includes_tools:
+                    # Only allow selecting a different section in the tool panel if the repository was uninstalled.
+                    return self.reselect_tool_panel_section( trans, **kwd )
                 return self.activate_or_reinstall_repository( trans, **kwd )
             if operation == "deactivate or uninstall":
                 return self.deactivate_or_uninstall_repository( trans, **kwd )
@@ -423,8 +427,31 @@ class AdminToolshed( AdminGalaxy ):
                     del trans.app.toolbox.tool_panel[ item_id ]
     @web.expose
     @web.require_admin
+    def reselect_tool_panel_section( self, trans, **kwd ):
+        repository = get_repository( trans, kwd[ 'id' ] )
+        # Get the location in the tool panel in which the tool was originally loaded.
+        metadata = repository.metadata
+        tool_panel_section = metadata[ 'tool_panel_section' ]
+        original_section_name = tool_panel_section[ 'name' ]
+        tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
+        no_changes_check_box = CheckboxField( 'no_changes', checked=True )
+        message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " % ( repository.name, original_section_name )
+        message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
+        message += "different section in the tool panel."
+        status = 'done'
+        return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',
+                                    repository=repository,
+                                    no_changes_check_box=no_changes_check_box,
+                                    original_section_name=original_section_name,
+                                    tool_panel_section_select_field=tool_panel_section_select_field,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
     def activate_or_reinstall_repository( self, trans, **kwd ):
         repository = get_repository( trans, kwd[ 'id' ] )
+        no_changes = kwd.get( 'no_changes', '' )
+        no_changes_checked = CheckboxField.is_checked( no_changes )
         shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
         uninstalled = repository.uninstalled
         if uninstalled:
@@ -457,20 +484,46 @@ class AdminToolshed( AdminGalaxy ):
                         tool_panel_section = metadata[ 'tool_panel_section' ]
                         original_section_id = tool_panel_section[ 'id' ]
                         original_section_name = tool_panel_section[ 'name' ]
-                        if original_section_id in [ '' ]:
-                            tool_section = None
+                        if no_changes_checked:
+                            if original_section_id in [ '' ]:
+                                tool_section = None
+                            else:
+                                section_key = 'section_%s' % str( original_section_id )
+                                if section_key in trans.app.toolbox.tool_panel:
+                                    tool_section = trans.app.toolbox.tool_panel[ section_key ]
+                                else:
+                                    # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
+                                    elem = Element( 'section' )
+                                    elem.attrib[ 'name' ] = original_section_name
+                                    elem.attrib[ 'id' ] = original_section_id
+                                    elem.attrib[ 'version' ] = ''
+                                    tool_section = tools.ToolSection( elem )
+                                    trans.app.toolbox.tool_panel[ section_key ] = tool_section
                         else:
-                            section_key = 'section_%s' % str( original_section_id )
-                            if section_key in trans.app.toolbox.tool_panel:
+                            # The user elected to change the tool panel section to contain the tools.
+                            new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
+                            tool_panel_section = kwd.get( 'tool_panel_section', '' )
+                            if new_tool_panel_section:
+                                section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+                                new_section_key = 'section_%s' % str( section_id )
+                                if new_section_key in trans.app.toolbox.tool_panel:
+                                    # Appending a tool to an existing section in trans.app.toolbox.tool_panel
+                                    log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
+                                    tool_section = trans.app.toolbox.tool_panel[ new_section_key ]
+                                else:
+                                    # Appending a new section to trans.app.toolbox.tool_panel
+                                    log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
+                                    elem = Element( 'section' )
+                                    elem.attrib[ 'name' ] = new_tool_panel_section
+                                    elem.attrib[ 'id' ] = section_id
+                                    elem.attrib[ 'version' ] = ''
+                                    tool_section = tools.ToolSection( elem )
+                                    trans.app.toolbox.tool_panel[ new_section_key ] = tool_section
+                            elif tool_panel_section:
+                                section_key = 'section_%s' % tool_panel_section
                                 tool_section = trans.app.toolbox.tool_panel[ section_key ]
                             else:
-                                # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
-                                elem = Element( 'section' )
-                                elem.attrib[ 'name' ] = original_section_name
-                                elem.attrib[ 'id' ] = original_section_id
-                                elem.attrib[ 'version' ] = ''
-                                tool_section = tools.ToolSection( elem )
-                                trans.app.toolbox.tool_panel[ section_key ] = tool_section
+                                tool_section = None
                         tool_shed_repository, metadata_dict = load_repository_contents( app=trans.app,
                                                                                         repository_name=repository.name,
                                                                                         description=repository.description,
