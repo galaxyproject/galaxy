@@ -501,6 +501,7 @@ class DynamicOptions( object ):
             assert dataset is not None, "Required dataset '%s' missing from input" % self.dataset_ref_name
             if not dataset: return [] #no valid dataset in history
             # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
+            path = dataset.file_name
             file_size = os.path.getsize( path )
             if os.path.getsize( path ) < 1048576:
                 options = self.parse_file_fields( open( path ) )
