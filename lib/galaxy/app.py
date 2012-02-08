@@ -57,7 +57,7 @@ class UniverseApplication( object ):
         # This will also load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_datatypes()
         # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
-        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config, override_conflicts=True )
+        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
         galaxy.model.set_datatypes_registry( self.datatypes_registry )
         # Security helper
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
