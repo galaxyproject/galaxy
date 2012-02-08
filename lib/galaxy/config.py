@@ -172,8 +172,10 @@ class Configuration( object ):
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
+        self.config_file = None
         self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
+            self.config_file = global_conf['__file__']
             global_conf_parser.read(global_conf['__file__'])
         # Heartbeat log file name override
         if global_conf is not None:

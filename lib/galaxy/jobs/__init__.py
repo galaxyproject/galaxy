@@ -863,7 +863,7 @@ class JobWrapper( object ):
                 sizes.append( ( outfile, 0 ) )
         return sizes
 
-    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
+    def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
         if set_extension:
@@ -879,6 +879,8 @@ class JobWrapper( object ):
             dataset_files_path = self.app.model.Dataset.file_path
         if config_root is None:
             config_root = self.app.config.root
+        if config_file is None:
+            config_file = self.app.config.config_file
         if datatypes_config is None:
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
         return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ],
@@ -887,6 +889,7 @@ class JobWrapper( object ):
                                                                       tmp_dir = tmp_dir,
                                                                       dataset_files_path = dataset_files_path,
                                                                       config_root = config_root,
+                                                                      config_file = config_file,
                                                                       datatypes_config = datatypes_config,
                                                                       job_metadata = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
                                                                       **kwds )
@@ -1165,7 +1168,7 @@ class TaskWrapper(JobWrapper):
                 sizes.append( ( outfile, 0 ) )
         return sizes
 
-    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
+    def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""
 

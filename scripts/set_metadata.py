@@ -36,12 +36,16 @@ def __main__():
     tmp_dir = sys.argv.pop( 1 )
     galaxy.model.Dataset.file_path = file_path
     galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tmp_dir
+
+    config_root = sys.argv.pop( 1 )
+    config_file_name = sys.argv.pop( 1 )
+    if not os.path.isabs( config_file_name ):
+        config_file_name = os.path.join( config_root, config_file_name )
     
     # Set up reference to object store
     # First, read in the main config file for Galaxy; this is required because
     # the object store configuration is stored there
     conf = ConfigParser.ConfigParser()
-    config_file_name = 'universe_wsgi.ini' # Safe assumption?
     conf.read(config_file_name)
     conf_dict = {}
     for section in conf.sections():
@@ -59,7 +63,6 @@ def __main__():
     galaxy.model.Dataset.object_store = object_store
     
     # Set up datatypes registry
-    config_root = sys.argv.pop( 1 )
     datatypes_config = sys.argv.pop( 1 )
     datatypes_registry = galaxy.datatypes.registry.Registry()
     datatypes_registry.load_datatypes( root_dir=config_root, config=datatypes_config )

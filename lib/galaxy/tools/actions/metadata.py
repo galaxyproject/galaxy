@@ -50,7 +50,8 @@ class SetMetadataToolAction( ToolAction ):
                                                                       tmp_dir = trans.app.config.new_file_path,
                                                                       dataset_files_path = trans.app.model.Dataset.file_path,
                                                                       output_fnames = None,
-                                                                      config_root = None,
+                                                                      config_root = trans.app.config.root,
+                                                                      config_file = trans.app.config.config_file,
                                                                       datatypes_config = trans.app.datatypes_registry.integrated_datatypes_configs,
                                                                       job_metadata = None,
                                                                       kwds = { 'overwrite' : overwrite } )
