@@ -32,7 +32,7 @@ class ToolDataTableManager( object ):
             table = tool_data_table_types[ type ]( table_elem )
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
-                log.debug( "Loaded tool data table '%s", table.name )
+                log.debug( "Loaded tool data table '%s'", table.name )
         return table_elems
     def add_new_entries_from_config_file( self, config_filename ):
         """

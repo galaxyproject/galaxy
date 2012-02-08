@@ -22,15 +22,6 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
-        # Initialize the datatypes registry to the default data types included in self.config.datatypes_config.
-        self.datatypes_registry = galaxy.datatypes.registry.Registry()
-        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
-        galaxy.model.set_datatypes_registry( self.datatypes_registry )
-        # Set up the tool sheds registry
-        if os.path.isfile( self.config.tool_sheds_config ):
-            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
-        else:
-            self.tool_shed_registry = None
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection
@@ -48,6 +39,26 @@ class UniverseApplication( object ):
                                    self.config.database_engine_options,
                                    database_query_profiling_proxy = self.config.database_query_profiling_proxy,
                                    object_store = self.object_store )
+        # Set up the tool sheds registry
+        if os.path.isfile( self.config.tool_sheds_config ):
+            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+        else:
+            self.tool_shed_registry = None
+        # Manage installed tool shed repositories.
+        self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
+        # Create an empty datatypes registry.
+        self.datatypes_registry = galaxy.datatypes.registry.Registry()
+        # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
+        # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
+        # generic sniffers (eg text,xml) which catch anything, so it's impossible for proprietary sniffers to be used.
+        # However, if there is a conflict (2 datatypes with the same extension) between a proprietary datatype and a datatype
+        # in the Galaxy distribution, the datatype in the Galaxy distribution will take precedence.  If there is a conflict
+        # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
+        # This will also load proprietary datatype converters and display applications.
+        self.installed_repository_manager.load_proprietary_datatypes()
+        # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
+        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config, override_conflicts=True )
+        galaxy.model.set_datatypes_registry( self.datatypes_registry )
         # Security helper
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Tag handler
@@ -63,28 +74,22 @@ class UniverseApplication( object ):
         if self.config.get_bool( 'enable_tool_shed_install', False ):
             from tool_shed import install_manager
             self.install_manager = install_manager.InstallManager( self, self.config.tool_shed_install_config, self.config.install_tool_config )
-        # If enabled, poll respective tool sheds to see if updates are
-        # available for any installed tool shed repositories.
+        # If enabled, poll respective tool sheds to see if updates are available for any installed tool shed repositories.
         if self.config.get_bool( 'enable_tool_shed_check', False ):
             from tool_shed import update_manager
             self.update_manager = update_manager.UpdateManager( self )
-        # Manage installed tool shed repositories
-        self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
         # Load datatype display applications defined in local datatypes_conf.xml
         self.datatypes_registry.load_display_applications()
         # Load datatype converters defined in local datatypes_conf.xml
         self.datatypes_registry.load_datatype_converters( self.toolbox )
-        # Load history import/export tools
-        load_history_imp_exp_tools( self.toolbox )
         # Load external metadata tool
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
-        # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed
-        # repositories.  This will also load all proprietary datatype converters and display_applications.
-        self.installed_repository_manager.load_proprietary_datatypes()
-        # Load security policy
+        # Load history import/export tools.
+        load_history_imp_exp_tools( self.toolbox )
+        # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
-        # Load quota management
+        # Load quota management.
         if self.config.enable_quotas:
             self.quota_agent = galaxy.quota.QuotaAgent( self.model )
         else:
