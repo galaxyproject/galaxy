@@ -699,7 +699,7 @@ class AdminToolshed( AdminGalaxy ):
         # Send a request to the relevant tool shed to see if there are any updates.
         repository = get_repository( trans, kwd[ 'id' ] )
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-        url = '%/srepository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+        url = '%s/repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
             ( tool_shed_url, url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision )
         return trans.response.send_redirect( url )
     @web.expose
@@ -731,7 +731,7 @@ class AdminToolshed( AdminGalaxy ):
                             repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
                             tool_shed = clean_tool_shed_url( tool_shed_url )
                             tool_shed_repository, metadata_dict = load_repository_contents( app=trans.app,
-                                                                                            name=name,
+                                                                                            repository_name=name,
                                                                                             description=repository.description,
                                                                                             owner=owner,
                                                                                             changeset_revision=changeset_revision,
@@ -743,7 +743,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                                             tool_shed=tool_shed,
                                                                                             tool_section=None,
                                                                                             shed_tool_conf=None,
-                                                                                            new_install=False )
+                                                                                            new_install=False,
+                                                                                            dist_to_shed=False )
                             # Update the repository changeset_revision in the database.
                             repository.changeset_revision = latest_changeset_revision
                             repository.update_available = False

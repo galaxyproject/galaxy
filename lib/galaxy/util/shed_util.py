@@ -338,6 +338,7 @@ def get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, 
     sa_session = app.model.context.current
     if tool_shed.find( '//' ) > 0:
         tool_shed = tool_shed.split( '//' )[1]
+    tool_shed = tool_shed.rstrip( '/' )
     return sa_session.query( app.model.ToolShedRepository ) \
                      .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                     app.model.ToolShedRepository.table.c.name == name,
