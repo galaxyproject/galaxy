@@ -927,18 +927,20 @@ class GFFDataProvider( TracksDataProvider ):
     
     def get_iterator( self, chrom, start, end ):
         """
-        Returns an iterator that provides data in the region chrom:start-end
+        Returns an iterator that provides data in the region chrom:start-end as well as
+        a file offset.
         """
         start, end = int( start ), int( end )
         source = open( self.original_dataset.file_name )
         
         def features_in_region_iter():
+            offset = 0
             for feature in GFFReaderWrapper( source, fix_strand=True ):
                 # Only provide features that are in region.
                 feature_start, feature_end = convert_gff_coords_to_bed( [ feature.start, feature.end ] )
-                if feature.chrom != chrom or feature_end < start or feature_start > end:
-                    continue                
-                yield feature
+                if feature.chrom == chrom and feature_end > start and feature_start < end:
+                    yield feature, offset
+                offset += feature.raw_size
         return features_in_region_iter()
         
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
@@ -949,9 +951,8 @@ class GFFDataProvider( TracksDataProvider ):
         no_detail = ( "no_detail" in kwargs )
         results = []
         message = None
-        offset = 0
-        
-        for count, feature in enumerate( iterator ):
+
+        for count, ( feature, offset ) in enumerate( iterator ):
             if count < start_val:
                 continue
             if count-start_val >= max_vals:
@@ -961,7 +962,7 @@ class GFFDataProvider( TracksDataProvider ):
             payload = package_gff_feature( feature, no_detail=no_detail, filter_cols=filter_cols )
             payload.insert( 0, offset )
             results.append( payload )
-            offset += feature.raw_size
+
             
         return { 'data': results, 'message': message }
                
