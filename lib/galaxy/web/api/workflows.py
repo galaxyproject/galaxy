@@ -279,7 +279,7 @@ class WorkflowsAPIController(BaseAPIController):
     # ---------------------------------------------------------------------------------------------- #
     # ---------------------------------------------------------------------------------------------- #
     @web.expose_api
-    @web.json
+    #@web.json
     def workflow_dict( self, trans, workflow_id, **kwd ):
         """
         GET /api/workflows/{encoded_workflow_id}/download
@@ -297,8 +297,9 @@ class WorkflowsAPIController(BaseAPIController):
                 trans.response.status = 400
                 return("Workflow is not owned by or shared with current user")
         
-        return self._workflow_to_dict( trans, stored_workflow )
-    
+        ret_dict = self._workflow_to_dict( trans, stored_workflow );
+        return ret_dict
+        
     @web.expose_api
     def delete( self, trans, id, **kwd ):  
         """
@@ -352,8 +353,6 @@ class WorkflowsAPIController(BaseAPIController):
         # api encoded, id 
         encoded_id = trans.security.encode_id(workflow_id);
         
-            
-               
         # return list
         rval= [];
         
@@ -362,8 +361,7 @@ class WorkflowsAPIController(BaseAPIController):
         
         rval.append(item);    
         
-        return rval;
-    
+        return item;
 
     def _workflow_from_dict( self, trans, data, source=None ):
         """
