@@ -27,13 +27,23 @@ def init():
     from galaxy import eggs
     import pkg_resources
 
-    config = ConfigParser( dict( file_path = 'database/files',
-                                 database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
-    config.read( os.path.basename( options.config ) )
+    import galaxy.config
+    from galaxy.objectstore import build_object_store_from_config
+
+    config_parser = ConfigParser( dict( here = os.getcwd(),
+                                        database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
+    config_parser.read( os.path.basename( options.config ) )
+
+    config_dict = {}
+    for key, value in config_parser.items( "app:main" ):
+        config_dict[key] = value
+
+    config = galaxy.config.Configuration( **config_dict )
+    object_store = build_object_store_from_config( config )
 
     from galaxy.model import mapping
 
-    return mapping.init( config.get( 'app:main', 'file_path' ), config.get( 'app:main', 'database_connection' ), create_tables = False )
+    return mapping.init( config.file_path, config.database_connection, create_tables = False, object_store = object_store ), object_store
 
 def quotacheck( sa_session, users ):
     sa_session.refresh( user )
@@ -57,7 +67,7 @@ def quotacheck( sa_session, users ):
 
 if __name__ == '__main__':
     print 'Loading Galaxy model...'
-    model = init()
+    model, object_store = init()
     sa_session = model.context.current
 
     if not options.username and not options.email:
@@ -67,6 +77,7 @@ if __name__ == '__main__':
             print '%3i%%' % int( float(i) / user_count * 100 ),
             quotacheck( sa_session, user )
         print '100% complete'
+        object_store.shutdown()
         sys.exit( 0 )
     elif options.username:
         user = sa_session.query( model.User ).enable_eagerloads( False ).filter_by( username=options.username ).first()
@@ -75,4 +86,5 @@ if __name__ == '__main__':
     if not user:
         print 'User not found'
         sys.exit( 1 )
+    object_store.shutdown()
     quotacheck( sa_session, user )
