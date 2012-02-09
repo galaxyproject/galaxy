@@ -188,7 +188,7 @@ class FilterableMixin:
         if isinstance( self.original_dataset.datatype, Gff ):
             # Can filter by score and GTF attributes.
             filters = [ { 'name': 'Score', 
-                          'type': 'int', 
+                          'type': 'number', 
                           'index': filter_col, 
                           'tool_id': 'Filter1',
                           'tool_exp_name': 'c6' } ]
@@ -199,7 +199,7 @@ class FilterableMixin:
                     if a_type in [ 'int', 'float' ]:
                         filters.append( 
                             { 'name': name,
-                              'type': a_type, 
+                              'type': 'number', 
                               'index': filter_col, 
                               'tool_id': 'gff_filter_by_attribute',
                               'tool_exp_name': name } )
@@ -228,7 +228,7 @@ class FilterableMixin:
         elif isinstance( self.original_dataset.datatype, Bed ):
             # Can filter by score column only.
             filters = [ { 'name': 'Score', 
-                          'type': 'int', 
+                          'type': 'number', 
                           'index': filter_col, 
                           'tool_id': 'Filter1',
                           'tool_exp_name': 'c5'

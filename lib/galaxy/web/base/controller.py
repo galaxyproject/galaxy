@@ -340,7 +340,7 @@ class UsesVisualization( SharableItemSecurity ):
                     "dataset_id": trans.security.encode_id( dataset.id ),
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
-                    "filters": track_data_provider.get_filters(),
+                    "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
                     "tool": get_tool_def( trans, dataset )
                 }
             

@@ -927,7 +927,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             prefs: this.prefs,
             obj_type: this.obj_type,
             drawables: dictified_drawables
-            };
+        };
     },
     /**
      * Restore object from a dictionary created by to_dict()
@@ -1206,8 +1206,12 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 for (var filter_name in shared_filters) {
                     filters = shared_filters[filter_name];
                     if (filters.length === num_feature_tracks) {
-                        // Add new filter to represent shared filters.
-                        new_filter = new NumberFilter(filters[0].name, filters[0].index);
+                        // Add new filter.
+                        // FIXME: can filter.copy() be used?
+                        new_filter = new NumberFilter( {
+                                        name: filters[0].name, 
+                                        index: filters[0].index
+                                        } );
                         this.filters_manager.add_filter(new_filter);
                     }
                 }
@@ -2087,30 +2091,44 @@ var NumberParameter = function(name, label, html, value, min, max) {
 /**
  * Filters that enable users to show/hide data points dynamically.
  */
-var Filter = function(name, index, tool_id, tool_exp_name) {
+var Filter = function(obj_dict) {
     this.manager = null;
-    this.name = name;
+    this.name = obj_dict.name;
     // Index into payload to filter.
-    this.index = index;
-    this.tool_id = tool_id;
+    this.index = obj_dict.index;
+    this.tool_id = obj_dict.tool_id;
     // Name to use for filter when building expression for tool.
-    this.tool_exp_name = tool_exp_name;
+    this.tool_exp_name = obj_dict.tool_exp_name;
 };
+
+extend(Filter.prototype, {
+    /**
+     * Convert filter to dictionary.
+     */
+    to_dict: function() {
+        return {
+            name: this.name,
+            index: this.index,
+            tool_id: this.tool_id,
+            tool_exp_name: this.tool_exp_name
+        };
+    } 
+});
 
 /**
  * Number filters have a min, max as well as a low, high; low and high are used 
  */
-var NumberFilter = function(name, index, tool_id, tool_exp_name) {
+var NumberFilter = function(obj_dict) {
     //
     // Attribute init.
     //
-    Filter.call(this, name, index, tool_id, tool_exp_name);
+    Filter.call(this, obj_dict);
     // Filter low/high. These values are used to filter elements.
-    this.low = -Number.MAX_VALUE;
-    this.high = Number.MAX_VALUE;
+    this.low = ('low' in obj_dict ? obj_dict.low : -Number.MAX_VALUE);
+    this.high = ('high' in obj_dict ? obj_dict.high : Number.MAX_VALUE);
     // Slide min/max. These values are used to set/update slider.
-    this.min = Number.MAX_VALUE;
-    this.max = -Number.MAX_VALUE;
+    this.min = ('min' in obj_dict ? obj_dict.min : Number.MAX_VALUE);
+    this.max = ('max' in obj_dict ? obj_dict.max : -Number.MAX_VALUE)
     // UI elements associated with filter.
     this.container = null;
     this.slider = null;
@@ -2195,7 +2213,7 @@ var NumberFilter = function(name, index, tool_id, tool_exp_name) {
     // Set up filter label (name, values).
     var filter_label = $("<div/>").addClass("elt-label").appendTo(filter.parent_div),
         name_span = $("<span/>").addClass("slider-name").text(filter.name + "  ").appendTo(filter_label),
-        values_span = $("<span/>"),
+        values_span = $("<span/>").text(this.low + "-" + this.high),
         values_span_container = $("<span/>").addClass("slider-value").appendTo(filter_label).append("[").append(values_span).append("]");
     filter.values_span = values_span;
             
@@ -2205,9 +2223,10 @@ var NumberFilter = function(name, index, tool_id, tool_exp_name) {
     var prev_values = [0,0];
     filter.control_element.slider({
         range: true,
-        min: Number.MAX_VALUE,
-        max: -Number.MIN_VALUE,
-        values: [0, 0],
+        min: this.min,
+        max: this.max,
+        step: this.get_slider_step(this.min, this.max),
+        values: [this.low, this.high],
         slide: function(event, ui) { 
             filter.slide(event, ui); 
         },
@@ -2222,52 +2241,51 @@ var NumberFilter = function(name, index, tool_id, tool_exp_name) {
     edit_slider_values(values_span_container, values_span, filter.control_element);
     
     // Set up filter display controls.
-    var 
-        display_controls_div = $("<div/>").addClass("display-controls").appendTo(filter.parent_div),
-        transparency_icon = create_action_icon("Use filter for data transparency", "layer-transparent", 
+    var display_controls_div = $("<div/>").addClass("display-controls").appendTo(filter.parent_div);
+    this.transparency_icon = create_action_icon("Use filter for data transparency", "layer-transparent", 
                                                 function() {
                                                     if (filter.manager.alpha_filter !== filter) {
                                                         // Setting this filter as the alpha filter.
                                                         filter.manager.alpha_filter = filter;
                                                         // Update UI for new filter.
                                                         filter.manager.parent_div.find(".layer-transparent").removeClass("active").hide();
-                                                        transparency_icon.addClass("active").show();
+                                                        filter.transparency_icon.addClass("active").show();
                                                     }
                                                     else {
                                                         // Clearing filter as alpha filter.
                                                         filter.manager.alpha_filter = null;
-                                                        transparency_icon.removeClass("active");
+                                                        filter.transparency_icon.removeClass("active");
                                                     }
                                                     filter.manager.track.request_draw(true, true);
                                                 } )
-                                                .appendTo(display_controls_div).hide(),
-        height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", 
+                                                .appendTo(display_controls_div).hide();
+    this.height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", 
                                                 function() {
                                                     if (filter.manager.height_filter !== filter) {
                                                         // Setting this filter as the height filter.
                                                         filter.manager.height_filter = filter;
                                                         // Update UI for new filter.
                                                         filter.manager.parent_div.find(".arrow-resize-090").removeClass("active").hide();
-                                                        height_icon.addClass("active").show();
+                                                        filter.height_icon.addClass("active").show();
                                                     }
                                                     else {
                                                         // Clearing filter as alpha filter.
                                                         filter.manager.height_filter = null;
-                                                        height_icon.removeClass("active");
+                                                        filter.height_icon.removeClass("active");
                                                     }
                                                     filter.manager.track.request_draw(true, true);
                                                 } )
                                                 .appendTo(display_controls_div).hide();
     filter.parent_div.hover( function() { 
-                                transparency_icon.show();
-                                height_icon.show(); 
+                                filter.transparency_icon.show();
+                                filter.height_icon.show(); 
                             },
                             function() {
                                 if (filter.manager.alpha_filter !== filter) {
-                                    transparency_icon.hide();
+                                    filter.transparency_icon.hide();
                                 }
                                 if (filter.manager.height_filter !== filter) {
-                                    height_icon.hide();
+                                    filter.height_icon.hide();
                                 }
                             } );
     
@@ -2276,10 +2294,29 @@ var NumberFilter = function(name, index, tool_id, tool_exp_name) {
 };
 extend(NumberFilter.prototype, {
     /**
+     * Convert filter to dictionary.
+     */
+    to_dict: function() {
+        var obj_dict = Filter.prototype.to_dict.call(this);
+        return extend(obj_dict, {
+            type: 'number',
+            min: this.min,
+            max: this.max,
+            low: this.low,
+            high: this.high
+        });
+    },
+    /**
      * Return a copy of filter.
      */
     copy: function() {
-        return new NumberFilter(this.name, this.index, this.tool_id, this.tool_exp_name);  
+        return new NumberFilter( 
+            {
+                name: this.name, 
+                index: this.index, 
+                tool_id: this.tool_id, 
+                tool_exp_name: this.tool_exp_name
+            });
     },
     /**
      * Get step for slider.
@@ -2380,8 +2417,12 @@ extend(NumberFilter.prototype, {
 /**
  * Manages a set of filters.
  */
-var FiltersManager = function(track, filters_dict) {
+var FiltersManager = function(track, obj_dict) {
     this.track = track;
+    this.alpha_filter = null;
+    this.height_filter = null;
+    this.visible = false;
+    this.filters = [];
     
     //
     // Create HTML.
@@ -2403,23 +2444,35 @@ var FiltersManager = function(track, filters_dict) {
     });
     
     //
-    // Unpack filters from dict.
+    // Restore state from dict.
     //
-    this.filters = [];
-    if (filters_dict) {
+    if (obj_dict) {
+        var 
+            alpha_filter_name = ('alpha_filter' in obj_dict ? obj_dict.alpha_filter : null),
+            height_filter_name = ('height_filter' in obj_dict ? obj_dict.height_filter : null),            
+            filters_dict = obj_dict.filters,
+            filter;
         for (var i = 0; i < filters_dict.length; i++) {
-            var 
-                filter_dict = filters_dict[i], 
-                name = filter_dict.name, 
-                type = filter_dict.type, 
-                index = filter_dict.index,
-                tool_id = filter_dict.tool_id,
-                tool_exp_name = filter_dict.tool_exp_name;
-            if (type === 'int' || type === 'float') {
-                this.add_filter( new NumberFilter(name, index, tool_id, tool_exp_name) );
-            } else {
+            if (filters_dict[i].type === 'number') {
+                filter = new NumberFilter(filters_dict[i]);
+                this.add_filter(filter);
+                if (filter.name === alpha_filter_name) {
+                    this.alpha_filter = filter;
+                    filter.transparency_icon.addClass("active").show();
+                }
+                if (filter.name === height_filter_name) {
+                    this.height_filter = filter;
+                    filter.height_icon.addClass("active").show();
+                }
+            } 
+            else {
                 console.log("ERROR: unsupported filter: ", name, type)
             }
+        }
+        
+        
+        if ('visible' in obj_dict && obj_dict.visible) {
+            this.parent_div.show();
         }
     }
     
@@ -2436,6 +2489,30 @@ var FiltersManager = function(track, filters_dict) {
 };
 
 extend(FiltersManager.prototype, {
+    /**
+     * Returns dictionary for manager.
+     */
+    to_dict: function() {
+        var obj_dict = {},
+            filter_dicts = [],
+            filter;
+            
+        // Include individual filter states.
+        for (var i = 0; i < this.filters.length; i++) {
+            filter = this.filters[i];
+            filter_dicts.push(filter.to_dict());
+        }
+        obj_dict['filters'] = filter_dicts;
+        
+        // Include transparency, height filters.
+        obj_dict['alpha_filter'] = (this.alpha_filter ? this.alpha_filter.name : null);
+        obj_dict['height_filter'] = (this.height_filter ? this.height_filter.name : null);
+        
+        // Include visibility.
+        obj_dict['visible'] = this.parent_div.is(":visible");
+        
+        return obj_dict;
+    },
     /**
      * Return a copy of the manager.
      */
@@ -3275,6 +3352,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             "dataset_id": this.dataset_id,
             "prefs": this.prefs,
             "mode": this.mode,
+            "filters": this.filters_manager.to_dict() 
         };
     },
     /**
