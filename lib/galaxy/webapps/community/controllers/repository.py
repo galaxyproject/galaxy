@@ -774,13 +774,27 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return trans.response.send_redirect( url )
     @web.expose
     def get_tool_versions( self, trans, **kwd ):
+        """
+        For each valid /downloadable change set (up to the received changeset_revision) in the
+        repository's change log, append the change set's tool_versions dictionary to the list
+        that will be returned.
+        """
         name = kwd[ 'name' ]
         owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        tool_version_dicts = []
+        for changeset in repo.changelog:
+            current_changeset_revision = str( repo.changectx( changeset ) )
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), current_changeset_revision )
+            if repository_metadata and repository_metadata.tool_versions:
+                tool_version_dicts.append( repository_metadata.tool_versions )
+                if current_changeset_revision == changeset_revision:
+                    break
         if repository_metadata.tool_versions:
-            return to_json_string( repository_metadata.tool_versions )
+            return to_json_string( tool_version_dicts )
         return ''
     @web.expose
     def check_for_updates( self, trans, **kwd ):

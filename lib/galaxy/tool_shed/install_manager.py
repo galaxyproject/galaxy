@@ -106,10 +106,11 @@ class InstallManager( object ):
                         text = response.read()
                         response.close()
                         if text:
-                            tool_versions_dict = from_json_string( text )
-                            handle_tool_versions( self.app, tool_versions_dict, tool_shed_repository )
+                            tool_version_dicts = from_json_string( text )
+                            handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
                         else:
                             # Set the tool versions since they seem to be missing for this repository in the tool shed.
+                            # CRITICAL NOTE: These default settings may not properly handle all parent/child associations.
                             for tool_dict in metadata_dict[ 'tools' ]:
                                 flush_needed = False
                                 tool_id = tool_dict[ 'guid' ]

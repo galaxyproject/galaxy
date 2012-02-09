@@ -477,33 +477,35 @@ def handle_tool_dependencies( current_working_dir, repo_files_dir, repository_to
                         error = tmp_stderr.read()
                         tmp_stderr.close()
                         log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
-def handle_tool_versions( app, tool_versions, tool_shed_repository ):
+def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     """
-    This method is used by the InstallManager, which does not have access to trans.  Using
-    the tool_versions dictionary retrieved from the tool shed, create the parent / child pairs
-    of tool versions.  The tool_versions dictionary contains { tool id : parent tool id } pairs.
+    This method is used by the InstallManager, which does not have access to trans.  Using the list
+    of tool_version_dicts retrieved from the tool shed (one per chngeset revison up to the currently
+    installed changeset revision), create the parent / child pairs of tool versions.  Each dictionary
+    contains { tool id : parent tool id } pairs.
     """
     sa_session = app.model.context.current
-    for tool_guid, parent_id in tool_versions.items():
-        tool_version_using_tool_guid = get_tool_version( app, tool_guid )
-        tool_version_using_parent_id = get_tool_version( app, parent_id )
-        if not tool_version_using_tool_guid:
-            tool_version_using_tool_guid = app.model.ToolVersion( tool_id=tool_guid, tool_shed_repository=tool_shed_repository )
-            sa_session.add( tool_version_using_tool_guid )
-            sa_session.flush()
-        if not tool_version_using_parent_id:
-            tool_version_using_parent_id = app.model.ToolVersion( tool_id=parent_id, tool_shed_repository=tool_shed_repository )
-            sa_session.add( tool_version_using_parent_id )
-            sa_session.flush()
-        # Associate the two versions as parent / child.
-        tool_version_association = get_tool_version_association( app,
-                                                                 tool_version_using_parent_id,
-                                                                 tool_version_using_tool_guid )
-        if not tool_version_association:
-            tool_version_association = app.model.ToolVersionAssociation( tool_id=tool_version_using_tool_guid.id,
-                                                                         parent_id=tool_version_using_parent_id.id )
-            sa_session.add( tool_version_association )
-            sa_session.flush()
+    for tool_version_dict in tool_version_dicts:
+        for tool_guid, parent_id in tool_version_dict.items():
+            tool_version_using_tool_guid = get_tool_version( app, tool_guid )
+            tool_version_using_parent_id = get_tool_version( app, parent_id )
+            if not tool_version_using_tool_guid:
+                tool_version_using_tool_guid = app.model.ToolVersion( tool_id=tool_guid, tool_shed_repository=tool_shed_repository )
+                sa_session.add( tool_version_using_tool_guid )
+                sa_session.flush()
+            if not tool_version_using_parent_id:
+                tool_version_using_parent_id = app.model.ToolVersion( tool_id=parent_id, tool_shed_repository=tool_shed_repository )
+                sa_session.add( tool_version_using_parent_id )
+                sa_session.flush()
+            tool_version_association = get_tool_version_association( app,
+                                                                     tool_version_using_parent_id,
+                                                                     tool_version_using_tool_guid )
+            if not tool_version_association:
+                # Associate the two versions as parent / child.
+                tool_version_association = app.model.ToolVersionAssociation( tool_id=tool_version_using_tool_guid.id,
+                                                                             parent_id=tool_version_using_parent_id.id )
+                sa_session.add( tool_version_association )
+                sa_session.flush()
 def load_datatype_items( app, repository, relative_install_dir, deactivate=False ):
     # Load proprietary datatypes.
     metadata = repository.metadata

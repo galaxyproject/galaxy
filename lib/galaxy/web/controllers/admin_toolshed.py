@@ -242,8 +242,8 @@ class AdminToolshed( AdminGalaxy ):
                                 text = response.read()
                                 response.close()
                                 if text:
-                                    tool_versions_dict = from_json_string( text )
-                                    handle_tool_versions( trans.app, tool_versions_dict, tool_shed_repository )
+                                    tool_version_dicts = from_json_string( text )
+                                    handle_tool_versions( trans.app, tool_version_dicts, tool_shed_repository )
                                 else:
                                     message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % name
                                     message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
@@ -309,8 +309,8 @@ class AdminToolshed( AdminGalaxy ):
         text = response.read()
         response.close()
         if text:
-            tool_versions_dict = from_json_string( text )
-            handle_tool_versions( trans.app, tool_versions_dict, repository )
+            tool_version_dicts = from_json_string( text )
+            handle_tool_versions( trans.app, tool_version_dicts, repository )
             message = "Tool versions have been set for all included tools."
             status = 'done'
         else:
