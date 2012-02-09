@@ -37,6 +37,7 @@ class FastQC():
     fastqc_data.txt         per_base_gc_content.png  per_base_sequence_content.png  sequence_length_distribution.png  warning.png
 
         """
+        serr = ''
         dummy,tlog = tempfile.mkstemp(prefix='rgFastQClog')
         sout = open(tlog, 'w')
         fastq = os.path.basename(self.opts.input)
@@ -45,12 +46,18 @@ class FastQC():
             cl.append('-f %s' % self.opts.informat)
         if self.opts.contaminants <> None :
             cl.append('-c %s' % self.opts.contaminants)
-        cl.append(self.opts.input)
+        # patch suggested by bwlang https://bitbucket.org/galaxy/galaxy-central/pull-request/30
+	# use a symlink in a temporary directory so that the FastQC report reflects the history input file name
+        fastqinfilename = os.path.basename(self.opts.inputfilename).replace(' ','_')
+        link_name = os.path.join(self.opts.outputdir, fastqinfilename)
+        os.symlink(self.opts.input, link_name)
+        cl.append(link_name)        
         p = subprocess.Popen(' '.join(cl), shell=True, stderr=sout, stdout=sout, cwd=self.opts.outputdir)
-        return_value = p.wait()
+        retval = p.wait()
         sout.close()
         runlog = open(tlog,'r').readlines()
         os.unlink(tlog)
+        os.unlink(link_name)
         flist = os.listdir(self.opts.outputdir) # fastqc plays games with its output directory name. eesh
         odpath = None
         for f in flist:
@@ -65,7 +72,8 @@ class FastQC():
                 rep = open(hpath,'r').readlines() # for our new html file but we need to insert our stuff after the <body> tag
             except:
                 pass
-        if hpath == None:        
+        if hpath == None:
+            serr = '\n'.join(runlog)       
             res =  ['## odpath=%s: No output found in %s. Output for the run was:<pre>\n' % (odpath,hpath),]
             res += runlog
             res += ['</pre>\n',
@@ -74,7 +82,7 @@ class FastQC():
                    'It is also possible that the log shows that fastqc is not installed?<br/>\n',
                    'If that is the case, please tell the relevant Galaxy administrator that it can be snarfed from<br/>\n',
                    'http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/<br/>\n',]
-            return res
+            return res,1,serr
         self.fix_fastqcimages(odpath)
         flist = os.listdir(self.opts.outputdir) # these have now been fixed
         excludefiles = ['tick.png','warning.png','fastqc_icon.png','error.png']
@@ -84,7 +92,7 @@ class FastQC():
             rep[i] = rep[i].replace('Images/','')
 
         html = self.fix_fastqc(rep,flist,runlog)
-        return html
+        return html,retval,serr
         
 
         
@@ -129,6 +137,7 @@ class FastQC():
 if __name__ == '__main__':
     op = optparse.OptionParser()
     op.add_option('-i', '--input', default=None)
+    op.add_option('-j', '--inputfilename', default=None)    
     op.add_option('-o', '--htmloutput', default=None)
     op.add_option('-d', '--outputdir', default="/tmp/shortread")
     op.add_option('-f', '--informat', default='fastq')
@@ -141,9 +150,12 @@ if __name__ == '__main__':
     if not os.path.exists(opts.outputdir): 
         os.makedirs(opts.outputdir)
     f = FastQC(opts)
-    html = f.run_fastqc()
+    html,retval,serr = f.run_fastqc()
     f = open(opts.htmloutput, 'w')
     f.write(''.join(html))
     f.close()
+    if retval <> 0:
+         print >> sys.stderr, serr # indicate failure
+         
     
 
