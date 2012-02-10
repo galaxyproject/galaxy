@@ -27,7 +27,6 @@ def __main__():
                         help='The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart.' )
     parser.add_option( '-I', '--max-intron-length', dest='max_intron_length', 
                         help='The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read.' )
-    parser.add_option( '-F', '--junction_filter', dest='junction_filter', help='Filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)' )
     parser.add_option( '-g', '--max_multihits', dest='max_multihits', help='Maximum number of alignments to be allowed' )
     parser.add_option( '', '--initial-read-mismatches', dest='initial_read_mismatches', help='Number of mismatches allowed in the initial read mapping' )
     parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
@@ -150,8 +149,6 @@ def __main__():
             opts += ' -m %s' % options.splice_mismatches
             opts += ' -i %s' % options.min_intron_length
             opts += ' -I %s' % options.max_intron_length
-            if float( options.junction_filter ) != 0.0:
-                opts += ' -F %s' % options.junction_filter
             opts += ' -g %s' % options.max_multihits
             # Custom junctions options.
             if options.gene_model_annotations:

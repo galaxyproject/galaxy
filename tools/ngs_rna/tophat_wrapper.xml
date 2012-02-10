@@ -34,7 +34,6 @@
                     -m $singlePaired.sParams.splice_mismatches
                     -i $singlePaired.sParams.min_intron_length
                     -I $singlePaired.sParams.max_intron_length
-                    -F $singlePaired.sParams.junction_filter
                     -g $singlePaired.sParams.max_multihits
                     --min-segment-intron $singlePaired.sParams.min_segment_intron
                     --max-segment-intron $singlePaired.sParams.max_segment_intron
@@ -96,7 +95,6 @@
                     -m $singlePaired.pParams.splice_mismatches
                     -i $singlePaired.pParams.min_intron_length
                     -I $singlePaired.pParams.max_intron_length
-                    -F $singlePaired.pParams.junction_filter
                     -g $singlePaired.pParams.max_multihits
                     --min-segment-intron $singlePaired.pParams.min_segment_intron
                     --max-segment-intron $singlePaired.pParams.max_segment_intron
@@ -203,8 +201,8 @@
                          <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
                       </when>
                   </conditional>
-                  <param name="junction_filter" type="float" value="0.15" label="Minimum isoform fraction: filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
-                  <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
+alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
+                  <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
                   <param name="initial_read_mismatches" type="integer" min="0" value="2" label="Number of mismatches allowed in the initial read mapping" />
@@ -310,8 +308,7 @@
                          <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
                       </when>
                   </conditional>
-                  <param name="junction_filter" type="float" value="0.15" label="Minimum isoform fraction: filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
-                  <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
+                  <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
                   <param name="initial_read_mismatches" type="integer" min="0" value="2" label="Number of mismatches allowed in the initial read mapping" />
@@ -532,7 +529,6 @@
             <param name="splice_mismatches" value="0"/>
             <param name="min_intron_length" value="70"/>
             <param name="max_intron_length" value="500000"/>
-            <param name="junction_filter" value="0.15"/>
             <param name="max_multihits" value="40"/>
             <param name="min_segment_intron" value="50" />
             <param name="max_segment_intron" value="500000" />
@@ -578,7 +574,6 @@
             <param name="splice_mismatches" value="0"/>
             <param name="min_intron_length" value="70"/>
             <param name="max_intron_length" value="500000"/>
-            <param name="junction_filter" value="0.15"/>
             <param name="max_multihits" value="40"/>
             <param name="min_segment_intron" value="50" />
             <param name="max_segment_intron" value="500000" />
