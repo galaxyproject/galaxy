@@ -1034,7 +1034,7 @@ var DrawableGroup = function(name, view, container, prefs) {
     this.filters_manager = new FiltersManager(this);
     this.header_div.after(this.filters_manager.parent_div);
     // For saving drawables' filter managers when group-level filtering is done:
-    this.saved_filters_managers = null;
+    this.saved_filters_managers = [];
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
@@ -1060,33 +1060,15 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 // TODO: update tipsy text.
                 if (group.filters_manager.visible()) {
                     // Hiding filters.
-                    group.filters_manager.clear_filters();    
-                    
-                    // Restore filter managers. 
+                    group.filters_manager.clear_filters();
+                    group._restore_filter_managers();
                     // TODO: maintain current filter by restoring and setting saved manager's 
                     // settings to current/shared manager's settings.
-                    // TODO: need to restore filter managers when moving drawable outside group.
-                    for (var i = 0; i < group.drawables.length; i++) {
-                        group.drawables[i].filters_manager = group.saved_filters_managers[i];
-                    }
-                    group.saved_filters_managers = null;
+                    // TODO: need to restore filter managers when moving drawable outside group.             
                 }
                 else {
                     // Showing filters.
-                    
-                    // Save tracks' managers and set up shared manager.
-                    if (group.filters_manager.filters.length > 0) {
-                        // For all tracks, save current filter manager and set manager to shared (this object's) manager.
-                        group.saved_filters_managers = [];
-                        for (var i = 0; i < group.drawables.length; i++) {
-                            drawable = group.drawables[i];
-                            group.saved_filters_managers.push(drawable.filters_manager);
-                            drawable.filters_manager = group.filters_manager;
-                        }
-
-                        //TODO: hide filters icons for each drawable.
-                    }
-                    group.filters_manager.init_filters();
+                    group.setup_multitrack_filtering();
                     group.request_draw(true);
                 }
                 group.filters_manager.toggle();
@@ -1229,6 +1211,33 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         }
     },
     /**
+     * Restore individual track filter managers.
+     */
+    _restore_filter_managers: function() {
+        for (var i = 0; i < this.drawables.length; i++) {
+            this.drawables[i].filters_manager = this.saved_filters_managers[i];
+        }
+        this.saved_filters_managers = [];
+    },
+    /**
+     *
+     */
+    setup_multitrack_filtering: function() {
+        // Save tracks' managers and set up shared manager.
+        if (this.filters_manager.filters.length > 0) {
+            // For all tracks, save current filter manager and set manager to shared (this object's) manager.
+            this.saved_filters_managers = [];
+            for (var i = 0; i < this.drawables.length; i++) {
+                drawable = this.drawables[i];
+                this.saved_filters_managers.push(drawable.filters_manager);
+                drawable.filters_manager = this.filters_manager;
+            }
+
+            //TODO: hide filters icons for each drawable?
+        }
+        this.filters_manager.init_filters();
+    },
+    /**
      * Replace group with a single composite track that includes all group's tracks.
      */
     show_composite_track: function() {
@@ -1252,6 +1261,21 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         DrawableCollection.prototype.remove_drawable.call(this, drawable);
         this.update_icons();
     },
+    to_dict: function() {
+        // If filters are visible, need to restore original filter managers before converting to dict.        
+        if (this.filters_manager.visible()) {
+            this._restore_filter_managers();
+        }
+
+        var obj_dict = extend(DrawableCollection.prototype.to_dict.call(this), { "filters": this.filters_manager.to_dict() });
+        
+        // Setup multi-track filtering again.
+        if (this.filters_manager.visible()) {
+            this.setup_multitrack_filtering();
+        }
+        
+        return obj_dict;
+    },
     /**
      * Restore object from a dictionary created by to_dict()
      */
@@ -1262,6 +1286,17 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         for (var i = 0; i < group.drawables.length; i++) {
             group.content_div.append(group.drawables[i].container_div);   
         }
+        
+        // Handle filters.
+        // FIXME: Pass collection_dict to DrawableCollection/Drawable will make this easier.
+        var old_manager = group.filters_manager;
+        group.filters_manager = new FiltersManager(group, collection_dict['filters']);
+        old_manager.parent_div.replaceWith(group.filters_manager.parent_div);
+        
+        if (collection_dict.filters.visible) {
+            group.setup_multitrack_filtering();
+        }
+        
         return group;
     },
     request_draw: function(clear_after, force) {
