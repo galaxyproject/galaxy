@@ -47,11 +47,13 @@ class Registry( object ):
         self.datatype_elems = []
         self.sniffer_elems = []
         self.xml_filename = None
-    def load_datatypes( self, root_dir=None, config=None, deactivate=False ):
+    def load_datatypes( self, root_dir=None, config=None, deactivate=False, override=True ):
         """
-        Parse a datatypes XML file located at root_dir/config.  If deactivate is True, an installed
-        tool shed repository that includes proprietary datatypes is being deactivated, so appropriate
-        loaded datatypes will be removed from the registry.
+        Parse a datatypes XML file located at root_dir/config.  If deactivate is True, an installed tool shed
+        repository that includes proprietary datatypes is being deactivated, so appropriate loaded datatypes
+        will be removed from the registry.  The value of override will be False when a tool shed repository is
+        being installed.  Since installation is occurring after the datatypes registry has been initialized, its
+        contents cannot be overridden by new introduced conflicting data types.
         """
         def __import_module( full_path, datatype_module ):
             sys.path.insert( 0, full_path )
@@ -116,9 +118,13 @@ class Registry( object ):
                         self.datatype_elems.append( elem )
                     if extension and extension in self.datatypes_by_extension and deactivate:
                         # We are deactivating an installed tool shed repository, so eliminate the datatype from the registry.
+                        # TODO: Handle deactivating datatype converters, etc before removing from self.datatypes_by_extension.
                         self.log.debug( "Removing datatype with extension '%s' from the registry." % extension )
                         del self.datatypes_by_extension[ extension ]
-                    elif extension and ( dtype or type_extension ):
+                        can_process_datatype = False
+                    else:
+                        can_process_datatype = ( extension and ( dtype or type_extension ) ) and ( extension not in self.datatypes_by_extension or override )
+                    if can_process_datatype:
                         if dtype:
                             fields = dtype.split( ':' )
                             datatype_module = fields[0]
@@ -194,6 +200,11 @@ class Registry( object ):
                             else:
                                 if elem not in self.display_app_containers:
                                     self.display_app_containers.append( elem )
+                    elif not deactivate:
+                        # A new tool shed repository that contains proprietary datatypes is being installed, and since installation
+                        # is occurring after the datatypes registry has been initialized, its contents cannot be overridden by new
+                        # introduced conflicting data types.
+                        self.log.warning( "Ignoring conflicting datatype with extension '%s' from %s." % ( extension, config ) )
                 except Exception, e:
                     if deactivate:
                         self.log.warning( "Error deactivating datatype with extension '%s': %s" % ( extension, str( e ) ) )
@@ -233,14 +244,22 @@ class Registry( object ):
                                 self.log.debug( "Deactivated sniffer for datatype '%s'" % dtype )
                             else:
                                 # See if we have a conflicting sniffer already loaded.
+                                conflict = False
                                 for conflict_loc, sniffer_class in enumerate( self.sniff_order ):
                                     if sniffer_class.__class__ == aclass.__class__:
                                         # We have a conflicting sniffer, so replace the one previously loaded.
-                                        del self.sniff_order[ conflict_loc ]
-                                        self.log.debug( "Replaced conflicting sniffer for datatype '%s'" % dtype )
+                                        conflict = True
+                                        if override:
+                                            del self.sniff_order[ conflict_loc ]
+                                            self.log.debug( "Replaced conflicting sniffer for datatype '%s'" % dtype )
                                         break
-                                self.sniff_order.append( aclass )
-                                self.log.debug( "Loaded sniffer for datatype '%s'" % dtype )
+                                if conflict:
+                                    if override:
+                                        self.sniff_order.append( aclass )
+                                        self.log.debug( "Loaded sniffer for datatype '%s'" % dtype )
+                                else:
+                                    self.sniff_order.append( aclass )
+                                    self.log.debug( "Loaded sniffer for datatype '%s'" % dtype )
                         except Exception, exc:
                             if deactivate:
                                 self.log.warning( "Error deactivating sniffer for datatype '%s': %s" % ( dtype, str( exc ) ) )

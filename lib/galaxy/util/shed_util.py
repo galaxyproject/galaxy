@@ -527,12 +527,14 @@ def load_datatype_items( app, repository, relative_install_dir, deactivate=False
         if display_path:
             # Load or deactivate proprietary datatype display applications
             app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict, deactivate=deactivate )
-def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=False ):
+def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=False, override=True ):
     """
     Parse a proprietary datatypes config (a datatypes_conf.xml file included in an installed tool shed repository) and
     add information to appropriate elements that will enable proprietary datatype class modules, datatypes converters
-    and display application to be discovered and properly imported by the datatypes registry.  This method is used by
-    the InstallManager, which does not have access to trans. 
+    and display application to be discovered and properly imported by the datatypes registry.  The value of override will
+    be False when a tool shed repository is being installed.  Since installation is occurring after the datatypes registry
+    has been initialized, its contents cannot be overridden by conflicting data types. This method is used by the InstallManager,
+    which does not have access to trans. 
     """
     tree = util.parse_xml( datatypes_config )
     datatypes_config_root = tree.getroot()
@@ -597,7 +599,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     else:
         proprietary_datatypes_config = datatypes_config
     # Load proprietary datatypes
-    app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=proprietary_datatypes_config, deactivate=deactivate )
+    app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=proprietary_datatypes_config, deactivate=deactivate, override=override )
     try:
         os.unlink( proprietary_datatypes_config )
     except:
@@ -728,7 +730,8 @@ def load_repository_contents( app, repository_name, description, owner, changese
     if 'datatypes_config' in metadata_dict:
         datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
         # Load data types required by tools.
-        converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir )
+        override = not new_install
+        converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, override=override )
         if converter_path or display_path:
             # Create a dictionary of tool shed repository related information.
             repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,

@@ -616,9 +616,6 @@ class AdminToolshed( AdminGalaxy ):
                                 break
                         for elem in sections_to_load:
                             trans.app.toolbox.load_section_tag_set( elem, trans.app.toolbox.tool_panel, tool_path )
-        if repository.includes_datatypes:
-            # Load proprietary datatypes.
-            load_datatype_items( trans.app, repository, relative_install_dir )
         if uninstalled:
             message = 'The <b>%s</b> repository has been reinstalled.' % repository.name
         else:
@@ -656,8 +653,6 @@ class AdminToolshed( AdminGalaxy ):
         if tool_section:
             trans.app.toolbox.tool_panel[ section_key ] = tool_section
             log.debug( "Appended reactivated tool to section: %s" % tool_section.name )
-        shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_path_and_relative_install_dir( trans, repository )
-        load_datatype_items( trans.app, repository, relative_install_dir )
     @web.expose
     @web.require_admin
     def manage_repository( self, trans, **kwd ):
