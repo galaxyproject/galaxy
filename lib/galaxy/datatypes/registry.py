@@ -1,8 +1,7 @@
 """
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
-import os, tempfile
-import logging
+import os, sys, tempfile, threading, logging
 import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary, assembly, ngsindex, wsf
 import galaxy.util
 from galaxy.util.odict import odict
@@ -20,8 +19,7 @@ class Registry( object ):
         self.datatype_converters = odict()
         # Converters defined in local datatypes_conf.xml
         self.converters = []
-        # Converters defined in datatypes_conf.xml included
-        # in installed tool shed repositories.
+        # Converters defined in datatypes_conf.xml included in installed tool shed repositories.
         self.proprietary_converters = []
         self.converter_deps = {}
         self.available_tracks = []
@@ -44,17 +42,24 @@ class Registry( object ):
         # The 'default' display_path defined in local datatypes_conf.xml
         self.display_applications_path = None
         self.inherit_display_application_by_class = []
+        # Keep a list of imported proprietary datatype class modules.
+        self.imported_modules = []
         self.datatype_elems = []
         self.sniffer_elems = []
         self.xml_filename = None
-    def load_datatypes( self, root_dir=None, config=None, imported_modules=None, deactivate=False ):
+    def load_datatypes( self, root_dir=None, config=None, deactivate=False ):
         """
-        Parse a datatypes XML file located at root_dir/config.  If imported_modules is received, it
-        is a list of imported datatypes class files included in an installed tool shed repository.
-        If deactivate is received as True, an installed tool shed repository that includes proprietary
-        datatypes is being deactivated, so relevant loaded datatypes will be removed from the registry.
+        Parse a datatypes XML file located at root_dir/config.  If deactivate is True, an installed
+        tool shed repository that includes proprietary datatypes is being deactivated, so appropriate
+        loaded datatypes will be removed from the registry.
         """
+        def __import_module( full_path, datatype_module ):
+            sys.path.insert( 0, full_path )
+            imported_module = __import__( datatype_module )
+            sys.path.pop( 0 )
+            return imported_module
         if root_dir and config:
+            handling_proprietary_datatypes = False
             # Parse datatypes_conf.xml
             tree = galaxy.util.parse_xml( config )
             root = tree.getroot()
@@ -73,6 +78,11 @@ class Registry( object ):
             if not self.display_applications_path:
                 self.display_path_attr = registration.get( 'display_path', 'display_applications' )
                 self.display_applications_path = os.path.join( root_dir, self.display_path_attr )
+            # Proprietary datatype's <registration> tag may have special attributes, proprietary_converter_path and proprietary_display_path.
+            proprietary_converter_path = registration.get( 'proprietary_converter_path', None )
+            proprietary_display_path = registration.get( 'proprietary_display_path', None )
+            if proprietary_converter_path or proprietary_display_path and not handling_proprietary_datatypes:
+                handling_proprietary_datatypes = True
             for elem in registration.findall( 'datatype' ):
                 try:
                     extension = elem.get( 'extension', None )
@@ -81,6 +91,12 @@ class Registry( object ):
                     mimetype = elem.get( 'mimetype', None )
                     display_in_upload = elem.get( 'display_in_upload', False )
                     make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
+                    # Proprietary datatypes included in installed tool shed repositories will include two special attributes
+                    # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
+                    proprietary_path = elem.get( 'proprietary_path', None )
+                    proprietary_datatype_module = elem.get( 'proprietary_datatype_module', None )
+                    if proprietary_path or proprietary_datatype_module and not handling_proprietary_datatypes:
+                        handling_proprietary_datatypes = True
                     if deactivate:
                         # We are deactivating an installed tool shed repository, so eliminate the
                         # datatype elem from the in-memory list of datatype elems.
@@ -108,12 +124,21 @@ class Registry( object ):
                             datatype_module = fields[0]
                             datatype_class_name = fields[1]
                             datatype_class = None
-                            if imported_modules:
-                                # See if one of the imported modules contains the datatype class name.
-                                for imported_module in imported_modules:
+                            if proprietary_path and proprietary_datatype_module:
+                                # We need to change the value of sys.path, so do it in a way that is thread-safe.
+                                lock = threading.Lock()
+                                lock.acquire( True )
+                                try:
+                                    imported_module = __import_module( proprietary_path, proprietary_datatype_module )
+                                    if imported_module not in self.imported_modules:
+                                        self.imported_modules.append( imported_module )
                                     if hasattr( imported_module, datatype_class_name ):
                                         datatype_class = getattr( imported_module, datatype_class_name )
-                                        break
+                                except Exception, e:
+                                    full_path = os.path.join( full_path, proprietary_datatype_module )
+                                    self.log.debug( "Exception importing proprietary code file %s: %s" % ( str( full_path ), str( e ) ) )
+                                finally:
+                                    lock.release()
                             if datatype_class is None:
                                 # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
                                 fields = datatype_module.split( '.' )
@@ -130,14 +155,14 @@ class Registry( object ):
                         self.datatypes_by_extension[ extension ] = datatype_class()
                         if mimetype is None:
                             # Use default mime type as per datatype spec
-                            mimetype = self.datatypes_by_extension[extension].get_mime()
-                        self.mimetypes_by_extension[extension] = mimetype
+                            mimetype = self.datatypes_by_extension[ extension ].get_mime()
+                        self.mimetypes_by_extension[ extension ] = mimetype
                         if hasattr( datatype_class, "get_track_type" ):
                             self.available_tracks.append( extension )
                         if display_in_upload:
                             self.upload_file_formats.append( extension )
                         # Max file size cut off for setting optional metadata
-                        self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
+                        self.datatypes_by_extension[ extension ].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
                         for converter in elem.findall( 'converter' ):
                             # Build the list of datatype converters which will later be loaded into the calling app's toolbox.
                             converter_config = converter.get( 'file', None )
@@ -148,7 +173,8 @@ class Registry( object ):
                                     self.converter_deps[extension] = {}
                                 self.converter_deps[extension][target_datatype] = depends_on.split(',')
                             if converter_config and target_datatype:
-                                if imported_modules:
+                                #if imported_modules:
+                                if proprietary_converter_path:
                                     self.proprietary_converters.append( ( converter_config, extension, target_datatype ) )
                                 else:
                                     self.converters.append( ( converter_config, extension, target_datatype ) )
@@ -161,7 +187,8 @@ class Registry( object ):
                             mimetype = composite_file.get( 'mimetype', None )
                             self.datatypes_by_extension[extension].add_composite_file( name, optional=optional, mimetype=mimetype )
                         for display_app in elem.findall( 'display' ):
-                            if imported_modules:
+                            #if imported_modules:
+                            if proprietary_display_path:
                                 if elem not in self.proprietary_display_app_containers:
                                     self.proprietary_display_app_containers.append( elem )
                             else:
@@ -185,9 +212,10 @@ class Registry( object ):
                             datatype_module = fields[0]
                             datatype_class_name = fields[1]
                             module = None
-                            if imported_modules:
+                            #if imported_modules:
+                            if handling_proprietary_datatypes:
                                 # See if one of the imported modules contains the datatype class name.
-                                for imported_module in imported_modules:
+                                for imported_module in self.imported_modules:
                                     if hasattr( imported_module, datatype_class_name ):
                                         module = imported_module
                                         break
@@ -197,13 +225,6 @@ class Registry( object ):
                                 for comp in datatype_module.split( '.' )[ 1: ]:
                                     module = getattr( module, comp )
                             aclass = getattr( module, datatype_class_name )()
-                            # See if we have a conflicting sniffer already loaded.
-                            conflict_loc = None
-                            conflict = False
-                            for conflict_loc, sniffer_class in enumerate( self.sniff_order ):
-                                if sniffer_class.__class__ == aclass.__class__:
-                                    conflict = True
-                                    break
                             if deactivate:
                                 for sniffer_class in self.sniff_order:
                                     if sniffer_class.__class__ == aclass.__class__:
@@ -211,19 +232,21 @@ class Registry( object ):
                                         break
                                 self.log.debug( "Deactivated sniffer for datatype '%s'" % dtype )
                             else:
-                                if conflict:
-                                    # We have a conflicting sniffer, so replace the one previously loaded.
-                                    del self.sniff_order[ conflict_loc ]
-                                    self.sniff_order.append( aclass )
-                                    self.log.debug( "Replaced conflicting sniffer for datatype '%s'" % dtype )
-                                else:
-                                    self.sniff_order.append( aclass )
-                                    self.log.debug( "Loaded sniffer for datatype '%s'" % dtype )
+                                # See if we have a conflicting sniffer already loaded.
+                                for conflict_loc, sniffer_class in enumerate( self.sniff_order ):
+                                    if sniffer_class.__class__ == aclass.__class__:
+                                        # We have a conflicting sniffer, so replace the one previously loaded.
+                                        del self.sniff_order[ conflict_loc ]
+                                        self.log.debug( "Replaced conflicting sniffer for datatype '%s'" % dtype )
+                                        break
+                                self.sniff_order.append( aclass )
+                                self.log.debug( "Loaded sniffer for datatype '%s'" % dtype )
                         except Exception, exc:
                             if deactivate:
                                 self.log.warning( "Error deactivating sniffer for datatype '%s': %s" % ( dtype, str( exc ) ) )
                             else:
                                 self.log.warning( "Error appending sniffer for datatype '%s' to sniff_order: %s" % ( dtype, str( exc ) ) )
+            self.upload_file_formats.sort()
             # Persist the xml form of the registry into a temporary file so that it
             # can be loaded from the command line by tools and set_metadata processing.
             self.to_xml_file()
@@ -385,8 +408,7 @@ class Registry( object ):
         app's toolbox.
         """   
         if installed_repository_dict:
-            # Load converters defined by datatypes_conf.xml
-            # included in installed tool shed repository.
+            # Load converters defined by datatypes_conf.xml included in installed tool shed repository.
             converters = self.proprietary_converters
         else:
             # Load converters defined by local datatypes_conf.xml.
@@ -438,10 +460,9 @@ class Registry( object ):
         If deactivate is False, add display applications from self.display_app_containers or
         self.proprietary_display_app_containers to appropriate datatypes.  If deactivate is
         True, eliminates relevant display applications from appropriate datatypes.
-        """   
+        """
         if installed_repository_dict:
-            # Load display applications defined by datatypes_conf.xml
-            # included in installed tool shed repository.
+            # Load display applications defined by datatypes_conf.xml included in installed tool shed repository.
             datatype_elems = self.proprietary_display_app_containers
         else:
             # Load display applications defined by local datatypes_conf.xml.
@@ -452,7 +473,8 @@ class Registry( object ):
                 display_file = display_app.get( 'file', None )
                 if installed_repository_dict:
                     display_path = installed_repository_dict[ 'display_path' ]
-                    config_path = os.path.join( display_path, display_file )
+                    display_file_head, display_file_tail = os.path.split( display_file )
+                    config_path = os.path.join( display_path, display_file_tail )
                 else:
                     config_path = os.path.join( self.display_applications_path, display_file )
                 try:

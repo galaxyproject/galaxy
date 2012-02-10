@@ -1,4 +1,4 @@
-import os, sys, tempfile, shutil, subprocess, threading, logging
+import os, tempfile, shutil, subprocess, logging
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import util
@@ -511,7 +511,7 @@ def load_datatype_items( app, repository, relative_install_dir, deactivate=False
     metadata = repository.metadata
     datatypes_config = metadata.get( 'datatypes_config', None )
     if datatypes_config:
-        converter_path, display_path = load_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
+        converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
         if converter_path or display_path:
             # Create a dictionary of tool shed repository related information.
             repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=repository.tool_shed,
@@ -527,15 +527,13 @@ def load_datatype_items( app, repository, relative_install_dir, deactivate=False
         if display_path:
             # Load or deactivate proprietary datatype display applications
             app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict, deactivate=deactivate )
-def load_datatypes( app, datatypes_config, relative_install_dir, deactivate=False ):
-    # This method is used by the InstallManager, which does not have access to trans.
-    def __import_module( relative_path, datatype_module ):
-        sys.path.insert( 0, relative_path )
-        imported_module = __import__( datatype_module )
-        sys.path.pop( 0 )
-        return imported_module
-    imported_modules = []
-    # Parse datatypes_config.
+def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=False ):
+    """
+    Parse a proprietary datatypes config (a datatypes_conf.xml file included in an installed tool shed repository) and
+    add information to appropriate elements that will enable proprietary datatype class modules, datatypes converters
+    and display application to be discovered and properly imported by the datatypes registry.  This method is used by
+    the InstallManager, which does not have access to trans. 
+    """
     tree = util.parse_xml( datatypes_config )
     datatypes_config_root = tree.getroot()
     # Path to datatype converters
@@ -551,6 +549,7 @@ def load_datatypes( app, datatypes_config, relative_install_dir, deactivate=Fals
         #    <datatype_file name="gmap.py"/>
         #    <datatype_file name="metagenomics.py"/>
         # </datatype_files>
+        # We'll add attributes to the datatype tag sets so that the modules can be properly imported by the datatypes registry.
         for elem in datatype_files.findall( 'datatype_file' ):
             datatype_file_name = elem.get( 'name', None )
             if datatype_file_name:
@@ -563,76 +562,91 @@ def load_datatypes( app, datatypes_config, relative_install_dir, deactivate=Fals
                                 break
                 break
         if datatype_class_modules:
-            # Import each of the datatype class modules.
+            registration = datatypes_config_root.find( 'registration' )
+            converter_path, display_path = get_converter_and_display_paths( registration, relative_install_dir )
+            if converter_path:
+                registration.attrib[ 'proprietary_converter_path' ] = converter_path
+            if display_path:
+                registration.attrib[ 'proprietary_display_path' ] = display_path
             for relative_path_to_datatype_file_name in datatype_class_modules:
                 relative_head, relative_tail = os.path.split( relative_path_to_datatype_file_name )
-                registration = datatypes_config_root.find( 'registration' )
-                # Get the module by parsing the <datatype> tag.
                 for elem in registration.findall( 'datatype' ):
-                    # A 'type' attribute is currently required.  The attribute
-                    # should be something like one of the following: 
+                    # Handle 'type' attribute which should be something like one of the following: 
                     # type="gmap:GmapDB"
                     # type="galaxy.datatypes.gmap:GmapDB"
                     dtype = elem.get( 'type', None )
                     if dtype:
                         fields = dtype.split( ':' )
-                        datatype_module = fields[ 0 ]
-                        if datatype_module.find( '.' ) >= 0:
-                            # Handle the case where datatype_module is "galaxy.datatypes.gmap"
-                            datatype_module = datatype_module.split( '.' )[ -1 ]
-                        datatype_class_name = fields[ 1 ]
-                    # We need to change the value of sys.path, so do it in a way that is thread-safe.
-                    lock = threading.Lock()
-                    lock.acquire( True )
-                    try:
-                        imported_module = __import_module( relative_head, datatype_module )
-                        if imported_module not in imported_modules:
-                            imported_modules.append( imported_module )
-                    except Exception, e:
-                        log.debug( "Exception importing datatypes code file %s: %s" % ( str( relative_path_to_datatype_file_name ), str( e ) ) )
-                    finally:
-                        lock.release()
-        # Handle data type converters and display applications.
-        for elem in registration.findall( 'datatype' ):
-            if not converter_path:
-                # If any of the <datatype> tag sets contain <converter> tags, set the converter_path
-                # if it is not already set.  This requires developers to place all converters in the
-                # same subdirectory within the repository hierarchy.
-                for converter in elem.findall( 'converter' ):
-                    converter_config = converter.get( 'file', None )
-                    if converter_config:
-                        for root, dirs, files in os.walk( relative_install_dir ):
-                            if root.find( '.hg' ) < 0:
-                                for name in files:
-                                    if name == converter_config:
-                                        converter_path = root
-                                        break
-                    if converter_path:
-                        break
-            if not display_path:
-                # If any of the <datatype> tag sets contain <display> tags, set the display_path
-                # if it is not already set.  This requires developers to place all display acpplications
-                # in the same subdirectory within the repository hierarchy.
-                for display_app in elem.findall( 'display' ):
-                    display_config = display_app.get( 'file', None )
-                    if display_config:
-                        for root, dirs, files in os.walk( relative_install_dir ):
-                            if root.find( '.hg' ) < 0:
-                                for name in files:
-                                    if name == display_config:
-                                        display_path = root
-                                        break
-                    if display_path:
-                        break
-            if converter_path and display_path:
-                break
+                        proprietary_datatype_module = fields[ 0 ]
+                        if proprietary_datatype_module.find( '.' ) >= 0:
+                            # Handle the case where datatype_module is "galaxy.datatypes.gmap".
+                            proprietary_datatype_module = proprietary_datatype_module.split( '.' )[ -1 ]
+                        # The value of proprietary_path must be an absolute path due to job_working_directory.
+                        elem.attrib[ 'proprietary_path' ] = os.path.abspath( relative_head )
+                        elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
+                
+            sniffers = datatypes_config_root.find( 'sniffers' )
+        fd, proprietary_datatypes_config = tempfile.mkstemp()
+        os.write( fd, '<?xml version="1.0"?>\n' )
+        os.write( fd, '<datatypes>\n' )
+        os.write( fd, '%s' % util.xml_to_string( registration ) )
+        os.write( fd, '%s' % util.xml_to_string( sniffers ) )
+        os.write( fd, '</datatypes>\n' )
+        os.close( fd )
+        os.chmod( proprietary_datatypes_config, 0644 )
     else:
-        # The repository includes a dataypes_conf.xml file, but no code file that
-        # contains data type classes.  This implies that the data types in datayptes_conf.xml
-        # are all subclasses of data types that are in the distribution.
-        imported_modules = []
+        proprietary_datatypes_config = datatypes_config
     # Load proprietary datatypes
-    app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=datatypes_config, imported_modules=imported_modules, deactivate=deactivate )
+    app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=proprietary_datatypes_config, deactivate=deactivate )
+    try:
+        os.unlink( proprietary_datatypes_config )
+    except:
+        pass
+    return converter_path, display_path
+def get_converter_and_display_paths( registration_elem, relative_install_dir ):
+    """
+    Find the relative path to data type converters and display
+    applications included in installed tool shed repositories.  
+    """
+    converter_path = None
+    display_path = None
+    for elem in registration_elem.findall( 'datatype' ):
+        if not converter_path:
+            # If any of the <datatype> tag sets contain <converter> tags, set the converter_path
+            # if it is not already set.  This requires developers to place all converters in the
+            # same subdirectory within the repository hierarchy.
+            for converter in elem.findall( 'converter' ):
+                converter_config = converter.get( 'file', None )
+                if converter_config:
+                    relative_head, relative_tail = os.path.split( converter_config )
+                    for root, dirs, files in os.walk( relative_install_dir ):
+                        if root.find( '.hg' ) < 0:
+                            for name in files:
+                                if name == relative_tail:
+                                    # The value of converter_path must be absolute due to job_working_directory.
+                                    converter_path = os.path.abspath( root )
+                                    break
+                if converter_path:
+                    break
+        if not display_path:
+            # If any of the <datatype> tag sets contain <display> tags, set the display_path
+            # if it is not already set.  This requires developers to place all display acpplications
+            # in the same subdirectory within the repository hierarchy.
+            for display_app in elem.findall( 'display' ):
+                display_config = display_app.get( 'file', None )
+                if display_config:
+                    relative_head, relative_tail = os.path.split( display_config )
+                    for root, dirs, files in os.walk( relative_install_dir ):
+                        if root.find( '.hg' ) < 0:
+                            for name in files:
+                                if name == relative_tail:
+                                    # The value of display_path must be absolute due to job_working_directory.
+                                    display_path = os.path.abspath( root )
+                                    break
+                if display_path:
+                    break
+        if converter_path and display_path:
+            break
     return converter_path, display_path
 def load_repository_contents( app, repository_name, description, owner, changeset_revision, tool_path, repository_clone_url, relative_install_dir,
                               current_working_dir, tmp_name, tool_shed=None, tool_section=None, shed_tool_conf=None, new_install=True, dist_to_shed=False ):
@@ -714,7 +728,7 @@ def load_repository_contents( app, repository_name, description, owner, changese
     if 'datatypes_config' in metadata_dict:
         datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
         # Load data types required by tools.
-        converter_path, display_path = load_datatypes( app, datatypes_config, relative_install_dir )
+        converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir )
         if converter_path or display_path:
             # Create a dictionary of tool shed repository related information.
             repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
