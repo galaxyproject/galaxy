@@ -252,7 +252,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             "hda_ldda": hda_ldda,
             "dataset_id": trans.security.encode_id( dataset.id ),
             "prefs": {},
-            "filters": track_data_provider.get_filters(),
+            "filters": { 'filters' : track_data_provider.get_filters() },
             "tool": get_tool_def( trans, dataset )
         }
         return track
@@ -671,7 +671,8 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 "name": collection_json.get( 'name', '' ),
                 "obj_type": collection_json[ 'obj_type' ],
                 "drawables": unpacked_drawables,
-                "prefs": collection_json.get( 'prefs' , [] )
+                "prefs": collection_json.get( 'prefs' , [] ),
+                "filters": collection_json.get( 'filters', None )
             }
 
         # TODO: unpack and validate bookmarks:

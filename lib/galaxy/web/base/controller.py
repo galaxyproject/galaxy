@@ -355,7 +355,8 @@ class UsesVisualization( SharableItemSecurity ):
                     'name': collection_dict.get( 'name', 'dummy' ),
                     'obj_type': collection_dict[ 'obj_type' ],
                     'drawables': drawables,
-                    'prefs': collection_dict.get( 'prefs', [] )
+                    'prefs': collection_dict.get( 'prefs', [] ),
+                    'filters': collection_dict.get( 'filters', {} )
                 }
                 
             def encode_dbkey( dbkey ):

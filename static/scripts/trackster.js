@@ -1032,8 +1032,7 @@ var DrawableGroup = function(name, view, container, prefs) {
     
     // Set up filters.
     this.filters_manager = new FiltersManager(this);
-    this.filters_div = this.filters_manager.parent_div;
-    this.header_div.after(this.filters_div);
+    this.header_div.after(this.filters_manager.parent_div);
     // For saving drawables' filter managers when group-level filtering is done:
     this.saved_filters_managers = null;
 };
@@ -1059,7 +1058,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             css_class: "filters-icon",
             on_click_fn: function(group) {
                 // TODO: update tipsy text.
-                if (group.filters_div.is(":visible")) {
+                if (group.filters_manager.visible()) {
                     // Hiding filters.
                     group.filters_manager.clear_filters();    
                     
@@ -1090,7 +1089,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                     group.filters_manager.init_filters();
                     group.request_draw(true);
                 }
-                group.filters_div.toggle();
+                group.filters_manager.toggle();
             }
         },
         Drawable.prototype.action_icons_def[2]
@@ -2421,7 +2420,6 @@ var FiltersManager = function(track, obj_dict) {
     this.track = track;
     this.alpha_filter = null;
     this.height_filter = null;
-    this.visible = false;
     this.filters = [];
     
     //
@@ -2489,6 +2487,11 @@ var FiltersManager = function(track, obj_dict) {
 };
 
 extend(FiltersManager.prototype, {
+    // HTML manipulation and inspection.
+    show: function() { this.parent_div.show(); },
+    hide: function() { this.parent_div.hide(); },
+    toggle: function() { this.parent_div.toggle(); },
+    visible: function() { return this.parent_div.is(":visible"); },
     /**
      * Returns dictionary for manager.
      */
@@ -3071,13 +3074,13 @@ extend(Track.prototype, Drawable.prototype, {
             css_class: "filters-icon",
             on_click_fn: function(drawable) {
                 // TODO: update tipsy text.
-                if (drawable.filters_div.is(":visible")) {
+                if (drawable.filters_manager.visible()) {
                     drawable.filters_manager.clear_filters();    
                 }
                 else {
                     drawable.filters_manager.init_filters();
                 }
-                drawable.filters_div.toggle();
+                drawable.filters_manager.toggle();
             }
         },
         // Toggle track tool.
@@ -3337,8 +3340,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     set_filters_manager: function(filters_manager) {
         this.filters_manager = filters_manager;
-        this.filters_div = this.filters_manager.parent_div;
-        this.header_div.after(this.filters_div);
+        this.header_div.after(this.filters_manager.parent_div);
     },
     /** 
      * Returns representation of object in a dictionary for easy saving. 
@@ -4405,7 +4407,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             if (track.filters_available !== filters_available) {
                 track.filters_available = filters_available;
                 if (!track.filters_available) {
-                    track.filters_div.hide();
+                    track.filters_manager.hide();
                 }
                 track.update_icons();
             }
