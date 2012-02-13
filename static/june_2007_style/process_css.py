@@ -108,6 +108,9 @@ def build_stylesheet_parser():
 
 stylesheet_parser = build_stylesheet_parser()
 
+class LessTemplate( string.Template ):
+    delimeter = "@"
+
 class CSSProcessor( object ):
     
     def process( self, file, out, variables, image_dir, out_dir ):
@@ -161,6 +164,8 @@ class CSSProcessor( object ):
         for selectors, properties in rules:
             for p in properties:
                 p[1] = string.Template( p[1] ).substitute( context ).strip()
+                # Less style uses @ to prefix variables
+                p[1] = LessTemplate( p[1] ).substitute( context ).strip()
     
     def make_sprites( self, rules, image_dir, out_dir ):
         
