@@ -29,16 +29,24 @@ var add_bookmark = function(position, annotation) {
 };
 
 /**
- * Create object from a dictionary.
+ * Create new object from a template. A template can be either an object dictionary or an 
+ * object itself.
  */
-var object_from_dict = function(track_dict, container) {
-    var
-       drawable_type = track_dict['obj_type'];
-    // For backward compatibility:
-    if (!drawable_type) {
-        drawable_type = track_dict['track_type']; 
+var object_from_template = function(template, container) {
+    if ('copy' in template) {
+        // Template is an object.
+        return template.copy(container);
     }
-    return addable_objects[ drawable_type ].prototype.from_dict(track_dict, container);
+    else {
+        // Template is a dictionary.
+        var
+           drawable_type = template['obj_type'];
+        // For backward compatibility:
+        if (!drawable_type) {
+            drawable_type = template['track_type']; 
+        }
+        return new addable_objects[ drawable_type ](view, container, template);
+    }
 };
 
 /**
@@ -55,10 +63,10 @@ var addable_objects = {
 /**
  * Create a complete Trackster visualization. Returns view.
  */
-var create_visualization = function(parent_elt, title, id, dbkey, viewport_config, drawables_config, bookmarks_config) {
+var create_visualization = function(view_config, viewport_config, drawables_config, bookmarks_config) {
     
     // Create view.
-    view = new View(parent_elt, title, id, dbkey);
+    view = new View(view_config);
     view.editor = true;
     $.when( view.load_chroms_deferred ).then(function() {
         // Viewport config.
@@ -81,7 +89,7 @@ var create_visualization = function(parent_elt, title, id, dbkey, viewport_confi
                 drawable_type,
                 drawable;
             for (var i = 0; i < drawables_config.length; i++) {
-                view.add_drawable( object_from_dict( drawables_config[i], view ) );
+                view.add_drawable( object_from_template( drawables_config[i], view ) );
             }
         }
         

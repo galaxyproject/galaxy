@@ -43,16 +43,16 @@ def get_tool_def( trans, hda ):
     # TODO: could use this assertion to provide more information.
     # assert job is not None, 'Requested job has not been loaded.'
     if not job:
-        return {}
+        return None
     tool = trans.app.toolbox.get_tool( job.tool_id )
     # TODO: could use this assertion to provide more information.
     # assert tool is not None, 'Requested tool has not been loaded.'
     if not tool:
-        return {}
+        return None
         
     # Tool must have a Trackster configuration.
     if not tool.trackster_conf:
-        return {}
+        return None
 
     # Get list of tool parameters that can be interactively modified.
     tool_params = []
@@ -75,7 +75,6 @@ def get_tool_def( trans, hda ):
                                   'html' : urllib.quote( input.get_html() ) } )
         
     # If tool has parameters that can be interactively modified, return tool.
-    tool_def = {}
     if len( tool_params ) != 0:
-        tool_def = { 'name' : tool.name, 'params' : tool_params } 
-    return tool_def
+        return { 'name' : tool.name, 'params' : tool_params } 
+    return None

@@ -679,10 +679,10 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
  *
  * They optionally have a drag handle class. 
  */
-var Drawable = function(name, view, container, prefs, drag_handle_class) {
+var Drawable = function(view, container, obj_dict) {
     if (!Drawable.id_counter) { Drawable.id_counter = 0; }
     this.id = Drawable.id_counter++;
-    this.name = name;
+    this.name = ('name' in obj_dict ? obj_dict.name : null);
     this.view = view;
     this.container = container;
     this.config = new DrawableConfig({
@@ -690,13 +690,13 @@ var Drawable = function(name, view, container, prefs, drag_handle_class) {
         params: [ 
             { key: 'name', label: 'Name', type: 'text', default_value: name }
         ],
-        saved_values: prefs,
+        saved_values: obj_dict.prefs,
         onchange: function() {
             this.track.set_name(this.track.config.values.name);
         }
     });
     this.prefs = this.config.values;
-    this.drag_handle_class = drag_handle_class;
+    this.drag_handle_class = obj_dict.drag_handle_class;
     this.is_overview = false;
     this.action_icons = {};
     
@@ -808,10 +808,6 @@ extend(Drawable.prototype, {
      * Use from_dict to recreate object.
      */
     to_dict: function() {},
-    /**
-     * Restore object from a dictionary created by to_dict()
-     */
-    from_dict: function(object_dict) {},
     update_icons: function() {},
     /**
      * Set drawable name.
@@ -889,14 +885,26 @@ extend(Drawable.prototype, {
 /**
  * A collection of drawable objects.
  */
-var DrawableCollection = function(obj_type, name, view, container, prefs, drag_handle_class) {
-    Drawable.call(this, name, view, container, prefs, drag_handle_class);
+var DrawableCollection = function(view, container, obj_dict) {
+    Drawable.call(this, view, container, obj_dict);
     
     // Attribute init.
-    this.obj_type = obj_type;
+    this.obj_type = obj_dict.obj_type;
     this.drawables = [];
 };
 extend(DrawableCollection.prototype, Drawable.prototype, {
+    /**
+     * Unpack and add drawables to the collection.
+     */
+    unpack_drawables: function(drawables_array) {
+        // Add drawables to collection.
+        this.drawables = [];
+        var drawable;
+        for (var i = 0; i < drawables_array.length; i++) {
+            drawable = object_from_template(drawables_array[i], this);
+            this.add_drawable(drawable);
+        }
+    },
     /**
      * Init each drawable in the collection.
      */
@@ -928,28 +936,6 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             obj_type: this.obj_type,
             drawables: dictified_drawables
         };
-    },
-    /**
-     * Restore object from a dictionary created by to_dict()
-     */
-    from_dict: function(collection_dict, container) {
-        var collection = new this.constructor( collection_dict.name, view, 
-                                               container, collection_dict.prefs, 
-                                               view.viewport_container, view);
-       var drawable_dict,
-           drawable_type,
-           drawable;
-        for (var i = 0; i < collection_dict.drawables.length; i++) {
-            drawable_dict = collection_dict.drawables[i];
-            drawable_type = drawable_dict['obj_type'];
-            // For backward compatibility:
-            if (!drawable_type) {
-                drawable_type = drawable_dict['track_type']; 
-            }
-            drawable = addable_objects[ drawable_type ].prototype.from_dict( drawable_dict, collection );
-            collection.add_drawable( drawable );
-        }
-        return collection;
     },
     /**
      * Add a drawable to the end of the collection.
@@ -1019,8 +1005,12 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
 /**
  * A group of drawables that are moveable, visible.
  */
-var DrawableGroup = function(name, view, container, prefs) {
-    DrawableCollection.call(this, "DrawableGroup", name, view, container, prefs, "group-handle");
+var DrawableGroup = function(view, container, obj_dict) {
+    extend(obj_dict, {
+        obj_type: "DrawableGroup",
+        drag_handle_class: "group-handle" 
+    });
+    DrawableCollection.call(this, view, container, obj_dict);
         
     // Set up containers/moving for group: register both container_div and content div as container
     // because both are used as containers (container div to recognize container, content_div to 
@@ -1035,6 +1025,23 @@ var DrawableGroup = function(name, view, container, prefs) {
     this.header_div.after(this.filters_manager.parent_div);
     // For saving drawables' filter managers when group-level filtering is done:
     this.saved_filters_managers = [];
+    
+    // Add drawables.
+    if ('drawables' in obj_dict) {
+        this.unpack_drawables(obj_dict.drawables);
+    }
+    
+    // Restore filters.
+    if ('filters' in obj_dict) {
+        // FIXME: Pass collection_dict to DrawableCollection/Drawable will make this easier.
+        var old_manager = this.filters_manager;
+        this.filters_manager = new FiltersManager(this, obj_dict['filters']);
+        old_manager.parent_div.replaceWith(this.filters_manager.parent_div);
+    
+        if (obj_dict.filters.visible) {
+            this.setup_multitrack_filtering();
+        }
+    }
 };
 
 extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
@@ -1249,7 +1256,10 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         var new_track_name = "Composite Track of " + this.drawables.length + " tracks (" + drawables_names.join(", ") + ")";
         
         // Replace this group with composite track.
-        var composite_track = new CompositeTrack(new_track_name, this.view, this.view, this.drawables);
+        var composite_track = new CompositeTrack(this.view, this.view, {
+            name: new_track_name,
+            drawables: this.drawables
+        });
         var index = this.container.replace_drawable(this, composite_track, true);
         composite_track.request_draw();
     },
@@ -1276,29 +1286,6 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         
         return obj_dict;
     },
-    /**
-     * Restore object from a dictionary created by to_dict()
-     */
-    from_dict: function(collection_dict, container) {
-        var group = DrawableCollection.prototype.from_dict.call(this, collection_dict, container);
-        
-        // Add drawables to group's content div to make them visible.
-        for (var i = 0; i < group.drawables.length; i++) {
-            group.content_div.append(group.drawables[i].container_div);   
-        }
-        
-        // Handle filters.
-        // FIXME: Pass collection_dict to DrawableCollection/Drawable will make this easier.
-        var old_manager = group.filters_manager;
-        group.filters_manager = new FiltersManager(group, collection_dict['filters']);
-        old_manager.parent_div.replaceWith(group.filters_manager.parent_div);
-        
-        if (collection_dict.filters.visible) {
-            group.setup_multitrack_filtering();
-        }
-        
-        return group;
-    },
     request_draw: function(clear_after, force) {
         for (var i = 0; i < this.drawables.length; i++) {
             this.drawables[i].request_draw(clear_after, force);
@@ -1309,13 +1296,15 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
 /**
  * View object manages complete viz view, including tracks and user interactions.
  */
-var View = function(container, title, vis_id, dbkey) {
-    DrawableCollection.call(this, "View");
-    this.container = container;
+var View = function(obj_dict) {
+    extend(obj_dict, {
+        obj_type: "View" 
+    });
+    DrawableCollection.call(this, "View", obj_dict.container, obj_dict);
     this.chrom = null;
-    this.vis_id = vis_id;
-    this.dbkey = dbkey;
-    this.title = title;
+    this.vis_id = obj_dict.vis_id;
+    this.dbkey = obj_dict.dbkey;
+    this.title = obj_dict.title;
     this.label_tracks = [];
     this.tracks_to_be_redrawn = [];
     this.max_low = 0;
@@ -1326,7 +1315,7 @@ var View = function(container, title, vis_id, dbkey) {
     // Deferred object that indicates when view's chrom data has been loaded.
     this.load_chroms_deferred = null;
     this.init();
-    this.canvas_manager = new CanvasManager( container.get(0).ownerDocument );
+    this.canvas_manager = new CanvasManager( this.container.get(0).ownerDocument );
     this.reset();
 };
 extend( View.prototype, DrawableCollection.prototype, {
@@ -2051,7 +2040,10 @@ extend(Tool.prototype, {
         }
         
         // Create and init new track.
-        var new_track = new current_track.constructor(track_name, view, container, "hda");
+        var new_track = new current_track.constructor(view, container, {
+            name: track_name,
+            hda_ldda: "hda"
+        });
         new_track.init_for_tool_data();
         new_track.change_mode(current_track.mode);
         new_track.set_filters_manager(current_track.filters_manager.copy(new_track));
@@ -2479,7 +2471,7 @@ var FiltersManager = function(track, obj_dict) {
     //
     // Restore state from dict.
     //
-    if (obj_dict) {
+    if (obj_dict && 'filters' in obj_dict) { // Second condition needed for backward compatibility.
         var 
             alpha_filter_name = ('alpha_filter' in obj_dict ? obj_dict.alpha_filter : null),
             height_filter_name = ('height_filter' in obj_dict ? obj_dict.height_filter : null),            
@@ -3060,18 +3052,21 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
  * -------> ReadTrack
  * -------> VcfTrack
  */
-var Track = function(name, view, container, prefs, data_manager, data_url, data_query_wait) {
+var Track = function(view, container, obj_dict) {
     // For now, track's container is always view.
-    Drawable.call(this, name, view, container, {}, "draghandle");
+    extend(obj_dict, {
+        drag_handle_class: "draghandle"
+    });
+    Drawable.call(this, view, container, obj_dict);
     
     //
     // Attribute init.
     //
-    this.data_url = (data_url ? data_url : default_data_url);
+    this.data_url = ('data_url' in obj_dict ? obj_dict.data_url : default_data_url);
     this.data_url_extra_params = {}
-    this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
+    this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
-    this.data_manager = (data_manager ? data_manager : new DataManager(DATA_CACHE_SIZE, this));
+    this.data_manager = ('data_manager' in obj_dict ? obj_dict.data_manager : new DataManager(DATA_CACHE_SIZE, this));
         
     //
     // Create content div, which is where track is displayed, and add to container if available.
@@ -3327,8 +3322,8 @@ extend(Track.prototype, Drawable.prototype, {
     predraw_init: function() {}
 });
 
-var TiledTrack = function(name, view, container, prefs, filters_dict, tool_dict, data_manager) {
-    Track.call(this, name, view, container, prefs, data_manager);
+var TiledTrack = function(view, container, obj_dict) {    
+    Track.call(this, view, container, obj_dict);
 
     var track = this,
         view = track.view;
@@ -3337,9 +3332,9 @@ var TiledTrack = function(name, view, container, prefs, filters_dict, tool_dict,
     moveable(track.container_div, track.drag_handle_class, ".group", track);
     
     // Attribute init.
-    this.filters_manager = new FiltersManager(this, filters_dict);
+    this.filters_manager = new FiltersManager(this, ('filters' in obj_dict ? obj_dict.filters : null));
     this.filters_available = false;
-    this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(this, tool_dict) : undefined);
+    this.tool = ('tool' in obj_dict && obj_dict.tool ? new Tool(this, obj_dict.tool) : null);
     this.tile_cache = new Cache(TILE_CACHE_SIZE);
     
     if (this.header_div) {
@@ -3356,6 +3351,10 @@ var TiledTrack = function(name, view, container, prefs, filters_dict, tool_dict,
             this.header_div.after(this.dynamic_tool_div);
         }
     }
+    
+    if (obj_dict.mode) {
+        this.change_mode(obj_dict.mode);
+    }
 };
 extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
@@ -3363,8 +3362,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     copy: function(container) {
         // Create copy.
-        var new_track = new this.constructor(this.name, this.view, container, this.hda_ldda, this.dataset_id, this.prefs, 
-                                             this.filters, this.tool, this.data_manager);
+        var obj_dict = this.to_dict();
+        extend(obj_dict, {
+            data_manager: this.data_manager
+        });
+        var new_track = new this.constructor(this.view, container, obj_dict);
         // Misc. init and return.
         new_track.change_mode(this.mode);
         new_track.enabled = this.enabled;
@@ -3389,20 +3391,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             "dataset_id": this.dataset_id,
             "prefs": this.prefs,
             "mode": this.mode,
-            "filters": this.filters_manager.to_dict() 
+            "filters": this.filters_manager.to_dict(),
+            "tool": null
         };
-    },
-    /**
-     * Restore object from a dictionary created by to_dict()
-     */
-    from_dict: function(track_dict, container) {
-        var track = new this.constructor( 
-                            track_dict.name, view, container, track_dict.hda_ldda, track_dict.dataset_id,
-                            track_dict.prefs, track_dict.filters, track_dict.tool);
-        if (track_dict.mode) {
-            track.change_mode(track_dict.mode);
-        }
-        return track;
     },
     /**
      * Change track's mode.
@@ -3767,7 +3758,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 });
 
 var LabelTrack = function (view, container) {
-    Track.call(this, "label", view, container, false, {} );
+    var obj_dict = {
+        todo: "label",
+        todo: false
+    };
+    Track.call(this, view, container, obj_dict);
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
@@ -3800,21 +3795,18 @@ extend(LabelTrack.prototype, Track.prototype, {
 /**
  * A tiled track composed of multiple other tracks.
  */
-var CompositeTrack = function(name, view, container, drawables) {
-    TiledTrack.call(this, name, view, container);
+var CompositeTrack = function(view, container, obj_dict) {
+    TiledTrack.call(this, view, container, obj_dict);
     
     // Init drawables; each drawable is a copy so that config/preferences 
     // are independent of each other. Also init left offset.
     this.drawables = [];
     this.left_offset = 0;
-    if (drawables) {
-        var 
-            ids = [],
-            drawable;
-        for (var i = 0; i < drawables.length; i++) {
-            drawable = drawables[i];
-            ids.push(drawable.dataset_id);
-            this.drawables[i] = drawable.copy();
+    if ('drawables' in obj_dict) {
+        var drawable;
+        for (var i = 0; i < obj_dict.drawables.length; i++) {
+            drawable = obj_dict.drawables[i];
+            this.drawables[i] = object_from_template(drawable);
             
             // Track's left offset is the max of all tracks.
             if (drawable.left_offset > this.left_offset) {
@@ -3858,34 +3850,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
      */
     to_dict: DrawableCollection.prototype.to_dict,
     add_drawable: DrawableCollection.prototype.add_drawable,
-    /**
-     * Restore object from a dictionary created by to_dict()
-     */
-    // TODO: unify with DrawableCollection.prototype.from_dict?
-    from_dict: function(collection_dict, container) {
-        var collection = new this.constructor( collection_dict.name, view, 
-                                               container, collection_dict.prefs, 
-                                               view.viewport_container, view);
-       var drawable_dict,
-           drawable_type,
-           drawable;
-        for (var i = 0; i < collection_dict.drawables.length; i++) {
-            drawable_dict = collection_dict.drawables[i];
-            drawable_type = drawable_dict['obj_type'];
-            // For backward compatibility:
-            if (!drawable_type) {
-                drawable_type = drawable_dict['track_type']; 
-            }
-            // No container for tracks so that it is not made visible.
-            drawable = addable_objects[ drawable_type ].prototype.from_dict(drawable_dict);
-            collection.add_drawable(drawable);
-        }
-        
-        //  HACKish: set mode using the first drawable. Should use config object and set mode from there.
-        collection.set_display_modes(collection.drawables[0].display_modes, collection.drawables[0].mode);
-        
-        return collection;
-    },
+    unpack_drawables: DrawableCollection.prototype.unpack_drawables,
     change_mode: function(new_mode) {
         TiledTrack.prototype.change_mode.call(this, new_mode);
         for (var i = 0; i < this.drawables.length; i++) {
@@ -3919,8 +3884,9 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
-            tile_low = tile_index * TILE_SIZE * resolution,
-            tile_high = tile_low + TILE_SIZE * resolution;
+            tile_bounds = this._get_tile_bounds(tile_index, resolution),
+            tile_low = tile_bounds[0],
+            tile_high = tile_bounds[1];
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
@@ -4036,7 +4002,9 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     show_group: function() {
         // Create group with individual tracks.
         var 
-            group = new DrawableGroup(this.name, this.view, this.container),
+            group = new DrawableGroup(this.view, this.container, {
+                name: this.name
+            }),
             track;
         for (var i = 0; i < this.drawables.length; i++) {
             track = this.drawables[i]
@@ -4154,11 +4122,11 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
+var LineTrack = function (view, container, obj_dict) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
-    TiledTrack.call(this, name, view, container, prefs, filters, tool, data_manager);
+    TiledTrack.call(this, view, container, obj_dict);
     
     // Cannot subset LineTrack data right now; see note in DataManager about using resolution in key 
     // to address this issue.
@@ -4168,9 +4136,9 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
     this.max_height_px = 400; 
     // Default height for new tracks, should be a defined constant?
     this.height_px = 32;
-    this.hda_ldda = hda_ldda;
-    this.dataset_id = dataset_id;
-    this.original_dataset_id = dataset_id;
+    this.hda_ldda = obj_dict.hda_ldda;
+    this.dataset_id = obj_dict.dataset_id;
+    this.original_dataset_id = this.dataset_id;
     this.left_offset = 0;
 
     // Define track configuration
@@ -4184,7 +4152,7 @@ var LineTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
             { key: 'height', type: 'int', default_value: this.height_px, hidden: true }
         ], 
-        saved_values: prefs,
+        saved_values: obj_dict.prefs,
         onchange: function() {
             track.set_name(track.prefs.name);
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
@@ -4319,7 +4287,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
-var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
+var FeatureTrack = function(view, container, obj_dict) {
     //
     // Preinitialization: do things that need to be done before calling Track and TiledTrack
     // initialization code.
@@ -4330,7 +4298,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     //
     // Initialization.
     //    
-    TiledTrack.call(this, name, view, container, prefs, filters, tool, data_manager);
+    TiledTrack.call(this, view, container, obj_dict);
 
     // Define and restore track configuration.
     this.config = new DrawableConfig( {
@@ -4346,7 +4314,7 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
                 options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         ], 
-        saved_values: prefs,
+        saved_values: obj_dict.prefs,
         onchange: function() {
             track.set_name(track.prefs.name);
             track.tile_cache.clear();
@@ -4358,9 +4326,9 @@ var FeatureTrack = function(name, view, container, hda_ldda, dataset_id, prefs, 
     
     this.height_px = 0;
     this.container_div.addClass( "feature-track" );
-    this.hda_ldda = hda_ldda;
-    this.dataset_id = dataset_id;
-    this.original_dataset_id = dataset_id;
+    this.hda_ldda = obj_dict.hda_ldda;
+    this.dataset_id = obj_dict.dataset_id;
+    this.original_dataset_id = obj_dict.dataset_id;
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.summary_draw_height = 30;
@@ -4734,8 +4702,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     },
 });
 
-var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, tool, data_manager);
+var VcfTrack = function(view, container, obj_dict) {
+    FeatureTrack.call(this, view, container, obj_dict);
     
     this.config = new DrawableConfig( {
         track: this,
@@ -4747,7 +4715,7 @@ var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filt
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         ], 
-        saved_values: prefs,
+        saved_values: obj_dict.prefs,
         onchange: function() {
             this.track.set_name(this.track.prefs.name);
             this.track.tile_cache.clear();
@@ -4761,8 +4729,8 @@ var VcfTrack = function(name, view, container, hda_ldda, dataset_id, prefs, filt
 
 extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
-var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, filters, data_manager) {
-    FeatureTrack.call(this, name, view, container, hda_ldda, dataset_id, prefs, filters, data_manager);
+var ReadTrack = function (view, container, obj_dict) {
+    FeatureTrack.call(this, view, container, obj_dict);
     
     var 
         block_color = get_random_color(),
@@ -4780,7 +4748,7 @@ var ReadTrack = function (name, view, container, hda_ldda, dataset_id, prefs, fi
             { key: 'histogram_max', label: 'Histogram maximum', type: 'float', default_value: null, help: 'Clear value to set automatically' },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         ], 
-        saved_values: prefs,
+        saved_values: obj_dict.prefs,
         onchange: function() {
             this.track.set_name(this.track.prefs.name);
             this.track.tile_cache.clear();
