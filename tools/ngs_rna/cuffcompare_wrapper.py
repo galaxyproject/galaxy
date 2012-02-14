@@ -58,16 +58,21 @@ def __main__():
         
     # Set/link to sequence file.
     if options.use_seq_data:
-        cached_seqs_pointer_file = os.path.join( options.index_dir, 'sam_fa_indices.loc' )
-        if not os.path.exists( cached_seqs_pointer_file ):
-            stop_err( 'The required file (%s) does not exist.' % cached_seqs_pointer_file )
-        # If found for the dbkey, seq_path will look something like /galaxy/data/equCab2/sam_index/equCab2.fa,
-        # and the equCab2.fa file will contain fasta sequences.
-        seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
         if options.ref_file != 'None':
+            # Sequence data from history.
             # Create symbolic link to ref_file so that index will be created in working directory.
             seq_path = "ref.fa"
             os.symlink( options.ref_file, seq_path  )
+        else:
+            # Sequence data from loc file.
+            cached_seqs_pointer_file = os.path.join( options.index_dir, 'sam_fa_indices.loc' )
+            if not os.path.exists( cached_seqs_pointer_file ):
+                stop_err( 'The required file (%s) does not exist.' % cached_seqs_pointer_file )
+            # If found for the dbkey, seq_path will look something like /galaxy/data/equCab2/sam_index/equCab2.fa,
+            # and the equCab2.fa file will contain fasta sequences.
+            seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
+            if seq_path == '':
+                stop_err( 'No sequence data found for dbkey %s, so sequence data cannot be used.' % options.dbkey  )
     
     # Build command.
     

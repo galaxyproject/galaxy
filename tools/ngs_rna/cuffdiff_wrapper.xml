@@ -96,8 +96,8 @@
         </param>
         <conditional name="bias_correction">
             <param name="do_bias_correction" type="select" label="Perform Bias Correction" help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
-                <option value="Yes">Yes</option>
                 <option value="No">No</option>
+                <option value="Yes">Yes</option>
             </param>
             <when value="Yes">
                 <conditional name="seq_source">
