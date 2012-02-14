@@ -514,7 +514,7 @@ class Registry( object ):
                             display_app.repository_owner = installed_repository_dict[ 'repository_owner' ]
                             display_app.installed_changeset_revision = installed_repository_dict[ 'installed_changeset_revision' ]
                             display_app.old_id = display_app.id
-                            # The converter should be included in the list of tools defined in tool_dicts.
+                            # The display application should be included in the list of tools defined in tool_dicts.
                             tool_dicts = installed_repository_dict[ 'tool_dicts' ]
                             for tool_dict in tool_dicts:
                                 if tool_dict[ 'id' ] == display_app.id:

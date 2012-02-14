@@ -1,4 +1,5 @@
 #Contains objects for using external display applications
+import logging, urllib
 from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
@@ -7,6 +8,8 @@ from parameters import DisplayApplicationParameter, DEFAULT_DATASET_NAME
 from urllib import quote_plus
 from util import encode_dataset_user
 from copy import deepcopy
+
+log = logging.getLogger( __name__ )
 
 #Any basic functions that we want to provide as a basic part of parameter dict should be added to this dict
 BASE_PARAMS = { 'qp': quote_plus, 'url_for':url_for } #url_for has route memory...
@@ -37,7 +40,13 @@ class DisplayApplicationLink( object ):
         self.name = None
     def get_display_url( self, data, trans ):
         dataset_hash, user_hash = encode_dataset_user( trans, data, None )
-        return url_for( controller = '/dataset', action = "display_application", dataset_id = dataset_hash, user_id = user_hash, app_name = self.display_application.id, link_name = self.id, app_action = None )
+        return url_for( controller='/dataset',
+                        action="display_application",
+                        dataset_id=dataset_hash,
+                        user_id=user_hash,
+                        app_name=urllib.quote_plus( self.display_application.id ),
+                        link_name=urllib.quote_plus( self.id ),
+                        app_action=None )
     def get_inital_values( self, data, trans ):
         if self.other_values:
             rval = odict( self.other_values )

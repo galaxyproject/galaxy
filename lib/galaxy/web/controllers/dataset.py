@@ -815,9 +815,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
             user_roles = user.all_roles()
         else:
             user_roles = []
+        # Decode application name and link name
+        app_name = urllib.unquote_plus( app_name )
+        link_name = urllib.unquote_plus( link_name )
         if None in [ app_name, link_name ]:
             return trans.show_error_message( "A display application name and link name must be provided." )
-        
         if trans.app.security_agent.can_access_dataset( user_roles, data.dataset ):
             msg = []
             refresh = False
