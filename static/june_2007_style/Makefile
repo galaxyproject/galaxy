@@ -15,7 +15,7 @@ variables.less : $(INI)
 
 # Convert using less
 %.css : %.less
-	lessc -x --include-path=$(OUT) $< > $@
+	lessc -x $< $@
 
 # Old style using process_css still works so we can move gradually
 %.css : %.css.tmpl

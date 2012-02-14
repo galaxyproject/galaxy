@@ -1,8 +1,13 @@
-## Lucida Grande for proper mac unicode characters, verdana/arial stack for others
-body{font:13px/1.231 "Lucida Grande",verdana,arial,helvetica,sans-serif;*font-size:small;*font:x-small;}select,input,button,textarea,button{font:99% "Lucida Grande",verdana,arial,helvetica,sans-serif;}table{font-size:inherit;font:100%;}pre,code,kbd,samp,tt{font-family:monospace;*font-size:108%;line-height:100%;}
-body{font-size:75%;}
+@import "variables.less";
 
-## Mixins
+@import "galaxy_bootstrap.less";
+
+
+// Lucida Grande for proper mac unicode characters, verdana/arial stack for others
+//body{font:13px/1.231 "Lucida Grande",verdana,arial,helvetica,sans-serif;*font-size:small;*font:x-small;}select,input,button,textarea,button{font:99% "Lucida Grande",verdana,arial,helvetica,sans-serif;}table{font-size:inherit;font:100%;}pre,code,kbd,samp,tt{font-family:monospace;*font-size:108%;line-height:100%;}
+//body{font-size:75%;}
+
+// Mixins
 
 .unselectable {
     user-select: none;
@@ -15,11 +20,11 @@ body{font-size:75%;}
     -webkit-box-shadow: 0 3px 30px black;
 }
 
-## Real styles
+// Real styles
 
 body  {
-    background: $base_bg_bottom;
-    color: $base_text;
+    background: @base_bg_bottom;
+    color: @base_text;
     background-image: url(base_bg.png);
     background-repeat: repeat-x;
     background-position: top;
@@ -32,11 +37,11 @@ img {
 
 
 a:link, a:visited, a:active {
-    color: $link_text;
+    color: @link_text;
 }
 
 h1, h2, h3, h4 {
-    color: $header_text;
+    color: @header_text;
     /*text-shadow: #bbb 2px 2px 1px;*/
 }
 
@@ -47,7 +52,7 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {
 hr {
     border: none;
     height: 0px;
-    border-bottom: dotted $base_text 1px;
+    border-bottom: dotted @base_text 1px;
 }
 
 table {
@@ -59,7 +64,7 @@ th {
 }
 
 div.toolForm {
-    border: solid $form_border 1px;
+    border: solid @form_border 1px;
 }
 
 div.toolFormTitle { 
@@ -67,11 +72,11 @@ div.toolFormTitle {
     padding: 5px;
     padding-left: 10px;
     padding-right: 10px;
-    background: $form_title_bg_bottom;
-    ## background-image: url(form_title_bg.png);
+    background: @form_title_bg_bottom;
+    // background-image: url(form_title_bg.png);
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid $form_border 1px;
+    border-bottom: solid @form_border 1px;
 }
 
 div.toolParamHelp {
@@ -83,7 +88,7 @@ div.toolParamHelp a {
 }
 
 div.toolFormBody { 
-    background: $form_body_bg_bottom;
+    background: @form_body_bg_bottom;
     background-image: url(form_body_bg.png);
     background-repeat: repeat-x;
     background-position: top;
@@ -94,17 +99,17 @@ div.toolFormBody div.toolFormTitle {
     background: transparent;
     border: none;
     font-weight: bold;
-    border-bottom: solid $form_border 1px;
+    border-bottom: solid @form_border 1px;
     margin-bottom: 5px;
 }
 
 div.toolFormDisabled div.toolFormTitle {
-    background: ${layout_bg};
-    border-color: ${layout_border};
+    background: @layout_bg;
+    border-color: @layout_border;
 }
 
 div.toolFormDisabled {
-    border-color: ${layout_border};
+    border-color: @layout_border;
 }
 
 div.toolHelp {
@@ -166,20 +171,20 @@ div.titleRow {
     padding-bottom: 0.25em;
 }
 
-## Forms 
+// Forms 
 
 div.form {
-    border: solid $form_border 1px;
+    border: solid @form_border 1px;
 }
 
 div.form-title { 
     font-weight: bold;
     padding: 5px 10px;
-    background: $form_title_bg_bottom;
+    background: @form_title_bg_bottom;
     background-image: url(form_title_bg.png);
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid $form_border 1px;
+    border-bottom: solid @form_border 1px;
 }
 
 div.form-body { 
@@ -195,13 +200,13 @@ div.form-title-row {
 }
 
 div.repeat-group-item {
-    border-left: solid $form_border 5px;
+    border-left: solid @form_border 5px;
     margin-left: 10px;
     margin-bottom: 10px;
 }
 
 div.form-row-error {
-    background: $error_message_bg;
+    background: @error_message_bg;
 }
 
 div.form-row label {
@@ -240,18 +245,18 @@ select, input, textarea {
 }
 
 select, textarea, input[type="text"], input[type="file"], input[type="password"] {
-    -webkit-box-sizing: border-box;
+    // -webkit-box-sizing: border-box;
     max-width: 300px;
 }
 
-## Messages 
+// Messages 
 
 .errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
     padding: 10px;
     padding-left: 52px;
     min-height: 32px;
-    border: 1px solid $error_message_border;
-    background-color: $error_message_bg;
+    border: 1px solid @error_message_border;
+    background-color: @error_message_bg;
     background-image: url(error_message_icon.png);
     background-repeat: no-repeat;
     background-position: 10px 10px;
@@ -259,20 +264,20 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
 
 .warningmessagelarge {
     background-image: url(warn_message_icon.png);
-    border-color: $warn_message_border;
-    background-color: $warn_message_bg;
+    border-color: @warn_message_border;
+    background-color: @warn_message_bg;
 }
 
 .donemessagelarge {
     background-image: url(done_message_icon.png);
-    border-color: $done_message_border;
-    background-color: $done_message_bg;
+    border-color: @done_message_border;
+    background-color: @done_message_bg;
 }
 
 .infomessagelarge {
     background-image: url(info_message_icon.png);
-    border-color: $info_message_border;
-    background-color: $info_message_bg;
+    border-color: @info_message_border;
+    background-color: @info_message_bg;
 }
 
 .screencastBox {   
@@ -286,8 +291,8 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     padding: 5px;
     padding-left: 25px;
     min-height: 15px;
-    border: 1px solid $error_message_border;
-    background-color: $error_message_bg;
+    border: 1px solid @error_message_border;
+    background-color: @error_message_bg;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 5px;
@@ -295,20 +300,20 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
 
 .warningmessage, .warningmessagesmall {
     background-image: url(warn_small.png);
-    border-color: $warn_message_border;
-    background-color: $warn_message_bg;
+    border-color: @warn_message_border;
+    background-color: @warn_message_bg;
 }
 
 .donemessage, .donemessagesmall {
     background-image: url(ok_small.png);
-    border-color: $done_message_border;
-    background-color: $done_message_bg;
+    border-color: @done_message_border;
+    background-color: @done_message_bg;
 }
 
 .infomessage, .infomessagesmall {
     background-image: url(info_small.png);
-    border-color: $info_message_border;
-    background-color: $info_message_bg;
+    border-color: @info_message_border;
+    background-color: @info_message_bg;
 }
 
 .errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr {
@@ -367,8 +372,8 @@ table.tabletip tbody tr:hover td {
 }
 
 table.colored {
-    border-top: solid $table_border 1px;
-    border-bottom: solid $table_border 1px;
+    border-top: solid @table_border 1px;
+    border-bottom: solid @table_border 1px;
 }
 
 table.colored td, table.colored th {
@@ -377,20 +382,20 @@ table.colored td, table.colored th {
 }
 
 table.colored tr.header { 
-    background: $table_header_bg;
+    background: @table_header_bg;
     background-image: url(form_title_bg.png);
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid $table_border 1px;
+    border-bottom: solid @table_border 1px;
     font-weight: bold;
 }
 
 table.colored tr { 
-    background: $table_row_bg;
+    background: @table_row_bg;
 }
 
 table.colored tr.odd_row { 
-    background: $odd_row_bg;
+    background: @odd_row_bg;
 }
 
 div.debug {
@@ -402,19 +407,19 @@ div.debug {
 }
 
 div.odd_row {
-    background: $odd_row_bg;
+    background: @odd_row_bg;
 }
     
 #footer {
   display: none;
 }
 
-## Tool panel stuff
+// Tool panel stuff
 
 td.panel-body {
     background: white;
-    color: $base_text;
-    background: $menu_bg_over url(menu_bg.png) top repeat-x;
+    color: @base_text;
+    background: @menu_bg_over url(menu_bg.png) top repeat-x;
 }
 
 div.toolSectionPad {
@@ -461,46 +466,46 @@ ul.manage-table-actions li {
     margin-left: 0.5em;
 }
 
-## State colors
+// State colors
 
 .state-color-new {
-    border-color: $history_new_border;
-    background: $history_new_bg;
+    border-color: @history_new_border;
+    background: @history_new_bg;
 }
 
 .state-color-upload {
-    border-color: $history_upload_border;
-    background: $history_upload_bg;
+    border-color: @history_upload_border;
+    background: @history_upload_bg;
 }
 
 .state-color-waiting {
-    border-color: $history_waiting_border;
-    background: $history_waiting_bg;
+    border-color: @history_waiting_border;
+    background: @history_waiting_bg;
 }
 
 .state-color-queued {
-    border-color: $history_queued_border;
-    background: $history_queued_bg;
+    border-color: @history_queued_border;
+    background: @history_queued_bg;
 }
 
 .state-color-running {
-    border-color: $history_running_border;
-    background: $history_running_bg;
+    border-color: @history_running_border;
+    background: @history_running_bg;
 }
 
 .state-color-ok {
-    border-color: $history_ok_border;
-    background: $history_ok_bg;
+    border-color: @history_ok_border;
+    background: @history_ok_bg;
 }
 
 .state-color-error {
-    border-color: $history_error_border;
-    background: $history_error_bg;
+    border-color: @history_error_border;
+    background: @history_error_bg;
 }
 
 .state-color-deleted {
-    border-color: $history_deleted_border;
-    background: $history_deleted_bg;
+    border-color: @history_deleted_border;
+    background: @history_deleted_bg;
 }
 
 .state-fg-new {
@@ -535,7 +540,7 @@ ul.manage-table-actions li {
     color: #3399FF;
 }
 
-## Button styles
+// Button styles
 
 .action-button {
     background: transparent;
@@ -571,7 +576,7 @@ ul.manage-table-actions li {
     background: #aaaaaa;
 }
 
-## A menu button is a button that has an attached popup menu
+// A menu button is a button that has an attached popup menu
 
 .menubutton {
     display: inline-block;
@@ -607,12 +612,12 @@ ul.manage-table-actions li {
 
 .menubutton:hover {
     border-color: #aaaaaa;
-    ## background: #eeeeee;
-    ## color: #333;
+    // background: #eeeeee;
+    // color: #333;
 }
 
-## A split menu button, the main button has an action, the arrow causes the
-## popup menu to appear
+// A split menu button, the main button has an action, the arrow causes the
+// popup menu to appear
 
 .menubutton.popup.split {
     padding-right: 2em;
@@ -622,7 +627,7 @@ ul.manage-table-actions li {
     background: url(../images/ddarrowsplit.png) no-repeat right -39px;
 }
 
-## Popup menu styles
+// Popup menu styles
 
 .overlay-border {
     position: absolute;
@@ -660,8 +665,8 @@ div.popmenu-wrapper {
         -moz-border-radius: 0.5em;
         -webkit-border-radius: 0.5em;
         border-radius: 0.5em;
-        ## margin: -3px -0.5em;
-        ## min-width: 100%;
+        // margin: -3px -0.5em;
+        // min-width: 100%;
         
         .unselectable;
         
@@ -704,7 +709,7 @@ div.permissionContainer {
     padding-left: 20px;
 }
 
-## Data grid style
+// Data grid style
 
 .grid-header {
     padding-bottom: 1em;
@@ -736,12 +741,12 @@ div.permissionContainer {
     height: 2em;
 }
 .grid thead th {
-    background: $table_header_bg;
-    ## background-image: url(form_title_bg.png);
+    background: @table_header_bg;
+    // background-image: url(form_title_bg.png);
     background-repeat: repeat-x;
     background-position: top;
-    border-top: solid $table_border 1px;
-    border-bottom: solid $table_border 1px;
+    border-top: solid @table_border 1px;
+    border-bottom: solid @table_border 1px;
     padding: 0.3em 0.5em;
     text-align: left;
     white-space: nowrap;
@@ -756,7 +761,7 @@ div.permissionContainer {
     background-color: #EEEEFF;
 }
 
-## Styles for areas of text content
+// Styles for areas of text content
 
 .text-content {
 
@@ -798,7 +803,7 @@ div.permissionContainer {
 
 }
 
-## Icon buttons.
+// Icon buttons.
 
 .icon-button  {
     width: 16px;
@@ -806,113 +811,14 @@ div.permissionContainer {
     display: block;
     float: left;
     margin-left: 2px;
-    ## Allow alt text for screen readers
+    // Allow alt text for screen readers
     text-indent: 20px;
     background-repeat:no-repeat;
     background-position: 0px 0px;
     padding: 0;
 }
 
-.icon-button.display {
-    -sprite-group: history-buttons;
-    -sprite-image: eye_icon.png;
-}
-.icon-button.display:hover {
-    -sprite-group: history-buttons;
-    -sprite-image: eye_icon_dark.png;
-}
-.icon-button.display_disabled {
-    -sprite-group: history-buttons;
-    -sprite-image: eye_icon_grey.png;
-}
-.icon-button.delete {
-    -sprite-group: history-buttons;
-    -sprite-image: delete_icon.png;
-}
-.icon-button.delete:hover {
-    -sprite-group: history-buttons;
-    -sprite-image: delete_icon_dark.png;
-}
-.icon-button.delete_disabled {
-    -sprite-group: history-buttons;
-    -sprite-image: delete_icon_grey.png;
-}
-.icon-button.edit {
-    -sprite-group: history-buttons;
-    -sprite-image: pencil_icon.png;
-}
-.icon-button.edit:hover {
-    -sprite-group: history-buttons;
-    -sprite-image: pencil_icon_dark.png;
-}
-.icon-button.edit_disabled {
-    -sprite-group: history-buttons;
-    -sprite-image: pencil_icon_grey.png;
-}
-.icon-button.tag {
-    -sprite-group: fugue;
-    -sprite-image: fugue/tag-label.png;
-}
-.icon-button.tags {
-    -sprite-group: fugue;
-    -sprite-image: fugue/tags.png;
-}
-.icon-button.tag--plus {
-    -sprite-group: fugue;
-    -sprite-image: fugue/tag--plus.png;
-}
-.icon-button.toggle-expand {
-    -sprite-group: fugue;
-    -sprite-image: fugue/toggle-expand.png;
-}
-.icon-button.toggle {
-    -sprite-group: fugue;
-    -sprite-image: fugue/toggle.png;
-}
-.icon-button.arrow-circle {
-    -sprite-group: fugue;
-    -sprite-image: fugue/arrow-circle.png;
-}
-.icon-button.chevron {
-    -sprite-group: fugue;
-    -sprite-image: fugue/chevron.png;
-}
-.icon-button.bug {
-    -sprite-group: fugue;
-    -sprite-image: fugue/bug.png;
-}
-.icon-button.disk {
-    -sprite-group: fugue;
-    -sprite-image: fugue/disk.png;
-}
-.icon-button.information {
-    -sprite-group: fugue;
-    -sprite-image: fugue/information-white.png;
-}
-.icon-button.annotate {
-    -sprite-group: fugue;
-    -sprite-image: fugue/sticky-note-text.png;
-}
-.icon-button.go-to-full-screen {
-    -sprite-group: fugue;
-    -sprite-image: fugue/external.png;
-}
-.icon-button.import {
-    -sprite-group: fugue;
-    -sprite-image: fugue/plus-circle.png;
-}
-.icon-button.plus-button {
-    -sprite-group: fugue;
-    -sprite-image: fugue/plus-button.png;
-}
-.icon-button.gear {
-    -sprite-group: fugue;
-    -sprite-image: fugue/gear.png;
-}
-
-.icon-button.chart_curve {
-    background: url(../images/silk/chart_curve.png) no-repeat;
-}
+@import "base_sprites";
 
 .tipsy {
     padding: 5px;
@@ -953,12 +859,13 @@ div.permissionContainer {
     cursor: text;
     border: dotted #999999 1px;
 }
-
+/*
 .text-and-autocomplete-select {
     -sprite-group: fugue;
     -sprite-image: fugue/control-270.png;
     -sprite-horiz-position: right;
 }
+*/
 .icon-button.multiinput{
     background:url(../images/documents-stack.png) no-repeat;
     cursor:pointer;

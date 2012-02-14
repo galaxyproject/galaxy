@@ -1,6 +1,10 @@
+@import "variables";
+
+@import "galaxy_bootstrap.less";
+
 body {
-    font: 75% "Lucida Grande",verdana,arial,helvetica,sans-serif; 
-    background: ${layout_bg};
+    // font: 75% "Lucida Grande",verdana,arial,helvetica,sans-serif; 
+    background: @layout_bg;
 }
 
 .unselectable {
@@ -11,7 +15,7 @@ body {
 
 #background {
     position: absolute;
-    background: ${layout_bg};
+    background: @layout_bg;
     z-index: -1;
     top: 0;
     left: 0;
@@ -40,12 +44,12 @@ body {
     background: #fff;
 }
 #left, #center, #right {
-    border-top: solid ${layout_border} 1px;
+    border-top: solid @layout_border 1px;
 }
 #left-border, #right-border {
     background: #eeeeee;
-    border-left: solid ${layout_border} 1px;
-    border-right: solid ${layout_border} 1px;
+    border-left: solid @layout_border 1px;
+    border-right: solid @layout_border 1px;
     padding-right: 1px;
     padding-left: 1px;
     width: 5px;
@@ -68,7 +72,7 @@ body {
     cursor: e-resize;
 }
 #left-border.hover div, #right-border.hover div {
-    background-color: ${layout_hover};
+    background-color: @layout_hover;
 }
 #left  {
     left: 0px;
@@ -96,11 +100,11 @@ body {
 .unified-panel-header {
     height: 2em;
     z-index: 1000;
-    background: ${panel_header_bg_bottom};
+    background: @panel_header_bg_bottom;
     background-image: url(panel_header_bg.png);
     background-position: top center;
     background-repeat: repeat-x;
-    border-bottom: solid ${layout_border} 1px;
+    border-bottom: solid @layout_border 1px;
     margin: 0;
     padding: 0;
     padding-right: 10px;
@@ -114,7 +118,7 @@ body {
 }
   
 .menu-bg {
-    background: $menu_bg_over url(menu_bg.png) top repeat-x;
+    background: @menu_bg_over url(menu_bg.png) top repeat-x;
 }
     
 div.unified-panel-body {
@@ -201,16 +205,16 @@ div.unified-panel-body {
     padding: 5px;
 }
 
-## Messages for message box, slightly different style
+// Messages for message box, slightly different style
 
 .panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
 {
     height: 24px;
     line-height: 24px;
-    color: $base_text;
+    color: @base_text;
     padding: 0px;
     padding-left: 26px;
-    background-color: $error_message_bg;
+    background-color: @error_message_bg;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
     background-position: 6px 50%;
@@ -219,47 +223,120 @@ div.unified-panel-body {
 .panel-warning-message 
 {
     background-image: url(warn_small.png);
-    background-color: $warn_message_bg;
+    background-color: @warn_message_bg;
 }
 
 .panel-done-message 
 {
     background-image: url(done_small.png);
-    background-color: $done_message_bg;
+    background-color: @done_message_bg;
 }
 
 .panel-info-message 
 {
     background-image: url(info_small.png);
-    background-color: $info_message_bg;
+    background-color: @info_message_bg;
 }
 
-## Masthead
+// Masthead
 
 #masthead {
+    .border-radius(0);
+    .navbar();
     position:absolute; 
     top:0; 
     left:0; 
     width:100%;
     min-width:900px;
     height:32px;
-    background: ${masthead_bg}; 
-    color:#fff;
-    border-bottom: solid ${layout_masthead_border} 1px;
+    // background: @masthead_bg; 
+    // color:#fff;
+    border-bottom: solid @layout_masthead_border 1px;
     z-index: 15000;
     padding: 0;
 
     a {
-        color: ${masthead_link};
+        color: @masthead_link;
         text-decoration: none;
     }
     
     .title {
+        .navbar.brand();
         font-family: verdana;
-        padding: 3px 10px;
-        font-size: 175%;
-        font-weight: bold;
-        z-index: -1;
+        //padding: 3px 10px;
+        //font-size: 175%;
+        //font-weight: bold;
+        z-index: 2000;
+    }
+
+    .masthead-inner {
+        .navbar-inner();
+        height: 32px;
+    }
+
+    // Tabs
+
+    .tab-group {
+
+        margin: 0;
+        padding: 0 10px;
+        height: 100%;
+        white-space: nowrap;
+        cursor: default;
+        background: transparent;
+       
+        .tab {
+        
+            // background: @masthead_bg;
+            position: relative;
+            float: left;
+            margin: 0;
+            padding: 0 1em;
+            height: 32px;
+            line-height: 32px;
+            text-align: left;
+            
+            .submenu {
+            
+                display: none;
+                position: absolute;
+                z-index: 16000;
+                left: 0;
+                top: 32px;
+                padding: 1em;
+                margin: -1em;
+                padding-top: 0;
+                margin-top: 0;
+                background-color: rgba(0,0,0,0.5);
+                -moz-border-radius: 0 0 1em 1em;
+                -webkit-border-bottom-right-radius: 1em;
+                -webkit-border-bottom-left-radius: 1em;
+            
+                ul {
+                
+                    display: block;
+                    margin: 0;
+                    padding: 0;
+                    list-style-type: none;
+                    background: @masthead_bg;
+                
+                    li {
+                    
+                        display: block;
+                        padding: 0 1em;
+                        white-space: nowrap;
+                    }
+                }
+            }
+        }
+
+        .tab:hover > a {
+            color: gold !important;
+        }
+
+        .active {
+            background: rgb(1,1,1);
+        }
     }
 }
 
@@ -282,7 +359,7 @@ div.unified-panel-body {
     right: 8px;
     height: 16px;
     width: 100px;
-    background-color: $quota_meter_bg;
+    background-color: @quota_meter_bg;
 }
 
 .quota-meter-bar
@@ -291,17 +368,17 @@ div.unified-panel-body {
     top: 0;
     left: 0;
     height: 16px;
-    background-color: $quota_meter_bar;
+    background-color: @quota_meter_bar;
 }
 
 .quota-meter-bar-warn
 {
-    background-color: $quota_meter_warn_bar;
+    background-color: @quota_meter_warn_bar;
 }
 
 .quota-meter-bar-error
 {
-    background-color: $quota_meter_error_bar;
+    background-color: @quota_meter_error_bar;
 }
 
 .quota-meter-text
@@ -314,70 +391,5 @@ div.unified-panel-body {
     margin-top: -6px;
     text-align: center;
     z-index: 9001;
-    color: $quota_meter_text;
-}
-
-## Tabs
-
-.tab-group {
-
-    margin: 0;
-    padding: 0 10px;
-    height: 100%;
-    white-space: nowrap;
-    cursor: default;
-    background: transparent;
-   
-    .tab {
-    
-        background: ${masthead_bg};
-        position: relative;
-        float: left;
-        margin: 0;
-        padding: 0 1em;
-        height: 32px;
-        line-height: 32px;
-        text-align: left;
-        
-        .submenu {
-        
-            display: none;
-            position: absolute;
-            z-index: 16000;
-            left: 0;
-            top: 32px;
-            padding: 1em;
-            margin: -1em;
-            padding-top: 0;
-            margin-top: 0;
-            background-color: rgba(0,0,0,0.5);
-            -moz-border-radius: 0 0 1em 1em;
-            -webkit-border-bottom-right-radius: 1em;
-            -webkit-border-bottom-left-radius: 1em;
-        
-            ul {
-            
-                display: block;
-                margin: 0;
-                padding: 0;
-                list-style-type: none;
-                background: ${masthead_bg};
-            
-                li {
-                
-                    display: block;
-                    padding: 0 1em;
-                    white-space: nowrap;
-                }
-            }
-        }
-    }
-
-    .tab:hover > a {
-        color: gold !important;
-    }
-
-    .active {
-        background: rgb(1,1,1);
-    }
+    color: @quota_meter_text;
 }

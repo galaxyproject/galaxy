@@ -217,8 +217,10 @@
             ## Background displays first
             <div id="background"></div>
             ## Layer iframes over backgrounds
-            <div id="masthead">
-                ${self.masthead()}
+            <div id="masthead" class="navbar nabbar-fixed-top">
+                <div class="masthead-inner navbar-inner">
+                    <div class="container">${self.masthead()}</div>
+                </div>
             </div>
             <div id="messagebox" class="panel-${self.message_box_class}-message">
                 %if self.message_box_visible:
