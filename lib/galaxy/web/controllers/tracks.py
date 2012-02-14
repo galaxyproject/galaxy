@@ -654,7 +654,8 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 "track_type": track_json['track_type'],
                 "prefs": track_json['prefs'],
                 "mode": track_json['mode'],
-                "filters": track_json['filters']
+                "filters": track_json['filters'],
+                "tool_state": track_json['tool_state']
             }
         
         def unpack_collection( collection_json ):

@@ -341,7 +341,8 @@ class UsesVisualization( SharableItemSecurity ):
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
                     "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
-                    "tool": get_tool_def( trans, dataset )
+                    "tool": get_tool_def( trans, dataset ),
+                    "tool_state": track_dict.get( 'tool_state', {} )
                 }
             
             def pack_collection( collection_dict ):

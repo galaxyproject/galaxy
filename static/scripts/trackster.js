@@ -821,8 +821,10 @@ extend(Drawable.prototype, {
      * Revert track name; currently name can be reverted only once.
      */
     revert_name: function() {
-        this.name = this.old_name;
-        this.name_div.text(this.name);
+        if (this.old_name) {
+            this.name = this.old_name;
+            this.name_div.text(this.name);
+        }
     },
     /**
      * Remove drawable (a) from its container and (b) from the HTML.
@@ -1875,7 +1877,7 @@ extend( View.prototype, DrawableCollection.prototype, {
 /**
  * Encapsulation of a tool that users can apply to tracks/datasets.
  */
-var Tool = function(track, tool_dict) {
+var Tool = function(track, tool_dict, tool_state_dict) {    
     //
     // Unpack tool information from dictionary.
     //
@@ -1884,6 +1886,7 @@ var Tool = function(track, tool_dict) {
     this.params = [];
     var params_dict = tool_dict.params;
     for (var i = 0; i < params_dict.length; i++) {
+        // FIXME: use dict for creating parameters.
         var param_dict = params_dict[i],
             name = param_dict.name,
             label = param_dict.label,
@@ -1891,15 +1894,21 @@ var Tool = function(track, tool_dict) {
             value = param_dict.value,
             type = param_dict.type;
         if (type === "number") {
-            this.params[this.params.length] = 
-                new NumberParameter(name, label, html, value, param_dict.min, param_dict.max);
+            this.params.push(
+                new NumberParameter(name, label, html, 
+                                    (name in tool_state_dict ? tool_state_dict[name] : value),
+                                    param_dict.min, param_dict.max)
+                            );
         }
         else if (type === "select") {
-            this.params[this.params.length] = new ToolParameter(name, label, html, value);
+            this.params.push(
+                new ToolParameter(name, label, html, 
+                                  (name in tool_state_dict ? tool_state_dict[name] : value))
+                            );
         }
         else {
             console.log("WARNING: unrecognized tool parameter type:", name, type);
-        }
+        }        
     }
     
     //
@@ -1945,8 +1954,35 @@ var Tool = function(track, tool_dict) {
     run_on_dataset_button.click( function() {
         tool.run_on_dataset();
     });
+    
+    if ('visible' in tool_state_dict && tool_state_dict.visible) {
+        this.parent_div.show();
+    }
 };
 extend(Tool.prototype, {
+    /**
+     * Update tool parameters.
+     */
+    update_params: function() {
+        for (var i = 0; i < this.params.length; i++) {
+            this.params[i].update_value();
+        }
+    },
+    /**
+     * Returns a dict with tool state information.
+     */
+    state_dict: function() {
+        // Save parameter values.
+        var tool_state = {};
+        for (var i = 0; i < this.params.length; i++) {
+            tool_state[this.params[i].name] = this.params[i].value;
+        }
+        
+        // Save visibility.
+        tool_state.visible = this.parent_div.is(":visible");
+        
+        return tool_state;
+    },
     /** 
      * Returns dictionary of parameter name-values.
      */
@@ -2052,6 +2088,7 @@ extend(Tool.prototype, {
         new_track.content_div.text("Starting job.");
         
         // Run tool.
+        this.update_params();
         this.run(url_params, new_track,
                  // Success callback.
                  function(track_data) {
@@ -2104,15 +2141,29 @@ extend(Tool.prototype, {
 var ToolParameter = function(name, label, html, value) {
     this.name = name;
     this.label = label;
-    this.html = html;
+    // Need to use jQuery for HTML so that value can be queried and updated dynamically.
+    this.html = $(html);
     this.value = value;
 };
+
+extend(ToolParameter.prototype, {
+    update_value: function() {
+        this.value = $(this.html).val();
+    } 
+});
 
 var NumberParameter = function(name, label, html, value, min, max) {
     ToolParameter.call(this, name, label, html, value)
     this.min = min;
     this.max = max;
 };
+
+extend(NumberParameter.prototype, ToolParameter.prototype, {
+    update_value: function() {
+        ToolParameter.prototype.update_value.call(this);
+        this.value = parseFloat(this.value);
+    }
+});
 
 /**
  * Filters that enable users to show/hide data points dynamically.
@@ -3334,7 +3385,7 @@ var TiledTrack = function(view, container, obj_dict) {
     // Attribute init.
     this.filters_manager = new FiltersManager(this, ('filters' in obj_dict ? obj_dict.filters : null));
     this.filters_available = false;
-    this.tool = ('tool' in obj_dict && obj_dict.tool ? new Tool(this, obj_dict.tool) : null);
+    this.tool = ('tool' in obj_dict && obj_dict.tool ? new Tool(this, obj_dict.tool, obj_dict.tool_state) : null);
     this.tile_cache = new Cache(TILE_CACHE_SIZE);
     
     if (this.header_div) {
@@ -3392,7 +3443,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             "prefs": this.prefs,
             "mode": this.mode,
             "filters": this.filters_manager.to_dict(),
-            "tool": null
+            "tool_state": (this.tool ? this.tool.state_dict() : {})
         };
     },
     /**
