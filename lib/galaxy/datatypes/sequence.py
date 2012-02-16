@@ -261,6 +261,66 @@ class Fasta( Sequence ):
             pass
         return False
 
+    def split(cls, input_datasets, subdir_generator_function, split_params):
+        """Split a FASTA file sequence by sequence."""
+        if split_params is None:
+            return
+        if len(input_datasets) > 1:
+            raise Exception("FASTA file splitting does not support multiple files")
+        input_file = input_datasets[0].file_name
+
+        #Counting chunk size as number of sequences.
+        if 'split_mode' not in split_params:
+            raise Exception('Tool does not define a split mode')
+        elif split_params['split_mode'] == 'number_of_parts':
+            #if split_mode = number_of_parts, and split_size = 10, then
+            #we count the number of sequences (say 1234) and divide by
+            #by ten, giving ten files of approx 123 sequences each.
+            chunk_size = 123
+        elif split_params['split_mode'] == 'to_size':
+            #Split the input file into as many sub-files as required,
+            #each containing to_size many sequences
+            chunk_size = int(split_params['split_size'])
+        else:
+            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+
+        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" \
+                  % (input_file, chunk_size))
+        f = open(input_file, "rU")
+        part_file = None
+        try:
+            #Note if the input FASTA file has no sequences, we will
+            #produce just one sub-file which will be a copy of it.
+            part_dir = subdir_generator_function()
+            part_path = os.path.join(part_dir, os.path.basename(input_file))
+            part_file = open(part_path, 'w')
+            log.debug("Writing %s part to %s" % (input_file, part_path))
+            rec_count = 0
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                if line[0]==">":
+                    rec_count += 1
+                    if rec_count > chunk_size:
+                        #Start a new sub-file
+                        part_file.close()
+                        part_dir = subdir_generator_function()
+                        part_path = os.path.join(part_dir, os.path.basename(input_file))
+                        part_file = open(part_path, 'w')
+                        log.debug("Writing %s part to %s" % (input_file, part_path))
+                        rec_count = 1
+                part_file.write(line)
+            part_file.close()
+        except Exception, e:
+            log.error('Unable to split FASTA file: %s' % str(e))
+            f.close()
+            if part_file is not None:
+                part_file.close()
+            raise
+        f.close()
+    split = classmethod(split)
+
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
     file_ext = "csfasta"
