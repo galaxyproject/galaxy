@@ -1,6 +1,7 @@
 <tool id="ncbi_blastp_wrapper" name="NCBI BLAST+ blastp" version="0.0.11">
     <description>Search protein database with protein query sequence(s)</description>
-    <parallelism method="multi" split_inputs="query" shared_inputs="subject" merge_outputs="output1"></parallelism>
+    <!-- If job splitting is enabled, break up the query file into batches of 500 sequences -->
+    <parallelism method="multi" split_inputs="query" split_mode="to_size" split_size="500" shared_inputs="subject" merge_outputs="output1"></parallelism>
     <version_command>blastp -version</version_command>
     <command interpreter="python">hide_stderr.py
 ## The command is a Cheetah template which allows some Python based syntax.
