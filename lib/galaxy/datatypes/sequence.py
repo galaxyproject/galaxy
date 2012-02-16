@@ -190,143 +190,10 @@ class Sequence( data.Text ):
     write_split_files = classmethod(write_split_files)
     
     def split( cls, input_datasets, subdir_generator_function, split_params):
-        """
-        FASTQ files are split on cluster boundaries, in increments of 4 lines
-        """
+        """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
-
-        # first, see if there are any associated FQTOC files that will give us the split locations
-        # if so, we don't need to read the files to do the splitting
-        toc_file_datasets = []
-        for ds in input_datasets:
-            tmp_ds = ds
-            fqtoc_file = None
-            while fqtoc_file is None and tmp_ds is not None:
-                fqtoc_file = tmp_ds.get_converted_files_by_type('fqtoc')
-                tmp_ds = tmp_ds.copied_from_library_dataset_dataset_association
-
-            if fqtoc_file is not None:
-                toc_file_datasets.append(fqtoc_file)
-
-        if len(toc_file_datasets) == len(input_datasets):
-            return cls.do_fast_split(input_datasets, toc_file_datasets, subdir_generator_function, split_params)
-        return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
-    split = classmethod(split)
-
-    def process_split_file(data):
-        """
-        This is called in the context of an external process launched by a Task (possibly not on the Galaxy machine)
-        to create the input files for the Task. The parameters:
-        data - a dict containing the contents of the split file
-        """
-        args = data['args']
-        input_name = data['input_name']
-        output_name = data['output_name']
-        start_sequence = long(args['start_sequence'])
-        sequence_count = long(args['num_sequences'])
-        
-        if 'toc_file' in args:
-            toc_file = simplejson.load(open(args['toc_file'], 'r'))
-            commands = Sequence.get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count)
-        else:
-            commands = Sequence.get_split_commands_sequential(is_gzip(input_name), input_name, output_name, start_sequence, sequence_count)
-        for cmd in commands:
-            if 0 != os.system(cmd):
-                raise Exception("Executing '%s' failed" % cmd)
-        return True
-    process_split_file = staticmethod(process_split_file)
-    
-    def get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count):
-        """
-        Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
-        shell commands that will extract the parts necessary
-        >>> three_sections=[dict(start=0, end=74, sequences=10), dict(start=74, end=148, sequences=10), dict(start=148, end=148+76, sequences=10)]
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=10)
-        ['dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=1, sequence_count=5)
-        ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +5 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=20)
-        ['dd bs=1 skip=0 count=148 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=10)
-        ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +21 2> /dev/null) | head -20 | gzip -c >> ./output.gz', '(dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +1 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=10, sequence_count=10)
-        ['dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=20)
-        ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +21 2> /dev/null) | head -20 | gzip -c >> ./output.gz', 'dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null >> ./output.gz', '(dd bs=1 skip=148 count=76 if=./input.gz 2> /dev/null )| zcat | ( tail -n +1 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
-        """
-        sections = toc_file['sections']
-        result = []
-
-        current_sequence = long(0)
-        i=0
-        # skip to the section that contains my starting sequence
-        while i < len(sections) and start_sequence >= current_sequence + long(sections[i]['sequences']):
-            current_sequence += long(sections[i]['sequences'])
-            i += 1
-        if i == len(sections): # bad input data!
-            raise Exception('No FQTOC section contains starting sequence %s' % start_sequence)
-    
-        # These two variables act as an accumulator for consecutive entire blocks that
-        # can be copied verbatim (without decompressing)
-        start_chunk = long(-1)
-        end_chunk = long(-1)
-        copy_chunk_cmd = 'dd bs=1 skip=%s count=%s if=%s 2> /dev/null >> %s'
-        
-        while sequence_count > 0 and i < len(sections):
-            # we need to extract partial data. So, find the byte offsets of the chunks that contain the data we need
-            # use a combination of dd (to pull just the right sections out) tail (to skip lines) and head (to get the 
-            # right number of lines
-            sequences = long(sections[i]['sequences'])
-            skip_sequences = start_sequence-current_sequence
-            sequences_to_extract = min(sequence_count, sequences-skip_sequences)
-            start_copy = long(sections[i]['start'])
-            end_copy = long(sections[i]['end'])
-            if sequences_to_extract < sequences:
-                if start_chunk > -1:
-                    result.append(copy_chunk_cmd % (start_chunk, end_chunk-start_chunk, input_name, output_name))
-                    start_chunk = -1
-                # extract, unzip, trim, recompress
-                result.append('(dd bs=1 skip=%s count=%s if=%s 2> /dev/null )| zcat | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c >> %s' % 
-                    (start_copy, end_copy-start_copy, input_name, skip_sequences*4+1, sequences_to_extract*4, output_name))
-            else: # whole section - add it to the start_chunk/end_chunk accumulator
-                if start_chunk == -1:
-                    start_chunk = start_copy
-                end_chunk = end_copy
-            sequence_count -= sequences_to_extract
-            start_sequence += sequences_to_extract
-            current_sequence += sequences
-            i += 1
-        if start_chunk > -1:
-            result.append(copy_chunk_cmd % (start_chunk, end_chunk-start_chunk, input_name, output_name))
-                
-        if sequence_count > 0:
-            raise Exception('%s sequences not found in file' % sequence_count)
-             
-        return result
-    get_split_commands_with_toc = staticmethod(get_split_commands_with_toc)
-
-
-    def get_split_commands_sequential(is_compressed, input_name, output_name, start_sequence, sequence_count):
-        """
-        Does a brain-dead sequential scan & extract of certain sequences
-        >>> Sequence.get_split_commands_sequential(True, './input.gz', './output.gz', start_sequence=0, sequence_count=10)
-        ['zcat "./input.gz" | ( tail -n +1 2> /dev/null) | head -40 | gzip -c > "./output.gz"']
-        >>> Sequence.get_split_commands_sequential(False, './input.fastq', './output.fastq', start_sequence=10, sequence_count=10)
-        ['tail -n +41 "./input.fastq" 2> /dev/null | head -40 > "./output.fastq"']
-        """
-        start_line = start_sequence * 4
-        line_count = sequence_count * 4
-        # TODO: verify that tail can handle 64-bit numbers
-        if is_compressed:
-            cmd = 'zcat "%s" | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c' % (input_name, start_line+1, line_count)
-        else:
-            cmd = 'tail -n +%s "%s" 2> /dev/null | head -%s'  % (start_line+1, input_name, line_count)
-        cmd += ' > "%s"' % output_name
-        
-        return [cmd]
-    get_split_commands_sequential = staticmethod(get_split_commands_sequential)
-
+        raise NotImplementedError("Can't split generic sequence files")
 
 
 class Alignment( data.Text ):
@@ -335,6 +202,13 @@ class Alignment( data.Text ):
     """Add metadata elements"""
     MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
 
+    def split( cls, input_datasets, subdir_generator_function, split_params):
+        """Split a generic alignment file (not sensible or possible, see subclasses)."""
+        if split_params is None:
+            return None
+        raise NotImplementedError("Can't split generic alignment files")
+
+                                
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
     file_ext = "fasta"
@@ -501,6 +375,55 @@ class Fastq ( Sequence ):
             return False
         except:
             return False
+
+    def split( cls, input_datasets, subdir_generator_function, split_params):
+        """
+        FASTQ files are split on cluster boundaries, in increments of 4 lines
+        """
+        if split_params is None:
+            return None
+
+        # first, see if there are any associated FQTOC files that will give us the split locations
+        # if so, we don't need to read the files to do the splitting
+        toc_file_datasets = []
+        for ds in input_datasets:
+            tmp_ds = ds
+            fqtoc_file = None
+            while fqtoc_file is None and tmp_ds is not None:
+                fqtoc_file = tmp_ds.get_converted_files_by_type('fqtoc')
+                tmp_ds = tmp_ds.copied_from_library_dataset_dataset_association
+
+            if fqtoc_file is not None:
+                toc_file_datasets.append(fqtoc_file)
+
+        if len(toc_file_datasets) == len(input_datasets):
+            return cls.do_fast_split(input_datasets, toc_file_datasets, subdir_generator_function, split_params)
+        return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
+    split = classmethod(split)
+
+    def process_split_file(data):
+        """
+        This is called in the context of an external process launched by a Task (possibly not on the Galaxy machine)
+        to create the input files for the Task. The parameters:
+        data - a dict containing the contents of the split file
+        """
+        args = data['args']
+        input_name = data['input_name']
+        output_name = data['output_name']
+        start_sequence = long(args['start_sequence'])
+        sequence_count = long(args['num_sequences'])
+        
+        if 'toc_file' in args:
+            toc_file = simplejson.load(open(args['toc_file'], 'r'))
+            commands = Sequence.get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count)
+        else:
+            commands = Sequence.get_split_commands_sequential(is_gzip(input_name), input_name, output_name, start_sequence, sequence_count)
+        for cmd in commands:
+            if 0 != os.system(cmd):
+                raise Exception("Executing '%s' failed" % cmd)
+        return True
+    process_split_file = staticmethod(process_split_file)
+
 
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
