@@ -228,8 +228,8 @@ $(function() {
         $(this).find("a.show-details").bind("click", function() { return false; });
         */
         
-        tag_handling(document);
-        annotation_handling(document);
+        tag_handling(this);
+        annotation_handling(this);
     });
     
     // Trackster links
