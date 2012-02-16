@@ -31,6 +31,9 @@ def __main__():
     Argument: a JSON file
     """
     file_path = sys.argv.pop( 1 )
+    if not os.path.isfile(file_path):
+        #Nothing to do - some splitters don't write a JSON file
+        sys.exit(0)
     data = simplejson.load(open(file_path, 'r'))
     try:
         class_name_parts = data['class_name'].split('.')
