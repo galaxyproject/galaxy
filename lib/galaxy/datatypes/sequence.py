@@ -262,7 +262,14 @@ class Fasta( Sequence ):
         return False
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
-        """Split a FASTA file sequence by sequence."""
+        """Split a FASTA file sequence by sequence.
+
+        Note that even if split_mode="number_of_parts", the actual number of
+        sub-files produced may not match that requested by split_size.
+
+        If split_mode="to_size" then split_size is treated as the number of
+        FASTA records to put in each sub-file (not size in bytes).
+        """
         if split_params is None:
             return
         if len(input_datasets) > 1:
@@ -273,17 +280,76 @@ class Fasta( Sequence ):
         if 'split_mode' not in split_params:
             raise Exception('Tool does not define a split mode')
         elif split_params['split_mode'] == 'number_of_parts':
-            #if split_mode = number_of_parts, and split_size = 10, then
-            #we count the number of sequences (say 1234) and divide by
+            split_size = int(split_params['split_size'])
+            log.debug("Split %s into %i parts..." % (input_file, split_size))
+            #if split_mode = number_of_parts, and split_size = 10, and
+            #we know the number of sequences (say 1234), then divide by
             #by ten, giving ten files of approx 123 sequences each.
-            chunk_size = 123
+            if input_datasets[0].metadata is not None \
+            and input_datasets[0].metadata.sequences:
+                #Galaxy has already counted/estimated the number
+                batch_size = 1 + input_datasets[0].metadata.sequences // split_size
+                cls._count_split(input_file, batch_size, subdir_generator_function)
+            else:
+                #OK, if Galaxy hasn't counted them, it may be a big file.
+                #We're not going to count the records which would be slow
+                #and a waste of disk IO time - instead we'll split using
+                #the file size.
+                chunk_size = os.path.getsize(input_file) // split_size
+                cls._size_split(input_file, chunk_size, subdir_generator_function)
         elif split_params['split_mode'] == 'to_size':
             #Split the input file into as many sub-files as required,
             #each containing to_size many sequences
-            chunk_size = int(split_params['split_size'])
+            batch_size = int(split_params['split_size'])
+            log.debug("Split %s into batches of %i records..." % (input_file, batch_size))
+            cls._count_split(input_file, batch_size, subdir_generator_function)
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+    split = classmethod(split)
 
+    def _size_split(cls, input_file, chunk_size, subdir_generator_function):
+        """Split a FASTA file into chunks based on size on disk.
+
+        This does of course preserve complete records - it only splits at the
+        start of a new FASTQ sequence record.
+        """
+        log.debug("Attemping to split FASTA file %s into chunks of %i bytes" \
+                  % (input_file, chunk_size))
+        f = open(input_file, "rU")
+        part_file = None
+        try:
+            #Note if the input FASTA file has no sequences, we will
+            #produce just one sub-file which will be a copy of it.
+            part_dir = subdir_generator_function()
+            part_path = os.path.join(part_dir, os.path.basename(input_file))
+            part_file = open(part_path, 'w')
+            log.debug("Writing %s part to %s" % (input_file, part_path))
+            start_offset = 0
+            while True:
+                offset = f.tell()
+                line = f.readline()
+                if not line:
+                    break
+                if line[0]==">" and offset - start_offset >= chunk_size:
+                    #Start a new sub-file
+                    part_file.close()
+                    part_dir = subdir_generator_function()
+                    part_path = os.path.join(part_dir, os.path.basename(input_file))
+                    part_file = open(part_path, 'w')
+                    log.debug("Writing %s part to %s" % (input_file, part_path))
+                    start_offset = f.tell()
+                part_file.write(line)
+        except Exception, e:
+            log.error('Unable to size split FASTA file: %s' % str(e))
+            f.close()
+            if part_file is not None:
+                part_file.close()
+            raise
+        f.close()
+    _size_split = classmethod(_size_split)
+
+    def _count_split(cls, input_file, chunk_size, subdir_generator_function):
+        """Split a FASTA file into chunks based on counting records."""
         log.debug("Attemping to split FASTA file %s into chunks of %i sequences" \
                   % (input_file, chunk_size))
         f = open(input_file, "rU")
@@ -313,13 +379,13 @@ class Fasta( Sequence ):
                 part_file.write(line)
             part_file.close()
         except Exception, e:
-            log.error('Unable to split FASTA file: %s' % str(e))
+            log.error('Unable to count split FASTA file: %s' % str(e))
             f.close()
             if part_file is not None:
                 part_file.close()
             raise
         f.close()
-    split = classmethod(split)
+    _count_split = classmethod(_count_split)
 
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
