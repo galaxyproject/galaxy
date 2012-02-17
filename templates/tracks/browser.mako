@@ -208,7 +208,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
          * Initialization for editor-specific functions.
          */
         function init_editor() {
-            $("#title").text(view.title + " (" + view.dbkey + ")");
+            $("#title").text(view.name + " (" + view.dbkey + ")");
            
             window.onbeforeunload = function() {
                 if (view.has_changes) {
@@ -251,7 +251,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 // FIXME: give unique IDs to Drawables and save overview as ID.
                 var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null);
                 var payload = { 
-                    'view': view.to_dict(), 
+                    'view': view.to_dict(),
                     'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
                     'bookmarks': bookmarks
                 };
@@ -261,7 +261,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     type: "POST",
                     data: {
                         'vis_id': view.vis_id,
-                        'vis_title': view.title,
+                        'title': view.name,
                         'dbkey': view.dbkey,
                         'payload': JSON.stringify(payload)
                     },

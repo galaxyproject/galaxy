@@ -631,7 +631,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         if vis_id == "undefined": # new vis
             vis = model.Visualization()
             vis.user = trans.user
-            vis.title = kwargs['vis_title']
+            vis.title = kwargs['title']
             vis.type = "trackster"
             vis.dbkey = dbkey
             session.add( vis )

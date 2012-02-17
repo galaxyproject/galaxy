@@ -682,7 +682,7 @@ extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototy
 var Drawable = function(view, container, obj_dict) {
     if (!Drawable.id_counter) { Drawable.id_counter = 0; }
     this.id = Drawable.id_counter++;
-    this.name = ('name' in obj_dict ? obj_dict.name : null);
+    this.name = obj_dict.name;
     this.view = view;
     this.container = container;
     this.config = new DrawableConfig({
@@ -1306,7 +1306,6 @@ var View = function(obj_dict) {
     this.chrom = null;
     this.vis_id = obj_dict.vis_id;
     this.dbkey = obj_dict.dbkey;
-    this.title = obj_dict.title;
     this.label_tracks = [];
     this.tracks_to_be_redrawn = [];
     this.max_low = 0;
