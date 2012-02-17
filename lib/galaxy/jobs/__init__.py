@@ -96,10 +96,12 @@ class JobQueue( object ):
         self.running = True
         self.dispatcher = dispatcher
         self.monitor_thread = threading.Thread( target=self.__monitor )
-        self.monitor_thread.start()
-        log.info( "job manager started" )
+        # Recover jobs at startup
         if app.config.get_bool( 'enable_job_recovery', True ):
             self.__check_jobs_at_startup()
+        # Start the queue
+        self.monitor_thread.start()
+        log.info( "job manager started" )
 
     def __check_jobs_at_startup( self ):
         """
