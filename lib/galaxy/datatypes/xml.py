@@ -42,6 +42,13 @@ class GenericXml( data.Text ):
         #TODO - Is there a more robust way to do this?
         return line.startswith('<?xml ')
 
+    def merge(split_files, output_file):
+        """Merging multiple XML files is non-trivial and must be done in subclasses."""
+        if len(split_files) > 1:
+            raise NotImplementedError("Merging multiple XML files is non-trivial and must be implemented for each XML type")
+        #For one file only, use base class method (move/copy)
+        data.Text.merge(split_files, output_file)
+    merge = staticmethod(merge)
 
 class BlastXml( GenericXml ):
     """NCBI Blast XML Output data"""
