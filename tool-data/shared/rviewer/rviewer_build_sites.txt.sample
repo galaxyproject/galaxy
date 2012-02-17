@@ -1,0 +1,3 @@
+#site_id	site_name	site_url	dbkey	rviewer_genome_version
+#lbl_test	test	http://127.0.0.1:8888	hg18,hg19	hg18,hg19
+lbl_main	main	http://rviewer.lbl.gov/rviewer	hg18,hg19	hg18,hg19

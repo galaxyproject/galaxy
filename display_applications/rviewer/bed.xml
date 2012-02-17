@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<display id="rviewer_interval" version="1.0.0" name="display at RViewer">
+    
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links from_file="tool-data/shared/rviewer/rviewer_build_sites.txt" skip_startswith="#" id="0" name="1">
+        
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="site_name" value="1"/>
+        <dynamic_param name="site_link" value="2"/>
+        <dynamic_param name="site_dbkeys" value="3" split="True" separator="," />
+        <dynamic_param name="site_genome_versions" value="4" split="True" separator="," />
+        
+        <!-- Filter out some of the links based upon matching site_dbkeys to dataset dbkey -->
+        <filter>${dataset.dbkey in $site_dbkeys}</filter>
+        
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${site_link}/application/service/datasets/add?datasetName=${qp($bed_file.name)}&amp;genomeVersion=${qp( $site_genome_versions[ $site_dbkeys.index( $bed_file.dbkey ) ] )}&amp;dataFormat=bed&amp;dataUrl=${bed_file.qp}</url>
+        
+        <param type="data" name="bed_file" format="bed" url="galaxy.bed" />
+        
+    </dynamic_links>
+    
+    
+</display>

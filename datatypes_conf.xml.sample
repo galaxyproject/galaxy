@@ -93,6 +93,7 @@
       <display file="genetrack.xml" inherit="True"/>
       <display file="ensembl/ensembl_interval_as_bed.xml" inherit="True"/>
       <display file="gbrowse/gbrowse_interval_as_bed.xml" inherit="True"/>
+      <display file="rviewer/bed.xml" inherit="True"/>
     </datatype>
     <datatype extension="picard_interval_list" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True">
       <converter file="picard_interval_list_to_bed6_converter.xml" target_datatype="bed6"/>
@@ -159,6 +160,7 @@
       <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
       <display file="ucsc/vcf.xml" />
       <display file="igv/vcf.xml" />
+      <display file="rviewer/vcf.xml" inherit="True"/>
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Binary" subclass="True"/>
     <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
