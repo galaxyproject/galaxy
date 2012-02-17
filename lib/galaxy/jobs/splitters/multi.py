@@ -152,8 +152,8 @@ def do_merge( job_wrapper,  task_wrappers):
         out = tw.get_task().stdout.strip()
         err = tw.get_task().stderr.strip()
         if len(out) > 0:
-            stdout += tw.working_directory + ':\n' + out
+            stdout += "\n" + tw.working_directory + ':\n' + out
         if len(err) > 0:
-            stderr += tw.working_directory + ':\n' + err
+            stderr += "\n" + tw.working_directory + ':\n' + err
     return (stdout,  stderr)
-    
+
