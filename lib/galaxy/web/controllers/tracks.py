@@ -253,7 +253,8 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             "dataset_id": trans.security.encode_id( dataset.id ),
             "prefs": {},
             "filters": { 'filters' : track_data_provider.get_filters() },
-            "tool": get_tool_def( trans, dataset )
+            "tool": get_tool_def( trans, dataset ),
+            "tool_state": {}
         }
         return track
 

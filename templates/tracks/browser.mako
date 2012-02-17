@@ -100,7 +100,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                                    [ arguments[0] ]
                                                    );
                                  for (var i= 0; i < track_defs.length; i++) {
-                                     view.add_drawable( object_from_dict(track_defs[i], view) ); 
+                                     view.add_drawable( object_from_template(track_defs[i], view) ); 
                                  }
                             });
                             hide_modal();
@@ -144,7 +144,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                     }).then( function(data) {
                                         for( i = 0; i < data.data.length; i++ ) {
                                             var row = data.data[i];
-                                            console.log( row[0], row[1] );
                                             add_bookmark( row[0], row[1] );
                                         }
                                     });
@@ -181,7 +180,11 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             init_editor();
         %else:
             var continue_fn = function() {
-                view = create_visualization( $("#browser-container"), $("#new-title").val(), undefined, $("#new-dbkey").val() );
+                view = create_visualization( {
+                    container: $("#browser-container"),
+                    name: $("#new-title").val(),
+                    dbkey: $("#new-dbkey").val()
+                } );
                 view.editor = true;
                 init_editor();
                 hide_modal();
@@ -193,7 +196,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 success: function(form_html) {
                     show_modal("New Visualization", form_html, {
                         "Cancel": function() { window.location = "${h.url_for( controller='visualization', action='list' )}"; },
-                        "Continue": function() { $(document).trigger("convert_to_values"); continue_fn(); }
+                        "Create": function() { $(document).trigger("convert_to_values"); continue_fn(); }
                     });
                     $("#new-title").focus();
                     replace_big_select_inputs();
