@@ -2915,6 +2915,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
     // Attribute init.
     Tile.call(this, track, index, resolution, canvas, data);
     this.mode = mode;
+    this.all_slotted = all_slotted;
     this.feature_mapper = feature_mapper;
     this.has_icons = false;
     
