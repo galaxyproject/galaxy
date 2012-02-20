@@ -461,10 +461,9 @@ extend(Cache.prototype, {
 /**
  * Data manager for a track.
  */
-var DataManager = function(num_elements, track, subset) {
+var DataManager = function(num_elements, track) {
     Cache.call(this, num_elements);
     this.track = track;
-    this.subset = (subset !== undefined ? subset : true);
 };
 extend(DataManager.prototype, Cache.prototype, {
     /**
@@ -516,34 +515,26 @@ extend(DataManager.prototype, Cache.prototype, {
         }
 
         //
-        // If data supports subsetting:
         // Look in cache for data that can be used. Data can be reused if it
         // has the requested data and is not summary tree and has details.
         // TODO: this logic could be improved if the visualization knew whether
         // the data was "index" or "data."
-        //
+        //        
+        var key, split_key, entry_low, entry_high, mode, entry;
+        for (var i = 0; i < this.key_ary.length; i++) {
+            key = this.key_ary[i];
+            split_key = this.split_key(key);
+            entry_low = split_key[0];
+            entry_high = split_key[1];
         
-        // TODO: can using resolution in the key enable LineTrack data to be subsetted appropriately?
-        if (this.subset) {
-            var key, split_key, entry_low, entry_high, mode, entry;
-            for (var i = 0; i < this.key_ary.length; i++) {
-                key = this.key_ary[i];
-                split_key = this.split_key(key);
-                entry_low = split_key[0];
-                entry_high = split_key[1];
-            
-                if (low >= entry_low && high <= entry_high) {
-                    // This entry has requested data; return if compatible and if entry does not 
-                    // have a message. If entry has a message, then not all data available and it
-                    // is better to fetch anew.
-                    entry = this.obj_cache[key];
-                    if ( is_deferred(entry) || 
-                        ( this.track.data_and_mode_compatible(entry, mode) && !entry.message ) ) {
-                        // TODO: for fast lookup and processing, create new entry with only data subset?
-                        // Entry is usable.
-                        this.move_key_to_end(key, i);
-                        return entry;
-                    }
+            if (low >= entry_low && high <= entry_high) {
+                // This entry has data in the requested range. Return if data
+                // is compatible and can be subsetted.
+                var entry = this.obj_cache[key];
+                if ( is_deferred(entry) || 
+                    ( this.track.data_and_mode_compatible(entry, mode) && this.track.can_subset(entry) ) ) {
+                    this.move_key_to_end(key, i);
+                    return entry;
                 }
             }
         }
@@ -3773,6 +3764,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         return true;
     },
     /**
+     * Returns true if data can be subsetted. Defaults to false to ensure data is fetched when needed.
+     */
+    can_subset: function(data) {
+        return false;  
+    },
+    /**
      * Set up track to receive tool data.
      */
     init_for_tool_data: function() {
@@ -4177,11 +4174,7 @@ var LineTrack = function (view, container, obj_dict) {
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
     TiledTrack.call(this, view, container, obj_dict);
-    
-    // Cannot subset LineTrack data right now; see note in DataManager about using resolution in key 
-    // to address this issue.
-    this.data_manager.subset = false;
-   
+       
     this.min_height_px = 16; 
     this.max_height_px = 400; 
     // Default height for new tracks, should be a defined constant?
@@ -4334,7 +4327,13 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
         return new Tile(this.track, tile_index, resolution, canvas, result.data);
-    }
+    },
+    /**
+     * LineTrack data cannot currently be subsetted.
+     */
+    can_subset: function(data) {
+        return false;
+    },
 });
 
 var FeatureTrack = function(view, container, obj_dict) {
@@ -4760,8 +4759,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      */
     data_and_mode_compatible: function(data, mode) {
         // Only handle modes that user can set.
-        if (mode === "Auto") { 
-            return true; 
+        if (mode === "Auto") {
+            return true;
         }
         // All other modes--Histogram, Dense, Squish, Pack--require data + details.
         else if (data.extra_info === "no_detail" || data.dataset_type === "summary_tree") {
@@ -4770,6 +4769,17 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         else {
             return true;
         }
+    },
+    /**
+     * Returns true if data can be subsetted.
+     */
+    can_subset: function(data) {
+        // Do not subset summary tree data or entries with a message.
+        if (data.dataset_type === "summary_tree" || data.message) {
+            return false;
+        }
+
+        return true;
     },
 });
 
