@@ -169,7 +169,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         %if config:
             view = create_visualization( {
                                             container: $("#browser-container"), 
-                                            title: "${config.get('title') | h}",
+                                            name: "${config.get('title') | h}",
                                             vis_id: "${config.get('vis_id')}", 
                                             dbkey: "${config.get('dbkey')}"
                                          },

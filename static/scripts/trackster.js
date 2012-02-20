@@ -710,10 +710,11 @@ var Drawable = function(view, container, obj_dict) {
     if (this.header_div) { 
         this.container_div.append(this.header_div);
         
+        // Icons container.
         this.icons_div = $("<div/>").css("float", "left").hide().appendTo(this.header_div);
         this.build_action_icons(this.action_icons_def);
+                
         this.header_div.append( $("<div style='clear: both'/>") );
-        
         
         // Suppress double clicks in header so that they do not impact viz.
         this.header_div.dblclick( function(e) { e.stopPropagation(); } );
@@ -721,8 +722,7 @@ var Drawable = function(view, container, obj_dict) {
         // Show icons when users is hovering over track.
         var drawable = this;
         this.container_div.hover(
-            function() { drawable.icons_div.show(); }, 
-            function() { drawable.icons_div.hide(); }
+            function() { drawable.icons_div.show(); }, function() { drawable.icons_div.hide(); }
         );
         
         // Needed for floating elts in header.
@@ -2928,7 +2928,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
     this.has_icons = false;
     
     // Add message + action icons to tile's html.
-    if (message || !all_slotted) {
+    if (message) {
         this.has_icons = true;
         
         var 
@@ -2937,53 +2937,39 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
             message_div = $("<div/>").addClass("tile-message")
                             // -1 to account for border.
                             .css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt);
-                            
-        // Handle when not all elements are slotted.
-        if (!all_slotted) {
-            var icon = $("<a href='javascript:void(0);'/>").addClass("icon exclamation")
-                            .attr("title", "To minimize track height, not all features in this region are displayed. Click to display more.")
-                            .tipsy( {gravity: 's'} ).appendTo(message_div)
-                            .click(function () {
-                                $(".tipsy").hide();
-                                tile.track.slotters[w_scale].max_rows *= 2;
-                                tile.track.request_draw(true);
-                            });
-        }
-                            
+                                                        
         // Handle message; only message currently is that only the first N elements are displayed.
-        if (message) {
-            var 
-                num_features = data.length,
-                more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
-                                    .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data including depth")
-                                    .tipsy( {gravity: 's'} ).appendTo(message_div),
-                more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across")
-                                    .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data excluding depth")
-                                    .tipsy( {gravity: 's'} ).appendTo(message_div);
+        var 
+            num_features = data.length,
+            more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
+                                .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data including depth")
+                                .tipsy( {gravity: 's'} ).appendTo(message_div),
+            more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across")
+                                .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data excluding depth")
+                                .tipsy( {gravity: 's'} ).appendTo(message_div);
 
-            // Set up actions for icons.
-            more_down_icon.click(function() {
-                // Mark tile as stale, request more data, and redraw track.
-                tile.stale = true;
-                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
-                $(".tipsy").hide();
-                track.request_draw();
-            }).dblclick(function(e) {
-                // Do not propogate as this would normally zoom in.
-                e.stopPropagation();
-            });
+        // Set up actions for icons.
+        more_down_icon.click(function() {
+            // Mark tile as stale, request more data, and redraw track.
+            tile.stale = true;
+            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+            $(".tipsy").hide();
+            track.request_draw();
+        }).dblclick(function(e) {
+            // Do not propogate as this would normally zoom in.
+            e.stopPropagation();
+        });
 
-            more_across_icon.click(function() {
-                // Mark tile as stale, request more data, and redraw track.
-                tile.stale = true;
-                track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
-                $(".tipsy").hide();
-                track.request_draw();
-            }).dblclick(function(e) {
-                // Do not propogate as this would normally zoom in.
-                e.stopPropagation();
-            });
-        }
+        more_across_icon.click(function() {
+            // Mark tile as stale, request more data, and redraw track.
+            tile.stale = true;
+            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+            $(".tipsy").hide();
+            track.request_draw();
+        }).dblclick(function(e) {
+            // Do not propogate as this would normally zoom in.
+            e.stopPropagation();
+        });
     }
 };
 extend(FeatureTrackTile.prototype, Tile.prototype);
@@ -3407,6 +3393,20 @@ var TiledTrack = function(view, container, obj_dict) {
     }
 };
 extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
+    action_icons_def: Track.prototype.action_icons_def.concat( [
+        // Show more rows when all features are not slotted.
+        {
+            name: "show_more_rows_icon",
+            title: "To minimize track height, not all feature rows are displayed. Click to display more rows.",
+            css_class: "exclamation",
+            on_click_fn: function(track) {
+                $(".tipsy").remove();
+                // HACKish: is it always reasonble to use view to get w_scale/current resolution?
+                track.slotters[ track.view.resolution_px_b ].max_rows *= 2;
+                track.request_draw(true);
+            }
+        }
+    ] ),
     /**
      * Returns a copy of the track. The copy uses the same data manager so that the tracks can share data.
      */
@@ -4472,8 +4472,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         this.container_div.find(".yaxislabel").remove();
         var first_tile = tiles[0];
         if (first_tile instanceof SummaryTreeTile) {
-            var 
-                max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
+            var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
                 max_label = 
                     get_editable_text_elt(max_val, false, 12, 0, function(new_val) {
                         var new_val = parseFloat(new_val);
@@ -4484,6 +4483,28 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     .addClass('yaxislabel top')
                     .css("color", this.prefs.label_color);
             this.container_div.prepend(max_label);
+        }
+        
+        //
+        // If not all features slotted, show icon for showing more rows (slots).
+        //
+        if (first_tile instanceof FeatureTrackTile) {
+            var all_slotted = true;
+            for (var i = 0; i < tiles.length; i++) {
+                if (!tiles[i].all_slotted) {
+                    all_slotted = false;
+                    break;
+                }
+            }
+            if (!all_slotted) {
+                this.action_icons.show_more_rows_icon.show();
+            }
+            else {
+                this.action_icons.show_more_rows_icon.hide();
+            }
+        }
+        else {
+            this.action_icons.show_more_rows_icon.hide();
         }
     },
     update_auto_mode: function( mode ) {
@@ -4667,7 +4688,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             left_offset = this.left_offset;
         
         // Drawing the summary tree (feature coverage histogram)
-        if (mode === "summary_tree" || mode === "Histogram") {            
+        if (mode === "summary_tree" || mode === "Histogram") {
             // Get summary tree data if necessary and set max if there is one.
             if (result.dataset_type !== "summary_tree") {
                 var st_data = this.get_summary_tree_data(result.data, tile_low, tile_high, 200);
@@ -4972,11 +4993,6 @@ extend( exports.FeatureSlotter.prototype, {
                 start_end_dct[slot_num].push([f_start, f_end]);
                 this.slots[feature_uid] = slot_num;
                 highest_slot = Math.max(highest_slot, slot_num);
-            }
-            else {
-                // TODO: remove this warning when skipped features are handled.
-                // Show warning for skipped feature.
-                //console.log("WARNING: not displaying feature", feature_uid, f_start, f_end);
             }
         }
         

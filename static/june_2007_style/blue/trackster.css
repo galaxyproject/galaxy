@@ -61,7 +61,7 @@ input{font:10px verdana;}
 .layer-transparent.active{background:transparent url(../images/fugue/layer-transparent.png) no-repeat;}
 .arrow-resize-090{background:transparent url(../images/fugue/arrow-resize-090-bw.png) no-repeat;}
 .arrow-resize-090.active{background:transparent url(../images/fugue/arrow-resize-090.png) no-repeat;}
-.exclamation{background:transparent url(../images/fugue/exclamation.png) no-repeat;}
+.exclamation{background:transparent url(../images/fugue/exclamation.png) no-repeat;margin-left:5em;}
 .layers-stack{background:transparent url(../images/fugue/layers-stack-bw.png) no-repeat;}
 .layers-stack:hover{background:transparent url(../images/fugue/layers-stack.png) no-repeat;}
 .chevron-expand{background:transparent url(../images/fugue/chevron-expand-bw.png) no-repeat;}
