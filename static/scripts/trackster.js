@@ -842,12 +842,15 @@ extend(Drawable.prototype, {
     /**
      * Add an action icon to this object. Appends icon unless prepend flag is specified.
      */
-    add_action_icon: function(name, title, css_class, on_click_fn, prepend) {
+    add_action_icon: function(name, title, css_class, on_click_fn, prepend, hide) {
         var drawable = this;
         this.action_icons[name] = $("<a/>").attr("href", "javascript:void(0);").attr("title", title)
                                            .addClass("icon-button").addClass(css_class).tipsy( {gravity: 's'} )
                                            .click( function() { on_click_fn(drawable); } )
                                            .appendTo(this.icons_div);
+        if (hide) {
+            this.action_icons[name].hide();
+        }
     },
     /**
      * Build drawable's icons div from object's icons_dict.
@@ -858,7 +861,7 @@ extend(Drawable.prototype, {
         for (var i = 0; i < action_icons_def.length; i++) {
             icon_dict = action_icons_def[i];
             this.add_action_icon(icon_dict.name, icon_dict.title, icon_dict.css_class, 
-                                 icon_dict.on_click_fn, icon_dict.prepend);
+                                 icon_dict.on_click_fn, icon_dict.prepend, icon_dict.hide);
         }
     },
     /**
@@ -3396,7 +3399,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 // HACKish: is it always reasonble to use view to get w_scale/current resolution?
                 track.slotters[ track.view.resolution_px_b ].max_rows *= 2;
                 track.request_draw(true);
-            }
+            },
+            hide: true
         }
     ] ),
     /**
