@@ -232,7 +232,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             $("#add-tracks-icon").click( function() { add_tracks(); } );
             
             $("#add-group-icon").click( function() {
-                view.add_drawable( new DrawableGroup(view, view, { name: "New Group" }) );                
+                view.add_drawable( new DrawableGroup(view, view, { name: "New Group" }) );
             });
             
             $("#save-icon").click( function() {                
