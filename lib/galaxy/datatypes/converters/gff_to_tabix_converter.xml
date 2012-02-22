@@ -1,6 +1,6 @@
 <tool id="CONVERTER_gff_to_tabix_0" name="Convert GFF to tabix" version="1.0.0" hidden="true">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">interval_to_tabix_converter.py gff $input1 $bgzip $output1</command>
+  <command interpreter="python">interval_to_tabix_converter.py -P gff $input1 $bgzip $output1</command>
   <inputs>
     <page>
         <param format="gff" name="input1" type="data" label="Choose GFF file"/>

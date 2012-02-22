@@ -1,6 +1,6 @@
 <tool id="CONVERTER_vcf_to_vcf_bgzip_0" name="Convert VCF to VCF_BGZIP" version="1.0.0" hidden="true">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">bgzip.py vcf $input1 $output1</command>
+  <command interpreter="python">bgzip.py -P vcf $input1 $output1</command>
   <inputs>
     <page>
         <param format="vcf" name="input1" type="data" label="Choose Vcf file"/>

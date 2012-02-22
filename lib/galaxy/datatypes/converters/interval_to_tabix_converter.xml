@@ -1,0 +1,20 @@
+<tool id="CONVERTER_interval_to_tabix_0" name="Convert Interval to tabix" version="1.0.0" hidden="true">
+<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <command interpreter="python">interval_to_tabix_converter.py
+                                  -c ${input1.metadata.chromCol} 
+                                  -s ${input1.metadata.startCol} 
+                                  -e ${input1.metadata.endCol} 
+                                  $input1 $bgzip $output1    
+  </command>
+  <inputs>
+    <page>
+        <param format="interval" name="input1" type="data" label="Choose Interval file"/>
+        <param format="bgzip" name="bgzip" type="data" label="BGZIP file"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="tabix" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

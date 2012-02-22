@@ -1,6 +1,6 @@
 <tool id="CONVERTER_bed_to_tabix_0" name="Convert BED to tabix" version="1.0.0" hidden="true">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">interval_to_tabix_converter.py bed $input1 $bgzip $output1</command>
+  <command interpreter="python">interval_to_tabix_converter.py -P bed $input1 $bgzip $output1</command>
   <inputs>
     <page>
         <param format="bed" name="input1" type="data" label="Choose BED file"/>

@@ -1,6 +1,6 @@
 <tool id="CONVERTER_bed_to_bgzip_0" name="Convert BED to BGZIP" version="1.0.0" hidden="true">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">bgzip.py bed $input1 $output1</command>
+  <command interpreter="python">bgzip.py -P bed $input1 $output1</command>
   <inputs>
     <page>
         <param format="bed" name="input1" type="data" label="Choose BED file"/>

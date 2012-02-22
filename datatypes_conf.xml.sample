@@ -89,7 +89,8 @@
       <converter file="interval_to_bedstrict_converter.xml" target_datatype="bedstrict"/>
       <converter file="interval_to_bed6_converter.xml" target_datatype="bed6"/>
       <converter file="interval_to_bed12_converter.xml" target_datatype="bed12"/>
-	  <converter file="interval_to_interval_index_converter.xml" target_datatype="interval_index"/>
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
 	  <converter file="interval_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
       <!-- <display file="ucsc/interval_as_bed.xml" inherit="True" /> -->
       <display file="genetrack.xml" inherit="True"/>
