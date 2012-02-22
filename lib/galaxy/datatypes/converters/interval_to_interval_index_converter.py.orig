@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+
+"""
+Convert from interval file to interval index file. Default input file format is BED (0-based, half-open intervals).
+
+usage: %prog in_file out_file
+    -G, --gff: input is GFF format, meaning start and end coordinates are 1-based, closed interval
+"""
+
+from __future__ import division
+
+import sys, fileinput
+from galaxy import eggs
+import pkg_resources; pkg_resources.require( "bx-python" )
+from galaxy.visualization.tracks.summary import *
+from bx.cookbook import doc_optparse
+from galaxy.tools.util.gff_util import convert_gff_coords_to_bed
+from bx.interval_index_file import Indexes
+from galaxy.tools.util.gff_util import parse_gff_attributes
+
+def main():
+    
+    # Read options, args.
+    options, args = doc_optparse.parse( __doc__ )
+    try:
+        gff_format = bool( options.gff )
+        input_fname, out_fname = args
+    except:
+        doc_optparse.exception()
+    
+    # Do conversion.
+    # TODO: take column numbers from command line.
+    if gff_format:
+        chr_col, start_col, end_col = ( 0, 3, 4 )
+    else:
+        chr_col, start_col, end_col = ( 0, 1, 2 )
+    index = Indexes()
+    offset = 0
+    # Need to keep track of last gene, transcript id for indexing GTF files.
+    last_gene_id = None
+    last_transcript_id = None
+    for line in open(input_fname, "r"):
+        feature = line.strip().split('\t')
+        if not feature or feature[0].startswith("track") or feature[0].startswith("#"):
+            offset += len(line)
+            continue
+        chrom = feature[ chr_col ]
+        chrom_start = int( feature[ start_col ] )
+        chrom_end = int( feature[ end_col ] )
+        if gff_format:
+            chrom_start, chrom_end = convert_gff_coords_to_bed( [chrom_start, chrom_end ] )
+            
+            # Only add feature if gene_id, transcript_id are different from last 
+            # values.
+            if len( feature ) == 9:
+                attributes = parse_gff_attributes( feature[8] )
+                gene_id = attributes.get( 'gene_id', None )
+                transcript_id = attributes.get( 'transcript_id', None )
+                if gene_id and transcript_id and gene_id == last_gene_id and \
+                   transcript_id == last_transcript_id:
+                    # Feature has same gene_id, transcript as last feature, so 
+                    # do not add.
+                    offset += len(line)
+                    continue
+                else:
+                    # gene_id, transcript_id set and are different from last 
+                    # values.
+                    last_gene_id = gene_id
+                    last_transcript_id = transcript_id
+
+        #print "%s %s %s %s %i %i %i" % (feature[2], last_gene_id, last_transcript_id, chrom, chrom_start, chrom_end, offset)
+        index.add( chrom, chrom_start, chrom_end, offset )
+        offset += len(line)
+            
+    index.write( open(out_fname, "w") )
+
+if __name__ == "__main__": 
+    main()
+    
