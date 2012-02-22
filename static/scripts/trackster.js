@@ -679,7 +679,7 @@ var Drawable = function(view, container, obj_dict) {
     this.config = new DrawableConfig({
         track: this,
         params: [ 
-            { key: 'name', label: 'Name', type: 'text', default_value: name }
+            { key: 'name', label: 'Name', type: 'text', default_value: this.name }
         ],
         saved_values: obj_dict.prefs,
         onchange: function() {
@@ -4193,7 +4193,7 @@ var LineTrack = function (view, container, obj_dict) {
     this.config = new DrawableConfig( {
         track: this,
         params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: name },
+            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
             { key: 'color', label: 'Color', type: 'color', default_value: get_random_color() },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
@@ -4358,7 +4358,7 @@ var FeatureTrack = function(view, container, obj_dict) {
     this.config = new DrawableConfig( {
         track: this,
         params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: name },
+            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
             { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
@@ -4794,7 +4794,7 @@ var VcfTrack = function(view, container, obj_dict) {
     this.config = new DrawableConfig( {
         track: this,
         params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: name },
+            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
             { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
@@ -4824,7 +4824,7 @@ var ReadTrack = function (view, container, obj_dict) {
     this.config = new DrawableConfig( {
         track: this,
         params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: name },
+            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
             { key: 'block_color', label: 'Block and sense strand color', type: 'color', default_value: block_color },
             { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: reverse_strand_color },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
