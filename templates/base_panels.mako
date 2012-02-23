@@ -236,15 +236,11 @@
                         <div class="drag"></div>
                     </div>
                 </div>
-                <div id="left-border">
-                    <div id="left-border-inner" style="display: none;"></div>
-                </div>
             %endif
             <div id="center">
                 ${self.center_panel()}
             </div>
             %if self.has_right_panel:
-                <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
                 <div id="right">
                     ${self.right_panel()}
                     <div class="unified-panel-footer">

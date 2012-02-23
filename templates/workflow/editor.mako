@@ -7,15 +7,15 @@
 %>
 </%def>
 
-<%def name="late_javascripts()">
-    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
-    <script type="text/javascript">
-        ensure_dd_helper();
-        make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
-        make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
-        ## handle_minwidth_hint = rp.handle_minwidth_hint;
-    </script>
-</%def>
+## <%def name="late_javascripts()">
+##     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
+##     <script type="text/javascript">
+##         ensure_dd_helper();
+##         make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+##         make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
+##         ## handle_minwidth_hint = rp.handle_minwidth_hint;
+##     </script>
+## </%def>
 
 <%def name="javascripts()">
 
@@ -727,9 +727,9 @@
     body { margin: 0; padding: 0; overflow: hidden; }
 
     /* Wider right panel */
-    #center       { right: 309px; }
-    #right-border { right: 300px; }
-    #right        { width: 300px; }
+    ## #center       { right: 309px; }
+    ## #right-border { right: 300px; }
+    ## #right        { width: 300px; }
     ## /* Relative masthead size */
     ## #masthead { height: 2.5em; }
     ## #masthead div.title { font-size: 1.8em; }

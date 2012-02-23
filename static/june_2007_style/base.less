@@ -16,6 +16,10 @@
 
 // ==== Real (basic) styles ====
 
+.clear {
+    .clearfix();
+}
+
 body  {
     background: @base_bg_bottom;
     color: @base_text;
@@ -236,9 +240,13 @@ th {
 div.unified-panel-body {
     position: absolute;
     top: @panel_header_height;
-    bottom: @panel_footer_height;
+    bottom: 0;
     width: 100%;
     margin-top: 1px;
+}
+
+#left > div.unified-panel-body, #right > div.unified-panel-body {
+    bottom: @panel_footer_height;
 }
 
 .panel-header-button {
@@ -251,27 +259,20 @@ div.unified-panel-body {
     // border: solid #999 1px;
     padding-right: 0.5em;
     padding-left: 0.5em;
-    // -moz-border-radius: 0.5em;
-    // -webkit-border-radius: 0.5em;
-    // border-radius: 0.5em;
+    // Fade to maroon on hover
+    &:hover {
+        color: maroon;
+        .transition(color .25s linear);
+    }
+    // Bootstrap style span caret needs positioning
     .caret {
         margin-top: 7px;
     }
-}
-
-.panel-header-button.popup {
-    padding-right: 1.75em;
-    background: url(../images/dropdownarrow.png) no-repeat right 7px;
-}
-
-.panel-header-button:hover {
-    // color: black;
-    // background-color: #ccc;
-}
-
-.panel-header-button:active {
-    // color: white;
-    // background-color: #aaaaaa;
+    // Another way to get a caret
+    &.popup {
+        padding-right: 1.75em;
+        background: url(../images/dropdownarrow.png) no-repeat right 7px;
+    }
 }
 
 #overlay {
@@ -695,6 +696,8 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
 }
 
 .infomessagelarge {
+    .alert();
+    .alert-info();
     background-image: url(info_message_icon.png);
     border-color: @info_message_border;
     background-color: @info_message_bg;
@@ -1327,7 +1330,7 @@ div.historyLinks {
 
 // Default history item appearance
 div.historyItem {
-    margin: 5px -5px 5px 0px;
+    margin: -5px -5px 5px 0px;
     padding: 5px 11px 5px 5px;
     border: solid @history_queued_border 1px;
     border-left: solid @history_queued_border 5px;
