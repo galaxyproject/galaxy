@@ -130,6 +130,11 @@
     <datatype extension="mafcustomtrack" type="galaxy.datatypes.sequence:MafCustomTrack">
       <display file="ucsc/maf_customtrack.xml" />
     </datatype>
+	<datatype extension="encodepeak" type="galaxy.datatypes.interval:ENCODEPeak" display_in_upload="True">
+	  <converter file="encodepeak_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+	  <converter file="encodepeak_to_bgzip_converter.xml" target_datatype="bgzip"/>
+	  <converter file="encodepeak_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+	</datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf"/>
     <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true" />
     <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png"/>

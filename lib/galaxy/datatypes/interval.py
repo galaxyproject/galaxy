@@ -1263,6 +1263,36 @@ class CustomTrack ( Tabular ):
                 except: 
                     return False
         return True
+        
+class ENCODEPeak( Interval ):
+    '''
+    Human ENCODE peak format. There are both broad and narrow peak formats. 
+    Formats are very similar; narrow peak has an additional column, though.
+    
+    Broad peak ( http://genome.ucsc.edu/FAQ/FAQformat#format13 ):
+    This format is used to provide called regions of signal enrichment based 
+    on pooled, normalized (interpreted) data. It is a BED 6+3 format.
+    
+    Narrow peak http://genome.ucsc.edu/FAQ/FAQformat#format12 and :
+    This format is used to provide called peaks of signal enrichment based on
+    pooled, normalized (interpreted) data. It is a BED6+4 format.
+    '''
+    
+    file_ext = "encodepeak"
+    column_names = [ 'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak' ]
+    
+    """Add metadata elements"""
+    MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
+    MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
+    MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
+    
+    def sniff( self, filename ):
+        return Exception( "Unimplemented Function" )
+        
+    def get_track_type( self ):
+        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}    
 
 if __name__ == '__main__':
     import doctest, sys

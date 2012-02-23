@@ -19,7 +19,7 @@ from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Vcf
-from galaxy.datatypes.interval import Bed, Gff, Gtf
+from galaxy.datatypes.interval import Bed, Gff, Gtf, ENCODEPeak
 
 from pysam import csamtools, ctabix
 
@@ -288,7 +288,7 @@ class BedDataProvider( TracksDataProvider ):
         Provides
         """
         # Build data to return. Payload format is:
-        # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
+        # [ <guid/offset>, <start>, <end>, <name>, <strand>, <thick_start>, 
         #   <thick_end>, <blocks> ]
         # 
         # First three entries are mandatory, others are optional.
@@ -965,6 +965,126 @@ class GFFDataProvider( TracksDataProvider ):
 
             
         return { 'data': results, 'message': message }
+
+#
+# -- ENCODE Peak data providers.
+#
+
+class ENCODEPeakDataProvider( TracksDataProvider ):
+    """
+    Abstract class that processes ENCODEPeak data from native format to payload format.
+    
+    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
+    """
+    
+    def get_iterator( self, chrom, start, end ):
+        raise "Unimplemented Method"
+            
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
+        Provides
+        """
+        
+        ## FIXMEs:
+        # (1) should be able to unify some of this code with BedDataProvider.process_data
+        # (2) are optional number of parameters supported?
+        
+        # Build data to return. Payload format is:
+        # [ <guid/offset>, <start>, <end>, <name>, <strand>, <thick_start>,
+        #   <thick_end>, <blocks> ]
+        # 
+        # First three entries are mandatory, others are optional.
+        #
+        no_detail = ( "no_detail" in kwargs )
+        rval = []
+        message = None
+        for count, line in enumerate( iterator ):
+            if count < start_val:
+                continue
+            if max_vals and count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                break
+
+            feature = line.split()
+            length = len( feature )
+            
+            # Feature initialization.
+            payload = [
+                # GUID is just a hash of the line
+                hash( line ),
+                # Add start, end.
+                int( feature[1] ), 
+                int( feature[2] )
+                        ]
+            
+            if no_detail:
+                rval.append( payload )
+                continue
+
+            # Extend with additional data.
+            payload.extend( [
+                # Add name, strand.
+                feature[3], 
+                feature[5],
+                # Thick start, end are feature start, end for now.
+                int( feature[1] ),
+                int( feature[2] ),
+                # No blocks.
+                None,
+                # Filtering data: Score, signalValue, pValue, qValue.
+                float( feature[4] ),
+                float( feature[6] ),
+                float( feature[7] ),
+                float( feature[8] )
+                ] )
+
+            rval.append( payload )
+
+        return { 'data': rval, 'message': message }
+
+    def write_data_to_file( self, chrom, start, end, filename ):
+        iterator = self.get_iterator( chrom, start, end )
+        out = open( filename, "w" )
+        for line in iterator:
+            out.write( "%s\n" % line )
+        out.close()
+        
+class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
+    """
+    Provides data from an ENCODEPeak dataset indexed via tabix.
+    """
+    
+    def get_filters( self ):
+        """
+        Returns filters for dataset.
+        """
+        # HACK: first 8 fields are for drawing, so start filter column index at 9.
+        filter_col = 8
+        filters = []
+        filters.append( { 'name': 'Score', 
+                          'type': 'number', 
+                          'index': filter_col,
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c6' } )
+        filter_col += 1
+        filters.append( { 'name': 'Signal Value', 
+                          'type': 'number', 
+                          'index': filter_col,
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c7' } )
+        filter_col += 1
+        filters.append( { 'name': 'pValue', 
+                        'type': 'number', 
+                        'index': filter_col,
+                        'tool_id': 'Filter1',
+                        'tool_exp_name': 'c8' } )
+        filter_col += 1
+        filters.append( { 'name': 'qValue', 
+                        'type': 'number', 
+                        'index': filter_col,
+                        'tool_id': 'Filter1',
+                        'tool_exp_name': 'c9' } )
+        return filters
                
 #        
 # -- Helper methods. --
@@ -974,7 +1094,7 @@ class GFFDataProvider( TracksDataProvider ):
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
-    "tabix": { Vcf: VcfTabixDataProvider, Bed: BedTabixDataProvider, "default" : TabixDataProvider },
+    "tabix": { Vcf: VcfTabixDataProvider, Bed: BedTabixDataProvider, ENCODEPeak: ENCODEPeakTabixDataProvider, "default" : TabixDataProvider },
     "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
     "bam": SamDataProvider,
