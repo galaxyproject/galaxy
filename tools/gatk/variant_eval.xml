@@ -1,4 +1,4 @@
-<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.7">
+<tool id="gatk_variant_eval" name="Eval Variants" version="0.0.8">
   <description></description>
   <requirements>
       <requirement type="package" version="1.4">gatk</requirement>
@@ -13,7 +13,7 @@
    -p 'java 
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "VariantEval"
-    --out "${output_table}"
+    --out "${output_report}"
     --num_threads 4 ##hard coded, for now
     -et "NO_ET" ##ET no phone home
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
@@ -495,7 +495,7 @@
     
   </inputs>
   <outputs>
-    <data format="gatkreport" name="output_table" label="${tool.name} on ${on_string} (table)" />
+    <data format="gatk_report" name="output_report" label="${tool.name} on ${on_string} (report)" />
     <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
   </outputs>
   <tests>
@@ -509,7 +509,7 @@
           <param name="comp_rod_bind" value="0" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="basic" />
-          <output name="output_table" file="gatk/gatk_variant_eval/gatk_variant_eval_out_1.tabular" />
+          <output name="output_report" file="gatk/gatk_variant_eval/gatk_variant_eval_out_1.gatk_report" />
           <output name="output_log" file="gatk/gatk_variant_eval/gatk_variant_eval_out_1.log.contains" compare="contains" />
       </test>
   </tests>
