@@ -19,8 +19,6 @@
         }
     </style>
 
-    ## For visualization (TODO: copied from browser.mako):
-    ${h.css( "trackster", "overcast/jquery-ui-1.8.5.custom" )}
     <style type="text/css">
         #browser-container {
             overflow: none;

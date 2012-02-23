@@ -112,7 +112,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging", "embed_item", "trackster", "jquery.rating" )}
+    ${h.css( "autocomplete_tagging", "embed_item", "trackster", "jquery.rating", "overcast/jquery-ui-1.8.5.custom" )}
     
     <style type="text/css">
         .page-body {
