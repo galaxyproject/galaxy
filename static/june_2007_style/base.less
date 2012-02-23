@@ -2,25 +2,19 @@
 
 @import "galaxy_bootstrap.less";
 
-
-// Lucida Grande for proper mac unicode characters, verdana/arial stack for others
-//body{font:13px/1.231 "Lucida Grande",verdana,arial,helvetica,sans-serif;*font-size:small;*font:x-small;}select,input,button,textarea,button{font:99% "Lucida Grande",verdana,arial,helvetica,sans-serif;}table{font-size:inherit;font:100%;}pre,code,kbd,samp,tt{font-family:monospace;*font-size:108%;line-height:100%;}
-//body{font-size:75%;}
+@import "iconic_stroke.less";
 
 // Mixins
 
 .unselectable {
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
+    .user-select(none);
 }
 
 .shadow {
-    -moz-box-shadow: 0 3px 30px black;
-    -webkit-box-shadow: 0 3px 30px black;
+    .box-shadow();
 }
 
-// Real styles
+// ==== Real (basic) styles ====
 
 body  {
     background: @base_bg_bottom;
@@ -37,6 +31,7 @@ img {
 
 
 a:link, a:visited, a:active {
+    text-decoration: underline;
     color: @link_text;
 }
 
@@ -62,6 +57,420 @@ table {
 th {
     text-align: left;
 }
+
+// ==== Panel layout styles ====
+
+#background {
+    position: absolute;
+    background: @layout_bg;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#messagebox {
+    position:absolute; 
+    top:33px; 
+    left:0; 
+    width:100%; 
+    height:24px !important;
+    overflow: hidden; 
+    border-bottom: solid #999 1px;
+    font-size: 90%;
+}
+
+@layout_top_padding: 0px;
+@layout_border_padding: 0px;
+
+@panel_header_height: 30px;
+@panel_footer_height: 25px;
+
+// Panels
+
+#left, #left-border, #center, #right-border, #right {
+    position: absolute; 
+    top: @navbarHeight + @layout_top_padding + 1;
+    bottom: 0px;
+    overflow: hidden; 
+    background: #fff;
+}
+#left, #center, #right, #left-border, #right-border {
+    // border-top: solid @layout_border 1px;
+}
+#left  {
+    left: 0px;
+    width: 250px;
+    z-index: 200;
+    border-right: solid @layout_border 1px;
+}
+#left-border  {
+    left: 250px;
+}
+#center  {
+    left:250 + @layout_border_padding;
+    right: 250 + @layout_border_padding;
+    overflow: hidden;
+    z-index: 1;
+}
+#right-border  {
+    right: 250px;
+}
+#right {
+    width: 250px;
+    right: 0px; 
+    z-index: 200;
+    border-left: solid @layout_border 1px;
+}
+
+.unified-panel-header {
+    .unselectable();
+    height: @panel_header_height;
+    z-index: 1000;
+    //background: @panel_header_bg_bottom;
+    //background-image: url(panel_header_bg.png);
+    //background-position: top center;
+    //background-repeat: repeat-x;
+    text-shadow: rgba(255,255,255,.8) 0 1px 0;
+    #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
+    border-bottom: solid @layout_border 1px;
+    margin: 0;
+    padding: 0;
+    padding-right: 10px;
+    padding-left: 10px;
+    font-weight: bold;
+
+    color: #555;
+    a {
+        color: #555;
+    }
+}
+
+.unified-panel-header-inner {
+    padding-top: 8px;
+}
+
+.unified-panel-footer {
+    .unselectable();
+    position: absolute;
+    bottom: 0;
+    height: @panel_footer_height;
+    line-height: @panel_footer_height;
+    width: 100%;
+    z-index: 1000;
+    border-top: solid @layout_border 1px;
+    #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
+
+    color: #555;
+    a {
+        color: #555;
+    }
+
+    .drag, .collapse {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0 5px;
+        text-align: center;
+        height: @panel_footer_height;
+        width: @panel_footer_height - 5;
+        background-image: url(../images/visualization/draggable_horizontal.png);
+        background-repeat: no-repeat;
+        background-position: 50% 50%;
+
+        // .ie7-restore-right-whitespace();
+    }
+
+    .drag {
+        cursor: w-resize;
+    }
+
+    .collapse {
+        position: fixed;
+        left: 0;
+        top: inherit;
+        bottom: 0;
+        background: none;
+        border-right: solid @layout_border 1px;
+        border-top: solid @layout_border 1px;
+        #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
+        .iconic();
+
+    }
+    .collapse.hidden {
+        // .opacity(50);
+    }
+    .collapse:before {
+        content:'\2190';
+    }
+    .collapse.hidden:before {
+        content:'\2192';
+    }
+}
+
+#right > .unified-panel-footer {
+    .drag {
+        left: 0;
+    }
+    .collapse {
+        left: inherit;
+        right: 0;
+        border-right: none;
+        border-left: solid @layout_border 1px;
+    }
+    .collapse:before{
+        content:'\2192';
+    }
+    .collapse.hidden:before {
+        content:'\2190';
+    }
+}
+  
+.menu-bg {
+    background: whiteSmoke top repeat-x;
+}
+    
+div.unified-panel-body {
+    position: absolute;
+    top: @panel_header_height;
+    bottom: @panel_footer_height;
+    width: 100%;
+    margin-top: 1px;
+}
+
+.panel-header-button {
+    color: #333;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    margin: -1px; padding: 1px;
+    margin-top: -0.2em;
+    // border: solid #999 1px;
+    padding-right: 0.5em;
+    padding-left: 0.5em;
+    // -moz-border-radius: 0.5em;
+    // -webkit-border-radius: 0.5em;
+    // border-radius: 0.5em;
+    .caret {
+        margin-top: 7px;
+    }
+}
+
+.panel-header-button.popup {
+    padding-right: 1.75em;
+    background: url(../images/dropdownarrow.png) no-repeat right 7px;
+}
+
+.panel-header-button:hover {
+    // color: black;
+    // background-color: #ccc;
+}
+
+.panel-header-button:active {
+    // color: white;
+    // background-color: #aaaaaa;
+}
+
+#overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 20000;
+}
+
+#overlay.modal #overlay-background {
+    background: rgba(0,0,0,0.5);
+}
+
+.dialog-box-container {
+    position: relative;
+    margin-top: 80px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.dialog-box-wrapper {
+    position: relative;
+    padding: 1em;
+    background-color: rgba(0,0,0,0.5);
+    -moz-border-radius: 1em;
+    -webkit-border-radius: 1em;
+}
+
+.dialog-box {
+    border: solid #999 1px;
+    background: white;
+    z-index: 80000;
+}
+
+#overlay.modal .dialog-box .body {
+    min-width: 600px;
+}
+
+.dialog-box .body {
+    padding: 5px;
+    overflow: auto;
+    max-height: 500px;
+    min-width: 300px;
+}
+
+.dialog-box .buttons {
+    padding: 5px;
+}
+
+// Messages for message box, slightly different style
+
+.panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
+{
+    height: 24px;
+    line-height: 24px;
+    color: @base_text;
+    padding: 0px;
+    padding-left: 26px;
+    background-color: @error_message_bg;
+    background-image: url(error_small.png);
+    background-repeat: no-repeat;
+    background-position: 6px 50%;
+}
+
+.panel-warning-message 
+{
+    background-image: url(warn_small.png);
+    background-color: @warn_message_bg;
+}
+
+.panel-done-message 
+{
+    background-image: url(done_small.png);
+    background-color: @done_message_bg;
+}
+
+.panel-info-message 
+{
+    background-image: url(info_small.png);
+    background-color: @info_message_bg;
+}
+
+// Masthead
+
+#masthead {
+    .border-radius(0);
+    .navbar();
+    position:absolute; 
+    top:0; 
+    left:0; 
+    width:100%;
+    min-width:900px;
+    height:32px;
+    // background: @masthead_bg; 
+    // color:#fff;
+    border-bottom: solid @layout_masthead_border 1px;
+    z-index: 15000;
+    padding: 0;
+
+    /*
+    a {
+        color: @masthead_link;
+        text-decoration: none;
+    }
+    */
+
+    .nav > li > a {
+        // Override height of navbar links
+        padding: 6px 10px 8px;
+        // Force cursor to be pointer since tabs are either a link of a button
+        cursor: pointer;
+    }
+
+    .nav > li > a:hover {
+        color: gold;
+    }
+    
+    .dropdown-menu a, .dropdown-menu a:hover {
+        text-decoration: none;
+    }
+
+    .title {
+        .navbar.brand();
+        font-family: verdana;
+        font-weight: bold;
+        color: white;
+        // Override margin and padding due to shorter navbar height
+        padding: 5px 20px 12px;
+        margin-left: -15px;
+        z-index: 2000;
+        a {
+            color: white;
+            text-decoration: none;
+        }
+    }
+
+    .masthead-inner {
+        .navbar-inner();
+        .navbar-fixed-top.navbar-inner();
+        height: 32px;
+    }
+}
+
+#masthead a:hover {
+    text-decoration: underline;
+}
+
+.quota-meter-container
+{
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 32px;
+}
+
+.quota-meter
+{
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    height: 16px;
+    width: 100px;
+    background-color: @quota_meter_bg;
+}
+
+.quota-meter-bar
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 16px;
+    background-color: @quota_meter_bar;
+}
+
+.quota-meter-bar-warn
+{
+    background-color: @quota_meter_warn_bar;
+}
+
+.quota-meter-bar-error
+{
+    background-color: @quota_meter_error_bar;
+}
+
+.quota-meter-text
+{
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100px;
+    height: 16px;
+    margin-top: -6px;
+    text-align: center;
+    z-index: 9001;
+    color: @quota_meter_text;
+}
+
+
+
+// ==== Tool form styles ====
 
 div.toolForm {
     border: solid @form_border 1px;
@@ -252,26 +661,37 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
 // Messages 
 
 .errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
-    padding: 10px;
+    /*padding: 10px;
     padding-left: 52px;
     min-height: 32px;
     border: 1px solid @error_message_border;
     background-color: @error_message_bg;
+    */
+    padding-left: 52px;
     background-image: url(error_message_icon.png);
     background-repeat: no-repeat;
     background-position: 10px 10px;
 }
 
+.errormessagelarge {
+    .alert-error();
+    padding-left: 52px;
+}
+
 .warningmessagelarge {
+    .alert();
     background-image: url(warn_message_icon.png);
     border-color: @warn_message_border;
     background-color: @warn_message_bg;
 }
 
 .donemessagelarge {
+    .alert();
+    .alert-success();
+    padding-left: 52px;
     background-image: url(done_message_icon.png);
-    border-color: @done_message_border;
-    background-color: @done_message_bg;
+    //border-color: @done_message_border;
+    //background-color: @done_message_bg;
 }
 
 .infomessagelarge {
@@ -288,32 +708,39 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
 }
 
 .errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall {
+    .alert();
     padding: 5px;
     padding-left: 25px;
     min-height: 15px;
-    border: 1px solid @error_message_border;
-    background-color: @error_message_bg;
+    //border: 1px solid @error_message_border;
+    //background-color: @error_message_bg;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 5px;
 }
 
+.errormessage {
+    .alert-error();
+}
+
 .warningmessage, .warningmessagesmall {
     background-image: url(warn_small.png);
-    border-color: @warn_message_border;
-    background-color: @warn_message_bg;
+    //border-color: @warn_message_border;
+    //background-color: @warn_message_bg;
 }
 
 .donemessage, .donemessagesmall {
+    .alert-success();
     background-image: url(ok_small.png);
-    border-color: @done_message_border;
-    background-color: @done_message_bg;
+    // border-color: @done_message_border;
+    // background-color: @done_message_bg;
 }
 
 .infomessage, .infomessagesmall {
+    .alert-info();
     background-image: url(info_small.png);
-    border-color: @info_message_border;
-    background-color: @info_message_bg;
+    //border-color: @info_message_border;
+    //background-color: @info_message_bg;
 }
 
 .errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr {
@@ -416,6 +843,7 @@ div.odd_row {
 
 // Tool panel stuff
 
+/*
 td.panel-body {
     background: white;
     color: @base_text;
@@ -435,18 +863,19 @@ div.toolSectionDetailsInner {
 }
 
 div.toolSectionTitle {
-    padding-bottom: 0px;
-    font-weight: bold;
+    // padding-bottom: 0px;
+    // font-weight: bold;
 }
 
 div.toolTitle {
-    padding-top: 5px;
-    padding-bottom: 5px;
+    //padding-top: 5px;
+    //padding-bottom: 5px;
     margin-left: 16px;
     margin-right: 10px;
     display: list-item;
     list-style: square outside;
 }
+*/
 
 span.toolParameterExpandableCollapsable {
     font-weight: bold;
@@ -543,42 +972,36 @@ ul.manage-table-actions li {
 // Button styles
 
 .action-button {
-    background: transparent;
-    line-height: 16px;
-    color: #333;
-    text-decoration: none;
-    font-size: 100%;
-    font-weight: bold;
-    display: inline-block;
-    cursor: pointer;
-    padding: 2px;
-    border: solid #aaaaaa 1px;
-    padding-right: 0.5em;
-    padding-left: 0.5em;
-    -moz-border-radius: 0.5em;
-    -webkit-border-radius: 0.5em;
-    border-radius: 0.5em;
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
+    .btn();
 }
-
-.action-button > * {
+a.action-button {
+    text-decoration: none;
+}
+.action-button > img {
     vertical-align: middle;
 }
 
+
+//.action-button > * {
+//    vertical-align: middle;
+//}
+
 .action-button:hover {
-    color: black;
-    background: #dddddd;
+    .btn.hover();
+    //color: black;
+    //background: #dddddd;
 }
 .action-button:active {
-    color: white;
-    background: #aaaaaa;
+    .btn.active();
+    //color: white;
+    //background: #aaaaaa;
 }
 
 // A menu button is a button that has an attached popup menu
 
 .menubutton {
+    .btn();
+
     display: inline-block;
     cursor: pointer;
     position: relative;
@@ -629,6 +1052,7 @@ ul.manage-table-actions li {
 
 // Popup menu styles
 
+/*
 .overlay-border {
     position: absolute;
     top: 0;
@@ -642,49 +1066,46 @@ ul.manage-table-actions li {
     -webkit-border-radius: 1em;
     z-index: -1;
 }
+*/
 
+// Galaxy popup menus
 div.popmenu-wrapper {
 
     position: absolute;
     top: 100%;
     z-index: 20000;
 
-    ul {
-        
+    ul.dropdown-menu {
+        // Since our menus are contained in a positioned div, need to override some styles
         display: block;
-        margin: 0;
-        padding: 0;
-        
-        background: white;
-        color: #333;
-        font-weight: bold;    
-        font-style: normal;
-        white-space: nowrap;
-        border: solid #aaaaaa 1px;
-        padding: 3px 0;
-        -moz-border-radius: 0.5em;
-        -webkit-border-radius: 0.5em;
-        border-radius: 0.5em;
-        // margin: -3px -0.5em;
-        // min-width: 100%;
-        
-        .unselectable;
-        
-        li {
-            display: block;
-            padding: 3px 1em;
-            cursor: pointer;
-            border-top: solid transparent 1px;
-            border-bottom: solid transparent 1px;
-        }
-        
-        li.head {
-            color: #999;
-            font-style: italic;
-        }
+        position: relative;
+        float: none;
     }
 }
 
+// For all dropdowns, define some additional item types
+ul.dropdown-menu {
+    // No underlines in dropdown menus
+    a {
+        text-decoration: none;
+    }
+    li.head > a {
+        // From nav-list nav-header
+        text-shadow: 0 1px 0 rgba(255,255,255,.5);
+        font-size: 11px;
+        font-weight: bold;
+        line-height: @baseLineHeight;
+        color: @grayLight;
+        text-transform: uppercase;
+    }
+
+    li.head > a:hover {
+        background: inherit;
+        border-color: transparent;
+    }
+}
+
+/*
 div.popmenu-wrapper ul li:hover {
     background: #EEEEFF;
     border-color: #aaa;
@@ -694,6 +1115,7 @@ div.popmenu-wrapper ul li.head:hover {
     background: inherit;
     border-color: transparent;
 }
+*/
 
 .popup-arrow {
     cursor: pointer;
@@ -884,3 +1306,220 @@ div.permissionContainer {
     padding-left:5px;
 }
     
+// ==== History styles ====
+
+body.historyPage {
+    background: @menu_bg_over;
+    color: @base_text;
+    margin: 5px;
+    border: 0;
+    padding: 0;
+}
+
+a {
+    color: @base_text;
+}
+
+// Control links at top of history
+div.historyLinks {
+    margin: 5px 5px;
+}
+
+// Default history item appearance
+div.historyItem {
+    margin: 5px -5px 5px 0px;
+    padding: 5px 11px 5px 5px;
+    border: solid @history_queued_border 1px;
+    border-left: solid @history_queued_border 5px;
+    border-right: none;
+    word-wrap: break-word;
+    background: @history_queued_bg;
+    .state-icon {
+        display: inline-block;
+        vertical-align: middle;
+        width: 16px;
+        height: 16px;
+        background-position: 0 1px;
+        background-repeat: no-repeat;
+    }
+    .historyItemTitle {
+        font-weight: bold;
+        line-height: 16px;
+    }
+}
+
+// Nested history items
+div.historyItem div.historyItem {
+    margin-right: -11px;
+}
+
+// Change background/border color depending on state
+div.historyItem-ok,
+div.historyItem-failed_metadata {
+    border-color: @history_ok_border;
+    background: @history_ok_bg;
+    .state-icon {
+        display: none;
+    }
+}
+
+div.historyItem-error {
+    border-color: @history_error_border;
+    background: @history_error_bg;
+    .state-icon {
+        -sprite-group: history-states;
+        -sprite-image: data_error.png;
+    }
+}
+
+div.historyItem-empty {
+    border-color: @history_error_border;
+    background: @history_error_bg;
+    .state-icon {
+        -sprite-group: history-states;
+        -sprite-image: data_empty.png;
+    }
+}
+
+div.historyItem-running {
+    border-color: @history_running_border;
+    background: @history_running_bg;
+    .state-icon {
+        background-image: url(data_running.gif);
+    }
+}
+
+div.historyItem-setting_metadata {
+    border-color: @history_running_border;
+    background: @history_running_bg;
+    .state-icon {
+        background-image: url(data_running.gif);
+    }
+}
+
+div.historyItem-upload {
+    border-color: @history_upload_border;
+    background: @history_upload_bg;
+    .state-icon {
+        background-image: url(data_upload.gif);
+    }
+}
+
+div.historyItem-queued {
+    background: @history_queued_bg;
+    .state-icon {
+        -sprite-group: history-states;
+        -sprite-image: data_queued.png;
+    }
+}
+
+div.historyItem-noPermission {
+    filter: alpha(opacity=60);
+    -moz-opacity: .60;
+    opacity: .60;
+}
+
+// Special case for showing the spinner but not changing the background
+div.historyItemTitleBar.spinner .state-icon {
+    background: url(data_running.gif) 0 1px no-repeat !important;
+}
+
+// Buttons
+div.historyItemButtons {
+    float: right;
+}
+
+div.historyItemBody div {
+    padding-top: 2px;
+}
+
+pre.peek {
+    background: white;
+    color: black;
+    width: 100%; 
+    overflow: auto;
+    th {
+        color: white;
+        background: @peek_table_header;
+    }
+}
+
+// ==== Tool menu styles 
+
+body.toolMenuPage
+{
+    background: white;
+    color: @base_text;
+    background: @menu_bg_over;
+    margin: 5px;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+hr
+{
+    border: none;
+    height: 0px;
+    margin-top: 0px;
+}
+
+/*
+div.toolSectionPad
+{
+    margin: 0;
+    padding: 0;
+    height: 5px;
+    font-size: 0px;
+}
+*/
+
+div.toolSectionWrapper {
+    margin-bottom: 5px;
+}
+
+div.toolSectionDetailsInner
+{ 
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+div.toolSectionTitle
+{
+  // font-weight: bold;
+}
+
+div.toolPanelLabel
+{
+  //padding-top: 10px;
+  //padding-bottom: 5px;
+  font-weight: bold;
+  color: gray;
+  text-transform: uppercase;
+}
+
+div.toolTitle
+{
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-left: 16px;
+  margin-right: 10px;
+  display: list-item;
+  list-style: square outside;
+}
+
+div.toolSectionBody div.toolPanelLabel
+{
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-left: 16px;
+  margin-right: 10px;
+  display: list-item;
+  list-style: none outside;
+}
+
+div.toolTitleNoSection
+{
+  padding-bottom: 0px;
+  font-weight: bold;
+}
+

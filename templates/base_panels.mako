@@ -28,10 +28,10 @@
     }
     #center {
         %if not self.has_left_panel:
-            left: 0;
+            left: 0 !important;
         %endif
         %if not self.has_right_panel:
-            right: 0;
+            right: 0 !important;
         %endif
     }
     %if self.message_box_visible:
@@ -64,14 +64,14 @@
     ensure_dd_helper();
         
     %if self.has_left_panel:
-            var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+            var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .collapse" ) } );
             force_left_panel = lp.force_panel;
         %endif
         
     %if self.has_right_panel:
-            var rp = make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
-            handle_minwidth_hint = rp.handle_minwidth_hint;
-            force_right_panel = rp.force_panel;
+            var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .collapse" ), right: true } );
+            window.handle_minwidth_hint = function( x ) { console.log( "hint", x ); rp.handle_minwidth_hint( x ) };
+            force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
     
     </script>
@@ -217,7 +217,7 @@
             ## Background displays first
             <div id="background"></div>
             ## Layer iframes over backgrounds
-            <div id="masthead" class="navbar nabbar-fixed-top">
+            <div id="masthead" class="navbar navbar-fixed-top">
                 <div class="masthead-inner navbar-inner">
                     <div class="container">${self.masthead()}</div>
                 </div>
@@ -231,6 +231,10 @@
             %if self.has_left_panel:
                 <div id="left">
                     ${self.left_panel()}
+                    <div class="unified-panel-footer">
+                        <div class="collapse"></span></div>
+                        <div class="drag"></div>
+                    </div>
                 </div>
                 <div id="left-border">
                     <div id="left-border-inner" style="display: none;"></div>
@@ -243,6 +247,10 @@
                 <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
                 <div id="right">
                     ${self.right_panel()}
+                    <div class="unified-panel-footer">
+                        <div class="collapse"></span></div>
+                        <div class="drag"></div>
+                    </div>
                 </div>
             %endif
         </div>

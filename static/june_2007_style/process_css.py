@@ -11,7 +11,7 @@ CSS processor for Galaxy style sheets. Supports the following features:
 
 import sys, string, os.path, os
 
-new_path = [ os.path.join( os.getcwd(), '..', '..', "lib" ) ]
+new_path = [ os.path.join( os.getcwd(), '..', '..', '..', "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
