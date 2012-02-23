@@ -705,3 +705,4 @@ Homo_sapiens_nuHg19_mtrCRS	Homo sapiens (hg19 with mtDNA replaced with rCRS)	chr
 Arabidopsis_thaliana_TAIR10	Arabidopsis thaliana TAIR10 (Arabidopsis_thaliana_TAIR10)	chr1=30427671,chr2=19698289,chr3=23459830,chr4=18585056,chr5=26975502,chrM=366924,chrC=154478
 dp4	D. pseudoobscura (dp4)
 Tcacao_1.0	Theobroma cacao Dec 2010 (CIRAD/Theobroma cacao Belizian Criollo)	Tc01=31268538,Tc02=27754001,Tc03=25475297,Tc04=23504306,Tc05=25651337,Tc06=15484475,Tc07=14169093,Tc08=11535834,Tc09=28459094,Tc10=15164258,Tc00=108886888
+apiMel3	Honeybee (Apis mellifera): apiMel3	Group10=11440700,Group11=12576330,Group12=9182753,Group13=8929068,Group14=8318479,Group15=7856270,Group16=5631066,Group1=25854376,Group2=14465785,Group3=12341916,Group4=10796202,Group5=13386189,Group6=14581788,Group7=9974240,Group8=11452794,Group9=10282195,GroupUn=399230636
