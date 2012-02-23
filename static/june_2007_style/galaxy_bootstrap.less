@@ -40,6 +40,9 @@
 // Buttons
 @primaryButtonBackground:    @linkColor;
 
+// Forms
+@formElementBorder:	@grayLight;
+
 
 
 // COMPONENT VARIABLES
@@ -68,21 +71,21 @@
 @navbarLinkColorHover:            @white;
 
 // Form states and alerts
-@warningText:             #c09853;
-@warningBackground:       #fcf8e3;
-@warningBorder:           darken(spin(@warningBackground, -10), 3%);
+@warningText:             darken(@warn_message_bg,70%);
+@warningBackground:       @warn_message_bg;
+@warningBorder:           darken(spin(@warningBackground, -10), 30%);
 
-@errorText:               #b94a48;
-@errorBackground:         #f2dede;
-@errorBorder:             darken(spin(@errorBackground, -10), 3%);
+@errorText:               darken(@error_message_bg,70%);
+@errorBackground:         @error_message_bg;
+@errorBorder:             darken(spin(@errorBackground, -10), 30%);
 
 @successText:             darken(@done_message_bg,70%);
 @successBackground:       @done_message_bg;
 @successBorder:           darken(spin(@successBackground, -10), 60%);
 
-@infoText:                #3a87ad;
-@infoBackground:          #d9edf7;
-@infoBorder:              darken(spin(@infoBackground, -10), 7%);
+@infoText:                darken(@info_message_bg,70%);
+@infoBackground:          @info_message_bg;
+@infoBorder:              darken(spin(@info_message_bg, -10), 60%);
 
 
 

@@ -130,6 +130,14 @@ th {
     border-left: solid @layout_border 1px;
 }
 
+.subnavbar {
+    #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
+    border-bottom: solid @layout_border 1px;
+    border-top: solid @layout_border 1px;
+    padding: 5px;
+    color: #555;
+}
+
 .unified-panel-header {
     .unselectable();
     height: @panel_header_height;
@@ -166,7 +174,7 @@ th {
     width: 100%;
     z-index: 1000;
     border-top: solid @layout_border 1px;
-    #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
+    #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
 
     color: #555;
     a {
@@ -200,7 +208,7 @@ th {
         background: none;
         border-right: solid @layout_border 1px;
         border-top: solid @layout_border 1px;
-        #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
+        #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
         .iconic();
 
     }
@@ -281,7 +289,7 @@ div.unified-panel-body {
     z-index: 20000;
 }
 
-#overlay.modal #overlay-background {
+#overlay.is_modal #overlay-background {
     background: rgba(0,0,0,0.5);
 }
 
@@ -306,7 +314,7 @@ div.unified-panel-body {
     z-index: 80000;
 }
 
-#overlay.modal .dialog-box .body {
+#overlay.is_modal .dialog-box .body {
     min-width: 600px;
 }
 
@@ -630,6 +638,7 @@ div.form-row label.inline {
 }
 
 div.form-row-input {
+    width: 300px;
     float: left;
 }
 
@@ -643,7 +652,7 @@ div.form-row-error-message {
     float: left;
     color: red;
     font-weight: bold;
-    padding: 3px 0 0 1em;
+    padding: 3px 0;
 }
 
 .form-row .help {
@@ -659,6 +668,24 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     max-width: 300px;
 }
 
+/*
+.search-query {
+  display: inline-block;
+  width: 210px;
+  height: @baseLineHeight;
+  padding: 4px;
+  margin-bottom: 9px;
+  font-size: @baseFontSize;
+  line-height: @baseLineHeight;
+  color: @gray;
+  border: 1px solid @formElementBorder;
+  padding-left: 14px;
+  padding-right: 14px;
+  margin-bottom: 0; // remove the default margin on all inputs
+  .border-radius(14px);
+}
+*/
+
 // Messages 
 
 .errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
@@ -668,6 +695,8 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     border: 1px solid @error_message_border;
     background-color: @error_message_bg;
     */
+    .alert();
+    min-height: 32px;
     padding-left: 52px;
     background-image: url(error_message_icon.png);
     background-repeat: no-repeat;
@@ -680,14 +709,12 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
 }
 
 .warningmessagelarge {
-    .alert();
     background-image: url(warn_message_icon.png);
     border-color: @warn_message_border;
     background-color: @warn_message_bg;
 }
 
 .donemessagelarge {
-    .alert();
     .alert-success();
     padding-left: 52px;
     background-image: url(done_message_icon.png);
@@ -696,7 +723,6 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
 }
 
 .infomessagelarge {
-    .alert();
     .alert-info();
     background-image: url(info_message_icon.png);
     border-color: @info_message_border;
@@ -973,6 +999,10 @@ ul.manage-table-actions li {
 }
 
 // Button styles
+
+button {
+    .btn();
+}
 
 .action-button {
     .btn();
@@ -1284,13 +1314,7 @@ div.permissionContainer {
     cursor: text;
     border: dotted #999999 1px;
 }
-/*
-.text-and-autocomplete-select {
-    -sprite-group: fugue;
-    -sprite-image: fugue/control-270.png;
-    -sprite-horiz-position: right;
-}
-*/
+
 .icon-button.multiinput{
     background:url(../images/documents-stack.png) no-repeat;
     cursor:pointer;
@@ -1330,10 +1354,10 @@ div.historyLinks {
 
 // Default history item appearance
 div.historyItem {
-    margin: -5px -5px 5px 0px;
-    padding: 5px 11px 5px 5px;
-    border: solid @history_queued_border 1px;
-    border-left: solid @history_queued_border 5px;
+    margin: 0px -5px;
+    padding: 8px 10px;
+    border-top: solid @layout_border 1px;
+    // border-left: solid @history_queued_border 5px;
     border-right: none;
     word-wrap: break-word;
     background: @history_queued_bg;
@@ -1351,6 +1375,10 @@ div.historyItem {
     }
 }
 
+.historyItemContainer:last-child div.historyItem {
+    border-bottom: solid @layout_border 1px;
+}
+
 // Nested history items
 div.historyItem div.historyItem {
     margin-right: -11px;
@@ -1359,7 +1387,7 @@ div.historyItem div.historyItem {
 // Change background/border color depending on state
 div.historyItem-ok,
 div.historyItem-failed_metadata {
-    border-color: @history_ok_border;
+    // border-color: @history_ok_border;
     background: @history_ok_bg;
     .state-icon {
         display: none;
@@ -1367,7 +1395,7 @@ div.historyItem-failed_metadata {
 }
 
 div.historyItem-error {
-    border-color: @history_error_border;
+    // border-color: @history_error_border;
     background: @history_error_bg;
     .state-icon {
         -sprite-group: history-states;
@@ -1376,7 +1404,7 @@ div.historyItem-error {
 }
 
 div.historyItem-empty {
-    border-color: @history_error_border;
+    // border-color: @history_error_border;
     background: @history_error_bg;
     .state-icon {
         -sprite-group: history-states;
@@ -1385,7 +1413,7 @@ div.historyItem-empty {
 }
 
 div.historyItem-running {
-    border-color: @history_running_border;
+    // border-color: @history_running_border;
     background: @history_running_bg;
     .state-icon {
         background-image: url(data_running.gif);
@@ -1393,7 +1421,7 @@ div.historyItem-running {
 }
 
 div.historyItem-setting_metadata {
-    border-color: @history_running_border;
+    // border-color: @history_running_border;
     background: @history_running_bg;
     .state-icon {
         background-image: url(data_running.gif);
@@ -1401,7 +1429,7 @@ div.historyItem-setting_metadata {
 }
 
 div.historyItem-upload {
-    border-color: @history_upload_border;
+    // border-color: @history_upload_border;
     background: @history_upload_bg;
     .state-icon {
         background-image: url(data_upload.gif);
@@ -1409,7 +1437,7 @@ div.historyItem-upload {
 }
 
 div.historyItem-queued {
-    background: @history_queued_bg;
+    // background: @history_queued_bg;
     .state-icon {
         -sprite-group: history-states;
         -sprite-image: data_queued.png;

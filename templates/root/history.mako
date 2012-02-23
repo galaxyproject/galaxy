@@ -568,6 +568,7 @@ div.form-row {
 %else:    
 
     ## Render requested datasets, ordered from newest to oldest
+    <div>
     %for data in reversed( datasets ):
         %if data.visible or show_hidden:
             <div class="historyItemContainer" id="historyItemContainer-${trans.app.security.encode_id(data.id)}">
@@ -575,6 +576,7 @@ div.form-row {
             </div>
         %endif
     %endfor
+    </div>
 
     <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
 %endif

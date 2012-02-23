@@ -126,15 +126,15 @@ $.extend( Panel.prototype, {
 // Modal dialog boxes
 
 function hide_modal() {
-    $(".dialog-box-container" ).hide( 0, function() {
+    $("#overlay .modal" ).hide( 0, function() {
         $("#overlay").hide();
-		$("#overlay").removeClass( "modal" );
+		$("#overlay-background").removeClass( "in" );
         $( ".dialog-box" ).find( ".body" ).children().remove();
     } );
 };
 
 function show_modal() {
-	$("#overlay").addClass( "modal" );
+	$("#overlay-background").addClass( "in" );
 	_show_modal.apply( this, arguments );
 }
 
@@ -144,41 +144,40 @@ function show_message() {
 
 function _show_modal( title, body, buttons, extra_buttons, init_fn ) {
     if ( title ) {
-        $( ".dialog-box" ).find( ".title" ).html( title );
-        $( ".dialog-box" ).find( ".unified-panel-header" ).show(); 
+        $( "#dialog-box .modal-header .title" ).html( title );
+        $( "#dialog-box .modal-header" ).show();
     } else {
-        $( ".dialog-box" ).find( ".unified-panel-header" ).hide();   
+        $( "#dialog-box .modal-header" ).hide();   
     }
-    var b = $( ".dialog-box" ).find( ".buttons" ).html( "" );
+    var b = $( "#dialog-box" ).find( ".buttons" ).html( "" );
     if ( buttons ) {
         $.each( buttons, function( name, value ) {
             b.append( $( '<button/>' ).text( name ).click( value ) );
             b.append( " " );
         });
-        b.show();
-    } else {
-        b.hide();
     }
-    var b = $( ".dialog-box" ).find( ".extra_buttons" ).html( "" );
+    var b = $( "#dialog-box" ).find( ".extra_buttons" ).html( "" );
     if ( extra_buttons ) {
         $.each( extra_buttons, function( name, value ) {
             b.append( $( '<button/>' ).text( name ).click( value ) );
             b.append( " " );
         });
-        b.show();
+    }
+    if ( buttons || extra_buttons ) {
+        $( "#dialog-box .modal-footer" ).show();
     } else {
-        b.hide();
+        $( "#dialog-box .modal-footer" ).hide();
     }
     if ( body == "progress" ) {
-        body = $("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif");
+        body = $("<div class='progress progress-striped active'><div class='bar'></div></div>"); 
     }
     var body_elt = $( ".dialog-box" ).find( ".body" );
     // Clear min-width to allow for modal to take size of new body.
     body_elt.css("min-width", "0px");
-    $( ".dialog-box" ).find( ".body" ).html( body );
-    if ( ! $(".dialog-box-container").is( ":visible" ) ) {
+    $( "#dialog-box" ).find( ".modal-body" ).html( body );
+    if ( ! $("#dialog-box").is( ":visible" ) ) {
         $("#overlay").show();
-        $(".dialog-box-container").show();
+        $("#dialog-box").show();
     }
     // Fix min-width so that modal cannot shrink considerably if 
     // new content is loaded.

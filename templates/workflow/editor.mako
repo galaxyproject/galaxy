@@ -926,7 +926,7 @@
 
 <%def name="overlay(visible=False)">
     ${parent.overlay( "Loading workflow editor...",
-                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>", self.overlay_visible )}
+                      "<div class='progress progress-striped progress-info active'><div class='bar' style='width: 100%;'></div></div>", self.overlay_visible )}
 </%def>
 
 <%def name="left_panel()">

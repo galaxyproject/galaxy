@@ -172,28 +172,26 @@
     %endif
     >
     ##
-    <div id="overlay-background" style="position: absolute; width: 100%; height: 100%;"></div>
+    <div id="overlay-background" class="modal-backdrop fade"></div>
     
     ## Need a table here for centering in IE6
-    <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"
+    <div id="dialog-box" class="modal" border="0"
     %if not visible:
         style="display: none;"
     %endif
-    ><tr><td>
-    <div class="dialog-box-wrapper">
-        <div class="dialog-box">
-            <div class="unified-panel-header">
-                <div class="unified-panel-header-inner"><span class='title'>${title}</span></div>
+    >
+            <div class="modal-header">
+                <span><h3 class='title'>${title}</h3></span>
             </div>
-            <div class="body">${content}</div>
-            <div>
-                <div class="buttons" style="display: none; float: right;"></div>
-                <div class="extra_buttons" style="display: none; padding: 5px;"></div>
+            <div class="modal-body">${content}</div>
+            <div class="modal-footer">
+                <div class="buttons" style="float: right;"></div>
+                <div class="extra_buttons" style=""></div>
                 <div style="clear: both;"></div>
             </div>
-        </div>
+
     </div>
-    </td></tr></table>
+    
     </div>
 </%def>
 
