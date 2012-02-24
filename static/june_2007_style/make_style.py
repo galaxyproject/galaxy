@@ -18,16 +18,6 @@ assert sys.version_info[:2] >= ( 2, 4 )
 def run( cmd ):
     return Popen( cmd, stdout=PIPE).communicate()[0]
 
-templates = [ ( "base.css.tmpl", "base.css" ),
-              ( "panel_layout.css.tmpl", "panel_layout.css" ),
-              ( "masthead.css.tmpl", "masthead.css" ),
-              ( "library.css.tmpl", "library.css" ),
-              ( "history.css.tmpl", "history.css" ),
-              ( "tool_menu.css.tmpl", "tool_menu.css" ),
-              ( "iphone.css.tmpl", "iphone.css" ),
-              ( "autocomplete_tagging.css.tmpl", "autocomplete_tagging.css" ),
-              ( "trackster.css.tmpl", "trackster.css" ) ]
-
 # TODO: Are these images still being used?  If not, clean this code up!
 images = [ 
            ( "./gradient.py 9 30 $panel_header_bg_top - $panel_header_bg_bottom 0 0 $panel_header_bg_bottom 1 1", "panel_header_bg.png" ),
@@ -62,6 +52,10 @@ shared_images = [
 ]
 
 if __name__ == "__main__":
+    print "This script is no longer used for generating stylesheets. Please use the Makefile instead"
+
+    # Old code for processing stylesheets
+    """
     if len(sys.argv) > 1: # has params
         ini_file, out_dir = sys.argv[1:]
     else:
@@ -71,8 +65,9 @@ if __name__ == "__main__":
     for in_file, out_file in templates:
         print in_file ,"->", out_file
         subprocess.call( "./process_css.py %s shared_images:../images %s < %s > %s" % ( ini_file, out_dir, in_file, os.path.join( out_dir, out_file ) ), shell=True )
-
+    """
   
+# Old code for processing images, long disabled, though images are still used. 
 """
 for rule, output in images:
     t = string.Template( rule ).substitute( context ) 

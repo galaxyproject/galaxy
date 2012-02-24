@@ -55,16 +55,16 @@ function make_popupmenu(button_element, initial_options) {
         // Need setTimeouts so clicks don't interfere with each other        
         setTimeout( function() {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
-            var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></ul>" );
+            var menu_element = $( "<ul class='dropdown-menu' id='" + button_element.attr('id') + "-menu'></ul>" );
             var options = button_element.data("menu_options");
             if (obj_length(options) <= 0) {
                 $("<li>No Options.</li>").appendTo(menu_element);
             }
             $.each( options, function( k, v ) {
                 if (v) {
-                    $("<li/>").html(k).click(v).appendTo(menu_element);
+                    $("<a href='#'>").html(k).click(v).appendTo(menu_element).wrap( "<li />" );
                 } else {
-                    $("<li class='head'/>").html(k).appendTo(menu_element);
+                    $("<a href='#'>").html(k).appendTo(menu_element).wrap( "<li class='head'/>" );
                 }
             });
             var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'>" );
@@ -73,11 +73,11 @@ function make_popupmenu(button_element, initial_options) {
                    .appendTo( "body" );
                    
             var x = e.pageX - wrapper.width() / 2 ;
-            x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 20 );
-            x = Math.max( x, $(document).scrollLeft() + 20 );
+            x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 5 );
+            x = Math.max( x, $(document).scrollLeft() + 5 );
 
             wrapper.css( {
-               top: e.pageY - 15,
+               top: e.pageY,
                left: x
             } );
         }, 10);
