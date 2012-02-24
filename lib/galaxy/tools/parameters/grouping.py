@@ -2,18 +2,19 @@
 Constructs for grouping tool parameters
 """
 
-from basic import ToolParameter
-from galaxy.util.expressions import ExpressionContext
-
 import logging
 log = logging.getLogger( __name__ )
 
-import StringIO, os, urllib
+import os
+import StringIO
+import unicodedata
+from basic import ToolParameter
 from galaxy.datatypes import sniff
-from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
-from galaxy.util import json, relpath, sanitize_for_filename
 from galaxy.util import inflector
+from galaxy.util import relpath
+from galaxy.util import sanitize_for_filename
+from galaxy.util.bunch import Bunch
+from galaxy.util.expressions import ExpressionContext
 
 class Group( object ):
     def __init__( self ):
@@ -306,6 +307,9 @@ class UploadDataset( Group ):
             # look for files uploaded via FTP
             valid_files = []
             if ftp_files is not None:
+                # Normalize input paths to ensure utf-8 encoding is normal form c.
+                # This allows for comparison when the filesystem uses a different encoding than the browser.
+                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files]
                 if trans.user is None:
                     log.warning( 'Anonymous user passed values in ftp_files: %s' % ftp_files )
                     ftp_files = []
@@ -316,7 +320,8 @@ class UploadDataset( Group ):
                         for filename in filenames:
                             path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
                             if not os.path.islink( os.path.join( dirpath, filename ) ):
-                                valid_files.append( path )
+                                # Normalize filesystem paths
+                                valid_files.append( unicodedata.normalize('NFC', path ))
             else:
                 ftp_files = []
             for ftp_file in ftp_files:
