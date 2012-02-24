@@ -487,7 +487,7 @@ button.btn.small,input[type="submit"].btn.small{*padding-top:3px;*padding-bottom
 body{background:#ffffff;color:#303030;background-image:url(base_bg.png);background-repeat:repeat-x;background-position:top;margin:10px;}
 img{border:0;}
 a:link,a:visited,a:active{text-decoration:underline;color:#303030;}
-h1,h2,h3,h4{color:#023858;}
+h1,h2,h3,h4{color:#023858;margin:0.5em 0;}
 h1:first-child,h2:first-child,h3:first-child,h4:first-child{margin-top:0px;}
 hr{border:none;height:0px;border-bottom:dotted #303030 1px;}
 table{border-collapse:collapse;}
@@ -536,8 +536,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%;margin-top
 #masthead .navbar-text{margin-bottom:0;line-height:40px;color:#999999;}#masthead .navbar-text a:hover{color:#ffffff;background-color:transparent;}
 #masthead .btn,#masthead .btn-group{margin-top:5px;}
 #masthead .btn-group .btn{margin-top:0;}
-#masthead .nav>li>a{padding:6px 10px 8px;cursor:pointer;}
-#masthead .nav>li>a:hover{color:gold;}
+#masthead .nav>li>a{padding:6px 10px 8px;cursor:pointer;}#masthead .nav>li>a:hover{color:gold;}
 #masthead .dropdown-menu a,#masthead .dropdown-menu a:hover{text-decoration:none;}
 #masthead .title{float:left;display:block;padding:8px 20px 12px;margin-left:-20px;font-size:20px;font-weight:200;line-height:1;color:#ffffff;font-family:verdana;font-weight:bold;color:white;padding:5px 20px 12px;margin-left:-15px;z-index:2000;}#masthead .title a{color:white;text-decoration:none;}
 #masthead .masthead-inner{padding-left:20px;padding-right:20px;background-color:#303239;background-image:-moz-linear-gradient(top, #333333, #2c3143);background-image:-ms-linear-gradient(top, #333333, #2c3143);background-image:-webkit-gradient(linear, 0 0, 0 100%, from(#333333), to(#2c3143));background-image:-webkit-linear-gradient(top, #333333, #2c3143);background-image:-o-linear-gradient(top, #333333, #2c3143);background-image:linear-gradient(top, #333333, #2c3143);background-repeat:repeat-x;filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#333333', endColorstr='#2c3143', GradientType=0);-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;-webkit-box-shadow:0 1px 3px rgba(0, 0, 0, 0.25),inset 0 -1px 0 rgba(0, 0, 0, 0.1);-moz-box-shadow:0 1px 3px rgba(0, 0, 0, 0.25),inset 0 -1px 0 rgba(0, 0, 0, 0.1);box-shadow:0 1px 3px rgba(0, 0, 0, 0.25),inset 0 -1px 0 rgba(0, 0, 0, 0.1);padding-left:0;padding-right:0;-webkit-border-radius:0;-moz-border-radius:0;border-radius:0;height:32px;}
@@ -728,6 +727,7 @@ body.toolMenuPage{background:white;color:#303030;background:#c1c9e5;margin:5px;m
 hr{border:none;height:0px;margin-top:0px;}
 div.toolSectionWrapper{margin-bottom:5px;}
 div.toolSectionDetailsInner{margin-left:5px;margin-right:5px;}
+div.toolSectionTitle{font-weight:bold;}
 div.toolPanelLabel{font-weight:bold;color:gray;text-transform:uppercase;}
 div.toolTitle{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:square outside;}
 div.toolSectionBody div.toolPanelLabel{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:none outside;}

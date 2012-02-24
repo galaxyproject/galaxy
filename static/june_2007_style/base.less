@@ -41,6 +41,7 @@ a:link, a:visited, a:active {
 
 h1, h2, h3, h4 {
     color: @header_text;
+    margin: 0.5em 0;
     /*text-shadow: #bbb 2px 2px 1px;*/
 }
 
@@ -391,10 +392,9 @@ div.unified-panel-body {
         padding: 6px 10px 8px;
         // Force cursor to be pointer since tabs are either a link of a button
         cursor: pointer;
-    }
-
-    .nav > li > a:hover {
-        color: gold;
+        &:hover {
+            color: gold;
+        }
     }
     
     .dropdown-menu a, .dropdown-menu a:hover {
@@ -1516,7 +1516,7 @@ div.toolSectionDetailsInner
 
 div.toolSectionTitle
 {
-  // font-weight: bold;
+  font-weight: bold;
 }
 
 div.toolPanelLabel
