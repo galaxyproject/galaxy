@@ -140,6 +140,8 @@ def app_factory( global_conf, **kwargs ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
     if asbool( kwargs.get( 'static_enabled', True ) ):
         webapp = wrap_in_static( webapp, global_conf, **kwargs )
+    if asbool(kwargs.get('pack_scripts', False)):
+        pack_scripts()
     # Close any pooled database connections before forking
     try:
         galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
@@ -147,7 +149,21 @@ def app_factory( global_conf, **kwargs ):
         pass
     # Return
     return webapp
-    
+
+def pack_scripts():
+    from glob import glob
+    from subprocess import call
+    cmd = "java -jar scripts/yuicompressor.jar --type js static/scripts/%(fname)s -o static/scripts/packed/%(fname)s"
+    raw_js= [os.path.basename(g) for g in glob( "static/scripts/*.js" )]
+    for fname in raw_js:
+        if os.path.exists('static/scripts/packed/%s' % fname):
+            if os.path.getmtime('static/scripts/packed/%s' % fname) > os.path.getmtime('static/scripts/%s' % fname):
+                continue # Skip, packed is newer than source.
+        d = dict( fname=fname )
+        log.info("%(fname)s --> packed/%(fname)s" % d)
+        call( cmd % d, shell=True )
+
+
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """
     Based on the configuration wrap `app` in a set of common and useful 

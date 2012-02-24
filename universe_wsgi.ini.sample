@@ -261,6 +261,12 @@ static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
 static_robots_txt = %(here)s/static/robots.txt
 
+# Pack javascript at launch (/static/scripts/*.js)
+# This only happens if the modified timestamp of the source .js is newer
+# than the version (if it exists) in /static/scripts/packed/
+# Note that this requires java > 1.4 for executing yuicompressor.jar
+#pack_scripts = False
+
 # -- Advanced proxy features
 
 # For help on configuring the Advanced proxy features, see:
@@ -525,7 +531,6 @@ use_interactive = True
 # be used for each "Set at Runtime" input, independent of others in the Workflow
 #enable_unique_workflow_defaults = False
 
-
 # -- Job Execution
 
 # If running multiple Galaxy processes, one can be designated as the job
@@ -673,4 +678,5 @@ upload1 = local:///
 #queue = galaxy_queue
 #exchange = galaxy_exchange
 #routing_key = bar_code_scanner
-#rabbitmqctl_path = /path/to/rabbitmqctl 
+#rabbitmqctl_path = /path/to/rabbitmqctl
+
