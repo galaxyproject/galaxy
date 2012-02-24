@@ -19,7 +19,7 @@ variables.less : $(INI)
 
 # Old style using process_css still works so we can move gradually
 %.css : %.css.tmpl
-	../process_css.py $(INI) shared_images:../images $(OUT) < $< > $@
+	../process_css.py ../$(INI) shared_images:../images $(OUT) < $< > $@
 
 # For building sprite images
 %.less : %.less.tmpl

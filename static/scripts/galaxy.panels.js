@@ -121,72 +121,97 @@ $.extend( Panel.prototype, {
         $(self.toggle).on( "click", function() { self.do_toggle(); } );
     }
 });
-
   
 // Modal dialog boxes
+var Modal = function( options ) {
+    this.$overlay = options.overlay;
+    this.$dialog = options.dialog;
+    this.$header = this.$dialog.find( ".modal-header" );
+    this.$body = this.$dialog.find( ".modal-body" );
+    this.$footer = this.$dialog.find( ".modal-footer" );
+    this.$backdrop = options.backdrop;
+}
+$.extend( Modal.prototype, {
+    setContent: function( options ) {
+        // Title
+        if ( options.title ) {
+            this.$header.find( ".title" ).html( options.title );
+            this.$header.show();
+        } else {
+            this.$header.hide();
+        }
+        // Buttons
+        this.$footer.hide();
+        console.log( this.$footer, options.buttons );
+        var $buttons = this.$footer.find( ".buttons" ).html( "" );
+        if ( options.buttons ) {
+            $.each( options.buttons, function( name, value ) {
+                 $buttons.append( $( '<button>' ).text( name ).click( value ) );
+            });
+            this.$footer.show();
+        }
+        var $extraButtons = this.$footer.find( ".extra_buttons" ).html( "" );
+        if ( options.extra_buttons ) {
+            $.each( options.extra_buttons, function( name, value ) {
+                 $extraButtons.append( $( '<button>' ).text( name ).click( value ) );
+            });
+            this.$footer.show();
+        }
+        // Body
+        var body = options.body;
+        if ( body == "progress" ) {
+            body = $("<div class='progress progress-striped active'><div class='bar' style='width: 100%'></div></div>"); 
+        }
+        this.$body.html( body );
+    },
+    show: function( options, callback ) {
+        if ( ! this.$dialog.is( ":visible" ) ) {
+            if ( options.backdrop) {
+                this.$backdrop.addClass( "in" );
+            } else {
+                this.$backdrop.removeClass( "in" );
+            }
+            this.$overlay.show();
+            this.$dialog.show();
+            // Fix min-width so that modal cannot shrink considerably if 
+            // new content is loaded.
+            this.$body.css( "min-width", this.$body.width() );
+        }
+        // Callback on init
+        if ( callback ) {
+            callback();
+        }
+    },
+    hide: function() {
+        var modal = this;
+        modal.$dialog.fadeOut( function() {
+           modal.$overlay.hide();
+           modal.$backdrop.removeClass( "in" );
+           modal.$body.children().remove();
+           // Clear min-width to allow for modal to take size of new body.
+           modal.$body.css( "min-width", undefined );
+       });
+   }
+});
 
+var modal;
+
+$(function(){
+   modal = new Modal( { overlay: $("#overlay"), dialog: $("#dialog-box"), backdrop: $("#overlay-background") } ); 
+});
+
+// Backward compatibility
 function hide_modal() {
-    $("#overlay .modal" ).hide( 0, function() {
-        $("#overlay").hide();
-		$("#overlay-background").removeClass( "in" );
-        $( ".dialog-box" ).find( ".body" ).children().remove();
-    } );
-};
-
-function show_modal() {
-	$("#overlay-background").addClass( "in" );
-	_show_modal.apply( this, arguments );
+    modal.hide();
 }
-
-function show_message() {
-	_show_modal.apply( this, arguments );
+function show_modal( title, body, buttons, extra_buttons, init_fn ) {
+    modal.setContent( { title: title, body: body, buttons: buttons, extra_buttons: extra_buttons } );
+    modal.show( { backdrop: true }, init_fn );
 }
-
-function _show_modal( title, body, buttons, extra_buttons, init_fn ) {
-    if ( title ) {
-        $( "#dialog-box .modal-header .title" ).html( title );
-        $( "#dialog-box .modal-header" ).show();
-    } else {
-        $( "#dialog-box .modal-header" ).hide();   
-    }
-    var b = $( "#dialog-box" ).find( ".buttons" ).html( "" );
-    if ( buttons ) {
-        $.each( buttons, function( name, value ) {
-            b.append( $( '<button/>' ).text( name ).click( value ) );
-            b.append( " " );
-        });
-    }
-    var b = $( "#dialog-box" ).find( ".extra_buttons" ).html( "" );
-    if ( extra_buttons ) {
-        $.each( extra_buttons, function( name, value ) {
-            b.append( $( '<button/>' ).text( name ).click( value ) );
-            b.append( " " );
-        });
-    }
-    if ( buttons || extra_buttons ) {
-        $( "#dialog-box .modal-footer" ).show();
-    } else {
-        $( "#dialog-box .modal-footer" ).hide();
-    }
-    if ( body == "progress" ) {
-        body = $("<div class='progress progress-striped active'><div class='bar'></div></div>"); 
-    }
-    var body_elt = $( ".dialog-box" ).find( ".body" );
-    // Clear min-width to allow for modal to take size of new body.
-    body_elt.css("min-width", "0px");
-    $( "#dialog-box" ).find( ".modal-body" ).html( body );
-    if ( ! $("#dialog-box").is( ":visible" ) ) {
-        $("#overlay").show();
-        $("#dialog-box").show();
-    }
-    // Fix min-width so that modal cannot shrink considerably if 
-    // new content is loaded.
-    body_elt.css("min-width", body_elt.width());
-    if ( init_fn ) {
-        init_fn();
-    }
-};
-
+function show_message( title, body, buttons, extra_buttons, init_fn ) {
+    modal.setContent( { title: title, body: body, buttons: buttons, extra_buttons: extra_buttons } );
+    modal.show( { backdrop: false }, init_fn  );
+}
 function show_in_overlay( options ) {
     var width = options.width || '600';
     var height = options.height || '400';
@@ -237,6 +262,7 @@ $(function() {
 // Exports
 exports.ensure_dd_helper = ensure_dd_helper;
 exports.Panel = Panel;
+exports.Modal = Modal;
 exports.hide_modal = hide_modal;
 exports.show_modal = show_modal;
 exports.show_message = show_message;

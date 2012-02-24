@@ -1,6 +1,6 @@
 .viewport-container{overflow-x:hidden;overflow-y:auto;}
-.nav-container{width:100%;}
-.nav{padding:0 0;color:#333;font-weight:bold;background:#cccccc;background-image:url(panel_header_bg.png);background-position:middle center;background-repeat:repeat-x;border-bottom:solid #333 1px;}
+.trackster-nav-container{width:100%;}
+.trackster-nav{padding:0 0;color:#333;font-weight:bold;background:#cccccc;background-image:url(panel_header_bg.png);background-position:middle center;background-repeat:repeat-x;border-bottom:solid #333 1px;}
 .content{font:10px verdana;}
 .nav-controls{text-align:center;padding:1px 0;}
 .nav-controls input{margin:0 5px;}
@@ -57,11 +57,11 @@ input{font:10px verdana;}
 .param-row{margin-top:0.2em;margin-left:1em;}
 .param-label{float:left;font-weight:bold;padding-top:0.2em;width:50%;}
 .menu-button{margin:0px 4px 0px 4px;}
+.exclamation{background:transparent url(../images/fugue/exclamation.png) no-repeat;margin-left:5em;}
 .layer-transparent{background:transparent url(../images/fugue/layer-transparent-bw.png) no-repeat;}
 .layer-transparent.active{background:transparent url(../images/fugue/layer-transparent.png) no-repeat;}
 .arrow-resize-090{background:transparent url(../images/fugue/arrow-resize-090-bw.png) no-repeat;}
 .arrow-resize-090.active{background:transparent url(../images/fugue/arrow-resize-090.png) no-repeat;}
-.exclamation{background:transparent url(../images/fugue/exclamation.png) no-repeat;margin-left:5em;}
 .layers-stack{background:transparent url(../images/fugue/layers-stack-bw.png) no-repeat;}
 .layers-stack:hover{background:transparent url(../images/fugue/layers-stack.png) no-repeat;}
 .chevron-expand{background:transparent url(../images/fugue/chevron-expand-bw.png) no-repeat;}
@@ -94,6 +94,6 @@ input{font:10px verdana;}
 .icon{display:inline-block;width:16px;height:16px;}
 .icon.more-down{background:url('../images/fugue/arrow-transition-270-bw.png') no-repeat 0px 0px;}
 .icon.more-across{background:url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;}
-.intro > .action-button{margin:1em;padding:1em;text-decoration:underline;}
+.intro > .action-button{background-color:#CCC;margin-top:10px;padding:1em;text-decoration:underline;}
 .feature-popup{position:absolute;z-index:1000;padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);background-position:top center;}
 .feature-popup-inner{padding:5px 8px 4px 8px;background-color:black;color:white;}

@@ -166,31 +166,30 @@
     <%def name="title()"></%def>
     <%def name="content()"></%def>
 
-    <div id="overlay"
-    %if not visible:
-        style="display: none;"
-    %endif
-    >
-    ##
-    <div id="overlay-background" class="modal-backdrop fade"></div>
-    
-    ## Need a table here for centering in IE6
-    <div id="dialog-box" class="modal" border="0"
-    %if not visible:
-        style="display: none;"
-    %endif
-    >
-            <div class="modal-header">
-                <span><h3 class='title'>${title}</h3></span>
-            </div>
-            <div class="modal-body">${content}</div>
-            <div class="modal-footer">
-                <div class="buttons" style="float: right;"></div>
-                <div class="extra_buttons" style=""></div>
-                <div style="clear: both;"></div>
-            </div>
+    <%
+    if visible:
+        display = ""
+        overlay_class = "in"
+    else:
+        display = "style='display: none;'"
+        overlay_class = ""
+    %>
 
-    </div>
+    <div id="overlay" ${display}>
+
+        <div id="overlay-background" class="modal-backdrop fade $overlay_class"></div>
+
+        <div id="dialog-box" class="modal" border="0" ${display}>
+                <div class="modal-header">
+                    <span><h3 class='title'>${title}</h3></span>
+                </div>
+                <div class="modal-body">${content}</div>
+                <div class="modal-footer">
+                    <div class="buttons" style="float: right;"></div>
+                    <div class="extra_buttons" style=""></div>
+                    <div style="clear: both;"></div>
+                </div>
+        </div>
     
     </div>
 </%def>
