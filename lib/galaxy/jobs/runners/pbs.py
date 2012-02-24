@@ -193,7 +193,7 @@ class PBSJobRunner( BaseJobRunner ):
                 elif op == 'fail':
                     self.fail_job( obj )
             except:
-                log.exception( "Uncaught exception %sing job" % op )
+                log.exception( "(%s) Uncaught exception %sing job" % ( getattr( obj, 'job_id', None ), op ) )
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
