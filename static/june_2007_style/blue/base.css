@@ -486,6 +486,7 @@ button.btn.small,input[type="submit"].btn.small{*padding-top:3px;*padding-bottom
 .clear:after{clear:both;}
 body{background:#ffffff;color:#303030;background-image:url(base_bg.png);background-repeat:repeat-x;background-position:top;margin:10px;}
 img{border:0;}
+a,a:link,a:visited,a:active{text-decoration:underline;color:#303030;}
 h1,h2,h3,h4{color:#023858;margin:0.5em 0;}
 h1:first-child,h2:first-child,h3:first-child,h4:first-child{margin-top:0px;}
 hr{border:none;height:0px;border-bottom:dotted #303030 1px;}
