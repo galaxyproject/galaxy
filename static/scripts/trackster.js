@@ -328,11 +328,16 @@ var moveable = function(element, handle_class, container_selector, element_js_ob
         // Handle sibling movement, aka sorting.
         
         // Determine new position
+        var child;
         for ( i = 0; i < children.length; i++ ) {
-            if ( d.offsetY < $(children.get(i)).position().top ) {
+            child = $(children.get(i));
+            if ( d.offsetY < child.position().top &&
+                 // Cannot move tracks above reference track or intro div.
+                 !(child.hasClass("reference-track") || child.hasClass("intro")) ) {
                 break;
             }
         }
+                
         // If not already in the right place, move. Need 
         // to handle the end specially since we don't have 
         // insert at index
@@ -2893,9 +2898,9 @@ extend(DrawableConfig.prototype, {
 var Tile = function(track, index, resolution, canvas, data) {
     this.track = track;
     this.index = index;
-    // FIXME: find better way to calculate low, high.
-    this.low = index * TILE_SIZE * resolution
-    this.high = (index + 1) * TILE_SIZE * resolution;
+    var tile_bounds = this.track._get_tile_bounds(index, resolution);
+    this.low = tile_bounds[0];
+    this.high = tile_bounds[1];
     this.resolution = resolution;
     // Wrap element in div for background.
     this.html_elt = $("<div class='track-tile'/>").append(canvas);
@@ -4153,7 +4158,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Draw ReferenceTrack tile.
      */
     draw_tile: function(seq, ctx, mode, resolution, tile_index, w_scale) {
-        var track = this;
+        var track = this;        
         
         if (w_scale > this.view.canvas_manager.char_width_px) {
             if (seq.data === null) {
@@ -4165,7 +4170,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             ctx.textAlign = "center";
             seq = seq.data;
             for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                var c_start = Math.round(c * w_scale);
+                var c_start = Math.floor(c * w_scale);
                 ctx.fillText(seq[c], c_start, 10);
             }
             return new Tile(track, tile_index, resolution, canvas, seq);
@@ -4331,7 +4336,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             painter = new painters.LinePainter(result.data, tile_low, tile_high, this.prefs, mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
-        return new Tile(this.track, tile_index, resolution, canvas, result.data);
+        return new Tile(this, tile_index, resolution, canvas, result.data);
     },
     /**
      * LineTrack data cannot currently be subsetted.
