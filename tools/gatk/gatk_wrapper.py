@@ -43,6 +43,23 @@ def html_report_from_directory( html_out, dir ):
         html_out.write(  '<li><a href="%s">%s</a></li>\n' % ( fname, fname ) )
     html_out.write( '</ul>\n</body>\n</html>\n' )
 
+def index_bam_files( bam_filenames, tmp_dir ):
+    for bam_filename in bam_filenames:
+        bam_index_filename = "%s.bai" % bam_filename
+        if not os.path.exists( bam_index_filename ):
+            #need to index this bam file
+            stderr_name = tempfile.NamedTemporaryFile( prefix = "bam_index_stderr" ).name
+            command = 'samtools index %s %s' % ( bam_filename, bam_index_filename )
+            proc = subprocess.Popen( args=command, shell=True, stderr=open( stderr_name, 'wb' ) )
+            return_code = proc.wait()
+            if return_code:
+                for line in open( stderr_name ):
+                    print >> sys.stderr, line
+                os.unlink( stderr_name ) #clean up
+                cleanup_before_exit( tmp_dir )
+                raise Exception( "Error indexing BAM file" )
+            os.unlink( stderr_name ) #clean up
+
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
@@ -67,11 +84,15 @@ def __main__():
         cmd = cmd.replace( 'java ', 'java -Xmx%s ' % ( options.max_jvm_heap ), 1 )
     elif options.max_jvm_heap_fraction is not None:
         cmd = cmd.replace( 'java ', 'java -XX:DefaultMaxRAMFraction=%s  -XX:+UseParallelGC ' % ( options.max_jvm_heap_fraction ), 1 )
+    bam_filenames = []
     if options.datasets:
         for ( dataset_arg, filename, galaxy_ext, prefix ) in options.datasets:
             gatk_filename = gatk_filename_from_galaxy( filename, galaxy_ext, target_dir = tmp_dir, prefix = prefix )
             if dataset_arg:
                 cmd = '%s %s "%s"' % ( cmd, gatk_filetype_argument_substitution( dataset_arg, galaxy_ext ), gatk_filename )
+            if galaxy_ext == "bam":
+                bam_filenames.append( gatk_filename )
+    index_bam_files( bam_filenames, tmp_dir )
     #set up stdout and stderr output options
     stdout = open_file_from_option( options.stdout, mode = 'wb' )
     stderr = open_file_from_option( options.stderr, mode = 'wb' )

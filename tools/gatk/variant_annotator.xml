@@ -2,13 +2,16 @@
   <description></description>
   <requirements>
       <requirement type="package" version="1.4">gatk</requirement>
+      <requirement type="package">samtools</requirement>
   </requirements>
   <command interpreter="python">gatk_wrapper.py
    --max_jvm_heap_fraction "1"
    --stdout "${output_log}"
    #if str( $reference_source.input_bam ) != "None":
        -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
-       -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
+       #if str( $reference_source.input_bam.metadata.bam_index ) != "None":
+           -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
+       #end if
    #end if
    -d "--variant" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
    -p 'java 
@@ -151,7 +154,6 @@
         <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." />
         <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" help="Not needed for all annotations." >
           <validator type="unspecified_build" />
-          <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
           <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
         <param name="ref_file" type="select" label="Using reference genome">
@@ -165,7 +167,6 @@
         <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" />
         <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." />
         <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" >
-          <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
         </param>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>

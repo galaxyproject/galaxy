@@ -74,7 +74,7 @@ GenomeAnalysisTK: AnalyzeCovariates accepts an recal CSV file.
 
 **Outputs**
 
-The output is in and HTML file with links to PDF graphs and a data files.
+The output is in CSV and HTML files with links to PDF graphs and a data files.
 
 
 Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_the_GATK&gt;`_ for details on GATK file formats.
