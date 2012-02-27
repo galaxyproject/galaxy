@@ -18,10 +18,10 @@ var MIN_PANEL_WIDTH = 150,
     MAX_PANEL_WIDTH = 800;
 
 var Panel = function( options ) {
-    this.panel = options.panel;
-    this.center = options.center;
-    this.drag = options.drag;
-    this.toggle = options.toggle;
+    this.$panel = options.panel;
+    this.$center = options.center;
+    this.$drag = options.drag;
+    this.$toggle = options.toggle;
     this.left = !options.right;
     this.hidden = false;
     this.hidden_by_tool = false;
@@ -30,11 +30,11 @@ var Panel = function( options ) {
 }
 $.extend( Panel.prototype, {
     resize: function( x ) {
-        $(this.panel).css( "width", x );
+        this.$panel.css( "width", x );
         if ( this.left ) {
-            $(center).css( "left", x );
+            this.$center.css( "left", x );
         } else {
-            $(center).css( "right", x );
+            this.$center.css( "right", x );
         }
         // ie7-recalc.js
         if ( document.recalc ) { document.recalc(); }
@@ -42,44 +42,40 @@ $.extend( Panel.prototype, {
     do_toggle: function() {
         var self = this;
         if ( this.hidden ) {
-            $(this.toggle).removeClass( "hidden" );
+            this.$toggle.removeClass( "hidden" );
             if ( this.left ) {
-                $(this.panel).css( "left", - this.saved_size ).show().animate( { "left": 0 }, "fast", function () {
+                this.$panel.css( "left", - this.saved_size ).show().animate( { "left": 0 }, "fast", function () {
                     self.resize( self.saved_size );
                 });
             } else {
-                $(this.panel).css( "right", - this.saved_size ).show().animate( { "right": 0 }, "fast", function () {
+                this.$panel.css( "right", - this.saved_size ).show().animate( { "right": 0 }, "fast", function () {
                     self.resize( self.saved_size );
                 });
             }
             self.hidden = false;
         } else {
-            self.saved_size = $(this.panel).width();
-            // Move center
-            
-            // $( center_el ).css( "right", $(border_el).innerWidth() + 1 );
-
+            self.saved_size = this.$panel.width();
             if ( document.recalc ) { document.recalc(); }
             // Hide border
             if ( this.left ) {
-                $(this.panel).animate( { left: - this.saved_size }, "fast" );
+                this.$panel.animate( { left: - this.saved_size }, "fast" );
             } else {
-                $(this.panel).animate( { right: - this.saved_size }, "fast" );
+                this.$panel.animate( { right: - this.saved_size }, "fast" );
             }
             // self.resize(0);
             if ( this.left ) {
-                $(center).css( "left", 0 );
+                this.$center.css( "left", 0 );
             } else {
-                $(center).css( "right", 0 );
+                this.$center.css( "right", 0 );
             }
 
             self.hidden = true;
-            $(self.toggle).addClass( "hidden" );
+            self.$toggle.addClass( "hidden" );
         }
         this.hidden_by_tool = false;
     },
     handle_minwidth_hint: function( x ) {
-        var space = $(this.center).width() - ( this.hidden ? this.saved_size : 0 );
+        var space = this.$center.width() - ( this.hidden ? this.saved_size : 0 );
         if ( space < x )
         {
             if ( ! this.hidden ) {
@@ -100,10 +96,12 @@ $.extend( Panel.prototype, {
     },
     init: function() {
         var self = this;
+        // Pull the collapse element out to body level so it is visible when panel is hidden
+        this.$toggle.remove().appendTo( "body" );
         // Resizing using drag element
-        $(this.drag).on( "dragstart", function( e, d ) {
+        this.$drag.on( "dragstart", function( e, d ) {
             $( '#DD-helper' ).show();
-            d.width = $(self.panel).width();
+            d.width = self.$panel.width();
         }).on( "dragend", function() {  
             $( '#DD-helper' ).hide();
         }).on( "drag", function( e, d ) {
@@ -118,7 +116,7 @@ $.extend( Panel.prototype, {
             self.resize( x );
         });
         // Hide/show using toggle element
-        $(self.toggle).on( "click", function() { self.do_toggle(); } );
+        self.$toggle.on( "click", function() { self.do_toggle(); } );
     }
 });
   

@@ -14,6 +14,11 @@
     .box-shadow();
 }
 
+.parent-width {
+    .box-sizing(border-box);
+    width: 100%;
+}
+
 // ==== Real (basic) styles ====
 
 .clear {
@@ -183,7 +188,7 @@ th {
         color: #555;
     }
 
-    .drag, .collapse {
+    .drag {
         position: absolute;
         top: 0;
         right: 0;
@@ -194,34 +199,7 @@ th {
         background-image: url(../images/visualization/draggable_horizontal.png);
         background-repeat: no-repeat;
         background-position: 50% 50%;
-
-        // .ie7-restore-right-whitespace();
-    }
-
-    .drag {
         cursor: w-resize;
-    }
-
-    .collapse {
-        position: fixed;
-        left: 0;
-        top: inherit;
-        bottom: 0;
-        background: none;
-        border-right: solid @layout_border 1px;
-        border-top: solid @layout_border 1px;
-        #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
-        .iconic();
-
-    }
-    .collapse.hidden {
-        // .opacity(50);
-    }
-    .collapse:before {
-        content:'\2190';
-    }
-    .collapse.hidden:before {
-        content:'\2192';
     }
 }
 
@@ -229,17 +207,41 @@ th {
     .drag {
         left: 0;
     }
-    .collapse {
+}
+
+// Needs to be outside panel to show when hidden
+.panel-collapse {
+    .unified-panel-footer();
+    z-index: 10000;
+    position: fixed;
+    left: 0;
+    top: inherit;
+    bottom: 0;
+    padding: 0 5px;
+    text-align: center;
+    width: @panel_footer_height - 5;
+    background: none;
+    border-right: solid @layout_border 1px;
+    border-top: solid @layout_border 1px;
+    #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
+    .iconic();
+    &:before {
+        content:'\2190';
+    }
+    &.hidden:before {
+        content:'\2192';
+    }
+    &.right {
         left: inherit;
         right: 0;
         border-right: none;
         border-left: solid @layout_border 1px;
-    }
-    .collapse:before{
-        content:'\2192';
-    }
-    .collapse.hidden:before {
-        content:'\2190';
+        &.right:before{
+            content:'\2192';
+        }
+        &.right.hidden:before {
+            content:'\2190';
+        }
     }
 }
   
@@ -669,11 +671,8 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     max-width: 300px;
 }
 
-/*
 .search-query {
   display: inline-block;
-  width: 210px;
-  height: @baseLineHeight;
   padding: 4px;
   margin-bottom: 9px;
   font-size: @baseFontSize;
@@ -684,8 +683,22 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
   padding-right: 14px;
   margin-bottom: 0; // remove the default margin on all inputs
   .border-radius(14px);
+  max-width: auto;
 }
-*/
+.search-query:focus {
+  border-color: rgba(82,168,236,.8);
+  @shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(82,168,236,.6);
+  .box-shadow(@shadow);
+  outline: 0;
+  outline: thin dotted \9; /* IE6-8 */
+}
+
+.search-spinner {
+    position: absolute; 
+    display: none; 
+    right: 8px; 
+    top: 10px;
+}
 
 // Messages 
 
@@ -889,7 +902,7 @@ div.debug {
     line-height: @baseLineHeight;
     border-top: solid #DDDDDD 1px;
     border-bottom: solid #DDDDDD 1px;
-    padding: 0.3em 0.5em;
+    padding: 5px;
 }
 .grid tbody td:empty {
     padding: 0;
@@ -905,7 +918,7 @@ div.debug {
     background-position: top;
     border-top: solid @table_border 1px;
     border-bottom: solid @table_border 1px;
-    padding: 0.3em 0.5em;
+    padding: 5px;
     text-align: left;
     white-space: nowrap;
 }
@@ -913,7 +926,7 @@ div.debug {
     background-color: #F8F8F8;
     border-top: solid #DDDDDD 1px;
     border-bottom: solid #DDDDDD 1px;
-    padding: 0.3em 0.5em;
+    padding: 5px;
 }
 .grid .current {
     background-color: #EEEEFF;
@@ -1503,7 +1516,6 @@ hr
     margin-top: 0px;
 }
 
-/*
 div.toolSectionPad
 {
     margin: 0;
@@ -1511,10 +1523,9 @@ div.toolSectionPad
     height: 5px;
     font-size: 0px;
 }
-*/
 
 div.toolSectionWrapper {
-    margin-bottom: 5px;
+    // margin-bottom: 5px;
 }
 
 div.toolSectionDetailsInner

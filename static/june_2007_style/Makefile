@@ -19,12 +19,12 @@ variables.less : $(INI)
 
 # Old style using process_css still works so we can move gradually
 %.css : %.css.tmpl
-	../process_css.py ../$(INI) shared_images:../images $(OUT) < $< > $@
+	../process_css.py ../$(INI) ..:../shared_images:../../images . < $< > $@
 
 # For building sprite images
 %.less : %.less.tmpl
-	../process_css.py $(INI) shared_images:../images $(OUT) < $< > $@
+	../process_css.py ../$(INI) ..:../shared_images:../../images . < $< > $@
 
 # Some dependencies
-base.css: variables.less galaxy_bootstrap.less iconic_stroke.less
+base.css: variables.less galaxy_bootstrap.less iconic_stroke.less base_sprites.less
 

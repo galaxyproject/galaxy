@@ -64,12 +64,12 @@
     ensure_dd_helper();
         
     %if self.has_left_panel:
-            var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .collapse" ) } );
+            var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
             force_left_panel = lp.force_panel;
         %endif
         
     %if self.has_right_panel:
-            var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .collapse" ), right: true } );
+            var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
             window.handle_minwidth_hint = function( x ) { console.log( "hint", x ); rp.handle_minwidth_hint( x ) };
             force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
@@ -168,7 +168,7 @@
 
     <%
     if visible:
-        display = ""
+        display = "style='display: block;'"
         overlay_class = "in"
     else:
         display = "style='display: none;'"
@@ -177,7 +177,7 @@
 
     <div id="overlay" ${display}>
 
-        <div id="overlay-background" class="modal-backdrop fade $overlay_class"></div>
+        <div id="overlay-background" class="modal-backdrop fade ${overlay_class}"></div>
 
         <div id="dialog-box" class="modal" border="0" ${display}>
                 <div class="modal-header">
@@ -229,7 +229,7 @@
                 <div id="left">
                     ${self.left_panel()}
                     <div class="unified-panel-footer">
-                        <div class="collapse"></span></div>
+                        <div class="panel-collapse"></span></div>
                         <div class="drag"></div>
                     </div>
                 </div>
@@ -241,7 +241,7 @@
                 <div id="right">
                     ${self.right_panel()}
                     <div class="unified-panel-footer">
-                        <div class="collapse"></span></div>
+                        <div class="panel-collapse right"></span></div>
                         <div class="drag"></div>
                     </div>
                 </div>
