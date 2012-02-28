@@ -336,12 +336,15 @@ class JobWrapper( object ):
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
+        self.params = None
+        if job.params:
+            self.params = from_json_string( job.params )
 
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
     def get_job_runner( self ):
-        return self.tool.job_runner
+        return self.tool.get_job_runner( self.params )
 
     def get_job( self ):
         return self.sa_session.query( model.Job ).get( self.job_id )

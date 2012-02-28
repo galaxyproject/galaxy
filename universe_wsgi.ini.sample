@@ -630,8 +630,13 @@ use_interactive = True
 
 # ---- Tool Job Runners -----------------------------------------------------
 
-# Individual per-tool job runner overrides.  If not listed here, a tool will
-# run with the runner defined with default_cluster_job_runner.
+# Individual per-tool job runner overrides. Parameters can be included to define 
+# multiple runners per tool. E.g. to run Cufflinks jobs initiated from Trackster 
+# differently than standard Cufflinks jobs:
+# cufflinks = local:///
+# cufflinks[source@trackster] = local:///
+# If not listed here, a tool will run with the runner defined with 
+# default_cluster_job_runner.
 
 [galaxy:tool_runners]
 

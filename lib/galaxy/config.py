@@ -180,9 +180,38 @@ class Configuration( object ):
         # Heartbeat log file name override
         if global_conf is not None:
             self.heartbeat_log = global_conf.get( 'heartbeat_log', 'heartbeat.log' )
-        #Store per-tool runner config
+        #Store per-tool runner configs.
         try:
-            self.tool_runners = global_conf_parser.items("galaxy:tool_runners")
+            tool_runners_config = global_conf_parser.items("galaxy:tool_runners")
+            
+            # Process config to group multiple configs for the same tool.
+            tool_runners = {}
+            for entry in tool_runners_config:
+                tool_config, url = entry
+                tool = None
+                runner_dict = {}
+                if tool_config.find("[") != -1:
+                    # Found tool with additional params; put params in dict.
+                    tool, params = tool_config[:-1].split( "[" )
+                    param_dict = {}
+                    for param in params.split( "," ):
+                        name, value = param.split( "@" )
+                        param_dict[ name ] = value
+                    runner_dict[ 'params' ] = param_dict
+                else:
+                    tool = tool_config
+                
+                # Add runner URL.
+                runner_dict[ 'url' ] = url
+                
+                # Create tool entry if necessary.
+                if tool not in tool_runners:
+                    tool_runners[ tool ] = []
+                    
+                # Add entry to runners.
+                tool_runners[ tool ].append( runner_dict )
+                
+            self.tool_runners = tool_runners
         except ConfigParser.NoSectionError:
             self.tool_runners = []
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )

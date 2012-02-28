@@ -991,7 +991,9 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         # Execute tool and handle outputs.
         #
         try:
-            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=target_history )
+            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, 
+                                                           history=target_history, 
+                                                           job_params={ "source" : "trackster" } )
         except Exception, e:
             # Lots of things can go wrong when trying to execute tool.
             return to_json_string( { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) } )

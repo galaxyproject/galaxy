@@ -1,6 +1,7 @@
 from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
+from galaxy.util.json import to_json_string
 from galaxy.tools.parameters import *
 from galaxy.tools.parameters.grouping import *
 from galaxy.util.template import fill_template
@@ -100,7 +101,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None ):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None ):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -389,6 +390,8 @@ class DefaultToolAction( object ):
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
         job.object_store_id = object_store_id
+        if job_params:
+            job.params = to_json_string( job_params )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
