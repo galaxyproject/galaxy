@@ -42,6 +42,13 @@ class GenericXml( data.Text ):
         #TODO - Is there a more robust way to do this?
         return line.startswith('<?xml ')
 
+    def merge(split_files, output_file):
+        """Merging multiple XML files is non-trivial and must be done in subclasses."""
+        if len(split_files) > 1:
+            raise NotImplementedError("Merging multiple XML files is non-trivial and must be implemented for each XML type")
+        #For one file only, use base class method (move/copy)
+        data.Text.merge(split_files, output_file)
+    merge = staticmethod(merge)
 
 class BlastXml( GenericXml ):
     """NCBI Blast XML Output data"""
@@ -86,7 +93,51 @@ class BlastXml( GenericXml ):
             return False
         handle.close()
         return True
-        
+    
+    def merge(split_files, output_file):
+        """Merging multiple XML files is non-trivial and must be done in subclasses."""
+        if len(split_files) == 1:
+            #For one file only, use base class method (move/copy)
+            return data.Text.merge(split_files, output_file)
+        out = open(output_file, "w")
+        h = None
+        for f in split_files:
+            h = open(f)
+            body = False
+            header = []
+            while True:
+                line = h.readline()
+                header.append(line)
+                if "<Iteration>" in line:
+                    break
+            header = "".join(header)
+            if "<BlastOutput>" not in header:
+                out.close()
+                h.close()
+                raise ValueError("%s is not a BLAST XML file:\n%s\n..." % (f, header))
+            if f == split_files[0]:
+                out.write(header)
+                old_header = header
+            elif old_header[:300] != header[:300]:
+                #Enough to check <BlastOutput_program> and <BlastOutput_version> match
+                out.close()
+                h.close()
+                raise ValueError("BLAST XML headers don't match for %s and %s - have:\n%s\n...\n\nAnd:\n%s\n...\n" \
+                                 % (split_files[0], f, old_header[:300], header[:300]))
+            else:
+                out.write("    <Iteration>\n")
+            for line in h:
+                if "</BlastOutput_iterations>" in line:
+                    break
+                #TODO - Increment <Iteration_iter-num> and if required automatic query names
+                #like <Iteration_query-ID>Query_3</Iteration_query-ID> to be increasing?
+                out.write(line)
+            h.close()
+        out.write("  </BlastOutput_iterations>\n")
+        out.write("</BlastOutput>\n")
+        out.close()
+    merge = staticmethod(merge)
+                                                
 
 class MEMEXml( GenericXml ):
     """MEME XML Output data"""

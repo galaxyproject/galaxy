@@ -1,5 +1,7 @@
 <tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.11">
     <description>Search nucleotide database with nucleotide query sequence(s)</description>
+    <!-- If job splitting is enabled, break up the query file into batches of 500 sequences -->
+    <parallelism method="multi" split_inputs="query" split_mode="number_of_parts" split_size="4" shared_inputs="subject" merge_outputs="output1"></parallelism>
     <version_command>blastn -version</version_command>
     <command interpreter="python">hide_stderr.py
 ## The command is a Cheetah template which allows some Python based syntax.
