@@ -19,7 +19,12 @@ def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_rev
     tool_path = shed_tool_conf_dict[ 'tool_path' ]
     config_elems = shed_tool_conf_dict[ 'config_elems' ]
     # Generate the list of ElementTree Element objects for each section or list of tools.
-    elem_list = generate_tool_panel_elem_list( repository_name, repository_clone_url, changeset_revision, tool_panel_dict, repository_tools_tups, owner=owner )
+    elem_list = generate_tool_panel_elem_list( repository_name,
+                                               repository_clone_url,
+                                               changeset_revision,
+                                               tool_panel_dict,
+                                               repository_tools_tups,
+                                               owner=owner )
     # Load the tools into the tool panel outside of any sections.
     for config_elem in elem_list:
         if config_elem.tag == 'section':
@@ -785,6 +790,7 @@ def load_repository_contents( trans, repository_name, description, owner, change
         # or outside of any sections in the tool panel.  We cannot pass a specific tool_config since we do not yet have one.
         tool_section_dict = generate_tool_section_dict( tool_config=None, tool_section=tool_section )
         metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url, tool_section_dict=tool_section_dict )
+    tool_panel_dict = metadata_dict[ 'tool_panel_section' ]
     # Add a new record to the tool_shed_repository table if one doesn't already exist.  If one exists but is marked deleted, undelete it.  This
     # must happen before the call to add_to_tool_panel() below because tools will not be properly loaded if the repository is marked deleted.
     log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % repository_name )
