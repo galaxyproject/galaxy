@@ -1,7 +1,6 @@
 import sys, os.path, logging
 
 from galaxy import eggs
-
 import pkg_resources
 pkg_resources.require( "sqlalchemy-migrate" )
 
@@ -20,7 +19,7 @@ dialect_to_egg = {
     "mysql" : "MySQL_python"
 }
 
-def create_or_verify_database( url, galaxy_config_file, engine_options={} ):
+def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=None ):
     """
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
@@ -30,9 +29,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={} ):
     2) Database older than migration support --> fail and require manual update
     3) Database at state where migrate support introduced --> add version control information but make no changes (might still require manual update)
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
-    
     """
-
     dialect = ( url.split( ':', 1 ) )[0]
     try:
         egg = dialect_to_egg[dialect]
@@ -45,7 +42,6 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={} ):
     except KeyError:
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
-
     # Create engine and metadata
     engine = create_engine( url, **engine_options )
     meta = MetaData( bind=engine )
@@ -53,8 +49,10 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={} ):
     try:
         dataset_table = Table( "dataset", meta, autoload=True )
     except NoSuchTableError:
-        # No 'dataset' table means a completely uninitialized database, which
-        # is fine, init the database in a versioned state
+        # No 'dataset' table means a completely uninitialized database.  If we have an app, we'll
+        # set it's new_installation setting to True so the tool migration process will be skipped.
+        if app:
+            app.new_installation = True
         log.info( "No database, initializing" )
         # Database might or might not be versioned
         try:

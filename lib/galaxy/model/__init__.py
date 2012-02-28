@@ -2682,10 +2682,10 @@ class ToolShedRepository( object ):
         self.dist_to_shed = dist_to_shed
     @property
     def includes_tools( self ):
-        return 'tools' in self.metadata
+        return self.metadata and 'tools' in self.metadata
     @property
     def includes_workflows( self ):
-        return 'workflows' in self.metadata
+        return self.metadata and 'workflows' in self.metadata
 
 class ToolVersion( object ):
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
@@ -2745,6 +2745,12 @@ class ToolVersionAssociation( object ):
         self.id = id
         self.tool_id = tool_id
         self.parent_id = parent_id
+
+class MigrateTools( object ):
+    def __init__( self, repository_id=None, repository_path=None, version=None ):
+        self.repository_id = repository_id
+        self.repository_path = repository_path
+        self.version = version
 
 ## ---- Utility methods -------------------------------------------------------
 

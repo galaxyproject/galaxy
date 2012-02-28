@@ -394,6 +394,11 @@ ToolVersionAssociation.table = Table( "tool_version_association", metadata,
     Column( "tool_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ),
     Column( "parent_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ) )
 
+MigrateTools.table = Table( "migrate_tools", metadata,
+    Column( "repository_id", TrimmedString( 255 ) ),
+    Column( "repository_path", TEXT ),
+    Column( "version", Integer ) )
+
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),

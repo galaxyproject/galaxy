@@ -6,8 +6,10 @@ python ./scripts/check_python.py
 [ $? -ne 0 ] && exit 1
 
 SAMPLES="
+    community_wsgi.ini.sample
     datatypes_conf.xml.sample
     external_service_types_conf.xml.sample
+    migrated_tools_conf.xml.sample
     reports_wsgi.ini.sample
     shed_tool_conf.xml.sample
     tool_conf.xml.sample

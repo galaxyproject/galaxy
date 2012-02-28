@@ -136,22 +136,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # http://wiki.g2.bx.psu.edu/Admin/Config/Tool%20Dependencies
 #tool_dependency_dir = None
 
-# Enable automatic installation of tools that used to be in the Galaxy
-# distribution but are now in the main Galaxy tool shed.  The tools
-# that will be installed are configured in the config file named
-# tool_shed_install.xml, which is located in the Galaxy install directory.
-# Tools already installed will not be re-installed even if they are
-# referenced in the tool_shed_install.xml file.
-#enable_tool_shed_install = False
-#tool_shed_install_config_file = tool_shed_install.xml
-
-# CRITICAL NOTE: the location in which the tools will be installed is the
-# location pointed to by the "tool_path" attribute in the following file.
-# The default location setting in shed_tool_conf.xml ("../shed_tools") may
-# be problematic for some cluster environments, so make sure to change it
-# if appropriate or use a different file name for the setting.
-#install_tool_config_file = shed_tool_conf.xml
-
 # Enable automatic polling of relative tool sheds to see if any updates
 # are available for installed repositories.  Ideally only one Galaxy 
 # server process should be able to check for repository updates.  The

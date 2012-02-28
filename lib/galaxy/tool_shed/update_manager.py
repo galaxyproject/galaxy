@@ -9,15 +9,9 @@ log = logging.getLogger( __name__ )
 
 class UpdateManager( object ):
     def __init__( self, app ):
-        """
-        Check tool settings in tool_shed_install_config and install all tools that are
-        not already installed.  The tool panel configuration file is the received
-        shed_tool_config, which defaults to shed_tool_conf.xml.
-        """
         self.app = app
         self.sa_session = self.app.model.context.current
-        # Ideally only one Galaxy server process
-        # should be able to check for repository updates.
+        # Ideally only one Galaxy server process should be able to check for repository updates.
         self.running = True
         self.sleeper = Sleeper()
         self.restarter = threading.Thread( target=self.__restarter )

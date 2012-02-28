@@ -151,8 +151,7 @@ Tag.table = Table( "tag", metadata,
     Column( "name", TrimmedString(255) ), 
     UniqueConstraint( "name" ) )
 
-# With the tables defined we can define the mappers and setup the 
-# relationships between the model objects.
+# With the tables defined we can define the mappers and setup the relationships between the model objects.
 assign_mapper( context, User, User.table, 
     properties=dict( active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ) ) )

@@ -52,9 +52,9 @@ class Configuration( object ):
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.len_file_path = kwargs.get( "len_file_path", resolve_path(os.path.join(self.tool_data_path, 'shared','ucsc','chrom'), self.root) )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
-        self.enable_tool_shed_install = string_as_bool( kwargs.get( 'enable_tool_shed_install', False ) )
-        self.tool_shed_install_config = resolve_path( kwargs.get( "tool_shed_install_config_file", "tool_shed_install.xml" ), self.root )
-        self.install_tool_config = resolve_path( kwargs.get( "install_tool_config_file", "shed_tool_conf.xml" ), self.root )
+        # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
+        # and moved to the tool shed.
+        self.migrated_tools_config = resolve_path( "migrated_tools_conf.xml", self.root )
         if 'tool_config_file' in kwargs:
             tcf = kwargs[ 'tool_config_file' ]
         elif 'tool_config_files' in kwargs:
@@ -210,7 +210,10 @@ class Configuration( object ):
     def check( self ):
         paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
         # Look for any tool shed configs and retrieve the tool_path attribute from the <toolbox> tag.
-        for config_filename in self.tool_configs:
+        tool_configs = self.tool_configs
+        if self.migrated_tools_config not in tool_configs:
+            tool_configs.append( self.migrated_tools_config )
+        for config_filename in tool_configs:
             tree = parse_xml( config_filename )
             root = tree.getroot()
             tool_path = root.get( 'tool_path' )
@@ -241,10 +244,12 @@ class Configuration( object ):
                     os.makedirs( path )
                 except Exception, e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
-
         # Check that required files exist
-        for path in self.tool_configs:
-            if not os.path.isfile(path):
+        tool_configs = self.tool_configs
+        if self.migrated_tools_config not in tool_configs:
+            tool_configs.append( self.migrated_tools_config )
+        for path in tool_configs:
+            if not os.path.isfile( path ):
                 raise ConfigurationError("File not found: %s" % path )
         if not os.path.isfile( self.datatypes_config ):
             raise ConfigurationError("File not found: %s" % self.datatypes_config )

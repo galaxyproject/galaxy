@@ -18,6 +18,7 @@ class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, **kwargs ):
         print >> sys.stderr, "python path is: " + ", ".join( sys.path )
+        self.new_installation = False
         # Read config file and check for errors
         self.config = config.Configuration( **kwargs )
         self.config.check()
@@ -27,9 +28,13 @@ class UniverseApplication( object ):
             db_url = self.config.database_connection
         else:
             db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
-        # Initialize database / check for appropriate schema version
+        # Initialize database / check for appropriate schema version.  # If this
+        # is a new installation, we'll restrict the tool migration messaging.
         from galaxy.model.migrate.check import create_or_verify_database
-        create_or_verify_database( db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
+        create_or_verify_database( db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options, app=self )
+        # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
+        from galaxy.tool_shed.migrate.check import verify_tools
+        verify_tools( self, db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
         # Object store manager
         self.object_store = build_object_store_from_config(self.config)
         # Setup the database engine and ORM
@@ -65,15 +70,13 @@ class UniverseApplication( object ):
         self.tag_handler = GalaxyTagHandler()
         # Tool data tables
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_table_config_path )
-        # Initialize the tools
-        self.toolbox = tools.ToolBox( self.config.tool_configs, self.config.tool_path, self )
+        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
+        tool_configs = self.config.tool_configs
+        if self.config.migrated_tools_config not in tool_configs:
+            tool_configs.append( self.config.migrated_tools_config )
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         # Search support for tools
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
-        # If enabled, check for tools missing from the distribution because they
-        # have been moved to the tool shed and install all such discovered tools.
-        if self.config.get_bool( 'enable_tool_shed_install', False ):
-            from tool_shed import install_manager
-            self.install_manager = install_manager.InstallManager( self, self.config.tool_shed_install_config, self.config.install_tool_config )
         # If enabled, poll respective tool sheds to see if updates are available for any installed tool shed repositories.
         if self.config.get_bool( 'enable_tool_shed_check', False ):
             from tool_shed import update_manager

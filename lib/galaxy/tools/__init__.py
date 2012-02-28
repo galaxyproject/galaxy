@@ -30,6 +30,7 @@ from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
+from galaxy.util.shed_util import *
 
 from galaxy.visualization.tracks.visual_analytics import TracksterConfig
 
@@ -178,38 +179,31 @@ class ToolBox( object ):
                         metadata = tool_shed_repository.metadata
                         update_needed = False
                         if 'tool_panel_section' in metadata:
+                            if panel_entry_per_tool( metadata[ 'tool_panel_section' ] ):
+                                # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
+                                tool_panel_dict = metadata[ 'tool_panel_section' ]
+                            else:
+                                # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
+                                tool_section_dict = metadata[ 'tool_panel_section' ]
+                                tool_section = generate_tool_section_element_from_dict( tool_section_dict )
+                                tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata, tool_section=tool_section )
                             if section:
-                                # If the tool_panel_section dictionary is included in the metadata, update it if necessary.
-                                tool_panel_section = metadata[ 'tool_panel_section' ]
-                                if tool_panel_section [ 'id' ] != section.id or \
-                                    tool_panel_section [ 'version' ] != section.version or \
-                                    tool_panel_section [ 'name' ] != section.name:
-                                    tool_panel_section [ 'id' ] = section.id
-                                    tool_panel_section [ 'version' ] = section.version
-                                    tool_panel_section [ 'name' ] = section.name
-                                    update_needed = True
+                                # This means all tools are loaded into the same tool panel section or are all outside of any sections.
+                                for guid, tool_section_dict in tool_panel_dict.items():
+                                    if tool_section_dict [ 'id' ] != section.id or \
+                                        tool_section_dict [ 'version' ] != section.version or \
+                                        tool_section_dict [ 'name' ] != section.name:
+                                        tool_section_dict [ 'id' ] = section.id
+                                        tool_section_dict [ 'version' ] = section.version
+                                        tool_section_dict [ 'name' ] = section.name
+                                        tool_panel_dict[ guid ] = tool_section_dict
+                                        update_needed = True
                         else:
                             # The tool_panel_section was introduced late, so set it's value if its missing in the metadata.
-                            if section:
-                                if section.id is None:
-                                    section_id = ''
-                                else:
-                                    section_id = section.id
-                                if section.version is None:
-                                    section_version = ''
-                                else:
-                                    section_version = section.version
-                                if section.name is None:
-                                    section_name = ''
-                                else:
-                                    section_name = section.name
-                                tool_panel_section = dict( id=section_id, version=section_version, name=section_name )
-                                update_needed = True
-                            else:
-                                tool_panel_section = dict( id='', version='', name='' )
-                                update_needed = True
+                            tool_panel_dict = generate_tool_panel_dict_for_repository_tools( tool_shed_repository.metadata, tool_section=section )
+                            update_needed = True
                         if update_needed:
-                            metadata[ 'tool_panel_section' ] = tool_panel_section
+                            metadata[ 'tool_panel_section' ] = tool_panel_dict
                             tool_shed_repository.metadata = metadata
                             self.sa_session.add( tool_shed_repository )
                             self.sa_session.flush()

@@ -2,7 +2,7 @@
 Classes encapsulating the management of repositories installed from Galaxy tool sheds.
 """
 import os, logging
-from galaxy.util.shed_util import create_repository_dict_for_proprietary_datatypes, load_datatype_items
+from galaxy.util.shed_util import *
 from galaxy.model.orm import *
 
 log = logging.getLogger(__name__)
