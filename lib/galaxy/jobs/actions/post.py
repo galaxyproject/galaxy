@@ -126,10 +126,73 @@ class RenameDatasetAction(DefaultJobAction):
     verbose_name = "Rename Dataset"
 
     @classmethod
-    def execute(cls, app, sa_session, action, job, replacement_dict):        
+    def execute(cls, app, sa_session, action, job, replacement_dict):
         # Prevent renaming a dataset to the empty string.
         if action.action_arguments and action.action_arguments.has_key('newname') and action.action_arguments['newname'] != '':
             new_name = action.action_arguments['newname']
+
+            #  TODO: Unify and simplify replacement options.
+            #      Add interface through workflow editor UI
+
+            #  The following if statement will process a request to rename
+            #  using an input file name.
+            #  TODO: Replace all matching code with regex
+            #  Proper syntax is #{input_file_variable | option 1 | option n}
+            #    where
+            #      input_file_variable = is the name of an module input variable
+            #      |  = the delimiter for added options. Optional if no options.
+            #      options = basename, upper, lower
+            #      basename = keep all of the file name except the extension
+            #                 (everything before the final ".")
+            #      upper = force the file name to upper case
+            #      lower = force the file name to lower case
+            #  suggested additions:
+            #      "replace" option so you can replace a portion of the name,
+            #      support multiple #{name} in one rename action...
+
+            if new_name.find("#{") > -1:
+                to_be_replaced = ""
+                #  This assumes a single instance of #{variable} will exist
+                start_pos = new_name.find("#{") + 2
+                end_pos = new_name.find("}")
+                to_be_replaced = new_name[start_pos:end_pos]
+                input_file_var = to_be_replaced
+                #  Pull out the piped controls and store them for later
+                #  parsing.
+                tokens = to_be_replaced.split("|")
+                operations = []
+                if len(tokens) > 1:
+                   input_file_var = tokens[0].strip()
+                   for i in range(1, len(tokens)):
+                       operations.append(tokens[i].strip())
+
+                replacement = ""
+                #  Lookp through inputs find one with "to_be_replaced" input
+                #  variable name, and get the replacement name
+                for input_assoc in job.input_datasets:
+                    if input_assoc.name == input_file_var:
+                        replacement = input_assoc.dataset.name
+
+                #  Do operations on replacement
+                #  Any control that is not defined will be ignored.
+                #  This should be moved out to a class or module function
+                for operation in operations:
+                    # Basename returns everything prior to the final '.'
+                    if operation == "basename":
+                        fields = replacement.split(".")
+                        replacement = fields[0]
+                        if len(fields) > 1:
+                            temp = ""
+                            for i in range(1, len(fields) - 1):
+                                temp += "." + fields[i]
+                            replacement += temp
+                    elif operation == "upper":
+                        replacement = replacement.upper()
+                    elif operation == "lower":
+                        replacement = replacement.lower()
+
+                new_name = new_name.replace("#{%s}" % to_be_replaced, replacement)
+
             if replacement_dict:
                 for k, v in replacement_dict.iteritems():
                     new_name = new_name.replace("${%s}" % k, v)
