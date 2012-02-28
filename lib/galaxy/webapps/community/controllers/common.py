@@ -346,15 +346,25 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
     metadata_dict = {}
     invalid_files = []
     sample_files = []
-    datatypes_config = None
+    tmp_datatypes_config = None
     # Find datatypes_conf.xml if it exists.
     for filename in ctx:
         if filename == 'datatypes_conf.xml':
             fctx = ctx[ filename ]
-            datatypes_config = fctx.data()
+            # Write the contents of datatypes_config.xml to a temporary file.
+            fh = tempfile.NamedTemporaryFile( 'w' )
+            tmp_datatypes_config = fh.name
+            fh.close()
+            fh = open( tmp_datatypes_config, 'w' )
+            fh.write( fctx.data() )
+            fh.close()
             break
-    if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
+    if tmp_datatypes_config:
+        metadata_dict = generate_datatypes_metadata( tmp_datatypes_config, metadata_dict )
+        try:
+            os.unlink( tmp_datatypes_config )
+        except:
+            pass
     # Get all tool config file names from the hgweb url, something like:
     # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
     for filename in ctx:
