@@ -1289,7 +1289,7 @@ class ENCODEPeak( Interval ):
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     
     def sniff( self, filename ):
-        return Exception( "Unimplemented Function" )
+        return False
         
     def get_track_type( self ):
         return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}    
