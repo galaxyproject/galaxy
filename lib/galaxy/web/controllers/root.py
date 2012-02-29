@@ -481,7 +481,15 @@ class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
             trans.sa_session.flush()
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] ) 
         except:
-            return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" ) 
+            return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" )
+
+    @web.expose
+    def bucket_proxy( self, trans, bucket=None, **kwd):
+        if bucket:
+            trans.response.set_content_type( 'text/xml' )
+            b_list_xml = urllib.urlopen('http://s3.amazonaws.com/%s/' % bucket)
+            return b_list_xml.read()
+        raise Exception("You must specify a bucket")
 
     # ---- Debug methods ----------------------------------------------------
 
@@ -496,7 +504,7 @@ class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
             if isinstance( kwd[k], FieldStorage ):
                 rval += "-> %s" % kwd[k].file.read()
         return rval
-    
+
     @web.expose
     def generate_error( self, trans ):
         raise Exception( "Fake error!" )

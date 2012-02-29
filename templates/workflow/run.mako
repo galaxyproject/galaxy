@@ -252,7 +252,15 @@ if wf_parms:
                         if not enable_unique_defaults:
                             del already_used[:]
                     %>
-                    ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                    %if step.type == None:
+                    ##Input Dataset Step, wrap for multiinput.
+                        <span class='multiinput_wrap'>
+                        ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                        </span>
+                    %else:
+                        ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                    %endif
+
                     <input type="hidden" name="${step.id}|__force_update__${prefix}${param.name}" value="true" />
                 %endif
             %elif isinstance( value, RuntimeValue ) or ( str(step.id) + '|__runtime__' + prefix + param.name ) in incoming:

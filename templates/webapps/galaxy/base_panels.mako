@@ -105,6 +105,16 @@
         %>
     %endif
 
+    ## Cloud menu.
+    %if app.config.get_bool( 'enable_cloud_control', False ):
+        <%
+            menu_options = [
+                             [_('New Cloud Cluster'), h.url_for( controller='/cloud', action='index' ) ],
+                           ]
+            tab( "cloud", _("Cloud"), h.url_for( controller='/cloud', action='index'), menu_options=menu_options )
+        %>
+    %endif
+
     ## Admin tab.
     ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
     

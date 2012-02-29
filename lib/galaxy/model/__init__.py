@@ -1671,57 +1671,10 @@ class GalaxySessionToHistoryAssociation( object ):
         self.galaxy_session = galaxy_session
         self.history = history
 
-class CloudImage( object ):
-    def __init__( self ):
-        self.id = None
-        self.instance_id = None
-        self.state = None
-
 class UCI( object ):
     def __init__( self ):
         self.id = None
         self.user = None
-
-class CloudInstance( object ):
-    def __init__( self ):
-        self.id = None
-        self.user = None
-        self.name = None
-        self.instance_id = None
-        self.mi = None
-        self.state = None
-        self.public_dns = None
-        self.availability_zone = None
-
-class CloudStore( object ):
-    def __init__( self ):
-        self.id = None
-        self.volume_id = None
-        self.user = None
-        self.size = None
-        self.availability_zone = None
-
-class CloudSnapshot( object ):
-    def __init__( self ):
-        self.id = None
-        self.user = None
-        self.store_id = None
-        self.snapshot_id = None
-
-class CloudProvider( object ):
-    def __init__( self ):
-        self.id = None
-        self.user = None
-        self.type = None
-
-class CloudUserCredentials( object ):
-    def __init__( self ):
-        self.id = None
-        self.user = None
-        self.name = None
-        self.accessKey = None
-        self.secretKey = None
-        self.credentials = []
 
 class StoredWorkflow( object, APIItem):
     api_collection_visible_keys = ( 'id', 'name' )

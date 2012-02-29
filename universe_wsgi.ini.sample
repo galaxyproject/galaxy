@@ -251,6 +251,10 @@ static_robots_txt = %(here)s/static/robots.txt
 # Note that this requires java > 1.4 for executing yuicompressor.jar
 #pack_scripts = False
 
+# Enable Cloud Launch
+
+#enable_cloud_launch = False
+
 # -- Advanced proxy features
 
 # For help on configuring the Advanced proxy features, see:
