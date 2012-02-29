@@ -1,4 +1,4 @@
-.viewport-container{overflow-x:hidden;overflow-y:auto;}
+.viewport-container{overflow-x:hidden;overflow-y:auto;background:white;}
 .nav-container{width:100%;}
 .nav{padding:0 0;color:#333;font-weight:bold;background:#cccccc;background-image:url(panel_header_bg.png);background-position:middle center;background-repeat:repeat-x;border-bottom:solid #333 1px;}
 .content{font:10px verdana;}
