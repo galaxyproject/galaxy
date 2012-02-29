@@ -24,7 +24,8 @@
                             error: function() { alert("Getting item content failed."); },
                             success: function( item_content ) {
                                 container.find(".summary-content").hide("fast");
-                                container.find(".item-content").html(item_content).show("fast");
+                                container.find(".item-content").html(item_content);
+                                container.find(".expanded-content").show("fast");
                                 container.find(".toggle-expand").hide();
                                 container.find(".toggle").show();
 
@@ -41,7 +42,7 @@
                         });
                     } else {
                         container.find(".summary-content").hide("fast");
-                        container.find(".item-content").show("fast");
+                        container.find(".expanded-content").show("fast");
                         container.find(".toggle-expand").hide();
                         container.find(".toggle").show();
                     }
@@ -49,7 +50,7 @@
             
                 // Hide embedded item.
                 var hide_embedded_item = function() {
-                    container.find(".item-content").hide("fast");
+                    container.find(".expanded-content").hide("fast");
                     container.find(".summary-content").show("fast");
                     container.find(".toggle").hide();
                     container.find(".toggle-expand").show();
@@ -72,7 +73,7 @@
                 // Setup toggle embed.
                 var toggle_embed = $(this).find('.toggle-embed');
                 toggle_embed.click( function() {
-                    if (container.find(".item-content").is(":visible")) {
+                    if (container.find(".expanded-content").is(":visible")) {
                         hide_embedded_item();
                     } else {
                         show_embedded_item();

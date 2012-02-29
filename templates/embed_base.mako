@@ -9,12 +9,13 @@
 <div class='embedded-item display ${get_class_display_name( item.__class__ ).lower()}'>
     <div class='title'>
         ${self.render_title( item )}
-        <hr/>
     </div>
     <div class='summary-content'>
         ${self.render_summary_content( item, item_data )}
     </div>
-    <div class='item-content'>
+    <div class='expanded-content'>
+        <hr/>
+        <div class='item-content'></div>
     </div>
 </div>
 

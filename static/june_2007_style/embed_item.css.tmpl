@@ -1,16 +1,13 @@
-
-.embedded-item {
-    margin-top: 0.5em
-    margin-left:auto;
-    margin-right:auto;
-    width:90%;
-    -moz-border-radius:0.5em;
-    -webkit-border-radius:0.5em;
-    border-radius:0.5em;
+.embedded-item { 
+    margin: 0em auto;
+    width: 90%;
+    -moz-border-radius: 0.5em;
+    -webkit-border-radius: 0.5em;
+    border-radius: 0.5em;
 }
 
 .embedded-item.display {
-    padding: 0.5em;
+    padding: 2px;
 }
 
 .embedded-item.history {
@@ -54,39 +51,47 @@
 
 .embedded-item.placeholder{}
 
-.embedded-item .item-content {
-    max-height: 25em;
-    overflow: auto;
+.embedded-item .expanded-content {
     display: none;
 }
 
+.embedded-item .item-content {
+    max-height: 25em;
+    overflow: auto;
+}
+
+.embedded-item.visualization .item-content {
+    overflow: hidden;
+}
+
 .embedded-item .title {
-    vertical-align:top;
-    text-align:center;
+    vertical-align: top;
+    text-align: center;
     font-weight: bold;
+    padding-bottom: 2px;
 }
 
 .embedded-item.placeholder .content {
-    padding: 1em 1em;
-    font-style:italic;
-    text-align:center;
+    padding: 0.5em 0.5em;
+    font-style: italic;
+    text-align: center;
 }
 
 table.annotated-item {
-    width:100%;
-    border-collapse:collapse;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 table.annotated-item td,th {
-    padding:0;
+    padding: 0;
 }
 
 table.annotated-item .annotation {
-    padding-left:2em;
-    width:40%;
+    padding-left: 2em;
+    width: 40%;
 }
 
 table.annotated-item td.annotation {
-    vertical-align:text-top;
-    padding-top:1em;
+    vertical-align: text-top;
+    padding-top: 1em;
 }
