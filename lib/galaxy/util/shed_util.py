@@ -18,14 +18,14 @@ def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_rev
     index, shed_tool_conf_dict = get_shed_tool_conf_dict( app, shed_tool_conf )
     tool_path = shed_tool_conf_dict[ 'tool_path' ]
     config_elems = shed_tool_conf_dict[ 'config_elems' ]
-    # Generate the list of ElementTree Element objects for each section or list of tools.
+    # Generate the list of ElementTree Element objects for each section or tool.
     elem_list = generate_tool_panel_elem_list( repository_name,
                                                repository_clone_url,
                                                changeset_revision,
                                                tool_panel_dict,
                                                repository_tools_tups,
                                                owner=owner )
-    # Load the tools into the tool panel outside of any sections.
+    # Load the tools into the tool panel.
     for config_elem in elem_list:
         if config_elem.tag == 'section':
             app.toolbox.load_section_tag_set( config_elem, app.toolbox.tool_panel, tool_path )

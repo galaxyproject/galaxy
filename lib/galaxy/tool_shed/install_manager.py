@@ -116,19 +116,25 @@ class InstallManager( object ):
                                     changeset_revision, tmp_name ):
         # Generate the metadata for the installed tool shed repository, among other things.  It is critical that the installed repository is
         # updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
-        tool_panel_dict = {}
+        tool_panel_dict_for_display = {}
+        tool_panel_dict_for_metadata = {}
         for tool_elem in repository_elem:
             # The tool_elem looks something like this: <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
             tool_config = tool_elem.get( 'file' )
+            guid = self.get_guid( repository_clone_url, relative_install_dir, tool_config )
             # See if tool_config is defined somewhere in self.proprietary_tool_panel_elems.
             is_loaded, tool_section = self.get_containing_tool_section( tool_config )
+            tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_section=tool_section )
+            # The tool_panel_dict_for_tool_config dictionary contains a single entry that looks something like this.
+            # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
+            # Add the new entry to the dictionary we're defining to set metadata.
+            for k, v in tool_panel_dict_for_tool_config.items():
+                tool_panel_dict_for_metadata[ k ] = v
             if is_loaded:
-                guid = self.get_guid( repository_clone_url, relative_install_dir, tool_config )
-                tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_section=tool_section )
-                # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
+                # Add the new entry to the dictionary we're defining to set the tool panel display.
                 for k, v in tool_panel_dict_for_tool_config.items():
-                    tool_panel_dict[ k ] = v
-        metadata_dict = generate_metadata( self.toolbox, relative_install_dir, repository_clone_url, tool_panel_dict=tool_panel_dict )
+                    tool_panel_dict_for_display[ k ] = v
+        metadata_dict = generate_metadata( self.toolbox, relative_install_dir, repository_clone_url, tool_panel_dict=tool_panel_dict_for_metadata )
         # Add a new record to the tool_shed_repository table if one doesn't already exist.  If one exists but is marked
         # deleted, undelete it.  It is critical that this happens before the call to add_to_tool_panel() below because
         # tools will not be properly loaded if the repository is marked deleted.
@@ -157,7 +163,7 @@ class InstallManager( object ):
                                    repository_tools_tups,
                                    self.repository_owner,
                                    self.migrated_tools_config,
-                                   tool_panel_dict,
+                                   tool_panel_dict=tool_panel_dict_for_display,
                                    new_install=True )
                 # Remove the temporary file
                 try:

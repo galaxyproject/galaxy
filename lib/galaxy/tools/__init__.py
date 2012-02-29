@@ -189,14 +189,14 @@ class ToolBox( object ):
                                 tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata, tool_section=tool_section )
                             if section:
                                 # This means all tools are loaded into the same tool panel section or are all outside of any sections.
-                                for guid, tool_section_dict in tool_panel_dict.items():
+                                for tool_panel_dict_guid, tool_section_dict in tool_panel_dict.items():
                                     if tool_section_dict [ 'id' ] != section.id or \
                                         tool_section_dict [ 'version' ] != section.version or \
                                         tool_section_dict [ 'name' ] != section.name:
                                         tool_section_dict [ 'id' ] = section.id
                                         tool_section_dict [ 'version' ] = section.version
                                         tool_section_dict [ 'name' ] = section.name
-                                        tool_panel_dict[ guid ] = tool_section_dict
+                                        tool_panel_dict[ tool_panel_dict_guid ] = tool_section_dict
                                         update_needed = True
                         else:
                             # The tool_panel_section was introduced late, so set it's value if its missing in the metadata.
@@ -1986,7 +1986,6 @@ class Tool:
         Find extra files in the job working directory and move them into
         the appropriate dataset's files directory
         """
-        # print "Working in collect_associated_files"
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
             try:
