@@ -69,6 +69,7 @@ datatypes_conf.xml.sample
 universe_wsgi.ini.sample
 tool_data_table_conf.xml.sample
 tool-data/shared/ucsc/builds.txt.sample
+migrated_tools_conf.xml.sample
 "
 
 DIRS="
