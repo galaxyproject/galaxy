@@ -80,6 +80,7 @@ class AdminToolshed( AdminGalaxy ):
         """Activate a repository that was deactivated but not uninstalled."""
         repository = get_repository( trans, kwd[ 'id' ] )
         shed_tool_conf, tool_path, relative_install_dir = self.__get_tool_panel_config_tool_path_install_dir( trans, repository )
+        repository_clone_url = self.__generate_clone_url( trans, repository )
         repository.deleted = False
         trans.sa_session.add( repository )
         trans.sa_session.flush()
@@ -88,19 +89,20 @@ class AdminToolshed( AdminGalaxy ):
             metadata = repository.metadata
             if 'tool_panel_section' in metadata:
                 if panel_entry_per_tool( metadata[ 'tool_panel_section' ] ):
-                    # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
                     tool_panel_dict = metadata[ 'tool_panel_section' ]
-                    # TODO: Fix this to handle the case where the tools are distributed across in more than 1 section.  The
-                    # following assumes everything was loaded into 1 section (or no section) in the tool panel.
-                    tool_section_dict = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
                 else:
-                    # The value of tool_panel_section is the old dictionary type like this, so update to the new dictionary type like that above.
-                    # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
+                    # The value of tool_panel_section is the old dictionary type.
                     tool_section_dict = metadata[ 'tool_panel_section' ]
-                original_section_id = tool_section_dict[ 'id' ]
+                    tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata, tool_section_dict=tool_section_dict )
+                    repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
+                    trans.sa_session.add( repository )
+                    trans.sa_session.flush()
             else:
-                # Tools were loaded outside of any panel sections.
-                original_section_id = ''
+                # The tool_panel_section was introduced late, so set it's value if its missing in the metadata.
+                tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata )
+                repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
+                trans.sa_session.add( repository )
+                trans.sa_session.flush()
             repository_tools_tups = get_repository_tools_tups( trans.app, metadata )
             guids_to_activate = [ repository_tool_tup[1] for repository_tool_tup in repository_tools_tups ]
             # Make sure we have a tool_version for each guid.
@@ -110,53 +112,15 @@ class AdminToolshed( AdminGalaxy ):
                     tool_version = trans.model.ToolVersion( tool_id=guid_to_activate, tool_shed_repository=repository )
                     trans.sa_session.add( tool_version )
                     trans.sa_session.flush()
-            if original_section_id in [ '' ]:
-                # If the repository includes tools, reload them into the tool panel outside of any sections.
-                self.__add_tools_to_tool_panel( trans, repository, repository_tools_tups, tool_section=None, section_key=None )
-            else:
-                original_section_name = tool_section_dict[ 'name' ]
-                original_section_version = tool_section_dict[ 'version' ]
-                section_key = 'section_%s' % str( original_section_id )
-                if section_key in trans.app.toolbox.tool_panel:
-                    # Load the repository tools into a section that still exists in the tool panel.
-                    tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                    self.__add_tools_to_tool_panel( trans, repository, repository_tools_tups, tool_section=tool_section, section_key=section_key )
-                else:
-                    # Load the repository tools into a section that no longer exists in the tool panel. The section must
-                    # still exist in the tool config since the repository was only deactivated and not uninstalled.
-                    sections_to_load = []
-                    tool_elems_found = 0
-                    # Only inspect tool configs that contain installed tool shed repositories.
-                    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
-                        config_filename = shed_tool_conf_dict[ 'config_filename' ]
-                        log.info( "Parsing the tool configuration %s" % config_filename )
-                        tree = util.parse_xml( config_filename )
-                        root = tree.getroot()
-                        tool_path = root.get( 'tool_path' )
-                        if tool_path is not None:
-                            # Tool configs that contain tools installed from tool shed repositories must have a tool_path attribute.
-                            for elem in root:
-                                if elem.tag == 'section' and \
-                                    elem.get( 'id' ) == original_section_id and \
-                                    elem.get( 'name' ) == original_section_name and \
-                                    elem.get( 'version' ) == original_section_version:
-                                        # We've found the section, but we have to make sure it contains the
-                                        # correct tool tag set.  This is necessary because the shed tool configs
-                                        # can include multiple sections of the same id, name and version, each
-                                        # containing one or more tool tag sets.
-                                        for tool_elem in elem:
-                                            if tool_elem.get( 'guid' ) in guids_to_activate:
-                                                tool_elems_found += 1
-                                                if elem not in sections_to_load:
-                                                    sections_to_load.append( elem )
-                                            if tool_elems_found == len( guids_to_activate ):
-                                                break
-                                if tool_elems_found == len( guids_to_activate ):
-                                    break
-                        if tool_elems_found == len( guids_to_activate ):
-                            break
-                    for elem in sections_to_load:
-                        trans.app.toolbox.load_section_tag_set( elem, trans.app.toolbox.tool_panel, tool_path )
+        add_to_tool_panel( trans.app,
+                           repository.name,
+                           repository_clone_url,
+                           repository.changeset_revision,
+                           repository_tools_tups,
+                           repository.owner,
+                           shed_tool_conf,
+                           tool_panel_dict,
+                           new_install=False )
         message = 'The <b>%s</b> repository has been activated.' % repository.name
         status = 'done'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -245,14 +209,10 @@ class AdminToolshed( AdminGalaxy ):
                     repository_tool_panel_keys = []
                 if 'tool_panel_section' in metadata:
                     if panel_entry_per_tool( metadata[ 'tool_panel_section' ] ):
-                        # The tool_panel_section dictionary contains entries that look like this.
-                        # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
                         tool_panel_dict = metadata[ 'tool_panel_section' ]
                     else:
-                        # The tool_panel_section dictionary looks like the following.  This is the old definition of the tool_panel_section,
-                        # so update it to the current dictionary like that above.  All of the repository tools will be installed in the same
-                        # section or outside of any sections.
-                        # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
+                        # The tool_panel_section dictionary is the old definition of the tool_panel_section, so update it to the current dictionary.
+                        # All of the repository tools will be installed in the same section or outside of any sections.
                         tool_section_dict = metadata[ 'tool_panel_section' ]
                         tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata, tool_section_dict=tool_section_dict )
                         repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
@@ -496,11 +456,9 @@ class AdminToolshed( AdminGalaxy ):
                 # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
                 # Later, each tool from a repository could be installed into the tool panel inside or outside a specified ToolSection in the tool panel.
                 if panel_entry_per_tool( metadata[ 'tool_panel_section' ] ):
-                    # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
                     tool_panel_dict = metadata[ 'tool_panel_section' ]
                     metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url, tool_panel_dict=tool_panel_dict )
                 else:
-                    # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
                     tool_section_dict = metadata[ 'tool_panel_section' ]
                     metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url, tool_section_dict=tool_section_dict )
             else:
@@ -537,13 +495,12 @@ class AdminToolshed( AdminGalaxy ):
                 metadata = repository.metadata
                 if 'tool_panel_section' in metadata:
                     if panel_entry_per_tool( metadata[ 'tool_panel_section' ] ):
-                        # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
                         tool_panel_dict = metadata[ 'tool_panel_section' ]
                         # TODO: Fix this to handle the case where the tools are distributed across in more than 1 ToolSection.  The
                         # following assumes everything was loaded into 1 section (or no section) in the tool panel.
-                        tool_section_dict = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                        tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                        tool_section_dict = tool_section_dicts[ 0 ]
                     else:
-                        # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
                         tool_section_dict = metadata[ 'tool_panel_section' ]
                         tool_section = generate_tool_section_element_from_dict( tool_section_dict )
                         tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata, tool_section=tool_section )
@@ -575,11 +532,13 @@ class AdminToolshed( AdminGalaxy ):
                     if new_tool_panel_section:
                         section_id = new_tool_panel_section.lower().replace( ' ', '_' )
                         # Update each tool_section dictionary in tool_panel_dict with the new section attributes.
-                        for guid, tool_section_dict in tool_panel_dict.items():
-                            tool_section_dict[ 'id' ] = section_id
-                            tool_section_dict[ 'name' ] = new_tool_panel_section
-                            tool_section_dict[ 'version' ] = ''
-                            tool_panel_dict[ guid ] = tool_section_dict
+                        for guid, tool_section_dicts in tool_panel_dict.items():
+                            for dict_index, tool_section_dict in enumerate( tool_section_dicts ):
+                                tool_section_dict[ 'id' ] = section_id
+                                tool_section_dict[ 'name' ] = new_tool_panel_section
+                                tool_section_dict[ 'version' ] = ''
+                                tool_section_dicts[ dict_index ] = tool_section_dict
+                            tool_panel_dict[ guid ] = tool_section_dicts
                         new_section_key = 'section_%s' % str( section_id )
                         if new_section_key in trans.app.toolbox.tool_panel:
                             # Appending a tool to an existing section in trans.app.toolbox.tool_panel
@@ -600,11 +559,13 @@ class AdminToolshed( AdminGalaxy ):
                     else:
                         # Update each tool_section dictionary in tool_panel_dict in case the tools used to be contained in a panel section
                         # but are now being moved outside of any panel sections.
-                        for guid, tool_section_dict in tool_panel_dict.items():
-                            tool_section_dict[ 'id' ] = ''
-                            tool_section_dict[ 'name' ] = ''
-                            tool_section_dict[ 'version' ] = ''
-                            tool_panel_dict[ guid ] = tool_section_dict
+                        for guid, tool_section_dicts in tool_panel_dict.items():
+                            for dict_index, tool_section_dict in enumerate( tool_section_dicts ):
+                                tool_section_dict[ 'id' ] = ''
+                                tool_section_dict[ 'name' ] = ''
+                                tool_section_dict[ 'version' ] = ''
+                                tool_section_dicts[ dict_index ] = tool_section_dict
+                            tool_panel_dict[ guid ] = tool_section_dicts
                         tool_section = None
                 tool_shed_repository, metadata_dict = load_repository_contents( trans,
                                                                                 repository_name=repository.name,
@@ -670,13 +631,12 @@ class AdminToolshed( AdminGalaxy ):
         if 'tool_panel_section' in metadata:
             tool_panel_dict = metadata[ 'tool_panel_section' ]
             if panel_entry_per_tool( tool_panel_dict ):
-                # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
                 # TODO: Fix this to handle the case where the tools are distributed across in more than 1 ToolSection.  The
                 # following assumes everything was loaded into 1 section (or no section) in the tool panel.
-                tool_panel_dict = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
-                original_section_name = tool_panel_dict[ 'name' ]
+                tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                tool_section_dict = tool_section_dicts[ 0 ]
+                original_section_name = tool_section_dict[ 'name' ]
             else:
-                # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
                 original_section_name = tool_panel_dict[ 'name' ]
         else:
             original_section_name = ''
@@ -744,10 +704,8 @@ class AdminToolshed( AdminGalaxy ):
         metadata = repository.metadata
         if 'tool_panel_section' in metadata:
             if panel_entry_per_tool( metadata[ 'tool_panel_section' ] ):
-                # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
             else:
-                # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
                 tool_section_dict = metadata[ 'tool_panel_section' ]
                 tool_section = generate_tool_section_element_from_dict( tool_section_dict )
                 tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata, tool_section=tool_section )
@@ -833,34 +791,6 @@ class AdminToolshed( AdminGalaxy ):
                                     metadata=metadata,
                                     message=message,
                                     status=status )
-    def __add_tools_to_tool_panel( self, trans, repository, repository_tools_tups, tool_section=None, section_key=None ):
-        # Load tools.
-        if tool_section:
-            elems = tool_section.elems
-        for repository_tools_tup in repository_tools_tups:
-            relative_path, guid, tool = repository_tools_tup
-            tool.tool_shed = repository.tool_shed
-            tool.repository_name = repository.name
-            tool.repository_owner = repository.owner
-            tool.installed_changeset_revision = repository.installed_changeset_revision
-            tool.guid = guid
-            # Set the tool's old_id to the id used before the tool shed existed.
-            tool.old_id = tool.id
-            # Set the tool's id to the tool shed guid.
-            tool.id = guid
-            if tool_section:
-                if tool.id not in elems:
-                    elems[ 'tool_%s' % tool.id ] = tool
-                    log.debug( "Reactivated tool id: %s, version: %s" % ( tool.id, tool.version ) )
-            else:
-                if tool.id not in trans.app.toolbox.tools_by_id:
-                    # Allow for the same tool to be loaded into multiple places in the tool panel.
-                    trans.app.toolbox.tools_by_id[ tool.id ] = tool
-                trans.app.toolbox.tool_panel[ 'tool_%s' % tool.id ] = tool
-                log.debug( "Reactivated tool id: %s, version: %s" % ( tool.id, tool.version ) )
-        if tool_section:
-            trans.app.toolbox.tool_panel[ section_key ] = tool_section
-            log.debug( "Appended reactivated tool to section: %s" % tool_section.name )
     def __generate_clone_url( self, trans, repository ):
         """Generate the URL for cloning a repository."""
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )

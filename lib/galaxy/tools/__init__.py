@@ -92,7 +92,7 @@ class ToolBox( object ):
             # We're parsing a shed_tool_conf file since we have a tool_path attribute.  
             parsing_shed_tool_conf = True
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
-            config_elems=[] 
+            config_elems = [] 
         else:
             parsing_shed_tool_conf = False
             # Default to backward compatible config setting.
@@ -180,7 +180,7 @@ class ToolBox( object ):
                         update_needed = False
                         if 'tool_panel_section' in metadata:
                             if panel_entry_per_tool( metadata[ 'tool_panel_section' ] ):
-                                # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
+                                # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
                                 tool_panel_dict = metadata[ 'tool_panel_section' ]
                             else:
                                 # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
@@ -189,15 +189,17 @@ class ToolBox( object ):
                                 tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata, tool_section=tool_section )
                             if section:
                                 # This means all tools are loaded into the same tool panel section or are all outside of any sections.
-                                for tool_panel_dict_guid, tool_section_dict in tool_panel_dict.items():
-                                    if tool_section_dict [ 'id' ] != section.id or \
-                                        tool_section_dict [ 'version' ] != section.version or \
-                                        tool_section_dict [ 'name' ] != section.name:
-                                        tool_section_dict [ 'id' ] = section.id
-                                        tool_section_dict [ 'version' ] = section.version
-                                        tool_section_dict [ 'name' ] = section.name
-                                        tool_panel_dict[ tool_panel_dict_guid ] = tool_section_dict
-                                        update_needed = True
+                                for tool_panel_dict_guid, tool_section_dicts in tool_panel_dict.items():
+                                    for dict_index, tool_section_dict in enumerate( tool_section_dicts ):
+                                        if tool_section_dict [ 'id' ] != section.id or \
+                                            tool_section_dict [ 'version' ] != section.version or \
+                                            tool_section_dict [ 'name' ] != section.name:
+                                            tool_section_dict [ 'id' ] = section.id
+                                            tool_section_dict [ 'version' ] = section.version
+                                            tool_section_dict [ 'name' ] = section.name
+                                            tool_section_dicts[ dict_index ] = tool_section_dict
+                                    tool_panel_dict[ tool_panel_dict_guid ] = tool_section_dicts
+                                    update_needed = True
                         else:
                             # The tool_panel_section was introduced late, so set it's value if its missing in the metadata.
                             tool_panel_dict = generate_tool_panel_dict_for_repository_tools( tool_shed_repository.metadata, tool_section=section )

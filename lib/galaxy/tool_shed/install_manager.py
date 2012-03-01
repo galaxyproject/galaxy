@@ -88,11 +88,13 @@ class InstallManager( object ):
                                 if elem not in tool_panel_elems:
                                     tool_panel_elems.append( elem )
         return tool_panel_elems
-    def get_containing_tool_section( self, tool_config ):
+    def get_containing_tool_sections( self, tool_config ):
         """
-        If tool_config is defined somewhere in self.proprietary_tool_panel_elems, return True and the ToolSection in which the tool is
-        displayed or None if it is displayed outside of any sections.
+        If tool_config is defined somewhere in self.proprietary_tool_panel_elems, return True and a list of ToolSections in which the
+        tool is displayed.  If the tool is displayed outside of any sections, None is appended to the list.
         """
+        tool_sections = []
+        is_displayed = False
         for proprietary_tool_panel_elem in self.proprietary_tool_panel_elems:
             if proprietary_tool_panel_elem.tag == 'tool':
                 # The proprietary_tool_panel_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
@@ -100,7 +102,9 @@ class InstallManager( object ):
                 proprietary_path, proprietary_name = os.path.split( proprietary_tool_config )
                 if tool_config == proprietary_name:
                     # The tool is loaded outside of any sections.
-                    return True, None
+                    tool_sections.append( None )
+                    if not is_displayed:
+                        is_displayed = True
             if proprietary_tool_panel_elem.tag == 'section':
                 # The proprietary_tool_panel_elem looks something like <section name="EMBOSS" id="EMBOSSLite">.
                 for section_elem in proprietary_tool_panel_elem:
@@ -110,27 +114,31 @@ class InstallManager( object ):
                         proprietary_path, proprietary_name = os.path.split( proprietary_tool_config )
                         if tool_config == proprietary_name:
                             # The tool is loaded inside of the section_elem.
-                            return True, ToolSection( proprietary_tool_panel_elem )
-        return False, None
+                            tool_sections.append( ToolSection( proprietary_tool_panel_elem ) )
+                            if not is_displayed:
+                                is_displayed = True
+        return is_displayed, tool_sections
     def handle_repository_contents( self, current_working_dir, repository_clone_url, relative_install_dir, repository_elem, repository_name, description,
                                     changeset_revision, tmp_name ):
         # Generate the metadata for the installed tool shed repository, among other things.  It is critical that the installed repository is
         # updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
+        # The values for the keys in each of the following dictionaries will be a list to allow for the same tool to be displayed in multiple places
+        # in the tool panel.
         tool_panel_dict_for_display = {}
         tool_panel_dict_for_metadata = {}
         for tool_elem in repository_elem:
             # The tool_elem looks something like this: <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
             tool_config = tool_elem.get( 'file' )
             guid = self.get_guid( repository_clone_url, relative_install_dir, tool_config )
-            # See if tool_config is defined somewhere in self.proprietary_tool_panel_elems.
-            is_loaded, tool_section = self.get_containing_tool_section( tool_config )
-            tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_section=tool_section )
+            # See if tool_config is defined inside of a section in self.proprietary_tool_panel_elems.
+            is_displayed, tool_sections = self.get_containing_tool_sections( tool_config )
+            tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
             # The tool_panel_dict_for_tool_config dictionary contains a single entry that looks something like this.
-            # {<Tool guid> : { tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}}
+            # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
             # Add the new entry to the dictionary we're defining to set metadata.
             for k, v in tool_panel_dict_for_tool_config.items():
                 tool_panel_dict_for_metadata[ k ] = v
-            if is_loaded:
+            if is_displayed:
                 # Add the new entry to the dictionary we're defining to set the tool panel display.
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
