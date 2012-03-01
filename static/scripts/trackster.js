@@ -1474,7 +1474,7 @@ extend( View.prototype, DrawableCollection.prototype, {
                  "z-index": 1000
             } ).appendTo( $(this) );
         }).bind( "drag", function( e, d ) {
-            $( d.proxy ).css({ left: Math.min( e.pageX, d.startX ), width: Math.abs( e.pageX - d.startX ) });
+            $( d.proxy ).css({ left: Math.min( e.pageX, d.startX ) - view.container.offset().left, width: Math.abs( e.pageX - d.startX ) });
             var min = Math.min(e.pageX, d.startX ) - view.container.offset().left,
                 max = Math.max(e.pageX, d.startX ) - view.container.offset().left,
                 span = (view.high - view.low),
