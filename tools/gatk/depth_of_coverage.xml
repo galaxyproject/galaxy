@@ -129,7 +129,7 @@
             &amp;&amp; mv ${output_per_locus_coverage}.sample_summary ${output_summary_sample}
             &amp;&amp; mv ${output_per_locus_coverage}.sample_statistics ${output_statistics_sample}
         #end if
-        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and str( $gatk_param_type.omit_interval_statistics ) == "":
+        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and ( str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_interval_statistics ) == "" ):
             &amp;&amp; mv ${output_per_locus_coverage}.sample_interval_summary ${output_interval_summary_sample}
             &amp;&amp; mv ${output_per_locus_coverage}.sample_interval_statistics ${output_interval_statistics_sample}
         #end if
@@ -148,7 +148,7 @@
             &amp;&amp; mv ${output_per_locus_coverage}.read_group_summary ${output_summary_readgroup}
             &amp;&amp; mv ${output_per_locus_coverage}.read_group_statistics ${output_statistics_readgroup}
         #end if
-        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and str( $gatk_param_type.omit_interval_statistics ) == "":
+        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and ( str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_interval_statistics ) == "" ):
             &amp;&amp; mv ${output_per_locus_coverage}.read_group_interval_summary ${output_interval_summary_readgroup}
             &amp;&amp; mv ${output_per_locus_coverage}.read_group_interval_statistics ${output_interval_statistics_readgroup}
         #end if
@@ -167,7 +167,7 @@
             &amp;&amp; mv ${output_per_locus_coverage}.library_summary ${output_summary_library}
             &amp;&amp; mv ${output_per_locus_coverage}.library_statistics ${output_statistics_library}
         #end if
-        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and str( $gatk_param_type.omit_interval_statistics ) == "":
+        #if $gatk_param_type.gatk_param_type_selector == "advanced" and len( $gatk_param_type.input_interval_repeat ) and ( str( $analysis_param_type.analysis_param_type_selector ) == "basic" or str( $analysis_param_type.omit_interval_statistics ) == "" ):
             &amp;&amp; mv ${output_per_locus_coverage}.library_interval_summary ${output_interval_summary_library}
             &amp;&amp; mv ${output_per_locus_coverage}.library_interval_statistics ${output_interval_statistics_library}
         #end if
