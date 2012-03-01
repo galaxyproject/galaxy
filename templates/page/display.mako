@@ -95,7 +95,7 @@
             margin: 0px;
         }
         ## Format tables in pages so that they look like they do in the page editor.
-        .page-body table {
+        .page-body > table {
             padding: 8px 5px 5px;
             min-width: 500px; 
             border: none;
@@ -108,7 +108,7 @@
             padding: 5px; 
             font-weight: bold; 
         }
-        .page-body td {
+        .page-body > table td {
             width: 25%;
             padding: 0.2em 0.8em;
         }
