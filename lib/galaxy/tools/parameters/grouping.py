@@ -309,7 +309,7 @@ class UploadDataset( Group ):
             if ftp_files is not None:
                 # Normalize input paths to ensure utf-8 encoding is normal form c.
                 # This allows for comparison when the filesystem uses a different encoding than the browser.
-                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files]
+                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, unicode)]
                 if trans.user is None:
                     log.warning( 'Anonymous user passed values in ftp_files: %s' % ftp_files )
                     ftp_files = []
@@ -321,7 +321,11 @@ class UploadDataset( Group ):
                             path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
                             if not os.path.islink( os.path.join( dirpath, filename ) ):
                                 # Normalize filesystem paths
-                                valid_files.append( unicodedata.normalize('NFC', path ))
+                                if isinstance(path, unicode):
+                                    valid_files.append(unicodedata.normalize('NFC', path ))
+                                else:
+                                    valid_files.append(path)
+
             else:
                 ftp_files = []
             for ftp_file in ftp_files:
