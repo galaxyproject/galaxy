@@ -599,25 +599,6 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
         if converter_path and display_path:
             break
     return converter_path, display_path
-def get_in_memory_config_elems_to_remove( shed_tool_conf_dict, guids_to_remove ):
-    config_elems = shed_tool_conf_dict[ 'config_elems' ]
-    config_elems_to_remove = []
-    for config_elem in config_elems:
-        if config_elem.tag == 'section':
-            tool_elems_to_remove = []
-            for tool_elem in config_elem:
-                if tool_elem.get( 'guid' ) in guids_to_remove:
-                    tool_elems_to_remove.append( tool_elem )
-            for tool_elem in tool_elems_to_remove:
-                # Remove all of the appropriate tool sub-elements from the section element.
-                config_elem.remove( tool_elem )
-            if len( config_elem ) < 1:
-                # Keep a list of all empty section elements so they can be removed.
-                config_elems_to_remove.append( config_elem )
-        elif config_elem.tag == 'tool':
-            if config_elem.get( 'guid' ) in guids_to_remove:
-                config_elems_to_remove.append( config_elem )
-    return config_elems_to_remove
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
     """
     Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
@@ -1003,18 +984,40 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     if uninstall:
         # Remove from the shed_tool_conf file on disk.
         remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove )
-    config_elems_to_remove = get_in_memory_config_elems_to_remove( shed_tool_conf_dict, guids_to_remove )
-    # Remove from the in-memory list of config_elems.
     config_elems = shed_tool_conf_dict[ 'config_elems' ]
+    config_elems_to_remove = []
+    for config_elem in config_elems:
+        if config_elem.tag == 'section':
+            # Get the section key for the in-memory tool panel.
+            section_key = 'section_%s' % str( config_elem.get( "id" ) )
+            # Generate the list of tool elements to remove.
+            tool_elems_to_remove = []
+            for tool_elem in config_elem:
+                if tool_elem.get( 'guid' ) in guids_to_remove:
+                    tool_elems_to_remove.append( tool_elem )
+            for tool_elem in tool_elems_to_remove:
+                # Remove the tool sub-element from the section element.
+                config_elem.remove( tool_elem )
+                # Remove the tool from the section in the in-memory tool panel.
+                if section_key in trans.app.toolbox.tool_panel:
+                    tool_section = trans.app.toolbox.tool_panel[ section_key ]
+                    tool_key = key = 'tool_%s' % str( tool_elem.get( 'guid' ) )
+                    if tool_key in tool_section.elems:
+                        del tool_section.elems[ tool_key ]
+                    if not tool_section.elems:
+                        del trans.app.toolbox.tool_panel[ section_key ]
+            if len( config_elem ) < 1:
+                # Keep a list of all empty section elements so they can be removed.
+                config_elems_to_remove.append( config_elem )
+        elif config_elem.tag == 'tool':
+            if config_elem.get( 'guid' ) in guids_to_remove:
+                tool_key = key = 'tool_%s' % str( config_elem.get( 'guid' ) )
+                if tool_key in trans.app.toolbox.tool_panel:
+                    del trans.app.toolbox.tool_panel[ tool_key ]
+                config_elems_to_remove.append( config_elem )
     for config_elem in config_elems_to_remove:
         # Remove the element from the in-memory list of elements.
         config_elems.remove( config_elem )
-        if config_elem.tag == 'section':
-            key = 'section_%s' % str( config_elem.get( "id" ) )
-            del trans.app.toolbox.tool_panel[ key ]
-        elif config_elem.tag == 'tool':
-            key = 'tool_%s' % str( config_elem.get( 'guid' ) )
-            del trans.app.toolbox.tool_panel[ key ]
     # Update the config_elems of the in-memory shed_tool_conf_dict.
     shed_tool_conf_dict[ 'config_elems' ] = config_elems
     trans.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
