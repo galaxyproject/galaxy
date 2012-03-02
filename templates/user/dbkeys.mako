@@ -99,7 +99,7 @@
         
         // Before submit, remove inputs not associated with the active tab.
         $("#submit").click(function() {
-            var id = $(".active > a").attr("id");
+            var id = $(this).parents("form").find(".active > a").attr("id");
             $("div.build_definition").children(":input").each(function() {
                 if ( $(this).attr("id") !== (id + "_input")  ) {
                     $(this).remove();
@@ -168,6 +168,10 @@
     <hr />
     <h3>Add a Custom Build</h3>
     <form action="dbkeys" method="post" enctype="multipart/form-data">
+        ## Include hidden param for panels:
+        %if use_panels:
+            <input type="hidden" name="use_panels" value="True">
+        %endif
         ## Custom build via fasta in history.
         <div class="toolForm" style="float: left;">
             <div class="toolFormTitle">New Build</div>

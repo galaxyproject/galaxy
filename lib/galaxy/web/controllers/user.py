@@ -1174,6 +1174,8 @@ class User( BaseUIController, UsesFormDefinitions ):
     @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
+        """ Handle custom builds. """
+        
         #
         # Process arguments and add/delete build.
         #
@@ -1298,7 +1300,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                         .filter_by( history=trans.history, extension="fasta", deleted=False ) \
                         .order_by( model.HistoryDatasetAssociation.hid.desc() )
-        
+
         return trans.fill_template( 'user/dbkeys.mako',
                                     user=user,
                                     dbkeys=dbkeys,
@@ -1306,7 +1308,7 @@ class User( BaseUIController, UsesFormDefinitions ):
                                     installed_len_files=self.installed_len_files,
                                     lines_skipped=lines_skipped,
                                     fasta_hdas=fasta_hdas,
-                                    use_panels=kwds.get( 'use_panels', None ) )          
+                                    use_panels=kwds.get( 'use_panels', False ) )          
     @web.expose
     @web.require_login()
     def api_keys( self, trans, cntrller, **kwd ):
