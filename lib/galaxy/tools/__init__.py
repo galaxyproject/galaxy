@@ -175,40 +175,6 @@ class ToolBox( object ):
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load = not tool_shed_repository.deleted
-                    if can_load:
-                        metadata = tool_shed_repository.metadata
-                        update_needed = False
-                        if 'tool_panel_section' in metadata:
-                            if panel_entry_per_tool( metadata[ 'tool_panel_section' ] ):
-                                # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
-                                tool_panel_dict = metadata[ 'tool_panel_section' ]
-                            else:
-                                # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
-                                tool_section_dict = metadata[ 'tool_panel_section' ]
-                                tool_section = generate_tool_section_element_from_dict( tool_section_dict )
-                                tool_panel_dict = generate_tool_panel_dict_for_repository_tools( metadata, tool_section=tool_section )
-                            if section:
-                                # This means all tools are loaded into the same tool panel section or are all outside of any sections.
-                                for tool_panel_dict_guid, tool_section_dicts in tool_panel_dict.items():
-                                    for dict_index, tool_section_dict in enumerate( tool_section_dicts ):
-                                        if tool_section_dict [ 'id' ] != section.id or \
-                                            tool_section_dict [ 'version' ] != section.version or \
-                                            tool_section_dict [ 'name' ] != section.name:
-                                            tool_section_dict [ 'id' ] = section.id
-                                            tool_section_dict [ 'version' ] = section.version
-                                            tool_section_dict [ 'name' ] = section.name
-                                            tool_section_dicts[ dict_index ] = tool_section_dict
-                                    tool_panel_dict[ tool_panel_dict_guid ] = tool_section_dicts
-                                    update_needed = True
-                        else:
-                            # The tool_panel_section was introduced late, so set it's value if its missing in the metadata.
-                            tool_panel_dict = generate_tool_panel_dict_for_repository_tools( tool_shed_repository.metadata, tool_section=section )
-                            update_needed = True
-                        if update_needed:
-                            metadata[ 'tool_panel_section' ] = tool_panel_dict
-                            tool_shed_repository.metadata = metadata
-                            self.sa_session.add( tool_shed_repository )
-                            self.sa_session.flush()
                 else:
                     # If there is not yet a tool_shed_repository record, we're in the process of installing
                     # a new repository, so any included tools can be loaded into the tool panel.

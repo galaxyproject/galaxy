@@ -125,24 +125,17 @@ class InstallManager( object ):
         # The values for the keys in each of the following dictionaries will be a list to allow for the same tool to be displayed in multiple places
         # in the tool panel.
         tool_panel_dict_for_display = {}
-        tool_panel_dict_for_metadata = {}
         for tool_elem in repository_elem:
             # The tool_elem looks something like this: <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
             tool_config = tool_elem.get( 'file' )
             guid = self.get_guid( repository_clone_url, relative_install_dir, tool_config )
             # See if tool_config is defined inside of a section in self.proprietary_tool_panel_elems.
             is_displayed, tool_sections = self.get_containing_tool_sections( tool_config )
-            tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
-            # The tool_panel_dict_for_tool_config dictionary contains a single entry that looks something like this.
-            # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
-            # Add the new entry to the dictionary we're defining to set metadata.
-            for k, v in tool_panel_dict_for_tool_config.items():
-                tool_panel_dict_for_metadata[ k ] = v
             if is_displayed:
-                # Add the new entry to the dictionary we're defining to set the tool panel display.
+                tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
-        metadata_dict = generate_metadata( self.toolbox, relative_install_dir, repository_clone_url, tool_panel_dict=tool_panel_dict_for_metadata )
+        metadata_dict = generate_metadata( self.toolbox, relative_install_dir, repository_clone_url )
         # Add a new record to the tool_shed_repository table if one doesn't already exist.  If one exists but is marked
         # deleted, undelete it.  It is critical that this happens before the call to add_to_tool_panel() below because
         # tools will not be properly loaded if the repository is marked deleted.

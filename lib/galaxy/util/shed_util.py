@@ -274,7 +274,7 @@ def generate_datatypes_metadata( datatypes_config, metadata_dict ):
         if datatypes:
             metadata_dict[ 'datatypes' ] = datatypes
     return metadata_dict
-def generate_metadata( toolbox, relative_install_dir, repository_clone_url, tool_section_dict=None, tool_panel_dict=None ):
+def generate_metadata( toolbox, relative_install_dir, repository_clone_url ):
     """
     Browse the repository files on disk to generate metadata.  Since we are using disk files, it is imperative that the
     repository is updated to the desired change set revision before metadata is generated.
@@ -282,24 +282,6 @@ def generate_metadata( toolbox, relative_install_dir, repository_clone_url, tool
     metadata_dict = {}
     sample_files = []
     datatypes_config = None
-    new_tool_panel_dict = {}
-    # Keep track of the section in the tool panel in which this repository's tools will be contained by using the information in either the
-    # tool_section_dict or the tool_panel_dict (at least 1 of these 2 dictionaries should be None).  The tool_section_dict is passed when the
-    # Admin is manually installing a repository into a single selected section.  It looks something like this.
-    # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
-    # The tool_panel_dict is fully populated with all tools in the repository that should be loaded into the tool panel.  It is received when
-    # this method is called by the InstallManager or when metadata is being reset on an existing repository.  This dictionary looks something
-    # like this.
-    # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
-    # The tool_panel_dict enables each tool in the repository to be contained inside or outside a specified ToolSection in the tool panel.  The 
-    # new_tool_panel_dict with be populated with a subset of the items in the received tool_panel_dict.  This will allow for the case where
-    # repository metadata is being updated where the previous change set revision included more tools than the current change set revision.
-    if tool_section_dict:
-        # The received tool_panel_dict must be None, so we'll populate it here.
-        for k, v in tool_section_dict.items():
-            if v is None:
-                # Coerce None values into empty strings because ElementTree.tostring() throws exceptions on None values.
-                tool_section_dict[ k ] = ''
     # Find datatypes_conf.xml if it exists.
     for root, dirs, files in os.walk( relative_install_dir ):
         if root.find( '.hg' ) < 0:
@@ -336,36 +318,6 @@ def generate_metadata( toolbox, relative_install_dir, repository_clone_url, tool
                         tool_config = os.path.join( root, name )
                         guid = generate_tool_guid( repository_clone_url, tool )
                         metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
-                        # Populate the tool_section_dict if necessary.
-                        if tool_panel_dict and guid in tool_panel_dict:
-                            # We're updating metadata on a previously installed repository.
-                            old_tool_panel_dicts = tool_panel_dict[ guid ]
-                            for dict_index, old_tool_panel_dict in enumerate( old_tool_panel_dicts ):
-                                # Should we really do this?  What if there is more than 1 old_tool_panel_dict in the list?
-                                if 'tool_config' not in old_tool_panel_dict or old_tool_panel_dict[ 'tool_config' ] in [ None, '' ]:
-                                    old_tool_panel_dict[ 'tool_config' ] = name
-                                    old_tool_panel_dicts[ dict_index ] = old_tool_panel_dict
-                            if guid in new_tool_panel_dict:
-                                for old_tool_panel_dict in old_tool_panel_dicts:
-                                    new_tool_panel_dict[ guid ].append( old_tool_panel_dict )
-                            else:
-                                new_tool_panel_dict[ guid ] = old_tool_panel_dicts
-                        else:
-                            # The admin is manually installing a new repository.
-                            new_tool_section_dict = {}
-                            if tool_section_dict:
-                                for k, v in tool_section_dict.items():
-                                    new_tool_section_dict[ k ] = v
-                            else:
-                                new_tool_section_dict[ 'id' ] = ''
-                                new_tool_section_dict[ 'name' ] = ''
-                                new_tool_section_dict[ 'version' ] = ''
-                            if 'tool_config' not in new_tool_section_dict or new_tool_section_dict[ 'tool_config' ] in [ None, '' ]:
-                                new_tool_section_dict[ 'tool_config' ] = name
-                            if guid in new_tool_panel_dict:
-                                new_tool_panel_dict[ guid ].append( new_tool_section_dict )
-                            else:
-                                new_tool_panel_dict[ guid ] = [ new_tool_section_dict ]
                 # Find all exported workflows
                 elif name.endswith( '.ga' ):
                     relative_path = os.path.join( root, name )
@@ -375,7 +327,6 @@ def generate_metadata( toolbox, relative_install_dir, repository_clone_url, tool
                     exported_workflow_dict = from_json_string( workflow_text )
                     if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
                         metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
-    metadata_dict[ 'tool_panel_section' ] = new_tool_panel_dict
     return metadata_dict
 def generate_tool_guid( repository_clone_url, tool ):
     """
@@ -433,7 +384,6 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
     return metadata_dict
 def generate_tool_panel_elem_list( repository_name, repository_clone_url, changeset_revision, tool_panel_dict, repository_tools_tups, owner='' ):
     """Generate a list of ElementTree Element objects for each section or tool."""
-    # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
     elem_list = []
     tool_elem = None
     tmp_url = clean_repository_clone_url( repository_clone_url )
@@ -487,34 +437,75 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
             else:
                 elem_list.append( tool_elem )
     return elem_list
-def generate_tool_panel_dict_for_repository_tools( repository_metadata, tool_section=None, tool_section_dict=None ):
+def generate_tool_panel_dict_for_new_install( tool_dicts, tool_section=None ):
     """
-    Create a dictionary of the following type for every tool in the repository where the tools are all contained in the same tool section
-    or no tool section.  If tool_section is None, tools will be displayed outside of any sections in the tool panel.
-    {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
+    When installing a repository that contains tools, all tools must curently be defined within the same tool section in the tool
+    panel or outside of any sections.
     """
     tool_panel_dict = {}
-    tool_dicts = repository_metadata[ 'tools' ]
+    if tool_section:
+        section_id = tool_section.id
+        section_name = tool_section.name
+        section_version = tool_section.version
+    else:
+        section_id = ''
+        section_name = ''
+        section_version = ''
     for tool_dict in tool_dicts:
         guid = tool_dict[ 'guid' ]
         tool_config = tool_dict[ 'tool_config' ]
-        new_tool_section_dict = {}
-        if tool_section_dict:
-            for k, v in tool_section_dict.items():
-                new_tool_section_dict[ k ] = v
-            file_path, file_name = os.path.split( tool_config )
-            new_tool_section_dict[ 'tool_config' ] = file_name
-            if guid in tool_panel_dict:
-                tool_panel_dict[ guid ].append( new_tool_section_dict )
-            else:
-                tool_panel_dict[ guid ] = [ new_tool_section_dict ]
+        tool_section_dict = dict( tool_config=tool_config, id=section_id, name=section_name, version=section_version )
+        if guid in tool_panel_dict:
+            tool_panel_dict[ guid ].append( tool_section_dict )
         else:
-            new_tool_section_dicts = generate_tool_section_dicts( tool_config=tool_config, tool_section=tool_section )
-            if guid in tool_panel_dict:
-                for new_tool_section_dict in new_tool_section_dicts:
-                    tool_panel_dict[ guid ].append( new_tool_section_dict )
-            else:
-                tool_panel_dict[ guid ] = new_tool_section_dicts
+            tool_panel_dict[ guid ] = [ tool_section_dict ]
+    return tool_panel_dict
+def generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository ):
+    """
+    Keep track of the section in the tool panel in which this repository's tools will be contained by parsing the shed-tool_conf in
+    which the repository's tools are defined and storing the tool panel definition of each tool in the repository.  This method is called
+    only when the repository is being deactivated or uninstalled and allows for activation or reinstallation using the original layout.
+    """
+    tool_panel_dict = {}
+    shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+    metadata = repository.metadata
+    # Create a dictionary of tool guid and tool config file name for each tool in the repository.
+    guids_and_configs = {}
+    for tool_dict in metadata[ 'tools' ]:
+        guid = tool_dict[ 'guid' ]
+        tool_config = tool_dict[ 'tool_config' ]
+        file_path, file_name = os.path.split( tool_config )
+        guids_and_configs[ guid ] = file_name
+    # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict. 
+    tree = util.parse_xml( shed_tool_conf )
+    root = tree.getroot()
+    for elem in root:
+        if elem.tag == 'tool':
+            guid = elem.get( 'guid' )
+            if guid in guids_and_configs:
+                # The tool is displayed in the tool panel outside of any tool sections.
+                tool_section_dict = dict( tool_config=guids_and_configs[ guid ], id='', name='', version='' )
+                if guid in tool_panel_dict:
+                    tool_panel_dict[ guid ].append( tool_section_dict )
+                else:
+                    tool_panel_dict[ guid ] = [ tool_section_dict ]
+        elif elem.tag == 'section':
+            section_id = elem.get( 'id' ) or ''
+            section_name = elem.get( 'name' ) or ''
+            section_version = elem.get( 'version' ) or ''
+            for section_elem in elem:
+                if section_elem.tag == 'tool':
+                    guid = section_elem.get( 'guid' )
+                    if guid in guids_and_configs:
+                        # The tool is displayed in the tool panel inside the current tool section.
+                        tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
+                                                  id=section_id,
+                                                  name=section_name,
+                                                  version=section_version )
+                        if guid in tool_panel_dict:
+                            tool_panel_dict[ guid ].append( tool_section_dict )
+                        else:
+                            tool_panel_dict[ guid ] = [ tool_section_dict ]
     return tool_panel_dict
 def generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=None ):
     """
@@ -611,7 +602,6 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
 def get_in_memory_config_elems_to_remove( shed_tool_conf_dict, guids_to_remove ):
     config_elems = shed_tool_conf_dict[ 'config_elems' ]
     config_elems_to_remove = []
-    tool_elements_removed = 0
     for config_elem in config_elems:
         if config_elem.tag == 'section':
             tool_elems_to_remove = []
@@ -621,20 +611,12 @@ def get_in_memory_config_elems_to_remove( shed_tool_conf_dict, guids_to_remove )
             for tool_elem in tool_elems_to_remove:
                 # Remove all of the appropriate tool sub-elements from the section element.
                 config_elem.remove( tool_elem )
-                log.debug( "Removed tool with guid '%s'." % str( tool_elem.get( 'guid' ) ) )
-                tool_elements_removed += 1
             if len( config_elem ) < 1:
                 # Keep a list of all empty section elements so they can be removed.
                 config_elems_to_remove.append( config_elem )
-            if tool_elements_removed == len( guids_to_remove ):
-                break
         elif config_elem.tag == 'tool':
             if config_elem.get( 'guid' ) in guids_to_remove:
                 config_elems_to_remove.append( config_elem )
-                log.debug( "Removed tool with guid '%s'." % str( config_elem.get( 'guid' ) ) )
-                tool_elements_removed += 1
-            if tool_elements_removed == len( guids_to_remove ):
-                break
     return config_elems_to_remove
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
     """
@@ -674,6 +656,68 @@ def get_repository_tools_tups( app, metadata_dict ):
             tool = app.toolbox.load_tool( os.path.abspath( relative_path ), guid=guid )
             repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
+def get_tool_panel_config_tool_path_install_dir( app, repository ):
+    # Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the
+    # repository is installed.  This method assumes all repository tools are defined in a single shed-related tool panel config.
+    tool_shed = clean_tool_shed_url( repository.tool_shed )
+    partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
+    # Get the relative tool installation paths from each of the shed tool configs.
+    relative_install_dir = None
+    for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+        shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
+        if repository.dist_to_shed:
+            # The repository is owned by devteam and contains tools migrated from the Galaxy distribution to the tool shed, so
+            # the reserved tool panel config is migrated_tools_conf.xml, to which app.config.migrated_tools_config refers.
+            if shed_tool_conf == app.config.migrated_tools_config:
+                tool_path = shed_tool_conf_dict[ 'tool_path' ]
+                relative_install_dir = os.path.join( tool_path, partial_install_dir )
+                if tool_path and relative_install_dir:
+                    return shed_tool_conf, tool_path, relative_install_dir
+        elif repository.uninstalled:
+            # Since the repository is uninstalled we don't know what tool panel config was originally used to
+            # define the tools in the repository, so we'll just make sure not to use the reserved migrated_tools_conf.xml.
+            if shed_tool_conf != app.config.migrated_tools_config:
+                tool_path = shed_tool_conf_dict[ 'tool_path' ]
+                relative_install_dir = os.path.join( tool_path, partial_install_dir )
+                if tool_path and relative_install_dir:
+                    return shed_tool_conf, tool_path, relative_install_dir
+        else:
+            if repository.includes_tools:
+                metadata = repository.metadata
+                for tool_dict in metadata[ 'tools' ]:
+                    # Parse the tool panel config to get the entire set of config_elems.  # We'll check config_elems until we
+                    # find an element that matches one of the tools in the repository's metadata.
+                    tool_panel_config = shed_tool_conf_dict[ 'config_filename' ]
+                    tree = util.parse_xml( tool_panel_config )
+                    root = tree.getroot()
+                    tool_path, relative_install_dir = get_tool_path_install_dir( partial_install_dir,
+                                                                                 shed_tool_conf_dict,
+                                                                                 tool_dict,
+                                                                                 root )
+                    if tool_path and relative_install_dir:
+                        return shed_tool_conf, tool_path, relative_install_dir
+            else:
+                # Nothing will be loaded into the tool panel, so look for the installed repository on disk.
+                tool_path = shed_tool_conf_dict[ 'tool_path' ]
+                relative_install_dir = os.path.join( tool_path, partial_install_dir )
+                if tool_path and relative_install_dir and os.path.isdir( relative_install_dir ):
+                    return shed_tool_conf, tool_path, relative_install_dir
+    return None, None, None
+def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems ):
+    for elem in config_elems:
+        if elem.tag == 'tool':
+            if elem.get( 'guid' ) == tool_dict[ 'guid' ]:
+                tool_path = shed_tool_conf_dict[ 'tool_path' ]
+                relative_install_dir = os.path.join( tool_path, partial_install_dir )
+                return tool_path, relative_install_dir
+        elif elem.tag == 'section':
+            for section_elem in elem:
+                if section_elem.tag == 'tool':
+                    if section_elem.get( 'guid' ) == tool_dict[ 'guid' ]:
+                        tool_path = shed_tool_conf_dict[ 'tool_path' ]
+                        relative_install_dir = os.path.join( tool_path, partial_install_dir )
+                        return tool_path, relative_install_dir
+    return None, None
 def get_tool_version( app, tool_id ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.ToolVersion ) \
@@ -829,31 +873,13 @@ def load_datatype_items( app, repository, relative_install_dir, deactivate=False
         if display_path:
             # Load or deactivate proprietary datatype display applications
             app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict, deactivate=deactivate )
-def load_repository_contents( trans, repository_name, description, owner, changeset_revision, tool_path, repository_clone_url, relative_install_dir,
-                              current_working_dir, tmp_name, tool_panel_dict=None, tool_shed=None, tool_section=None, shed_tool_conf=None,
-                              new_install=True ):
-    """
-    Generate the metadata for the installed tool shed repository, among other things.  It is critical that the installed repository
-    is updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository
-    files on disk.  If this method is called when a new repository is being installed, the value of tool_panel_dict will be None and
-    the value of tool_section (a ToolSection or None) will be used.  This method is also called when updates have been pulled to a
-    previously installed repository, in which case the value of tool_panel_dict will be used and the value of new_install will be False.
-    """
-    if tool_panel_dict:
-        # We're resetting metadata on a previously installed repository.  For backward compatibility we have to handle 2 types of dictionaries.
-        # In the past, all repository tools had to be installed into a single ToolSection (or outside of any sections) in the tool panel.
-        if panel_entry_per_tool( tool_panel_dict ):
-            # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
-            metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url, tool_panel_dict=tool_panel_dict )
-        else:
-            # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
-            metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url, tool_section_dict=tool_panel_dict )
-    else:
-        # We're installing a new repository or reinstalling an uninstalled repository where all tools are contained in the same tool panel section
-        # or outside of any sections in the tool panel.  We cannot pass a specific tool_config since we do not yet have one.
-        tool_section_dicts = generate_tool_section_dicts( tool_config=None, tool_sections=util.listify( tool_section ) )
-        metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url, tool_section_dict=tool_section_dicts[ 0 ] )
-    tool_panel_dict = metadata_dict[ 'tool_panel_section' ]
+def load_repository_contents( trans, repository_name, description, owner, changeset_revision, tool_path, repository_clone_url,
+                              relative_install_dir, current_working_dir, tmp_name, tool_shed=None, tool_section=None, shed_tool_conf=None ):
+    """Generate the metadata for the installed tool shed repository, among other things."""
+    # It is critical that the installed repository is updated to the desired changeset_revision before metadata is set because the
+    # process for setting metadata uses the repository files on disk.  This method is called when an admin is installing a new repository
+    # or reinstalling an uninstalled repository. 
+    metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url )
     # Add a new record to the tool_shed_repository table if one doesn't already exist.  If one exists but is marked deleted, undelete it.  This
     # must happen before the call to add_to_tool_panel() below because tools will not be properly loaded if the repository is marked deleted.
     log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % repository_name )
@@ -865,6 +891,7 @@ def load_repository_contents( trans, repository_name, description, owner, change
                                                                   metadata_dict,
                                                                   dist_to_shed=False )
     if 'tools' in metadata_dict:
+        tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
         repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
         if repository_tools_tups:
             sample_files = metadata_dict.get( 'sample_files', [] )
@@ -874,20 +901,15 @@ def load_repository_contents( trans, repository_name, description, owner, change
             repository_tools_tups = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
             # Handle tools that use fabric scripts to install dependencies.
             handle_tool_dependencies( current_working_dir, relative_install_dir, repository_tools_tups )
-            if new_install:
-                add_to_tool_panel( app=trans.app,
-                                   repository_name=repository_name,
-                                   repository_clone_url=repository_clone_url,
-                                   changeset_revision=changeset_revision,
-                                   repository_tools_tups=repository_tools_tups,
-                                   owner=owner,
-                                   shed_tool_conf=shed_tool_conf,
-                                   tool_panel_dict=tool_panel_dict,
-                                   new_install=new_install )
-            elif trans.app.toolbox_search.enabled:
-                # If search support for tools is enabled, index the new installed tools.  In the condition above, this happens in the
-                # add_to_tool_panel() method.
-                trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
+            add_to_tool_panel( app=trans.app,
+                               repository_name=repository_name,
+                               repository_clone_url=repository_clone_url,
+                               changeset_revision=changeset_revision,
+                               repository_tools_tups=repository_tools_tups,
+                               owner=owner,
+                               shed_tool_conf=shed_tool_conf,
+                               tool_panel_dict=tool_panel_dict,
+                               new_install=True )
             # Remove the temporary file
             try:
                 os.unlink( tmp_name )
@@ -896,8 +918,7 @@ def load_repository_contents( trans, repository_name, description, owner, change
     if 'datatypes_config' in metadata_dict:
         datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
         # Load data types required by tools.
-        override = not new_install
-        converter_path, display_path = alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, relative_install_dir, override=override )
+        converter_path, display_path = alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, relative_install_dir, override=False )
         if converter_path or display_path:
             # Create a dictionary of tool shed repository related information.
             repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
@@ -937,7 +958,7 @@ def pull_repository( current_working_dir, repo_files_dir, name ):
     os.chdir( current_working_dir )
     tmp_stderr.close()
     return returncode, tmp_name
-def remove_from_shed_tool_config( app, shed_tool_conf_dict, guids_to_remove ):
+def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
     # been deactivated.
@@ -948,7 +969,6 @@ def remove_from_shed_tool_config( app, shed_tool_conf_dict, guids_to_remove ):
     root = tree.getroot()
     for elem in root:
         config_elems.append( elem )
-    tool_elements_removed = 0
     config_elems_to_remove = []
     for config_elem in config_elems:
         if config_elem.tag == 'section':
@@ -959,30 +979,30 @@ def remove_from_shed_tool_config( app, shed_tool_conf_dict, guids_to_remove ):
             for tool_elem in tool_elems_to_remove:
                 # Remove all of the appropriate tool sub-elements from the section element.
                 config_elem.remove( tool_elem )
-                tool_elements_removed += 1
             if len( config_elem ) < 1:
                 # Keep a list of all empty section elements so they can be removed.
                 config_elems_to_remove.append( config_elem )
-            if tool_elements_removed == len( guids_to_remove ):
-                break
         elif config_elem.tag == 'tool':
             if config_elem.get( 'guid' ) in guids_to_remove:
                 config_elems_to_remove.append( config_elem )
-                tool_elements_removed += 1
-            if tool_elements_removed == len( guids_to_remove ):
-                break
     for config_elem in config_elems_to_remove:
         config_elems.remove( config_elem )
     # Persist the altered in-memory version of the tool config.
-    config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
-def remove_from_tool_panel( app, shed_tool_conf, tool_panel_dict, uninstall ):
+    config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
+def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     """A tool shed repository is being deactivated or uninstalled so handle tool panel alterations accordingly."""
-    index, shed_tool_conf_dict = get_shed_tool_conf_dict( app, shed_tool_conf )
+    # Determine where the tools are currently defined in the tool panel and store this information so the tools can be displayed
+    # in the same way when the repository is activated or reinstalled.
+    tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
+    repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
+    trans.sa_session.add( repository )
+    trans.sa_session.flush()
     # Create a list of guids for all tools that will be removed from the in-memory tool panel and config file on disk.
     guids_to_remove = [ k for k in tool_panel_dict.keys() ]
+    index, shed_tool_conf_dict = get_shed_tool_conf_dict( trans.app, shed_tool_conf )
     if uninstall:
         # Remove from the shed_tool_conf file on disk.
-        remove_from_shed_tool_config( app, shed_tool_conf_dict, guids_to_remove )
+        remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove )
     config_elems_to_remove = get_in_memory_config_elems_to_remove( shed_tool_conf_dict, guids_to_remove )
     # Remove from the in-memory list of config_elems.
     config_elems = shed_tool_conf_dict[ 'config_elems' ]
@@ -991,16 +1011,16 @@ def remove_from_tool_panel( app, shed_tool_conf, tool_panel_dict, uninstall ):
         config_elems.remove( config_elem )
         if config_elem.tag == 'section':
             key = 'section_%s' % str( config_elem.get( "id" ) )
-            del app.toolbox.tool_panel[ key ]
+            del trans.app.toolbox.tool_panel[ key ]
         elif config_elem.tag == 'tool':
             key = 'tool_%s' % str( config_elem.get( 'guid' ) )
-            del app.toolbox.tool_panel[ key ]
+            del trans.app.toolbox.tool_panel[ key ]
     # Update the config_elems of the in-memory shed_tool_conf_dict.
     shed_tool_conf_dict[ 'config_elems' ] = config_elems
-    app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
-    if app.toolbox_search.enabled:
+    trans.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
+    if trans.app.toolbox_search.enabled:
         # If search support for tools is enabled, index tools.
-        app.toolbox_search = ToolBoxSearch( app.toolbox )
+        trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
 def update_repository( current_working_dir, repo_files_dir, changeset_revision ):
     # Update the cloned repository to changeset_revision.  It is imperative that the 
     # installed repository is updated to the desired changeset_revision before metadata
