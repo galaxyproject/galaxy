@@ -649,7 +649,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         def unpack_track( track_json ):
             """ Unpack a track from its json. """
             return {
-                "dataset_id": track_json['dataset_id'],
+                "dataset_id": trans.security.decode_id( track_json['dataset_id'] ),
                 "hda_ldda": track_json.get('hda_ldda', "hda"),
                 "name": track_json['name'],
                 "track_type": track_json['track_type'],
