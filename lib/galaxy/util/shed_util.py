@@ -1002,10 +1002,10 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
                 if section_key in trans.app.toolbox.tool_panel:
                     tool_section = trans.app.toolbox.tool_panel[ section_key ]
                     tool_key = key = 'tool_%s' % str( tool_elem.get( 'guid' ) )
+                    # Remove empty sections only from the in-memory config_elems, but leave
+                    # the in-memory tool panel alone.
                     if tool_key in tool_section.elems:
                         del tool_section.elems[ tool_key ]
-                    if not tool_section.elems:
-                        del trans.app.toolbox.tool_panel[ section_key ]
             if len( config_elem ) < 1:
                 # Keep a list of all empty section elements so they can be removed.
                 config_elems_to_remove.append( config_elem )
