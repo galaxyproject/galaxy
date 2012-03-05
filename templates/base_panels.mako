@@ -28,10 +28,10 @@
     }
     #center {
         %if not self.has_left_panel:
-            left: 0;
+            left: 0 !important;
         %endif
         %if not self.has_right_panel:
-            right: 0;
+            right: 0 !important;
         %endif
     }
     %if self.message_box_visible:
@@ -64,14 +64,14 @@
     ensure_dd_helper();
         
     %if self.has_left_panel:
-            var lp = make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+            var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
             force_left_panel = lp.force_panel;
         %endif
         
     %if self.has_right_panel:
-            var rp = make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
-            handle_minwidth_hint = rp.handle_minwidth_hint;
-            force_right_panel = rp.force_panel;
+            var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
+            window.handle_minwidth_hint = function( x ) { console.log( "hint", x ); rp.handle_minwidth_hint( x ) };
+            force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
     
     </script>
@@ -166,34 +166,31 @@
     <%def name="title()"></%def>
     <%def name="content()"></%def>
 
-    <div id="overlay"
-    %if not visible:
-        style="display: none;"
-    %endif
-    >
-    ##
-    <div id="overlay-background" style="position: absolute; width: 100%; height: 100%;"></div>
-    
-    ## Need a table here for centering in IE6
-    <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"
-    %if not visible:
-        style="display: none;"
-    %endif
-    ><tr><td>
-    <div class="dialog-box-wrapper">
-        <div class="dialog-box">
-            <div class="unified-panel-header">
-                <div class="unified-panel-header-inner"><span class='title'>${title}</span></div>
-            </div>
-            <div class="body">${content}</div>
-            <div>
-                <div class="buttons" style="display: none; float: right;"></div>
-                <div class="extra_buttons" style="display: none; padding: 5px;"></div>
-                <div style="clear: both;"></div>
-            </div>
+    <%
+    if visible:
+        display = "style='display: block;'"
+        overlay_class = "in"
+    else:
+        display = "style='display: none;'"
+        overlay_class = ""
+    %>
+
+    <div id="overlay" ${display}>
+
+        <div id="overlay-background" class="modal-backdrop fade ${overlay_class}"></div>
+
+        <div id="dialog-box" class="modal" border="0" ${display}>
+                <div class="modal-header">
+                    <span><h3 class='title'>${title}</h3></span>
+                </div>
+                <div class="modal-body">${content}</div>
+                <div class="modal-footer">
+                    <div class="buttons" style="float: right;"></div>
+                    <div class="extra_buttons" style=""></div>
+                    <div style="clear: both;"></div>
+                </div>
         </div>
-    </div>
-    </td></tr></table>
+    
     </div>
 </%def>
 
@@ -217,8 +214,10 @@
             ## Background displays first
             <div id="background"></div>
             ## Layer iframes over backgrounds
-            <div id="masthead">
-                ${self.masthead()}
+            <div id="masthead" class="navbar navbar-fixed-top">
+                <div class="masthead-inner navbar-inner">
+                    <div class="container">${self.masthead()}</div>
+                </div>
             </div>
             <div id="messagebox" class="panel-${self.message_box_class}-message">
                 %if self.message_box_visible:
@@ -229,18 +228,22 @@
             %if self.has_left_panel:
                 <div id="left">
                     ${self.left_panel()}
-                </div>
-                <div id="left-border">
-                    <div id="left-border-inner" style="display: none;"></div>
+                    <div class="unified-panel-footer">
+                        <div class="panel-collapse"></span></div>
+                        <div class="drag"></div>
+                    </div>
                 </div>
             %endif
             <div id="center">
                 ${self.center_panel()}
             </div>
             %if self.has_right_panel:
-                <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
                 <div id="right">
                     ${self.right_panel()}
+                    <div class="unified-panel-footer">
+                        <div class="panel-collapse right"></span></div>
+                        <div class="drag"></div>
+                    </div>
                 </div>
             %endif
         </div>

@@ -1344,8 +1344,8 @@ extend( View.prototype, DrawableCollection.prototype, {
         // Another label track at bottom
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
         // Navigation at top
-        this.nav_container = $("<div/>").addClass("nav-container").prependTo(this.top_container);
-        this.nav = $("<div/>").addClass("nav").appendTo(this.nav_container);
+        this.nav_container = $("<div/>").addClass("trackster-nav-container").prependTo(this.top_container);
+        this.nav = $("<div/>").addClass("trackster-nav").appendTo(this.nav_container);
         // Overview (scrollbar and overview plot) at bottom
         this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);

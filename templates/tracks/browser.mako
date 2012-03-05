@@ -18,13 +18,13 @@
         #browser-container {
             overflow: none;
         }
-        .nav-container {
+        .trackster-nav-container {
             width: 100%;
             ## Overriding styles from trackster.css to push nav up into title bar
             height: 0;
             text-align: center;
         }
-        .nav {
+        .trackster-nav {
             ## Overriding styles from trackster.css to push nav up into title bar
             position: relative;
             display: inline-block;
