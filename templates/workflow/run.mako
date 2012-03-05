@@ -72,7 +72,7 @@
             $("#new_history_cbx").click(function(){
                 $("#new_history_input").toggle(this.checked);
             });
-            $('select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
+            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
                 var select = $(s);
                 var new_width = Math.max(200, select.width()) + 20;
                 select.parent().prev().append(
@@ -252,7 +252,7 @@ if wf_parms:
                         if not enable_unique_defaults:
                             del already_used[:]
                     %>
-                    %if step.type == None:
+                    %if step.type == 'data_input':
                     ##Input Dataset Step, wrap for multiinput.
                         <span class='multiinput_wrap'>
                         ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
