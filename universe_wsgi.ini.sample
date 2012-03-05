@@ -309,6 +309,12 @@ static_robots_txt = %(here)s/static/robots.txt
 # log_events and log_actions functionality will eventually be merged.
 #log_actions = True
 
+# Sanitize All HTML Tool Output
+# By default, all tool output served as 'text/html' will be sanitized
+# thoroughly. This can be disabled if you have special tools that require
+# unaltered output.
+#sanitize_all_html = True
+
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
 # also causes the files used by PBS/SGE (submission script, output, and error)

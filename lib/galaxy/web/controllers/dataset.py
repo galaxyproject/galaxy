@@ -409,7 +409,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         if isinstance(data.datatype, datatypes.images.Html):
             max_peek_size = 10000000 # 10 MB for html
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
-            if trans.response.get_content_type() == "text/html":
+            if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
                 return sanitize_html(open( data.file_name ).read())
             return open( data.file_name )

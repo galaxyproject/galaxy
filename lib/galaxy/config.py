@@ -33,7 +33,7 @@ class Configuration( object ):
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
-        self.database_engine_options = get_database_engine_options( kwargs )                        
+        self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
         # Where dataset files are stored
@@ -61,7 +61,7 @@ class Configuration( object ):
             tcf = kwargs[ 'tool_config_files' ]
         else:
             tcf = 'tool_conf.xml'
-        self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ] 
+        self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         try:
@@ -125,6 +125,7 @@ class Configuration( object ):
         self.use_memdump = string_as_bool( kwargs.get( 'use_memdump', 'False' ) )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
+        self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,tair,modencode_worm,modencode_fly,sgd_yeast" ).lower().split(",")
         self.genetrack_display_sites = kwargs.get( 'genetrack_display_sites', "main,test" ).lower().split(",")
@@ -183,7 +184,7 @@ class Configuration( object ):
         #Store per-tool runner configs.
         try:
             tool_runners_config = global_conf_parser.items("galaxy:tool_runners")
-            
+
             # Process config to group multiple configs for the same tool.
             tool_runners = {}
             for entry in tool_runners_config:
@@ -200,17 +201,17 @@ class Configuration( object ):
                     runner_dict[ 'params' ] = param_dict
                 else:
                     tool = tool_config
-                
+
                 # Add runner URL.
                 runner_dict[ 'url' ] = url
-                
+
                 # Create tool entry if necessary.
                 if tool not in tool_runners:
                     tool_runners[ tool ] = []
-                    
+
                 # Add entry to runners.
                 tool_runners[ tool ].append( runner_dict )
-                
+
             self.tool_runners = tool_runners
         except ConfigParser.NoSectionError:
             self.tool_runners = []
@@ -281,12 +282,12 @@ class Configuration( object ):
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
-                log.warning( "Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key ) 
-               
+                log.warning( "Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key )
+
     def is_admin_user( self,user ):
         """
         Determine if the provided user is listed in `admin_users`.
-        
+
         NOTE: This is temporary, admin users will likely be specified in the
               database in the future.
         """
@@ -343,7 +344,7 @@ def configure_logging( config ):
     if level <= logging.DEBUG:
         logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
     # Remove old handlers
-    for h in root.handlers[:]: 
+    for h in root.handlers[:]:
         root.removeHandler(h)
     # Create handler
     if destination == "stdout":
@@ -351,7 +352,7 @@ def configure_logging( config ):
     else:
         handler = logging.FileHandler( destination )
     # Create formatter
-    formatter = logging.Formatter( format )    
+    formatter = logging.Formatter( format )
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )
