@@ -2427,7 +2427,13 @@ extend(NumberFilter.prototype, {
         return false;
     },
     /**
-     * Returns true if (a) element's value is in [low, high] (range is inclusive) 
+     * Helper function: returns true if value in in filter's [low, high] range.
+     */
+    _keep_val: function(val) {
+        return (isNaN(val) || (val >= this.low && val <= this.high));
+    },    
+    /**
+     * Returns true if (a) element's value(s) is in [low, high] (range is inclusive) 
      * or (b) if value is non-numeric and hence unfilterable.
      */
     keep: function(element) {
@@ -2435,8 +2441,26 @@ extend(NumberFilter.prototype, {
             // No element to filter on.
             return true;
         }
-        var val = element[this.index];
-        return (isNaN(val) || (val >= this.low && val <= this.high));
+
+        // Keep value function.
+        var filter = this;
+
+        // Do filtering.
+        var to_filter = element[this.index];
+        if (to_filter instanceof Array) {
+            var returnVal = true;
+            for (var i = 0; i < to_filter.length; i++) {
+                if (!this._keep_val(to_filter[i])) {
+                    // Exclude element.
+                    returnVal = false;
+                    break;
+                }
+            }
+            return returnVal;
+        }
+        else {
+            return this._keep_val(element[this.index]);
+        }
     },
     /**
      * Update filter's min and max values based on element's values.

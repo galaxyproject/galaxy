@@ -2,8 +2,8 @@
 Data providers for tracks visualizations.
 """
 
-import sys, time
-from math import ceil, log, sqrt
+import sys
+from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
 if sys.version_info[:2] == (2, 4):
@@ -569,10 +569,24 @@ class SummaryTreeDataProvider( TracksDataProvider ):
         # Check for data.
         return st.chrom_blocks.get(chrom, None) is not None or (chrom and st.chrom_blocks.get(chrom[3:], None) is not None)
 
-class BamDataProvider( TracksDataProvider ):
+class BamDataProvider( TracksDataProvider, FilterableMixin ):
     """
     Provides access to intervals from a sorted indexed BAM file.
     """
+    
+    def get_filters( self ):
+        """
+        Returns filters for dataset.
+        """
+        # HACK: first 7 fields are for drawing, so start filter column index at 7.
+        filter_col = 7
+        filters = []
+        filters.append( { 'name': 'Mapping Quality', 
+                        'type': 'number', 
+                        'index': filter_col
+                         } )
+        return filters
+    
     
     def write_data_to_file( self, chrom, start, end, filename ):
         """
@@ -632,13 +646,15 @@ class BamDataProvider( TracksDataProvider ):
         """
         Returns a dict with the following attributes:
             data - a list of reads with the format 
-                    [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
+                    [<guid>, <start>, <end>, <name>, <read_1>, <read_2>, [empty], <mapq_scores>]
                 where <read_1> has the format
-                    [<start>, <end>, <cigar>, <strand>, ?<read_seq>?]
+                    [<start>, <end>, <cigar>, <strand>, <read_seq>]
                 and <read_2> has the format
-                    [<start>, <end>, <cigar>, <strand>, ?<read_seq>?]
+                    [<start>, <end>, <cigar>, <strand>, <read_seq>]
+                Field 7 is empty so that mapq scores' location matches that in single-end reads.
                 For single-end reads, read has format:
-                    [<guid>, <start>, <end>, <name>, <cigar>, <strand>, <seq>] 
+                    [<guid>, <start>, <end>, <name>, <cigar>, <strand>, <seq>, <mapq_score>]
+                
                 NOTE: read end and sequence data are not valid for reads outside of
                 requested region and should not be used.
             
@@ -692,14 +708,17 @@ class BamDataProvider( TracksDataProvider ):
                                       read.pos + read_len, 
                                       qname, 
                                       [ pair['start'], pair['end'], pair['cigar'], pair['strand'], pair['seq'] ], 
-                                      [ read.pos, read.pos + read_len, read.cigar, strand, seq ] 
+                                      [ read.pos, read.pos + read_len, read.cigar, strand, seq ],
+                                      None, [ pair['mapq'], read.mapq ]
                                      ] )
                     del paired_pending[qname]
                 else:
                     paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos,
-                                              'rlen': read_len, 'strand': strand, 'cigar': read.cigar }
+                                              'rlen': read_len, 'strand': strand, 'cigar': read.cigar, 'mapq': read.mapq }
             else:
-                results.append( [ "%i_%s" % ( read.pos, qname ), read.pos, read.pos + read_len, qname, read.cigar, strand, read.seq] )
+                results.append( [ "%i_%s" % ( read.pos, qname ), 
+                                read.pos, read.pos + read_len, qname, 
+                                read.cigar, strand, read.seq, [read.mapq, 125] ] )
                 
         # Take care of reads whose mates are out of range.
         # TODO: count paired reads when adhering to max_vals?
@@ -721,7 +740,7 @@ class BamDataProvider( TracksDataProvider ):
                 r1 = [ read['start'], read['end'], read['cigar'], read['strand'], read['seq'] ]
                 r2 = [ read['mate_start'], read['mate_start'] ]
 
-            results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2 ] )
+            results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2, [read[ 'mapq' ], 125] ] )
             
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
