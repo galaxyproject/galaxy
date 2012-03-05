@@ -77,7 +77,6 @@ from sqlalchemy import *
 from sqlalchemy.orm import *
 from sqlalchemy.exc import *
 
-os.environ['PYTHONINSPECT'] = 'True'
 engine = create_engine(db_url, echo=True)
 db_session = scoped_session( sessionmaker( bind = engine ) )
 from galaxy.model.mapping import context as sa_session
