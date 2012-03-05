@@ -746,12 +746,20 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         roles = params.get( 'roles', '' )
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
+        widgets = []
+        widget_fields_have_contents = False
+        info_association, inherited = None, None
+        template_id = "None"
         if replace_id not in [ '', None, 'None' ]:
             replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
             self._check_access( trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted )
             self._check_modify( trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted )
             library = replace_dataset.folder.parent_library
             folder = replace_dataset.folder
+            info_association, inherited = replace_dataset.library_dataset_dataset_association.get_info_association()
+            if info_association and ( not( inherited ) or info_association.inheritable ):
+                widgets = replace_dataset.library_dataset_dataset_association.get_template_widgets( trans )
+                widget_fields_have_contents = self.widget_fields_have_contents( widgets )
             # The name is stored - by the time the new ldda is created, replace_dataset.name
             # will point to the new ldda, not the one it's replacing.
             replace_dataset_name = replace_dataset.name
@@ -793,7 +801,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                                                            status='error' ) )
             else:
                 # See if we have any inherited templates.
-                info_association, inherited = folder.get_info_association( inherited=True )
+                if not info_association:
+                    info_association, inherited = folder.get_info_association( inherited=True )
                 if info_association and info_association.inheritable:
                     template_id = str( info_association.template.id )
                     widgets = folder.get_template_widgets( trans, get_contents=True )
@@ -836,9 +845,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                         else:
                             processed_widgets.append( widget_dict )
                     widgets = processed_widgets
-                else:
-                    template_id = 'None'
-                    widgets = []
                 created_outputs_dict = trans.webapp.controllers[ 'library_common' ].upload_dataset( trans,
                                                                                                     cntrller=cntrller,
                                                                                                     library_id=trans.security.encode_id( library.id ),
@@ -910,13 +916,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         # attribute of the html input file type field is typically ignored by browsers as a security precaution. 
         
         # See if we have any inherited templates.
-        info_association, inherited = folder.get_info_association( inherited=True )
-        if info_association and info_association.inheritable:
-            widgets = folder.get_template_widgets( trans, get_contents=True )
+        if not info_association:
+            info_association, inherited = folder.get_info_association( inherited=True )
+            if info_association and info_association.inheritable:
+                widgets = folder.get_template_widgets( trans, get_contents=True )
+        if info_association:
             # Retain contents of widget fields when form was submitted via refresh_on_change.
             widgets = self.populate_widgets_from_kwd( trans, widgets, **kwd )
-        else:
-            widgets = []
+            template_id = str( info_association.template.id )
+        
         # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
         file_formats = trans.app.datatypes_registry.upload_file_formats
         # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
@@ -956,6 +964,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                                     roles_select_list=roles_select_list,
                                     history=history,
                                     widgets=widgets,
+                                    template_id=template_id,
                                     space_to_tab=space_to_tab,
                                     link_data_only=link_data_only,
                                     show_deleted=show_deleted,
@@ -1185,6 +1194,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
         roles = params.get( 'roles', '' )
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
+        widgets = []
+        widget_fields_have_contents = False
+        info_association, inherited = None, None
+        template_id = "None"
         if replace_id not in [ None, 'None' ]:
             try:
                 replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
@@ -1195,6 +1208,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
             library = replace_dataset.folder.parent_library
             folder = replace_dataset.folder
             last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
+            info_association, inherited = replace_dataset.library_dataset_dataset_association.get_info_association()
+            if info_association and ( not( inherited ) or info_association.inheritable ):
+                widgets = replace_dataset.library_dataset_dataset_association.get_template_widgets( trans )
+                widget_fields_have_contents = self.widget_fields_have_contents( widgets )
+                template_id = str( info_association.template.id )
         else:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
             self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
@@ -1241,6 +1259,20 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                         # LDDA and LibraryDataset.
                         trans.app.security_agent.copy_library_permissions( trans, folder, ldda )
                         trans.app.security_agent.copy_library_permissions( trans, folder, ldda.library_dataset )
+                    else:
+                        library_bunch = upload_common.handle_library_params( trans, params, folder_id, replace_dataset )
+                        if library_bunch.template and library_bunch.template_field_contents:
+                            # Since information templates are inherited, the template fields can be displayed on the upload form.
+                            # If the user has added field contents, we'll need to create a new form_values and info_association
+                            # for the new library_dataset_dataset_association object.
+                            # Create a new FormValues object, using the template we previously retrieved
+                            form_values = trans.app.model.FormValues( library_bunch.template, library_bunch.template_field_contents )
+                            trans.sa_session.add( form_values )
+                            trans.sa_session.flush()
+                            # Create a new info_association between the current ldda and form_values
+                            info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( ldda, library_bunch.template, form_values )
+                            trans.sa_session.add( info_association )
+                            trans.sa_session.flush()
                     # Make sure to apply any defined dataset permissions, allowing the permissions inherited from the folder to
                     # over-ride the same permissions on the dataset, if they exist.
                     dataset_permissions_dict = trans.app.security_agent.get_permissions( hda.dataset )
@@ -1330,6 +1362,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                                             roles_select_list=roles_select_list,
                                             history=history,
                                             widgets=widgets,
+                                            template_id=template_id,
                                             space_to_tab=space_to_tab,
                                             link_data_only=link_data_only,
                                             show_deleted=show_deleted,

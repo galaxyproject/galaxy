@@ -363,12 +363,6 @@
                                 <div style="clear: both"></div>
                             </div>
                         %endif
-                        ## Render hidden template fields so the contents will be associated with the dataset
-                        %if widgets:
-                            %for i, field in enumerate( widgets ):
-                                ${render_template_field( field, render_as_hidden=True )}
-                            %endfor 
-                        %endif
                         %for hda in history.visible_datasets:
                             <% encoded_id = trans.security.encode_id( hda.id ) %>
                             <div class="form-row">
@@ -376,6 +370,24 @@
                                 <label for="hist_${encoded_id}" style="display: inline;font-weight:normal;">${hda.hid}: ${hda.name}</label>
                             </div>
                         %endfor
+                        %if widgets:
+                            <input type="hidden" name="template_id" value="${template_id}"/>
+                            %for i, field in enumerate( widgets ):
+                                <div class="form-row">
+                                    <label>${field[ 'label' ]}</label>
+                                    <div class="form-row-input">
+                                        ${field[ 'widget' ].get_html()}
+                                    </div>
+                                    <div class="toolParamHelp" style="clear: both;">
+                                        %if field[ 'helptext' ]:
+                                            ${field[ 'helptext' ]}<br/>
+                                        %endif
+                                        *Inherited template field
+                                    </div>
+                                    <div style="clear: both"></div>
+                                </div>
+                            %endfor 
+                        %endif
                         <div class="form-row">
                             <input type="submit" name="add_history_datasets_to_library_button" value="Import to library"/>
                         </div>

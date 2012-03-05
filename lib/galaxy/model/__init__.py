@@ -1582,6 +1582,9 @@ class LibraryDatasetDatasetInfoAssociation( object ):
         self.library_dataset_dataset_association = library_dataset_dataset_association
         self.template = form_definition
         self.info = info
+    @property
+    def inheritable( self ):
+        return True #always allow inheriting, used for replacement
 
 class ValidationError( object ):
     def __init__( self, message=None, err_type=None, attributes=None ):
