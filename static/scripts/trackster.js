@@ -4340,20 +4340,31 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             track.container_div.find(".yaxislabel").remove();
             
             // Add min, max labels.
-            var min_label = get_editable_text_elt(round(track.prefs.min_value, 3), false, 6, null, function(new_val) {
-                                var new_val = parseFloat(new_val);
-                                if (!isNaN(new_val)) {
-                                    track.set_min_value(new_val);
-                                }
-                            } ).addClass('yaxislabel bottom').attr("id", 'linetrack_' + track.dataset_id + '_minval')
-                               .prependTo(track.container_div),
-                max_label = get_editable_text_elt(round(track.prefs.max_value, 3), false, 6, null, function(new_val) {
-                                var new_val = parseFloat(new_val);
-                                if (!isNaN(new_val)) {
-                                    track.set_max_value(new_val);
-                                }
-                            } ).addClass('yaxislabel top').attr("id", 'linetrack_' + track.dataset_id + '_maxval')
-                               .prependTo(track.container_div);
+            var 
+            min_label = $("<div/>").text(round(track.prefs.min_value, 3)).make_text_editable({
+                num_cols: 6,
+                on_finish: function(new_val) {
+                    $(".tipsy").remove();
+                    var new_val = parseFloat(new_val);
+                    if (!isNaN(new_val)) {
+                        track.set_min_value(new_val);
+                    }
+                },
+                help_text: "Set min value"
+            }).addClass('yaxislabel bottom').attr("id", 'linetrack_' + track.dataset_id + '_minval')
+              .prependTo(track.container_div),
+            max_label = $("<div/>").text(round(track.prefs.max_value, 3)).make_text_editable({
+                  num_cols: 6,
+                  on_finish: function(new_val) {
+                      $(".tipsy").remove();
+                      var new_val = parseFloat(new_val);
+                      if (!isNaN(new_val)) {
+                          track.set_max_value(new_val);
+                      }
+                  },
+                  help_text: "Set max value"
+              }).addClass('yaxislabel top').attr("id", 'linetrack_' + track.dataset_id + '_maxval')
+                .prependTo(track.container_div);
         });
     },
     /**
@@ -4515,15 +4526,17 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var first_tile = tiles[0];
         if (first_tile instanceof SummaryTreeTile) {
             var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
-                max_label = 
-                    get_editable_text_elt(max_val, false, 12, 0, function(new_val) {
+                max_label = $("<div/>").text(max_val).make_text_editable({
+                    num_cols: 12,
+                    on_finish: function(new_val) {
+                        $(".tipsy").remove();
                         var new_val = parseFloat(new_val);
                         track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
                         track.tile_cache.clear();
                         track.request_draw();
-                    })
-                    .addClass('yaxislabel top')
-                    .css("color", this.prefs.label_color);
+                    },
+                    help_text: "Set max value; leave blank to use default"
+                }).addClass('yaxislabel top').css("color", this.prefs.label_color);
             this.container_div.prepend(max_label);
         }
         

@@ -331,21 +331,23 @@ function replace_big_select_inputs(min_length, max_length) {
 }
 
 /**
- * Returns editable text element. Element is a div with text: (a) when user clicks on text, a textbox/area 
- * enables user to edit text; (b) when user presses enter key, element's text is set.
+ * Make an element with text editable: (a) when user clicks on text, a textbox/area 
+ * is provided for editing; (b) when enter key pressed, element's text is set and on_finish
+ * is called.
  */
 // TODO: use this function to implement async_save_text (implemented below).
-function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish) {
-    // Set defaults if necessary.
-    if (num_cols === undefined) {
-        num_cols = 30;
-    }
-    if (num_rows === undefined) {
-        num_rows = 4;
-    }
+$.fn.make_text_editable = function(config_dict) {
+    // Get config options.
+    var num_cols = ("num_cols" in config_dict ? config_dict.num_cols : 30),
+        num_rows = ("num_rows" in config_dict ? config_dict.num_rows : 4),
+        use_textarea = ("use_textarea" in config_dict ? config_dict.use_textarea : false),
+        on_finish = ("on_finish" in config_dict ? config_dict.on_finish : null),
+        help_text = ("help_text" in config_dict ? config_dict.help_text : null);
+        
     
-    // Create div for element.
-    var container = $("<div/>").addClass("editable-text").text(text).click(function(e) {
+    // Add element behavior.
+    var container = $(this);
+    container.addClass("editable-text").click(function(e) {
         // If there's already an input element, editing is active, so do nothing.
         if ($(this).children(":input").length > 0) {
             return;
@@ -354,7 +356,7 @@ function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish
         container.removeClass("editable-text");
         
         // Handler for setting element text.
-        var set_text = function(new_text, do_on_finish) {
+        var set_text = function(new_text) {
             container.find(":input").remove();
             
             if (new_text != "") {
@@ -366,7 +368,7 @@ function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish
             }
             container.addClass("editable-text");
 
-            if (do_on_finish && on_finish) {
+            if (on_finish) {
                 on_finish(new_text);
             }
         };
@@ -383,7 +385,7 @@ function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish
                 }
             });
             button_elt = $("<button/>").text("Done").click(function() {
-                set_text(input_elt.val(), true);
+                set_text(input_elt.val());
                 // Return false so that click does not propogate to container.
                 return false;
             });
@@ -398,7 +400,7 @@ function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish
                     $(this).trigger("blur");
                 } else if (e.keyCode === 13) {
                     // Enter key.
-                    set_text($(this).val(), true);
+                    set_text($(this).val());
                 }
             });
         }               
@@ -415,6 +417,12 @@ function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish
         // Do not propogate to elements below b/c that blurs input and prevents it from being used.
         e.stopPropagation();
     });
+    
+    // Add help text if there some.
+    if (help_text) {
+        container.attr("title", help_text).tipsy( { gravity: 's' } );
+    }
+    
     return container;
 }
 
