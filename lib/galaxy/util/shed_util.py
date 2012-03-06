@@ -43,19 +43,29 @@ def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_rev
     if new_install:
         # Add the new elements to the shed_tool_conf file on disk.
         add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list )
+        # Use the new elements to add entries to the 
     config_elems = shed_tool_conf_dict[ 'config_elems' ]
     for config_elem in elem_list:
         # Add the new elements to the in-memory list of config_elems.
         config_elems.append( config_elem )
         # Load the tools into the in-memory tool panel.
         if config_elem.tag == 'section':
-            app.toolbox.load_section_tag_set( config_elem, app.toolbox.tool_panel, tool_path )
+            app.toolbox.load_section_tag_set( config_elem, tool_path, load_panel_dict=True )
+        elif config_elem.tag == 'workflow':
+            app.toolbox.load_workflow_tag_set( config_elem, app.toolbox.tool_panel, app.toolbox.integrated_tool_panel, load_panel_dict=True )
         elif config_elem.tag == 'tool':
             guid = config_elem.get( 'guid' )
-            app.toolbox.load_tool_tag_set( config_elem, app.toolbox.tool_panel, tool_path=tool_path, guid=guid )
+            app.toolbox.load_tool_tag_set( config_elem,
+                                           app.toolbox.tool_panel,
+                                           app.toolbox.integrated_tool_panel,
+                                           tool_path,
+                                           load_panel_dict=True,
+                                           guid=guid )
     # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
     shed_tool_conf_dict[ 'config_elems' ] = config_elems
     app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
+    # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
+    app.toolbox.write_integrated_tool_panel_config_file()
     if app.toolbox_search.enabled:
         # If search support for tools is enabled, index the new installed tools.
         app.toolbox_search = ToolBoxSearch( app.toolbox )
@@ -446,7 +456,7 @@ def generate_tool_panel_dict_for_new_install( tool_dicts, tool_section=None ):
     if tool_section:
         section_id = tool_section.id
         section_name = tool_section.name
-        section_version = tool_section.version
+        section_version = tool_section.version or ''
     else:
         section_id = ''
         section_name = ''
@@ -921,6 +931,8 @@ def panel_entry_per_tool( tool_section_dict ):
     # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
     # But not like this.
     # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
+    if not tool_section_dict:
+        return False
     if len( tool_section_dict ) != 3:
         return True
     for k, v in tool_section_dict:
@@ -1001,11 +1013,17 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
                 # Remove the tool from the section in the in-memory tool panel.
                 if section_key in trans.app.toolbox.tool_panel:
                     tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                    tool_key = key = 'tool_%s' % str( tool_elem.get( 'guid' ) )
-                    # Remove empty sections only from the in-memory config_elems, but leave
-                    # the in-memory tool panel alone.
+                    tool_key = 'tool_%s' % str( tool_elem.get( 'guid' ) )
+                    # Remove empty sections only from the in-memory config_elems, but leave the in-memory tool panel alone.
                     if tool_key in tool_section.elems:
                         del tool_section.elems[ tool_key ]
+                if uninstall:
+                    # Remove the tool from the section in the in-memory integrated tool panel.
+                    if section_key in trans.app.toolbox.integrated_tool_panel:
+                        tool_section = trans.app.toolbox.integrated_tool_panel[ section_key ]
+                        tool_key = 'tool_%s' % str( tool_elem.get( 'guid' ) )
+                        if tool_key in tool_section.elems:
+                            del tool_section.elems[ tool_key ]
             if len( config_elem ) < 1:
                 # Keep a list of all empty section elements so they can be removed.
                 config_elems_to_remove.append( config_elem )
@@ -1014,6 +1032,9 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
                 tool_key = key = 'tool_%s' % str( config_elem.get( 'guid' ) )
                 if tool_key in trans.app.toolbox.tool_panel:
                     del trans.app.toolbox.tool_panel[ tool_key ]
+                if uninstall:
+                    if tool_key in trans.app.toolbox.integrated_tool_panel:
+                        del trans.app.toolbox.integrated_tool_panel[ tool_key ]
                 config_elems_to_remove.append( config_elem )
     for config_elem in config_elems_to_remove:
         # Remove the element from the in-memory list of elements.
@@ -1024,6 +1045,9 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     if trans.app.toolbox_search.enabled:
         # If search support for tools is enabled, index tools.
         trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
+    if uninstall:
+        # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
+        trans.app.toolbox.write_integrated_tool_panel_config_file()
 def update_repository( current_working_dir, repo_files_dir, changeset_revision ):
     # Update the cloned repository to changeset_revision.  It is imperative that the 
     # installed repository is updated to the desired changeset_revision before metadata

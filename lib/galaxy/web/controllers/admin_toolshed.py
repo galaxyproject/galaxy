@@ -427,8 +427,9 @@ class AdminToolshed( AdminGalaxy ):
                     metadata = repository.metadata
                     if 'tool_panel_section' in metadata:
                         tool_panel_dict = metadata[ 'tool_panel_section' ]
+                        if not tool_panel_dict:
+                            tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
                     else:
-                        # This should never happen.
                         tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
                     # TODO: Fix this to handle the case where the tools are distributed across in more than 1 ToolSection.  The
                     # following assumes everything was loaded into 1 section (or no section) in the tool panel.
@@ -474,6 +475,8 @@ class AdminToolshed( AdminGalaxy ):
                         elif tool_panel_section:
                             section_key = 'section_%s' % tool_panel_section
                             tool_section = trans.app.toolbox.tool_panel[ section_key ]
+                        else:
+                            tool_section = None
                 tool_shed_repository, metadata_dict = load_repository_contents( trans,
                                                                                 repository_name=repository.name,
                                                                                 description=repository.description,
@@ -505,14 +508,17 @@ class AdminToolshed( AdminGalaxy ):
         metadata = repository.metadata
         if 'tool_panel_section' in metadata:
             tool_panel_dict = metadata[ 'tool_panel_section' ]
-            if panel_entry_per_tool( tool_panel_dict ):
-                # TODO: Fix this to handle the case where the tools are distributed across in more than 1 ToolSection.  The
-                # following assumes everything was loaded into 1 section (or no section) in the tool panel.
-                tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
-                tool_section_dict = tool_section_dicts[ 0 ]
-                original_section_name = tool_section_dict[ 'name' ]
+            if tool_panel_dict:
+                if panel_entry_per_tool( tool_panel_dict ):
+                    # TODO: Fix this to handle the case where the tools are distributed across in more than 1 ToolSection.  The
+                    # following assumes everything was loaded into 1 section (or no section) in the tool panel.
+                    tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                    tool_section_dict = tool_section_dicts[ 0 ]
+                    original_section_name = tool_section_dict[ 'name' ]
+                else:
+                    original_section_name = tool_panel_dict[ 'name' ]
             else:
-                original_section_name = tool_panel_dict[ 'name' ]
+                original_section_name = ''
         else:
             original_section_name = ''
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
