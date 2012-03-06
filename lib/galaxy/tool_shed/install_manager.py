@@ -1,8 +1,6 @@
 """
-Manage automatic installation of tools configured in tool_shed_install.xml, all of which were
-at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool
-shed.  Tools included in tool_shed_install.xml that have already been installed will not be
-re-installed.
+Manage automatic installation of tools configured in the xxx.xml files in ~/scripts/migrate_tools (e.g., 0002_tools.xml).
+All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
 import logging, urllib2
 from galaxy.tools import ToolSection
@@ -13,8 +11,8 @@ log = logging.getLogger( __name__ )
 class InstallManager( object ):
     def __init__( self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config ):
         """
-        Check tool settings in tool_shed_install_config and install all tools that are not already installed.  The tool panel
-        configuration file is the received migrated_tools_config, which is the reserved file named migrated_tools_conf.xml.
+        Check tool settings in tool_shed_install_config and install all repositories that are not already installed.  The tool
+        panel configuration file is the received migrated_tools_config, which is the reserved file named migrated_tools_conf.xml.
         """
         self.app = app
         self.toolbox = self.app.toolbox

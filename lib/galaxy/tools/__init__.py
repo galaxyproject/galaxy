@@ -232,6 +232,9 @@ class ToolBox( object ):
                         if section_item:
                             os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
                     elif section_key.startswith( 'label_' ):
+                        label_id = section_item.id or ''
+                        label_text = section_item.text or ''
+                        label_version = section_item.version or ''
                         os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
                 os.write( fd, '    </section>\n' )
         os.write( fd, '</toolbox>\n' )
