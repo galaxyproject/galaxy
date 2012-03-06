@@ -657,12 +657,13 @@ class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRa
                 valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
                 hname = history.name
                 hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
-                trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-History-%s.tar" % ( hname )
+                hname = "Galaxy-History-%s.tar" % ( hname )
                 if jeha.compressed:
-                    trans.response.headers["Content-Disposition"] += ".gz"
+                    hname += ".gz"
                     trans.response.set_content_type( 'application/x-gzip' )
                 else:
                     trans.response.set_content_type( 'application/x-tar' )
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % ( hname )
                 return trans.app.object_store.get_data(jeha.dataset)
             elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
