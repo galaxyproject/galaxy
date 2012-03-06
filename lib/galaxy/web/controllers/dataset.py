@@ -294,14 +294,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                         tmpfh = open( tmpf )
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp 
                         trans.response.set_content_type( "application/x-zip-compressed" )
-                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.zip" % outfname 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname 
                         return tmpfh
                     else:
                         trans.response.set_content_type( "application/x-tar" )
                         outext = 'tgz'
                         if params.do_action == 'tbz':
                             outext = 'tbz'
-                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext) 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext) 
                         archive.wsgi_status = trans.response.wsgi_status()
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream
@@ -319,7 +319,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
         
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
-        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, file_ext)
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, file_ext)
         return open(data.metadata.get(metadata_name).file_name)
     
     def _check_dataset(self, trans, dataset_id):
@@ -401,7 +401,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                 valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
                 fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
                 trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
-                trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, to_ext)
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, to_ext)
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
