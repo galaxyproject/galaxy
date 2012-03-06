@@ -1450,7 +1450,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
             valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
             fname = ldda.name
             fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
-            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s" % fname
+            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % fname
             try:
                 return open( ldda.file_name )
             except: 
@@ -1850,19 +1850,19 @@ class LibraryCommon( BaseUIController, UsesFormDefinitions ):
                         if action == 'zip':
                             archive.close()
                             trans.response.set_content_type( "application/x-zip-compressed" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname,outext)
                             archive = util.streamball.ZipBall(tmpf, tmpd)
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream
                         elif action == 'ngxzip':
                             trans.response.set_content_type( "application/zip" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname,outext)
                             trans.response.headers[ "X-Archive-Files" ] = "zip"
                             return archive
                         else:
                             trans.response.set_content_type( "application/x-tar" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname,outext)
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream
