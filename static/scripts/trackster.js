@@ -33,7 +33,7 @@ var requestAnimationFrame = (function(){
             window.oRequestAnimationFrame      || 
             window.msRequestAnimationFrame     || 
             function( callback, element ) {
-              window.setTimeout(callback, 1000 / 60);
+                window.setTimeout(callback, 1000 / 60);
             };
 })();
 
@@ -1320,6 +1320,9 @@ var View = function(obj_dict) {
 };
 extend( View.prototype, DrawableCollection.prototype, {
     init: function() {
+        // Attribute init.
+        this.requested_redraw = false;
+        
         // Create DOM elements
         var parent_element = this.container,
             view = this;
@@ -1706,6 +1709,7 @@ extend( View.prototype, DrawableCollection.prototype, {
      * Request that view redraw some or all tracks. If a track is not specificied, redraw all tracks.
      */
     // FIXME: change method call so that track is first and additional parameters are optional.
+    // FIXME: is nodraw parameter needed?
     request_redraw: function(nodraw, force, clear_after, track) {
         var 
             view = this,
@@ -1739,8 +1743,11 @@ extend( View.prototype, DrawableCollection.prototype, {
             }
         }
 
-        // Set up redraw.
-        requestAnimationFrame(function() { view._redraw(nodraw) });
+        // Set up redraw if it has not been requested since last redraw.
+        if (!this.requested_redraw) {
+            requestAnimationFrame(function() { view._redraw(nodraw) });
+            this.requested_redraw = true;
+        }
     },
     /**
      * Redraws view and tracks.
@@ -1748,6 +1755,8 @@ extend( View.prototype, DrawableCollection.prototype, {
      * that requestAnimationFrame can manage redrawing.
      */
     _redraw: function(nodraw) {
+        // Clear because requested redraw is being handled now.
+        this.requested_redraw = false;
         
         var low = this.low,
             high = this.high;
