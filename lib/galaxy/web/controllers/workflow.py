@@ -1502,7 +1502,6 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             job = None
                             if step.type == 'tool' or step.type is None:
                                 tool = trans.app.toolbox.get_tool( step.tool_id )
-                                input_values = step.state.inputs
                                 # Connect up
                                 def callback( input, value, prefixed_name, prefixed_label ):
                                     if isinstance( input, DataToolParameter ):
@@ -1531,6 +1530,11 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                             else:
                                 job, out_data = step.module.execute( trans, step.state )
                                 outputs[ step.id ] = out_data
+                                if new_history:
+                                    for input_dataset_hda in out_data.values():
+                                        new_hda = input_dataset_hda.copy( copy_children=True )
+                                        new_history.add_dataset(new_hda)
+                                        outputs[ step.id ]['input_ds_copy'] = new_hda
                             # Record invocation
                             workflow_invocation_step = model.WorkflowInvocationStep()
                             workflow_invocation_step.workflow_invocation = workflow_invocation
