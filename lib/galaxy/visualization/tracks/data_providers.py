@@ -718,7 +718,7 @@ class BamDataProvider( TracksDataProvider, FilterableMixin ):
             else:
                 results.append( [ "%i_%s" % ( read.pos, qname ), 
                                 read.pos, read.pos + read_len, qname, 
-                                read.cigar, strand, read.seq, [read.mapq, 125] ] )
+                                read.cigar, strand, read.seq, read.mapq ] )
                 
         # Take care of reads whose mates are out of range.
         # TODO: count paired reads when adhering to max_vals?

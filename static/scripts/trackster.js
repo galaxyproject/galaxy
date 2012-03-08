@@ -2480,14 +2480,27 @@ extend(NumberFilter.prototype, {
             return updated;
         }
         
+        //
         // Update filter's min, max based on element values.
-        if (element[this.index] < this.min) {
-            this.min = Math.floor(element[this.index]);
-            updated = true;
+        //
+        
+        // Make value(s) into an Array.
+        var values = element[this.index];
+        if (!(values instanceof Array)) {
+            values = [values];
         }
-        if (element[this.index] > this.max) {
-            this.max = Math.ceil(element[this.index]);
-            updated = true;
+        
+        // Loop through values and update min, max.
+        for (var i = 0; i < values.length; i++) {
+            var value = values[i];
+            if (value < this.min) {
+                this.min = Math.floor(value);
+                updated = true;
+            }
+            if (value > this.max) {
+                this.max = Math.ceil(value);
+                updated = true;
+            }
         }
         return updated;
     },
