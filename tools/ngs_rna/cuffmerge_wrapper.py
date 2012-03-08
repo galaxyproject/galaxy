@@ -82,7 +82,7 @@ def __main__():
     
     # Add options.
     if options.num_threads:
-        cmd += ( " -p %i" % int ( options.num_threads ) )
+        cmd += ( " -p %i " % int ( options.num_threads ) )
     if options.ref_annotation:
         cmd += " -g %s " % options.ref_annotation
     if options.use_seq_data:
