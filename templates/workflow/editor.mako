@@ -236,6 +236,9 @@
 
         make_popupmenu( $("#workflow-options-button"), {
             "Save" : save_current_workflow,
+            "Run": function() {
+                window.location = "${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id))}";
+            },
             ##"Create New" : create_new_workflow_dialog,
             "Edit Attributes" : edit_workflow_attributes,
             ##"Edit Workflow Outputs": edit_workflow_outputs,
