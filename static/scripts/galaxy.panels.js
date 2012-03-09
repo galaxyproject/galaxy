@@ -144,14 +144,14 @@ $.extend( Modal.prototype, {
         var $buttons = this.$footer.find( ".buttons" ).html( "" );
         if ( options.buttons ) {
             $.each( options.buttons, function( name, value ) {
-                 $buttons.append( $( '<button>' ).text( name ).click( value ) );
+                 $buttons.append( $( '<button></button> ' ).text( name ).click( value ) ).append( " " );
             });
             this.$footer.show();
         }
         var $extraButtons = this.$footer.find( ".extra_buttons" ).html( "" );
         if ( options.extra_buttons ) {
             $.each( options.extra_buttons, function( name, value ) {
-                 $extraButtons.append( $( '<button>' ).text( name ).click( value ) );
+                 $extraButtons.append( $( '<button></button>' ).text( name ).click( value ) ).append( " " );
             });
             this.$footer.show();
         }
