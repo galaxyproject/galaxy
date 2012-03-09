@@ -44,31 +44,28 @@
                 <a class="${a_cls}" data-toggle="dropdown">${display}${extra}</a>
             %endif
             %if menu_options:
-                ## <div class="submenu">
                 <ul class="dropdown-menu">
                     %for menu_item in menu_options:
                         %if not menu_item:
-                            <li class="divider" />
+                            <li class="divider"></li>
                         %else:
                             <li>
                             %if len ( menu_item ) == 1:
                                 ${menu_item[0]}
                             %elif len ( menu_item ) == 2:
                                 <% name, link = menu_item %>
-                                <a href="${link}">${name}</a></li>
+                                <a href="${link}">${name}</a>
                             %else:
                                 <% name, link, target = menu_item %>
-                                <a target="${target}" href="${link}">${name}</a></li>
+                                <a target="${target}" href="${link}">${name}</a>
                             %endif
                             </li>
                         %endif
                     %endfor
                 </ul>
-                ## </div>
             %endif
         </li>
     </%def>
-    
 
     ## Analyze data tab.
     ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
@@ -151,7 +148,7 @@
             email = trans.user.email
         else:
             email = ""
-        menu_options = [ [ '<li><a>Logged in as <span id="user-email">%s</span></a></li>' %  email ] ]
+        menu_options = [ [ '<a>Logged in as <span id="user-email">%s</span></a>' %  email ] ]
         if app.config.use_remote_user:
             if app.config.remote_user_logout_href:
                 menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
@@ -173,7 +170,7 @@
             menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
         if app.config.use_remote_user:
             menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
-    
+
         extra_class = "loggedin-only"
         visible = ( trans.user != None )
         tab( "user", "User", None, visible=visible, menu_options=menu_options )
@@ -187,9 +184,9 @@
     </div>
     
     ## Logo, layered over tabs to be clickable
-    <div class="title" style="position: absolute; top: 0; left: 0;">
+    <div class="title" style="position: absolute; top: 0; left: 0; white-space: nowrap;">
         <a href="${app.config.get( 'logo_url', '/' )}">
-        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
+        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="display: inline; width: 26px; vertical-align: top;">
         Galaxy
         %if app.config.brand:
             <span class='brand'>/ ${app.config.brand}</span>

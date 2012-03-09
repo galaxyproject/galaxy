@@ -201,7 +201,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>
             <div style="float: right">
-                <a class='panel-header-button' id="tools-options-button" href="#"><span class="iconic cog"></span></a>
+                <a class='panel-header-button' id="tools-options-button" href="#"><span class="ficon large cog"></span></a>
             </div>
             ${n_('Tools')}
         </div>
@@ -235,7 +235,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a id="history-options-button" class='panel-header-button' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"><span class="iconic cog"></span></a>
+                <a id="history-options-button" class='panel-header-button' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"><span class="ficon large cog"></span></a>
             </div>
             <div class="panel-header-text">${_('History')}</div>
         </div>

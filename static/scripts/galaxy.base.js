@@ -62,15 +62,12 @@ function make_popupmenu(button_element, initial_options) {
             }
             $.each( options, function( k, v ) {
                 if (v) {
-                    $("<a href='#'>").html(k).click(v).appendTo(menu_element).wrap( "<li />" );
+                    menu_element.append( $("<li></li>").append( $("<a href='#'></a>").html(k).click(v) ) );
                 } else {
-                    $("<a href='#'>").html(k).appendTo(menu_element).wrap( "<li class='head'/>" );
+                    menu_element.append( $("<li></li>").addClass( "head" ).append( $("<a href='#'></a>").html(k) ) );
                 }
             });
-            var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'>" );
-            wrapper.append( menu_element )
-                   .append( "<div class='overlay-border'>" )
-                   .appendTo( "body" );
+            var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>" ).append( menu_element ).appendTo( "body" );
                    
             var x = e.pageX - wrapper.width() / 2 ;
             x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 5 );

@@ -11,7 +11,7 @@
   padding: 4px 10px 4px;
   font-size: @baseFontSize;
   line-height: @baseLineHeight;
-  color: @grayDark;
+  color: @textColor;
   text-align: center;
   text-shadow: 0 1px 1px rgba(255,255,255,.75);
   #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%)); // Don't use .gradientbar() here since it does a three-color gradient
@@ -29,7 +29,7 @@
 // Hover state
 .btn.hover, 
 .btn:hover {
-  color: @grayDark;
+  color: @textColor;
   text-decoration: none;
   background-color: darken(@white, 10%);
   background-position: 0 -15px;

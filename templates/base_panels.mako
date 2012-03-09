@@ -1,5 +1,4 @@
-## This needs to be on the first line, otherwise IE6 goes into quirks mode
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 
 <%
     self.has_left_panel=True
@@ -204,7 +203,10 @@
     <head>
         <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        ## For mobile browsers, don't scale up
         <meta name = "viewport" content = "maximum-scale=1.0">
+        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
         ${self.stylesheets()}
         ${self.javascripts()}
     </head>

@@ -50,7 +50,7 @@
     </div>
 </%def>
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
     <head>
         <title>${_('Galaxy Tools')}</title>
@@ -59,7 +59,6 @@
         <link href="${h.url_for('/static/style/tool_menu.css')}" rel="stylesheet" type="text/css" />
         <link href="${h.url_for('/static/style/autocomplete_tagging.css')}" rel="stylesheet" type="text/css" />
 
-        ##<script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
         ${h.js( "jquery", "galaxy.base", "json2", "autocomplete_tagging" )}
 
         <script type="text/javascript">

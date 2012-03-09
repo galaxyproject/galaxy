@@ -2,7 +2,7 @@
 
 @import "galaxy_bootstrap.less";
 
-@import "iconic_stroke.less";
+@import "fontawesome/font-awesome.less";
 
 // Mixins
 
@@ -17,6 +17,7 @@
 .parent-width {
     .box-sizing(border-box);
     width: 100%;
+    *width: 90%;
 }
 
 // ==== Real (basic) styles ====
@@ -224,12 +225,13 @@ th {
     border-right: solid @layout_border 1px;
     border-top: solid @layout_border 1px;
     #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
-    .iconic();
+    .ficon();
+     font-size: 4/3em;
     &:before {
-        content:'\2190';
+        content:'\f053';
     }
     &.hidden:before {
-        content:'\2192';
+        content:'\f054';
     }
     &.right {
         left: inherit;
@@ -237,10 +239,10 @@ th {
         border-right: none;
         border-left: solid @layout_border 1px;
         &.right:before{
-            content:'\2192';
+            content:'\f054';
         }
         &.right.hidden:before {
-            content:'\2190';
+            content:'\f053';
         }
     }
 }
@@ -484,63 +486,6 @@ div.unified-panel-body {
 
 // ==== Tool form styles ====
 
-div.toolForm {
-    border: solid @form_border 1px;
-}
-
-div.toolFormTitle { 
-    font-weight: bold;
-    padding: 5px;
-    padding-left: 10px;
-    padding-right: 10px;
-    background: @form_title_bg_bottom;
-    // background-image: url(form_title_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
-    border-bottom: solid @form_border 1px;
-}
-
-div.toolParamHelp {
-    color: #666;
-}
-
-div.toolParamHelp a {
-    color: #666;
-}
-
-div.toolFormBody { 
-    background: @form_body_bg_bottom;
-    background-image: url(form_body_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
-    padding: 5px 0;
-}
-
-div.toolFormBody div.toolFormTitle {
-    background: transparent;
-    border: none;
-    font-weight: bold;
-    border-bottom: solid @form_border 1px;
-    margin-bottom: 5px;
-}
-
-div.toolFormDisabled div.toolFormTitle {
-    background: @layout_bg;
-    border-color: @layout_border;
-}
-
-div.toolFormDisabled {
-    border-color: @layout_border;
-}
-
-div.toolHelp {
-    margin-top: 10px;
-}
-
-div.toolHelpBody {
-    width: 100%;
-}
-
 div.metadataForm {
     border:solid #aaaaaa 1px;
 }
@@ -594,17 +539,54 @@ div.titleRow {
 
 // Forms 
 
-div.form {
-    border: solid @form_border 1px;
-}
-
-div.form-title { 
-    font-weight: bold;
-    padding: 5px 10px;
-    background: @form_title_bg_bottom;
-    background-image: url(form_title_bg.png);
+div.toolFormBody { 
+    background: @form_body_bg_bottom;
+    background-image: url(form_body_bg.png);
     background-repeat: repeat-x;
     background-position: top;
+    padding: 5px 0;
+}
+
+div.toolFormBody div.toolFormTitle {
+    background: transparent;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid @form_border 1px;
+    margin-bottom: 5px;
+}
+
+div.toolFormDisabled div.toolFormTitle {
+    background: @layout_bg;
+    border-color: @layout_border;
+}
+
+div.toolFormDisabled {
+    border-color: @layout_border;
+}
+
+div.toolHelp {
+    margin-top: 15px;
+    padding: 5px;
+}
+
+div.toolHelpBody {
+    width: 100%;
+}
+
+
+
+div.form, div.toolForm {
+    // border: solid @form_border 1px;
+}
+
+div.form-title, div.toolFormTitle { 
+    font-size: @baseFontSize * 1.25;
+    line-height: @baseLineHeight * 1.5;
+    padding: 5px 10px;
+    background: @form_title_bg_bottom;
+    // background-image: url(form_title_bg.png);
+    // background-repeat: repeat-x;
+    // background-position: top;
     border-bottom: solid @form_border 1px;
 }
 
@@ -658,8 +640,27 @@ div.form-row-error-message {
     padding: 3px 0;
 }
 
-.form-row .help {
+.form-row .help, .toolParamHelp {
     color: #666;
+    a {
+        color: #666;
+    }
+}
+
+.form-row.form-actions {
+    background: whiteSmoke;
+    border-top: solid #ddd 1px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 5px;
+}
+
+// Selects
+select {
+    //border: 1px solid @formElementBorder;
+    padding: 4px;
+    font-size: @baseFontSize;
+    line-height: @baseLineHeight;
 }
 
 select, input, textarea {
@@ -671,22 +672,28 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     max-width: 300px;
 }
 
+textarea, input[type="text"], input[type="password"] {
+    font-size: @baseFontSize;
+    line-height: @baseLineHeight;
+    border: 1px solid @formElementBorder;
+    padding: 3px;
+}
+
 .search-query {
   display: inline-block;
   padding: 4px;
-  margin-bottom: 9px;
   font-size: @baseFontSize;
   line-height: @baseLineHeight;
   color: @gray;
   border: 1px solid @formElementBorder;
-  padding-left: 14px;
-  padding-right: 14px;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
   margin-bottom: 0; // remove the default margin on all inputs
   .border-radius(14px);
   max-width: auto;
 }
 .search-query:focus {
-  border-color: rgba(82,168,236,.8);
+  border-color: darken(rgba(82,168,236,.8),15%);
   @shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(82,168,236,.6);
   .box-shadow(@shadow);
   outline: 0;
@@ -710,7 +717,7 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     background-color: @error_message_bg;
     */
     .alert();
-    min-height: 32px;
+    min-height: 36px;
     padding-left: 52px;
     background-image: url(error_message_icon.png);
     background-repeat: no-repeat;
@@ -932,6 +939,91 @@ div.debug {
     background-color: #EEEEFF;
 }
 
+// Pulled out of grid base
+.count-box {
+    min-width: 1.1em;
+    padding: 5px;
+    border-width: 1px;
+    border-style: solid;
+    text-align: center;
+    display: inline-block;
+}
+.text-filter-val {
+    border: solid 1px #AAAAAA;
+    padding: 1px 2px 1px 3px;
+    margin-right: 5px;
+    -moz-border-radius: .5em;
+    -webkit-border-radius: .5em;
+    font-style: italic;
+}
+.page-link a, .inactive-link {
+    padding: 0px 7px 0px 7px;
+    color: #555;
+}
+.inactive-link, .current-filter {
+    font-weight: bold;
+    color: #000;
+}
+.submit-image {
+    background: url(../images/fugue/magnifier-left.png) no-repeat center transparent;
+    background-color: #eee;
+    width: @baseLineHeight + 8;
+    height: @baseLineHeight + 8;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+    display: block;
+    //float: right;
+    border: 1px solid #aaa;
+    border-left: none;
+}
+#advanced-search td {
+    padding: 3px;
+}
+#advanced-search table {
+    border-collapse: separate;
+}
+.delete-search-icon {
+    background: url(../images/delete_tag_icon_gray.png) center no-repeat;
+    display: inline-block;
+    width: 10px;
+    cursor: pointer;
+    height: 18px;
+    vertical-align: middle;
+    margin-left: 2px;
+    
+}
+.search-box-input {
+    border: 0;
+    float: left;
+    outline: medium none;
+    font-style: italic;
+    font-size: inherit;
+}
+.search-box {
+    vertical-align: bottom;
+    display: inline-block;
+    padding: 0;
+    // border: 1px solid #aaa;
+}
+.gray-background {
+    background-color: #DDDDDD;
+}
+.loading-elt-overlay {
+    background-color : white;
+    opacity : 0.5;
+    width : 100%;
+    height : 100%;
+    z-index : 14000;
+    position : fixed;
+    display: none;
+}
+
+
+
+
+
+
 
 
 
@@ -1073,9 +1165,9 @@ ul.manage-table-actions li {
 
 // Button styles
 
-button {
-    .btn();
-}
+//button {
+//    .btn();
+//}
 
 .action-button {
     .btn();
