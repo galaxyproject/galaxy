@@ -1,0 +1,1668 @@
+@import "variables.less";
+
+@import "galaxy_bootstrap.less";
+
+@import "fontawesome/font-awesome.less";
+
+// Mixins
+
+.unselectable {
+    .user-select(none);
+}
+
+.shadow {
+    .box-shadow();
+}
+
+.parent-width {
+    .box-sizing(border-box);
+    width: 100%;
+    *width: 90%;
+}
+
+// ==== Real (basic) styles ====
+
+.clear {
+    .clearfix();
+}
+
+body  {
+    background: @base_bg_bottom;
+    color: @base_text;
+    background-image: url(base_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    margin: 10px;
+}
+
+img {
+    border: 0;
+}
+
+
+a, a:link, a:visited, a:active {
+    text-decoration: underline;
+    color: @link_text;
+}
+
+
+h1, h2, h3, h4 {
+    color: @header_text;
+    margin: 0.5em 0;
+    /*text-shadow: #bbb 2px 2px 1px;*/
+}
+
+h1:first-child, h2:first-child, h3:first-child, h4:first-child {
+    margin-top: 0px;
+}
+
+hr {
+    border: none;
+    height: 0px;
+    border-bottom: dotted @base_text 1px;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+}
+
+// ==== Panel layout styles ====
+
+#background {
+    position: absolute;
+    background: @layout_bg;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#messagebox {
+    position:absolute; 
+    top: @navbarHeight + @layout_top_padding + 1;
+    left:0; 
+    width:100%; 
+    height: @panel_header_height !important;
+    overflow: hidden; 
+    border-bottom: solid #999 1px;
+    font-size: 90%;
+}
+
+@layout_top_padding: 0px;
+@layout_border_padding: 0px;
+
+@panel_header_height: 30px;
+@panel_footer_height: 25px;
+
+// Panels
+
+#left, #left-border, #center, #right-border, #right {
+    position: absolute; 
+    top: @navbarHeight + @layout_top_padding + 1;
+    bottom: 0px;
+    overflow: hidden; 
+    background: #fff;
+}
+#left, #center, #right, #left-border, #right-border {
+    // border-top: solid @layout_border 1px;
+}
+#left  {
+    left: 0px;
+    width: 250px;
+    z-index: 200;
+    border-right: solid @layout_border 1px;
+}
+#left-border  {
+    left: 250px;
+}
+#center  {
+    left:250 + @layout_border_padding;
+    right: 250 + @layout_border_padding;
+    overflow: hidden;
+    z-index: 1;
+}
+#right-border  {
+    right: 250px;
+}
+#right {
+    width: 250px;
+    right: 0px; 
+    z-index: 200;
+    border-left: solid @layout_border 1px;
+}
+
+.subnavbar {
+    #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
+    border-bottom: solid @layout_border 1px;
+    border-top: solid @layout_border 1px;
+    padding: 5px;
+    color: #555;
+}
+
+.unified-panel-header {
+    .unselectable();
+    height: @panel_header_height;
+    z-index: 1000;
+    //background: @panel_header_bg_bottom;
+    //background-image: url(panel_header_bg.png);
+    //background-position: top center;
+    //background-repeat: repeat-x;
+    text-shadow: rgba(255,255,255,.8) 0 1px 0;
+    #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
+    border-bottom: solid @layout_border 1px;
+    margin: 0;
+    padding: 0;
+    padding-right: 10px;
+    padding-left: 10px;
+    font-weight: bold;
+
+    color: #555;
+    a {
+        color: #555;
+    }
+}
+
+.unified-panel-header-inner {
+    padding-top: 8px;
+}
+
+.unified-panel-footer {
+    .unselectable();
+    position: absolute;
+    bottom: 0;
+    height: @panel_footer_height;
+    line-height: @panel_footer_height;
+    width: 100%;
+    z-index: 1000;
+    border-top: solid @layout_border 1px;
+    #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
+
+    color: #555;
+    a {
+        color: #555;
+    }
+
+    .drag {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0 5px;
+        text-align: center;
+        height: @panel_footer_height;
+        width: @panel_footer_height - 5;
+        background-image: url(../images/visualization/draggable_horizontal.png);
+        background-repeat: no-repeat;
+        background-position: 50% 50%;
+        cursor: w-resize;
+    }
+}
+
+#right > .unified-panel-footer {
+    .drag {
+        left: 0;
+    }
+}
+
+// Needs to be outside panel to show when hidden
+.panel-collapse {
+    .unified-panel-footer();
+    z-index: 10000;
+    position: fixed;
+    left: 0;
+    top: inherit;
+    bottom: 0;
+    padding: 0 5px;
+    text-align: center;
+    width: @panel_footer_height - 5;
+    background: none;
+    border-right: solid @layout_border 1px;
+    border-top: solid @layout_border 1px;
+    #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
+    .ficon();
+     font-size: 4/3em;
+    &:before {
+        content:'\f053';
+    }
+    &.hidden:before {
+        content:'\f054';
+    }
+    &.right {
+        left: inherit;
+        right: 0;
+        border-right: none;
+        border-left: solid @layout_border 1px;
+        &.right:before{
+            content:'\f054';
+        }
+        &.right.hidden:before {
+            content:'\f053';
+        }
+    }
+}
+  
+.menu-bg {
+    background: whiteSmoke top repeat-x;
+}
+    
+div.unified-panel-body {
+    position: absolute;
+    top: @panel_header_height;
+    bottom: 0;
+    width: 100%;
+    margin-top: 1px;
+}
+
+#left > div.unified-panel-body, #right > div.unified-panel-body {
+    bottom: @panel_footer_height;
+}
+
+.panel-header-button {
+    color: #333;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    margin: -1px; padding: 1px;
+    margin-top: -0.2em;
+    // border: solid #999 1px;
+    padding-right: 0.5em;
+    padding-left: 0.5em;
+    // Fade to maroon on hover
+    &:hover {
+        color: maroon;
+        .transition(color .25s linear);
+    }
+    // Bootstrap style span caret needs positioning
+    .caret {
+        margin-top: 7px;
+    }
+    // Another way to get a caret
+    &.popup {
+        padding-right: 1.75em;
+        background: url(../images/dropdownarrow.png) no-repeat right 7px;
+    }
+}
+
+#overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 20000;
+}
+
+#overlay.is_modal #overlay-background {
+    background: rgba(0,0,0,0.5);
+}
+
+.dialog-box-container {
+    position: relative;
+    margin-top: 80px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.dialog-box-wrapper {
+    position: relative;
+    padding: 1em;
+    background-color: rgba(0,0,0,0.5);
+    -moz-border-radius: 1em;
+    -webkit-border-radius: 1em;
+}
+
+.dialog-box {
+    border: solid #999 1px;
+    background: white;
+    z-index: 80000;
+}
+
+#overlay.is_modal .dialog-box .body {
+    min-width: 600px;
+}
+
+.dialog-box .body {
+    padding: 5px;
+    overflow: auto;
+    max-height: 500px;
+    min-width: 300px;
+}
+
+.dialog-box .buttons {
+    padding: 5px;
+}
+
+// Messages for message box, slightly different style
+
+.panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
+{
+    height: 24px;
+    line-height: 24px;
+    color: @base_text;
+    padding: 0px;
+    padding-left: 26px;
+    background-color: @error_message_bg;
+    background-image: url(error_small.png);
+    background-repeat: no-repeat;
+    background-position: 6px 50%;
+}
+
+.panel-warning-message 
+{
+    background-image: url(warn_small.png);
+    background-color: @warn_message_bg;
+}
+
+.panel-done-message 
+{
+    background-image: url(done_small.png);
+    background-color: @done_message_bg;
+}
+
+.panel-info-message 
+{
+    background-image: url(info_small.png);
+    background-color: @info_message_bg;
+}
+
+// Masthead
+
+#masthead {
+    .border-radius(0);
+    .navbar();
+    position:absolute; 
+    top:0; 
+    left:0; 
+    width:100%;
+    min-width:900px;
+    height:32px;
+    // background: @masthead_bg; 
+    // color:#fff;
+    border-bottom: solid @layout_masthead_border 1px;
+    z-index: 15000;
+    padding: 0;
+
+    /*
+    a {
+        color: @masthead_link;
+        text-decoration: none;
+    }
+    */
+
+    .nav > li > a {
+        // Override height of navbar links
+        padding: 6px 10px 8px;
+        // Force cursor to be pointer since tabs are either a link of a button
+        cursor: pointer;
+        &:hover {
+            color: gold;
+        }
+    }
+    
+    .dropdown-menu a, .dropdown-menu a:hover {
+        text-decoration: none;
+    }
+
+    .title {
+        .navbar.brand();
+        font-family: verdana;
+        font-weight: bold;
+        color: white;
+        // Override margin and padding due to shorter navbar height
+        padding: 5px 20px 12px;
+        margin-left: -15px;
+        z-index: 2000;
+        a {
+            color: white;
+            text-decoration: none;
+        }
+    }
+
+    .masthead-inner {
+        .navbar-inner();
+        .navbar-fixed-top.navbar-inner();
+        height: 32px;
+    }
+}
+
+#masthead a:hover {
+    text-decoration: underline;
+}
+
+.quota-meter-container
+{
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 32px;
+}
+
+.quota-meter
+{
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    height: 16px;
+    width: 100px;
+    background-color: @quota_meter_bg;
+}
+
+.quota-meter-bar
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 16px;
+    background-color: @quota_meter_bar;
+}
+
+.quota-meter-bar-warn
+{
+    background-color: @quota_meter_warn_bar;
+}
+
+.quota-meter-bar-error
+{
+    background-color: @quota_meter_error_bar;
+}
+
+.quota-meter-text
+{
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100px;
+    height: 16px;
+    margin-top: -6px;
+    text-align: center;
+    z-index: 9001;
+    color: @quota_meter_text;
+}
+
+
+
+// ==== Tool form styles ====
+
+div.metadataForm {
+    border:solid #aaaaaa 1px;
+}
+
+div.metadataFormTitle {
+    font-weight:bold;
+    padding:5px;
+    padding-left:10px;
+    padding-right:10px;
+    background:#cccccc;
+    background-repeat:repeat-x;
+    background-position:top;
+    border-bottom:solid #aaaaaa 1px;
+}
+
+div.metadataFormBody {
+    background:#FFFFFF;
+    background-image:url(form_body_bg.png);
+    background-repeat:repeat-x;
+    background-position:top;
+    padding:5px 0;
+}
+
+div.metadataFormBody div.metadataFormTitle {
+    background:transparent;
+    border:none;
+    font-weight:bold;
+    border-bottom:solid #dcb790 1px;
+    margin-bottom:5px;
+}
+
+div.metadataFormDisabled div.metadataFormTitle {
+    background:#eee;
+    border-color:#999;
+}
+
+div.metadataFormDisabled {
+    border-color:#999;
+}
+
+div.metadataHelpBody { 
+    width:100%;overflow:auto;
+}
+
+div.titleRow {
+    font-weight: bold;
+    border-bottom: dotted gray 1px;
+    margin-bottom: 0.5em;
+    padding-bottom: 0.25em;
+}
+
+// Forms 
+
+div.toolFormBody { 
+    background: @form_body_bg_bottom;
+    background-image: url(form_body_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    padding: 5px 0;
+}
+
+div.toolFormBody div.toolFormTitle {
+    background: transparent;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid @form_border 1px;
+    margin-bottom: 5px;
+}
+
+div.toolFormDisabled div.toolFormTitle {
+    background: @layout_bg;
+    border-color: @layout_border;
+}
+
+div.toolFormDisabled {
+    border-color: @layout_border;
+}
+
+div.toolHelp {
+    margin-top: 15px;
+    padding: 5px;
+}
+
+div.toolHelpBody {
+    width: 100%;
+}
+
+
+
+div.form, div.toolForm {
+    // border: solid @form_border 1px;
+}
+
+div.form-title, div.toolFormTitle { 
+    font-size: @baseFontSize * 1.25;
+    line-height: @baseLineHeight * 1.5;
+    padding: 5px 10px;
+    background: @form_title_bg_bottom;
+    // background-image: url(form_title_bg.png);
+    // background-repeat: repeat-x;
+    // background-position: top;
+    border-bottom: solid @form_border 1px;
+}
+
+div.form-body { 
+    padding: 5px 0;
+}
+
+div.form-row  {
+    padding: 5px 10px;
+}
+
+div.form-title-row {
+    padding: 5px 10px;
+}
+
+div.repeat-group-item {
+    border-left: solid @form_border 5px;
+    margin-left: 10px;
+    margin-bottom: 10px;
+}
+
+div.form-row-error {
+    background: @error_message_bg;
+}
+
+div.form-row label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: .2em;
+}
+
+div.form-row label.inline {
+    display: inline;
+}
+
+div.form-row-input {
+    width: 300px;
+    float: left;
+}
+
+div.form-row-input label {
+    font-weight: normal;
+    display: inline;
+}
+
+div.form-row-error-message {
+    width: 300px;
+    float: left;
+    color: red;
+    font-weight: bold;
+    padding: 3px 0;
+}
+
+.form-row .help, .toolParamHelp {
+    color: #666;
+    a {
+        color: #666;
+    }
+}
+
+.form-row.form-actions {
+    background: whiteSmoke;
+    border-top: solid #ddd 1px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 5px;
+}
+
+// Selects
+select {
+    //border: 1px solid @formElementBorder;
+    padding: 4px;
+    font-size: @baseFontSize;
+    line-height: @baseLineHeight;
+}
+
+select, input, textarea {
+    font: inherit;
+}
+
+select, textarea, input[type="text"], input[type="file"], input[type="password"] {
+    // -webkit-box-sizing: border-box;
+    max-width: 300px;
+}
+
+textarea, input[type="text"], input[type="password"] {
+    font-size: @baseFontSize;
+    line-height: @baseLineHeight;
+    border: 1px solid @formElementBorder;
+    padding: 3px;
+}
+
+.search-query {
+  display: inline-block;
+  padding: 4px;
+  font-size: @baseFontSize;
+  line-height: @baseLineHeight;
+  color: @gray;
+  border: 1px solid @formElementBorder;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  margin-bottom: 0; // remove the default margin on all inputs
+  .border-radius(14px);
+  max-width: auto;
+}
+.search-query:focus {
+  border-color: darken(rgba(82,168,236,.8),15%);
+  @shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(82,168,236,.6);
+  .box-shadow(@shadow);
+  outline: 0;
+  outline: thin dotted \9; /* IE6-8 */
+}
+
+.search-spinner {
+    position: absolute; 
+    display: none; 
+    right: 8px; 
+    top: 10px;
+}
+
+// Messages 
+
+.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
+    /*padding: 10px;
+    padding-left: 52px;
+    min-height: 32px;
+    border: 1px solid @error_message_border;
+    background-color: @error_message_bg;
+    */
+    .alert();
+    min-height: 36px;
+    padding-left: 52px;
+    background-image: url(error_message_icon.png);
+    background-repeat: no-repeat;
+    background-position: 10px 10px;
+}
+
+.errormessagelarge {
+    .alert-error();
+    padding-left: 52px;
+}
+
+.warningmessagelarge {
+    background-image: url(warn_message_icon.png);
+    border-color: @warn_message_border;
+    background-color: @warn_message_bg;
+}
+
+.donemessagelarge {
+    .alert-success();
+    padding-left: 52px;
+    background-image: url(done_message_icon.png);
+    //border-color: @done_message_border;
+    //background-color: @done_message_bg;
+}
+
+.infomessagelarge {
+    .alert-info();
+    background-image: url(info_message_icon.png);
+    border-color: @info_message_border;
+    background-color: @info_message_bg;
+}
+
+.screencastBox {   
+    padding-left: 10px;
+    border-color: #AAAA66;
+    background-color: #FFFFCC;
+    background-image: none;
+}
+
+.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall {
+    .alert();
+    padding: 5px;
+    padding-left: 25px;
+    min-height: 15px;
+    //border: 1px solid @error_message_border;
+    //background-color: @error_message_bg;
+    background-image: url(error_small.png);
+    background-repeat: no-repeat;
+    background-position: 5px 5px;
+}
+
+.errormessage {
+    .alert-error();
+}
+
+.warningmessage, .warningmessagesmall {
+    background-image: url(warn_small.png);
+    //border-color: @warn_message_border;
+    //background-color: @warn_message_bg;
+}
+
+.donemessage, .donemessagesmall {
+    .alert-success();
+    background-image: url(ok_small.png);
+    // border-color: @done_message_border;
+    // background-color: @done_message_bg;
+}
+
+.infomessage, .infomessagesmall {
+    .alert-info();
+    background-image: url(info_small.png);
+    //border-color: @info_message_border;
+    //background-color: @info_message_bg;
+}
+
+.errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr {
+    padding-left: 20px;
+    min-height: 15px;
+    background: url(error_small.png) no-repeat;
+}
+
+.warningmark {
+    background-image: url(warn_small.png);
+}
+
+.donemark {
+    background-image: url(ok_small.png);
+}
+
+.infomark, .ok_bgr {
+    background-image: url(info_small.png);
+}
+
+/* I think this is only used in view details */
+table.simple {
+    font-size: 12px;
+    background: #fff;
+    margin: 1em;
+    border-collapse: collapse;
+    text-align: left;
+}
+table.simple th {
+    font-size: 14px;
+    font-weight: normal;
+    padding: 10px 8px;
+    border-bottom: 2px solid #333;
+}
+table.simple td {
+    padding: 10px 8px 0px 8px;
+}
+table.simple tbody tr:hover td {
+    color: #333;
+}
+table.tabletip {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+table.tabletip th {
+    white-space: nowrap;
+    border-bottom: 1px solid #444;
+    padding-right: 3px;
+}
+table.tabletip td {
+    border-bottom: 1px solid #ddd;
+}
+table.tabletip tbody tr:hover td {
+    background-color: #eee;
+}
+
+
+table.colored {
+    border-top: solid @table_border 1px;
+    border-bottom: solid @table_border 1px;
+}
+
+table.colored td, table.colored th {
+    text-align: left;
+    padding: 5px;
+    line-height: @baseLineHeight;
+}
+
+table.colored tr.header { 
+    background: @table_header_bg;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid @table_border 1px;
+    font-weight: bold;
+}
+
+table.colored tr { 
+    background: @table_row_bg;
+}
+
+table.colored tr.odd_row { 
+    background: @odd_row_bg;
+}
+
+div.debug {
+    margin: 10px;
+    padding: 5px;
+    background: #FFFF99;
+    border: solid #FFFF33 1px;
+    color: black;
+}
+
+// Data grid style
+
+.grid-header {
+    padding-bottom: 1em;
+}
+
+.grid-header h2 {
+    margin: 0;
+    margin-bottom: 0.5em;
+}
+
+.grid-header .title {
+    font-weight: bold;
+}
+
+.grid {
+    padding-top: 1em;
+    border-collapse: collapse;
+    width: 100%;
+}
+.grid tbody td {
+    line-height: @baseLineHeight;
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 5px;
+}
+.grid tbody td:empty {
+    padding: 0;
+}
+.grid thead tr {
+    height: 2em;
+}
+.grid thead th {
+    line-height: @baseLineHeight;
+    background: @table_header_bg;
+    // background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-top: solid @table_border 1px;
+    border-bottom: solid @table_border 1px;
+    padding: 5px;
+    text-align: left;
+    white-space: nowrap;
+}
+.grid tfoot td {
+    background-color: #F8F8F8;
+    border-top: solid #DDDDDD 1px;
+    border-bottom: solid #DDDDDD 1px;
+    padding: 5px;
+}
+.grid .current {
+    background-color: #EEEEFF;
+}
+
+// Pulled out of grid base
+.count-box {
+    min-width: 1.1em;
+    padding: 5px;
+    border-width: 1px;
+    border-style: solid;
+    text-align: center;
+    display: inline-block;
+}
+.text-filter-val {
+    border: solid 1px #AAAAAA;
+    padding: 1px 2px 1px 3px;
+    margin-right: 5px;
+    -moz-border-radius: .5em;
+    -webkit-border-radius: .5em;
+    font-style: italic;
+}
+.page-link a, .inactive-link {
+    padding: 0px 7px 0px 7px;
+    color: #555;
+}
+.inactive-link, .current-filter {
+    font-weight: bold;
+    color: #000;
+}
+.submit-image {
+    background: url(../images/fugue/magnifier-left.png) no-repeat center transparent;
+    background-color: #eee;
+    width: @baseLineHeight + 8;
+    height: @baseLineHeight + 8;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+    display: block;
+    //float: right;
+    border: 1px solid #aaa;
+    border-left: none;
+}
+#advanced-search td {
+    padding: 3px;
+}
+#advanced-search table {
+    border-collapse: separate;
+}
+.delete-search-icon {
+    background: url(../images/delete_tag_icon_gray.png) center no-repeat;
+    display: inline-block;
+    width: 10px;
+    cursor: pointer;
+    height: 18px;
+    vertical-align: middle;
+    margin-left: 2px;
+    
+}
+.search-box-input {
+    border: 0;
+    float: left;
+    outline: medium none;
+    font-style: italic;
+    font-size: inherit;
+}
+.search-box {
+    vertical-align: bottom;
+    display: inline-block;
+    padding: 0;
+    // border: 1px solid #aaa;
+}
+.gray-background {
+    background-color: #DDDDDD;
+}
+.loading-elt-overlay {
+    background-color : white;
+    opacity : 0.5;
+    width : 100%;
+    height : 100%;
+    z-index : 14000;
+    position : fixed;
+    display: none;
+}
+
+
+
+
+
+
+
+
+
+div.odd_row {
+    background: @odd_row_bg;
+}
+    
+#footer {
+  display: none;
+}
+
+// Tool panel stuff
+
+/*
+td.panel-body {
+    background: white;
+    color: @base_text;
+    background: @menu_bg_over url(menu_bg.png) top repeat-x;
+}
+
+div.toolSectionPad {
+    margin: 0;
+    padding: 0;
+    height: 5px;
+    font-size: 0px;
+}
+
+div.toolSectionDetailsInner { 
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+div.toolSectionTitle {
+    // padding-bottom: 0px;
+    // font-weight: bold;
+}
+
+div.toolTitle {
+    //padding-top: 5px;
+    //padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: square outside;
+}
+*/
+
+span.toolParameterExpandableCollapsable {
+    font-weight: bold;
+    cursor: pointer;
+}
+ul.toolParameterExpandableCollapsable {
+    list-style: none;
+}
+
+ul.manage-table-actions {
+    float: right;
+    margin-top: -2.5em;
+}
+ul.manage-table-actions li {
+    display: block;
+    float: left;
+    margin-left: 0.5em;
+}
+
+// State colors
+
+.state-color-new {
+    border-color: @history_new_border;
+    background: @history_new_bg;
+}
+
+.state-color-upload {
+    border-color: @history_upload_border;
+    background: @history_upload_bg;
+}
+
+.state-color-waiting {
+    border-color: @history_waiting_border;
+    background: @history_waiting_bg;
+}
+
+.state-color-queued {
+    border-color: @history_queued_border;
+    background: @history_queued_bg;
+}
+
+.state-color-running {
+    border-color: @history_running_border;
+    background: @history_running_bg;
+}
+
+.state-color-ok {
+    border-color: @history_ok_border;
+    background: @history_ok_bg;
+}
+
+.state-color-error {
+    border-color: @history_error_border;
+    background: @history_error_bg;
+}
+
+.state-color-deleted {
+    border-color: @history_deleted_border;
+    background: @history_deleted_bg;
+}
+
+.state-fg-new {
+    color: #FFB030;
+}
+
+.state-fg-upload {
+    color: #D090D0;
+}
+
+.state-fg-waiting {
+    color: #E8C060;
+}
+
+.state-fg-queued {
+    color: #888888;
+}
+
+.state-fg-running {
+    color: #AAAA66;
+}
+
+.state-fg-ok {
+    color: #66AA66;
+}
+
+.state-fg-error {
+    color: #AA6666;
+}
+
+.state-fg-deleted {
+    color: #3399FF;
+}
+
+// Button styles
+
+//button {
+//    .btn();
+//}
+
+.action-button {
+    .btn();
+}
+a.action-button {
+    text-decoration: none;
+}
+.action-button > img {
+    vertical-align: middle;
+}
+
+
+//.action-button > * {
+//    vertical-align: middle;
+//}
+
+.action-button:hover {
+    .btn.hover();
+    //color: black;
+    //background: #dddddd;
+}
+.action-button:active {
+    .btn.active();
+    //color: white;
+    //background: #aaaaaa;
+}
+
+// A menu button is a button that has an attached popup menu
+
+.menubutton {
+    .btn();
+
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+    .unselectable;
+    
+    // border: solid transparent 1px;
+    // -moz-border-radius: 0.25em;
+    // -webkit-border-radius: 0.25em;
+    // border-radius: 0.25em;
+    
+    // padding: 1px 0.25em;
+    // margin: -1px -0.25em;
+    
+    .label {
+        position: relative;
+        // display: block;
+        border-right: none;
+        text-decoration: none;
+    }
+
+    &.popup .label {
+        border-right: solid @buttonBorder 1px;
+        padding-right: 6px;
+    }
+
+    &.popup {
+        &:after {
+            margin-top: 6px;
+            .caret();
+        }
+    }
+
+    &.popup.split {
+        &:after {
+            margin-top: 6px;
+            margin-left: 0px;
+            .caret();
+        }
+    }
+
+}
+
+// A split menu button, the main button has an action, the arrow causes the
+// popup menu to appear
+
+.menubutton.popup.split {
+    // padding-right: 2em;
+}
+
+.menubutton.popup.split:hover {
+    //background: url(../images/ddarrowsplit.png) no-repeat right -39px;
+}
+
+// Popup menu styles
+
+/*
+.overlay-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    padding: 1em;
+    margin: -1em;
+    background-color: rgba(0,0,0,0.5);
+    -moz-border-radius: 1em;
+    -webkit-border-radius: 1em;
+    z-index: -1;
+}
+*/
+
+// Galaxy popup menus
+div.popmenu-wrapper {
+
+    position: absolute;
+    top: 100%;
+    z-index: 20000;
+
+    ul.dropdown-menu {
+        // Since our menus are contained in a positioned div, need to override some styles
+        display: block;
+        position: relative;
+        float: none;
+    }
+}
+
+// For all dropdowns, define some additional item types
+ul.dropdown-menu {
+    // No underlines in dropdown menus
+    a {
+        text-decoration: none;
+    }
+    li.head > a {
+        // From nav-list nav-header
+        text-shadow: 0 1px 0 rgba(255,255,255,.5);
+        font-size: 11px;
+        font-weight: bold;
+        line-height: @baseLineHeight;
+        color: @grayLight;
+        text-transform: uppercase;
+    }
+
+    li.head > a:hover {
+        background: inherit;
+        border-color: transparent;
+    }
+}
+
+/*
+div.popmenu-wrapper ul li:hover {
+    background: #EEEEFF;
+    border-color: #aaa;
+}
+
+div.popmenu-wrapper ul li.head:hover {
+    background: inherit;
+    border-color: transparent;
+}
+*/
+
+.popup-arrow {
+    cursor: pointer;
+    text-decoration: none;
+    color: #555;
+}
+
+.popup-arrow:hover {
+    color: black;
+}
+
+div.permissionContainer {
+    padding-left: 20px;
+}
+
+// Styles for areas of text content
+
+.text-content {
+
+    hr {
+            display:block;
+            background:black;
+            color:black;
+            width:100%;
+            height:1px;
+            border:none;
+            background:#aaa;
+            color:#aaa;
+    }
+    
+    table
+    {
+            border-collapse:collapse;
+            border-top:1px solid #ccc;
+            border-left:1px solid #ccc;
+    }
+    
+    blockquote {
+            color:#666;
+    }
+    
+    fieldset {
+            border-color:#ccc;
+            border:1px solid #ccc;
+    }
+    
+    th,td {
+            border-bottom:1px solid #ddd;
+            border-right:1px solid #ccc;
+    }
+    
+    th,td {
+            padding:.8em;
+    }
+
+}
+
+// Icon buttons.
+
+.icon-button  {
+    width: 16px;
+    height: 16px;
+    display: block;
+    float: left;
+    margin-left: 2px;
+    // Allow alt text for screen readers
+    text-indent: 20px;
+    background-repeat:no-repeat;
+    background-position: 0px 0px;
+    padding: 0;
+}
+
+@import "base_sprites";
+
+.tipsy {
+    padding: 5px;
+    font-size: 10px;
+    filter: alpha(opacity=80);
+    background-repeat: no-repeat;
+    background-image: url(../images/tipsy.gif);
+}
+.tipsy-inner {
+    padding: 5px 8px 4px 8px;
+    background-color: black;
+    color: white;
+    max-width: 200px;
+    text-align: center;
+}
+
+.tipsy-north {
+    background-position: top center;
+}
+
+.tipsy-south {
+    background-position: bottom center;
+}
+
+.tipsy-east {
+    background-position: right center;
+}
+
+.tipsy-west {
+    background-position: left center;
+}
+
+.editable-text {
+    cursor:pointer;
+}
+
+.editable-text:hover {
+    cursor: text;
+    border: dotted #999999 1px;
+}
+
+.icon-button.multiinput{
+    background:url(../images/documents-stack.png) no-repeat;
+    cursor:pointer;
+    float:none;
+    display:inline-block;
+    margin-left:10px;
+}
+.icon-button.multiinput.disabled{
+    background:url(../images/documents-stack-faded.png) no-repeat;
+    cursor:auto;
+}
+.workflow-invocation-complete{
+    border:solid 1px #6A6;
+    border-left-width:5px;
+    margin:10px 0;
+    padding-left:5px;
+}
+    
+// ==== History styles ====
+
+body.historyPage {
+    background: @menu_bg_over;
+    color: @base_text;
+    margin: 5px;
+    border: 0;
+    padding: 0;
+}
+
+// Control links at top of history
+div.historyLinks {
+    margin: 5px 5px;
+}
+
+// Default history item appearance
+div.historyItem {
+    margin: 0px -5px;
+    padding: 8px 10px;
+    border-top: solid @layout_border 1px;
+    // border-left: solid @history_queued_border 5px;
+    border-right: none;
+    word-wrap: break-word;
+    background: @history_queued_bg;
+    .state-icon {
+        display: inline-block;
+        vertical-align: middle;
+        width: 16px;
+        height: 16px;
+        background-position: 0 1px;
+        background-repeat: no-repeat;
+    }
+    .historyItemTitle {
+        font-weight: bold;
+        line-height: 16px;
+    }
+}
+
+.historyItemContainer:last-child div.historyItem {
+    border-bottom: solid @layout_border 1px;
+}
+
+// Nested history items
+div.historyItem div.historyItem {
+    margin-right: -11px;
+}
+
+// Change background/border color depending on state
+div.historyItem-ok,
+div.historyItem-failed_metadata {
+    // border-color: @history_ok_border;
+    background: @history_ok_bg;
+    .state-icon {
+        display: none;
+    }
+}
+
+div.historyItem-error {
+    // border-color: @history_error_border;
+    background: @history_error_bg;
+    .state-icon {
+        -sprite-group: history-states;
+        -sprite-image: data_error.png;
+    }
+}
+
+div.historyItem-empty {
+    // border-color: @history_error_border;
+    background: @history_error_bg;
+    .state-icon {
+        -sprite-group: history-states;
+        -sprite-image: data_empty.png;
+    }
+}
+
+div.historyItem-running {
+    // border-color: @history_running_border;
+    background: @history_running_bg;
+    .state-icon {
+        background-image: url(data_running.gif);
+    }
+}
+
+div.historyItem-setting_metadata {
+    // border-color: @history_running_border;
+    background: @history_running_bg;
+    .state-icon {
+        background-image: url(data_running.gif);
+    }
+}
+
+div.historyItem-upload {
+    // border-color: @history_upload_border;
+    background: @history_upload_bg;
+    .state-icon {
+        background-image: url(data_upload.gif);
+    }
+}
+
+div.historyItem-queued {
+    // background: @history_queued_bg;
+    .state-icon {
+        -sprite-group: history-states;
+        -sprite-image: data_queued.png;
+    }
+}
+
+div.historyItem-noPermission {
+    filter: alpha(opacity=60);
+    -moz-opacity: .60;
+    opacity: .60;
+}
+
+// Special case for showing the spinner but not changing the background
+div.historyItemTitleBar.spinner .state-icon {
+    background: url(data_running.gif) 0 1px no-repeat !important;
+}
+
+// Buttons
+div.historyItemButtons {
+    float: right;
+}
+
+div.historyItemBody div {
+    padding-top: 2px;
+}
+
+pre.peek {
+    background: white;
+    color: black;
+    width: 100%; 
+    overflow: auto;
+    th {
+        color: white;
+        background: @peek_table_header;
+    }
+}
+
+// ==== Tool menu styles 
+
+body.toolMenuPage
+{
+    background: white;
+    color: @base_text;
+    background: @menu_bg_over;
+    margin: 5px;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+hr
+{
+    border: none;
+    height: 0px;
+    margin-top: 0px;
+}
+
+div.toolSectionPad
+{
+    margin: 0;
+    padding: 0;
+    height: 5px;
+    font-size: 0px;
+}
+
+div.toolSectionWrapper {
+    // margin-bottom: 5px;
+}
+
+div.toolSectionDetailsInner
+{ 
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+div.toolSectionTitle
+{
+  font-weight: bold;
+}
+
+div.toolPanelLabel
+{
+  //padding-top: 10px;
+  //padding-bottom: 5px;
+  font-weight: bold;
+  color: gray;
+  text-transform: uppercase;
+}
+
+div.toolTitle
+{
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-left: 16px;
+  margin-right: 10px;
+  display: list-item;
+  list-style: square outside;
+}
+
+div.toolSectionBody div.toolPanelLabel
+{
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-left: 16px;
+  margin-right: 10px;
+  display: list-item;
+  list-style: none outside;
+}
+
+div.toolTitleNoSection
+{
+  padding-bottom: 0px;
+  font-weight: bold;
+}
+

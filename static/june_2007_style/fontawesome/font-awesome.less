@@ -1,0 +1,218 @@
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('../images/fonts/fontawesome-webfont.eot');
+    src: url('../images/fonts/fontawesome-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../images/fonts/fontawesome-webfont.woff') format('woff'),
+         url('../images/fonts/fontawesome-webfont.ttf') format('truetype'),
+         url('../images/fonts/fontawesome-webfont.svgz#FontAwesomeRegular') format('svg'),
+         url('../images/fonts/fontawesome-webfont.svg#FontAwesomeRegular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+// ICONS
+// Glyphs and icons for buttons, nav, and more
+// -------------------------------------------
+// Font Awesome courtesy of Dave Gandy at fortaweso.me/font-awesome
+
+.ficon,
+[class^="ficon"]:before,
+[class*=" ficon"]:before {
+    font-family: FontAwesome;
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+}
+
+// makes the font 33% larger relative to the icon container
+.ficon.large:before {
+//    display: inline-block;
+    font-size: 4/3em;
+}
+
+.btn {
+    [class^="ficon"],
+    [class*=" ficon"] {
+    line-height: .9em; // keeps button heights with and without icons the same
+    }
+}
+
+li {
+    [class^="ficon"],
+    [class*=" ficon"] {
+        display: inline-block;
+        width: 1.25em;
+        text-align: center;
+    }
+    .ficon.large[class^="ficon"],
+    .ficon.large[class*=" ficon"]  {
+        width: 1.5*1.25em; // 1.5 increased font size for icon-large * 1.25 width
+    }
+}
+
+li[class^="ficon"],
+li[class*=" ficon"] {
+    margin-left: 0;
+    list-style-type: none;
+
+    &:before {
+        text-indent: -2em;
+        text-align: center;
+    }
+    &.ficon.large:before {
+        text-indent: -4/3em;
+    }
+}
+
+// Uses Unicode Private Use Area (PUA) to ensure screen readers do not read off
+// random characters that represent icons
+.ficon.glass:before              { content: "\f000"; }
+.ficon.music:before              { content: "\f001"; }
+.ficon.search:before             { content: "\f002"; }
+.ficon.envelope:before           { content: "\f003"; }
+.ficon.heart:before              { content: "\f004"; }
+.ficon.star:before               { content: "\f005"; }
+.ficon.star-empty:before         { content: "\f006"; }
+.ficon.user:before               { content: "\f007"; }
+.ficon.film:before               { content: "\f008"; }
+.ficon.th-large:before           { content: "\f009"; }
+.ficon.th:before                 { content: "\f00a"; }
+.ficon.th-list:before            { content: "\f00b"; }
+.ficon.ok:before                 { content: "\f00c"; }
+.ficon.remove:before             { content: "\f00d"; }
+.ficon.zoom-in:before            { content: "\f00e"; }
+
+.ficon.zoom-out:before           { content: "\f010"; }
+.ficon.off:before                { content: "\f011"; }
+.ficon.signal:before             { content: "\f012"; }
+.ficon.cog:before                { content: "\f013"; }
+.ficon.trash:before              { content: "\f014"; }
+.ficon.home:before               { content: "\f015"; }
+.ficon.file:before               { content: "\f016"; }
+.ficon.time:before               { content: "\f017"; }
+.ficon.road:before               { content: "\f018"; }
+.ficon.download-alt:before       { content: "\f019"; }
+.ficon.download:before           { content: "\f01a"; }
+.ficon.upload:before             { content: "\f01b"; }
+.ficon.inbox:before              { content: "\f01c"; }
+.ficon.play-circle:before        { content: "\f01d"; }
+.ficon.repeat:before             { content: "\f01e"; }
+
+// \f020 is not a valid unicode character. all shifted one down
+.ficon.refresh:before            { content: "\f021"; }
+.ficon.list-alt:before           { content: "\f022"; }
+.ficon.lock:before               { content: "\f023"; }
+.ficon.flag:before               { content: "\f024"; }
+.ficon.headphones:before         { content: "\f025"; }
+.ficon.volume-off:before         { content: "\f026"; }
+.ficon.volume-down:before        { content: "\f027"; }
+.ficon.volume-up:before          { content: "\f028"; }
+.ficon.qrcode:before             { content: "\f029"; }
+.ficon.barcode:before            { content: "\f02a"; }
+.ficon.tag:before                { content: "\f02b"; }
+.ficon.tags:before               { content: "\f02c"; }
+.ficon.book:before               { content: "\f02d"; }
+.ficon.bookmark:before           { content: "\f02e"; }
+.ficon.print:before              { content: "\f02f"; }
+
+.ficon.camera:before             { content: "\f030"; }
+.ficon.font:before               { content: "\f031"; }
+.ficon.bold:before               { content: "\f032"; }
+.ficon.italic:before             { content: "\f033"; }
+.ficon.text-height:before        { content: "\f034"; }
+.ficon.text-width:before         { content: "\f035"; }
+.ficon.align-left:before         { content: "\f036"; }
+.ficon.align-center:before       { content: "\f037"; }
+.ficon.align-right:before        { content: "\f038"; }
+.ficon.align-justify:before      { content: "\f039"; }
+.ficon.list:before               { content: "\f03a"; }
+.ficon.indent-left:before        { content: "\f03b"; }
+.ficon.indent-right:before       { content: "\f03c"; }
+.ficon.facetime-video:before     { content: "\f03d"; }
+.ficon.picture:before            { content: "\f03e"; }
+
+.ficon.pencil:before             { content: "\f040"; }
+.ficon.map-marker:before         { content: "\f041"; }
+.ficon.adjust:before             { content: "\f042"; }
+.ficon.tint:before               { content: "\f043"; }
+.ficon.edit:before               { content: "\f044"; }
+.ficon.share:before              { content: "\f045"; }
+.ficon.check:before              { content: "\f046"; }
+.ficon.move:before               { content: "\f047"; }
+.ficon.step-backward:before      { content: "\f048"; }
+.ficon.fast-backward:before      { content: "\f049"; }
+.ficon.backward:before           { content: "\f04a"; }
+.ficon.play:before               { content: "\f04b"; }
+.ficon.pause:before              { content: "\f04c"; }
+.ficon.stop:before               { content: "\f04d"; }
+.ficon.forward:before            { content: "\f04e"; }
+
+.ficon.fast-forward:before       { content: "\f050"; }
+.ficon.step-forward:before       { content: "\f051"; }
+.ficon.eject:before              { content: "\f052"; }
+.ficon.chevron-left:before       { content: "\f053"; }
+.ficon.chevron-right:before      { content: "\f054"; }
+.ficon.plus-sign:before          { content: "\f055"; }
+.ficon.minus-sign:before         { content: "\f056"; }
+.ficon.remove-sign:before        { content: "\f057"; }
+.ficon.ok-sign:before            { content: "\f058"; }
+.ficon.question-sign:before      { content: "\f059"; }
+.ficon.info-sign:before          { content: "\f05a"; }
+.ficon.screenshot:before         { content: "\f05b"; }
+.ficon.remove-circle:before      { content: "\f05c"; }
+.ficon.ok-circle:before          { content: "\f05d"; }
+.ficon.ban-circle:before         { content: "\f05e"; }
+
+.ficon.arrow-left:before         { content: "\f060"; }
+.ficon.arrow-right:before        { content: "\f061"; }
+.ficon.arrow-up:before           { content: "\f062"; }
+.ficon.arrow-down:before         { content: "\f063"; }
+.ficon.share-alt:before          { content: "\f064"; }
+.ficon.resize-full:before        { content: "\f065"; }
+.ficon.resize-small:before       { content: "\f066"; }
+.ficon.plus:before               { content: "\f067"; }
+.ficon.minus:before              { content: "\f068"; }
+.ficon.asterisk:before           { content: "\f069"; }
+.ficon.exclamation-sign:before   { content: "\f06a"; }
+.ficon.gift:before               { content: "\f06b"; }
+.ficon.leaf:before               { content: "\f06c"; }
+.ficon.fire:before               { content: "\f06d"; }
+.ficon.eye-open:before           { content: "\f06e"; }
+
+.ficon.eye-close:before          { content: "\f070"; }
+.ficon.warning-sign:before       { content: "\f071"; }
+.ficon.plane:before              { content: "\f072"; }
+.ficon.calendar:before           { content: "\f073"; }
+.ficon.random:before             { content: "\f074"; }
+.ficon.comment:before            { content: "\f075"; }
+.ficon.magnet:before             { content: "\f076"; }
+.ficon.chevron-up:before         { content: "\f077"; }
+.ficon.chevron-down:before       { content: "\f078"; }
+.ficon.retweet:before            { content: "\f079"; }
+.ficon.shopping-cart:before      { content: "\f07a"; }
+.ficon.folder-close:before       { content: "\f07b"; }
+.ficon.folder-open:before        { content: "\f07c"; }
+.ficon.resize-vertical:before    { content: "\f07d"; }
+.ficon.resize-horizontal:before  { content: "\f07e"; }
+
+.ficon.bar-chart:before          { content: "\f080"; }
+.ficon.twitter-sign:before       { content: "\f081"; }
+.ficon.facebook-sign:before      { content: "\f082"; }
+.ficon.camera-retro:before       { content: "\f083"; }
+.ficon.key:before                { content: "\f084"; }
+.ficon.cogs:before               { content: "\f085"; }
+.ficon.comments:before           { content: "\f086"; }
+.ficon.thumbs-up:before          { content: "\f087"; }
+.ficon.thumbs-down:before        { content: "\f088"; }
+.ficon.star-half:before          { content: "\f089"; }
+.ficon.heart-empty:before        { content: "\f08a"; }
+.ficon.signout:before            { content: "\f08b"; }
+.ficon.linkedin-sign:before      { content: "\f08c"; }
+.ficon.pushpin:before            { content: "\f08d"; }
+.ficon.external-link:before      { content: "\f08e"; }
+
+.ficon.signin:before             { content: "\f090"; }
+.ficon.trophy:before             { content: "\f091"; }
+.ficon.github-sign:before        { content: "\f092"; }
+.ficon.upload-alt:before         { content: "\f093"; }
+.ficon.lemon:before              { content: "\f094"; }
