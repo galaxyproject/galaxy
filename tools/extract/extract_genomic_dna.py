@@ -279,5 +279,10 @@ def __main__():
     if skipped_lines:
         # Error message includes up to the first 10 skipped lines.
         print 'Skipped %d invalid lines, 1st is #%d, "%s"' % ( skipped_lines, first_invalid_line, '\n'.join( invalid_lines[:10] ) )
+        
+    # Clean up temp file.
+    if fasta_file:
+        os.remove( seq_path )
+        os.remove( tmp_name )
 
 if __name__ == "__main__": __main__()
