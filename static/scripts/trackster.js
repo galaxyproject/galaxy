@@ -3149,12 +3149,20 @@ var Track = function(view, container, obj_dict) {
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
     this.data_manager = ('data_manager' in obj_dict ? obj_dict.data_manager : new DataManager(DATA_CACHE_SIZE, this));
-        
+    
+    // Height attributes: min height, max height, and visible height.
+    this.min_height_px = 16;
+    this.max_height_px = 800;
+    this.visible_height_px = 0;
+            
     //
     // Create content div, which is where track is displayed, and add to container if available.
     //
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
-    if (this.container) { this.container.content_div.append(this.container_div); }
+    if (this.container) { 
+        this.container.content_div.append(this.container_div);
+        this.add_resize_handle();
+    }
 };
 
 extend(Track.prototype, Drawable.prototype, {
@@ -3234,6 +3242,46 @@ extend(Track.prototype, Drawable.prototype, {
         this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.name)
                         .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         return header_div;
+    },
+    /**
+     * Action to take during resize.
+     */
+    on_resize: function() {},
+    /**
+     * Add resizing handle to drawable's container_div.
+     */
+    add_resize_handle: function () {
+        var track = this;
+        var in_handle = false;
+        var in_drag = false;
+        var drag_control = $( "<div class='track-resize'>" )
+        // Control shows on hover over track, stays while dragging
+        $(track.container_div).hover( function() { 
+            if ( track.content_visible ) {
+                in_handle = true;
+                drag_control.show(); 
+            }
+        }, function() { 
+            in_handle = false;
+            if ( ! in_drag ) { drag_control.hide(); }
+        });
+        // Update height and force redraw of current view while dragging,
+        // clear cache to force redraw of other tiles.
+        drag_control.hide().bind( "dragstart", function( e, d ) {
+            in_drag = true;
+            d.original_height = $(track.content_div).height();
+        }).bind( "drag", function( e, d ) {
+            var new_height = Math.min( Math.max( d.original_height + d.deltaY, track.min_height_px ), track.max_height_px );
+            $(track.content_div).css( 'height', new_height );
+            track.visible_height_px = (track.max_height_px === new_height ? 0 : new_height);
+            track.on_resize();
+        }).bind( "dragend", function( e, d ) {
+            track.tile_cache.clear();    
+            in_drag = false;
+            if (!in_handle) { drag_control.hide(); }
+            track.config.values.height = track.visible_height_px;
+            track.changed();
+        }).appendTo(track.container_div);
     },
     /**
      * Set track's modes and update mode icon popup.
@@ -3380,7 +3428,7 @@ extend(Track.prototype, Drawable.prototype, {
                 track.content_div.text(DATA_OK);
                 if (track.view.chrom) {
                     track.content_div.text("");
-                    track.content_div.css( "height", track.height_px + "px" );
+                    track.content_div.css( "height", track.visible_height_px + "px" );
                     track.enabled = true;
                     // predraw_init may be asynchronous, wait for it and then draw
                     $.when(track.predraw_init()).done(function() {
@@ -3556,6 +3604,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.view.request_redraw(false, force, clear_after, this);
     },
     /**
+     * Actions to be taken before drawing.
+     */
+    before_draw: function() {},
+    /**
      * Draw track. It is possible to force a redraw rather than use cached tiles and/or clear old 
      * tiles after drawing new tiles.
      * NOTE: this function should never be called directly; use request_draw() so that requestAnimationFrame 
@@ -3578,6 +3630,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / TILE_SIZE ) / Math.log(RESOLUTION) ));
             w_scale = width / (view.max_high - view.max_low);
         }
+        
+        this.before_draw();
 
         //
         // Method for moving and/or removing tiles:
@@ -3591,7 +3645,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Step (a) for (re)moving tiles.
         this.content_div.children().addClass("remove");
 
-        this.max_height = 0;
         var 
             // Index of first tile that overlaps visible region.
             tile_index = Math.floor( low / (resolution * TILE_SIZE) ),
@@ -3738,7 +3791,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * number of pixels required.
      */
     get_canvas_height: function(result, mode, w_scale, canvas_width) {
-        return this.height_px;
+        return this.visible_height_px;
     },
     /**
      * Draw a track tile.
@@ -3785,11 +3838,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             parent_element.append(tile_element);
         }
         
-        // Set track height.
-        track.max_height = Math.max(track.max_height, tile_element.height());
-        track.content_div.css("height", track.max_height + "px");
-        parent_element.children().css("height", track.max_height + "px");        
+        track.after_show_tile(tile);
     },
+    /**
+     * Actions to be taken after showing tile.
+     */
+    after_show_tile: function(tile) {},
     /**
      * Returns tile bounds--tile low and tile high--based on a tile index. Return value is an array 
      * with values tile_low and tile_high.
@@ -4183,7 +4237,7 @@ var ReferenceTrack = function (view) {
     
     view.reference_track = this;
     this.left_offset = 200;
-    this.height_px = 12;
+    this.visible_height_px = 12;
     this.container_div.addClass("reference-track");
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
@@ -4231,10 +4285,6 @@ var LineTrack = function (view, container, obj_dict) {
     this.mode = "Histogram";
     TiledTrack.call(this, view, container, obj_dict);
        
-    this.min_height_px = 16; 
-    this.max_height_px = 400; 
-    // Default height for new tracks, should be a defined constant?
-    this.height_px = 32;
     this.hda_ldda = obj_dict.hda_ldda;
     this.dataset_id = obj_dict.dataset_id;
     this.original_dataset_id = this.dataset_id;
@@ -4249,7 +4299,7 @@ var LineTrack = function (view, container, obj_dict) {
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-            { key: 'height', type: 'int', default_value: this.height_px, hidden: true }
+            { key: 'height', type: 'int', default_value: 32, hidden: true }
         ], 
         saved_values: obj_dict.prefs,
         onchange: function() {
@@ -4261,12 +4311,16 @@ var LineTrack = function (view, container, obj_dict) {
     });
 
     this.prefs = this.config.values;
-    this.height_px = this.config.values.height;
+    this.visible_height_px = this.config.values.height;
     this.vertical_range = this.config.values.max_value - this.config.values.min_value;
-
-    this.add_resize_handle();
 };
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    /**
+     * Action to take during resize.
+     */
+    on_resize: function() {
+        this.request_draw(true);
+    },
     /**
      * Set track minimum value.
      */
@@ -4284,41 +4338,6 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         $('#linetrack_' + this.dataset_id + '_maxval').text(this.prefs.max_value);
         this.tile_cache.clear();
         this.request_draw();
-    },
-    add_resize_handle: function () {
-        // Add control for resizing
-        // Trickery here to deal with the hovering drag handle, can probably be
-        // pulled out and reused.
-        var track = this;
-        var in_handle = false;
-        var in_drag = false;
-        var drag_control = $( "<div class='track-resize'>" )
-        // Control shows on hover over track, stays while dragging
-        $(track.container_div).hover( function() { 
-            if ( track.content_visible ) {
-                in_handle = true;
-                drag_control.show(); 
-            }
-        }, function() { 
-            in_handle = false;
-            if ( ! in_drag ) { drag_control.hide(); }
-        });
-        // Update height and force redraw of current view while dragging,
-        // clear cache to force redraw of other tiles.
-        drag_control.hide().bind( "dragstart", function( e, d ) {
-            in_drag = true;
-            d.original_height = $(track.content_div).height();
-        }).bind( "drag", function( e, d ) {
-            var new_height = Math.min( Math.max( d.original_height + d.deltaY, track.min_height_px ), track.max_height_px );
-            $(track.content_div).css( 'height', new_height );
-            track.height_px = new_height;
-            track.request_draw(true);
-        }).bind( "dragend", function( e, d ) {
-            track.tile_cache.clear();    
-            in_drag = false;
-            if (!in_handle) { drag_control.hide(); }
-            track.config.values.height = track.height_px;
-        }).appendTo(track.container_div);
     },
     predraw_init: function() {
         var track = this;
@@ -4429,6 +4448,7 @@ var FeatureTrack = function(view, container, obj_dict) {
             { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
                 options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+            { key: 'height', type: 'int', default_value: this.visible_height_px, hidden: true}
         ], 
         saved_values: obj_dict.prefs,
         onchange: function() {
@@ -4439,8 +4459,8 @@ var FeatureTrack = function(view, container, obj_dict) {
         }
     });
     this.prefs = this.config.values;
-    
-    this.height_px = 0;
+    this.visible_height_px = this.config.values.height;
+        
     this.container_div.addClass( "feature-track" );
     this.hda_ldda = obj_dict.hda_ldda;
     this.dataset_id = obj_dict.dataset_id;
@@ -4462,6 +4482,30 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         } else {
             this.painter = painters.LinkedFeaturePainter;
         }
+    },
+    /**
+     * Actions to be taken before drawing.
+     */
+    before_draw: function() {
+        // Clear because this is set when drawing.
+        this.max_height_px = 0;
+    },
+    /**
+     * Actions to be taken after showing tile.
+     */
+    after_show_tile: function(tile) {
+        // Update max height based on current tile.
+        this.max_height_px = Math.max(this.max_height_px, tile.html_elt.height());
+        
+        // Update height for all tiles based on max height.
+        tile.html_elt.parent().children().css("height", this.max_height_px + "px");
+        
+        // Update track height based on max height and visible height.
+        var track_height = this.max_height_px;
+        if (this.visible_height_px !== 0) {
+            track_height = Math.min(this.max_height_px, this.visible_height_px);
+        }
+        this.content_div.css("height", track_height + "px");    
     },
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
