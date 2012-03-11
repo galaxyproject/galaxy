@@ -26,9 +26,27 @@ database/*.sqlite
 # Config files
 universe_wsgi.ini
 reports_wsgi.ini
+community_wsgi.ini
+
 datatypes_conf.xml
 tool_conf.xml
+external_service_types_conf.xml
+migrated_tools_conf.xml
+shed_tool_conf.xml
+tool_data_table_conf.xml
+tool_sheds_conf.xml
 static/welcome.html.*
+static/welcome.html
+
+# Tool data.
+tool-data/annotation_profiler_options.xml
+tool-data/annotation_profiler_valid_builds.txt
+tool-data/gatk_annotations.txt
+tool-data/gd.restriction_enzymes.txt
+tool-data/gd.species.txt
+tool-data/shared/igv/igv_build_sites.txt
+tool-data/shared/rviewer/rviewer_build_sites.txt
+tool-data/shared/ucsc/builds.txt
 tool-data/*.loc
 
 # Test output
@@ -39,6 +57,9 @@ run_functional_tests.html
 
 # Chrom len files
 *.len
+
+# Jars
+tool-data/shared/jars/
 
 # Misc
 *.orig
