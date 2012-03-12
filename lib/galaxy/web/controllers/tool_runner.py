@@ -109,16 +109,49 @@ class ToolRunner( BaseUIController ):
             raise Exception("Failed to get job information for dataset hid %d" % data.hid)
         # Get the tool object
         tool_id = job.tool_id
+        tool_version = job.tool_version
         try:
             # Load the tool
             toolbox = self.get_toolbox()
-            tool = toolbox.get_tool( tool_id )
+            tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
+            if len( tools ) > 1:
+                tool_id_select_field = self.build_tool_id_select_field( tools, tool_id )
+                for tool in tools:
+                    if tool.id == tool_id:
+                        break
+                else:
+                    tool = tools[ 0 ]
+                tool_id_version_message = 'This job was initially run with tool id "%s", version "%s", and multiple derivations ' % ( job.tool_id, job.tool_version )
+                tool_id_version_message += 'of this tool are available.  Rerun the job with the selected tool or choose another derivation of the tool.'
+            else:
+                tool_id_select_field = None
+                tool = tools[ 0 ]
+            if tool.id == job.tool_id and tool.version == job.tool_version:
+                tool_id_version_message = ''
+            elif tool.id == job.tool_id:
+                if job.tool_version == None:
+                    # For some reason jobs don't always keep track of the tool version.
+                    tool_id_version_message = ''
+                else:
+                    if len( tools ) > 1:
+                        tool_id_version_message = 'This job was initially run with tool version "%s", which is not currently available.  ' % job.tool_version
+                        tool_id_version_message += 'You can rerun the job with the selected tool or choose another derivation of the tool.'
+                    else:
+                        tool_id_version_message = 'This job was initially run with tool version "%s", which is not currently available.  ' % job.tool_version
+                        tool_id_version_message += 'You can rerun the job with this tool version, which is a derivation of the original tool.'
+            else:
+                if len( tools ) > 1:
+                    tool_id_version_message = 'This job was initially run with tool version "%s", which is not currently available.  ' % job.tool_version
+                    tool_id_version_message += 'You can rerun the job with the selected tool or choose another derivation of the tool.'
+                else:
+                    tool_id_version_message = 'This job was initially run with tool id "%s", version "%s", which is not ' % ( job.tool_id, job.tool_version )
+                    tool_id_version_message += 'currently available.  You can rerun the job with this tool, which is a derivation of the original tool.'
             assert tool is not None, 'Requested tool has not been loaded.'
         except:
-            #this is expected, so not an exception
+            # This is expected so not an exception.
+            tool_id_version_message = ''
             error( "This dataset was created by an obsolete tool (%s). Can't re-run." % tool_id )
-        # Can't rerun upload, external data sources, et cetera. Workflow
-        # compatible will proxy this for now
+        # Can't rerun upload, external data sources, et cetera. Workflow compatible will proxy this for now
         if not tool.is_workflow_compatible:
             error( "The '%s' tool does not currently support rerunning." % tool.name )
         # Get the job's parameters
@@ -163,7 +196,30 @@ class ToolRunner( BaseUIController ):
         if from_noframe is not None:
             add_frame.wiki_url = trans.app.config.wiki_url
             add_frame.from_noframe = True
-        return trans.fill_template( "tool_form.mako", history=history, toolbox=toolbox, tool=tool, util=util, add_frame=add_frame, **vars )
+        return trans.fill_template( "tool_form.mako",
+                                    history=history,
+                                    toolbox=toolbox,
+                                    tool_id_select_field=tool_id_select_field,
+                                    tool=tool,
+                                    util=util,
+                                    add_frame=add_frame,
+                                    tool_id_version_message=tool_id_version_message,
+                                    **vars )
+    def build_tool_id_select_field( self, tools, selected_tool_id ):
+        """Build a SelectField whose options are the ids for the received list of tools."""
+        options = []
+        refresh_on_change_values = []
+        for tool in tools:
+            options.append( ( tool.id, tool.id ) )
+            refresh_on_change_values.append( tool.id )
+        select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
+        for option_tup in options:
+            selected = option_tup[0] == selected_tool_id
+            if selected:
+                select_field.add_option( option_tup[0], option_tup[1], selected=True )
+            else:
+                select_field.add_option( option_tup[0], option_tup[1] )
+        return select_field
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
         if not redirect_url:
@@ -251,7 +307,6 @@ class ToolRunner( BaseUIController ):
                                 datasets.append( create_dataset( 'Pasted Entry' ) )
                                 break
         return [ d.id for d in datasets ]
-
     @web.expose
     def upload_async_message( self, trans, **kwd ):
         # might be more appropriate in a different controller
