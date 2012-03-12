@@ -1,4 +1,5 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/base_panels.mako" import="overlay" />
 
 <%def name="stylesheets()">
@@ -274,10 +275,11 @@
         assert len(tool.action) == 2
         tool_url = tool.action[0] + h.url_for(tool.action[1])
 %>
-%if message:
-    <div class="errormessage">${message}</div>
-    <br/>
+
+%if tool_id_version_message:
+    ${render_msg( tool_id_version_message, 'error' )}
 %endif
+
 <div class="toolForm" id="${tool.id}">
     %if tool.has_multiple_pages:
         <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
@@ -286,7 +288,18 @@
     %endif
     <div class="toolFormBody">
         <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}">
-            <input type="hidden" name="tool_id" value="${tool.id}">
+            %if tool_id_select_field:
+                <div class="form-row">
+                    <label>Tool id:</label>
+                    ${tool_id_select_field.get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        Select a different derivation of this tool to rerun the job.
+                    </div>
+                </div>
+                <div style="clear: both"></div>
+            %else:
+                <input type="hidden" name="tool_id" value="${tool.id}">
+            %endif
             <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
             %if tool.display_by_page[tool_state.page]:
                 ${trans.fill_template_string( tool.display_by_page[tool_state.page], context=tool.get_param_html_map( trans, tool_state.page, tool_state.inputs ) )}

@@ -241,7 +241,7 @@ class ToolBox( object ):
         os.close( fd )
         shutil.move( filename, os.path.abspath( self.integrated_tool_panel_config ) )
         os.chmod( self.integrated_tool_panel_config, 0644 )
-    def get_tool( self, tool_id, tool_version=None ):
+    def get_tool( self, tool_id, tool_version=None, get_all_versions=False ):
         """Attempt to locate a tool in the tool box."""
         if tool_id in self.tools_by_id:
             tool = self.tools_by_id[ tool_id ]
@@ -252,6 +252,12 @@ class ToolBox( object ):
         tv = self.__get_tool_version( tool_id )
         if tv:
             tool_version_ids = tv.get_version_ids( self.app )
+            if get_all_versions:
+                available_tool_versions = []
+                for tool_version_id in tool_version_ids:
+                    if tool_version_id in self.tools_by_id:
+                        available_tool_versions.append( self.tools_by_id[ tool_version_id ] )
+                return available_tool_versions
             for tool_version_id in tool_version_ids:
                 if tool_version_id in self.tools_by_id:
                     tool = self.tools_by_id[ tool_version_id ]
