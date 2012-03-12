@@ -1,26 +1,30 @@
-menu_bg.png : 
-	./gradient.py 9 1000 DDDDFF 9999FF FFFFFF 0 0 FFFFFF 1 1 > $@
+OUT=blue
+INI=$(OUT)_colors.ini
 
-base_bg.png : 
-	./gradient.py 9 1000 EEEEFF - FFFFFF 0 0 FFFFFF 1 1 > $@
+# The catch-all rule is magic, it reruns make in the OUT directory with a VPATH
+all:
+	@( cd blue; make -f ../Makefile VPATH=.. css )
 
-masthead_bg.png : 
-	./gradient.py 9 50 023858 000000 000000 0 0.5 000000 1 1 > $@
+ALL_CSS=base panel_layout masthead library history tool_menu iphone autocomplete_tagging trackster
 
-footer_title_bg.png : 
-	./gradient.py 9 30 023858 000000 000000 0 0.5 000000 1 1 > $@
+css: $(foreach N,$(ALL_CSS),$N.css)
 
-form_title_bg.png : 
-	./gradient.py 9 50 ebd9b2 b9a780 FFFFFF 0 0 FFFFFF 0.5 1 > $@
+# Convert variables from ini to less syntax
+variables.less : $(INI)
+	../variables_to_less.py < $< > $@
 
-ok_bg.png : 
-	./gradient.py 9 200 AAFFAA - CCFFCC 0 0.5 CCFFCC 1 1 > $@
+# Convert using less
+%.css : %.less
+	lessc -x $< $@
 
-error_bg.png : 
-	./gradient.py 9 200 FFAAAA - FFCCCC 0 0.5 FFCCCC 1 1 > $@
+# Old style using process_css still works so we can move gradually
+%.css : %.css.tmpl
+	../process_css.py ../$(INI) ..:../shared_images:../../images . < $< > $@
 
-warn_bg.png : 
-	./gradient.py 9 200 FFFFAA - FFFFCC 0 0.5 FFFFCC 1 1 > $@
+# For building sprite images
+%.less : %.less.tmpl
+	../process_css.py ../$(INI) ..:../shared_images:../../images . < $< > $@
 
-gray_bg.png : 
-	./gradient.py 9 200 AAAAAA - CCCCCC 0 0.5 CCCCCC 1 1 > $@
+# Some dependencies
+base.css: variables.less galaxy_bootstrap.less iconic_stroke.less base_sprites.less
+

@@ -12,56 +12,60 @@
 <%def name="masthead()">
 
     ## Tab area, fills entire width
-    <div style="position: relative; right: -50%; float: left; text-align: center;">
-    
-    <table class="tab-group" border="0" cellspacing="0" style="position: relative; right: 50%;">
-    <tr>
+    <div style="position: relative; right: -50%; float: left;">
+    <div style="display: block; position: relative; right: 50%;">
+
+    <ul class="nav" border="0" cellspacing="0">
     
     <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
         ## Create a tab at the top of the panels. menu_options is a list of 2-elements lists of [name, link]
         ## that are options in the menu.
     
         <%
-        cls = "tab"
+        cls = ""
+        a_cls = ""
+        extra = ""
         if extra_class:
             cls += " " + extra_class
         if self.active_view == id:
             cls += " active"
+        if menu_options:
+            cls += " dropdown"
+            a_cls += " dropdown-toggle"
+            extra = "<b class='caret'></b>"
         style = ""
         if not visible:
             style = "display: none;"
         %>
-        <td class="${cls}" style="${style}">
+        <li class="${cls}" style="${style}">
             %if href:
-                <a target="${target}" href="${href}">${display}</a>
+                <a class="${a_cls}" data-toggle="dropdown" target="${target}" href="${href}">${display}${extra}</a>
             %else:
-                <a>${display}</a>
+                <a class="${a_cls}" data-toggle="dropdown">${display}${extra}</a>
             %endif
             %if menu_options:
-                <div class="submenu">
-                <ul>
+                <ul class="dropdown-menu">
                     %for menu_item in menu_options:
-                        <li>
                         %if not menu_item:
-                            <hr style="color: inherit; background-color: gray"/></li>
+                            <li class="divider"></li>
                         %else:
+                            <li>
                             %if len ( menu_item ) == 1:
                                 ${menu_item[0]}
                             %elif len ( menu_item ) == 2:
                                 <% name, link = menu_item %>
-                                <a href="${link}">${name}</a></li>
+                                <a href="${link}">${name}</a>
                             %else:
                                 <% name, link, target = menu_item %>
-                                <a target="${target}" href="${link}">${name}</a></li>
+                                <a target="${target}" href="${link}">${name}</a>
                             %endif
+                            </li>
                         %endif
                     %endfor
                 </ul>
-                </div>
             %endif
-        </td>
+        </li>
     </%def>
-    
 
     ## Analyze data tab.
     ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
@@ -144,7 +148,7 @@
             email = trans.user.email
         else:
             email = ""
-        menu_options = [ [ '<li>Logged in as <span id="user-email">%s</span></li>' %  email ] ]
+        menu_options = [ [ '<a>Logged in as <span id="user-email">%s</span></a>' %  email ] ]
         if app.config.use_remote_user:
             if app.config.remote_user_logout_href:
                 menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
@@ -166,21 +170,23 @@
             menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
         if app.config.use_remote_user:
             menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
-    
+
         extra_class = "loggedin-only"
         visible = ( trans.user != None )
         tab( "user", "User", None, visible=visible, menu_options=menu_options )
     %>
     
-    </tr>
-    </table>
-    
+    ## </tr>
+    ## </table>
+    </ul>
+
+    </div>
     </div>
     
     ## Logo, layered over tabs to be clickable
-    <div class="title" style="position: absolute; top: 0; left: 0;">
+    <div class="title" style="position: absolute; top: 0; left: 0; white-space: nowrap;">
         <a href="${app.config.get( 'logo_url', '/' )}">
-        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
+        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="display: inline; width: 26px; vertical-align: top;">
         Galaxy
         %if app.config.brand:
             <span class='brand'>/ ${app.config.brand}</span>

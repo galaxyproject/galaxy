@@ -50,7 +50,7 @@
     </div>
 </%def>
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
     <head>
         <title>${_('Galaxy Tools')}</title>
@@ -59,7 +59,6 @@
         <link href="${h.url_for('/static/style/tool_menu.css')}" rel="stylesheet" type="text/css" />
         <link href="${h.url_for('/static/style/autocomplete_tagging.css')}" rel="stylesheet" type="text/css" />
 
-        ##<script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
         ${h.js( "jquery", "galaxy.base", "json2", "autocomplete_tagging" )}
 
         <script type="text/javascript">
@@ -321,13 +320,13 @@
                     else:
                         display = "none"
                 %>
-                <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
+                <div id="tool-search" class="bar" style="padding-top: 5px; padding-bottom: 10px;position: relative; display: ${display};">
                     %if trans.app.config.get_bool( 'enable_tool_tags', False ):
                         <b>Tags:</b>
                         ${render_tool_tagging_elements()}
                     %endif
-                    <input type="text" name="query" value="search tools" id="tool-search-query" autocomplete="off" style="width: 100%; font-style:italic; font-size: inherit"/>
-                    <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>
+                    <input type="text" name="query" value="search tools" id="tool-search-query" autocomplete="off" class="search-query parent-width" />
+                    <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner"/>
                 </div>
                 
                 ## Recently used tools.

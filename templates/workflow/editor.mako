@@ -7,15 +7,15 @@
 %>
 </%def>
 
-<%def name="late_javascripts()">
-    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
-    <script type="text/javascript">
-        ensure_dd_helper();
-        make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
-        make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
-        ## handle_minwidth_hint = rp.handle_minwidth_hint;
-    </script>
-</%def>
+## <%def name="late_javascripts()">
+##     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
+##     <script type="text/javascript">
+##         ensure_dd_helper();
+##         make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
+##         make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
+##         ## handle_minwidth_hint = rp.handle_minwidth_hint;
+##     </script>
+## </%def>
 
 <%def name="javascripts()">
 
@@ -730,9 +730,9 @@
     body { margin: 0; padding: 0; overflow: hidden; }
 
     /* Wider right panel */
-    #center       { right: 309px; }
-    #right-border { right: 300px; }
-    #right        { width: 300px; }
+    ## #center       { right: 309px; }
+    ## #right-border { right: 300px; }
+    ## #right        { width: 300px; }
     ## /* Relative masthead size */
     ## #masthead { height: 2.5em; }
     ## #masthead div.title { font-size: 1.8em; }
@@ -929,7 +929,7 @@
 
 <%def name="overlay(visible=False)">
     ${parent.overlay( "Loading workflow editor...",
-                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>", self.overlay_visible )}
+                      "<div class='progress progress-striped progress-info active'><div class='bar' style='width: 100%;'></div></div>", self.overlay_visible )}
 </%def>
 
 <%def name="left_panel()">
@@ -955,8 +955,8 @@
                     display = "none"
             %>
             <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
-                <input type="text" name="query" value="search tools" id="tool-search-query" style="width: 100%; font-style:italic; font-size: inherit" autocomplete="off"/>
-                <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>
+                <input type="text" name="query" value="search tools" id="tool-search-query" class="search-query parent-width" />
+                <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
             </div>
             <div class="toolSectionList">
                 %for key, val in app.toolbox.tool_panel.items():

@@ -140,13 +140,13 @@
                     %>
                     <div class="form-title-row"><strong>${input.title} ${i + 1}</strong></div>
                     ${do_inputs( input.inputs, repeat_state[i], rep_errors, prefix + input.name + "_" + str(index) + "|", other_values )}
-                    <div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
+                    <div class="form-row"><input type="submit" class="btn" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
                 </div>
                 %if rep_errors.has_key( '__index__' ):
                     <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${rep_errors['__index__']}</span></div>
                 %endif
               %endfor
-              <div class="form-row"><input type="submit" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
+              <div class="form-row"><input type="submit" class="btn" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
           </div>
         %elif input.type == "conditional":
             <%
@@ -303,14 +303,14 @@
             <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
             %if tool.display_by_page[tool_state.page]:
                 ${trans.fill_template_string( tool.display_by_page[tool_state.page], context=tool.get_param_html_map( trans, tool_state.page, tool_state.inputs ) )}
-                <input type="submit" class="primary-button" name="runtool_btn" value="Execute">
+                <input type="submit" class="btn btn-primary" name="runtool_btn" value="Execute">
             %else:
                 ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, errors, "" )}
-                <div class="form-row">
+                <div class="form-row form-actions">
                     %if tool_state.page == tool.last_page:
-                        <input type="submit" class="primary-button" name="runtool_btn" value="Execute">
+                        <input type="submit" class="btn btn-primary" name="runtool_btn" value="Execute">
                     %else:
-                        <input type="submit" class="primary-button" name="runtool_btn" value="Next step">
+                        <input type="submit" class="btn btn-primary" name="runtool_btn" value="Next step">
                     %endif
                 </div>
             %endif
