@@ -246,9 +246,15 @@ class ToolBox( object ):
         if tool_id in self.tools_by_id:
             tool = self.tools_by_id[ tool_id ]
             if tool_version and tool.version == tool_version:
-                return tool
+                if get_all_versions:
+                    return [ tool ]
+                else:
+                    return tool
             else:
-                return tool
+                if get_all_versions:
+                    return [ tool ]
+                else:
+                    return tool
         tv = self.__get_tool_version( tool_id )
         if tv:
             tool_version_ids = tv.get_version_ids( self.app )
