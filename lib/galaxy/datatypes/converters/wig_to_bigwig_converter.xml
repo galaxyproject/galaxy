@@ -1,4 +1,4 @@
-<tool id="CONVERTER_wig_to_bigwig" name="wig->bigwig for Trackster. Needs 'wigToBigWig' tool in path." hidden="true">
+<tool id="CONVERTER_wig_to_bigwig" name="Convert Wiggle to BigWig" hidden="true">
   <!-- Used internally to generate track indexes -->
   <command>wigToBigWig $input $chromInfo $output</command>
   <inputs>
