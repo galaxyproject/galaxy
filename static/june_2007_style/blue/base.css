@@ -525,7 +525,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%;margin-top
 .dialog-box .buttons{padding:5px;}
 .panel-error-message,.panel-warning-message,.panel-done-message,.panel-info-message{height:24px;line-height:24px;color:#303030;padding:0px;padding-left:26px;background-color:#ffcccc;background-image:url(error_small.png);background-repeat:no-repeat;background-position:6px 50%;}
 .panel-warning-message{background-image:url(warn_small.png);background-color:#ffffcc;}
-.panel-done-message{background-image:url(done_small.png);background-color:#ccffcc;}
+.panel-done-message{background-image:url(ok_small.png);background-color:#ccffcc;}
 .panel-info-message{background-image:url(info_small.png);background-color:#d9edf7;}
 #masthead{-webkit-border-radius:0;-moz-border-radius:0;border-radius:0;overflow:visible;margin-bottom:16px;position:absolute;top:0;left:0;width:100%;min-width:900px;height:32px;border-bottom:solid #444444 1px;z-index:15000;padding:0;}#masthead .brand:hover{text-decoration:none;}
 #masthead .brand{float:left;display:block;padding:8px 20px 12px;margin-left:-20px;font-size:20px;font-weight:200;line-height:1;color:#ffffff;}
@@ -542,7 +542,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%;margin-top
 .quota-meter-bar{position:absolute;top:0;left:0;height:16px;background-color:#969db3;}
 .quota-meter-bar-warn{background-color:#ffb400;}
 .quota-meter-bar-error{background-color:#ff4343;}
-.quota-meter-text{position:absolute;top:50%;left:0;width:100px;height:16px;margin-top:-6px;text-align:center;z-index:9001;color:#000000;}
+.quota-meter-text{position:absolute;top:50%;left:0;width:100px;height:16px;margin-top:-6px;text-align:center;z-index:9001;color:#000000;white-space:nowrap;}
 div.metadataForm{border:solid #aaaaaa 1px;}
 div.metadataFormTitle{font-weight:bold;padding:5px;padding-left:10px;padding-right:10px;background:#cccccc;background-repeat:repeat-x;background-position:top;border-bottom:solid #aaaaaa 1px;}
 div.metadataFormBody{background:#FFFFFF;background-image:url(form_body_bg.png);background-repeat:repeat-x;background-position:top;padding:5px 0;}
@@ -581,7 +581,7 @@ textarea,input[type="text"],input[type="password"]{font-size:12px;line-height:16
 .errormessagelarge,.warningmessagelarge,.donemessagelarge,.infomessagelarge{padding:8px 35px 8px 14px;margin-bottom:16px;text-shadow:0 1px 0 rgba(255, 255, 255, 0.5);background-color:#ffffcc;border:1px solid #ffdd33;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;color:#666600;min-height:36px;padding-left:52px;background-image:url(error_large.png);background-repeat:no-repeat;background-position:10px 10px;}
 .errormessagelarge{background-color:#ffcccc;border-color:#ff3355;color:#660000;padding-left:52px;}
 .warningmessagelarge{background-image:url(warn_large.png);border-color:#aaaa66;background-color:#ffffcc;}
-.donemessagelarge{background-color:#ccffcc;border-color:#1a9900;color:#006600;padding-left:52px;background-image:url(done_large.png);}
+.donemessagelarge{background-color:#ccffcc;border-color:#1a9900;color:#006600;padding-left:52px;background-image:url(ok_large.png);}
 .infomessagelarge{background-color:#d9edf7;border-color:#1b7183;color:#134158;background-image:url(info_large.png);border-color:#6666aa;background-color:#d9edf7;}
 .screencastBox{padding-left:10px;border-color:#AAAA66;background-color:#FFFFCC;background-image:none;}
 .errormessage,.warningmessage,.donemessage,.infomessage,.errormessagesmall,.warningmessagesmall,.donemessagesmall,.infomessagesmall{padding:8px 35px 8px 14px;margin-bottom:16px;text-shadow:0 1px 0 rgba(255, 255, 255, 0.5);background-color:#ffffcc;border:1px solid #ffdd33;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;color:#666600;padding:5px;padding-left:25px;min-height:15px;background-image:url(error_small.png);background-repeat:no-repeat;background-position:5px 5px;}
