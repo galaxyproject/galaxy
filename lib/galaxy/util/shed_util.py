@@ -2,6 +2,7 @@ import os, tempfile, shutil, subprocess, logging
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import util
+from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.model.orm import *
@@ -11,6 +12,7 @@ from elementtree import ElementTree, ElementInclude
 from elementtree.ElementTree import Element, SubElement
 
 log = logging.getLogger( __name__ )
+
 def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
@@ -320,14 +322,15 @@ def generate_metadata( toolbox, relative_install_dir, repository_clone_url ):
                 # Find all tool configs.
                 if name != 'datatypes_conf.xml' and name.endswith( '.xml' ):
                     full_path = os.path.abspath( os.path.join( root, name ) )
-                    try:
-                        tool = toolbox.load_tool( full_path )
-                    except Exception, e:
-                        tool = None
-                    if tool is not None:
-                        tool_config = os.path.join( root, name )
-                        guid = generate_tool_guid( repository_clone_url, tool )
-                        metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
+                    if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
+                             or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
+                        try:
+                            tool = toolbox.load_tool( full_path )
+                        except Exception, e:
+                            tool = None
+                        if tool is not None:
+                            tool_config = os.path.join( root, name )
+                            metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
                 # Find all exported workflows
                 elif name.endswith( '.ga' ):
                     relative_path = os.path.join( root, name )
@@ -642,10 +645,14 @@ def get_repository_tools_tups( app, metadata_dict ):
     repository_tools_tups = []
     if 'tools' in metadata_dict:
         for tool_dict in metadata_dict[ 'tools' ]:
-            relative_path = tool_dict[ 'tool_config' ]
-            guid = tool_dict[ 'guid' ]
-            tool = app.toolbox.load_tool( os.path.abspath( relative_path ), guid=guid )
-            repository_tools_tups.append( ( relative_path, guid, tool ) )
+            relative_path = tool_dict.get( 'tool_config', None )
+            guid = tool_dict.get( 'guid', None )
+            if relative_path and guid:
+                tool = app.toolbox.load_tool( os.path.abspath( relative_path ), guid=guid )
+            else:
+                tool = None
+            if tool:
+                repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
     # Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the
@@ -745,6 +752,7 @@ def handle_missing_data_table_entry( app, tool_path, sample_files, repository_to
             missing_data_table_entry = True
             break
     if missing_data_table_entry:
+        sample_file = None
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
         for sample_file in sample_files:
             head, tail = os.path.split( sample_file )
@@ -753,10 +761,10 @@ def handle_missing_data_table_entry( app, tool_path, sample_files, repository_to
         error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_file )
         if error:
             # TODO: Do more here than logging an exception.
-            log.debug( exception_msg )
+            log.debug( correction_msg )
         # Reload the tool into the local list of repository_tools_tups.
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
-        repository_tools_tups[ index ] = ( tup_path, repository_tool )
+        repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups ):
     """Inspect each tool to see if it has any input parameters that are dynamically generated select lists that depend on a .loc file."""
@@ -781,6 +789,46 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups
+def handle_sample_tool_data_table_conf_file( app, filename ):
+    """
+    Parse the incoming filename and add new entries to the in-memory
+    app.tool_data_tables dictionary as well as appending them to the
+    shed's tool_data_table_conf.xml file on disk.
+    """
+    error = False
+    message = ''
+    try:
+        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename )
+    except Exception, e:
+        message = str( e )
+        error = True
+    if not error:
+        # Add an entry to the end of the tool_data_table_conf.xml file.
+        tdt_config = "%s/tool_data_table_conf.xml" % app.config.root
+        if os.path.exists( tdt_config ):
+            # Make a backup of the file since we're going to be changing it.
+            today = date.today()
+            backup_date = today.strftime( "%Y_%m_%d" )
+            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( app.config.root, backup_date )
+            shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
+            # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
+            fh = tempfile.NamedTemporaryFile( 'wb' )
+            tmp_filename = fh.name
+            fh.close()
+            new_tdt_config = open( tmp_filename, 'wb' )
+            for i, line in enumerate( open( tdt_config, 'rb' ) ):
+                if line.find( '</tables>' ) >= 0:
+                    for new_table_elem in new_table_elems:
+                        new_tdt_config.write( '    %s\n' % util.xml_to_string( new_table_elem ).rstrip( '\n' ) )
+                    new_tdt_config.write( '</tables>\n' )
+                else:
+                    new_tdt_config.write( line )
+            new_tdt_config.close()
+            shutil.move( tmp_filename, os.path.abspath( tdt_config ) )
+        else:
+            message = "The required file named tool_data_table_conf.xml does not exist in the Galaxy install directory."
+            error = True
+    return error, message
 def handle_tool_dependencies( current_working_dir, repo_files_dir, repository_tools_tups ):
     """
     Inspect each tool to see if it includes a "requirement" that refers to a fabric

@@ -856,13 +856,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             fh = open( tmp_filename, 'w' )
                             fh.write( fctx.data() )
                             fh.close()
-                            try:
-                                tool = load_tool( trans, tmp_filename )
-                                valid = True
-                            except:
-                                valid = False
-                            if valid and tool is not None:
-                                tool_guids.append( generate_tool_guid( trans, repository, tool ) )
+                            if not ( check_binary( tmp_filename ) or check_image( tmp_filename ) or check_gzip( tmp_filename )[ 0 ]
+                                     or check_bz2( tmp_filename )[ 0 ] or check_zip( tmp_filename ) ):
+                                try:
+                                    tool = load_tool( trans, tmp_filename )
+                                    valid = True
+                                except:
+                                    valid = False
+                                if valid and tool is not None:
+                                    tool_guids.append( generate_tool_guid( trans, repository, tool ) )
                             try:
                                 os.unlink( tmp_filename )
                             except:

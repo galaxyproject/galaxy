@@ -2464,46 +2464,6 @@ def get_quota( trans, id ):
     id = trans.security.decode_id( id )
     quota = trans.sa_session.query( trans.model.Quota ).get( id )
     return quota
-def handle_sample_tool_data_table_conf_file( app, filename ):
-    """
-    Parse the incoming filename and add new entries to the in-memory
-    app.tool_data_tables dictionary as well as appending them to the
-    shed's tool_data_table_conf.xml file on disk.
-    """
-    error = False
-    message = ''
-    try:
-        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename )
-    except Exception, e:
-        message = str( e )
-        error = True
-    if not error:
-        # Add an entry to the end of the tool_data_table_conf.xml file.
-        tdt_config = "%s/tool_data_table_conf.xml" % app.config.root
-        if os.path.exists( tdt_config ):
-            # Make a backup of the file since we're going to be changing it.
-            today = date.today()
-            backup_date = today.strftime( "%Y_%m_%d" )
-            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( app.config.root, backup_date )
-            shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
-            # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
-            fh = tempfile.NamedTemporaryFile( 'wb' )
-            tmp_filename = fh.name
-            fh.close()
-            new_tdt_config = open( tmp_filename, 'wb' )
-            for i, line in enumerate( open( tdt_config, 'rb' ) ):
-                if line.find( '</tables>' ) >= 0:
-                    for new_table_elem in new_table_elems:
-                        new_tdt_config.write( '    %s\n' % util.xml_to_string( new_table_elem ).rstrip( '\n' ) )
-                    new_tdt_config.write( '</tables>\n' )
-                else:
-                    new_tdt_config.write( line )
-            new_tdt_config.close()
-            shutil.move( tmp_filename, os.path.abspath( tdt_config ) )
-        else:
-            message = "The required file named tool_data_table_conf.xml does not exist in the Galaxy install directory."
-            error = True
-    return error, message
 def tool_shed_encode( val ):
     if isinstance( val, dict ):
         value = simplejson.dumps( val )

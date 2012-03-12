@@ -1,10 +1,12 @@
 import os, string, socket, logging, simplejson, binascii
 from time import strftime
 from datetime import *
+from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
 from galaxy.util.shed_util import copy_sample_loc_file, generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
+from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -314,19 +316,21 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
                 # Find all tool configs.
                 if name != 'datatypes_conf.xml' and name.endswith( '.xml' ):
                     full_path = os.path.abspath( os.path.join( root, name ) )
-                    try:
-                        tool = load_tool( trans, full_path )
-                        valid = True
-                    except Exception, e:
-                        valid = False
-                        invalid_files.append( ( name, str( e ) ) )
-                    if valid and tool is not None:
-                        can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
-                        if can_set_metadata:
-                            # Update the list of metadata dictionaries for tools in metadata_dict.
-                            tool_config = os.path.join( root, name )
-                            repository_clone_url = generate_clone_url( trans, id )
-                            metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
+                    if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
+                             or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
+                        try:
+                            tool = load_tool( trans, full_path )
+                            valid = True
+                        except Exception, e:
+                            valid = False
+                            invalid_files.append( ( name, str( e ) ) )
+                        if valid and tool is not None:
+                            can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
+                            if can_set_metadata:
+                                # Update the list of metadata dictionaries for tools in metadata_dict.
+                                tool_config = os.path.join( root, name )
+                                repository_clone_url = generate_clone_url( trans, id )
+                                metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
                 # Find all exported workflows
                 elif name.endswith( '.ga' ):
                     try:
@@ -381,22 +385,24 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
             fh = open( tmp_filename, 'w' )
             fh.write( fctx.data() )
             fh.close()
-            try:
-                tool = load_tool( trans, tmp_filename )
-                valid = True
-            except Exception, e:
-                invalid_files.append( ( filename, str( e ) ) )
-                valid = False
-            if valid and tool is not None:
-                # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
-                # here is the relative path to the config file within the change set context, something
-                # like filtering.xml, but when the change set was the repository tip, the value was
-                # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
-                # anything, but may result in a bit of confusion when maintaining the code / data over time.
-                # IMPORTANT NOTE:  Here we are assuming that since the current change set is not the repository
-                # tip, we do not have to handle any .loc.sample files since they would have been handled previously.
-                repository_clone_url = generate_clone_url( trans, id )
-                metadata_dict = generate_tool_metadata( filename, tool, repository_clone_url, metadata_dict )
+            if not ( check_binary( tmp_filename ) or check_image( tmp_filename ) or check_gzip( tmp_filename )[ 0 ]
+                     or check_bz2( tmp_filename )[ 0 ] or check_zip( tmp_filename ) ):
+                try:
+                    tool = load_tool( trans, tmp_filename )
+                    valid = True
+                except Exception, e:
+                    invalid_files.append( ( filename, str( e ) ) )
+                    valid = False
+                if valid and tool is not None:
+                    # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
+                    # here is the relative path to the config file within the change set context, something
+                    # like filtering.xml, but when the change set was the repository tip, the value was
+                    # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
+                    # anything, but may result in a bit of confusion when maintaining the code / data over time.
+                    # IMPORTANT NOTE:  Here we are assuming that since the current change set is not the repository
+                    # tip, we do not have to handle any .loc.sample files since they would have been handled previously.
+                    repository_clone_url = generate_clone_url( trans, id )
+                    metadata_dict = generate_tool_metadata( filename, tool, repository_clone_url, metadata_dict )
             try:
                 os.unlink( tmp_filename )
             except:

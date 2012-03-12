@@ -63,7 +63,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
             raise Exception( "Error attempting to update the value of migrate_tools.version: %s" % output )
         elif missing_tool_configs:
             msg = "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-            msg += "\n\nThe list of files at the end of this message refer to tools that are configured to load into the tool panel for\n"
+            msg += "\n\nThe list of files at the end of this message refers to tools that are configured to load into the tool panel for\n"
             msg += "this Galaxy instance, but have been removed from the Galaxy distribution.  These tools can be automatically installed\n"
             msg += "from the Galaxy tool shed at http://toolshed.g2.bx.psu.edu.\n\n"
             msg += "To skip this process, attempt to start your Galaxy server again (e.g., sh run.sh or whatever you use).  If you do this,\n"
