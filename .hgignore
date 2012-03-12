@@ -35,6 +35,8 @@ migrated_tools_conf.xml
 shed_tool_conf.xml
 tool_data_table_conf.xml
 tool_sheds_conf.xml
+integrated_tool_panel.xml
+
 static/welcome.html.*
 static/welcome.html
 
