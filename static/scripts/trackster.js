@@ -1098,11 +1098,11 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         return header_div;
     },
     hide_contents: function () {
-        this.content_div.hide();
+        this.tiles_div.hide();
     },
     show_contents: function() {
         // Show the contents div and labels (if present)
-        this.content_div.show();
+        this.tiles_div.show();
         // Request a redraw of the content
         this.request_draw();
     },
@@ -3039,7 +3039,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     }, function() { 
         this.hovered = false; 
         // Clear popup if it is still hanging around (this is probably not needed) 
-        $(this).siblings(".feature-popup").remove();
+        $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
     } ).mousemove(function (e) {
         // Use the hover plugin to get a delay before showing popup
         if ( !this.hovered ) { return; }
@@ -3051,7 +3051,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
             feature_data = tile.feature_mapper.get_feature_data(offsetX, offsetY),
             feature_uid = (feature_data ? feature_data[0] : null);
         // Hide visible popup if not over a feature or over a different feature.
-        $(this).siblings(".feature-popup").each(function() {
+        $(this).parents(".track-content").children(".overlay").children(".feature-popup").each(function() {
             if ( !feature_uid || 
                  $(this).attr("id") !== feature_uid.toString() ) {
                 $(this).remove();
@@ -3096,8 +3096,8 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
                 popups[feature_uid] = popup;
             }
             
-            // Attach popup to canvas's parent.
-            popup.appendTo($(tile.html_elt).parent());
+            // Attach popup to track's overlay.
+            popup.appendTo( $(this).parents(".track-content").children(".overlay") );
             
             // Offsets are within canvas, but popup must be positioned relative to parent element.
             // parseInt strips "px" from left, top measurements. +7 so that mouse pointer does not
@@ -3117,7 +3117,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
         }
     })
     .mouseleave(function() {
-        $(this).siblings(".feature-popup").remove();
+        $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
     });
 };
 
@@ -3272,7 +3272,7 @@ extend(Track.prototype, Drawable.prototype, {
             d.original_height = $(track.content_div).height();
         }).bind( "drag", function( e, d ) {
             var new_height = Math.min( Math.max( d.original_height + d.deltaY, track.min_height_px ), track.max_height_px );
-            $(track.content_div).css( 'height', new_height );
+            $(track.tiles_div).css( 'height', new_height );
             track.visible_height_px = (track.max_height_px === new_height ? 0 : new_height);
             track.on_resize();
         }).bind( "dragend", function( e, d ) {
@@ -3385,7 +3385,7 @@ extend(Track.prototype, Drawable.prototype, {
         }
         */
         // Remove old track content (e.g. tiles, messages).
-        track.content_div.children().remove();
+        track.tiles_div.children().remove();
         track.container_div.removeClass("nodata error pending");
         
         //
@@ -3403,32 +3403,32 @@ extend(Track.prototype, Drawable.prototype, {
                  function (result) {
             if (!result || result === "error" || result.kind === "error") {
                 track.container_div.addClass("error");
-                track.content_div.text(DATA_ERROR);
+                track.tiles_div.text(DATA_ERROR);
                 if (result.message) {
                     var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").click(function() {
                         show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
                     });
-                    track.content_div.append(error_link);
+                    track.tiles_div.append(error_link);
                 }
             } else if (result === "no converter") {
                 track.container_div.addClass("error");
-                track.content_div.text(DATA_NOCONVERTER);
+                track.tiles_div.text(DATA_NOCONVERTER);
             } else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
                 track.container_div.addClass("nodata");
-                track.content_div.text(DATA_NONE);
+                track.tiles_div.text(DATA_NONE);
             } else if (result === "pending") {
                 track.container_div.addClass("pending");
-                track.content_div.text(DATA_PENDING);
+                track.tiles_div.text(DATA_PENDING);
                 setTimeout(function() { track.init(); }, track.data_query_wait);
             } else if (result['status'] === "data") {
                 if (result['valid_chroms']) {
                     track.valid_chroms = result['valid_chroms'];
                     track.update_icons();
                 }
-                track.content_div.text(DATA_OK);
+                track.tiles_div.text(DATA_OK);
                 if (track.view.chrom) {
-                    track.content_div.text("");
-                    track.content_div.css( "height", track.visible_height_px + "px" );
+                    track.tiles_div.text("");
+                    track.tiles_div.css( "height", track.visible_height_px + "px" );
                     track.enabled = true;
                     // predraw_init may be asynchronous, wait for it and then draw
                     $.when(track.predraw_init()).done(function() {
@@ -3481,6 +3481,10 @@ var TiledTrack = function(view, container, obj_dict) {
             this.header_div.after(this.dynamic_tool_div);
         }
     }
+    
+    // Add tiles_div, overlay_div to content_div.
+    this.tiles_div = $("<div/>").addClass("tiles").appendTo(this.content_div);
+    this.overlay_div = $("<div/>").addClass("overlay").appendTo(this.content_div);
     
     if (obj_dict.mode) {
         this.change_mode(obj_dict.mode);
@@ -3643,7 +3647,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         
         // Step (a) for (re)moving tiles.
-        this.content_div.children().addClass("remove");
+        this.tiles_div.children().addClass("remove");
 
         var 
             // Index of first tile that overlaps visible region.
@@ -3654,7 +3658,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             is_tile = function(o) { return (o && 'track' in o) };
         // Draw tiles.
         while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
-            var draw_result = this.draw_helper( force, width, tile_index, resolution, this.content_div, w_scale );
+            var draw_result = this.draw_helper( force, width, tile_index, resolution, this.tiles_div, w_scale );
             if ( is_tile(draw_result) ) {
                 drawn_tiles.push( draw_result );
             } else {
@@ -3664,13 +3668,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
         
         // Step (c) for (re)moving tiles when clear_after is false.
-        if (!clear_after) { this.content_div.children(".remove").remove(); }
+        if (!clear_after) { this.tiles_div.children(".remove").remove(); }
                 
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         var track = this;
         if (all_tiles_drawn) {
             // Step (c) for (re)moving tiles when clear_after is true:
-            this.content_div.children(".remove").remove();
+            this.tiles_div.children(".remove").remove();
             track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);
         } 
     },
@@ -4505,7 +4509,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         if (this.visible_height_px !== 0) {
             track_height = Math.min(this.max_height_px, this.visible_height_px);
         }
-        this.content_div.css("height", track_height + "px");    
+        this.tiles_div.css("height", track_height + "px");    
     },
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 

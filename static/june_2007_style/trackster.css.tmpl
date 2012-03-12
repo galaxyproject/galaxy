@@ -171,7 +171,7 @@
     margin-left: 0px;
 }
 
-.track-content {
+.tiles {
     text-align: center;
     border-top: 1px solid #eee;
     border-bottom: 2px solid #eee;
@@ -179,6 +179,12 @@
     min-height: 16px;
     position: relative;
     overflow: hidden;
+}
+
+.overlay { 
+    position: absolute;
+    left: 0;
+    top: 0;
 }
 
 .track-name {
@@ -211,6 +217,11 @@
     background-color: #ECB4AF;
     background-image: none;
 }
+
+.track-content {
+    position: relative;
+}
+
 .track.nodata .track-content {
     background-color: #eee;
     background-image: none;

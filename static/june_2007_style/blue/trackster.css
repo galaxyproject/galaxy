@@ -27,9 +27,11 @@
 .track{background:white;}
 .track-header{text-align:left;padding:4px 0px;color:#666;}
 .track-header .menubutton{margin-left:0px;}
-.track-content{text-align:center;border-top:1px solid #eee;border-bottom:2px solid #eee;background:#eee url('../images/tracks/diag_bg.gif');min-height:16px;position:relative;overflow:hidden;}
+.tiles{text-align:center;border-top:1px solid #eee;border-bottom:2px solid #eee;background:#eee url('../images/tracks/diag_bg.gif');min-height:16px;position:relative;overflow:hidden;}
+.overlay{position:absolute;left:0;top:0;}
 .track-name{float:left;margin-top:2px;height:16px;}
 .label-track .track-content{background:white;}
+.track-content{position:relative;}
 .track-tile{background:white;}
 .track-tile canvas{position:relative;z-index:100;}
 .tile-message{border-bottom:solid 1px red;text-align:center;color:red;background-color:white;}
