@@ -4281,6 +4281,14 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             return new Tile(track, tile_index, resolution, canvas, seq);
         }
         this.content_div.css("height", "0px");
+    },
+    /**
+     * If there is a tile with sequence data, set content div so that data is visible.
+     */
+    after_show_tile: function(tile) {
+        if (tile) {
+            this.content_div.css("height", "12px");
+        }
     }
 });
 
