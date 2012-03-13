@@ -3161,7 +3161,9 @@ var Track = function(view, container, obj_dict) {
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
     if (this.container) { 
         this.container.content_div.append(this.container_div);
-        this.add_resize_handle();
+        if ( !("resize" in obj_dict) || obj_dict.resize ) {
+            this.add_resize_handle();
+        }
     }
 };
 
@@ -3920,8 +3922,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
 var LabelTrack = function (view, container) {
     var obj_dict = {
-        todo: "label",
-        todo: false
+        resize: false
     };
     Track.call(this, view, container, obj_dict);
     this.container_div.addClass( "label-track" );
@@ -4237,7 +4238,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 });
 
 var ReferenceTrack = function (view) {
-    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack }, {});
+    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack, resize: false }, {});
     
     view.reference_track = this;
     this.left_offset = 200;
