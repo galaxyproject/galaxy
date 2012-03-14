@@ -75,10 +75,12 @@ class ToolBox( object ):
         if self.integrated_tool_panel_config_has_contents:
             # Load self.tool_panel based on the order in self.integrated_tool_panel.
             self.load_tool_panel()
-        # Always write the current in-memory integrated_tool_panel to the integrated_tool_panel.xml file.
-        # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
-        # config files, adding or removing locally developed tools or workflows.
-        self.write_integrated_tool_panel_config_file()
+        if app.config.update_integrated_tool_panel:
+            # Write the current in-memory integrated_tool_panel to the integrated_tool_panel.xml file.
+            # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
+            # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
+            # will be False when things like functional tests are the caller.
+            self.write_integrated_tool_panel_config_file()
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.  The following tags are currently supported:

@@ -430,7 +430,6 @@ class AdminController( BaseUIController, Admin ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_repositories',
                                                                   **kwd ) )
-        # Render the list view
         return self.repository_metadata_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
@@ -504,7 +503,7 @@ class AdminController( BaseUIController, Admin ):
                 else:
                     del kwd[ 'operation' ]
             elif operation == 'delete':
-                return self.mark_repository_deleted( trans, **kwd )
+                return self.delete_repository( trans, **kwd )
             elif operation == "undelete":
                 return self.undelete_repository( trans, **kwd )
         # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
@@ -528,12 +527,13 @@ class AdminController( BaseUIController, Admin ):
         return self.repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
-    def mark_repository_deleted( self, trans, **kwd ):
+    def delete_repository( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
+            # Deleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id. 
             ids = util.listify( id )
             count = 0
             deleted_repositories = ""
@@ -564,6 +564,7 @@ class AdminController( BaseUIController, Admin ):
         status = params.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
+            # Undeleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id.
             ids = util.listify( id )
             count = 0
             undeleted_repositories = ""

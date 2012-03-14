@@ -70,6 +70,7 @@ class Configuration( object ):
                 self.hours_between_check = 12
         except:
             self.hours_between_check = 12
+        self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )

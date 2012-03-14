@@ -167,6 +167,7 @@ def main():
                                    file_path = file_path,
                                    new_file_path = new_file_path,
                                    tool_path = tool_path,
+                                   update_integrated_tool_panel = False,
                                    tool_config_file = tool_config_file,
                                    datatype_converters_config_file = "datatype_converters_conf.xml.sample",
                                    tool_parse_help = False,
