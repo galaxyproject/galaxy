@@ -70,6 +70,7 @@ class MigrateToolsApplication( object ):
         self.config = galaxy.config.Configuration( **galaxy_config_dict )
         if self.config.database_connection is None:
             self.config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
+        self.config.update_integrated_tool_panel = True
         self.object_store = build_object_store_from_config( self.config )
         # Setup the database engine and ORM
         self.model = galaxy.model.mapping.init( self.config.file_path,

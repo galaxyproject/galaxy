@@ -6,6 +6,7 @@ import logging, urllib2
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
+from galaxy.util.odict import odict
 log = logging.getLogger( __name__ )
 
 class InstallManager( object ):
@@ -19,7 +20,7 @@ class InstallManager( object ):
         self.migrated_tools_config = migrated_tools_config
         # Get the local non-shed related tool panel config (the default name is tool_conf.xml).  If the user has more than 1
         # non-shed tool panel config it could cause problems.
-        self.proprietary_tool_conf = self.non_shed_tool_panel_config
+        self.proprietary_tool_confs = self.non_shed_tool_panel_configs
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems( latest_migration_script_number )
         # Set the location where the repositories will be installed by retrieving the tool_path setting from migrated_tools_config.
         tree = util.parse_xml( migrated_tools_config )
@@ -50,10 +51,11 @@ class InstallManager( object ):
         tool = self.toolbox.load_tool( full_path )
         return generate_tool_guid( repository_clone_url, tool )
     def get_proprietary_tool_panel_elems( self, latest_tool_migration_script_number ):
-        # Parse self.proprietary_tool_conf (the default is tool_conf.xml) and generate a list of Elements that are either ToolSection elements
-        # or Tool elements.  These will be used to generate new entries in the migrated_tools_conf.xml file for the installed tools.
+        # Parse each config in self.proprietary_tool_confs (the default is tool_conf.xml) and generate a list of Elements that are
+        # either ToolSection elements or Tool elements.  These will be used to generate new entries in the migrated_tools_conf.xml
+        # file for the installed tools.
         tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
-        # Parse the XML and load the file attributes for later checking against self.proprietary_tool_conf.
+        # Parse the XML and load the file attributes for later checking against the integrated elements from self.proprietary_tool_confs.
         migrated_tool_configs = []
         tree = util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
@@ -61,30 +63,31 @@ class InstallManager( object ):
             if elem.tag == 'repository':
                 for tool_elem in elem:
                     migrated_tool_configs.append( tool_elem.get( 'file' ) )
-        # Parse self.proprietary_tool_conf and generate the list of tool panel Elements that contain them.
+        # Parse each file in self.proprietary_tool_confs and generate the integrated list of tool panel Elements that contain them.
         tool_panel_elems = []
-        tree = util.parse_xml( self.proprietary_tool_conf )
-        root = tree.getroot()
-        for elem in root:
-            if elem.tag == 'tool':
-                # Tools outside of sections.
-                file_path = elem.get( 'file', None )
-                if file_path:
-                    path, name = os.path.split( file_path )
-                    if name in migrated_tool_configs:
-                        if elem not in tool_panel_elems:
-                            tool_panel_elems.append( elem )
-            elif elem.tag == 'section':
-                # Tools contained in a section.
-                for section_elem in elem:
-                    if section_elem.tag == 'tool':
-                        file_path = section_elem.get( 'file', None )
-                        if file_path:
-                            path, name = os.path.split( file_path )
-                            if name in migrated_tool_configs:
-                                # Append the section, not the tool.
-                                if elem not in tool_panel_elems:
-                                    tool_panel_elems.append( elem )
+        for proprietary_tool_conf in self.proprietary_tool_confs:
+            tree = util.parse_xml( proprietary_tool_conf )
+            root = tree.getroot()
+            for elem in root:
+                if elem.tag == 'tool':
+                    # Tools outside of sections.
+                    file_path = elem.get( 'file', None )
+                    if file_path:
+                        path, name = os.path.split( file_path )
+                        if name in migrated_tool_configs:
+                            if elem not in tool_panel_elems:
+                                tool_panel_elems.append( elem )
+                elif elem.tag == 'section':
+                    # Tools contained in a section.
+                    for section_elem in elem:
+                        if section_elem.tag == 'tool':
+                            file_path = section_elem.get( 'file', None )
+                            if file_path:
+                                path, name = os.path.split( file_path )
+                                if name in migrated_tool_configs:
+                                    # Append the section, not the tool.
+                                    if elem not in tool_panel_elems:
+                                        tool_panel_elems.append( elem )
         return tool_panel_elems
     def get_containing_tool_sections( self, tool_config ):
         """
@@ -122,7 +125,7 @@ class InstallManager( object ):
         # updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
         # The values for the keys in each of the following dictionaries will be a list to allow for the same tool to be displayed in multiple places
         # in the tool panel.
-        tool_panel_dict_for_display = {}
+        tool_panel_dict_for_display = odict()
         for tool_elem in repository_elem:
             # The tool_elem looks something like this: <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
             tool_config = tool_elem.get( 'file' )
@@ -264,8 +267,9 @@ class InstallManager( object ):
                 print "Error cloning repository '", name, "': ", str( tmp_stderr.read() )
                 tmp_stderr.close()
     @property
-    def non_shed_tool_panel_config( self ):
-        # Get the non-shed related tool panel config value from the Galaxy config - the default is tool_conf.xml.
+    def non_shed_tool_panel_configs( self ):
+        # Get the non-shed related tool panel config file names from the Galaxy config - the default is tool_conf.xml.
+        config_filenames = []
         for config_filename in self.app.config.tool_configs:
             # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
             # <toolbox tool_path="../shed_tools">
@@ -274,8 +278,8 @@ class InstallManager( object ):
             tool_path = root.get( 'tool_path', None )
             if tool_path is None:
                 # There will be a problem here if the user has defined 2 non-shed related configs.
-                return config_filename
-        return None
+                config_filenames.append( config_filename )
+        return config_filenames
     def __get_url_from_tool_shed( self, tool_shed ):
         # The value of tool_shed is something like: toolshed.g2.bx.psu.edu
         # We need the URL to this tool shed, which is something like:
