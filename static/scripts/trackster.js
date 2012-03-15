@@ -4238,7 +4238,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 });
 
 var ReferenceTrack = function (view) {
-    TiledTrack.call(this, "reference", view, { content_div: view.top_labeltrack, resize: false }, {});
+    TiledTrack.call(this, view, { content_div: view.top_labeltrack, resize: false }, {});
     
     view.reference_track = this;
     this.left_offset = 200;
