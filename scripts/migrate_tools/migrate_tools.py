@@ -20,12 +20,14 @@ from galaxy.tool_shed.migrate.common import *
 
 app = MigrateToolsApplication( sys.argv[ 1 ] )
 non_shed_tool_confs = app.install_manager.proprietary_tool_confs
-msg = "\nThe installation process is finished.  You should now remove entries for the installed tools from "
 if len( non_shed_tool_confs ) == 1:
-    msg += "your file named %s and start your Galaxy server." % non_shed_tool_conf
+    plural = ''
+    file_names = non_shed_tool_confs[ 0 ]
 else:
+    plural = 's'
     file_names = ', '.join( non_shed_tool_confs )
-    msg += "your files named %s, and start your Galaxy server." % file_names
+msg = "\nThe installation process is finished.  You should now remove entries for the installed tools from your file%s named\n" % plural
+msg += "%s and start your Galaxy server.\n" % file_names
 print msg 
 app.shutdown()
 sys.exit( 0 )

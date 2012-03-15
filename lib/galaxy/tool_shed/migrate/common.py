@@ -39,8 +39,9 @@ def check_tool_tag_set( elem, migrated_tool_configs, missing_tool_configs ):
         if name in migrated_tool_configs:
             missing_tool_configs.append( name )
     return missing_tool_configs
-def get_non_shed_tool_panel_config( app ):
-    # Get the non-shed related tool panel config value from the Galaxy config - the default is tool_conf.xml.
+def get_non_shed_tool_panel_configs( app ):
+    # Get the non-shed related tool panel configs - there can be more than one, and the default is tool_conf.xml.
+    config_filenames = []
     for config_filename in app.config.tool_configs:
         # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
         # <toolbox tool_path="../shed_tools">
@@ -48,9 +49,8 @@ def get_non_shed_tool_panel_config( app ):
         root = tree.getroot()
         tool_path = root.get( 'tool_path', None )
         if tool_path is None:
-            # There will be a problem here if the user has defined 2 non-shed related configs.
-            return config_filename
-    return None
+            config_filenames.append( config_filename )
+    return config_filenames
 class MigrateToolsApplication( object ):
     """Encapsulates the state of a basic Galaxy Universe application in order to initiate the Install Manager"""
     def __init__( self, tools_migration_config ):

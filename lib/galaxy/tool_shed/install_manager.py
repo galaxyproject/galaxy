@@ -18,8 +18,7 @@ class InstallManager( object ):
         self.app = app
         self.toolbox = self.app.toolbox
         self.migrated_tools_config = migrated_tools_config
-        # Get the local non-shed related tool panel config (the default name is tool_conf.xml).  If the user has more than 1
-        # non-shed tool panel config it could cause problems.
+        # Get the local non-shed related tool panel configs (there can be more than one, and the default name is tool_conf.xml).
         self.proprietary_tool_confs = self.non_shed_tool_panel_configs
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems( latest_migration_script_number )
         # Set the location where the repositories will be installed by retrieving the tool_path setting from migrated_tools_config.

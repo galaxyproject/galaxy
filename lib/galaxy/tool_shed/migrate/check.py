@@ -46,11 +46,11 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
             # New installations will not be missing tools, so we don't need to worry about them.
             missing_tool_configs = []
         else:
-            tool_panel_config = get_non_shed_tool_panel_config( app )
-            if tool_panel_config is None:
-                missing_tool_configs = []
+            tool_panel_configs = get_non_shed_tool_panel_configs( app )
+            if tool_panel_configs:
+                missing_tool_configs = check_for_missing_tools( tool_panel_configs, latest_tool_migration_script_number )
             else:
-                missing_tool_configs = check_for_missing_tools( tool_panel_config, latest_tool_migration_script_number )
+                missing_tool_configs = []
         config_arg = ''
         if os.path.abspath( os.path.join( os.getcwd(), 'universe_wsgi.ini' ) ) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
@@ -62,13 +62,19 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
         if return_code != 0:
             raise Exception( "Error attempting to update the value of migrate_tools.version: %s" % output )
         elif missing_tool_configs:
+            if len( tool_panel_configs ) == 1:
+                plural = ''
+                tool_panel_config_file_names = tool_panel_configs[ 0 ]
+            else:
+                plural = 's'
+                tool_panel_config_file_names = ', '.join( tool_panel_configs )
             msg = "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
             msg += "\n\nThe list of files at the end of this message refers to tools that are configured to load into the tool panel for\n"
             msg += "this Galaxy instance, but have been removed from the Galaxy distribution.  These tools can be automatically installed\n"
             msg += "from the Galaxy tool shed at http://toolshed.g2.bx.psu.edu.\n\n"
             msg += "To skip this process, attempt to start your Galaxy server again (e.g., sh run.sh or whatever you use).  If you do this,\n"
             msg += "be aware that these tools will no longer be available in your Galaxy tool panel, and entries for each of them should\n"
-            msg += "be removed from your file named %s.\n\n" % tool_panel_config
+            msg += "be removed from your file%s named %s.\n\n" % ( plural, tool_panel_config_file_names )
             msg += "CRITICAL NOTE IF YOU PLAN TO INSTALL\n"
             msg += "The location in which the tool repositories will be installed is the value of the 'tool_path' attribute in the <tool>\n"
             msg += 'tag of the file named ./migrated_tool_conf.xml (i.e., <toolbox tool_path="../shed_tools">).  The default location\n'
@@ -84,7 +90,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
             msg += "After the installation process finishes, you can start your Galaxy server.  As part of this installation process,\n"
             msg += "entries for each of the following tool config files will be added to the file named ./migrated_tool_conf.xml, so these\n"
             msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these files should be\n"
-            msg += "removed from your file named %s, but only after the installation process finishes.\n\n" % tool_panel_config
+            msg += "removed from your file%s named %s, but only after the installation process finishes.\n\n" % ( plural, tool_panel_config_file_names )
             for i, missing_tool_config in enumerate( missing_tool_configs ):
                 msg += "%s\n" % missing_tool_config
                 # Should we do the following?
