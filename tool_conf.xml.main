@@ -390,6 +390,39 @@
    <tool file="samtools/samtools_flagstat.xml" />
    <tool file="samtools/samtools_rmdup.xml" />
   </section>
+  <section name="NGS: GATK Tools (beta)" id="gatk">
+    <label text="Alignment Utilities" id="gatk_bam_utilities"/>
+    <tool file="gatk/depth_of_coverage.xml" />
+    <tool file="gatk/print_reads.xml" />
+    
+    <label text="Realignment" id="gatk_realignment" />
+    <tool file="gatk/realigner_target_creator.xml" />
+    <tool file="gatk/indel_realigner.xml" />
+    
+    <label text="Base Recalibration" id="gatk_recalibration" />
+    <tool file="gatk/count_covariates.xml" />
+    <tool file="gatk/table_recalibration.xml" />
+    <tool file="gatk/analyze_covariates.xml" />
+    
+    <label text="Genotyping" id="gatk_genotyping" />
+    <tool file="gatk/unified_genotyper.xml" />
+    
+    <label text="Annotation" id="gatk_annotation" />
+    <tool file="gatk/variant_annotator.xml" />
+    
+    <label text="Filtration" id="gatk_filtration" />
+    <tool file="gatk/variant_filtration.xml" />
+    <tool file="gatk/variant_select.xml" />
+    
+    <label text="Variant Quality Score Recalibration" id="gatk_variant_quality_score_recalibration" />
+    <tool file="gatk/variant_recalibrator.xml" />
+    <tool file="gatk/variant_apply_recalibration.xml" />
+    
+    <label text="Variant Utilities" id="gatk_variant_utilities"/>
+    <tool file="gatk/variants_validate.xml" />
+    <tool file="gatk/variant_eval.xml" />
+    <tool file="gatk/variant_combine.xml" />
+  </section>
   <section name="NGS: Indel Analysis" id="indel_analysis">
     <tool file="indels/sam_indel_filter.xml" />
     <tool file="indels/indel_sam2interval.xml" />
