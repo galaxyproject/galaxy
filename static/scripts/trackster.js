@@ -2092,7 +2092,7 @@ extend(Tool.prototype, {
         new_track.set_filters_manager(current_track.filters_manager.copy(new_track));
         new_track.update_icons();
         container.add_drawable(new_track);
-        new_track.content_div.text("Starting job.");
+        new_track.tiles_div.text("Starting job.");
         
         // Run tool.
         this.update_params();
@@ -2100,7 +2100,7 @@ extend(Tool.prototype, {
                  // Success callback.
                  function(track_data) {
                      new_track.dataset_id = track_data.dataset_id;
-                     new_track.content_div.text("Running job.");
+                     new_track.tiles_div.text("Running job.");
                      new_track.init();
                  }
                 );
