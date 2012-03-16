@@ -336,7 +336,7 @@ class WorkflowsAPIController(BaseAPIController):
     @web.expose_api
     def import_new_workflow(self, trans, payload, **kwd):
         """
-        POST /api/workflows
+        POST /api/workflows/upload
         Importing dynamic workflows from the api. Return newly generated workflow id.
         Author: rpark 
         
@@ -344,7 +344,7 @@ class WorkflowsAPIController(BaseAPIController):
         """
         
         #import pdb; pdb.set_trace()
-        
+                
         data = payload['workflow'];
         workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source="API" )
         
