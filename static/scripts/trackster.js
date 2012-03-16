@@ -393,7 +393,8 @@ var
     DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
-    DATA_PENDING = "Currently indexing... please wait",
+    DATA_PENDING = "Preparing data. This takes seconds for a small dataset but longer for a large dataset.<br/>\
+                    You can save and close the visualization and preparation will continue.<br/>",
     DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ",
     DATA_LOADING = "Loading data...",
     DATA_OK = "Ready for display",
@@ -3420,7 +3421,8 @@ extend(Track.prototype, Drawable.prototype, {
                 track.tiles_div.text(DATA_NONE);
             } else if (result === "pending") {
                 track.container_div.addClass("pending");
-                track.tiles_div.text(DATA_PENDING);
+                track.tiles_div.html(DATA_PENDING);
+                //$("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif").appendTo(track.tiles_div);
                 setTimeout(function() { track.init(); }, track.data_query_wait);
             } else if (result['status'] === "data") {
                 if (result['valid_chroms']) {
