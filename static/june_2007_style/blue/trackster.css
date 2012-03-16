@@ -72,8 +72,8 @@ input{font:10px verdana;}
 .settings-icon:hover{background:transparent url(../images/fugue/gear.png) no-repeat;}
 .overview-icon{background:transparent url(../images/fugue/application-dock-270-bw.png) no-repeat;}
 .overview-icon:hover{background:transparent url(../images/fugue/application-dock-270.png) no-repeat;}
-.tools-icon{background:transparent url(../images/fugue/toolbox-bw.png) no-repeat;}
-.tools-icon:hover{background:transparent url(../images/fugue/toolbox.png) no-repeat;}
+.toolbox{background:transparent url(../images/fugue/toolbox-bw.png) no-repeat;}
+.toolbox:hover{background:transparent url(../images/fugue/toolbox.png) no-repeat;}
 .filters-icon{background:transparent url(../images/fugue/ui-slider-050-bw.png) no-repeat;}
 .filters-icon:hover{background:transparent url(../images/fugue/ui-slider-050.png) no-repeat;}
 .remove-icon,.overview-close{background:transparent url(../images/fugue/cross-small-bw.png) no-repeat;}

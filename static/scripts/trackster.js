@@ -3209,7 +3209,7 @@ extend(Track.prototype, Drawable.prototype, {
         {
             name: "tools_icon",
             title: "Tools",
-            css_class: "tools-icon",
+            css_class: "toolbox",
             on_click_fn: function(track) {
                 // TODO: update tipsy text.
 
