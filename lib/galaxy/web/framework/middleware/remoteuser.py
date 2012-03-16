@@ -35,42 +35,22 @@ errorpage = """
 </html>
 """
 
-UCSC_MAIN_SERVERS = (
-    'hgw1.cse.ucsc.edu',
-    'hgw2.cse.ucsc.edu',
-    'hgw3.cse.ucsc.edu',
-    'hgw4.cse.ucsc.edu',
-    'hgw5.cse.ucsc.edu',
-    'hgw6.cse.ucsc.edu',
-    'hgw7.cse.ucsc.edu',
-    'hgw8.cse.ucsc.edu',
-)
-UCSC_ARCHAEA_SERVERS = (
-    'lowepub.cse.ucsc.edu',
-)
-
 class RemoteUser( object ):
-    def __init__( self, app, maildomain=None, ucsc_display_sites=[], admin_users=[] ):
+    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None ):
         self.app = app
         self.maildomain = maildomain
-        self.allow_ucsc_main = False
-        self.allow_ucsc_archaea = False
-        self.admin_users = admin_users
-        if 'main' in ucsc_display_sites or 'test' in ucsc_display_sites:
-            self.allow_ucsc_main = True
-        if 'archaea' in ucsc_display_sites:
-            self.allow_ucsc_archaea = True
+        self.display_servers = display_servers or []
+        self.admin_users = admin_users or []
     def __call__( self, environ, start_response ):
-        # Allow through UCSC if the UCSC display links are enabled
-        if ( self.allow_ucsc_main or self.allow_ucsc_archaea ) and environ.has_key( 'REMOTE_ADDR' ):
+        # Allow display servers
+        if self.display_servers and environ.has_key( 'REMOTE_ADDR' ):
             try:
                 host = socket.gethostbyaddr( environ[ 'REMOTE_ADDR' ] )[0]
             except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
                 # in the event of a lookup failure, deny access
                 host = None
-            if ( self.allow_ucsc_main and host in UCSC_MAIN_SERVERS ) or \
-               ( self.allow_ucsc_archaea and host in UCSC_ARCHAEA_SERVERS ):
-                environ[ 'HTTP_REMOTE_USER' ] = 'ucsc_browser_display@example.org'
+            if host in self.display_servers:
+                environ[ 'HTTP_REMOTE_USER' ] = 'remote_display_server@%s' % ( self.maildomain or 'example.org' )
                 return self.app( environ, start_response )
         # Apache sets REMOTE_USER to the string '(null)' when using the
         # Rewrite* method for passing REMOTE_USER and a user is

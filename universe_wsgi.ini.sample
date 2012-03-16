@@ -210,6 +210,20 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # GeneTrack servers: tool-data/shared/genetrack/genetrack_sites.txt
 #genetrack_display_sites = main,test
 
+# If use_remote_user = True, display application servers will be denied access
+# to Galaxy and so displaying datasets in these sites will fail.
+# display_servers contains a list of hostnames which should be allowed to
+# bypass security to display datasets.  Please be aware that there are security
+# implications if this is allowed.  More details (including required changes to
+# the proxy server config) are available in the Apache proxy documentation on
+# the wiki.
+#
+# The list of servers in this sample config are for the UCSC Main, Test and
+# Archaea browsers, but the default if left commented is to not allow any
+# display sites to bypass security (you must uncomment the line below to allow
+# them).
+#display_servers = hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
+
 # -- Next gen LIMS interface on top of existing Galaxy Sample/Request management code.
 
 use_nglims = False

@@ -183,9 +183,9 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # upstream server
     if asbool(conf.get( 'use_remote_user', False )):
         from galaxy.web.framework.middleware.remoteuser import RemoteUser
-        app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
-                               ucsc_display_sites=conf.get( 'ucsc_display_sites', [] ),
-                               admin_users=conf.get( 'admin_users', '' ).split( ',' ) )
+        app = RemoteUser( app, maildomain = conf.get( 'remote_user_maildomain', None ),
+                               display_servers = util.listify( conf.get( 'display_servers', '' ) ),
+                               admin_users = conf.get( 'admin_users', '' ).split( ',' ) )
         log.debug( "Enabling 'remote user' middleware" )
     # The recursive middleware allows for including requests in other 
     # requests or forwarding of requests, all on the server side.
