@@ -3209,8 +3209,8 @@ extend(Track.prototype, Drawable.prototype, {
         // Toggle track tool.
         {
             name: "tools_icon",
-            title: "Tools",
-            css_class: "toolbox",
+            title: "Tool",
+            css_class: "hammer",
             on_click_fn: function(track) {
                 // TODO: update tipsy text.
 
