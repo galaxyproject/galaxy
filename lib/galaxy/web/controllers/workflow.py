@@ -16,6 +16,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
 from galaxy import model
+from galaxy import util
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.model.item_attrs import *
@@ -1127,7 +1128,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # id being imported from a Galaxy tool shed repository.
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         repository_metadata_id = kwd.get( 'repository_metadata_id', '' )
-        add_to_menu = kwd.get( 'add_to_menu', False )
+        add_to_menu = util.string_as_bool( kwd.get( 'add_to_menu', False ) )
         # The workflow_name parameter is in the request only if the import originated
         # from a Galaxy tool shed, in which case the value was encoded.
         workflow_name = kwd.get( 'workflow_name', '' )
