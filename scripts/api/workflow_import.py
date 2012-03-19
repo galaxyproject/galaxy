@@ -2,7 +2,7 @@
 """
 Import workflows from the command line.
 Example calls:
-python workflow_import.py <api_key> <galaxy_url> '/path/to/workflow/file'
+python workflow_import.py <api_key> <galaxy_url> '/path/to/workflow/file [--add_to_menu]'
 """
 
 import os, sys
@@ -16,6 +16,8 @@ def main():
     try:
         data = {}
         data['installed_repository_file'] = sys.argv[3]
+        if len(sys.argv) > 4 and sys.argv[4] == "--add_to_menu":
+            data['add_to_menu'] = True   
     except IndexError:
         print 'usage: %s key galaxy_url workflow_file' % os.path.basename(sys.argv[0])
         sys.exit(1)

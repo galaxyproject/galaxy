@@ -1127,6 +1127,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # id being imported from a Galaxy tool shed repository.
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         repository_metadata_id = kwd.get( 'repository_metadata_id', '' )
+        add_to_menu = kwd.get( 'add_to_menu', False )
         # The workflow_name parameter is in the request only if the import originated
         # from a Galaxy tool shed, in which case the value was encoded.
         workflow_name = kwd.get( 'workflow_name', '' )
@@ -1193,7 +1194,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     src = None
                     if cntrller != 'api':
                         src="uploaded file"
-                    workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source=src )
+                    workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source=src, add_to_menu=add_to_menu )
                     workflow = workflow.latest_workflow
                     if workflow_name:
                         workflow.name = workflow_name
@@ -1824,7 +1825,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             # Add to return value
             data['steps'][step.order_index] = step_dict
         return data
-    def _workflow_from_dict( self, trans, data, source=None ):
+    def _workflow_from_dict( self, trans, data, source=None, add_to_menu=False ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
@@ -1901,6 +1902,15 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # Persist
         trans.sa_session.add( stored )
         trans.sa_session.flush()
+
+        if add_to_menu:
+            if trans.user.stored_workflow_menu_entries == None:
+                trans.user.stored_workflow_menu_entries = []
+            menuEntry = model.StoredWorkflowMenuEntry()
+            menuEntry.stored_workflow = stored
+            trans.user.stored_workflow_menu_entries.append( menuEntry )
+            trans.sa_session.flush()
+
         return stored, missing_tool_tups
 
 ## ---- Utility methods -------------------------------------------------------
