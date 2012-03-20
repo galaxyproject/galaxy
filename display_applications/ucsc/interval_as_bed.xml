@@ -14,7 +14,7 @@
         <param type="template" name="position" strip="True" >
 #set chrom, start, end = $bed_file.datatype.get_estimated_display_viewport( $bed_file )
 #if $chrom is not None:
-${chrom}:${start}-${end + 1}
+${chrom}:${start}-${int( end ) + 1}
 #else:
 :-
 #end if
