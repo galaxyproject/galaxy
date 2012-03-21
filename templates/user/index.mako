@@ -37,6 +37,7 @@
             %if trans.app.config.enable_quotas:
                 Your disk quota is: <strong>${trans.app.quota_agent.get_quota( trans.user, nice_size=True )}</strong>.
             %endif
+            Is your usage more than expected?  See the <a href="http://wiki.g2.bx.psu.edu/Learn/Managing%20Datasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.
         </p>
     %endif
 %else:
