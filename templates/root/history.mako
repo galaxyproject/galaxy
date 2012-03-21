@@ -1,7 +1,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 <% _=n_ %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 
 <html>
 
@@ -467,6 +467,7 @@ div.form-row {
 </head>
 
 <body class="historyPage">
+
 <div id="top-links" class="historyLinks">
     
     <a title="${_('refresh')}" class="icon-button arrow-circle tooltip" href="${h.url_for('history', show_deleted=show_deleted)}"></a>
@@ -478,10 +479,9 @@ div.form-row {
         <a id="history-annotate" title="Edit history annotation" class="icon-button annotate tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='annotate' )}"></a>
     </div>
     %endif
-
 </div>
 
-<div style="clear: both;"></div>
+<div class="clear"></div>
 
 %if show_deleted:
 <div class="historyLinks">
@@ -568,6 +568,7 @@ div.form-row {
 %else:    
 
     ## Render requested datasets, ordered from newest to oldest
+    <div>
     %for data in reversed( datasets ):
         %if data.visible or show_hidden:
             <div class="historyItemContainer" id="historyItemContainer-${trans.app.security.encode_id(data.id)}">
@@ -575,6 +576,7 @@ div.form-row {
             </div>
         %endif
     %endfor
+    </div>
 
     <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
 %endif

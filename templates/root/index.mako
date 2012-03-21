@@ -201,7 +201,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>
             <div style="float: right">
-                <a class='panel-header-button popup' id="tools-options-button" href="#">${_('Options')}</a>
+                <a class='panel-header-button' id="tools-options-button" href="#"><span class="ficon large cog"></span></a>
             </div>
             ${n_('Tools')}
         </div>
@@ -227,7 +227,7 @@
         center_url = h.url_for( '/static/welcome.html' )
     %>
     
-    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
+    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"></iframe>
 
 </%def>
 
@@ -235,7 +235,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a id="history-options-button" class='panel-header-button popup' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main">${_('Options')}</a>
+                <a id="history-options-button" class='panel-header-button' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"><span class="ficon large cog"></span></a>
             </div>
             <div class="panel-header-text">${_('History')}</div>
         </div>

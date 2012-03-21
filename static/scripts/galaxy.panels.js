@@ -1,4 +1,8 @@
-function ensure_dd_helper() {
+!function( exports, $ ){
+
+"use strict"
+
+var ensure_dd_helper = function () {
     // Insert div that covers everything when dragging the borders
     if ( $( "#DD-helper" ).length == 0 ) {
         $( "<div id='DD-helper'/>" ).css( {
@@ -8,223 +12,204 @@ function ensure_dd_helper() {
     }
 }
 
-var MIN_PANEL_WIDTH = 100,
-    MAX_PANEL_WIDTH = 1000;
+// Panels
 
-function make_left_panel( panel_el, center_el, border_el ) {
-    var hidden = false;
-    var saved_size = null;
-    // Functions for managing panel
-    var resize = function( x ) {
-        var oldx = x;
-        if ( x < 0 ) x = 0;
-        $( panel_el ).css( "width", x );
-        $( border_el ).css( "left", oldx );
-        $( center_el ).css( "left", x+7 );
-        // ie7-recalc.js
-        if ( document.recalc ) { document.recalc(); }
-    };
-    var toggle = function() {
-        if ( hidden ) {
-            $( border_el ).removeClass( "hover" );
-            $( border_el).animate( {left: saved_size }, "fast" );
-            $( panel_el ).css( "left", - saved_size ).show().animate( { "left": 0 }, "fast", function () {
-                resize( saved_size );
-                $( border_el ).removeClass( "hidden" );
-            });
-            hidden = false;
+var MIN_PANEL_WIDTH = 150,
+    MAX_PANEL_WIDTH = 800;
+
+var Panel = function( options ) {
+    this.$panel = options.panel;
+    this.$center = options.center;
+    this.$drag = options.drag;
+    this.$toggle = options.toggle;
+    this.left = !options.right;
+    this.hidden = false;
+    this.hidden_by_tool = false;
+    this.saved_size = null;
+    this.init();
+}
+$.extend( Panel.prototype, {
+    resize: function( x ) {
+        this.$panel.css( "width", x );
+        if ( this.left ) {
+            this.$center.css( "left", x );
         } else {
-            saved_size = $( border_el ).position().left;
-            // Move center
-            $( center_el ).css( "left", $(border_el).innerWidth() );
-            if ( document.recalc ) { document.recalc(); }
-            $( border_el).removeClass( "hover" );
-            $( panel_el ).animate( { left: - saved_size }, "fast" );
-            $( border_el ).animate( { left: -1 }, "fast", function() {
-                $( this ).addClass( "hidden" );
-            });
-            hidden = true;
+            this.$center.css( "right", x );
         }
-    };
-    // Connect to elements
-    //$( border_el ).hover( 
-    //    function() { $( this ).addClass( "hover" ) },
-    //    function() { $( this ).removeClass( "hover" ) }
-    $( border_el ).bind( "dragstart", function() {
-        $( '#DD-helper' ).show();
-    }).bind( "dragend", function() {
-        $( '#DD-helper' ).hide();
-    }).bind( "drag", function( e, d ) {
-        x = d.offsetX;
-        // Limit range
-        x = Math.min( MAX_PANEL_WIDTH, Math.max( MIN_PANEL_WIDTH, x ) );
-        // Resize
-        if ( hidden ) {
-            $( panel_el ).css( "left", 0 );
-            $( border_el ).removeClass( "hidden" );
-            hidden = false;
-        }
-        resize( x );
-    }).bind( "dragclickonly", function() {
-        toggle();
-    }).find( "div" ).show();
-    var force_panel = function( op ) {
-        if ( ( hidden && op == 'show' ) || ( ! hidden && op == 'hide' ) ) { 
-            toggle();
-        }
-    }
-    return { force_panel: force_panel };
-};
-
-function make_right_panel( panel_el, center_el, border_el ) {
-    var hidden = false,
-        hidden_by_tool = false,
-        saved_size = null;
-    
-    var resize = function( x ) {
-        $( panel_el ).css( "width", x );
-        $( center_el ).css( "right", x+9 );
-        $( border_el ).css( "right", x ).css( "left", "" );
         // ie7-recalc.js
         if ( document.recalc ) { document.recalc(); }
-    };
-    var toggle = function() {
-        if ( hidden ) {
-            $( border_el).removeClass( "hover" );
-            $( border_el ).animate( { right: saved_size }, "fast" );
-            $( panel_el ).css( "right", - saved_size ).show().animate( { "right": 0 }, "fast", function () {
-                resize( saved_size );
-                $( border_el ).removeClass( "hidden" );
-            });
-            hidden = false;
-        }
-        else
-        {
-            saved_size = $(document).width() - $( border_el ).position().left - $(border_el).outerWidth();
-            // Move center
-            $( center_el ).css( "right", $(border_el).innerWidth() + 1 );
+    },
+    do_toggle: function() {
+        var self = this;
+        if ( this.hidden ) {
+            this.$toggle.removeClass( "hidden" );
+            if ( this.left ) {
+                this.$panel.css( "left", - this.saved_size ).show().animate( { "left": 0 }, "fast", function () {
+                    self.resize( self.saved_size );
+                });
+            } else {
+                this.$panel.css( "right", - this.saved_size ).show().animate( { "right": 0 }, "fast", function () {
+                    self.resize( self.saved_size );
+                });
+            }
+            self.hidden = false;
+        } else {
+            self.saved_size = this.$panel.width();
             if ( document.recalc ) { document.recalc(); }
             // Hide border
-            $( border_el ).removeClass( "hover" );
-            $( panel_el ).animate( { right: - saved_size }, "fast" );
-            $(  border_el ).animate( { right: -1 }, "fast", function() {
-                $( this ).addClass( "hidden" );
-            });
-            hidden = true;
+            if ( this.left ) {
+                this.$panel.animate( { left: - this.saved_size }, "fast" );
+            } else {
+                this.$panel.animate( { right: - this.saved_size }, "fast" );
+            }
+            // self.resize(0);
+            if ( this.left ) {
+                this.$center.css( "left", 0 );
+            } else {
+                this.$center.css( "right", 0 );
+            }
+
+            self.hidden = true;
+            self.$toggle.addClass( "hidden" );
         }
-        hidden_by_tool = false;
-    };
-    var handle_minwidth_hint = function( x ) {
-        var space = $( center_el ).width() - ( hidden ? saved_size : 0 );
+        this.hidden_by_tool = false;
+    },
+    handle_minwidth_hint: function( x ) {
+        var space = this.$center.width() - ( this.hidden ? this.saved_size : 0 );
         if ( space < x )
         {
-            if ( ! hidden ) {
-                toggle();
-                hidden_by_tool = true;
+            if ( ! this.hidden ) {
+                this.do_toggle();
+                this.hidden_by_tool = true;
             }
         } else {
-            if ( hidden_by_tool ) {
-                toggle();
-                hidden_by_tool = false;
+            if ( this.hidden_by_tool ) {
+                this.do_toggle();
+                this.hidden_by_tool = false;
             }
         }
-    };
-    $( border_el ).hover( 
-        function() { $( this ).addClass( "hover" ); },
-        function() { $( this ).removeClass( "hover" ); }
-    ).bind( "dragstart", function() {
-        $( '#DD-helper' ).show();
-    }).bind( "dragend", function() {  
-        $( '#DD-helper' ).hide();
-    }).bind( "drag", function( e, d ) {
-        x = d.offsetX;
-        w = $(window).width(); 
-        // Limit range
-        x = Math.min( w - MIN_PANEL_WIDTH, x );
-        x = Math.max( w - MAX_PANEL_WIDTH, x );
-        // Resize
-        if ( hidden ) {
-            $( panel_el ).css( "right", 0 );
-            $( border_el ).removeClass( "hidden" );
-            hidden = false;
+    },
+    force_panel: function( op ) {
+        if ( ( this.hidden && op == 'show' ) || ( ! this.hidden && op == 'hide' ) ) { 
+            this.do_toggle();
         }
-        resize( w - x - $(this).outerWidth() );
-    }).bind( "dragclickonly", function() {
-        toggle();
-    }).find( "div" ).show();
-    var force_panel = function( op ) {
-        if ( ( hidden && op == 'show' ) || ( ! hidden && op == 'hide' ) ) { 
-            toggle();
-        }
+    },
+    init: function() {
+        var self = this;
+        // Pull the collapse element out to body level so it is visible when panel is hidden
+        this.$toggle.remove().appendTo( "body" );
+        // Resizing using drag element
+        this.$drag.on( "dragstart", function( e, d ) {
+            $( '#DD-helper' ).show();
+            d.width = self.$panel.width();
+        }).on( "dragend", function() {  
+            $( '#DD-helper' ).hide();
+        }).on( "drag", function( e, d ) {
+            var x;
+            if ( self.left ) {
+                x = d.width + d.deltaX;
+            } else {
+                x = d.width - d.deltaX;
+            }
+            // Limit range
+            x = Math.min( MAX_PANEL_WIDTH, Math.max( MIN_PANEL_WIDTH, x ) );
+            self.resize( x );
+        });
+        // Hide/show using toggle element
+        self.$toggle.on( "click", function() { self.do_toggle(); } );
     }
-    return { handle_minwidth_hint: handle_minwidth_hint, force_panel: force_panel };
-};
-
+});
+  
 // Modal dialog boxes
+var Modal = function( options ) {
+    this.$overlay = options.overlay;
+    this.$dialog = options.dialog;
+    this.$header = this.$dialog.find( ".modal-header" );
+    this.$body = this.$dialog.find( ".modal-body" );
+    this.$footer = this.$dialog.find( ".modal-footer" );
+    this.$backdrop = options.backdrop;
+}
+$.extend( Modal.prototype, {
+    setContent: function( options ) {
+        // Title
+        if ( options.title ) {
+            this.$header.find( ".title" ).html( options.title );
+            this.$header.show();
+        } else {
+            this.$header.hide();
+        }
+        // Buttons
+        this.$footer.hide();
+        console.log( this.$footer, options.buttons );
+        var $buttons = this.$footer.find( ".buttons" ).html( "" );
+        if ( options.buttons ) {
+            $.each( options.buttons, function( name, value ) {
+                 $buttons.append( $( '<button></button> ' ).text( name ).click( value ) ).append( " " );
+            });
+            this.$footer.show();
+        }
+        var $extraButtons = this.$footer.find( ".extra_buttons" ).html( "" );
+        if ( options.extra_buttons ) {
+            $.each( options.extra_buttons, function( name, value ) {
+                 $extraButtons.append( $( '<button></button>' ).text( name ).click( value ) ).append( " " );
+            });
+            this.$footer.show();
+        }
+        // Body
+        var body = options.body;
+        if ( body == "progress" ) {
+            body = $("<div class='progress progress-striped active'><div class='bar' style='width: 100%'></div></div>"); 
+        }
+        this.$body.html( body );
+    },
+    show: function( options, callback ) {
+        if ( ! this.$dialog.is( ":visible" ) ) {
+            if ( options.backdrop) {
+                this.$backdrop.addClass( "in" );
+            } else {
+                this.$backdrop.removeClass( "in" );
+            }
+            this.$overlay.show();
+            this.$dialog.show();
+            // Fix min-width so that modal cannot shrink considerably if 
+            // new content is loaded.
+            this.$body.css( "min-width", this.$body.width() );
+        }
+        // Callback on init
+        if ( callback ) {
+            callback();
+        }
+    },
+    hide: function() {
+        var modal = this;
+        modal.$dialog.fadeOut( function() {
+           modal.$overlay.hide();
+           modal.$backdrop.removeClass( "in" );
+           modal.$body.children().remove();
+           // Clear min-width to allow for modal to take size of new body.
+           modal.$body.css( "min-width", undefined );
+       });
+   }
+});
 
+var modal;
+
+$(function(){
+   modal = new Modal( { overlay: $("#overlay"), dialog: $("#dialog-box"), backdrop: $("#overlay-background") } ); 
+});
+
+// Backward compatibility
 function hide_modal() {
-    $(".dialog-box-container" ).hide( 0, function() {
-        $("#overlay").hide();
-		$("#overlay").removeClass( "modal" );
-        $( ".dialog-box" ).find( ".body" ).children().remove();
-    } );
-};
-
-function show_modal() {
-	$("#overlay").addClass( "modal" );
-	_show_modal.apply( this, arguments );
+    modal.hide();
 }
-
-function show_message() {
-	_show_modal.apply( this, arguments );
+function show_modal( title, body, buttons, extra_buttons, init_fn ) {
+    modal.setContent( { title: title, body: body, buttons: buttons, extra_buttons: extra_buttons } );
+    modal.show( { backdrop: true }, init_fn );
 }
-
-function _show_modal( title, body, buttons, extra_buttons, init_fn ) {
-    if ( title ) {
-        $( ".dialog-box" ).find( ".title" ).html( title );
-        $( ".dialog-box" ).find( ".unified-panel-header" ).show(); 
-    } else {
-        $( ".dialog-box" ).find( ".unified-panel-header" ).hide();   
-    }
-    var b = $( ".dialog-box" ).find( ".buttons" ).html( "" );
-    if ( buttons ) {
-        $.each( buttons, function( name, value ) {
-            b.append( $( '<button/>' ).text( name ).click( value ) );
-            b.append( " " );
-        });
-        b.show();
-    } else {
-        b.hide();
-    }
-    var b = $( ".dialog-box" ).find( ".extra_buttons" ).html( "" );
-    if ( extra_buttons ) {
-        $.each( extra_buttons, function( name, value ) {
-            b.append( $( '<button/>' ).text( name ).click( value ) );
-            b.append( " " );
-        });
-        b.show();
-    } else {
-        b.hide();
-    }
-    if ( body == "progress" ) {
-        body = $("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif");
-    }
-    var body_elt = $( ".dialog-box" ).find( ".body" );
-    // Clear min-width to allow for modal to take size of new body.
-    body_elt.css("min-width", "0px");
-    $( ".dialog-box" ).find( ".body" ).html( body );
-    if ( ! $(".dialog-box-container").is( ":visible" ) ) {
-        $("#overlay").show();
-        $(".dialog-box-container").show();
-    }
-    // Fix min-width so that modal cannot shrink considerably if 
-    // new content is loaded.
-    body_elt.css("min-width", body_elt.width());
-    if ( init_fn ) {
-        init_fn();
-    }
-};
-
+function show_message( title, body, buttons, extra_buttons, init_fn ) {
+    modal.setContent( { title: title, body: body, buttons: buttons, extra_buttons: extra_buttons } );
+    modal.show( { backdrop: false }, init_fn  );
+}
 function show_in_overlay( options ) {
     var width = options.width || '600';
     var height = options.height || '400';
@@ -236,22 +221,6 @@ function show_in_overlay( options ) {
     show_modal( null, $( "<div style='margin: -5px;'><img id='close_button' style='position:absolute;right:-17px;top:-15px;src='" + image_path + "/closebox.png'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) );
     $("#close_button").bind( "click", function() { hide_modal(); } );
 }
-
-// Tab management
-
-$(function() {
-    $(".tab").each( function() {
-        var submenu = $(this).children( ".submenu" );
-        if ( submenu.length > 0 ) {
-            if ( $.browser.msie ) {
-                // Vile IE iframe hack -- even IE7 needs this
-                submenu.prepend( "<iframe style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; filter:Alpha(Opacity='0');\"></iframe>" );
-            }
-            $(this).hover( function() { submenu.show(); }, function() { submenu.hide(); } );
-            submenu.click( function() { submenu.hide(); } );
-        }
-    });
-});
 
 function user_changed( user_email, is_admin ) {
     if ( user_email ) {
@@ -267,3 +236,35 @@ function user_changed( user_email, is_admin ) {
         $(".admin-only").hide();
     }
 }
+
+// Masthead dropdown menus
+$(function() {
+    var $dropdowns = $("#masthead ul.nav > li.dropdown > .dropdown-menu");
+    $("body").on( "click.nav_popups", function( e ) {
+        $dropdowns.hide();
+        $("#DD-helper").hide();
+        // If the target is in the menu, treat normally
+        if ( $(e.target).closest( "#masthead ul.nav > li.dropdown > .dropdown-menu" ).length ) {
+            return;
+        }
+        // Otherwise, was the click in a tab
+        var $clicked = $(e.target).closest( "#masthead ul.nav > li.dropdown" );
+        if ( $clicked.length ) {
+            $("#DD-helper").show();
+            $clicked.children( ".dropdown-menu" ).show();
+            e.preventDefault();
+        }
+    });
+});
+
+// Exports
+exports.ensure_dd_helper = ensure_dd_helper;
+exports.Panel = Panel;
+exports.Modal = Modal;
+exports.hide_modal = hide_modal;
+exports.show_modal = show_modal;
+exports.show_message = show_message;
+exports.show_in_overlay = show_in_overlay;
+exports.user_changed = user_changed;
+
+}( window, window.jQuery );
