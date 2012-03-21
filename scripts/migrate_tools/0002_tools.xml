@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <toolshed name="toolshed.g2.bx.psu.edu">
     <repository name="emboss_datatypes" description="Datatypes for Emboss tools" changeset_revision="a89163f31369" />
-    <repository name="emboss_5" description="Galaxy wrappers for EMBOSS version 5.0.0 tools" changeset_revision="b94ca591877b">
+    <repository name="emboss_5" description="Galaxy wrappers for EMBOSS version 5.0.0 tools" changeset_revision="7334f6d0ac17">
         <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
         <tool id="EMBOSS: backtranseq2" version="5.0.0" file="emboss_backtranseq.xml" />
         <tool id="EMBOSS: banana3" version="5.0.0" file="emboss_banana.xml" />
