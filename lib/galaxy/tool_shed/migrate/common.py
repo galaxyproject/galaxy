@@ -9,7 +9,7 @@ import galaxy.tool_shed.tool_shed_registry
 from galaxy.tool_shed import install_manager
 from galaxy.tool_shed.migrate.common import *
 
-def check_for_missing_tools( tool_panel_config, latest_tool_migration_script_number ):
+def check_for_missing_tools( tool_panel_configs, latest_tool_migration_script_number ):
     # Get the 000x_tools.xml file associated with the current migrate_tools version number.
     tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
@@ -20,17 +20,18 @@ def check_for_missing_tools( tool_panel_config, latest_tool_migration_script_num
         if elem.tag == 'repository':
             for tool_elem in elem.findall( 'tool' ):
                 migrated_tool_configs.append( tool_elem.get( 'file' ) )
-    # Parse the proprietary tool_panel_config (the default is tool_conf.xml) and generate the list of missing tool config file names.
+    # Parse the proprietary tool_panel_configs (the default is tool_conf.xml) and generate the list of missing tool config file names.
     missing_tool_configs = []
-    tree = util.parse_xml( tool_panel_config )
-    root = tree.getroot()
-    for elem in root:
-        if elem.tag == 'tool':
-            missing_tool_configs = check_tool_tag_set( elem, migrated_tool_configs, missing_tool_configs )
-        elif elem.tag == 'section':
-            for section_elem in elem:
-                if section_elem.tag == 'tool':
-                    missing_tool_configs = check_tool_tag_set( section_elem, migrated_tool_configs, missing_tool_configs )
+    for tool_panel_config in tool_panel_configs:
+        tree = util.parse_xml( tool_panel_config )
+        root = tree.getroot()
+        for elem in root:
+            if elem.tag == 'tool':
+                missing_tool_configs = check_tool_tag_set( elem, migrated_tool_configs, missing_tool_configs )
+            elif elem.tag == 'section':
+                for section_elem in elem:
+                    if section_elem.tag == 'tool':
+                        missing_tool_configs = check_tool_tag_set( section_elem, migrated_tool_configs, missing_tool_configs )
     return missing_tool_configs
 def check_tool_tag_set( elem, migrated_tool_configs, missing_tool_configs ):
     file_path = elem.get( 'file', None )
