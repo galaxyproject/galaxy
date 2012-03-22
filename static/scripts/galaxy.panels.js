@@ -140,7 +140,6 @@ $.extend( Modal.prototype, {
         }
         // Buttons
         this.$footer.hide();
-        console.log( this.$footer, options.buttons );
         var $buttons = this.$footer.find( ".buttons" ).html( "" );
         if ( options.buttons ) {
             $.each( options.buttons, function( name, value ) {
