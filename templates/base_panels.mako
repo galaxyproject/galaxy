@@ -178,7 +178,7 @@
 
         <div id="overlay-background" class="modal-backdrop fade ${overlay_class}"></div>
 
-        <div id="dialog-box" class="modal" border="0" ${display}>
+        <div id="dialog-box" class="modal dialog-box" border="0" ${display}>
                 <div class="modal-header">
                     <span><h3 class='title'>${title}</h3></span>
                 </div>
