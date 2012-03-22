@@ -433,13 +433,13 @@ class Text( Data ):
             if line and not line.startswith( '#' ):
                 data_lines += 1
         return data_lines
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False, skipchars=[] ):
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=[] ):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte, skipchars=skipchars )
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars )
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
@@ -567,6 +567,11 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     ## >>> get_file_peek(fname)
     ## 'chr22    30128507    31828507    uc003bnx.1_cds_2_0_chr22_29227_f    0    +\n'
     """
+    # Set size for file.readline() to a negative number to force it to
+    # read until either a newline or EOF.  Needed for datasets with very
+    # long lines.
+    if WIDTH == 'unlimited':
+        WIDTH = -1
     lines = []
     count = 0
     file_type = None
