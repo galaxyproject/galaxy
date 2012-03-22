@@ -14,6 +14,7 @@ button::-moz-focus-inner,input::-moz-focus-inner{padding:0;border:0;}
 button,input[type="button"],input[type="reset"],input[type="submit"]{cursor:pointer;-webkit-appearance:button;}
 input[type="search"]{-webkit-appearance:textfield;-webkit-box-sizing:content-box;-moz-box-sizing:content-box;box-sizing:content-box;}
 input[type="search"]::-webkit-search-decoration,input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;}
+input[type="checkbox"],input[type="radio"]{margin-left:0.5ex;margin-right:0.5ex;}
 textarea{overflow:auto;vertical-align:top;}
 body{margin:0;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;font-size:12px;line-height:16px;color:#111111;background-color:#ffffff;}
 a{color:#303030;text-decoration:none;}
