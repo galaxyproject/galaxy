@@ -69,7 +69,7 @@
         
     %if self.has_right_panel:
             var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
-            window.handle_minwidth_hint = function( x ) { console.log( "hint", x ); rp.handle_minwidth_hint( x ) };
+            window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
             force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
     
