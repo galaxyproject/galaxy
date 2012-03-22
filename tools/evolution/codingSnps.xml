@@ -2,7 +2,7 @@
   <description>amino-acid changes caused by a set of SNPs</description>
 
   <command interpreter="perl">
-    codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep > $out_file1
+    codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep strand=${strand_source.strand_col} > $out_file1
   </command>
 
   <inputs>
@@ -17,6 +17,22 @@
       <option value="0" selected="true">No</option>
       <option value="1">Yes</option>
     </param>
+    <conditional name="strand_source">
+      <param name="strand_choice" type="select" label="Strand info">
+        <option value="data_column">a column in the dataset</option>
+        <option value="all_pos" selected="true">all on sense/forward/+ strand</option>
+        <option value="all_neg">all on antisense/reverse/- strand</option>
+      </param>
+      <when value="data_column">
+        <param name="strand_col" type="data_column" data_ref="input1" label="Column with strand"/>
+      </when>
+      <when value="all_pos">
+        <param name="strand_col" type="hidden" value="+"/>
+      </when>
+      <when value="all_neg">
+        <param name="strand_col" type="hidden" value="-"/>
+      </when>
+    </conditional>
   </inputs>
 
   <outputs>
@@ -36,13 +52,25 @@
       <param name="input1" ftype="interval" value="codingSnps_input1.interval" dbkey="hg18" />
       <param name="col1" value="6" />
       <param name="input2" ftype="interval" value="codingSnps_inputGenes1.bed" dbkey="hg18" />
+      <param name="strand_choice" value="all_pos" />
+      <param name="strand_col" value="+" />
       <output name="output" file="codingSnps_output1.interval" />
     </test>
     <test>
       <param name="input1" ftype="interval" value="codingSnps_input2.interval" dbkey="hg18" />
       <param name="input2" ftype="interval" value="codingSnps_inputGenes2.bed" dbkey="hg18" />
       <param name="col1" value="4" />
+      <param name="strand_choice" value="all_pos" />
+      <param name="strand_col" value="+" />
       <output name="output" file="codingSnps_output2.interval" />
+    </test>
+    <test>
+      <param name="input1" ftype="interval" value="codingSnps_input2.interval" dbkey="hg18" />
+      <param name="input2" ftype="interval" value="codingSnps_inputGenes2.bed" dbkey="hg18" />
+      <param name="col1" value="4" />
+      <param name="strand_choice" value="all_neg" />
+      <param name="strand_col" value="-" />
+      <output name="output" file="codingSnps_output3.interval" />
     </test>
   </tests>
 
@@ -79,8 +107,9 @@ to be used for defining the coding regions.  This file must be a BED file with
 the first 12 columns standard BED columns.  The output is the same as the
 first input file with
 several columns added: the name field from the line of the gene input file
-used, the amino acids, the codon number, and the reference nucleotide that 
-changed in the amino acid.
+used, the amino acids, the codon number, the reference nucleotide that 
+changed in the amino acid (in the same strand as the gene), and the codons 
+that go with the amino acids.
 The amino acids are listed with the reference amino acid first, then a colon,
 and then the amino acids for the alleles.  If a SNP is not in a coding region
 or is synonymous then it is not included in the output file.
@@ -128,15 +157,15 @@ or is synonymous then it is not included in the output file.
 
 - output file, showing non-synonymous substitutions in coding regions::
 
-    chr22  15825725  15825726  G/T  uc002zlw.1  Gln:Pro/Gln   469  T
-    chr22  15827035  15827036  G    uc002zlw.1  Glu:Asp       414  C
-    chr22  15827135  15827136  C/G  uc002zlw.1  Gly:Gly/Ala   381  C
-    chr22  15830928  15830929  A/G  uc002zlw.1  Ala:Ser/Pro   281  C
-    chr22  15830951  15830952  G    uc002zlw.1  Leu:Pro       273  A
-    chr22  15830955  15830956  C/T  uc002zlw.1  Ser:Gly/Ser   272  T
-    chr22  15848885  15848886  C/T  uc002zlw.1  Ser:Trp/Stop  217  G
-    chr22  15848885  15848886  C/T  uc010gqs.1  Ser:Trp/Stop  200  G
-    chr22  15849048  15849049  A/C  uc002zlw.1  Gly:Stop/Gly  163  C
+    chr22  15825725  15825726  G/T  uc002zlw.1  Gln:Pro/Gln   469  A  CAA:CCA/CAA
+    chr22  15827035  15827036  G    uc002zlw.1  Glu:Asp       414  G  GAG:GAC
+    chr22  15827135  15827136  C/G  uc002zlw.1  Gly:Gly/Ala   381  G  GGT:GGT/GCT
+    chr22  15830928  15830929  A/G  uc002zlw.1  Ala:Ser/Pro   281  G  GCA:TCA/CCA
+    chr22  15830951  15830952  G    uc002zlw.1  Leu:Pro       273  T  CTT:CCT
+    chr22  15830955  15830956  C/T  uc002zlw.1  Ser:Gly/Ser   272  A  AGC:GGC/AGC
+    chr22  15848885  15848886  C/T  uc002zlw.1  Ser:Trp/Stop  217  C  TCG:TGG/TAG
+    chr22  15848885  15848886  C/T  uc010gqs.1  Ser:Trp/Stop  200  C  TCG:TGG/TAG
+    chr22  15849048  15849049  A/C  uc002zlw.1  Gly:Stop/Gly  163  G  GGA:TGA/GGA
     etc.
 
   </help>

@@ -7,11 +7,15 @@ use strict;
 #	and a gene bed file with cds start and stop.
 #	It then checks for changes in coding regions, reporting
 #	those that cause a frameshift or substitution in the amino acid.
+#	Output columns:
+#		chrom, start, end, allele as given (amb code translated)
+#		Gene ID from genes file, ref amino acid:variant amino acids,
+#		codon number, (in strand of gene)ref nt, refCodon:variantCodons
 #########################################################################
 
 my $seqFlag = "2bit"; #flag to set sequence type 2bit|nib
 if (!@ARGV or scalar @ARGV < 3) {
-   print "Usage: codingSnps.pl snps.bed genes.bed (/dir/*$seqFlag|Galaxy build= loc=) [chr=# start=# end=# snp=# keepColumns=1] > codingSnps.txt\n";
+   print "Usage: codingSnps.pl snps.bed genes.bed (/dir/*$seqFlag|Galaxy build= loc=) [chr=# start=# end=# snp=# strand=#|-|+ keepColumns=1 synon=1 unique=1] > codingSnps.txt\n";
    exit;
 }
 my $uniq = 0; #flag for whether want uniq positions
@@ -25,6 +29,7 @@ my $col0 = 0; #bed like columns in default positions
 my $col1 = 1;
 my $col2 = 2;
 my $col3 = 3;
+my $strand = -1;
 #column positions 1 based coming in (for Galaxy)
 foreach (@ARGV) {
    if (/chr=(\d+)/) { $col0 = $1 -1; }
@@ -32,6 +37,10 @@ foreach (@ARGV) {
    elsif (/end=(\d+)/) { $col2 = $1 -1; }
    elsif (/snp=(\d+)/) { $col3 = $1 -1; }
    elsif (/keepColumns=1/) { $keep = 1; }
+   elsif (/synon=1/) { $syn = 1; }
+   elsif (/unique=1/) { $uniq = 1; }
+   elsif (/strand=(\d+)/) { $strand = $1 -1; } #0 based column
+   elsif (/strand=-/) { $strand = -99; }  #special case of all minus
 }
 if ($col0 < 0 || $col1 < 0 || $col2 < 0 || $col3 < 0) {
    print STDERR "ERROR column numbers are given with origin 1\n";
@@ -42,6 +51,7 @@ my %chrSt; #index in array where each chrom starts
 my %codon; #hash of codon amino acid conversions
 my $ends = 0; #ends vs sizes in bed 11 position, starts relative to chrom
 my $ignoreN = 1; #skip N
+my $origAll; #alleles from input file (before changes for strand)
 
 my %amb = (
 "R" => "A/G",
@@ -90,6 +100,10 @@ while(<FH>) {
       print STDERR "ERROR file has fewer columns than requested, requested columns (0 based) $col0 $col1 $col2 $col3, file has $size\n";
       exit 1;
    }
+   if ($strand >= 0 && $strand > $size) { 
+      print STDERR "ERROR file has fewer columns than requested, requested strand in $strand (0 based), file has $size\n";
+      exit 1;
+   }
    if ($s[$col1] =~ /\D/) { 
       print STDERR "ERROR the start point must be an integer not $s[$col1]\n";
       exit 1;
@@ -100,6 +114,11 @@ while(<FH>) {
    }
    if ($s[$col3] eq 'N' && $ignoreN) { next; }
    if (exists $amb{$s[$col3]}) { $s[$col3] = $amb{$s[$col3]}; }
+   if (($strand >= 0 && $s[$strand] eq '-') or $strand == -99) { 
+      #reverse complement nts
+      $origAll = $s[$col3];
+      $s[$col3] = reverseCompAlleles($s[$col3]);
+   }else { undef $origAll }
    if (!@g && exists $chrSt{$s[$col0]}) { #need to fetch first gene row
       $i = $chrSt{$s[$col0]};
       @g = split(/\t/, $genes[$i]);
@@ -287,36 +306,45 @@ sub processSnp {
       }
       #now compute amino acids
       my $oldaa = getaa($oldnts);
+      my $codon = "$oldnts:";
       my @newaa;
       my $change = 0; #flag for if there is a change
       foreach my $v (@newnts) {
          my $t = getaa($v);
          if ($t ne $oldaa) { $change = 1; }
-         push(@newaa, $t);
+         push(@newaa, "$t");
+         $codon .= "$v/";
       }
+      $codon =~ s/\/$//; 
       if (!$change && $syn) { 
           if (!$keep) {
              print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
-             print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\n";
+             print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\t$codon\n";
           }else {
              my @s = @{$sref};
              print join("\t", @s), 
-                   "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\n";
+                   "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\t$codon\n";
           }
+          $done{"$sref->[$col0] $sref->[$col1] $sref->[$col2]"}++;
           return;
       }elsif ($syn) { return; } #only want synonymous changes
       if (!$change) { return; } #no change in amino acids
       if (!$keep) {
-         print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
-         if ($gref->[5] eq '-') { $changed = compl($changed); } #use plus for ref
+         my $a = $sref->[$col3];
+         if (($strand >= 0 && $origAll) or $strand == -99) { $a = $origAll; }
+         print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$a";
+         #my $minus = $changed; #in case minus strand and change back
+         #if ($gref->[5] eq '-') { $changed = compl($changed); } #use plus for ref
          if (!$changed) { return; } #skip this one
-         print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\n";
+         print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\t$codon\n";
       }else {
          my @s = @{$sref};
+         if (($strand >= 0 && $origAll) or $strand == -99) { $s[$col3] = $origAll; }
          print join("\t", @s);
-         if ($gref->[5] eq '-') { $changed = compl($changed); } #use plus for ref
+         #my $minus = $changed; #in case minus strand and change back
+         #if ($gref->[5] eq '-') { $changed = compl($changed); } #use plus for ref
          if (!$changed) { return; } #skip this one
-         print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\n";
+         print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\t$codon\n";
       }
       $done{"$sref->[$col0] $sref->[$col1] $sref->[$col2]"}++;
    }
@@ -416,6 +444,19 @@ sub compl {
       else { $comp = undef; }
    }
    return $comp;
+}
+
+sub reverseCompAlleles {
+   my $all = shift;
+   my @nt = split(/\//, $all);
+   my $rv = '';
+   foreach my $n (@nt) {
+      $n = reverse(split(/ */, $n)); #needed for indels
+      $n = compl($n);
+      $rv .= "$n/";
+   }
+   $rv =~ s/\/$//;
+   return $rv;
 }
 
 sub getaa {
