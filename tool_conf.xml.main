@@ -192,21 +192,25 @@
     <tool file="taxonomy/lca.xml" />
     <tool file="taxonomy/poisson2test.xml" />
   </section>
-  <section name="Human Genome Variation" id="hgv">
+  <section name="Phenotype Association" id="hgv">
     <tool file="evolution/codingSnps.xml" />
     <tool file="evolution/add_scores.xml" />
-    <tool file="human_genome_variation/sift.xml" />
-    <tool file="human_genome_variation/linkToGProfile.xml" />
-    <tool file="human_genome_variation/linkToDavid.xml"/>
-    <tool file="human_genome_variation/ctd.xml" />
-    <tool file="human_genome_variation/funDo.xml" />
-    <tool file="human_genome_variation/snpFreq.xml" />
-    <tool file="human_genome_variation/ldtools.xml" />
-    <tool file="human_genome_variation/pass.xml" />
-    <tool file="human_genome_variation/gpass.xml" />
-    <tool file="human_genome_variation/beam.xml" />
-    <tool file="human_genome_variation/lps.xml" />
-    <tool file="human_genome_variation/hilbertvis.xml" />
+    <tool file="phenotype_association/sift.xml" />
+    <tool file="phenotype_association/linkToGProfile.xml" />
+    <tool file="phenotype_association/linkToDavid.xml"/>
+    <tool file="phenotype_association/ctd.xml" />
+    <tool file="phenotype_association/funDo.xml" />
+    <tool file="phenotype_association/snpFreq.xml" />
+    <tool file="phenotype_association/ldtools.xml" />
+    <tool file="phenotype_association/pass.xml" />
+    <tool file="phenotype_association/gpass.xml" />
+    <tool file="phenotype_association/beam.xml" />
+    <tool file="phenotype_association/lps.xml" />
+    <tool file="phenotype_association/hilbertvis.xml" />
+    <tool file="phenotype_association/freebayes.xml" />
+    <tool file="phenotype_association/master2pg.xml" />
+    <tool file="phenotype_association/vcf2pgSnp.xml" />
+    <tool file="phenotype_association/dividePgSnpAlleles.xml" />
   </section>
   <section name="Genome Diversity" id="gd">
     <tool file="genome_diversity/extract_primers.xml" />

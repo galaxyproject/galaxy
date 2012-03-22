@@ -1,0 +1,78 @@
+<tool id="vcf2pgSnp" name="Convert VCF" hidden="false">
+  <description>to pgSnp</description>
+  <command interpreter="perl">
+    #if $inType.how == "all" #vcf2pgSnp.pl all $input1 > $out_file1
+    #else if $inType.how == "every" #vcf2pgSnpMult.pl $input1 > $out_file1
+    #else #vcf2pgSnp.pl $inType.ind_column $input1 > $out_file1
+    #end if
+  </command>
+  <inputs>
+    <param format="vcf" name="input1" type="data" label="VCF file" />
+    <conditional name="inType">
+      <param name="how" type="select" label="How to treat individuals">
+        <option value="all">Group all as a population</option>
+        <option value="one">Do just one column</option>
+        <option value="every">Convert each column separately</option>
+      </param>
+      <when value="one">
+        <param name="ind_column" type="data_column" data_ref="input1" label="Column to convert" value="10" />
+      </when>
+      <when value="all">
+          <!-- do nothing -->
+      </when>
+      <when value="every">
+          <!-- do nothing -->
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+  <data format="interval" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="vcf2pgSnp_input.vcf" ftype="vcf" />
+      <param name="how" value="all" />
+      <output name="output" file="vcf2pgSnp_output.pgSnp" />
+    </test>
+    <test>
+      <param name="input1" value="vcf2pgSnp_input.vcf" ftype="vcf" />
+      <param name="how" value="every" />
+      <output name="output" file="vcf2pgSnp_output2.pgSnp" />
+    </test>
+  </tests>
+
+  <help>
+**What it does**
+
+This converts a VCF file to a pgSnp file with the frequency counts being
+chromosome counts.  If there is more than 1 column of SNP data it will either
+accumulate all columns as a population, convert the column indicated
+to pgSnp, or add pgSnp allele data columns for each of the individuals.
+
+-----
+
+**Examples**
+
+- input::
+
+   1       13327   rs144762171     G       C       100     PASS    VT=SNP;SNPSOURCE=LOWCOV     GT:DS:GL        0|0:0.000:-0.03,-1.11,-5.00     0|1:1.000:-1.97,-0.01,-2.51     0|0:0.050:-0.01,-1.69,-5.00     0|0:0.100:-0.48,-0.48,-0.48
+   1       13980   rs151276478     T       C       100     PASS    VT=SNP;SNPSOURCE=LOWCOV     GT:DS:GL        0|0:0.100:-0.48,-0.48,-0.48     0|1:0.950:-0.48,-0.48,-0.48     0|0:0.050:-0.48,-0.48,-0.48     0|0:0.050:-0.48,-0.48,-0.48
+   1       30923   rs140337953     G       T       100     PASS    VT=SNP;SNPSOURCE=LOWCOV     GT:DS:GL        1|1:1.950:-5.00,-0.61,-0.12     0|0:0.450:-0.10,-0.69,-2.81     0|0:0.450:-0.11,-0.64,-3.49     1|1:1.500:-0.48,-0.48,-0.48
+   etc.
+
+- output as a population::
+
+   chr1    13326   13327   G/C     2       7,1     0,0
+   chr1    13979   13980   T/C     2       7,1     0,0
+   chr1    30922   30923   G/T     2       4,4     0,0
+   etc.
+
+- output for each column separately::
+
+   chr1    13326   13327   G       1       2       0       G/C     2       1,1     0,0     G       1       2       0       G       1       2       0
+   chr1    13979   13980   T       1       2       0       T/C     2       1,1     0,0     T       1       2       0       T       1       2       0
+   chr1    30922   30923   T       1       2       0       G       1       2       0       G       1       2       0       T       1       2       0
+   etc.
+
+</help>
+</tool>

@@ -2,13 +2,17 @@
   <description>tools for functional profiling of gene lists</description>
 
   <command interpreter="perl">
-    linkToGProfile.pl $input $numerical_column $type $out_file1
+    linkToGProfile.pl $input $type $out_file1 -region=$region -gene=$genes -chr=${input.metadata.chromCol} -start=${input.metadata.startCol} -end=${input.metadata.endCol}
   </command>
 
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset" />
-    <param name="numerical_column" type="data_column" data_ref="input" numerical="True" label="Column with identifiers" />
-    <param name="type" label="Identifier type" type="select">
+    <param name="genes" type="data_column" data_ref="input" label="Column with identifiers" />
+    <param name="region" type="select" label="Or use genomic intervals">
+      <option value="0" selected="true">No</option>
+      <option value="1">Yes</option>
+    </param>
+    <param name="type" label="Identifier type if numeric" type="select">
       <option value="ENTREZGENE_ACC" selected="true">Entrez Gene Acc</option>
       <option value="MIM_MORBID">OMIM Morbid Map</option>
       <option value="MIM_GENE">OMIM Gene ID</option>
@@ -31,7 +35,7 @@
   <tests>
     <test>
       <param name="input" ftype="tabular" value="linkToGProfile.tabular" />
-      <param name="numerical_column" value="2" />
+      <param name="genes" value="2" />
       <param name="type" value="ENTREZGENE_ACC" />
       <output name="out_file1" file="linkToGProfile_1.out" />
     </test>

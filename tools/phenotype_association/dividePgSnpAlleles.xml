@@ -1,0 +1,52 @@
+<tool id="dividePgSnp" name="Separate alleles" hidden="false">
+  <description>in a pgSnp file</description>
+  <command interpreter="perl">
+    dividePgSnpAlleles.pl -ref=$ref_column $input1 > $out_file1
+  </command>
+  <inputs>
+    <param format="interval" name="input1" type="data" label="Personal genome SNP file" />
+    <param name="ref_column" type="data_column" data_ref="input1" label="Column with reference allele if available" />
+  </inputs>
+  <outputs>
+  <data format="interval" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name='input1' value='dividePgSnp_input.pgSnp' ftype='interval' />
+      <param name='ref_column' value='1' />
+      <output name="output" file="dividePgSnp_output.txt" />
+    </test>
+  </tests>
+
+  <help>
+**What it does**
+
+This separates the alleles from a pgSnp formated file into separate columns,
+as well as the frequency and scores that go with the alleles.  It will skip
+any positions with more than 2 alleles.  If only a single allele is given "N"
+will be used for the second with frequency and score of zero.  If a column 
+other than the first column is chosen for the reference allele, the value in 
+that column will be used in place of the "N" for single alleles.
+
+-----
+
+**Examples**
+
+- input pgSnp file::
+
+   chr1    256     257     A/C     2       2,4     10,20
+   chr1    56100   56101   A       1       5       30
+   chr1    77052   77053   A/G     2       3,2     40,50
+   chr1    110904  110905  A       1       3       60
+   etc.
+
+- output::
+
+   chr1    256     257     A       2       10       C       4       20
+   chr1    56100   56101   A       5       30       N       0       0
+   chr1    77052   77053   A       3       40       G       2       50
+   chr1    110904  110905  A       3       60       N       0       0
+   etc.
+
+</help>
+</tool>
