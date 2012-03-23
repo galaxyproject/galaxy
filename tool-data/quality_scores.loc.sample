@@ -8,7 +8,7 @@
 #/depot/data2/galaxy/panTro2/quality_scores, then the quality_scores.loc entry 
 #would look like this:
 #
-#panTro2 /depot/data2/galaxy/panTro2/quality_scores
+#panTro2	/depot/data2/galaxy/panTro2/quality_scores
 #
 #and your /depot/data2/galaxy/panTro2/quality_scores directory would 
 #contain all of your quality score files (e.g.):

@@ -5,13 +5,13 @@
 #the directories in which those files are stored. The lastz_seqs.loc
 #file has this format (white space characters are TAB characters):
 #
-#<unique_build_id>   <display_name>   <file_path>
+#<unique_build_id>	<display_name>		<file_path>
 #
 #So, for example, if your lastz_seqs.loc began like this:
 #
-#hg18   Human (Homo sapiens): hg18   /depot/data2/galaxy/twobit/hg18.2bit
-#hg19   Human (Homo sapiens): hg19   /depot/data2/galaxy/twobit/hg19.2bit
-#mm9    Mouse (Mus musculus): mm9    /depot/data2/galaxy/twobit/mm9.2bit
+#hg18	Human (Homo sapiens): hg18		/depot/data2/galaxy/twobit/hg18.2bit
+#hg19	Human (Homo sapiens): hg19		/depot/data2/galaxy/twobit/hg19.2bit
+#mm9	Mouse (Mus musculus): mm9		/depot/data2/galaxy/twobit/mm9.2bit
 #
 #then your /depot/data2/galaxy/twobit/ directory
 #would need to contain the following 2bit files:

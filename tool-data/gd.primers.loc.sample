@@ -5,18 +5,18 @@
 # primers files are stored.  The gd.primers.loc file has the following
 # format (white space characters are TAB characters):
 #
-#<species>        <primers_file_path>
+#<species>		<primers_file_path>
 #
 # So, for example, if you had a primers file located at
 # /galaxy/data/location/gd/primers/bighorn_primers.txt for a collection of
 # Ovis canadensis SNPs, then the gd.primers.loc entry would look like
 # this:
 #
-#bighorn          /galaxy/data/location/gd/primers/bighorn_primers.txt
+#bighorn		/galaxy/data/location/gd/primers/bighorn_primers.txt
 #
 # Your gd.primers.loc file should include an entry for each pair of
 # species SNPs and primers file.  For example:
 #
-#bighorn          /galaxy/data/location/gd/primers/bighorn_primers.txt
-#tasmanian_devil  /galaxy/data/location/gd/primers/tasmanian_devil_primers.txt
+#bighorn			/galaxy/data/location/gd/primers/bighorn_primers.txt
+#tasmanian_devil	/galaxy/data/location/gd/primers/tasmanian_devil_primers.txt
 #...etc...

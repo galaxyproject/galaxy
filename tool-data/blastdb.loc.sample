@@ -2,7 +2,7 @@
 #list of nucleotide BLAST databases, using three columns tab separated
 #(longer whitespace are TAB characters):
 #
-#<unique_id>      <database_caption>     <base_name_path>
+#<unique_id>	<database_caption>	<base_name_path>
 #
 #The captions typically contain spaces and might end with the build date.
 #It is important that the actual database name does not have a space in it,
@@ -25,9 +25,9 @@
 #Your blastdb.loc file should include an entry per line for each "base name" 
 #you have stored.  For example:
 #
-#nt_02_Dec_2009      nt 02 Dec 2009      /depot/data2/galaxy/blastdb/nt/nt.chunk
-#wgs_30_Nov_2009     wgs 30 Nov 2009     /depot/data2/galaxy/blastdb/wgs/wgs.chunk
-#test_20_Sep_2008    test 20 Sep 2008    /depot/data2/galaxy/blastdb/test/test
+#nt_02_Dec_2009		nt 02 Dec 2009		/depot/data2/galaxy/blastdb/nt/nt.chunk
+#wgs_30_Nov_2009	wgs 30 Nov 2009	/depot/data2/galaxy/blastdb/wgs/wgs.chunk
+#test_20_Sep_2008	test 20 Sep 2008	/depot/data2/galaxy/blastdb/test/test
 #...etc...
 #
 #See also blastdb_p.loc which is for any protein BLAST database.

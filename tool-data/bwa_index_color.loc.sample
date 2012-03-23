@@ -5,7 +5,7 @@
 #the directories in which those files are stored. The bwa_index_color.loc
 #file has this format (longer white space characters are TAB characters):
 #
-#<unique_build_id>   <dbkey>   <display_name>   <file_path>
+#<unique_build_id>	<dbkey>		<display_name>	<file_path>
 #
 #So, for example, if you had phiX indexed stored in 
 #/depot/data2/galaxy/phiX/color/, 
@@ -25,10 +25,10 @@
 #index set you have stored. The "file" in the path does not actually
 #exist, but it is the prefix for the actual index files.  For example:
 #
-#phiX174              phiX   phiX174          /depot/data2/galaxy/phiX/color/phiX.fa
-#hg18canon            hg18   hg18 Canonical   /depot/data2/galaxy/hg18/color/hg18canon.fa
-#hg18full             hg18   hg18 Full        /depot/data2/galaxy/hg18/color/hg18full.fa
-#/orig/path/hg19.fa   hg19   hg19             /depot/data2/galaxy/hg19/color/hg19.fa
+#phiX174				phiX	phiX174				/depot/data2/galaxy/phiX/color/phiX.fa
+#hg18canon				hg18	hg18 Canonical		/depot/data2/galaxy/hg18/color/hg18canon.fa
+#hg18full				hg18	hg18 Full			/depot/data2/galaxy/hg18/color/hg18full.fa
+#/orig/path/hg19.fa		hg19	hg19				/depot/data2/galaxy/hg19/color/hg19.fa
 #...etc...
 #
 #Note that for backwards compatibility with workflows, the unique ID of
