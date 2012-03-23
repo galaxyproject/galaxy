@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<provider id="google" name="Google">
+    <op_endpoint_url>https://www.google.com/accounts/o8/id</op_endpoint_url>
+</provider>

@@ -1,5 +1,5 @@
 """
-Mange the OpenID consumer and related data stores.
+Manage the OpenID consumer and related data stores.
 """
 
 import os, pickle, logging

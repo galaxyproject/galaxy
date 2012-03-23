@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<provider id="yahoo" name="Yahoo!">
+    <op_endpoint_url>http://yahoo.com</op_endpoint_url>
+</provider>

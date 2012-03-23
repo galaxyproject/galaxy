@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<openid>
+    <provider file="google.xml" />
+    <provider file="yahoo.xml" />
+    <provider file="aol.xml" />
+    <provider file="launchpad.xml" />
+    <provider file="genomespace.xml" />
+</openid>

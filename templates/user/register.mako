@@ -21,7 +21,7 @@
     ${render_registration_form()}
 %endif
 
-<%def name="render_registration_form( form_action=None )">
+<%def name="render_registration_form( form_action=None, openid_provider='' )">
 
     <%
         if form_action is None:
@@ -38,6 +38,7 @@
                 <input type="text" name="email" value="${email}" size="40"/>
                 <input type="hidden" name="webapp" value="${webapp}" size="40"/>
                 <input type="hidden" name="referer" value="${referer}" size="40"/>
+                <input type="hidden" name="openid_provider" value="${openid_provider}" />
             </div>
             <div class="form-row">
                 <label>Password:</label>

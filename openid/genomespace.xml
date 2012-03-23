@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<provider id="genomespace" name="GenomeSpace">
+    <op_endpoint_url>https://identity.genomespace.org/identityServer/xrd.jsp</op_endpoint_url>
+    <sreg>
+        <field name="nickname" required="True">
+            <use_for name="username"/>
+            <store_user_preference name="genomespace_username"/>
+        </field>
+        <field name="email" required="False">
+            <use_for name="email"/>
+        </field>
+        <field name="gender" required="True">
+            <store_user_preference name="genomespace_token"/>
+        </field>
+    </sreg>
+</provider>

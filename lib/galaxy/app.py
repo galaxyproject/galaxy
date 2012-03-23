@@ -13,6 +13,7 @@ import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.sample_tracking import external_service_types
+from galaxy.openid.providers import OpenIDProviders
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -105,6 +106,9 @@ class UniverseApplication( object ):
         if self.config.enable_openid:
             from galaxy.web.framework import openid_manager
             self.openid_manager = openid_manager.OpenIDManager( self.config.openid_consumer_cache_path )
+            self.openid_providers = OpenIDProviders.from_file( self.config.openid_config )
+        else:
+            self.openid_providers = OpenIDProviders()
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
             from galaxy.util import heartbeat

@@ -11,6 +11,7 @@ from galaxy.web.form_builder import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.framework.helpers import iff
 from galaxy.security.validate_user_input import validate_email, validate_publicname, validate_password
+from galaxy.openid.providers import OpenIDProvider
 
 log = logging.getLogger( __name__ )
 
@@ -20,12 +21,6 @@ require_login_template = """
 </p>
 <p/>
 """
-
-OPENID_PROVIDERS = { 'Google' : 'https://www.google.com/accounts/o8/id',
-                     'Yahoo!' : 'http://yahoo.com',
-                     'AOL/AIM' : 'http://openid.aol.com',
-                     'Launchpad' : 'http://login.launchpad.net',
-                   }
 
 class UserOpenIDGrid( grids.Grid ):
     use_panels = False
@@ -68,19 +63,26 @@ class User( BaseUIController, UsesFormDefinitions ):
         if not referer:
             referer = url_for( '/' )
         consumer = trans.app.openid_manager.get_consumer( trans )
-        process_url = trans.request.base.rstrip( '/' ) + url_for( controller='user', action='openid_process', referer=referer, auto_associate=auto_associate )
-        if not openid_url and openid_provider and openid_provider in OPENID_PROVIDERS:
-            openid_url = OPENID_PROVIDERS[openid_provider]
-        if openid_url:
+        openid_provider_obj = None
+        if not openid_url and openid_provider and trans.app.openid_providers.get( openid_provider ):
+            openid_provider_obj = trans.app.openid_providers.get( openid_provider )
+        elif openid_url:
+            openid_provider_obj = OpenIDProvider( openid_url, openid_url, openid_url ) #for manually entered links use the link for id, name and url
+        elif openid_provider:
+            message = 'Invalid OpenID provider specified: %s' % ( openid_provider )
+        else:
+            message = 'An OpenID provider was not specified'
+        process_url = trans.request.base.rstrip( '/' ) + url_for( controller='user', action='openid_process', referer=referer, auto_associate=auto_associate, openid_provider=openid_provider )
+        if openid_provider_obj is not None:
             request = None
             try:
-                request = consumer.begin( openid_url )
+                request = consumer.begin( openid_provider_obj.op_endpoint_url )
                 if request is None:
-                    message = 'No OpenID services are available at %s' % openid_url
+                    message = 'No OpenID services are available at %s' % openid_provider_obj.op_endpoint_url
             except Exception, e:
                 message = 'Failed to begin OpenID authentication: %s' % str( e )
             if request is not None:
-                trans.app.openid_manager.add_sreg( trans, request, optional=[ 'nickname', 'email' ] )
+                sreg_request = trans.app.openid_manager.add_sreg( trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional )
                 if request.shouldSendRedirect():
                     redirect_url = request.redirectURL(
                         trans.request.base, process_url )
@@ -114,6 +116,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         info = consumer.complete( kwd, trans.request.url )
         display_identifier = info.getDisplayIdentifier()
         redirect_url = kwd.get( 'referer', url_for( '/' ) )
+        openid_provider = kwd.get( 'openid_provider', '' )
         if info.status == trans.app.openid_manager.FAILURE and display_identifier:
             message = "Login via OpenID failed.  The technical reason for this follows, please include this message in your email if you need to %s to resolve this problem: %s" % ( contact, info.message )
             return trans.response.send_redirect( url_for( controller='user',
@@ -125,6 +128,9 @@ class User( BaseUIController, UsesFormDefinitions ):
             if info.endpoint.canonicalID:
                 display_identifier = info.endpoint.canonicalID
             user_openid = trans.sa_session.query( trans.app.model.UserOpenID ).filter( trans.app.model.UserOpenID.table.c.openid == display_identifier ).first()
+            openid_provider_obj = trans.app.openid_providers.get( openid_provider )
+            if not openid_provider_obj:
+                openid_provider_obj = OpenIDProvider( display_identifier, display_identifier, display_identifier )
             if not user_openid:
                 user_openid = trans.app.model.UserOpenID( session=trans.galaxy_session, openid=display_identifier )
             elif not user_openid.user and user_openid.session.id != trans.galaxy_session.id:
@@ -132,6 +138,7 @@ class User( BaseUIController, UsesFormDefinitions ):
             elif user_openid.user and not auto_associate:
                 trans.handle_user_login( user_openid.user, webapp )
                 trans.log_event( "User logged in via OpenID: %s" % display_identifier )
+                openid_provider_obj.post_authentication( trans, trans.app.openid_manager, info )
                 trans.response.send_redirect( redirect_url )
                 return
             if auto_associate and trans.user:
@@ -151,6 +158,7 @@ class User( BaseUIController, UsesFormDefinitions ):
                     trans.log_event( "User associated OpenID: %s" % display_identifier )
                     message = "The OpenID <strong>%s</strong> has been associated with your Galaxy account, <strong>%s</strong>." % ( display_identifier, trans.user.email )
                     status = "done"
+                    openid_provider_obj.post_authentication( trans, trans.app.openid_manager, info )
                 trans.response.send_redirect( url_for( controller='user',
                                                        action='openid_manage',
                                                        use_panels=True,
@@ -162,15 +170,18 @@ class User( BaseUIController, UsesFormDefinitions ):
             message = "OpenID authentication was successful, but you need to associate your OpenID with a Galaxy account."
             sreg_resp = trans.app.openid_manager.get_sreg( info )
             try:
-                username = sreg_resp.get( 'nickname', '' )
+                sreg_username_name = openid_provider_obj.use_for.get( 'username' )
+                username = sreg_resp.get( sreg_username_name, '' )
             except AttributeError:
                 username = ''
             try:
-                email = sreg_resp.get( 'email', '' )
+                sreg_email_name = openid_provider_obj.use_for.get( 'email' )
+                email = sreg_resp.get( sreg_email_name, '' )
             except AttributeError:
                 email = ''
             trans.response.send_redirect( url_for( controller='user',
                                                    action='openid_associate',
+                                                   openid_provider=openid_provider,
                                                    use_panels=True,
                                                    username=username,
                                                    email=email,
@@ -199,6 +210,8 @@ class User( BaseUIController, UsesFormDefinitions ):
         email = kwd.get( 'email', '' )
         username = kwd.get( 'username', '' )
         referer = kwd.get( 'referer', trans.request.referer )
+        openid_provider = kwd.get( 'openid_provider', '' )
+        openid_provider_obj = trans.app.openid_providers.get( openid_provider )
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         openids = trans.galaxy_session.openids
@@ -219,8 +232,9 @@ class User( BaseUIController, UsesFormDefinitions ):
                 redirect_url = referer
                 if not redirect_url:
                     redirect_url = url_for( '/' )
-                trans.response.send_redirect( redirect_url )
-                return
+                if openid_provider_obj:
+                    return trans.response.send_redirect( url_for( controller='user', action='openid_auth', openid_provider=openid_provider, referer=redirect_url ) )
+                return trans.response.send_redirect( redirect_url )
         if kwd.get( 'create_user_button', False ):
             password = kwd.get( 'password', '' )
             confirm = kwd.get( 'confirm', '' )
@@ -251,7 +265,9 @@ class User( BaseUIController, UsesFormDefinitions ):
                         redirect_url = referer
                         if not redirect_url:
                             redirect_url = url_for( '/' )
-                        trans.response.send_redirect( redirect_url )
+                        if openid_provider_obj:
+                            return trans.response.send_redirect( url_for( controller='user', action='openid_auth', openid_provider=openid_provider, referer=redirect_url ) )
+                        return trans.response.send_redirect( redirect_url )
                 else:
                     message = error
                     status = 'error'
@@ -285,7 +301,8 @@ class User( BaseUIController, UsesFormDefinitions ):
                                     user_type_fd_id_select_field=user_type_fd_id_select_field,
                                     user_type_form_definition=user_type_form_definition,
                                     widgets=widgets,
-                                    openids=openids )
+                                    openids=openids,
+                                    openid_provider=openid_provider )
     @web.expose
     @web.require_login( 'manage OpenIDs' )
     def openid_disassociate( self, trans, webapp='galaxy', **kwd ):
@@ -340,7 +357,7 @@ class User( BaseUIController, UsesFormDefinitions ):
                                                        use_panels=use_panels,
                                                        id=kwd['id'] ) )
         kwd['referer'] = url_for( controller='user', action='openid_manage', use_panels=True )
-        kwd['openid_providers'] = OPENID_PROVIDERS
+        kwd['openid_providers'] = trans.app.openid_providers
         return self.user_openid_grid( trans, **kwd )
     @web.expose
     def login( self, trans, webapp='galaxy', redirect_url='', refresh_frames=[], **kwd ):
@@ -351,6 +368,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         header = ''
         user = None
         email = kwd.get( 'email', '' )
+        openid_provider = kwd.get( 'openid_provider', '' )
         if kwd.get( 'login_button', False ):
             if webapp == 'galaxy' and not refresh_frames:
                 if trans.app.config.require_login:
@@ -385,7 +403,7 @@ class User( BaseUIController, UsesFormDefinitions ):
                                     refresh_frames=refresh_frames,
                                     message=message,
                                     status=status,
-                                    openid_providers=OPENID_PROVIDERS,
+                                    openid_providers=trans.app.openid_providers,
                                     active_view="user" )
     def __validate_login( self, trans, webapp='galaxy', **kwd ):
         message = kwd.get( 'message', '' )

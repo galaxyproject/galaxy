@@ -44,7 +44,9 @@ class Configuration( object ):
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # web API
         self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
+        # Galaxy OpenID settings
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
+        self.openid_config = kwargs.get( 'openid_config_file', 'openid_conf.xml' )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
         self.tool_sheds_config = kwargs.get( 'tool_sheds_config_file', 'tool_sheds_conf.xml' )
         self.enable_unique_workflow_defaults = string_as_bool( kwargs.get( 'enable_unique_workflow_defaults', False ) )

@@ -495,6 +495,7 @@ use_interactive = True
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.
 #enable_openid = False
+#openid_config_file = openid_conf.xml
 
 # Enable the (experimental! beta!) Web API.  Documentation forthcoming.
 #enable_api = False

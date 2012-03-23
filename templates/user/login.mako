@@ -59,7 +59,7 @@
 
 </%def>
 
-<%def name="render_login_form( form_action=None )">
+<%def name="render_login_form( form_action=None, openid_provider='' )">
 
     <%
         if form_action is None:
@@ -77,6 +77,7 @@
                 <input type="text" name="email" value="${email}" size="40"/>
                 <input type="hidden" name="webapp" value="${webapp}" size="40"/>
                 <input type="hidden" name="referer" value="${referer}" size="40"/>
+                <input type="hidden" name="openid_provider" value="${openid_provider}" />
             </div>
             <div class="form-row">
                 <label>Password:</label>
@@ -94,10 +95,9 @@
 </%def>
 
 <%def name="render_openid_form( referer, auto_associate, openid_providers )">
-
     <div class="toolForm">
         <div class="toolFormTitle">OpenID Login</div>
-        <form name="openid" id="openid" action="${h.url_for( controller='user', action='openid_auth' )}" method="post" >
+        <form name="openid" id="openid" action="${h.url_for( controller='user', action='openid_auth' )}" method="post" target="_parent" >
             <div class="form-row">
                 <label>OpenID URL:</label>
                 <input type="text" name="openid_url" size="60" style="background-image:url('${h.url_for( '/static/images/openid-16x16.gif' )}' ); background-repeat: no-repeat; padding-right: 20px; background-position: 99% 50%;"/>
@@ -107,8 +107,8 @@
             </div>
             <div class="form-row">
                 Or, authenticate with your <select name="openid_provider">
-                %for provider in openid_providers.keys():
-                    <option>${provider}</option>
+                %for provider in openid_providers:
+                    <option value="${provider.id}">${provider.name}</option>
                 %endfor
                 </select> account.
             </div>
