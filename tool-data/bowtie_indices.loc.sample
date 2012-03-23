@@ -7,11 +7,11 @@
 #
 #<unique_build_id>   <dbkey>   <display_name>   <file_base_path>
 #
-#So, for example, if you had hg18 indexed stored in 
-#/depot/data2/galaxy/bowtie/hg18/, 
+#So, for example, if you had hg18 indexed stored in
+#/depot/data2/galaxy/bowtie/hg18/,
 #then the bowtie_indices.loc entry would look like this:
 #
-#hg18   hg18   hg18   /depot/data2/galaxy/bowtie/hg18/hg18
+#hg18	hg18	hg18	/depot/data2/galaxy/bowtie/hg18/hg18
 #
 #and your /depot/data2/galaxy/bowtie/hg18/ directory
 #would contain hg18.*.ebwt files:
@@ -25,9 +25,9 @@
 #index set you have stored. The "file" in the path does not actually
 #exist, but it is the prefix for the actual index files. For example:
 #
-#hg18canon          hg18   hg18 Canonical   /depot/data2/galaxy/bowtie/hg18/hg18canon
-#hg18full           hg18   hg18 Full        /depot/data2/galaxy/bowtie/hg18/hg18full
-#/orig/path/hg19    hg19   hg19             /depot/data2/galaxy/bowtie/hg19/hg19
+#hg18canon			hg18	hg18 Canonical	/depot/data2/galaxy/bowtie/hg18/hg18canon
+#hg18full			hg18	hg18 Full		/depot/data2/galaxy/bowtie/hg18/hg18full
+#/orig/path/hg19	hg19	hg19			/depot/data2/galaxy/bowtie/hg19/hg19
 #...etc...
 #
 #Note that for backwards compatibility with workflows, the unique ID of
