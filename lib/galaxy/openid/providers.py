@@ -76,7 +76,6 @@ class OpenIDProvider( object ):
         for store_pref_name, store_pref_value_name in self.store_user_preference.iteritems():
             if store_pref_value_name in ( self.sreg_optional + self.sreg_required ):
                 trans.user.preferences[ store_pref_name ] = sreg_attributes.get( store_pref_value_name )
-                print 'setting',store_pref_name,'to',trans.user.preferences[ store_pref_name ]
             else:
                 raise Exception( 'Only sreg is currently supported.' )
         trans.sa_session.add( trans.user )
