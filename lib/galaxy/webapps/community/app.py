@@ -3,6 +3,7 @@ import galaxy.tools.data
 import galaxy.quota
 import galaxy.datatypes.registry
 import galaxy.webapps.community.model
+from galaxy.openid.providers import OpenIDProviders
 from galaxy.web import security
 from galaxy.tags.tag_handler import CommunityTagHandler
 
@@ -42,5 +43,6 @@ class UniverseApplication( object ):
         # Load security policy
         self.security_agent = self.model.security_agent
         self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )
+        self.openid_providers = OpenIDProviders() #TODO: Add OpenID support
     def shutdown( self ):
         pass
