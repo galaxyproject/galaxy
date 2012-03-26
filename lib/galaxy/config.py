@@ -238,16 +238,6 @@ class Configuration( object ):
             return default
     def check( self ):
         paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
-        # Look for any tool shed configs and retrieve the tool_path attribute from the <toolbox> tag.
-        tool_configs = self.tool_configs
-        if self.migrated_tools_config not in tool_configs:
-            tool_configs.append( self.migrated_tools_config )
-        for config_filename in tool_configs:
-            tree = parse_xml( config_filename )
-            root = tree.getroot()
-            tool_path = root.get( 'tool_path' )
-            if tool_path not in [ None, False ]:
-                paths_to_check.append( resolve_path( tool_path, self.root ) )
         # Check that required directories exist
         for path in paths_to_check:
             if path not in [ None, False ] and not os.path.isdir( path ):
