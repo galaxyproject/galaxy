@@ -1122,6 +1122,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # The special Galaxy integration landing page's URL on myExperiment
         myexperiment_target_url = 'http://%s/galaxy?galaxy_url=%s' % \
             ( trans.app.config.get( "myexperiment_url", "www.myexperiment.org" ), trans.request.base )
+        # The source of the workflow, used by myExperiment to indicate the workflow came from there.
+        workflow_source = kwd.get( 'workflow_source', 'uploaded file' )
         # The following parameters will have values only if the workflow
         # id being imported from a Galaxy tool shed repository.
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
@@ -1192,7 +1194,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                     # Galaxy instance, the tool information will be available in the step_dict.
                     src = None
                     if cntrller != 'api':
-                        src="uploaded file"
+                        src = workflow_source
                     workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source=src, add_to_menu=add_to_menu )
                     workflow = workflow.latest_workflow
                     if workflow_name:
