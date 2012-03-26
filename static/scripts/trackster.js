@@ -393,8 +393,8 @@ var
     DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
-    DATA_PENDING = "Preparing data. This takes seconds for a small dataset but longer for a large dataset.<br/>\
-                    You can save and close the visualization and preparation will continue.<br/>",
+    DATA_PENDING = "Preparing data. This is very fast for a small dataset but can take a long time for a large dataset. \
+                    If visualization is saved and closed, preparation will continue in the background.",
     DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ",
     DATA_LOADING = "Loading data...",
     DATA_OK = "Ready for display",
@@ -3329,18 +3329,15 @@ extend(Track.prototype, Drawable.prototype, {
      * Hide any elements that are part of the tracks contents area. Should
      * remove as approprite, the track will be redrawn by show_contents.
      */
-    hide_contents : function () {
-        // Clear contents by removing any elements that are contained in
-        // the tracks content_div
-        this.content_div.children().remove();
-        // Hide the content div
-        this.content_div.hide();
-        // And any y axis labels (common to several track types)
+    hide_contents: function () {
+        // Hide tiles.
+        this.tiles_div.hide();
+        // Hide any y axis labels (common to several track types)
         this.container_div.find(".yaxislabel, .track-resize").hide()
     },
-    show_contents : function() {
+    show_contents: function() {
         // Show the contents div and labels (if present)
-        this.content_div.show();
+        this.tiles_div.show();
         this.container_div.find(".yaxislabel, .track-resize").show()
         // Request a redraw of the content
         this.request_draw();
@@ -4282,7 +4279,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             }
             return new Tile(track, tile_index, resolution, canvas, seq);
         }
-        this.content_div.css("height", "0px");
+        track.content_div.css("height", "0px");
     },
     /**
      * If there is a tile with sequence data, set content div so that data is visible.
