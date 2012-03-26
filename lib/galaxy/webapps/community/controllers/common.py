@@ -1003,6 +1003,10 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         revision_label = get_revision_label( trans, repository, changeset_revision )
         options.append( ( revision_label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
+    # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,
+    # the changeset revisions may not be sorted correctly because setting metadata over time will reset update_time,
+    # screwing up the order.
+    sorted_options = sorted( options )
     if add_id_to_name:
         name = 'changeset_revision_%d' % repository.id
     else:
@@ -1010,7 +1014,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
     select_field = SelectField( name=name,
                                 refresh_on_change=True,
                                 refresh_on_change_values=refresh_on_change_values )
-    for option_tup in options:
+    for option_tup in sorted_options:
         selected = selected_value and option_tup[1] == selected_value
         select_field.add_option( option_tup[0], option_tup[1], selected=selected )
     return select_field
