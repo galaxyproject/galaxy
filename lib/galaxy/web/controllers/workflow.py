@@ -1121,7 +1121,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         import_button = kwd.get( 'import_button', False )
         # The special Galaxy integration landing page's URL on myExperiment
         myexperiment_target_url = 'http://%s/galaxy?galaxy_url=%s' % \
-            ( trans.app.config.get( "myexperiment_url", "www.myexperiment.org" ), trans.request.base )
+            ( trans.app.config.get( "myexperiment_url", "www.myexperiment.org" ), url_for('/', qualified=True) )
         # The source of the workflow, used by myExperiment to indicate the workflow came from there.
         workflow_source = kwd.get( 'workflow_source', 'uploaded file' )
         # The following parameters will have values only if the workflow
