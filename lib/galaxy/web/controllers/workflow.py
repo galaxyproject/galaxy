@@ -999,10 +999,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         parser = SingleTagContentsParser( "content" )
         parser.feed( workflow_xml )
         workflow_content = base64.b64decode( parser.tag_content )
-        # Process workflow XML and create workflow.
-        parser = SingleTagContentsParser( "galaxy_json" )
-        parser.feed( workflow_content )
-        workflow_dict = from_json_string( parser.tag_content )
+        # Process workflow JSON and create workflow.
+        workflow_dict = from_json_string( workflow_content )
         # Create workflow.
         workflow, missing_tool_tups = self._workflow_from_dict( trans, workflow_dict, source="myExperiment" ).latest_workflow
         if missing_tool_tups:
