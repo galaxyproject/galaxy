@@ -986,7 +986,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         """
         # Get workflow XML.
         # Get workflow content.
-        conn = httplib.HTTPConnection( self.__myexp_url )
+        conn = httplib.HTTPConnection( trans.app.config.get( "myexperiment_url", self.__myexp_url ) )
         # NOTE: blocks web thread.
         headers = {}
         if myexp_username and myexp_password:
@@ -1055,7 +1055,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # Do request and get result.
         auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
         headers = { "Content-type": "text/xml", "Accept": "text/xml", "Authorization" : "Basic %s" % auth_header }
-        conn = httplib.HTTPConnection( self.__myexp_url )
+        conn = httplib.HTTPConnection( trans.app.config.get( "myexperiment_url", self.__myexp_url ) )
         # NOTE: blocks web thread.
         conn.request("POST", "/workflow.xml", request, headers)
         response = conn.getresponse()

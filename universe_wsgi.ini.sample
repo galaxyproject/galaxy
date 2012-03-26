@@ -653,6 +653,9 @@ use_interactive = True
 #pbs_stage_path = 
 #pbs_dataset_server = 
 
+# The URL to the myExperiment instance being used (omit scheme but include port)
+myexperiment_url = www.myexperiment.org:80
+
 # ---- Tool Job Runners -----------------------------------------------------
 
 # Individual per-tool job runner overrides. Parameters can be included to define 
