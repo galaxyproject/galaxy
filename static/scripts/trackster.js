@@ -4249,6 +4249,7 @@ var ReferenceTrack = function (view) {
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
     this.data_manager = new ReferenceTrackDataManager(DATA_CACHE_SIZE, this, false);
+    this.hide_contents();
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     build_header_div: function() {},
@@ -4266,7 +4267,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         if (w_scale > this.view.canvas_manager.char_width_px) {
             if (seq.data === null) {
-                track.content_div.css("height", "0px");
+                this.hide_contents();
                 return;
             }
             var canvas = ctx.canvas;
@@ -4277,17 +4278,10 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 var c_start = Math.floor(c * w_scale);
                 ctx.fillText(seq[c], c_start, 10);
             }
+            this.show_contents();
             return new Tile(track, tile_index, resolution, canvas, seq);
         }
-        track.content_div.css("height", "0px");
-    },
-    /**
-     * If there is a tile with sequence data, set content div so that data is visible.
-     */
-    after_show_tile: function(tile) {
-        if (tile) {
-            this.content_div.css("height", "12px");
-        }
+        this.hide_contents();
     }
 });
 
