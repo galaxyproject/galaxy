@@ -1037,11 +1037,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # Create and submit workflow myExperiment request.
         #
 
-        # Create workflow content XML.
-        workflow_dict_packed = simplejson.dumps( workflow_dict, indent=4, sort_keys=True )
-        workflow_content = trans.fill_template( "workflow/myexp_export_content.mako", \
-                                                 workflow_dict_packed=workflow_dict_packed, \
-                                                 workflow_steps=workflow_dict['steps'] )
+        # Create workflow content JSON.
+        workflow_content = simplejson.dumps( workflow_dict, indent=4, sort_keys=True )
 
         # Create myExperiment request.
         request_raw = trans.fill_template( "workflow/myexp_export.mako", \
