@@ -48,6 +48,18 @@
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
+                    <label>Import a Galaxy workflow from myExperiment:</label>
+                    <div class="form-row-input">
+                        <a href="${h.url_for( myexperiment_target_url )}">
+                            Visit myExperiment
+                        </a>
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Click the link above to visit myExperiment and browse for Galaxy workflows.
+                    </div>
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
                     <input type="submit" class="primary-button" name="import_button" value="Import">
                 </div>
             </form>

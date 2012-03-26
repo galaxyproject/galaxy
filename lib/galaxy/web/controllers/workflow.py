@@ -1124,6 +1124,9 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         import_button = kwd.get( 'import_button', False )
+        # The special Galaxy integration landing page's URL on myExperiment
+        myexperiment_target_url = 'http://%s/galaxy?galaxy_url=%s' % \
+            ( trans.app.config.get( "myexperiment_url", "www.myexperiment.org" ), trans.request.base )
         # The following parameters will have values only if the workflow
         # id being imported from a Galaxy tool shed repository.
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
@@ -1269,7 +1272,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                                     url=url,
                                     message=message,
                                     status=status,
-                                    use_panels=True )
+                                    use_panels=True,
+                                    myexperiment_target_url=myexperiment_target_url )
     @web.json
     def get_datatypes( self, trans ):
         ext_to_class_name = dict()
