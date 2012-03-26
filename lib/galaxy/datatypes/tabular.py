@@ -26,7 +26,7 @@ class Tabular( data.Text ):
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
-    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, **kwd ):
+    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, max_guess_type_data_lines = None, **kwd ):
         """
         Tries to determine the number of columns as well as those columns
         that contain numerical values in the dataset.  A skip parameter is
@@ -116,13 +116,14 @@ class Tabular( data.Text ):
                     comment_lines += 1
                 else:
                     data_lines += 1
-                    fields = line.split( '\t' )
-                    for field_count, field in enumerate( fields ):
-                        if field_count >= len( column_types ): #found a previously unknown column, we append None
-                            column_types.append( None )
-                        column_type = guess_column_type( field )
-                        if type_overrules_type( column_type, column_types[field_count] ):
-                            column_types[field_count] = column_type
+                    if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
+                        fields = line.split( '\t' )
+                        for field_count, field in enumerate( fields ):
+                            if field_count >= len( column_types ): #found a previously unknown column, we append None
+                                column_types.append( None )
+                            column_type = guess_column_type( field )
+                            if type_overrules_type( column_type, column_types[field_count] ):
+                                column_types[field_count] = column_type
                     if i == 0 and requested_skip is None:
                         # This is our first line, people seem to like to upload files that have a header line, but do not 
                         # start with '#' (i.e. all column types would then most likely be detected as str).  We will assume
