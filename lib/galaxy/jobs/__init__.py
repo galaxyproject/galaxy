@@ -1183,7 +1183,7 @@ class DefaultJobDispatcher( object ):
         self.job_runners = {}
         start_job_runners = ["local"]
         if app.config.start_job_runners is not None:
-            start_job_runners.extend( app.config.start_job_runners.split(",") )
+            start_job_runners.extend( [ x.strip() for x in util.listify( app.config.start_job_runners ) ] )
         if app.config.use_tasked_jobs:
             start_job_runners.append("tasks")
         for name in start_job_runners:
