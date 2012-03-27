@@ -208,6 +208,7 @@
     <tool file="phenotype_association/lps.xml" />
     <tool file="phenotype_association/hilbertvis.xml" />
     <tool file="phenotype_association/freebayes.xml" />
+    <tool file="variant_detection/freebayes.xml" />
     <tool file="phenotype_association/master2pg.xml" />
     <tool file="phenotype_association/vcf2pgSnp.xml" />
     <tool file="phenotype_association/dividePgSnpAlleles.xml" />
@@ -325,6 +326,9 @@
     <tool file="indels/sam_indel_filter.xml" />
     <tool file="indels/indel_sam2interval.xml" />
     <tool file="indels/indel_analysis.xml" />
+  </section>
+  <section name="NGS: Variant Detection" id="variant_detection">
+    <tool file="variant_detection/freebayes.xml" />
   </section>
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />

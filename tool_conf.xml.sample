@@ -477,6 +477,7 @@
     <tool file="phenotype_association/lps.xml" />
     <tool file="phenotype_association/hilbertvis.xml" />
     <tool file="phenotype_association/freebayes.xml" />
+    <tool file="variant_detection/freebayes.xml" />
     <tool file="phenotype_association/master2pg.xml" />
     <tool file="phenotype_association/vcf2pgSnp.xml" />
     <tool file="phenotype_association/dividePgSnpAlleles.xml" />
