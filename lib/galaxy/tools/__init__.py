@@ -485,6 +485,13 @@ class ToolSection( object ):
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
         self.elems = odict()
+        
+    def to_dict( self ):
+        """ Return a dict that includes section's attributes. """
+        section_elts = []
+        for key, val in self.elems.items():
+            section_elts.append( val.to_dict() )
+        return { 'type': 'section', 'id': self.id, 'name': self.name, 'version': self.version, 'elems': section_elts }
 
 class ToolSectionLabel( object ):
     """
@@ -495,6 +502,10 @@ class ToolSectionLabel( object ):
         self.text = elem.get( "text" )
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
+        
+    def to_dict( self ):
+        """ Return a dict that includes label's attributes. """
+        return { 'type': 'label', 'id': self.id, 'name': self.text, 'version': self.version }
 
 class DefaultToolState( object ):
     """
@@ -2238,6 +2249,11 @@ class Tool:
                     self.sa_session.add( new_data )
                     self.sa_session.flush()
         return primary_datasets
+        
+    def to_dict( self, **kwds ):
+        """ Return dict that includes tool's attributes. """
+        return  { 'type': 'tool', 'id': self.id, 'name': self.name, 
+                  'version': self.version, 'description': self.description }
 
 class DataSourceTool( Tool ):
     """
