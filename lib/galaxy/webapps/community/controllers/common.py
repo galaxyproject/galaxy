@@ -997,16 +997,24 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
     """
     repo = hg.repository( get_configured_ui(), repository.repo_path )
     options = []
+    changeset_tups = []
     refresh_on_change_values = []
     for repository_metadata in repository.downloadable_revisions:
         changeset_revision = repository_metadata.changeset_revision
-        revision_label = get_revision_label( trans, repository, changeset_revision )
-        options.append( ( revision_label, changeset_revision ) )
+        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+        if ctx:
+            rev = '%04d' % ctx.rev()
+            label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        else:
+            rev = '-1'
+            label = "-1:%s" % changeset_revision
+        changeset_tups.append( ( rev, label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,
-    # the changeset revisions may not be sorted correctly because setting metadata over time will reset update_time,
-    # screwing up the order.
-    sorted_options = sorted( options )
+    # the changeset revisions may not be sorted correctly because setting metadata over time will reset update_time.
+    for changeset_tup in sorted( changeset_tups ):
+        # Display the latest revision first.
+        options.insert( 0, ( changeset_tup[1], changeset_tup[2] ) )
     if add_id_to_name:
         name = 'changeset_revision_%d' % repository.id
     else:
@@ -1014,7 +1022,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
     select_field = SelectField( name=name,
                                 refresh_on_change=True,
                                 refresh_on_change_values=refresh_on_change_values )
-    for option_tup in sorted_options:
+    for option_tup in options:
         selected = selected_value and option_tup[1] == selected_value
         select_field.add_option( option_tup[0], option_tup[1], selected=selected )
     return select_field
