@@ -20,6 +20,7 @@ if len( sys.argv ) > 1:
     to_pack = sys.argv[1:]
 else:
     to_pack = glob( "*.js" )
+    to_pack.extend( glob( "libs/*.js" ) )
 
 for fname in to_pack:
     d = dict( fname=fname )
