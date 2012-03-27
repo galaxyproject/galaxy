@@ -64,6 +64,10 @@ run_functional_tests.html
 # Jars
 tool-data/shared/jars/
 
+# CSS build artifacts.
+*/variables.less
+static/june_2007_style/blue/base_sprites.less
+
 # Misc
 *.orig
 .DS_Store
