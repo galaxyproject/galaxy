@@ -974,12 +974,15 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 new_dataset.set_dataset_state( trans.app.model.Dataset.states.OK )
                 
                 # Set metadata.
+                # TODO: set meta internally if dataset is small enough?
                 if trans.app.config.set_metadata_externally:
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':new_dataset }, overwrite=False )
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, 
+                                                                                                 trans, incoming = { 'input1':new_dataset }, 
+                                                                                                 overwrite=False, job_params={ "source" : "trackster" } )
                 else:
                     message = 'Attributes updated'
                     new_dataset.set_meta()
-                    new_dataset.datatype.after_setting_metadata( new_dataset )
+                    new_dataset.datatype.after_setting_metadata( new_dataset )    
                     
                 trans.sa_session.flush()
                 
