@@ -6,10 +6,13 @@ BioCloudCentral Source: https://github.com/chapmanb/biocloudcentral
 
 """
 
-import boto
 import datetime
 import logging
 import time
+from galaxy import eggs
+import pkg_resources
+pkg_resources.require('boto')
+import boto
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 from boto.ec2.regioninfo import RegionInfo
