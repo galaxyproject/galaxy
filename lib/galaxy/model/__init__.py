@@ -1536,17 +1536,22 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             else:
                 return template.get_widgets( trans.user )
         return []
-    def templates_dict( self ):
+    def templates_dict( self, use_name=False ):
         """
         Returns a dict of template info
         """
+        #TODO: Should have a method that allows names and labels to be returned together in a structured way
         template_data = {}
         for temp_info in self.info_association:
             template = temp_info.template
             content = temp_info.info.content
             tmp_dict = {}
             for field in template.fields:
-                tmp_dict[field['label']] = content[field['name']]
+                if use_name:
+                    name = field[ 'name' ]
+                else:
+                    name = field[ 'label' ]
+                tmp_dict[ name ] = content[ field[ 'name' ] ]
             template_data[template.name] = tmp_dict
         return template_data
     def templates_json( self ):
