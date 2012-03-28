@@ -980,11 +980,15 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
     @web.expose
     @web.require_login( "use workflows" )
-    def import_from_myexp( self, trans, myexp_id, myexp_username=None, myexp_password=None ):
+    def import_from_myexp( self, trans, myexp_id, **kwd ):
         """
         Imports a workflow from the myExperiment website.
+        Authenticates either by using HTTP basic, or with a cookie.
         """
-        # Get workflow XML.
+        # Parse parameters
+        myexp_username = kwd.get( 'myexp_username', None )
+        myexp_password = kwd.get( 'myexp_password', None )
+        myexp_cookie = kwd.get( 'myexp_cookie', None )
         # Get workflow content.
         conn = httplib.HTTPConnection( trans.app.config.get( "myexperiment_url", self.__myexp_url ) )
         # NOTE: blocks web thread.
@@ -992,28 +996,36 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         if myexp_username and myexp_password:
             auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
             headers = { "Authorization" : "Basic %s" % auth_header }
+        elif myexp_cookie:
+            headers = { "Cookie" : "myexperiment_session=%s" % myexp_cookie }
         conn.request( "GET", "/workflow.xml?id=%s&elements=content" % myexp_id, headers=headers )
         response = conn.getresponse()
-        workflow_xml = response.read()
+        response_data = response.read()
         conn.close()
-        parser = SingleTagContentsParser( "content" )
-        parser.feed( workflow_xml )
-        workflow_content = base64.b64decode( parser.tag_content )
-        # Process workflow JSON and create workflow.
-        workflow_dict = from_json_string( workflow_content )
-        # Create workflow.
-        workflow, missing_tool_tups = self._workflow_from_dict( trans, workflow_dict, source="myExperiment" ).latest_workflow
-        if missing_tool_tups:
-            # TODO: handle the case where the imported workflow requires tools that are not available in
-            # the local Galaxy instance.
-            pass
+        if response.status == 200:
+            parser = SingleTagContentsParser( "content" )
+            parser.feed( response_data )
+            workflow_content = base64.b64decode( parser.tag_content )
+            # Process workflow JSON and create workflow.
+            workflow_dict = from_json_string( workflow_content )
+            # Create workflow.
+            workflow, missing_tool_tups = self._workflow_from_dict( trans, workflow_dict, source="myExperiment" )
+            workflow = workflow.latest_workflow
+            if missing_tool_tups:
+                # TODO: handle the case where the imported workflow requires tools that are not available in
+                # the local Galaxy instance.
+                pass
+            
         # Provide user feedback.
+        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( action='list' )
+        if response.status != 200:
+            return trans.show_error_message( "There was a problem importing the workflow. Error: %s %s" % (response_data, workflow_list_str) )            
         if workflow.has_errors:
-            return trans.show_warn_message( "Imported, but some steps in this workflow have validation errors" )
+            return trans.show_warn_message( "Imported, but some steps in this workflow have validation errors. %s" % workflow_list_str )
         if workflow.has_cycles:
-            return trans.show_warn_message( "Imported, but this workflow contains cycles" )
+            return trans.show_warn_message( "Imported, but this workflow contains cycles. %s" % workflow_list_str )
         else:
-            return trans.show_message( "Workflow '%s' imported" % workflow.name )
+            return trans.show_message( "Workflow '%s' imported. %s" % (workflow.name, workflow_list_str) )
     @web.expose
     @web.require_login( "use workflows" )
     def export_to_myexp( self, trans, id, myexp_username, myexp_password ):
@@ -1050,7 +1062,8 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         # Do request and get result.
         auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
         headers = { "Content-type": "text/xml", "Accept": "text/xml", "Authorization" : "Basic %s" % auth_header }
-        conn = httplib.HTTPConnection( trans.app.config.get( "myexperiment_url", self.__myexp_url ) )
+        myexp_url = trans.app.config.get( "myexperiment_url", self.__myexp_url )
+        conn = httplib.HTTPConnection( myexp_url )
         # NOTE: blocks web thread.
         conn.request("POST", "/workflow.xml", request, headers)
         response = conn.getresponse()
@@ -1064,12 +1077,13 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( action='list' )
         if myexp_workflow_id:
             return trans.show_message( \
-                "Workflow '%s' successfully exported to myExperiment. %s" % \
-                ( stored.name, workflow_list_str ),
+                """Workflow '%s' successfully exported to myExperiment. <br/>
+                <a href="http://%s/workflows/%s">Click here to view the workflow on myExperiment</a> %s
+                """ % ( stored.name, myexp_url, myexp_workflow_id, workflow_list_str ),
                 use_panels=True )
         else:
             return trans.show_error_message( \
-                "Workflow '%s' could not be exported to myExperiment. Error: %s. %s" % \
+                "Workflow '%s' could not be exported to myExperiment. Error: %s %s" % \
                 ( stored.name, response_data, workflow_list_str ), use_panels=True )
 
     @web.json_pretty
