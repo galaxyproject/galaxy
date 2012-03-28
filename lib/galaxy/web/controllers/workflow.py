@@ -984,6 +984,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         """
         Imports a workflow from the myExperiment website.
         Authenticates either by using HTTP basic, or with a cookie.
+        !!! This isn't currently used. MyExperiment uses the generic import_workflow method !!!
         """
         # Parse parameters
         myexp_username = kwd.get( 'myexp_username', None )
