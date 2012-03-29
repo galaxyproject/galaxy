@@ -1133,7 +1133,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 from_file = os.path.join( tool.app.config.tool_data_path, from_file )
             elem = XML( "<root>%s</root>" % open( from_file ).read() )
         self.is_dynamic = False
-        self.dynamic_options = None #backwards compatibility with SelectToolParameter's old dynamic options and late validation
+        self.dynamic_options = elem.get( 'dynamic_options' , None )
+        if self.dynamic_options:
+            self.is_dynamic = True
         self.options = []
         self.filtered = {}
         if elem.find( 'filter' ):
@@ -1148,12 +1150,23 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     if filter.get( 'value' ) not in self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )]:
                         self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )][filter.get( 'value' )] = []
                     recurse_option_elems( self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )][filter.get( 'value' )], filter.find( 'options' ).findall( 'option' ) )
-        else:
+        elif not self.dynamic_options:
             recurse_option_elems( self.options, elem.find( 'options' ).findall( 'option' ) )
+    
+    def _get_options_from_code( self, trans=None, value=None, other_values=None ):
+        assert self.dynamic_options, Exception( "dynamic_options was not specifed" )
+        call_other_values = { '__trans__': trans, '__value__': value }
+        if other_values:
+            call_other_values.update( other_values.dict )
+        return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
+        
     
     def get_options( self, trans=None, value=None, other_values={} ):
         if self.is_dynamic:
-            options = []
+            if self.dynamic_options:
+                options = self._get_options_from_code( trans=trans, value=value, other_values=other_values )
+            else:
+                options = []
             for filter_key, filter_value in self.filtered.iteritems():
                 dataset = other_values[filter_key]
                 if dataset.__class__.__name__.endswith( "DatasetFilenameWrapper" ): #this is a bad way to check for this, but problems importing class ( due to circular imports? )

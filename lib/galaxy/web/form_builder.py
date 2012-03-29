@@ -440,7 +440,7 @@ class DrillDownField( BaseField ):
         self.options = options
         if value and not isinstance( value, list ):
             value = [ value ]
-        else:
+        elif not value:
             value = []
         self.value = value
         if display == "checkbox":
