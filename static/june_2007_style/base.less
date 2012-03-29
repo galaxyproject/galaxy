@@ -407,14 +407,26 @@ div.unified-panel-body {
     }
 
     .title {
-        .navbar.brand();
+
+        position: absolute;
+        left: 0;
+        top: 0;
+
         font-family: verdana;
         font-weight: bold;
+        font-size: 20px;
+        line-height: 1;
         color: white;
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
         margin-left: -15px;
         z-index: 2000;
+
+        img {
+            display: inline; 
+            width: 26px; 
+            vertical-align: top;
+        }
         a {
             color: white;
             text-decoration: none;
