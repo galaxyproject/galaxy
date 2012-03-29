@@ -199,6 +199,11 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitions ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        sample_id = params.get( 'sample_id', None )
+        try:
+            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             sample_dataset_id = params.get( 'id', None )
@@ -269,11 +274,6 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitions ):
                                                                   **kwd ) )
 
         # Render the grid view
-        sample_id = params.get( 'sample_id', None )
-        try:
-            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Manage "%s" datasets'  % sample.name
