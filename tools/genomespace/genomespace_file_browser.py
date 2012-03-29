@@ -1,6 +1,6 @@
 #Dan Blankenberg
 
-import optparse, os, urllib2, cookielib
+import optparse, os, urllib, urllib2, urlparse, cookielib
 
 from galaxy import eggs
 import pkg_resources
@@ -121,17 +121,29 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
         filetype_key = "%s%i" % ( file_type_prefix, file_num )
         filetype_url = datasource_params.get( filetype_key, None )
         galaxy_ext = get_galaxy_ext_from_genomespace_format_url( url_opener, filetype_url )
+        formated_download_url = "%s?%s" % ( download_url, urllib.urlencode( [ ( 'dataformat', filetype_url ) ] ) )
+        new_file_request = urllib2.Request( formated_download_url )
+        new_file_request.get_method = lambda: 'GET'
+        target_download_url = url_opener.open( new_file_request )
+        filename = None
+        if 'Content-Disposition' in target_download_url.info():
+            # If the response has Content-Disposition, try to get filename from it
+            content_disposition = dict( map( lambda x: x.strip().split('=') if '=' in x else ( x.strip(),'' ), target_download_url.info()['Content-Disposition'].split( ';' ) ) )
+            if 'filename' in content_disposition:
+                filename = content_disposition[ 'filename' ].strip( "\"'" )
+        if not filename:
+            parsed_url = urlparse.urlparse( download_url )
+            query_params = urlparse.parse_qs( parsed_url[4] )
+            filename = urllib.unquote_plus( parsed_url[2].split( '/' )[-1] )
         if output_filename is None:
             output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_output%i_visible_%s' % ( hda_id, file_num, galaxy_ext ) )
         else:
             if dataset_id is not None:
                metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'dataset',
                                      dataset_id = dataset_id,
-                                     ext = galaxy_ext ) ) )
+                                     ext = galaxy_ext,
+                                     name = "GenomeSpace import on %s" % ( filename ) ) ) )
         output_file = open( output_filename, 'wb' )
-        new_file_request = urllib2.Request( download_url )
-        new_file_request.get_method = lambda: 'GET'
-        target_download_url = url_opener.open( new_file_request )
         chunk_write( target_download_url, output_file )
         output_file.close()
         output_filename = None #only have one filename available
