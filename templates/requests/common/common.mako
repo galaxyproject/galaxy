@@ -298,9 +298,14 @@
                 ## This link will direct the admin to a page allowing them to manage datasets.
                 <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
             %elif sample.datasets:
+                <%
+                    # Get an external_service from one of the sample datasets.  This assumes all sample datasets are associated with
+                    # the same external service - hopefully this is a good assumption.
+                    external_service = sample.datasets[0].external_service
+                %>
                 ## Since this is a regular user, only display a link if there is at least 1
                 ## selected dataset for the sample.
-                <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, external_service_id=trans.security.encode_id( external_service.id ), sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
             %else:
                 ## Since this is a regular user, do not display a link if there are no datasets.
                 <a id="sampleDatasets-${sample.id}">${len( sample.datasets )}</a>
@@ -424,8 +429,13 @@
                                     %endif
                                     %if sample.datasets and len( sample.datasets ) > len( transferred_dataset_files ) and sample.library and sample.folder:
                                         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Manage selected datasets</a></li>
-                                    %elif sample.datasets and len(sample.datasets ) == len( transferred_dataset_files ):
-                                        <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">View transferred datasets</a></li>
+                                    %elif sample.datasets and len( sample.datasets ) == len( transferred_dataset_files ):
+                                        <%
+                                            # Get an external_service from one of the sample datasets.  This assumes all sample datasets are associated with
+                                            # the same external service - hopefully this is a good assumption.
+                                            external_service = sample.datasets[0].external_service
+                                        %>
+                                        <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, external_service_id=trans.security.encode_id( external_service.id ), sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">View transferred datasets</a></li>
                                     %endif
                                 </div>
                             %else:
@@ -483,6 +493,11 @@
                                     ## This link will direct the admin to a page allowing them to manage datasets.
                                     <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
                                 %elif sample.library and sample.datasets:
+                                    <%
+                                        # Get an external_service from one of the sample datasets.  This assumes all sample datasets are associated with
+                                        # the same external service - hopefully this is a good assumption.
+                                        external_service = sample.datasets[0].external_service
+                                    %>
                                     ## Since this is a regular user, only display a link if there is at least 1
                                     ## selected dataset for the sample.
                                     <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>

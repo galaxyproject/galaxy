@@ -493,6 +493,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitions ):
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='select_datasets_to_transfer',
                                                           request_id=trans.security.encode_id( request.id ),
+                                                          external_service_id=trans.security.encode_id( external_service.id ),
                                                           status=status,
                                                           message=message ) )
     def __create_sample_datasets( self, trans, sample, selected_datasets_to_transfer, external_service ):

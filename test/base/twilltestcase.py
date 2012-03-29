@@ -13,6 +13,7 @@ from markupsafe import escape
 from elementtree import ElementTree
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
+from galaxy.util.json import from_json_string
 from base.asserts import verify_assertions
 
 buffer = StringIO.StringIO()
@@ -34,7 +35,14 @@ class TwillTestCase( unittest.TestCase ):
         self.host = os.environ.get( 'GALAXY_TEST_HOST' )
         self.port = os.environ.get( 'GALAXY_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
-        self.file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR' )
+        self.file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', None )
+        self.migrated_tools_file = os.environ.get( 'GALAXY_MIGRATED_TOOLS_FILE', None )
+        if self.migrated_tools_file:
+            f = open( self.migrated_tools_file, 'r' )
+            self.migrated_tools_dict = from_json_string( f.readlines() )
+            f.close()
+        else:
+            self.migrated_tools_dict = {}
         self.keepOutdir = os.environ.get( 'GALAXY_TEST_SAVE', '' )
         if self.keepOutdir > '':
            try:
@@ -1792,9 +1800,10 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-    def add_datasets_to_sample( self, request_id, sample_id, sample_datasets, strings_displayed=[], strings_displayed_after_submit=[] ):
+    def add_datasets_to_sample( self, request_id, sample_id, external_service_id, sample_datasets, strings_displayed=[], strings_displayed_after_submit=[] ):
         # visit the dataset selection page
-        url = "%s/requests_admin/select_datasets_to_transfer?cntrller=requests_admin&sample_id=%s&request_id=%s" % ( self.url, sample_id, request_id )
+        url = "%s/requests_admin/select_datasets_to_transfer?cntrller=requests_admin&sample_id=%s&request_id=%s&external_service_id=%s" % \
+            ( self.url, sample_id, request_id, external_service_id )
         self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )

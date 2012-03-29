@@ -25,7 +25,7 @@
     <li><a class="action-button" id="sample-${sample.id}-popup" class="menubutton">Dataset Actions</a></li>
     <div popupmenu="sample-${sample.id}-popup">
         %if can_select_datasets:
-            <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( sample.request.id ), sample_id=trans.security.encode_id( sample.id ) )}">Select more datasets</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, external_service_id=trans.security.encode_id( external_service.id ), request_id=trans.security.encode_id( sample.request.id ), sample_id=trans.security.encode_id( sample.id ) )}">Select more datasets</a></li>
         %endif
         <li><a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( sample.library.id ) )}">View target Data Library</a></li>
         <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Browse this request</a></li>

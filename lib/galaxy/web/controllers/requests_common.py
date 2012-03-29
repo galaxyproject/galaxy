@@ -1011,6 +1011,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitions ):
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, sample_id, 'sample' )
+        external_service_id = params.get( 'external_service_id', None )
+        external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
         # See if a library and folder have been set for this sample.
         if is_admin and not sample.library or not sample.folder:
             status = 'error'
@@ -1043,6 +1045,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitions ):
         return trans.fill_template( '/requests/common/view_sample_datasets.mako', 
                                     cntrller=cntrller,
                                     title=title,
+                                    external_service=external_service,
                                     sample=sample,
                                     sample_datasets=sample_datasets,
                                     transfer_status=transfer_status,

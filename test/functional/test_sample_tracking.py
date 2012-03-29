@@ -800,11 +800,13 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         sample_dataset_file_names = [ dataset.split( '/' )[-1] for dataset in sample_datasets ]
         global request1_sample1
         request1_sample1 = request1.get_sample( 'Sample1_renamed' )
+        external_service = request1_sample1.external_service
         strings_displayed_after_submit = [ 'Datasets (%s) have been selected for sample (%s)' % \
                                            ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), request1_sample1.name ) ]
         strings_displayed = [ 'Select datasets to transfer from data directory configured for the sequencer' ]
         self.add_datasets_to_sample( request_id=self.security.encode_id( request2.id ),
                                      sample_id= self.security.encode_id( request1_sample1.id ),
+                                     external_service_id=self.security.encode_id( external_serviceexternal_service.id ),
                                      sample_datasets=sample_datasets,
                                      strings_displayed=strings_displayed,
                                      strings_displayed_after_submit=strings_displayed_after_submit )

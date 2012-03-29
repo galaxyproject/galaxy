@@ -78,7 +78,12 @@
                             %else:
                                 State: ${sample.state.name}<br/>
                             %endif
-                            Datasets: <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a><br/>
+                            <%
+                                # Get an external_service from one of the sample datasets.  This assumes all sample datasets are associated with
+                                # the same external service - hopefully this is a good assumption.
+                                external_service = sample.datasets[0].external_service
+                            %>
+                            Datasets: <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, external_service_id=trans.security.encode_id( external_service.id ), sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a><br/>
                             %if is_admin:
                                <i>User: ${sample.request.user.email}</i>
                             %endif
