@@ -124,7 +124,7 @@ class ToolBox( object ):
             elif elem.tag == 'section':
                 self.load_section_tag_set( elem, tool_path, load_panel_dict )
             elif elem.tag == 'label':
-                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel )
+                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict )
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
@@ -370,10 +370,10 @@ class ToolBox( object ):
             integrated_panel_dict[ key ] = workflow
         except:
             log.exception( "Error loading workflow: %s" % workflow_id )
-    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict ):
+    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict ):
         label = ToolSectionLabel( elem )
         key = 'label_' + label.id
-        if not self.integrated_tool_panel_config_has_contents:
+        if load_panel_dict:
             panel_dict[ key ] = label
         integrated_panel_dict[ key ] = label
     def load_section_tag_set( self, elem, tool_path, load_panel_dict ):
@@ -396,7 +396,7 @@ class ToolBox( object ):
             elif sub_elem.tag == 'workflow':
                 self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict )
             elif sub_elem.tag == 'label':
-                self.load_label_tag_set( sub_elem, elems, integrated_elems )
+                self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.

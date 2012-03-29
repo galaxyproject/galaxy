@@ -276,7 +276,6 @@ class InstallManager( object ):
             root = tree.getroot()
             tool_path = root.get( 'tool_path', None )
             if tool_path is None:
-                # There will be a problem here if the user has defined 2 non-shed related configs.
                 config_filenames.append( config_filename )
         return config_filenames
     def __get_url_from_tool_shed( self, tool_shed ):
