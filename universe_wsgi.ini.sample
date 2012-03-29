@@ -542,14 +542,25 @@ use_interactive = True
 
 # -- Job Execution
 
-# If running multiple Galaxy processes, one can be designated as the job
-# runner.  For more information, see:
-# http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Web%20Application%20Scaling
-#enable_job_running = True
+# To increase performance of job execution and the web interface, you can
+# separate Galaxy into multiple processes.  There are more than one way to do
+# this, and they are explained in detail in the documentation:
+#
+#   http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Web%20Application%20Scaling
+#
+# By default, Galaxy manages and executes jobs from within a single process and
+# notifies itself of new jobs via in-memory queues.  If you change job_manager
+# and job_handlers from their default values, notification will instead be done
+# using the `state` and `handler` columns of the job table in the database.
 
-# Should jobs be tracked through the database, rather than in memory.
-# Necessary if you're running the load balanced setup.
-#track_jobs_in_database = False
+# Identify the server_name (the string following server: at the top of this
+# file) which should be designated as the job manager (only one):
+#job_manager = main
+
+# Identify the server_name(s) which should be designated as job handlers
+# (responsible for starting, tracking, finishing, and cleaning up jobs) as a
+# comma-separated list.
+#job_handlers = main
 
 # This enables splitting of jobs into tasks, if specified by the particular tool config.
 # This is a new feature and not recommended for production servers yet.

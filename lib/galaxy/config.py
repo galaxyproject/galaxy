@@ -184,7 +184,20 @@ class Configuration( object ):
         # Heartbeat log file name override
         if global_conf is not None:
             self.heartbeat_log = global_conf.get( 'heartbeat_log', 'heartbeat.log' )
-        #Store per-tool runner configs.
+        # Determine which 'server:' this is
+        self.server_name = 'main'
+        for arg in sys.argv:
+            # Crummy, but PasteScript does not give you a way to determine this
+            if arg.lower().startswith('--server-name='):
+                self.server_name = arg.split('=', 1)[-1]
+        # Store advanced job management config
+        self.job_manager = kwargs.get('job_manager', self.server_name).strip()
+        self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
+        # Use database for IPC unless this is a standalone server (or multiple servers doing self dispatching in memory)
+        self.track_jobs_in_database = True
+        if ( len( self.job_handlers ) == 1 ) and ( self.job_handlers[0] == self.server_name ) and ( self.job_manager == self.server_name ):
+            self.track_jobs_in_database = False
+        # Store per-tool runner configs
         try:
             tool_runners_config = global_conf_parser.items("galaxy:tool_runners")
 

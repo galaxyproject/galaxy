@@ -2381,8 +2381,8 @@ class Admin( object ):
         deleted = []
         msg = None
         status = None
-        if not trans.app.config.get_bool( "enable_job_running", True ):
-            return trans.show_error_message( 'This Galaxy instance is not configured to run jobs.  If using multiple servers, please directly access the job running instance to manage jobs.' )
+        if not self.app.config.job_manager != self.app.config.server_name:
+            return trans.show_error_message( 'This Galaxy instance is not the job manager.  If using multiple servers, please directly access the job manager instance to manage jobs.' )
         job_ids = util.listify( stop )
         if job_ids and stop_msg in [ None, '' ]:
             msg = 'Please enter an error message to display to the user describing why the job was terminated'

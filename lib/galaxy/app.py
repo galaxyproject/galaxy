@@ -124,8 +124,9 @@ class UniverseApplication( object ):
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from jobs import transfer_manager
             self.transfer_manager = transfer_manager.TransferManager( self )
-        # Start the job queue
-        self.job_manager = jobs.JobManager( self )
+        # Start the job manager
+        from jobs import manager
+        self.job_manager = manager.JobManager( self )
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue

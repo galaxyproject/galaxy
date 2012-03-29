@@ -904,8 +904,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistory, UsesHist
                 if job.state in [ self.app.model.Job.states.QUEUED, self.app.model.Job.states.RUNNING, self.app.model.Job.states.NEW ]:
                     # Are *all* of the job's other output datasets deleted?
                     if job.check_if_output_datasets_deleted():
-                        job.mark_deleted( self.app.config.get_bool( 'enable_job_running', True ),
-                                          self.app.config.get_bool( 'track_jobs_in_database', False ) )
+                        job.mark_deleted( self.app.config.track_jobs_in_database )
                         self.app.job_manager.job_stop_queue.put( job.id )
             trans.sa_session.flush()
         except Exception, e:

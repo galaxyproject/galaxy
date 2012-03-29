@@ -132,6 +132,7 @@ class Job( object ):
         self.job_runner_external_id = None
         self.post_job_actions = []
         self.imported = False
+        self.handler = None
 
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
@@ -171,14 +172,11 @@ class Job( object ):
             if not dataset.deleted:
                 return False
         return True
-    def mark_deleted( self, enable_job_running=True, track_jobs_in_database=False ):
+    def mark_deleted( self, track_jobs_in_database=False ):
         """
         Mark this job as deleted, and mark any output datasets as discarded.
         """
-        # This could be handled with *just* track_jobs_in_database, but I
-        # didn't want to make setting track_jobs_in_database required in
-        # non-runner configs.
-        if not enable_job_running or track_jobs_in_database:
+        if track_jobs_in_database:
             self.state = Job.states.DELETED_NEW
         else:
             self.state = Job.states.DELETED

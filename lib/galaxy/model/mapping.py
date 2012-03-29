@@ -421,7 +421,8 @@ Job.table = Table( "job", metadata,
     Column( "job_runner_external_id", String( 255 ) ), 
     Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "imported", Boolean, default=False, index=True ),
-    Column( "params", TrimmedString(255), index=True ) )
+    Column( "params", TrimmedString(255), index=True ),
+    Column( "handler", TrimmedString( 255 ), index=True ) )
     
 JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
