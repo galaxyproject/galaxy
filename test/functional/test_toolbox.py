@@ -10,7 +10,7 @@ toolbox = None
 
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
-    def do_it( self, testdef, migrated_tool_id=None ):
+    def do_it( self, testdef, shed_tool_id=None ):
         # If the test generation had an error, raise
         if testdef.error:
             if testdef.exception:
@@ -40,7 +40,7 @@ class ToolTestCase( TwillTestCase ):
                               dbkey=extra.get( 'dbkey', 'hg17' ),
                               metadata=metadata,
                               composite_data=composite_data,
-                              migrated_tool_id=migrated_tool_id )
+                              shed_tool_id=shed_tool_id )
             print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
             #Post upload attribute editing
             edit_attributes = extra.get( 'edit_attributes', [] )
@@ -99,7 +99,7 @@ class ToolTestCase( TwillTestCase ):
             elem_hid = elem.get( 'hid' )
             elem_index += 1
             try:
-                self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes, migrated_tool_id=migrated_tool_id )
+                self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes, shed_tool_id=shed_tool_id )
             except Exception, e:
                 print >>sys.stderr, self.get_job_stdout( elem.get( 'id' ), format=True )
                 print >>sys.stderr, self.get_job_stderr( elem.get( 'id' ), format=True )
@@ -143,7 +143,7 @@ class ToolTestCase( TwillTestCase ):
                     expanded_inputs[value.name] = declared_inputs[value.name]
         return expanded_inputs
 
-def build_tests( testing_migrated_tools=False ):
+def build_tests( testing_shed_tools=False ):
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
     classes for all of its tests and put them into this modules globals() so
@@ -166,12 +166,12 @@ def build_tests( testing_migrated_tools=False ):
             baseclasses = ( ToolTestCase, )
             namespace = dict()
             for j, testdef in enumerate( tool.tests ):
-                def make_test_method( td, migrated_tool_id=None ):
+                def make_test_method( td, shed_tool_id=None ):
                     def test_tool( self ):
-                        self.do_it( td, migrated_tool_id=migrated_tool_id )
+                        self.do_it( td, shed_tool_id=shed_tool_id )
                     return test_tool
-                if testing_migrated_tools:
-                    test_method = make_test_method( testdef, migrated_tool_id=tool.id )
+                if testing_shed_tools:
+                    test_method = make_test_method( testdef, shed_tool_id=tool.id )
                 else:
                     test_method = make_test_method( testdef )
                 test_method.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )

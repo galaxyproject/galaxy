@@ -36,14 +36,14 @@ class TwillTestCase( unittest.TestCase ):
         self.port = os.environ.get( 'GALAXY_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
         self.file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', None )
-        self.migrated_tools_file = os.environ.get( 'GALAXY_MIGRATED_TOOLS_FILE', None )
-        if self.migrated_tools_file:
-            f = open( self.migrated_tools_file, 'r' )
+        self.tool_shed_test_file = os.environ.get( 'GALAXY_TOOL_SHED_TEST_FILE', None )
+        if self.tool_shed_test_file:
+            f = open( self.tool_shed_test_file, 'r' )
             text = f.read()
             f.close()
-            self.migrated_tools_dict = from_json_string( text )
+            self.shed_tools_dict = from_json_string( text )
         else:
-            self.migrated_tools_dict = {}
+            self.shed_tools_dict = {}
         self.keepOutdir = os.environ.get( 'GALAXY_TEST_SAVE', '' )
         if self.keepOutdir > '':
            try:
@@ -169,9 +169,9 @@ class TwillTestCase( unittest.TestCase ):
             if line_diff_count > lines_diff:
                 raise AssertionError, "Failed to find '%s' in history data. (lines_diff=%i):\n" % ( contains, lines_diff )
 
-    def get_filename( self, filename, migrated_tool_id=None ):
-        if migrated_tool_id and self.migrated_tools_dict:
-            file_dir = self.migrated_tools_dict[ migrated_tool_id ]
+    def get_filename( self, filename, shed_tool_id=None ):
+        if shed_tool_id and self.shed_tools_dict:
+            file_dir = self.shed_tools_dict[ shed_tool_id ]
             if not file_dir:
                 file_dir = self.file_dir
         else:
@@ -183,9 +183,9 @@ class TwillTestCase( unittest.TestCase ):
         filename = os.path.join( *path )
         file(filename, 'wt').write(buffer.getvalue())
 
-    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, migrated_tool_id=None ):
+    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, shed_tool_id=None ):
         """
-        Uploads a file.  If migrated_tool_id has a value, we're testing tools migrated from the distribution to the tool shed,
+        Uploads a file.  If shed_tool_id has a value, we're testing tools migrated from the distribution to the tool shed,
         so the tool-data directory of test data files is contained in the installed tool shed repository.
         """
         self.visit_url( "%s/tool_runner?tool_id=upload1" % self.url )
@@ -197,11 +197,11 @@ class TwillTestCase( unittest.TestCase ):
                     tc.fv( "1", "files_metadata|%s" % elem.get( 'name' ), elem.get( 'value' ) )
             if composite_data:
                 for i, composite_file in enumerate( composite_data ):
-                    filename = self.get_filename( composite_file.get( 'value' ), migrated_tool_id=migrated_tool_id )
+                    filename = self.get_filename( composite_file.get( 'value' ), shed_tool_id=shed_tool_id )
                     tc.formfile( "1", "files_%i|file_data" % i, filename )
                     tc.fv( "1", "files_%i|space_to_tab" % i, composite_file.get( 'space_to_tab', False ) )
             else:
-                filename = self.get_filename( filename, migrated_tool_id=migrated_tool_id )
+                filename = self.get_filename( filename, shed_tool_id=shed_tool_id )
                 tc.formfile( "1", "file_data", filename )
                 tc.fv( "1", "space_to_tab", space_to_tab )
             tc.submit("runtool_btn")
@@ -653,7 +653,7 @@ class TwillTestCase( unittest.TestCase ):
         fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
         return temp_prefix
 
-    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None, migrated_tool_id=None ):
+    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None, shed_tool_id=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait:
             self.wait( maxseconds=maxseconds ) #wait for job to finish
@@ -692,7 +692,7 @@ class TwillTestCase( unittest.TestCase ):
                     errmsg += str( err )
                     raise AssertionError( errmsg )
             if filename is not None:
-                local_name = self.get_filename( filename, migrated_tool_id=migrated_tool_id )
+                local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
                 temp_name = self.makeTfname(fname = filename)
                 file( temp_name, 'wb' ).write(data)
                 if self.keepOutdir > '':
@@ -726,7 +726,7 @@ class TwillTestCase( unittest.TestCase ):
                         else:
                             raise Exception, 'Unimplemented Compare type: %s' % compare
                         if extra_files:
-                            self.verify_extra_files_content( extra_files, elem.get( 'id' ), migrated_tool_id=migrated_tool_id )
+                            self.verify_extra_files_content( extra_files, elem.get( 'id' ), shed_tool_id=shed_tool_id )
                     except AssertionError, err:
                         errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
                         errmsg += str( err )
@@ -745,21 +745,21 @@ class TwillTestCase( unittest.TestCase ):
         os.remove( temp_name )
         return temp_local, temp_temp
 
-    def verify_extra_files_content( self, extra_files, hda_id, migrated_tool_id=None ):
+    def verify_extra_files_content( self, extra_files, hda_id, shed_tool_id=None ):
         files_list = []
         for extra_type, extra_value, extra_name, extra_attributes in extra_files:
             if extra_type == 'file':
                 files_list.append( ( extra_name, extra_value, extra_attributes ) )
             elif extra_type == 'directory':
-                for filename in os.listdir( self.get_filename( extra_value, migrated_tool_id=migrated_tool_id ) ):
+                for filename in os.listdir( self.get_filename( extra_value, shed_tool_id=shed_tool_id ) ):
                     files_list.append( ( filename, os.path.join( extra_value, filename ), extra_attributes ) )
             else:
                 raise ValueError, 'unknown extra_files type: %s' % extra_type
         for filename, filepath, attributes in files_list:
-            self.verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, migrated_tool_id=migrated_tool_id )
+            self.verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, shed_tool_id=shed_tool_id )
         
-    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, migrated_tool_id=None ):
-        local_name = self.get_filename( file_name, migrated_tool_id=migrated_tool_id )
+    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, shed_tool_id=None ):
+        local_name = self.get_filename( file_name, shed_tool_id=shed_tool_id )
         if base_name is None:
             base_name = os.path.split(file_name)[-1]
         temp_name = self.makeTfname(fname = base_name)
@@ -1015,8 +1015,8 @@ class TwillTestCase( unittest.TestCase ):
     def last_page( self ):
         return tc.browser.get_html()
 
-    def load_cookies( self, file, migrated_tool_id=None ):
-        filename = self.get_filename( file, migrated_tool_id=migrated_tool_id )
+    def load_cookies( self, file, shed_tool_id=None ):
+        filename = self.get_filename( file, shed_tool_id=shed_tool_id )
         tc.load_cookies(filename)
 
     def reload_page( self ):
