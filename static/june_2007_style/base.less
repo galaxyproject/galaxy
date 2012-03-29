@@ -1222,6 +1222,10 @@ a.action-button {
 .menubutton {
     .btn();
 
+    &:hover { .btn.hover(); }
+    &:active { .btn.active(); }
+    &:focus { .tab-focus(); }
+
     display: inline-block;
     cursor: pointer;
     position: relative;
@@ -1235,11 +1239,21 @@ a.action-button {
     // padding: 1px 0.25em;
     // margin: -1px -0.25em;
     
+    a {
+        text-decoration: none;
+    }
+
     .label {
         position: relative;
-        // display: block;
+        display: inline-block;
         border-right: none;
         text-decoration: none;
+        text-align: left;
+        // The following properties truncate the text and force the button to have one line
+        max-height: 2*@baseLineHeight;
+        line-height: @baseLineHeight;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     &.popup .label {
@@ -1247,21 +1261,16 @@ a.action-button {
         padding-right: 6px;
     }
 
-    &.popup {
+    &.popup, &.popup.split {
+        padding-right: 18px;
         &:after {
             margin-top: 6px;
+            position: absolute;
+            top: 2px;
+            right: 6px;
             .caret();
         }
     }
-
-    &.popup.split {
-        &:after {
-            margin-top: 6px;
-            margin-left: 0px;
-            .caret();
-        }
-    }
-
 }
 
 // A split menu button, the main button has an action, the arrow causes the
