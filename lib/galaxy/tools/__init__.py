@@ -636,6 +636,8 @@ class Tool:
         self.check_values = True
         self.nginx_upload = False
         self.input_required = False
+        self.display_interface = True
+        self.require_login = False
         # Define a place to keep track of all input parameters.  These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -732,6 +734,8 @@ class Tool:
         # Useful i.e. when an indeterminate number of outputs are created by 
         # a tool.
         self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
+        self.display_interface = util.string_as_bool( root.get( 'display_interface', str( self.display_interface ) ) )
+        self.require_login = util.string_as_bool( root.get( 'require_login', str( self.require_login ) ) )
         # Load input translator, used by datasource tools to change 
         # names/values of incoming parameters
         self.input_translator = root.find( "request_param_translation" )
@@ -1337,6 +1341,8 @@ class Tool:
             # on the standard run form) or "URL" (a parameter provided by
             # external data source tools). 
             if "runtool_btn" not in incoming and "URL" not in incoming:
+                if not self.display_interface:
+                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
         # Process incoming data
         if not( self.check_values ):
@@ -1385,6 +1391,8 @@ class Tool:
                 state.page += 1
                 # Fill in the default values for the next page
                 self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
+                if not self.display_interface:
+                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
                 return 'tool_form.mako', dict( errors=errors, tool_state=state )
         else:
             try:
@@ -1397,6 +1405,8 @@ class Tool:
             except:
                 pass
             # Just a refresh, render the form with updated state and errors.
+            if not self.display_interface:
+                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):

@@ -24,6 +24,9 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
+        %if 'everything' in refresh_frames:
+            parent.location.href="${h.url_for( controller='root' )}";
+        %endif
         %if 'masthead' in refresh_frames:
             ## if ( parent.frames && parent.frames.galaxy_masthead ) {
             ##     parent.frames.galaxy_masthead.location.href="${h.url_for( controller='root', action='masthead')}";
