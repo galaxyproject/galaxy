@@ -11,8 +11,6 @@ import threading
 import traceback
 import subprocess
 
-from sqlalchemy.sql.expression import and_, or_
-
 import galaxy
 from galaxy import util, model
 from galaxy.datatypes.tabular import *
