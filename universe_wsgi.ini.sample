@@ -664,17 +664,29 @@ use_interactive = True
 #pbs_stage_path = 
 #pbs_dataset_server = 
 
-# ---- Tool Job Runners -----------------------------------------------------
+# ---- Per-Tool Job Management ----------------------------------------------
 
-# Individual per-tool job runner overrides. Parameters can be included to define 
-# multiple runners per tool. E.g. to run Cufflinks jobs initiated from Trackster 
+# Per-tool job handler and runner overrides. Parameters can be included to define multiple
+# runners per tool. E.g. to run Cufflinks jobs initiated from Trackster
 # differently than standard Cufflinks jobs:
-# cufflinks = local:///
-# cufflinks[source@trackster] = local:///
-# If not listed here, a tool will run with the runner defined with 
-# default_cluster_job_runner.
+#
+#   cufflinks = local:///
+#   cufflinks[source@trackster] = local:///
+
+[galaxy:tool_handlers]
+
+# By default, Galaxy will select a handler at random from the list of
+# job_handlers set above.  You can override as in the following examples:
+#
+#upload1 = upload_handler
+#cufflinks[source@trackster] = realtime_handler
 
 [galaxy:tool_runners]
+
+# If not listed here, a tool will run with the runner defined with 
+# default_cluster_job_runner.  These overrides for local:/// are done because
+# these tools can fetch data from remote sites, which may not be suitable to
+# run on a cluster (if it does not have access to the Internet, for example).
 
 biomart = local:///
 encode_db1 = local:///

@@ -5,7 +5,7 @@ import pkg_resources
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -682,31 +682,35 @@ class Tool:
         if tool_version:
             return tool_version.get_version_ids( self.app )
         return []
-    def get_job_runner( self, job_params=None ):
-        # Look through runners to find one with matching parameters.
-        selected_runner = None
-        if len( self.job_runners ) == 1:
-            # Most tools have a single runner.
-            selected_runner = self.job_runners[0]
+    def __get_job_run_config( self, run_configs, key, job_params=None ):
+        # Look through runners/handlers to find one with matching parameters.
+        available_configs = []
+        if len( run_configs ) == 1:
+            # Most tools have a single config.
+            return run_configs[0][ key ] # return to avoid random when this will be the case most of the time
         elif job_params is None:
-            # Use job runner with no params
-            for runner in self.job_runners:
-                if "params" not in runner:
-                    selected_runner = runner
+            # Use job config with no params
+            for config in run_configs:
+                if "params" not in config:
+                    available_configs.append( config )
         else:
-            # Find runner with matching parameters.
-            for runner in self.job_runners:
-                if "params" in runner:
+            # Find config with matching parameters.
+            for config in run_configs:
+                if "params" in config:
                     match = True
-                    runner_params = runner[ "params" ]
+                    config_params = config[ "params" ]
                     for param, value in job_params.items():
-                        if param not in runner_params or \
-                           runner_params[ param ] != job_params[ param ]:
+                        if param not in config_params or \
+                           config_params[ param ] != job_params[ param ]:
                            match = False
                            break
                     if match:
-                        selected_runner = runner
-        return selected_runner[ "url" ]
+                        available_configs.append( config )
+        return random.choice( available_configs )[ key ]
+    def get_job_runner( self, job_params=None ):
+        return self.__get_job_run_config( self.job_runners, key='url', job_params=job_params )
+    def get_job_handler( self, job_params=None ):
+        return self.__get_job_run_config( self.job_handlers, key='name', job_params=job_params )
     def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -773,6 +777,12 @@ class Tool:
             self.parallelism = ToolParallelismInfo(parallelism)
         else:
             self.parallelism = None
+        # Set job handler(s). Each handler is a dict with 'url' and, optionally, 'params'.
+        self_id = self.id.lower()
+        self.job_handlers = [ { "name" : name } for name in self.app.config.job_handlers ]
+        # Set custom handler(s) if they're defined.
+        if self_id in self.app.config.tool_handlers:
+            self.job_handlers = self.app.config.tool_handlers[ self_id ]
         # Set job runner(s). Each runner is a dict with 'url' and, optionally, 'params'.
         if self.app.config.start_job_runners is None:
             # Jobs are always local regardless of tool config if no additional
@@ -782,7 +792,6 @@ class Tool:
             # Set job runner to the cluster default
             self.job_runners = [ { "url" : self.app.config.default_cluster_job_runner } ]
             # Set custom runner(s) if they're defined.
-            self_id = self.id.lower()
             if self_id in self.app.config.tool_runners:
                 self.job_runners = self.app.config.tool_runners[ self_id ]
         # Is this a 'hidden' tool (hidden in tool menu)

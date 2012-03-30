@@ -144,7 +144,7 @@ class JobManagerQueue( object ):
                 pass
 
         for job in jobs_to_check:
-            job.handler = self.__select_handler( job )
+            job.handler = self.__get_handler( job )
             log.debug( "(%s) Job assigned to handler '%s'" % ( job.id, job.handler ) )
             self.sa_session.add( job )
 
@@ -157,9 +157,15 @@ class JobManagerQueue( object ):
         for job in jobs_to_check:
             self.job_handler.job_queue.put( job.id, job.tool_id )
 
-    def __select_handler( self, job ):
-        # TODO: handler selection based on params, tool, etc.
-        return random.choice( self.app.config.job_handlers )
+    def __get_handler( self, job ):
+        try:
+            params = None
+            if job.params:
+                params = from_json_string( job.params )
+            return self.app.toolbox.tools_by_id.get( job.tool_id, None ).get_job_handler( params )
+        except:
+            log.exception( "(%s) Caught exception attempting to get tool-specific job handler for tool '%s', selecting at random from available handlers instead:" % ( job.id, job.tool_id ) )
+            return random.choice( self.app.config.job_handlers )
 
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""
