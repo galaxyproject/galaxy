@@ -177,7 +177,7 @@ class DataTransfer( object ):
         self.update_status( SampleDataset.transfer_status.ADD_TO_LIBRARY )
         try:
             data = {}
-            data[ 'folder_id' ] = api.encode_id( self.config_id_secret, '%s.%s' % (  'folder', self.folder_id ) )
+            data[ 'folder_id' ] = 'F%s' % api.encode_id( self.config_id_secret, self.folder_id )
             data[ 'file_type' ] = 'auto'
             data[ 'server_dir' ] = self.server_dir
             data[ 'dbkey' ] = ''
