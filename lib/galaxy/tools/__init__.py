@@ -114,17 +114,17 @@ class ToolBox( object ):
             tool_path = self.tool_root_dir
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self.integrated_tool_panel_config_has_contents
-        for elem in root:
+        for index, elem in enumerate( root ):
             if parsing_shed_tool_conf:
                 config_elems.append( elem )
             if elem.tag == 'tool':
-                self.load_tool_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict, guid=elem.get( 'guid' ) )
+                self.load_tool_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict, guid=elem.get( 'guid' ), index=index )
             elif elem.tag == 'workflow':
-                self.load_workflow_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict )
+                self.load_workflow_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
             elif elem.tag == 'section':
-                self.load_section_tag_set( elem, tool_path, load_panel_dict )
+                self.load_section_tag_set( elem, tool_path, load_panel_dict, index=index )
             elif elem.tag == 'label':
-                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict )
+                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
@@ -286,7 +286,7 @@ class ToolBox( object ):
                                              self.app.model.ToolShedRepository.table.c.owner == owner,
                                              self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
                               .first()
-    def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None ):
+    def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
         try:
             path = elem.get( "file" )
             if guid is None:
@@ -354,10 +354,13 @@ class ToolBox( object ):
                 if load_panel_dict:
                     panel_dict[ key ] = tool
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
-            integrated_panel_dict[ key ] = tool
+            if key in integrated_panel_dict or index is None:
+                integrated_panel_dict[ key ] = tool
+            else:
+                integrated_panel_dict.insert( index, key, tool )
         except:
             log.exception( "Error reading tool from path: %s" % path )
-    def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict ):
+    def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         try:
             # TODO: should id be encoded?
             workflow_id = elem.get( 'id' )
@@ -367,16 +370,22 @@ class ToolBox( object ):
             if load_panel_dict:
                 panel_dict[ key ] = workflow
             # Always load workflows into the integrated_panel_dict.
-            integrated_panel_dict[ key ] = workflow
+            if key in integrated_panel_dict or index is None:
+                integrated_panel_dict[ key ] = workflow
+            else:
+                integrated_panel_dict.insert( index, key, workflow )
         except:
             log.exception( "Error loading workflow: %s" % workflow_id )
-    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict ):
+    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         label = ToolSectionLabel( elem )
         key = 'label_' + label.id
         if load_panel_dict:
             panel_dict[ key ] = label
-        integrated_panel_dict[ key ] = label
-    def load_section_tag_set( self, elem, tool_path, load_panel_dict ):
+        if key in integrated_panel_dict or index is None:
+            integrated_panel_dict[ key ] = label
+        else:
+            integrated_panel_dict.insert( index, key, label )
+    def load_section_tag_set( self, elem, tool_path, load_panel_dict, index=None ):
         key = 'section_' + elem.get( "id" )
         if key in self.tool_panel:
             section = self.tool_panel[ key ]
@@ -390,17 +399,20 @@ class ToolBox( object ):
         else:
             integrated_section = ToolSection( elem )
             integrated_elems = integrated_section.elems
-        for sub_elem in elem:
+        for sub_index, sub_elem in enumerate( elem ):
             if sub_elem.tag == 'tool':
-                self.load_tool_tag_set( sub_elem, elems, integrated_elems, tool_path, load_panel_dict, guid=sub_elem.get( 'guid' ) )
+                self.load_tool_tag_set( sub_elem, elems, integrated_elems, tool_path, load_panel_dict, guid=sub_elem.get( 'guid' ), index=sub_index )
             elif sub_elem.tag == 'workflow':
-                self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict )
+                self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
             elif sub_elem.tag == 'label':
-                self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict )
+                self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
-        self.integrated_tool_panel[ key ] = integrated_section
+        if key in self.integrated_tool_panel or index is None:
+            self.integrated_tool_panel[ key ] = integrated_section
+        else:
+            self.integrated_tool_panel.insert( index, key, integrated_section )
     def load_tool( self, config_file, guid=None ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
