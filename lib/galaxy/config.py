@@ -193,6 +193,7 @@ class Configuration( object ):
         # Store advanced job management config
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
+        self.default_job_handlers = [ x.strip() for x in kwargs.get('default_job_handlers', ','.join( self.job_handlers ) ).split(',') ]
         # Use database for IPC unless this is a standalone server (or multiple servers doing self dispatching in memory)
         self.track_jobs_in_database = True
         if ( len( self.job_handlers ) == 1 ) and ( self.job_handlers[0] == self.server_name ) and ( self.job_manager == self.server_name ):

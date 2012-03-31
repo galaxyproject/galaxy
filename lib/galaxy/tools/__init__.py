@@ -791,7 +791,7 @@ class Tool:
             self.parallelism = None
         # Set job handler(s). Each handler is a dict with 'url' and, optionally, 'params'.
         self_id = self.id.lower()
-        self.job_handlers = [ { "name" : name } for name in self.app.config.job_handlers ]
+        self.job_handlers = [ { "name" : name } for name in self.app.config.default_job_handlers ]
         # Set custom handler(s) if they're defined.
         if self_id in self.app.config.tool_handlers:
             self.job_handlers = self.app.config.tool_handlers[ self_id ]

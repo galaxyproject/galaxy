@@ -562,6 +562,13 @@ use_interactive = True
 # comma-separated list.
 #job_handlers = main
 
+# By default, a handler from job_handlers will be selected at random if the
+# tool to run does specify a handler below in [galaxy:tool_handlers].  If you
+# want certain handlers to only handle jobs for tools/params explicitly
+# assigned below, use default_job_handlers to specify which handlers should be
+# used for jobs without explicit handlers.
+#default_job_handlers = main
+
 # This enables splitting of jobs into tasks, if specified by the particular tool config.
 # This is a new feature and not recommended for production servers yet.
 #use_tasked_jobs = False
