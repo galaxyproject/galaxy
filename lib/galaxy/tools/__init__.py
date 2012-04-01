@@ -5,7 +5,7 @@ import pkg_resources
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -115,17 +115,17 @@ class ToolBox( object ):
             tool_path = self.tool_root_dir
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self.integrated_tool_panel_config_has_contents
-        for elem in root:
+        for index, elem in enumerate( root ):
             if parsing_shed_tool_conf:
                 config_elems.append( elem )
             if elem.tag == 'tool':
-                self.load_tool_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict, guid=elem.get( 'guid' ) )
+                self.load_tool_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict, guid=elem.get( 'guid' ), index=index )
             elif elem.tag == 'workflow':
-                self.load_workflow_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict )
+                self.load_workflow_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
             elif elem.tag == 'section':
-                self.load_section_tag_set( elem, tool_path, load_panel_dict )
+                self.load_section_tag_set( elem, tool_path, load_panel_dict, index=index )
             elif elem.tag == 'label':
-                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict )
+                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
@@ -287,7 +287,7 @@ class ToolBox( object ):
                                              self.app.model.ToolShedRepository.table.c.owner == owner,
                                              self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
                               .first()
-    def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None ):
+    def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
         try:
             path = elem.get( "file" )
             if guid is None:
@@ -355,10 +355,13 @@ class ToolBox( object ):
                 if load_panel_dict:
                     panel_dict[ key ] = tool
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
-            integrated_panel_dict[ key ] = tool
+            if key in integrated_panel_dict or index is None:
+                integrated_panel_dict[ key ] = tool
+            else:
+                integrated_panel_dict.insert( index, key, tool )
         except:
             log.exception( "Error reading tool from path: %s" % path )
-    def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict ):
+    def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         try:
             # TODO: should id be encoded?
             workflow_id = elem.get( 'id' )
@@ -368,16 +371,22 @@ class ToolBox( object ):
             if load_panel_dict:
                 panel_dict[ key ] = workflow
             # Always load workflows into the integrated_panel_dict.
-            integrated_panel_dict[ key ] = workflow
+            if key in integrated_panel_dict or index is None:
+                integrated_panel_dict[ key ] = workflow
+            else:
+                integrated_panel_dict.insert( index, key, workflow )
         except:
             log.exception( "Error loading workflow: %s" % workflow_id )
-    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict ):
+    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         label = ToolSectionLabel( elem )
         key = 'label_' + label.id
         if load_panel_dict:
             panel_dict[ key ] = label
-        integrated_panel_dict[ key ] = label
-    def load_section_tag_set( self, elem, tool_path, load_panel_dict ):
+        if key in integrated_panel_dict or index is None:
+            integrated_panel_dict[ key ] = label
+        else:
+            integrated_panel_dict.insert( index, key, label )
+    def load_section_tag_set( self, elem, tool_path, load_panel_dict, index=None ):
         key = 'section_' + elem.get( "id" )
         if key in self.tool_panel:
             section = self.tool_panel[ key ]
@@ -391,17 +400,20 @@ class ToolBox( object ):
         else:
             integrated_section = ToolSection( elem )
             integrated_elems = integrated_section.elems
-        for sub_elem in elem:
+        for sub_index, sub_elem in enumerate( elem ):
             if sub_elem.tag == 'tool':
-                self.load_tool_tag_set( sub_elem, elems, integrated_elems, tool_path, load_panel_dict, guid=sub_elem.get( 'guid' ) )
+                self.load_tool_tag_set( sub_elem, elems, integrated_elems, tool_path, load_panel_dict, guid=sub_elem.get( 'guid' ), index=sub_index )
             elif sub_elem.tag == 'workflow':
-                self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict )
+                self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
             elif sub_elem.tag == 'label':
-                self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict )
+                self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
-        self.integrated_tool_panel[ key ] = integrated_section
+        if key in self.integrated_tool_panel or index is None:
+            self.integrated_tool_panel[ key ] = integrated_section
+        else:
+            self.integrated_tool_panel.insert( index, key, integrated_section )
     def load_tool( self, config_file, guid=None ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
@@ -683,31 +695,35 @@ class Tool:
         if tool_version:
             return tool_version.get_version_ids( self.app )
         return []
-    def get_job_runner( self, job_params=None ):
-        # Look through runners to find one with matching parameters.
-        selected_runner = None
-        if len( self.job_runners ) == 1:
-            # Most tools have a single runner.
-            selected_runner = self.job_runners[0]
+    def __get_job_run_config( self, run_configs, key, job_params=None ):
+        # Look through runners/handlers to find one with matching parameters.
+        available_configs = []
+        if len( run_configs ) == 1:
+            # Most tools have a single config.
+            return run_configs[0][ key ] # return to avoid random when this will be the case most of the time
         elif job_params is None:
-            # Use job runner with no params
-            for runner in self.job_runners:
-                if "params" not in runner:
-                    selected_runner = runner
+            # Use job config with no params
+            for config in run_configs:
+                if "params" not in config:
+                    available_configs.append( config )
         else:
-            # Find runner with matching parameters.
-            for runner in self.job_runners:
-                if "params" in runner:
+            # Find config with matching parameters.
+            for config in run_configs:
+                if "params" in config:
                     match = True
-                    runner_params = runner[ "params" ]
+                    config_params = config[ "params" ]
                     for param, value in job_params.items():
-                        if param not in runner_params or \
-                           runner_params[ param ] != job_params[ param ]:
+                        if param not in config_params or \
+                           config_params[ param ] != job_params[ param ]:
                            match = False
                            break
                     if match:
-                        selected_runner = runner
-        return selected_runner[ "url" ]
+                        available_configs.append( config )
+        return random.choice( available_configs )[ key ]
+    def get_job_runner( self, job_params=None ):
+        return self.__get_job_run_config( self.job_runners, key='url', job_params=job_params )
+    def get_job_handler( self, job_params=None ):
+        return self.__get_job_run_config( self.job_handlers, key='name', job_params=job_params )
     def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -774,6 +790,12 @@ class Tool:
             self.parallelism = ToolParallelismInfo(parallelism)
         else:
             self.parallelism = None
+        # Set job handler(s). Each handler is a dict with 'url' and, optionally, 'params'.
+        self_id = self.id.lower()
+        self.job_handlers = [ { "name" : name } for name in self.app.config.default_job_handlers ]
+        # Set custom handler(s) if they're defined.
+        if self_id in self.app.config.tool_handlers:
+            self.job_handlers = self.app.config.tool_handlers[ self_id ]
         # Set job runner(s). Each runner is a dict with 'url' and, optionally, 'params'.
         if self.app.config.start_job_runners is None:
             # Jobs are always local regardless of tool config if no additional
@@ -783,7 +805,6 @@ class Tool:
             # Set job runner to the cluster default
             self.job_runners = [ { "url" : self.app.config.default_cluster_job_runner } ]
             # Set custom runner(s) if they're defined.
-            self_id = self.id.lower()
             if self_id in self.app.config.tool_runners:
                 self.job_runners = self.app.config.tool_runners[ self_id ]
         # Is this a 'hidden' tool (hidden in tool menu)

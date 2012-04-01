@@ -49,7 +49,8 @@ def get_genomespace_site_urls():
 
 def get_directory( url_opener, dm_url, path ):
     url = dm_url
-    for sub_path in path:
+    i = None
+    for i, sub_path in enumerate( path ):
         url = "%s/%s" % ( url, sub_path )
         dir_request = urllib2.Request( url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' } )
         dir_request.get_method = lambda: 'GET'
@@ -59,10 +60,14 @@ def get_directory( url_opener, dm_url, path ):
             #print "e", e, url #punting, assuming lack of permisions at this low of a level...
             continue
         break
-    return dir_dict
+    if i is not None:
+        path = path[i+1:]
+    else:
+        path = []
+    return ( dir_dict, path )
 
 def get_default_directory( url_opener, dm_url ):
-    return get_directory( url_opener, dm_url, ["defaultdirectory"] )
+    return get_directory( url_opener, dm_url, ["defaultdirectory"] )[0]
 
 def create_directory( url_opener, directory_dict, new_dir, dm_url ):
     payload = { "isDirectory": True }
@@ -142,8 +147,8 @@ def send_file_to_genomespace( genomespace_site, username, token, source_filename
     dm_url = genomespace_site_dict['dmServer']
     #get default directory
     if target_directory and target_directory[0] == '/':
-        directory_dict = get_directory( url_opener, dm_url, [ "%s/%s/%s" % ( GENOMESPACE_API_VERSION_STRING, 'file', target_directory[1] ) ] + target_directory[2:] )['directory']
-        target_directory.pop(0)
+        directory_dict, target_directory = get_directory( url_opener, dm_url, [ "%s/%s/%s" % ( GENOMESPACE_API_VERSION_STRING, 'file', target_directory[1] ) ] + target_directory[2:] )
+        directory_dict = directory_dict['directory']
     else:
         directory_dict = get_default_directory( url_opener, dm_url )['directory']
     #what directory to stuff this in

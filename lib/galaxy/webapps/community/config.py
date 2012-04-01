@@ -84,6 +84,11 @@ class Configuration( object ):
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.log_events = False
         self.cloud_controller_instance = False
+        self.server_name = ''
+        self.job_manager = ''
+        self.job_handlers = []
+        self.tool_handlers = []
+        self.tool_runners = []
         # Proxy features
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )

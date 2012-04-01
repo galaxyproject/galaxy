@@ -193,18 +193,33 @@ class Configuration( object ):
         # Store advanced job management config
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
+        self.default_job_handlers = [ x.strip() for x in kwargs.get('default_job_handlers', ','.join( self.job_handlers ) ).split(',') ]
         # Use database for IPC unless this is a standalone server (or multiple servers doing self dispatching in memory)
         self.track_jobs_in_database = True
         if ( len( self.job_handlers ) == 1 ) and ( self.job_handlers[0] == self.server_name ) and ( self.job_manager == self.server_name ):
             self.track_jobs_in_database = False
         # Store per-tool runner configs
+        self.tool_handlers = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_handlers', 'name' )
+        self.tool_runners = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_runners', 'url' )
+        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
+        # Cloud configuration options
+        self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
+        # Galaxy messaging (AMQP) configuration options
+        self.amqp = {}
         try:
-            tool_runners_config = global_conf_parser.items("galaxy:tool_runners")
+            amqp_config = global_conf_parser.items("galaxy_amqp")
+        except ConfigParser.NoSectionError:
+            amqp_config = {}
+        for k, v in amqp_config:
+            self.amqp[k] = v
+    def __read_tool_job_config( self, global_conf_parser, section, key ):
+        try:
+            tool_runners_config = global_conf_parser.items( section )
 
             # Process config to group multiple configs for the same tool.
-            tool_runners = {}
+            rval = {}
             for entry in tool_runners_config:
-                tool_config, url = entry
+                tool_config, val = entry
                 tool = None
                 runner_dict = {}
                 if tool_config.find("[") != -1:
@@ -219,29 +234,18 @@ class Configuration( object ):
                     tool = tool_config
 
                 # Add runner URL.
-                runner_dict[ 'url' ] = url
+                runner_dict[ key ] = val
 
                 # Create tool entry if necessary.
-                if tool not in tool_runners:
-                    tool_runners[ tool ] = []
+                if tool not in rval:
+                    rval[ tool ] = []
 
                 # Add entry to runners.
-                tool_runners[ tool ].append( runner_dict )
+                rval[ tool ].append( runner_dict )
 
-            self.tool_runners = tool_runners
+            return rval
         except ConfigParser.NoSectionError:
-            self.tool_runners = []
-        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
-        # Cloud configuration options
-        self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
-        # Galaxy messaging (AMQP) configuration options
-        self.amqp = {}
-        try:
-            amqp_config = global_conf_parser.items("galaxy_amqp")
-        except ConfigParser.NoSectionError:
-            amqp_config = {}
-        for k, v in amqp_config:
-            self.amqp[k] = v
+            return []
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def get_bool( self, key, default ):

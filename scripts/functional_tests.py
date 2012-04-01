@@ -135,8 +135,8 @@ def main():
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
-    testing_migrated_tools = '--migrated' in sys.argv
-    testing_installed_tools = '--installed' in sys.argv
+    testing_migrated_tools = '-migrated' in sys.argv
+    testing_installed_tools = '-installed' in sys.argv
 
     if testing_migrated_tools or testing_installed_tools:
         sys.argv.pop()

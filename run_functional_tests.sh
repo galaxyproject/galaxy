@@ -20,23 +20,23 @@ elif [ $1 = '-list' ]; then
 	echo "==========================================================================================================================================="
 	echo "'run_functional_tests.sh -id bbb'               for testing one tool with id 'bbb' ('bbb' is the tool id)"
 	echo "'run_functional_tests.sh -sid ccc'              for testing one section with sid 'ccc' ('ccc' is the string after 'section::')"
-elif [ $1 = '--migrated' ]; then
+elif [ $1 = '-migrated' ]; then
     if [ ! $2 ]; then
-        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html --migrated
+        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html -migrated
     elif [ $2 = '-id' ]; then
         # TODO: This option is not tested...
-        python ./scripts/functional_tests.py -v functional.test_toolbox:TestForTool_$3 --with-nosehtml --html-report-file run_functional_tests.html --migrated
+        python ./scripts/functional_tests.py -v functional.test_toolbox:TestForTool_$3 --with-nosehtml --html-report-file run_functional_tests.html -migrated
     else
-        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html --migrated
+        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html -migrated
     fi
-elif [ $1 = '--installed' ]; then
+elif [ $1 = '-installed' ]; then
     if [ ! $2 ]; then
-        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html --installed
+        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html -installed
     elif [ $2 = '-id' ]; then
         # TODO: This option is not tested...
-        python ./scripts/functional_tests.py -v functional.test_toolbox:TestForTool_$3 --with-nosehtml --html-report-file run_functional_tests.html --installed
+        python ./scripts/functional_tests.py -v functional.test_toolbox:TestForTool_$3 --with-nosehtml --html-report-file run_functional_tests.html -installed
     else
-        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html --installed
+        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html -installed
     fi
 else
 	python ./scripts/functional_tests.py -v --with-nosehtml --html-report-file run_functional_tests.html $1
