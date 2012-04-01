@@ -20,12 +20,12 @@ class ToolsController( BaseUIController ):
             panel_elts = []
             # Taken from tool_menu.mako:
             for key, val in self.app.toolbox.tool_panel.items():
-                panel_elts.append( val.to_dict() )
+                panel_elts.append( val.to_dict( trans ) )
             rval = panel_elts
         else:
             tools = []
             for id, tool in self.app.toolbox.tools_by_id.items():
-                tools.append( tool.to_dict() )
+                tools.append( tool.to_dict( trans ) )
             rval = tools
 
         return rval

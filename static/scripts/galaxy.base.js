@@ -623,7 +623,6 @@ function reset_tool_search( initValue ) {
     if (initValue) {
         var search_input = tool_menu_frame.find("#tool-search-query");
         search_input.val("search tools");
-        search_input.css("font-style", "italic");
     }
 }
 

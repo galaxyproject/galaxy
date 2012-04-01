@@ -22,6 +22,5 @@ else:
     
 for fname in to_pack:
     fname_base = path.splitext( path.split( fname )[1] )[0]
-    print fname_base
     print "%s --> compiled/%s.js" % ( fname, fname_base )
     out = call( cmd % ( fname, fname_base ), shell=True )

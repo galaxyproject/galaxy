@@ -26,7 +26,7 @@
   ## <!--[if lt IE 7]>
   ## <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
   ## <![endif]-->
-  ${h.js( "jquery", "galaxy.base" )}
+  ${h.js( "jquery", "galaxy.base", "libs/underscore", "libs/backbone", "libs/handlebars.runtime" )}
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.

@@ -31,6 +31,7 @@ from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
 from galaxy.util.shed_util import *
+from galaxy.web import url_for
 
 from galaxy.visualization.tracks.visual_analytics import TracksterConfig
 
@@ -486,11 +487,11 @@ class ToolSection( object ):
         self.version = elem.get( "version" ) or ''
         self.elems = odict()
         
-    def to_dict( self ):
+    def to_dict( self, trans ):
         """ Return a dict that includes section's attributes. """
         section_elts = []
         for key, val in self.elems.items():
-            section_elts.append( val.to_dict() )
+            section_elts.append( val.to_dict( trans ) )  
         return { 'type': 'section', 'id': self.id, 'name': self.name, 'version': self.version, 'elems': section_elts }
 
 class ToolSectionLabel( object ):
@@ -503,7 +504,7 @@ class ToolSectionLabel( object ):
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
         
-    def to_dict( self ):
+    def to_dict( self, trans ):
         """ Return a dict that includes label's attributes. """
         return { 'type': 'label', 'id': self.id, 'name': self.text, 'version': self.version }
 
@@ -2260,10 +2261,19 @@ class Tool:
                     self.sa_session.flush()
         return primary_datasets
         
-    def to_dict( self, **kwds ):
-        """ Return dict that includes tool's attributes. """
-        return  { 'type': 'tool', 'id': self.id, 'name': self.name, 
-                  'version': self.version, 'description': self.description }
+    def to_dict( self, trans ):
+        """ Return dict of tool attributes. """
+        
+        # Create tool link.
+        if not self.tool_type.startswith( 'data_source' ):
+            link = url_for( controller='tool_runner', tool_id=self.id )
+        else:
+            link = url_for( self.action, **self.get_static_param_values( trans ) )    
+            
+        return  { 'type': 'tool', 'id': self.id, 'name': self.name, 'link': link, 
+                  'version': self.version, 'description': self.description,
+                  'min_width': self.uihints.get( 'minwidth', -1 ),
+                  'target': self.target }
 
 class DataSourceTool( Tool ):
     """
