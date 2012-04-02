@@ -203,54 +203,54 @@ var ToolPanel = Backbone.Collection.extend({
  * they are controllers are well and the HTML is the real view in the MVC architecture.
  */
  
-// TODO: implement a BaseModelView for handling model visibility.
+/**
+ * Base view that handles visibility based on model's hidden attribute.
+ */
+var BaseView = Backbone.View.extend({
+    initialize: function() {
+        this.model.on("change:hidden", this.update_visible, this);
+    },
+    update_visible: function() {
+        ( this.model.attributes.hidden ? this.$el.hide() : this.$el.show() );
+    }    
+});
  
 /**
  * Link to a tool.
  */
-var ToolLinkView = Backbone.View.extend({
+var ToolLinkView = BaseView.extend({
     tagName: 'div',
     template: Handlebars.templates.tool_link,
-    initialize: function() {
-        this.model.on("change:hidden", this.update_visible, this);
-    },
+    
     render: function() {
         this.$el.append( this.template(this.model.toJSON()) );
         return this;
-    },
-    update_visible: function() {
-        ( this.model.attributes.hidden ? this.$el.hide() : this.$el.show() );
     }
 });
 
 /**
  * Panel label/section header.
  */
-var ToolPanelLabelView = Backbone.View.extend({
+var ToolPanelLabelView = BaseView.extend({
     tagName: 'div',
     className: 'toolPanelLabel',
     template: Handlebars.templates.panel_label,
-    initialize: function() {
-        this.model.on("change:hidden", this.update_visible, this);
-    },
+
     render: function() {
         this.$el.append( this.template(this.model.toJSON()) );
         return this;
     },
-    update_visible: function() {
-        ( this.model.attributes.hidden ? this.$el.hide() : this.$el.show() );
-    }
 });
 
 /**
  * Panel section.
  */
-var ToolPanelSectionView = Backbone.View.extend({
+var ToolPanelSectionView = BaseView.extend({
     tagName: 'div',
     className: 'toolSectionWrapper',
     template: Handlebars.templates.panel_section,
     initialize: function() {
-        this.model.on("change:hidden", this.update_visible, this);
+        BaseView.prototype.initialize.call(this);
         this.model.on("change:open", this.update_open, this);
     },
     render: function() {
@@ -297,13 +297,6 @@ var ToolPanelSectionView = Backbone.View.extend({
             this.$el.children(".toolSectionBody").show("fast") :
             this.$el.children(".toolSectionBody").hide("fast") 
         );
-    },
-    
-    /**
-     * Update section and section elements visibility after search.
-     */
-    update_visible: function() {
-        ( this.model.attributes.hidden ? this.$el.hide() : this.$el.show() );
     }
 });
 
