@@ -138,6 +138,7 @@
                 --excludeAnnotation "${annotation}"
             #end for
         #end if
+        ${analysis_param_type.multiallelic}
         '
 ##        #if str( $analysis_param_type.snpEff_rod_bind_type.snpEff_rod_bind_type_selector ) == 'set_snpEff':
 ##            -p '--annotation "SnpEff"'
@@ -145,7 +146,6 @@
 ##        #else:
 ##            -p '--excludeAnnotation "SnpEff"'
 ##        #end if
-        ${analysis_param_type.multiallelic}
     #end if
   </command>
   <inputs>
