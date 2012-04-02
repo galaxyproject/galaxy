@@ -45,10 +45,11 @@ class ShedCounter( object ):
                     if 'tools' in metadata:
                         tool_dicts = metadata[ 'tools' ]
                         for tool_dict in tool_dicts:
-                            guid = tool_dict[ 'guid' ]
-                            if guid not in processed_guids:
-                                valid_tools += 1
-                                processed_guids.append( guid )
+                            if 'guid' in tool_dict:
+                                guid = tool_dict[ 'guid' ]
+                                if guid not in processed_guids:
+                                    valid_tools += 1
+                                    processed_guids.append( guid )
                 processed_repository_ids.append( repository.id )
         return valid_tools
 
