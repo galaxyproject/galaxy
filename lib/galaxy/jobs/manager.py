@@ -89,7 +89,7 @@ class JobManagerQueue( object ):
                 log.warning( "(%s) Tool '%s' removed from tool config, unable to recover job" % ( job.id, job.tool_id ) )
                 JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.' )
             else:
-                job.handler = self.__select_handler( job ) # handler's recovery method will take it from here
+                job.handler = self.__get_handler( job ) # handler's recovery method will take it from here
                 log.info( "(%d) Job in '%s' state had no handler at job manager startup, assigned '%s' handler" % ( job.id, job.state, job.handler ) )
         if self.sa_session.dirty:
             self.sa_session.flush()
