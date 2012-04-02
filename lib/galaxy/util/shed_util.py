@@ -1,6 +1,6 @@
 import os, tempfile, shutil, subprocess, logging, string
 from datetime import date, datetime, timedelta
-from time import strftime
+from time import strftime, gmtime
 from galaxy import util
 from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
@@ -20,6 +20,37 @@ MAPPED_CHARS = { '>' :'&gt;',
                  '&' : '&amp;',
                  '\'' : '&apos;' }
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
+
+class ShedCounter( object ):
+    def __init__( self, model ):
+        self.model = model
+        self.count_time = strftime( "%b %d, %Y", gmtime() )
+        self.valid_tools = self.count_valid_tools()
+    @property
+    def sa_session( self ):
+        """Returns a SQLAlchemy session"""
+        return self.model.context
+    def count_valid_tools( self ):
+        valid_tools = 0
+        processed_repository_ids = []
+        for repository_metadata in self.sa_session.query( self.model.RepositoryMetadata ) \
+                                                  .filter( and_( self.model.RepositoryMetadata.table.c.malicious == False,
+                                                                 self.model.RepositoryMetadata.table.c.metadata is not None,
+                                                                 self.model.RepositoryMetadata.table.c.tool_versions is not None ) ):
+            processed_guids = []
+            repository = repository_metadata.repository
+            if repository.id not in processed_repository_ids:
+                for revision_metadata in repository.downloadable_revisions:
+                    metadata = revision_metadata.metadata
+                    if 'tools' in metadata:
+                        tool_dicts = metadata[ 'tools' ]
+                        for tool_dict in tool_dicts:
+                            guid = tool_dict[ 'guid' ]
+                            if guid not in processed_guids:
+                                valid_tools += 1
+                                processed_guids.append( guid )
+                processed_repository_ids.append( repository.id )
+        return valid_tools
 
 def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the config file to generate the entire list

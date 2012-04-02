@@ -321,7 +321,7 @@ class RepositoryMetadataListGrid( grids.Grid ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             repo = hg.repository( get_configured_ui(), repository.repo_path )
-            ctx = get_changectx_for_changeset( trans, repo, repository_metadata.changeset_revision )
+            ctx = get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
             return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
     class ToolsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):

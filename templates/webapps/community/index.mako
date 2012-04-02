@@ -39,7 +39,7 @@
 
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>Galaxy Tool Shed</div>
+        <div class='unified-panel-header-inner'>${trans.app.shed_counter.valid_tools} valid tools on ${trans.app.shed_counter.count_time}</div>
     </div>
     <div class="page-container" style="padding: 10px;">
         <div class="toolMenu">

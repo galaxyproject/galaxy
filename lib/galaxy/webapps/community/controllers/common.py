@@ -140,7 +140,7 @@ def get_revision_label( trans, repository, changeset_revision ):
     changeset rev and the changeset revision string.
     """
     repo = hg.repository( get_configured_ui(), repository.repo_path )
-    ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
     else:
@@ -425,7 +425,7 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
     repository = get_repository( trans, id )
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
-    ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
     metadata_dict = {}
     invalid_files = []
     if ctx is not None:
@@ -514,7 +514,7 @@ def reset_all_repository_metadata( trans, id, **kwd ):
         ancestor_metadata_dict = None
         for changeset in repo.changelog:
             current_changeset_revision = str( repo.changectx( changeset ) )
-            ctx = get_changectx_for_changeset( trans, repo, current_changeset_revision )
+            ctx = get_changectx_for_changeset( repo, current_changeset_revision )
             if current_changeset_revision == repository.tip:
                 current_metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, current_changeset_revision, repo_dir )
             else:
@@ -740,7 +740,7 @@ def compare_datatypes( ancestor_datatypes, current_datatypes ):
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
     return trans.sa_session.query( trans.model.Repository ).filter_by( name=name ).one()
-def get_changectx_for_changeset( trans, repo, changeset_revision, **kwd ):
+def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
     """Retrieve a specified changectx from a repository"""
     for changeset in repo.changelog:
         ctx = repo.changectx( changeset )
@@ -963,7 +963,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
         # Get the tool config file name from the hgweb url, something like:
         # /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
         old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
-        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
         fctx = None
         for filename in ctx:
             filename_head, filename_tail = os.path.split( filename )
@@ -1001,7 +1001,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
     refresh_on_change_values = []
     for repository_metadata in repository.downloadable_revisions:
         changeset_revision = repository_metadata.changeset_revision
-        ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
         if ctx:
             rev = '%04d' % ctx.rev()
             label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )

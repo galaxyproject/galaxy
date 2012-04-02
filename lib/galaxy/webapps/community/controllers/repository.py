@@ -854,7 +854,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 repo = hg.repository( get_configured_ui(), repo_dir )
                 # Load each tool in the repository's changeset_revision to generate a list of
                 # tool guids, since guids differentiate tools by id and version.
-                ctx = get_changectx_for_changeset( trans, repo, changeset_revision )
+                ctx = get_changectx_for_changeset( repo, changeset_revision )
                 if ctx is not None:        
                     tool_guids = []
                     for filename in ctx:
@@ -1579,7 +1579,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
-        ctx = get_changectx_for_changeset( trans, repo, ctx_str )
+        ctx = get_changectx_for_changeset( repo, ctx_str )
         if ctx is None:
             message = "Repository does not include changeset revision '%s'." % str( ctx_str )
             status = 'error'

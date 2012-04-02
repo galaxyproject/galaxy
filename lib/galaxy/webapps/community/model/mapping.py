@@ -13,6 +13,7 @@ from galaxy.model.orm import *
 from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
+from galaxy.util.shed_util import ShedCounter
 from galaxy.webapps.community.security import CommunityRBACAgent
 
 metadata = MetaData()
@@ -247,4 +248,5 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = CommunityRBACAgent( result )
+    result.shed_counter = ShedCounter( result )
     return result
