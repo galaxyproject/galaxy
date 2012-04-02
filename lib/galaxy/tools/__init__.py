@@ -2181,7 +2181,7 @@ class Tool:
                                                                           sa_session=self.sa_session )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(child_dataset.dataset, filename, create=True)
+                self.app.object_store.update_from_file(child_dataset.dataset, file_name=filename, create=True)
                 self.sa_session.add( child_dataset )
                 self.sa_session.flush()
                 child_dataset.set_size()
@@ -2248,7 +2248,7 @@ class Tool:
                 self.sa_session.add( primary_data )
                 self.sa_session.flush()
                 # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(primary_data.dataset, filename, create=True)
+                self.app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
                 primary_data.set_size()
                 primary_data.name = "%s (%s)" % ( outdata.name, designation )
                 primary_data.info = outdata.info

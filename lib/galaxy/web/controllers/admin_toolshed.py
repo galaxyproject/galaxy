@@ -367,6 +367,22 @@ class AdminToolshed( AdminGalaxy ):
             shed_tool_conf = shed_tool_conf.replace( './', '', 1 )
             shed_tool_conf_select_field = None
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
+        if includes_tools:
+            # If we're installing a single repository that contains a readme file, get it's contents to display.
+            decoded_repo_info_dict = tool_shed_decode( repo_info_dict )
+            if len( decoded_repo_info_dict ) == 1:
+                name = decoded_repo_info_dict.keys()[ 0 ]
+                repo_info_tuple = decoded_repo_info_dict[ name ]
+                description, repository_clone_url, changeset_revision = repo_info_tuple
+                owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
+                url = '%s/repository/get_readme?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( tool_shed_url, name, owner, changeset_revision )
+                response = urllib2.urlopen( url )
+                readme_text = response.read()
+                response.close()
+            else:
+                readme_text = '' 
+        else:
+            readme_text = ''
         return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                     tool_shed_url=tool_shed_url,
                                     repo_info_dict=repo_info_dict,
@@ -375,6 +391,7 @@ class AdminToolshed( AdminGalaxy ):
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
                                     new_tool_panel_section=new_tool_panel_section,
+                                    readme_text=readme_text,
                                     message=message,
                                     status=status )
     @web.expose
