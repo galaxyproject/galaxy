@@ -341,10 +341,6 @@ var ToolPanelView = Backbone.View.extend({
      */
     initialize: function(options) {
         this.collection.tool_search.on("change:results", this.handle_search_results, this);
-        
-        var self = this;
-        // Wait for collection to load before rendering.
-        this.collection.bind("reset", function() { self.render(); });
     },
     
     render: function() {

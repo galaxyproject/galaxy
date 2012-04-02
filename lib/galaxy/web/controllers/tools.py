@@ -18,7 +18,6 @@ class ToolsController( BaseUIController ):
         in_panel = util.string_as_bool( kwds.get( 'in_panel', 'True' ) )
         if in_panel:
             panel_elts = []
-            # Taken from tool_menu.mako:
             for key, val in self.app.toolbox.tool_panel.items():
                 panel_elts.append( val.to_dict( trans ) )
             rval = panel_elts

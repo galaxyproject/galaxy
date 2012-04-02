@@ -20,9 +20,14 @@
     ${h.js( "galaxy.base", "json2", "autocomplete_tagging", "backbone/tools" )}
     
     <%
+        # Set up for creating tool panel.
         show_tool_search = "true"
         if trans.user and trans.user.preferences.get( "show_tool_search", "False" ) == "False":
             show_tool_search = "false"
+        
+        dictified_panel = []
+        for key, val in trans.app.toolbox.tool_panel.items():
+            dictified_panel.append( val.to_dict( trans ) )
     %>
     
     <script type="text/javascript">
@@ -36,11 +41,11 @@
             
             // Set up tool panel.
             tool_panel = new ToolPanel( { tool_search: tool_search } );
-            tool_panel.fetch();
-            
+            tool_panel.reset( tool_panel.parse( ${h.to_json_string( dictified_panel )} ) );
             
             // Set up tool panel view and initialize.
             tool_panel_view = new ToolPanelView( {collection: tool_panel} );
+            tool_panel_view.render();
             $('body').prepend(tool_panel_view.$el);
                         
             // Minsize init hint.
