@@ -101,7 +101,7 @@ var ToolPanelSection = BaseModel.extend({
  * indicates that query was not run; if not null, results are from search using
  * query.
  */
-var ToolSearch = Backbone.Model.extend({
+var ToolSearch = BaseModel.extend({
     defaults: {
         spinner_url: "",
         search_url: "",
@@ -320,6 +320,9 @@ var ToolSearchView = Backbone.View.extend({
     
     render: function() {
         this.$el.append( this.template(this.model.toJSON()) );
+        if (!this.model.is_visible()) {
+            this.$el.hide();
+        }
         return this;
     },
     

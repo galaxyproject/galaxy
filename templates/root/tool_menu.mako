@@ -21,9 +21,9 @@
     
     <%
         # Set up for creating tool panel.
-        show_tool_search = "true"
+        tool_search_hidden = "false"
         if trans.user and trans.user.preferences.get( "show_tool_search", "False" ) == "False":
-            show_tool_search = "false"
+            tool_search_hidden = "true"
         
         dictified_panel = []
         for key, val in trans.app.toolbox.tool_panel.items():
@@ -37,7 +37,7 @@
             // Set up search.
             tool_search = new ToolSearch( {spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
                                            search_url: "${h.url_for( controller='root', action='tool_search' )}",
-                                           visible: ${show_tool_search} } );
+                                           hidden: ${tool_search_hidden} } );
             
             // Set up tool panel.
             tool_panel = new ToolPanel( { tool_search: tool_search } );
