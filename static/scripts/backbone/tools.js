@@ -355,7 +355,7 @@ var ToolPanelView = Backbone.View.extend({
                 this_el.append(section_title_view.$el);
             }
             else if (panel_elt instanceof Tool) {
-                var tool_view = new ToolLinkView({model: elt, className: "toolTitleNoSection"});
+                var tool_view = new ToolLinkView({model: panel_elt, className: "toolTitleNoSection"});
                 tool_view.render();
                 this_el.append(tool_view.$el);
             }
