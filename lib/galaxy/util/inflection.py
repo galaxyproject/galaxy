@@ -14,7 +14,7 @@ class Base:
     def cond_plural(self, number_of_records, word) :
         '''Returns the plural form of a word if first parameter is greater than 1'''
         
-        if number_of_records > 1 :
+        if number_of_records != 1:
             return self.pluralize(word)
         else :
             return word
