@@ -773,6 +773,25 @@ class RepositoryController( BaseUIController, ItemRatings ):
             ( galaxy_url, url_for( '/', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
         return trans.response.send_redirect( url )
     @web.expose
+    def get_readme( self, trans, **kwd ):
+        """
+        If the received changeset_revision includes a file named readme (case ignored), return it's contents.
+        """
+        name = kwd[ 'name' ]
+        owner = kwd[ 'owner' ]
+        changeset_revision = kwd[ 'changeset_revision' ]
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        for root, dirs, files in os.walk( repo_dir ):
+            for name in files:
+                if name.lower() in [ 'readme', 'read_me' ]:
+                    f = open( os.path.join( root, name ), 'r' )
+                    text = f.read()
+                    f.close()
+                    return str( text )
+        return ''
+    @web.expose
     def get_tool_versions( self, trans, **kwd ):
         """
         For each valid /downloadable change set (up to the received changeset_revision) in the

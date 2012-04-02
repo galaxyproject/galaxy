@@ -86,6 +86,7 @@ class Configuration( object ):
         self.cloud_controller_instance = False
         self.server_name = ''
         self.job_manager = ''
+        self.default_job_handlers = []
         self.job_handlers = []
         self.tool_handlers = []
         self.tool_runners = []
