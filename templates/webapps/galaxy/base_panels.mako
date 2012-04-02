@@ -110,7 +110,7 @@
     %endif
 
     ## Cloud menu.
-    %if app.config.get_bool( 'enable_cloud_control', False ):
+    %if app.config.get_bool( 'enable_cloud_launch', False ):
         <%
             menu_options = [
                              [_('New Cloud Cluster'), h.url_for( controller='/cloud', action='index' ) ],
