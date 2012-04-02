@@ -6,7 +6,7 @@ from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
 from galaxy.util.shed_util import copy_sample_loc_file, generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
-from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file
+from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, to_html_escaped, to_html_str
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *

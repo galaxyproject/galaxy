@@ -15,14 +15,7 @@ from mercurial import hg, ui, patch, commands
 
 log = logging.getLogger( __name__ )
 
-# Characters that must be html escaped
-MAPPED_CHARS = { '>' :'&gt;', 
-                 '<' :'&lt;',
-                 '"' : '&quot;',
-                 '&' : '&amp;',
-                 '\'' : '&apos;' }
 MAX_CONTENT_SIZE = 32768
-VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
     
 class CategoryListGrid( grids.Grid ):
@@ -785,7 +778,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo = hg.repository( get_configured_ui(), repo_dir )
         for root, dirs, files in os.walk( repo_dir ):
             for name in files:
-                if name.lower() in [ 'readme', 'read_me' ]:
+                if name.lower() in [ 'readme', 'readme.txt', 'read_me', 'read_me.txt' ]:
                     f = open( os.path.join( root, name ), 'r' )
                     text = f.read()
                     f.close()
@@ -1600,7 +1593,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         anchors = modified + added + removed + deleted + unknown + ignored + clean
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
-            diffs.append( self.to_html_escaped( diff ) )
+            diffs.append( to_html_escaped( diff ) )
         is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
                                     repository=repository,
@@ -1938,20 +1931,20 @@ class RepositoryController( BaseUIController, ItemRatings ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         if is_gzip( file_path ):
-            to_html = self.to_html_str( '\ngzip compressed file\n' )
+            to_html = to_html_str( '\ngzip compressed file\n' )
         elif is_bz2( file_path ):
-            to_html = self.to_html_str( '\nbz2 compressed file\n' )
+            to_html = to_html_str( '\nbz2 compressed file\n' )
         elif check_zip( file_path ):
-            to_html = self.to_html_str( '\nzip compressed file\n' )
+            to_html = to_html_str( '\nzip compressed file\n' )
         elif check_binary( file_path ):
-            to_html = self.to_html_str( '\nBinary file\n' )
+            to_html = to_html_str( '\nBinary file\n' )
         else:
             to_html = ''
             for i, line in enumerate( open( file_path ) ):
-                to_html = '%s%s' % ( to_html, self.to_html_str( line ) )
+                to_html = '%s%s' % ( to_html, to_html_str( line ) )
                 if len( to_html ) > MAX_CONTENT_SIZE:
                     large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-                    to_html = '%s%s' % ( to_html, self.to_html_str( large_str ) )
+                    to_html = '%s%s' % ( to_html, to_html_str( large_str ) )
                     break
         return to_html
     @web.expose
@@ -1960,34 +1953,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         return trans.fill_template( '/webapps/community/repository/help.mako', message=message, status=status, **kwd )
-    def to_html_escaped( self, text ):
-        """Translates the characters in text to html values"""
-        translated = []
-        for c in text:
-            if c in [ '\r\n', '\n', ' ', '\t' ] or c in VALID_CHARS:
-                translated.append( c )
-            elif c in MAPPED_CHARS:
-                translated.append( MAPPED_CHARS[ c ] )
-            else:
-                translated.append( 'X' )
-        return ''.join( translated )
-    def to_html_str( self, text ):
-        """Translates the characters in text to sn html string"""
-        translated = []
-        for c in text:
-            if c in VALID_CHARS:
-                translated.append( c )
-            elif c in MAPPED_CHARS:
-                translated.append( MAPPED_CHARS[ c ] )
-            elif c == ' ':
-                translated.append( '&nbsp;' )
-            elif c == '\t':
-                translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
-            elif c == '\n':
-                translated.append( '<br/>' )
-            elif c not in [ '\r' ]:
-                translated.append( 'X' )
-        return ''.join( translated )
     def __build_allow_push_select_field( self, trans, current_push_list, selected_value='none' ):
         options = []
         for user in trans.sa_session.query( trans.model.User ):

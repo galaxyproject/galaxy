@@ -6,6 +6,8 @@ from galaxy import tools
 
 log = logging.getLogger( __name__ )
 
+MAX_CONTENT_SIZE = 32768
+
 class RepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool_shed_repository ):
@@ -377,8 +379,15 @@ class AdminToolshed( AdminGalaxy ):
                 owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
                 url = '%s/repository/get_readme?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( tool_shed_url, name, owner, changeset_revision )
                 response = urllib2.urlopen( url )
-                readme_text = response.read()
+                raw_text = response.read()
                 response.close()
+                readme_text = ''
+                for i, line in enumerate( raw_text ):
+                    readme_text = '%s%s' % ( readme_text, to_html_str( line ) )
+                    if len( readme_text ) > MAX_CONTENT_SIZE:
+                        large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
+                        readme_text = '%s%s' % ( readme_text, to_html_str( large_str ) )
+                        break
             else:
                 readme_text = '' 
         else:

@@ -1,4 +1,4 @@
-import os, tempfile, shutil, subprocess, logging
+import os, tempfile, shutil, subprocess, logging, string
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import util
@@ -12,6 +12,14 @@ from elementtree import ElementTree, ElementInclude
 from elementtree.ElementTree import Element, SubElement
 
 log = logging.getLogger( __name__ )
+
+# Characters that must be html escaped
+MAPPED_CHARS = { '>' :'&gt;', 
+                 '<' :'&lt;',
+                 '"' : '&quot;',
+                 '&' : '&amp;',
+                 '\'' : '&apos;' }
+VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 
 def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the config file to generate the entire list
@@ -1096,6 +1104,34 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     if uninstall:
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         trans.app.toolbox.write_integrated_tool_panel_config_file()
+def to_html_escaped( text ):
+    """Translates the characters in text to html values"""
+    translated = []
+    for c in text:
+        if c in [ '\r\n', '\n', ' ', '\t' ] or c in VALID_CHARS:
+            translated.append( c )
+        elif c in MAPPED_CHARS:
+            translated.append( MAPPED_CHARS[ c ] )
+        else:
+            translated.append( 'X' )
+    return ''.join( translated )
+def to_html_str( text ):
+    """Translates the characters in text to sn html string"""
+    translated = []
+    for c in text:
+        if c in VALID_CHARS:
+            translated.append( c )
+        elif c in MAPPED_CHARS:
+            translated.append( MAPPED_CHARS[ c ] )
+        elif c == ' ':
+            translated.append( '&nbsp;' )
+        elif c == '\t':
+            translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
+        elif c == '\n':
+            translated.append( '<br/>' )
+        elif c not in [ '\r' ]:
+            translated.append( 'X' )
+    return ''.join( translated )
 def update_repository( current_working_dir, repo_files_dir, changeset_revision ):
     # Update the cloned repository to changeset_revision.  It is imperative that the 
     # installed repository is updated to the desired changeset_revision before metadata
