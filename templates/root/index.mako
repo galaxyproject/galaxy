@@ -173,7 +173,8 @@
                 else:
                     action = "SHOW_RECENT"
             %>
-            menu_options[ ${action} ] = toggle_recently_used_fn;
+            // TODO: make compatible with new tool menu.
+            //menu_options[ ${action} ] = toggle_recently_used_fn;
         %endif
         
         
