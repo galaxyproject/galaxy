@@ -4,6 +4,7 @@
   <!-- Dan Blankenberg -->
   <command>java  -XX:DefaultMaxRAMFraction=1 -XX:+UseParallelGC
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/FastqToSam.jar"
+    --tmpdir "${__new_file_path__}" 
     FASTQ="${input_fastq1}"
     #if str( $input_fastq2) != "None":
         FASTQ2="${input_fastq2}"

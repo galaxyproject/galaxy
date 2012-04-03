@@ -15,6 +15,7 @@
       --allow-contig-len-discord=$allowContigLenDiscord
       --output-format=$outputFormat
       --output=$outFile
+      --tmpdir "${__new_file_path__}" 
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/ReorderSam.jar"
   </command>
   <inputs>

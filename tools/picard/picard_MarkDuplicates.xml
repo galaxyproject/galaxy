@@ -7,6 +7,7 @@
       --opt-dup-dist="$optDupeDist"
       --output-format=$outputFormat
       --output-txt=$outMetrics
+      --tmpdir "${__new_file_path__}" 
       #if str( $outputFormat ) == "sam"
         #if str( $remDups ) == "true"
           --output-sam=$outFileSamRemoved

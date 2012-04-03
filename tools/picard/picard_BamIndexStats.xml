@@ -7,6 +7,7 @@
       -t "$htmlfile"
       -d "$htmlfile.files_path"
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/BamIndexStats.jar"
+      --tmpdir "${__new_file_path__}" 
   </command>
   <inputs>
     <param format="bam" name="input_file" type="data"  label="BAM dataset to generate statistics for"
