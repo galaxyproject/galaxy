@@ -464,9 +464,12 @@ class AdminController( BaseUIController, Admin ):
         count = 0
         for repository in trans.sa_session.query( trans.model.Repository ) \
                                           .filter( trans.model.Repository.table.c.deleted == False ):
-            reset_all_repository_metadata( trans, trans.security.encode_id( repository.id ) )
-            log.debug( "Reset metadata on repository %s" % repository.name )
-            count += 1
+            try:
+                reset_all_repository_metadata( trans, trans.security.encode_id( repository.id ) )
+                log.debug( "Reset metadata on repository %s" % repository.name )
+                count += 1
+            except Exception, e:
+                log.debug( "Error attempting to reset metadata on repository %s: %s" % ( repository.name, str( e ) ) )
         message = "Reset metadata on %d repositories" % count
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='browse_repository_metadata',
