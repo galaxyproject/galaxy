@@ -963,6 +963,9 @@ class DistributedObjectStore(ObjectStore):
         return self.__call_method('get_filename', obj, ObjectNotFound, True, **kwargs)
 
     def update_from_file(self, obj, **kwargs):
+        if kwargs.get('create', False):
+            self.create(obj, **kwargs)
+            kwargs['create'] = False
         return self.__call_method('update_from_file', obj, ObjectNotFound, True, **kwargs)
 
     def get_object_url(self, obj, **kwargs):
