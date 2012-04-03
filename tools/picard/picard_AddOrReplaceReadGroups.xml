@@ -16,6 +16,7 @@
       --output-format=$outputFormat
       --output=$outFile
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/AddOrReplaceReadGroups.jar"
+      --tmpdir "${__new_file_path__}" 
   </command>
   <inputs>
     <param format="bam,sam" name="inputFile" type="data" label="SAM/BAM dataset to add or replace read groups in"
