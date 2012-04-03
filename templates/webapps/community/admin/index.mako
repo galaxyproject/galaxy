@@ -89,6 +89,12 @@
                         </div>
                     </div>
                 </div>
+                <div class="toolSectionTitle">
+                    Statistics
+                </div>
+                    <div class="toolTitle">
+                        <a target="galaxy_main" href="${h.url_for( controller='admin', action='regenerate_statistics', webapp='community' )}">View shed statistics</a>
+                    </div>
             </div>
         </div>    
     </div>

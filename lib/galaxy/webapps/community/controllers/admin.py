@@ -548,6 +548,15 @@ class AdminController( BaseUIController, Admin ):
         return self.repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
+    def regenerate_statistics( self, trans, **kwd ):
+        if 'regenerate_statistics_button' in kwd:
+            trans.app.shed_counter.generate_statistics()
+        message = "Successfully regenerated statistics"
+        return trans.fill_template( '/webapps/community/admin/statistics.mako',
+                                    message=message,
+                                    status='done' )
+    @web.expose
+    @web.require_admin
     def delete_repository( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
