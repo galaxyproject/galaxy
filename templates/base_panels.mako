@@ -84,6 +84,7 @@
                 $("iframe#galaxy_main").contents().find("body").find("div[class='errormessage']").text( msg );
             }
         }
+        var uploads_in_progress = 0;
         jQuery( function() {
             $("iframe#galaxy_main").load( function() {
                 $(this).contents().find("form").each( function() { 
@@ -134,7 +135,16 @@
                                 $(this).append("<input type='hidden' name='ajax_upload' value='true'>");
                             }
                             // iframe submit is required for nginx (otherwise the encoding is wrong)
-                            $(this).ajaxSubmit( { iframe: true } );
+                            $(this).ajaxSubmit( { iframe:   true,
+                                                  complete: function (xhr, stat) {
+                                                                uploads_in_progress--;
+                                                                if (uploads_in_progress == 0) {
+                                                                    window.onbeforeunload = null;
+                                                                }
+                                                            }
+                                                 } );
+                            uploads_in_progress++;
+                            window.onbeforeunload = function() { return "Navigating away from the Galaxy analysis interface will interrupt the file upload(s) currently in progress.  Do you really want to do this?"; }
                             if ( $(this).find("input[name='folder_id']").val() != undefined ) {
                                 var library_id = $(this).find("input[name='library_id']").val();
                                 var show_deleted = $(this).find("input[name='show_deleted']").val();
