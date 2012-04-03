@@ -178,7 +178,13 @@ var ToolPanel = Backbone.Collection.extend({
     
     clear_search_results: function() {
         this.each(function(panel_elt) {
-            panel_elt.clear_search_results();
+            if (panel_elt instanceof ToolPanelSection) {
+                panel_elt.clear_search_results();
+            }
+            else {
+                // Label or tool, so just show.
+                panel_elt.show();
+            }
         });
     },
     
@@ -189,8 +195,24 @@ var ToolPanel = Backbone.Collection.extend({
             return;
         }
         
+        var cur_label = null;
         this.each(function(panel_elt) {
-            panel_elt.apply_search_results(results);
+            if (panel_elt instanceof ToolPanelLabel) {
+                cur_label = panel_elt;
+                cur_label.hide();
+            }
+            else if (panel_elt instanceof Tool) {
+                if (panel_elt.apply_search_results(results)) {
+                    if (cur_label) {
+                        cur_label.show();
+                    }
+                }
+            }
+            else {
+                // Starting new section, so clear current label.
+                cur_label = null;
+                panel_elt.apply_search_results(results);
+            }
         });
     }
 });
@@ -357,6 +379,11 @@ var ToolPanelView = Backbone.View.extend({
                 var tool_view = new ToolLinkView({model: panel_elt, className: "toolTitleNoSection"});
                 tool_view.render();
                 this_el.append(tool_view.$el);
+            }
+            else if (panel_elt instanceof ToolPanelLabel) {
+                var label_view = new ToolPanelLabelView({model: panel_elt});
+                label_view.render();
+                this_el.append(label_view.$el);
             }
         });
         return this;
