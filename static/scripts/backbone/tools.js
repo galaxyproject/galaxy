@@ -285,7 +285,6 @@ var ToolPanelSectionView = BaseView.extend({
      * Toggle visibility of tool section.
      */
     toggle: function() {
-        this.$el.children(".toolSectionBody").toggle("fast");
         this.model.set("open", !this.model.attributes.open);
     },
     
@@ -294,8 +293,8 @@ var ToolPanelSectionView = BaseView.extend({
      */
     update_open: function() {
         (this.model.attributes.open ?
-            this.$el.children(".toolSectionBody").show("fast") :
-            this.$el.children(".toolSectionBody").hide("fast") 
+            this.$el.children(".toolSectionBody").slideDown("fast") :
+            this.$el.children(".toolSectionBody").slideUp("fast") 
         );
     }
 });
