@@ -24,35 +24,73 @@ VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{
 class ShedCounter( object ):
     def __init__( self, model ):
         self.model = model
-        self.count_time = strftime( "%b %d, %Y", gmtime() )
-        self.valid_tools = self.count_valid_tools()
+        self.generation_time = strftime( "%b %d, %Y", gmtime() )
+        self.repositories = 0
+        self.new_repositories = 0
+        self.deleted_repositories = 0
+        self.invalid_tools = 0
+        self.valid_tools = 0
+        self.workflows = 0
+        self.proprietary_datatypes = 0
+        self.total_clones = 0
+        self.generate_statistics()
     @property
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.model.context
-    def count_valid_tools( self ):
-        valid_tools = 0
-        processed_repository_ids = []
-        for repository_metadata in self.sa_session.query( self.model.RepositoryMetadata ) \
-                                                  .filter( and_( self.model.RepositoryMetadata.table.c.malicious == False,
-                                                                 self.model.RepositoryMetadata.table.c.metadata is not None,
-                                                                 self.model.RepositoryMetadata.table.c.tool_versions is not None ) ):
-            processed_guids = []
-            repository = repository_metadata.repository
-            if repository.id not in processed_repository_ids:
-                for revision_metadata in repository.downloadable_revisions:
-                    metadata = revision_metadata.metadata
+    def generate_statistics( self ):
+        self.repositories = 0
+        self.new_repositories = 0
+        self.deleted_repositories = 0
+        self.invalid_tools = 0
+        self.valid_tools = 0
+        self.workflows = 0
+        self.proprietary_datatypes = 0
+        self.total_clones = 0
+        for repository in self.sa_session.query( self.model.Repository ):
+            self.repositories += 1
+            self.total_clones += repository.times_downloaded
+            if repository.deleted:
+                self.deleted_repositories += 1
+            elif repository.is_new:
+                self.new_repositories += 1
+            else:
+                processed_guids = []
+                processed_invalid_tool_configs = []
+                processed_relative_workflow_paths = []
+                processed_datatypes = []
+                for downloadable_revision in repository.downloadable_revisions:
+                    metadata = downloadable_revision.metadata
                     if 'tools' in metadata:
                         tool_dicts = metadata[ 'tools' ]
                         for tool_dict in tool_dicts:
                             if 'guid' in tool_dict:
                                 guid = tool_dict[ 'guid' ]
                                 if guid not in processed_guids:
-                                    valid_tools += 1
+                                    self.valid_tools += 1
                                     processed_guids.append( guid )
-                processed_repository_ids.append( repository.id )
-        return valid_tools
-
+                    if 'invalid_tools' in metadata:
+                        invalid_tool_configs = metadata[ 'invalid_tools' ]
+                        for invalid_tool_config in invalid_tool_configs:
+                            if invalid_tool_config not in processed_invalid_tool_configs:
+                                self.invalid_tools += 1
+                                processed_invalid_tool_configs.append( invalid_tool_config )
+                    if 'datatypes' in metadata:
+                        datatypes = metadata[ 'datatypes' ]
+                        for datatypes_dict in datatypes:
+                            if 'extension' in datatypes_dict:
+                                extension = datatypes_dict[ 'extension' ]
+                                if extension not in processed_datatypes:
+                                    self.proprietary_datatypes += 1
+                                    processed_datatypes.append( extension )
+                    if 'workflows' in metadata:
+                        workflows = metadata[ 'workflows' ]
+                        for workflow_tup in workflows:
+                            relative_path, exported_workflow_dict = workflow_tup
+                            if relative_path not in processed_relative_workflow_paths:
+                                self.workflows += 1
+                                processed_relative_workflow_paths.append( relative_path )
+        self.generation_time = strftime( "%b %d, %Y", gmtime() )
 def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have

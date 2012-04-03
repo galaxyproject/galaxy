@@ -201,7 +201,7 @@ def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
                         can_set_metadata = False
                         correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
                         correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
-                        correction_msg += "that includes the required entry to resolve this issue.<br/>"
+                        correction_msg += "that includes the required entry to correct this error.<br/>"
                         invalid_files.append( ( name, correction_msg ) )
                 if options.index_file or options.missing_index_file:
                     # Make sure the repository contains the required xxx.loc.sample file.
@@ -290,6 +290,7 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
     # repository tip, we handle things like .loc.sample files here.
     metadata_dict = {}
     invalid_files = []
+    invalid_tool_configs = []
     sample_files = []
     datatypes_config = None
     # Find datatypes_conf.xml if it exists.
@@ -324,6 +325,7 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
                         except Exception, e:
                             valid = False
                             invalid_files.append( ( name, str( e ) ) )
+                            invalid_tool_configs.append( name )
                         if valid and tool is not None:
                             can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
                             if can_set_metadata:
@@ -331,6 +333,8 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
                                 tool_config = os.path.join( root, name )
                                 repository_clone_url = generate_clone_url( trans, id )
                                 metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
+                            else:
+                                invalid_tool_configs.append( name )
                 # Find all exported workflows
                 elif name.endswith( '.ga' ):
                     try:
@@ -344,11 +348,14 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
                             metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
                     except Exception, e:
                         invalid_files.append( ( name, str( e ) ) )
+    if invalid_tool_configs:
+        metadata_dict[ 'invalid_tools' ] = invalid_tool_configs
     return metadata_dict, invalid_files
 def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision, repo_dir ):
     # Browse repository files within a change set to generate metadata.
     metadata_dict = {}
     invalid_files = []
+    invalid_tool_configs = []
     sample_files = []
     tmp_datatypes_config = None
     # Find datatypes_conf.xml if it exists.
@@ -392,6 +399,7 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
                     valid = True
                 except Exception, e:
                     invalid_files.append( ( filename, str( e ) ) )
+                    invalid_tool_configs.append( filename )
                     valid = False
                 if valid and tool is not None:
                     # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
@@ -403,6 +411,8 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
                     # tip, we do not have to handle any .loc.sample files since they would have been handled previously.
                     repository_clone_url = generate_clone_url( trans, id )
                     metadata_dict = generate_tool_metadata( filename, tool, repository_clone_url, metadata_dict )
+                else:
+                   invalid_tool_configs.append( filename ) 
             try:
                 os.unlink( tmp_filename )
             except:
@@ -417,6 +427,8 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
                     metadata_dict = generate_workflow_metadata( '', exported_workflow_dict, metadata_dict )
             except Exception, e:
                 invalid_files.append( ( name, str( e ) ) )
+    if invalid_tool_configs:
+        metadata_dict[ 'invalid_tools' ] = invalid_tool_configs
     return metadata_dict, invalid_files
 def set_repository_metadata( trans, id, changeset_revision, content_alert_str='', **kwd ):
     """Set repository metadata"""

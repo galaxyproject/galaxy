@@ -770,15 +770,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
         """
         If the received changeset_revision includes a file named readme (case ignored), return it's contents.
         """
-        name = kwd[ 'name' ]
-        owner = kwd[ 'owner' ]
+        repository_name = kwd[ 'name' ]
+        repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
-        repository = get_repository_by_name_and_owner( trans, name, owner )
+        repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
         repo_dir = repository.repo_path
-        repo = hg.repository( get_configured_ui(), repo_dir )
         for root, dirs, files in os.walk( repo_dir ):
             for name in files:
-                if name.lower() in [ 'readme', 'readme.txt', 'read_me', 'read_me.txt' ]:
+                if name.lower() in [ 'readme', 'readme.txt', 'read_me', 'read_me.txt', '%s.txt' % repository_name ]:
                     f = open( os.path.join( root, name ), 'r' )
                     text = f.read()
                     f.close()
@@ -1800,6 +1799,81 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                         status=status )
         except Exception, e:
             message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str( e )
+        if webapp == 'galaxy':
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='preview_tools_in_changeset',
+                                                              repository_id=repository_id,
+                                                              changeset_revision=changeset_revision,
+                                                              message=message,
+                                                              status='error' ) )
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='browse_repositories',
+                                                          operation='view_or_manage_repository',
+                                                          id=repository_id,
+                                                          changeset_revision=changeset_revision,
+                                                          message=message,
+                                                          status='error' ) )
+    @web.expose
+    def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'error' )
+        webapp = params.get( 'webapp', 'community' )
+        repository = get_repository( trans, repository_id )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
+        invalid_message = ''
+        if changeset_revision == repository.tip:
+            for root, dirs, files in os.walk( repo_dir ):
+                found = False
+                for name in files:
+                    if name == tool_config:
+                        tool_config_path = os.path.join( root, name )
+                        found = True
+                        break
+                if found:
+                    break
+        else:
+            for filename in ctx:
+                if filename == tool_config:
+                    fctx = ctx[ filename ]
+                    # Write the contents of datatypes_config.xml to a temporary file.
+                    fh = tempfile.NamedTemporaryFile( 'w' )
+                    tool_config_path = fh.name
+                    fh.close()
+                    fh = open( tool_config_path, 'w' )
+                    fh.write( fctx.data() )
+                    fh.close()
+                    break
+        metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, repository_id, ctx, changeset_revision, repo_dir )
+        for invalid_file_tup in invalid_files:
+            invalid_tool_config, invalid_msg = invalid_file_tup
+            if tool_config == invalid_tool_config:
+                invalid_message = invalid_msg
+                break 
+        tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_path )
+        tool_state = self.__new_state( trans )
+        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
+        if changeset_revision != repository.tip:
+            try:
+                os.unlink( tool_config_path )
+            except:
+                pass
+        try:
+            if invalid_message:
+                message = invalid_message
+            return trans.fill_template( "/webapps/community/repository/tool_form.mako",
+                                        repository=repository,
+                                        changeset_revision=changeset_revision,
+                                        tool=tool,
+                                        tool_state=tool_state,
+                                        is_malicious=is_malicious,
+                                        webapp=webapp,
+                                        message=message,
+                                        status='error' )
+        except Exception, e:
+            message = "This tool is invalid because: %s." % str( e )
         if webapp == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',

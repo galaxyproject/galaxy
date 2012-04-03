@@ -457,6 +457,27 @@ class AdminController( BaseUIController, Admin ):
                                                    status=status ) )
     @web.expose
     @web.require_admin
+    def reset_all_repository_metadata( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        count = 0
+        for repository in trans.sa_session.query( trans.model.Repository ) \
+                                          .filter( trans.model.Repository.table.c.deleted == False ):
+            try:
+                reset_all_repository_metadata( trans, trans.security.encode_id( repository.id ) )
+                log.debug( "Reset metadata on repository %s" % repository.name )
+                count += 1
+            except Exception, e:
+                log.debug( "Error attempting to reset metadata on repository %s: %s" % ( repository.name, str( e ) ) )
+        message = "Reset metadata on %d repositories" % count
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repository_metadata',
+                                                   webapp='community',
+                                                   message=util.sanitize_text( message ),
+                                                   status=status ) )
+    @web.expose
+    @web.require_admin
     def browse_repositories( self, trans, **kwd ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
@@ -525,6 +546,15 @@ class AdminController( BaseUIController, Admin ):
                                                                       changeset_revision=v ) )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def regenerate_statistics( self, trans, **kwd ):
+        if 'regenerate_statistics_button' in kwd:
+            trans.app.shed_counter.generate_statistics()
+        message = "Successfully regenerated statistics"
+        return trans.fill_template( '/webapps/community/admin/statistics.mako',
+                                    message=message,
+                                    status='done' )
     @web.expose
     @web.require_admin
     def delete_repository( self, trans, **kwd ):

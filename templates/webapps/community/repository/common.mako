@@ -95,7 +95,7 @@
                         <div class="form-row">
                             <table width="100%">
                                 <tr bgcolor="#D8D8D8" width="100%">
-                                    <td><b>Tools</b><i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i></td>
+                                    <td><b>Valid tools</b><i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i></td>
                                 </tr>
                             </table>
                         </div>
@@ -140,6 +140,31 @@
                                             %else:
                                                 none
                                             %endif
+                                        </td>
+                                    </tr>
+                                %endfor
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                    %endif
+                    %if 'invalid_tools' in metadata:
+                        <div class="form-row">
+                            <table width="100%">
+                                <tr bgcolor="#D8D8D8" width="100%">
+                                    <td><b>Invalid tools</b><i> - click the tool config file name to see why the tool is invalid</i></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <% invalid_tool_configs = metadata[ 'invalid_tools' ] %>
+                            <table class="grid">
+                                %for invalid_tool_config in invalid_tool_configs:
+                                    <tr>
+                                        <td>
+                                            <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=invalid_tool_config, changeset_revision=changeset_revision, webapp=webapp )}">
+                                                ${invalid_tool_config}
+                                            </a>
                                         </td>
                                     </tr>
                                 %endfor
