@@ -48,18 +48,18 @@ class ShedCounter( object ):
         self.proprietary_datatypes = 0
         self.total_clones = 0
         for repository in self.sa_session.query( self.model.Repository ):
+            self.repositories += 1
             self.total_clones += repository.times_downloaded
             if repository.deleted:
                 self.deleted_repositories += 1
             elif repository.is_new:
                 self.new_repositories += 1
             else:
-                self.repositories += 1
+                processed_guids = []
+                processed_invalid_tool_configs = []
+                processed_relative_workflow_paths = []
+                processed_datatypes = []
                 for downloadable_revision in repository.downloadable_revisions:
-                    processed_guids = []
-                    processed_invalid_tool_configs = []
-                    processed_relative_workflow_paths = []
-                    processed_datatypes = []
                     metadata = downloadable_revision.metadata
                     if 'tools' in metadata:
                         tool_dicts = metadata[ 'tools' ]
