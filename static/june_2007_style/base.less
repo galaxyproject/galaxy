@@ -1401,8 +1401,6 @@ div.permissionContainer {
     padding: 0;
 }
 
-@import "base_sprites";
-
 .tipsy {
     padding: 5px;
     font-size: 10px;
@@ -1521,19 +1519,19 @@ div.historyItem-failed_metadata {
 div.historyItem-error {
     // border-color: @history_error_border;
     background: @history_error_bg;
-    .state-icon {
-        -sprite-group: history-states;
-        -sprite-image: data_error.png;
-    }
+    // .state-icon {
+    //     -sprite-group: history-states;
+    //     -sprite-image: data_error.png;
+    // }
 }
 
 div.historyItem-empty {
     // border-color: @history_error_border;
     background: @history_error_bg;
-    .state-icon {
-        -sprite-group: history-states;
-        -sprite-image: data_empty.png;
-    }
+    // .state-icon {
+    //     -sprite-group: history-states;
+    //     -sprite-image: data_empty.png;
+    // }
 }
 
 div.historyItem-running {
@@ -1561,11 +1559,11 @@ div.historyItem-upload {
 }
 
 div.historyItem-queued {
-    // background: @history_queued_bg;
-    .state-icon {
-        -sprite-group: history-states;
-        -sprite-image: data_queued.png;
-    }
+    background: @history_queued_bg;
+    // .state-icon {
+    //     -sprite-group: history-states;
+    //     -sprite-image: data_queued.png;
+    // }
 }
 
 div.historyItem-noPermission {
@@ -1681,3 +1679,4 @@ div.toolTitleNoSection
   font-weight: bold;
 }
 
+@import "base_sprites";
