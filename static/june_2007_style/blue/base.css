@@ -682,6 +682,44 @@ div.permissionContainer{padding-left:20px;}
 .text-content th,.text-content td{border-bottom:1px solid #ddd;border-right:1px solid #ccc;}
 .text-content th,.text-content td{padding:.8em;}
 .icon-button{width:16px;height:16px;display:block;float:left;margin-left:2px;text-indent:20px;background-repeat:no-repeat;background-position:0px 0px;padding:0;}
+.tipsy{padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);}
+.tipsy-inner{padding:5px 8px 4px 8px;background-color:black;color:white;max-width:200px;text-align:center;}
+.tipsy-north{background-position:top center;}
+.tipsy-south{background-position:bottom center;}
+.tipsy-east{background-position:right center;}
+.tipsy-west{background-position:left center;}
+.editable-text{cursor:pointer;}
+.editable-text:hover{cursor:text;border:dotted #999999 1px;}
+.icon-button.multiinput{background:url(../images/documents-stack.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
+.icon-button.multiinput.disabled{background:url(../images/documents-stack-faded.png) no-repeat;cursor:auto;}
+.workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px;}
+body.historyPage{background:#dfe5f9;color:#303030;margin:5px;border:0;padding:0;}
+div.historyLinks{margin:5px 5px;}
+div.historyItem{margin:0px -5px;padding:8px 10px;border-top:solid #999999 1px;border-right:none;word-wrap:break-word;background:#eeeeee;}div.historyItem .state-icon{display:inline-block;vertical-align:middle;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat;}
+div.historyItem .historyItemTitle{font-weight:bold;line-height:16px;}
+.historyItemContainer:last-child div.historyItem{border-bottom:solid #999999 1px;}
+div.historyItem div.historyItem{margin-right:-11px;}
+div.historyItem-ok,div.historyItem-failed_metadata{background:#ccffcc;}div.historyItem-ok .state-icon,div.historyItem-failed_metadata .state-icon{display:none;}
+div.historyItem-error{background:#ffcccc;}
+div.historyItem-empty{background:#ffcccc;}
+div.historyItem-running{background:#ffffcc;}div.historyItem-running .state-icon{background-image:url(data_running.gif);}
+div.historyItem-setting_metadata{background:#ffffcc;}div.historyItem-setting_metadata .state-icon{background-image:url(data_running.gif);}
+div.historyItem-upload{background:#ccccff;}div.historyItem-upload .state-icon{background-image:url(data_upload.gif);}
+div.historyItem-queued{background:#eeeeee;}
+div.historyItem-noPermission{filter:alpha(opacity=60);-moz-opacity:.60;opacity:.60;}
+div.historyItemTitleBar.spinner .state-icon{background:url(data_running.gif) 0 1px no-repeat !important;}
+div.historyItemButtons{float:right;}
+div.historyItemBody div{padding-top:2px;}
+pre.peek{background:white;color:black;width:100%;font-size:10px;overflow:auto;}pre.peek th{color:white;background:#023858;}
+pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Menlo,Monaco,"Courier New",monospace;font-size:10px;}
+body.toolMenuPage{background:white;color:#303030;background:#dfe5f9;margin:5px;margin-right:10px;margin-left:10px;}
+div.toolSectionPad{margin:0;padding:0;height:5px;font-size:0px;}
+div.toolSectionDetailsInner{margin-left:5px;margin-right:5px;}
+div.toolSectionTitle{font-weight:bold;}
+div.toolPanelLabel{font-weight:bold;color:gray;text-transform:uppercase;}
+div.toolTitle{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:square outside;}
+div.toolSectionBody div.toolPanelLabel{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:none outside;}
+div.toolTitleNoSection{padding-bottom:0px;font-weight:bold;}
 .icon-button.display{background:url(history-buttons.png) no-repeat 0px 0px;}
 .icon-button.display:hover{background:url(history-buttons.png) no-repeat 0px -26px;}
 .icon-button.display_disabled{background:url(history-buttons.png) no-repeat 0px -52px;}
@@ -708,41 +746,6 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.gear{background:url(fugue.png) no-repeat 0px -364px;}
 .icon-button.chart_curve{background:url(fugue.png) no-repeat 0px -390px;}
 .text-and-autocomplete-select{background:url(fugue.png) no-repeat right -416px;}
-.tipsy{padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);}
-.tipsy-inner{padding:5px 8px 4px 8px;background-color:black;color:white;max-width:200px;text-align:center;}
-.tipsy-north{background-position:top center;}
-.tipsy-south{background-position:bottom center;}
-.tipsy-east{background-position:right center;}
-.tipsy-west{background-position:left center;}
-.editable-text{cursor:pointer;}
-.editable-text:hover{cursor:text;border:dotted #999999 1px;}
-.icon-button.multiinput{background:url(../images/documents-stack.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-.icon-button.multiinput.disabled{background:url(../images/documents-stack-faded.png) no-repeat;cursor:auto;}
-.workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px;}
-body.historyPage{background:#dfe5f9;color:#303030;margin:5px;border:0;padding:0;}
-div.historyLinks{margin:5px 5px;}
-div.historyItem{margin:0px -5px;padding:8px 10px;border-top:solid #999999 1px;border-right:none;word-wrap:break-word;background:#eeeeee;}div.historyItem .state-icon{display:inline-block;vertical-align:middle;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat;}
-div.historyItem .historyItemTitle{font-weight:bold;line-height:16px;}
-.historyItemContainer:last-child div.historyItem{border-bottom:solid #999999 1px;}
-div.historyItem div.historyItem{margin-right:-11px;}
-div.historyItem-ok,div.historyItem-failed_metadata{background:#ccffcc;}div.historyItem-ok .state-icon,div.historyItem-failed_metadata .state-icon{display:none;}
-div.historyItem-error{background:#ffcccc;}div.historyItem-error .state-icon{-sprite-group:history-states;-sprite-image:data_error.png;}
-div.historyItem-empty{background:#ffcccc;}div.historyItem-empty .state-icon{-sprite-group:history-states;-sprite-image:data_empty.png;}
-div.historyItem-running{background:#ffffcc;}div.historyItem-running .state-icon{background-image:url(data_running.gif);}
-div.historyItem-setting_metadata{background:#ffffcc;}div.historyItem-setting_metadata .state-icon{background-image:url(data_running.gif);}
-div.historyItem-upload{background:#ccccff;}div.historyItem-upload .state-icon{background-image:url(data_upload.gif);}
-div.historyItem-queued .state-icon{-sprite-group:history-states;-sprite-image:data_queued.png;}
-div.historyItem-noPermission{filter:alpha(opacity=60);-moz-opacity:.60;opacity:.60;}
-div.historyItemTitleBar.spinner .state-icon{background:url(data_running.gif) 0 1px no-repeat !important;}
-div.historyItemButtons{float:right;}
-div.historyItemBody div{padding-top:2px;}
-pre.peek{background:white;color:black;width:100%;font-size:10px;overflow:auto;}pre.peek th{color:white;background:#023858;}
-pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Menlo,Monaco,"Courier New",monospace;font-size:10px;}
-body.toolMenuPage{background:white;color:#303030;background:#dfe5f9;margin:5px;margin-right:10px;margin-left:10px;}
-div.toolSectionPad{margin:0;padding:0;height:5px;font-size:0px;}
-div.toolSectionDetailsInner{margin-left:5px;margin-right:5px;}
-div.toolSectionTitle{font-weight:bold;}
-div.toolPanelLabel{font-weight:bold;color:gray;text-transform:uppercase;}
-div.toolTitle{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:square outside;}
-div.toolSectionBody div.toolPanelLabel{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:none outside;}
-div.toolTitleNoSection{padding-bottom:0px;font-weight:bold;}
+div.historyItem-error .state-icon{background:url(history-states.png) no-repeat 0px 0px;}
+div.historyItem-empty .state-icon{background:url(history-states.png) no-repeat 0px -25px;}
+div.historyItem-queued .state-icon{background:url(history-states.png) no-repeat 0px -50px;}
