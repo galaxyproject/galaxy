@@ -72,7 +72,7 @@
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_repositories', webapp='community' )}">Browse my repositories</a>
                             </div>
                             <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', webapp='community' )}">Browse my invalid tools</a>
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository', webapp='community' )}">Browse my invalid tools</a>
                             </div>
                         %endif
                     </div>

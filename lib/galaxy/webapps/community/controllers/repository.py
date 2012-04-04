@@ -405,9 +405,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         webapp = params.get( 'webapp', 'community' )
+        cntrller = params.get( 'cntrller', 'repository' )
         is_admin = trans.user_is_admin()
         invalid_tools_dict = odict()
-        if is_admin:
+        if is_admin and cntrller == 'admin':
             for repository in trans.sa_session.query( trans.model.Repository ) \
                                               .filter( trans.model.Repository.table.c.deleted == False ) \
                                               .order_by( trans.model.Repository.table.c.name ):
