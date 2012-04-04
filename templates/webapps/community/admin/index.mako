@@ -60,6 +60,9 @@
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repository_metadata', webapp='community' )}">Browse metadata</a>
                         </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', webapp='community' )}">Browse invalid tools</a>
+                        </div>
                     </div>
                 </div>
                 <div class="toolSectionTitle">
