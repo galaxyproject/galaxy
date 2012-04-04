@@ -1056,26 +1056,35 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     ... </param>
     ... ''' ) )
     >>> print p.get_html()
-    <div><ul class="toolParameterExpandableCollapsable">
-    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
-    <li><input type="checkbox" name="some_name" value="option1"">Option 1
-    </li>
-    <li><input type="checkbox" name="some_name" value="option2"">Option 2
-    </li>
-    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="some_name" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
-    <li><input type="checkbox" name="some_name" value="option3"">Option 3
-    </li>
-    <li><input type="checkbox" name="some_name" value="option4"">Option 4
-    </li>
-    </ul>
-    </li>
-    </ul>
-    </li>
-    <li><input type="checkbox" name="some_name" value="option5"">Option 5
-    </li>
-    </ul></div>
+    <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
+    <div class="form-row-input">
+    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
+    <input type="checkbox" name="some_name" value="heading1" >Heading 1
+    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    <div class="form-row-input">
+    <input type="checkbox" name="some_name" value="option1" >Option 1
+    </div>
+    <div class="form-row-input">
+    <input type="checkbox" name="some_name" value="option2" >Option 2
+    </div>
+    <div class="form-row-input">
+    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
+    <input type="checkbox" name="some_name" value="heading1" >Heading 1
+    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    <div class="form-row-input">
+    <input type="checkbox" name="some_name" value="option3" >Option 3
+    </div>
+    <div class="form-row-input">
+    <input type="checkbox" name="some_name" value="option4" >Option 4
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    <div class="form-row-input">
+    <input type="checkbox" name="some_name" value="option5" >Option 5
+    </div>
+    </div>
     >>> p = DrillDownSelectToolParameter( None, XML( 
     ... '''
     ... <param name="some_name" type="drill_down" display="radio" hierarchy="recurse" multiple="false">
@@ -1093,26 +1102,35 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     ... </param>
     ... ''' ) )
     >>> print p.get_html()
-    <div><ul class="toolParameterExpandableCollapsable">
-    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="some_name" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
-    <li><input type="radio" name="some_name" value="option1"">Option 1
-    </li>
-    <li><input type="radio" name="some_name" value="option2"">Option 2
-    </li>
-    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="some_name" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
-    <li><input type="radio" name="some_name" value="option3"">Option 3
-    </li>
-    <li><input type="radio" name="some_name" value="option4"">Option 4
-    </li>
-    </ul>
-    </li>
-    </ul>
-    </li>
-    <li><input type="radio" name="some_name" value="option5"">Option 5
-    </li>
-    </ul></div>
+    <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
+    <div class="form-row-input">
+    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
+    <input type="radio" name="some_name" value="heading1" >Heading 1
+    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    <div class="form-row-input">
+    <input type="radio" name="some_name" value="option1" >Option 1
+    </div>
+    <div class="form-row-input">
+    <input type="radio" name="some_name" value="option2" >Option 2
+    </div>
+    <div class="form-row-input">
+    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
+    <input type="radio" name="some_name" value="heading1" >Heading 1
+    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    <div class="form-row-input">
+    <input type="radio" name="some_name" value="option3" >Option 3
+    </div>
+    <div class="form-row-input">
+    <input type="radio" name="some_name" value="option4" >Option 4
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    <div class="form-row-input">
+    <input type="radio" name="some_name" value="option5" >Option 5
+    </div>
+    </div>
     >>> print p.options
     [{'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 1', 'value': 'option1', 'options': []}, {'selected': False, 'name': 'Option 2', 'value': 'option2', 'options': []}, {'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 3', 'value': 'option3', 'options': []}, {'selected': False, 'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'selected': False, 'name': 'Option 5', 'value': 'option5', 'options': []}]
     """
