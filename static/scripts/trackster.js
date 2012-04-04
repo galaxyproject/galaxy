@@ -1811,7 +1811,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         }
     },
     zoom_in: function (point, container) {
-        if (this.max_high === 0 || this.high - this.low < this.min_separation) {
+        if (this.max_high === 0 || this.high - this.low <= this.min_separation) {
             return;
         }
         var span = this.high - this.low,
