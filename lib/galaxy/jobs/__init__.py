@@ -443,7 +443,7 @@ class JobWrapper( object ):
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data, self.working_directory)
         # Create generated output children and primary datasets and add to param_dict
-        collected_datasets = {'children':self.tool.collect_child_datasets(out_data),'primary':self.tool.collect_primary_datasets(out_data)}
+        collected_datasets = {'children':self.tool.collect_child_datasets(out_data, self.working_directory),'primary':self.tool.collect_primary_datasets(out_data, self.working_directory)}
         param_dict.update({'__collected_datasets__':collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
