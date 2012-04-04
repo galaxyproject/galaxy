@@ -428,6 +428,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     for invalid_tool_config in invalid_tools:
                         invalid_tools_dict[ invalid_tool_config ] = ( repository.id, repository.name, downloadable_revision.changeset_revision )
         return trans.fill_template( '/webapps/community/repository/browse_invalid_tools.mako',
+                                    cntrller=cntrller,
                                     invalid_tools_dict=invalid_tools_dict,
                                     webapp=webapp,
                                     message=message,
@@ -1867,6 +1868,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         break
                 if found:
                     break
+            metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, repository_id, ctx, changeset_revision, repo_dir )
         else:
             for filename in ctx:
                 if filename == tool_config:
@@ -1879,7 +1881,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     fh.write( fctx.data() )
                     fh.close()
                     break
-        metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, repository_id, ctx, changeset_revision, repo_dir )
+            metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, repository_id, ctx, changeset_revision, repo_dir )
         for invalid_file_tup in invalid_files:
             invalid_tool_config, invalid_msg = invalid_file_tup
             if tool_config == invalid_tool_config:

@@ -32,7 +32,11 @@
         </div>
     %else:
         <div class="form-row">
-            You do not own any repositories that contain invalid tools.
+            %if cntrller == 'admin' and trans.user_is_admin():
+                No repositories in this tool shed contain invalid tools.
+            %else:
+                None of your repositories contain invalid tools.
+            %endif
         </div>
     %endif
 </div>
