@@ -117,12 +117,12 @@
     </div>
     
     ## Logo, layered over tabs to be clickable
-    <div class="title" style="position: absolute; top: 0; left: 0; white-space: nowrap;">
+    <div class="title">
         <a href="${app.config.get( 'logo_url', '/' )}">
-        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="display: inline; width: 26px; vertical-align: top;">
+        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
         Galaxy Tool Shed
         %if app.config.brand:
-            <span class='brand'>/ ${app.config.brand}</span>
+            <span>/ ${app.config.brand}</span>
         %endif
         </a>
     </div>
