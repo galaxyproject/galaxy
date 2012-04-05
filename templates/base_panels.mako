@@ -50,7 +50,7 @@
     <script type="text/javascript">
         var image_path = '${h.url_for("/static/images")}';
     </script>
-    ${h.js( 'jquery' )}
+    ${h.js( 'jquery', 'libs/underscore', 'libs/backbone', 'libs/handlebars.runtime', 'backbone/ui' )}
 </%def>
 
 ## Default late-load javascripts

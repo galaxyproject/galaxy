@@ -157,6 +157,81 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     };
     
     $(function() {
+        // Create and initialize menu.
+        var 
+        
+        buttons = new IconButtonCollection([
+            new IconButton({icon_class: 'plus-button', title: 'Add tracks', on_click: function() { add_tracks(); } }),
+            new IconButton({icon_class: 'block--plus', title: 'Add group', on_click: function() { 
+                view.add_drawable( new DrawableGroup(view, view, { name: "New Group" }) );
+            } }),
+            /*
+            new IconButton({icon_class: 'toolbox', title: 'Use tools', on_click: function() { 
+                console.log("toolbox!")
+            } }),
+            */
+            new IconButton({icon_class: 'bookmarks', title: 'Bookmarks', on_click: function() { 
+                // HACK -- use style to determine if panel is hidden and hide/show accordingly.
+                parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));
+            } }),
+            new IconButton({icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
+                // Show saving dialog box
+                show_modal("Saving...", "progress");
+                                    
+                // Save bookmarks.
+                var bookmarks = [];
+                $(".bookmark").each(function() { 
+                    bookmarks[bookmarks.length] = {
+                        position: $(this).children(".position").text(),
+                        annotation: $(this).children(".annotation").text()
+                    };
+                });
+
+                // FIXME: give unique IDs to Drawables and save overview as ID.
+                var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null);
+                var payload = { 
+                    'view': view.to_dict(),
+                    'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
+                    'bookmarks': bookmarks
+                };
+
+                $.ajax({
+                    url: "${h.url_for( action='save' )}",
+                    type: "POST",
+                    data: {
+                        'vis_id': view.vis_id,
+                        'title': view.name,
+                        'dbkey': view.dbkey,
+                        'payload': JSON.stringify(payload)
+                    },
+                    dataType: "json",
+                    success: function(vis_info) {
+                        hide_modal();
+                        view.vis_id = vis_info.vis_id;
+                        view.has_changes = false;
+                        
+                        // Needed to set URL when first saving a visualization.
+                        window.history.pushState({}, "", vis_info.url);
+                    },
+                    error: function() { 
+                        show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
+                                    { "Close" : hide_modal } );
+                    }
+                });
+            } }),
+            new IconButton({icon_class: 'cross-circle', title: 'Close', on_click: function() { 
+                window.location = "${h.url_for( controller='visualization', action='list' )}";
+            } })
+        ]),
+        
+        menu = new IconButtonMenuView({
+            collection: buttons
+        });
+        
+        menu.render();
+        menu.$el.attr("style", "float: right");
+        $("#center .unified-panel-header-inner").append(menu.$el);
+        
         // Manual tipsy config because default gravity is S and cannot be changed.
         $(".menu-button").tipsy( {gravity: 'n'} );
         
@@ -229,67 +304,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             //
             // Initialize icons.
             //
-            $("#add-tracks-icon").click( function() { add_tracks(); } );
             
-            $("#add-group-icon").click( function() {
-                view.add_drawable( new DrawableGroup(view, view, { name: "New Group" }) );
-            });
-            
-            $("#save-icon").click( function() {                
-                // Show saving dialog box
-                show_modal("Saving...", "progress");
-                                    
-                // Save bookmarks.
-                var bookmarks = [];
-                $(".bookmark").each(function() { 
-                    bookmarks[bookmarks.length] = {
-                        position: $(this).children(".position").text(),
-                        annotation: $(this).children(".annotation").text()
-                    };
-                });
-
-                // FIXME: give unique IDs to Drawables and save overview as ID.
-                var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null);
-                var payload = { 
-                    'view': view.to_dict(),
-                    'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
-                    'bookmarks': bookmarks
-                };
-
-                $.ajax({
-                    url: "${h.url_for( action='save' )}",
-                    type: "POST",
-                    data: {
-                        'vis_id': view.vis_id,
-                        'title': view.name,
-                        'dbkey': view.dbkey,
-                        'payload': JSON.stringify(payload)
-                    },
-                    dataType: "json",
-                    success: function(vis_info) {
-                        hide_modal();
-                        view.vis_id = vis_info.vis_id;
-                        view.has_changes = false;
-                        
-                        // Needed to set URL when first saving a visualization.
-                        window.history.pushState({}, "", vis_info.url);
-                    },
-                    error: function() { 
-                        show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
-                                    { "Close" : hide_modal } );
-                    }
-                });
-            });
-            
-            $("#bookmarks-icon").click( function() {
-                // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));                 
-            });
-
-            $("#close-icon").click( function() {
-                window.location = "${h.url_for( controller='visualization', action='list' )}";
-            });  
-        
             $("#add-bookmark-button").click(function() {
                 // Add new bookmark.
                 var position = view.chrom + ":" + view.low + "-" + view.high,
@@ -315,13 +330,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 <div class="unified-panel-header" unselectable="on">
     <div class="unified-panel-header-inner">
         <div style="float:left;" id="title"></div>
-        <div style="float: right">
-            <a id="add-tracks-icon" class='icon-button menu-button' href="javascript:void(0);" title="Add tracks"></a>
-            <a id="add-group-icon" class='icon-button menu-button' href="javascript:void(0);" title="Add new group"></a>
-            <a id="bookmarks-icon" class='icon-button menu-button' href="javascript:void(0);" title="Bookmarks"></a>
-            <a id="save-icon" class='icon-button menu-button' href="javascript:void(0);" title="Save"></a>
-            <a id="close-icon" class='icon-button menu-button' href="javascript:void(0);" title="Close"></a>
-        </div>
     </div>
     <div style="clear: both"></div>
 </div>
