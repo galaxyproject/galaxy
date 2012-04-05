@@ -19,7 +19,7 @@
                         <td>${trans.app.shed_counter.repositories}</td>
                     </tr>
                     <tr>
-                        <td>New repositories</td>
+                        <td>Empty repositories</td>
                         <td>${trans.app.shed_counter.new_repositories}</td>
                     </tr>
                     <tr>

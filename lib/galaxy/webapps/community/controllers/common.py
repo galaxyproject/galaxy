@@ -427,8 +427,13 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
                     metadata_dict = generate_workflow_metadata( '', exported_workflow_dict, metadata_dict )
             except Exception, e:
                 invalid_files.append( ( name, str( e ) ) )
+    """
+    FIXME: Handling invalid tools in change sets that are not the repository tip are a bit complex, so this is currently not
+    supported.  One example is the Emboss tools that have a <code file> tag set, which requires the file to exist in a location
+    that can be found.
     if invalid_tool_configs:
         metadata_dict[ 'invalid_tools' ] = invalid_tool_configs
+    """
     return metadata_dict, invalid_files
 def set_repository_metadata( trans, id, changeset_revision, content_alert_str='', **kwd ):
     """Set repository metadata"""

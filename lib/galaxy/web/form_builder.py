@@ -6,6 +6,7 @@ import logging, sys, os, time
 from cgi import escape
 from galaxy.util import restore_text, relpath, nice_size
 from galaxy.web import url_for
+from binascii import hexlify
 
 log = logging.getLogger(__name__)
 
@@ -391,48 +392,66 @@ class DrillDownField( BaseField ):
     
     >>> t = DrillDownField( "foo", multiple=True, display="checkbox", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
     >>> print t.get_html()
-    <div><ul class="toolParameterExpandableCollapsable">
-    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
-    <li><input type="checkbox" name="foo" value="option1"">Option 1
-    </li>
-    <li><input type="checkbox" name="foo" value="option2"">Option 2
-    </li>
-    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="checkbox" name="foo" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
-    <li><input type="checkbox" name="foo" value="option3"">Option 3
-    </li>
-    <li><input type="checkbox" name="foo" value="option4"">Option 4
-    </li>
-    </ul>
-    </li>
-    </ul>
-    </li>
-    <li><input type="checkbox" name="foo" value="option5"">Option 5
-    </li>
-    </ul></div>
+    <div class="form-row drilldown-container" id="drilldown--666f6f">
+    <div class="form-row-input">
+    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
+    <input type="checkbox" name="foo" value="heading1" >Heading 1
+    <div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    <div class="form-row-input">
+    <input type="checkbox" name="foo" value="option1" >Option 1
+    </div>
+    <div class="form-row-input">
+    <input type="checkbox" name="foo" value="option2" >Option 2
+    </div>
+    <div class="form-row-input">
+    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
+    <input type="checkbox" name="foo" value="heading1" >Heading 1
+    <div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    <div class="form-row-input">
+    <input type="checkbox" name="foo" value="option3" >Option 3
+    </div>
+    <div class="form-row-input">
+    <input type="checkbox" name="foo" value="option4" >Option 4
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    <div class="form-row-input">
+    <input type="checkbox" name="foo" value="option5" >Option 5
+    </div>
+    </div>
     >>> t = DrillDownField( "foo", multiple=False, display="radio", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
     >>> print t.get_html()
-    <div><ul class="toolParameterExpandableCollapsable">
-    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="foo" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
-    <li><input type="radio" name="foo" value="option1"">Option 1
-    </li>
-    <li><input type="radio" name="foo" value="option2"">Option 2
-    </li>
-    <li><span class="toolParameterExpandableCollapsable">[+]</span><input type="radio" name="foo" value="heading1"">Heading 1
-    <ul class="toolParameterExpandableCollapsable" default_state="collapsed">
-    <li><input type="radio" name="foo" value="option3"">Option 3
-    </li>
-    <li><input type="radio" name="foo" value="option4"">Option 4
-    </li>
-    </ul>
-    </li>
-    </ul>
-    </li>
-    <li><input type="radio" name="foo" value="option5"">Option 5
-    </li>
-    </ul></div>
+    <div class="form-row drilldown-container" id="drilldown--666f6f">
+    <div class="form-row-input">
+    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
+    <input type="radio" name="foo" value="heading1" >Heading 1
+    <div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    <div class="form-row-input">
+    <input type="radio" name="foo" value="option1" >Option 1
+    </div>
+    <div class="form-row-input">
+    <input type="radio" name="foo" value="option2" >Option 2
+    </div>
+    <div class="form-row-input">
+    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
+    <input type="radio" name="foo" value="heading1" >Heading 1
+    <div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    <div class="form-row-input">
+    <input type="radio" name="foo" value="option3" >Option 3
+    </div>
+    <div class="form-row-input">
+    <input type="radio" name="foo" value="option4" >Option 4
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    <div class="form-row-input">
+    <input type="radio" name="foo" value="option5" >Option 5
+    </div>
+    </div>
     """
     def __init__( self, name, multiple=None, display=None, refresh_on_change=False, options = [], value = [], refresh_on_change_values = [] ):
         self.name = name
@@ -466,30 +485,34 @@ class DrillDownField( BaseField ):
                 if option['options']:
                     new_parents = list( parent_options ) + [ option['value'] ]
                     find_expanded_options( expanded_options, option['options'], new_parents )
-        def recurse_options( html, options, expanded_options = [] ):
+        def recurse_options( html, options, base_id, expanded_options = [] ):
             for option in options:
+                escaped_option_value = escape( str( option['value'] ), quote=True )
                 selected = ( option['value'] in self.value )
-                if selected: selected = ' checked'
-                else: selected = ''
-                if option['options']:
-                    default_state = 'collapsed'
-                    default_icon = '[+]'
-                    if option['value'] in expanded_options:
-                        default_state = 'expanded'
-                        default_icon = '[-]'
-                    html.append( '<li><span class="toolParameterExpandableCollapsable">%s</span><input type="%s" name="%s%s" value="%s"%s">%s' % ( default_icon, self.display, prefix, self.name, escape(str(option['value']), quote=True), selected, option['name']) )
-                    html.append( '<ul class="toolParameterExpandableCollapsable" default_state="%s">' % default_state )
-                    recurse_options( html, option['options'], expanded_options )
-                    html.append( '</ul>')
+                if selected:
+                    selected = ' checked'
                 else:
-                    html.append( '<li><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, escape(str(option['value']), quote=True), selected, option['name']) )
-                html.append( '</li>' )
+                    selected = ''
+                span_class = 'form-toggle icon-button toggle'
+                if option['value'] not in expanded_options:
+                    span_class = "%s-expand" % ( span_class )
+                html.append( '<div class="form-row-input">')
+                drilldown_group_id = "%s-%s" % ( base_id, hexlify( option['value'] ) )
+                if option['options']:
+                    html.append( '<span class="%s" id="%s-click"></span>' % ( span_class, drilldown_group_id ) )
+                html.append( '<input type="%s" name="%s%s" value="%s" %s>%s' % ( self.display, prefix, self.name, escaped_option_value, selected, option['name']) )
+                if option['options']:
+                    html.append( '<div class="form-row" id="%s-container" style="float: left; margin-left: 1em;">' % ( drilldown_group_id )  )
+                    recurse_options( html, option['options'], drilldown_group_id, expanded_options )
+                    html.append( '</div>')
+                html.append( '</div>')
+        drilldown_id = "drilldown-%s-%s" % ( hexlify( prefix ), hexlify( self.name ) )
         rval = []
-        rval.append( '<div><ul class="toolParameterExpandableCollapsable">' )
+        rval.append( '<div class="form-row drilldown-container" id="%s">' % ( drilldown_id ) )
         expanded_options = []
         find_expanded_options( expanded_options, self.options )
-        recurse_options( rval, self.options, expanded_options )
-        rval.append( '</ul></div>' )
+        recurse_options( rval, self.options, drilldown_id, expanded_options )
+        rval.append( '</div>' )
         return '\n'.join( rval )
     
 class AddressField(BaseField):

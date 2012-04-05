@@ -50,9 +50,14 @@ class ShedCounter( object ):
         for repository in self.sa_session.query( self.model.Repository ):
             self.repositories += 1
             self.total_clones += repository.times_downloaded
-            if repository.deleted:
+            is_deleted = repository.deleted
+            is_new = repository.is_new
+            if is_deleted and is_new:
                 self.deleted_repositories += 1
-            elif repository.is_new:
+                self.new_repositories += 1
+            elif is_deleted:
+                self.deleted_repositories += 1
+            elif is_new:
                 self.new_repositories += 1
             else:
                 processed_guids = []

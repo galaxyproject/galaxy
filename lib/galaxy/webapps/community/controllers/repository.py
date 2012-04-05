@@ -400,6 +400,40 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # Render the list view
         return self.valid_repository_list_grid( trans, **kwd )
     @web.expose
+    def browse_invalid_tools( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        webapp = params.get( 'webapp', 'community' )
+        cntrller = params.get( 'cntrller', 'repository' )
+        is_admin = trans.user_is_admin()
+        invalid_tools_dict = odict()
+        if is_admin and cntrller == 'admin':
+            for repository in trans.sa_session.query( trans.model.Repository ) \
+                                              .filter( trans.model.Repository.table.c.deleted == False ) \
+                                              .order_by( trans.model.Repository.table.c.name ):
+                for downloadable_revision in repository.downloadable_revisions:
+                    metadata = downloadable_revision.metadata
+                    invalid_tools = metadata.get( 'invalid_tools', [] )
+                    for invalid_tool_config in invalid_tools:
+                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id, repository.name, downloadable_revision.changeset_revision )
+        else:
+            for repository in trans.sa_session.query( trans.model.Repository ) \
+                                              .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                             trans.model.Repository.table.c.user_id == trans.user.id ) ) \
+                                              .order_by( trans.model.Repository.table.c.name ):
+                for downloadable_revision in repository.downloadable_revisions:
+                    metadata = downloadable_revision.metadata
+                    invalid_tools = metadata.get( 'invalid_tools', [] )
+                    for invalid_tool_config in invalid_tools:
+                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id, repository.name, downloadable_revision.changeset_revision )
+        return trans.fill_template( '/webapps/community/repository/browse_invalid_tools.mako',
+                                    cntrller=cntrller,
+                                    invalid_tools_dict=invalid_tools_dict,
+                                    webapp=webapp,
+                                    message=message,
+                                    status=status )     
+    @web.expose
     def find_workflows( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
@@ -1834,6 +1868,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         break
                 if found:
                     break
+            metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, repository_id, ctx, changeset_revision, repo_dir )
         else:
             for filename in ctx:
                 if filename == tool_config:
@@ -1846,7 +1881,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     fh.write( fctx.data() )
                     fh.close()
                     break
-        metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, repository_id, ctx, changeset_revision, repo_dir )
+            metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, repository_id, ctx, changeset_revision, repo_dir )
         for invalid_file_tup in invalid_files:
             invalid_tool_config, invalid_msg = invalid_file_tup
             if tool_config == invalid_tool_config:
