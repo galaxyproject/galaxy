@@ -43,14 +43,14 @@
                     }
                     show_hide_click_elt.click( function() {
                         if ( show_hide_click_elt.hasClass("toggle") ){
-                            show_hide_click_elt.removeClass("toggle");
                             show_hide_click_elt.addClass("toggle-expand");
-                            show_hide_elt.hide()
+                            show_hide_click_elt.removeClass("toggle");
+                            show_hide_elt.slideUp( 'fast' );
                         }
                         else {
                             show_hide_click_elt.addClass("toggle");
                             show_hide_click_elt.removeClass("toggle-expand");
-                            show_hide_elt.show();
+                            show_hide_elt.slideDown( 'fast' );
                         }
                     });
                 });
