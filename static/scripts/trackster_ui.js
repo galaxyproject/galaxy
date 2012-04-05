@@ -21,8 +21,12 @@ var add_bookmark = function(position, annotation) {
         position_link = $("<a href=''/>").text(position).appendTo(position_div).click(function() {
             view.go_to(position);
             return false;
-        });
-        annotation_div = get_editable_text_elt(annotation, true).addClass("annotation").appendTo(new_bookmark);
+        }),
+        annotation_div = $("<div/>").text(annotation).make_text_editable({
+            num_rows: 3,
+            use_textarea: true,
+            help_text: "Set bookmark note"
+        }).addClass("annotation").appendTo(new_bookmark);
         
     view.has_changes = true;
     return new_bookmark;
