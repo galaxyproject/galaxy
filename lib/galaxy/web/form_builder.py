@@ -144,7 +144,7 @@ class FileField(BaseField):
     def get_html( self, prefix="" ):
         value_text = ""
         if self.value:
-            value_text = ' value="%s"' % self.value
+            value_text = ' value="%s"' % escape( str( self.value ),  quote=True )
         ajax_text = ""
         if self.ajax:
             ajax_text = ' galaxy-ajax-upload="true"'
@@ -279,7 +279,7 @@ class SelectField(BaseField):
         if self.refresh_on_change: 
             self.refresh_on_change_text = ' refresh_on_change="true"'
             if self.refresh_on_change_values:
-                self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
+                self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % ( self.refresh_on_change_text, escape( ",".join( self.refresh_on_change_values ), quote=True ) )
         else:
             self.refresh_on_change_text = ''
     def add_option( self, text, value, selected = False ):
@@ -306,7 +306,7 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " checked='checked'"
             rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
-                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, text ) )
+                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( str( text ), quote=True ) ) )
             ctr += 1
         return "\n".join( rval )
     def get_html_radio( self, prefix="", disabled=False ):
@@ -351,7 +351,7 @@ class SelectField(BaseField):
                 last_selected_value = value
             else:
                 selected_text = ""
-            rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, text ) )
+            rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, escape( str( text ), quote=True ) ) )
         if last_selected_value:
             last_selected_value = ' last_selected_value="%s"' % escape( str( last_selected_value ), quote=True )
         rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>' % \
