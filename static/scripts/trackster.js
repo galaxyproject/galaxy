@@ -3399,7 +3399,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
         // about track status.
         var init_deferred = $.Deferred();
-        $.getJSON(converted_datasets_state_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
+        $.getJSON(this.dataset_check_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
                  function (result) {
             if (!result || result === "error" || result.kind === "error") {
                 track.container_div.addClass("error");
@@ -3421,7 +3421,7 @@ extend(Track.prototype, Drawable.prototype, {
                 track.tiles_div.html(DATA_PENDING);
                 //$("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif").appendTo(track.tiles_div);
                 setTimeout(function() { track.init(); }, track.data_query_wait);
-            } else if (result['status'] === "data") {
+            } else if (result === "data" || result['status'] === "data") {
                 if (result['valid_chroms']) {
                     track.valid_chroms = result['valid_chroms'];
                     track.update_icons();
