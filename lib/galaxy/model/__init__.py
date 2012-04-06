@@ -1186,6 +1186,12 @@ class HistoryDatasetAssociationDisplayAtAuthorization( object ):
         self.history_dataset_association = hda
         self.user = user
         self.site = site
+        
+class HistoryDatasetAssociationSubset( object ):
+    def __init__(self, hda, subset, location):
+        self.hda = hda
+        self.subset = subset
+        self.location = location
 
 class Library( object, APIItem ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )

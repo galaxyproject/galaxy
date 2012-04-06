@@ -143,6 +143,12 @@ HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_dataset_
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "site", TrimmedString( 255 ) ) )
+    
+HistoryDatasetAssociationSubset.table = Table( "history_dataset_association_subset", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "history_dataset_association_subset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "location", Unicode(255), index=True) )
 
 ImplicitlyConvertedDatasetAssociation.table = Table( "implicitly_converted_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1232,6 +1238,13 @@ assign_mapper( context, Dataset, Dataset.table,
 assign_mapper( context, HistoryDatasetAssociationDisplayAtAuthorization, HistoryDatasetAssociationDisplayAtAuthorization.table,
     properties=dict( history_dataset_association = relation( HistoryDatasetAssociation ),
                      user = relation( User ) ) )
+                     
+assign_mapper( context, HistoryDatasetAssociationSubset, HistoryDatasetAssociationSubset.table,
+    properties=dict( hda = relation( HistoryDatasetAssociation,
+                        primaryjoin=( HistoryDatasetAssociationSubset.table.c.history_dataset_association_id == HistoryDatasetAssociation.table.c.id ) ),
+                     subset = relation( HistoryDatasetAssociation,
+                        primaryjoin=( HistoryDatasetAssociationSubset.table.c.history_dataset_association_subset_id == HistoryDatasetAssociation.table.c.id ) )
+                    ) )
 
 assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvertedDatasetAssociation.table, 
     properties=dict( parent_hda=relation( 
