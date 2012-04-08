@@ -3894,28 +3894,28 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.data_query_wait = 1000;
         this.dataset_check_url = dataset_state_url;
         
-        /**
-         * Predraw init sets up postdraw init.
-         */
-        this.predraw_init = function() {
-            // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
-            var track = this; 
-            var post_init = function() {
-                if (track.data_manager.size() === 0) {
-                    // Track still drawing initial data, so do nothing.
-                    setTimeout(post_init, 300);
-                }
-                else {
-                    // Track drawing done: reset dataset check, data URL, wait time and get dataset state to start
-                    // indexing.
-                    track.data_url = default_data_url;
-                    track.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
-                    track.dataset_state_url = converted_datasets_state_url;
-                    $.getJSON(track.dataset_state_url, {dataset_id : track.dataset_id, hda_ldda: track.hda_ldda}, function(track_data) {});
-                }
-            };
-            post_init();
-        }
+        //
+        // Set up one-time, post-draw to clear tool execution settings.
+        //
+        this.normal_postdraw_actions = this.postdraw_actions;
+        this.postdraw_actions = function(tiles, width, w_scale, clear_after) {
+            var self = this;
+            
+            // Do normal postdraw init.
+            self.normal_postdraw_actions(tiles, width, w_scale, clear_after);
+            
+            // Tool-execution specific post-draw init:
+            
+            // Reset dataset check, data URL, wait time.
+            self.data_url = default_data_url;
+            self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+            self.dataset_state_url = converted_datasets_state_url;
+            // Get dataset state to indexing.
+            $.getJSON(self.dataset_state_url, {dataset_id : self.dataset_id, hda_ldda: self.hda_ldda}, function(track_data) {});
+            
+            // Reset post-draw actions function.
+            self.postdraw_actions = self.normal_postdraw_actions;
+        };
     }
 });
 
