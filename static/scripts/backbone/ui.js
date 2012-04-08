@@ -18,40 +18,21 @@ var IconButtonCollection = Backbone.Collection.extend({
 });
 
 /**
- * A single icon button.
- */
-var IconButtonView = Backbone.View.extend({
-    tagName: 'a',
-    className: 'icon-button menu-button',
-    
-    events: {
-        'click': 'on_click'
-    },
-    
-    render: function() {
-        this.$el.attr('href', 'javascript:void(0)')
-                .attr('title', this.model.attributes.title)
-                .addClass(this.model.attributes.icon_class);
-        return this;
-    },
-    
-    on_click: function() {
-        this.model.attributes.on_click();
-    }
-});
-
-/**
- * Menu with multiple icon buttons.
+ * Menu with multiple icon buttons. Views are not needed nor used for individual buttons.
  */
 var IconButtonMenuView = Backbone.View.extend({
     tagName: 'div',
     
     render: function() {
         var self = this;
-        this.collection.each(function(icon_button) {
-            var view = new IconButtonView({model: icon_button});
-            view.render();
-            self.$el.append(view.$el); 
+        this.collection.each(function(button) {
+            // Create and add icon button to menu.
+            $("<a/>").attr('href', 'javascript:void(0)')
+                     .attr('title', button.attributes.title)
+                     .addClass('icon-button menu-button')
+                     .addClass(button.attributes.icon_class)
+                     .appendTo(self.$el)
+                     .click(button.attributes.on_click);
         });
         return this;
     }
