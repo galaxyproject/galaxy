@@ -2,7 +2,7 @@
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os, sys, tempfile, threading, logging
-import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary, assembly, ngsindex, wsf
+import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary, assembly, ngsindex
 import galaxy.util
 from galaxy.util.odict import odict
 from display_applications.application import DisplayApplication

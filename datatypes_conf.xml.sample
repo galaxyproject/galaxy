@@ -171,7 +171,6 @@
       <display file="rviewer/vcf.xml" inherit="True"/>
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Binary" subclass="True"/>
-    <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
