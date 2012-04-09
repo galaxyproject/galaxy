@@ -64,7 +64,7 @@
         
     %if self.has_left_panel:
             var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
-            force_left_panel = lp.force_panel;
+            force_left_panel = function( x ) { lp.force_panel( x ) };
         %endif
         
     %if self.has_right_panel:
