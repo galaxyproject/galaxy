@@ -25,9 +25,7 @@
         if trans.user and trans.user.preferences.get( "show_tool_search", "False" ) == "False":
             tool_search_hidden = "true"
         
-        dictified_panel = []
-        for key, val in trans.app.toolbox.tool_panel.items():
-            dictified_panel.append( val.to_dict( trans ) )
+        dictified_panel = trans.app.toolbox.to_dict( trans )
     %>
     
     <script type="text/javascript">

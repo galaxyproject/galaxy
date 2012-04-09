@@ -487,17 +487,105 @@ class ToolBox( object ):
         Returns a SQLAlchemy session
         """
         return self.app.model.context
+        
+    def to_dict( self, trans, in_panel=True, trackster=False ):
+        
+        def filter_for_trackster( item ):
+            """
+            Filters tool panel elements so that only those that are compatible
+            with Trackster are kept.
+            """
+            
+            if isinstance( item, Tool ):
+                # If tool has a trackster config, it can be used in Trackster.
+                if tool.trackster_conf:
+                    return item
+            elif isinstance( item, ToolSectionLabel ):
+                # Tool label cannot be directly filtered.
+                return item
+            elif isinstance( item, ToolSection ):
+                # Filter section item-by-item. Only show a label if there are 
+                # trackster-compatible tools below it.
+                cur_label_key = None
+                tools_under_label = False
+                filtered_elems = item.elems.copy()
+                for key, section_item in item.elems.items():
+                    if isinstance( section_item, Tool ):
+                        # Filter tool.
+                        if section_item.trackster_conf:
+                            tools_under_label = True
+                        else:
+                            del filtered_elems[ key ]
+                    elif isinstance( section_item, ToolSectionLabel ):
+                        # If there is a label and it does not have tools, 
+                        # remove it.
+                        if cur_label_key and not tools_under_label:
+                            del filtered_elems[ cur_label_key ]
+                            
+                        # Reset attributes for new label.
+                        cur_label_key = key
+                        tools_under_label = False
+                        
+                
+                # Handle last label.
+                if cur_label_key and not tools_under_label:
+                    del filtered_elems[ cur_label_key ]
+                        
+                # Only return section if there are elements.
+                if len( filtered_elems ) != 0:
+                    copy = item.copy()
+                    copy.elems = filtered_elems
+                    return copy
+                    
+            return None
+        
+        #    
+        # Dictify toolbox.
+        # 
+        
+        if in_panel:
+            panel_elts = [ val for val in self.tool_panel.itervalues() ]
+            
+            # Filter if necessary.
+            if trackster:
+                filtered_panel_elts = []
+                for index, elt in enumerate( panel_elts ):
+                    elt = filter_for_trackster( elt )
+                    if elt:
+                        filtered_panel_elts.append( elt )
+                panel_elts = filtered_panel_elts
+            
+            # Produce panel.
+            rval = []
+            for elt in panel_elts:
+                rval.append( elt.to_dict( trans ) )
+        else:
+            tools = []
+            for id, tool in self.app.toolbox.tools_by_id.items():
+                tools.append( tool.to_dict( trans ) )
+            rval = tools
+
+        return rval
     
 class ToolSection( object ):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
     """
-    def __init__( self, elem ):
-        self.name = elem.get( "name" )
-        self.id = elem.get( "id" )
-        self.version = elem.get( "version" ) or ''
+    def __init__( self, elem=None ):
+        f = lambda elem, val: elem is not None and elem.get( val ) or ''
+        self.name = f( elem, 'name' )
+        self.id = f( elem, 'id' )
+        self.version = f( elem, 'version' )
         self.elems = odict()
+        
+    def copy( self ):
+        copy = ToolSection()
+        copy.name = self.name
+        copy.id = self.id
+        copy.version = self.version
+        copy.elems = self.elems.copy()
+        return copy
         
     def to_dict( self, trans ):
         """ Return a dict that includes section's attributes. """
@@ -880,7 +968,7 @@ class Tool:
         self.is_workflow_compatible = self.check_workflow_compatible()
         # Trackster configuration.
         trackster_conf = root.find( "trackster_conf" )
-        if trackster_conf:
+        if trackster_conf is not None:
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None

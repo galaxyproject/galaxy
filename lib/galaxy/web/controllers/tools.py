@@ -14,18 +14,13 @@ class ToolsController( BaseUIController ):
         GET /api/tools: returns a list of tools defined by parameters
             parameters: 
                 in_panel - if true, tools are returned in panel structure, including sections and labels
+                trackster - if true, only tools that are compatible with Trackster are returned
         """
+        
+        # Read params.
         in_panel = util.string_as_bool( kwds.get( 'in_panel', 'True' ) )
-        if in_panel:
-            panel_elts = []
-            for key, val in self.app.toolbox.tool_panel.items():
-                panel_elts.append( val.to_dict( trans ) )
-            rval = panel_elts
-        else:
-            tools = []
-            for id, tool in self.app.toolbox.tools_by_id.items():
-                tools.append( tool.to_dict( trans ) )
-            rval = tools
-
-        return rval
+        trackster = util.string_as_bool( kwds.get( 'trackster', 'False' ) )
+        
+        # Create return value.
+        return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster )
         
