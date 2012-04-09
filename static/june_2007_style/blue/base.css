@@ -713,13 +713,16 @@ div.historyItemBody div{padding-top:2px;}
 pre.peek{background:white;color:black;width:100%;font-size:10px;overflow:auto;}pre.peek th{color:white;background:#023858;}
 pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Menlo,Monaco,"Courier New",monospace;font-size:10px;}
 .toolMenuContainer{color:#303030;background:#dfe5f9;margin-top:5px;}
+.unified-panel-body>.toolMenu{padding:10px;}
 div.toolSectionPad{margin:0;padding:0;height:5px;font-size:0px;}
+div.toolSectionWrapper{margin-bottom:5px;}
 div.toolSectionDetailsInner{margin-left:5px;margin-right:5px;}
 div.toolSectionTitle{font-weight:bold;}
-div.toolPanelLabel{font-weight:bold;color:gray;text-transform:uppercase;}
+div.toolPanelLabel{padding-top:10px;padding-bottom:5px;font-weight:bold;color:gray;text-transform:uppercase;}
 div.toolTitle{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:square outside;}
 div.toolSectionBody div.toolPanelLabel{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:none outside;}
-div.toolTitleNoSection{padding-bottom:0px;font-weight:bold;}
+div.toolTitleNoSection{padding-bottom:5px;font-weight:bold;}
+#tool-search{padding-top:5px;padding-bottom:10px;position:relative;}
 .icon-button.display{background:url(history-buttons.png) no-repeat 0px 0px;}
 .icon-button.display:hover{background:url(history-buttons.png) no-repeat 0px -26px;}
 .icon-button.display_disabled{background:url(history-buttons.png) no-repeat 0px -52px;}
