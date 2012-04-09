@@ -141,7 +141,7 @@ class Registry( object ):
                                     if hasattr( imported_module, datatype_class_name ):
                                         datatype_class = getattr( imported_module, datatype_class_name )
                                 except Exception, e:
-                                    full_path = os.path.join( full_path, proprietary_datatype_module )
+                                    full_path = os.path.join( proprietary_path, proprietary_datatype_module )
                                     self.log.debug( "Exception importing proprietary code file %s: %s" % ( str( full_path ), str( e ) ) )
                                 finally:
                                     lock.release()
