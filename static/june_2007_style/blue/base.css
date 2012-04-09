@@ -712,7 +712,7 @@ div.historyItemButtons{float:right;}
 div.historyItemBody div{padding-top:2px;}
 pre.peek{background:white;color:black;width:100%;font-size:10px;overflow:auto;}pre.peek th{color:white;background:#023858;}
 pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Menlo,Monaco,"Courier New",monospace;font-size:10px;}
-body.toolMenuPage{background:white;color:#303030;background:#dfe5f9;margin:5px;margin-right:10px;margin-left:10px;}
+.toolMenuContainer{color:#303030;background:#dfe5f9;margin-top:5px;}
 div.toolSectionPad{margin:0;padding:0;height:5px;font-size:0px;}
 div.toolSectionDetailsInner{margin-left:5px;margin-right:5px;}
 div.toolSectionTitle{font-weight:bold;}

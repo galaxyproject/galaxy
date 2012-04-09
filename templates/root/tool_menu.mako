@@ -89,7 +89,7 @@
 </%def>
 
 ## Default body
-<body class="toolMenuPage">
+<body class="toolMenuContainer">
     
     <div class="toolMenu">
         ## Feedback when search returns no results.
