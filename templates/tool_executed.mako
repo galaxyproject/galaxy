@@ -16,7 +16,7 @@
   %if trans.user:  
       if (inside_galaxy_frameset)
       {
-            parent.frames.galaxy_tools.update_recently_used();
+            //parent.frames.galaxy_tools.update_recently_used();
       }
   %endif
   
