@@ -2292,6 +2292,11 @@ class Tool:
                     self.sa_session.flush()
         return primary_datasets
         
+    def _is_hidden_for_user( self, user ):
+        if self.hidden or ( not user and self.require_login ):
+            return True
+        return False
+        
     def to_dict( self, trans ):
         """ Return dict of tool attributes. """
         
@@ -2304,7 +2309,8 @@ class Tool:
         return  { 'type': 'tool', 'id': self.id, 'name': self.name, 'link': link, 
                   'version': self.version, 'description': self.description,
                   'min_width': self.uihints.get( 'minwidth', -1 ),
-                  'target': self.target }
+                  'target': self.target,
+                  'hidden': self._is_hidden_for_user( trans.user ) }
 
 class DataSourceTool( Tool ):
     """

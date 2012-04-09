@@ -230,6 +230,7 @@ var ToolPanel = Backbone.Collection.extend({
 var BaseView = Backbone.View.extend({
     initialize: function() {
         this.model.on("change:hidden", this.update_visible, this);
+        this.update_visible();
     },
     update_visible: function() {
         ( this.model.attributes.hidden ? this.$el.hide() : this.$el.show() );
