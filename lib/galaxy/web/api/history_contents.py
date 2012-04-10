@@ -95,7 +95,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             except Exception, e:
                 return str( e )
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
-            history.add_dataset( hda )
             trans.sa_session.flush()
             return hda.get_api_value()
         else:
