@@ -490,52 +490,57 @@ class ToolBox( object ):
         
     def to_dict( self, trans, in_panel=True, trackster=False ):
         
-        def filter_for_trackster( item ):
+        def filter_for_panel( item, filters ):
             """
             Filters tool panel elements so that only those that are compatible
-            with Trackster are kept.
+            with provided filters are kept.
             """
-            
+            def _apply_filter( filter_item, filter_list ):
+                for filter_method in filter_list:
+                    if not filter_method( filter_item ):
+                        return False
+                return True
             if isinstance( item, Tool ):
-                # If tool has a trackster config, it can be used in Trackster.
-                if tool.trackster_conf:
+                if _apply_filter( item, filters[ 'tool' ] ):
                     return item
             elif isinstance( item, ToolSectionLabel ):
-                # Tool label cannot be directly filtered.
-                return item
+                if _apply_filter( item, filters[ 'label' ] ): 
+                    return item
             elif isinstance( item, ToolSection ):
                 # Filter section item-by-item. Only show a label if there are 
-                # trackster-compatible tools below it.
-                cur_label_key = None
-                tools_under_label = False
-                filtered_elems = item.elems.copy()
-                for key, section_item in item.elems.items():
-                    if isinstance( section_item, Tool ):
-                        # Filter tool.
-                        if section_item.trackster_conf:
-                            tools_under_label = True
-                        else:
-                            del filtered_elems[ key ]
-                    elif isinstance( section_item, ToolSectionLabel ):
-                        # If there is a label and it does not have tools, 
-                        # remove it.
-                        if cur_label_key and not tools_under_label:
-                            del filtered_elems[ cur_label_key ]
-                            
-                        # Reset attributes for new label.
-                        cur_label_key = key
-                        tools_under_label = False
-                        
+                # non-filtered tools below it.
                 
-                # Handle last label.
-                if cur_label_key and not tools_under_label:
-                    del filtered_elems[ cur_label_key ]
-                        
-                # Only return section if there are elements.
-                if len( filtered_elems ) != 0:
-                    copy = item.copy()
-                    copy.elems = filtered_elems
-                    return copy
+                if _apply_filter( item, filters[ 'section' ] ):
+                    cur_label_key = None
+                    tools_under_label = False
+                    filtered_elems = item.elems.copy()
+                    for key, section_item in item.elems.items():
+                        if isinstance( section_item, Tool ):
+                            # Filter tool.
+                            if _apply_filter( section_item, filters[ 'tool' ] ):
+                                tools_under_label = True
+                            else:
+                                del filtered_elems[ key ]
+                        elif isinstance( section_item, ToolSectionLabel ):
+                            # If there is a label and it does not have tools, 
+                            # remove it.
+                            if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
+                                del filtered_elems[ cur_label_key ]
+                            
+                            # Reset attributes for new label.
+                            cur_label_key = key
+                            tools_under_label = False
+                            
+                    
+                    # Handle last label.
+                    if cur_label_key and not tools_under_label:
+                        del filtered_elems[ cur_label_key ]
+                            
+                    # Only return section if there are elements.
+                    if len( filtered_elems ) != 0:
+                        copy = item.copy()
+                        copy.elems = filtered_elems
+                        return copy
                     
             return None
         
@@ -547,13 +552,15 @@ class ToolBox( object ):
             panel_elts = [ val for val in self.tool_panel.itervalues() ]
             
             # Filter if necessary.
+            filters = dict( tool=[ lambda x: not x._is_hidden_for_user( trans.user ) ], section=[], label=[] ) #hidden tools filter
             if trackster:
-                filtered_panel_elts = []
-                for index, elt in enumerate( panel_elts ):
-                    elt = filter_for_trackster( elt )
-                    if elt:
-                        filtered_panel_elts.append( elt )
-                panel_elts = filtered_panel_elts
+                filters[ 'tool' ].append( lambda x: x.trackster_conf ) # If tool has a trackster config, it can be used in Trackster.
+            filtered_panel_elts = []
+            for index, elt in enumerate( panel_elts ):
+                elt = filter_for_panel( elt, filters )
+                if elt:
+                    filtered_panel_elts.append( elt )
+            panel_elts = filtered_panel_elts
             
             # Produce panel.
             rval = []
