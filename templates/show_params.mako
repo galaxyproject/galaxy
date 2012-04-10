@@ -52,6 +52,9 @@
         <tr><td>Tool Version:</td><td>${hda.tool_version}</td></tr>
         <tr><td>Tool Standard Output:</td><td><a href="${h.url_for( controller='dataset', action='stdout')}">stdout</a></td></tr>
         <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr')}">stderr</a></td></tr>
+        %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+            <tr><td>Full Path:</td><td>${hda.file_name}</td></tr>
+        %endif
 </table>
 <br />
 <table class="tabletip">

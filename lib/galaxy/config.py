@@ -106,6 +106,7 @@ class Configuration( object ):
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
+        self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
         # External Service types used in sample tracking
         self.external_service_type_config_file = resolve_path( kwargs.get( 'external_service_type_config_file', 'external_service_types_conf.xml' ), self.root )
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )

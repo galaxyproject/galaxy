@@ -678,6 +678,10 @@ use_interactive = True
 #pbs_stage_path = 
 #pbs_dataset_server = 
 
+# This option allows users to see the full path of datasets via the "View
+# Details" option in the history.  Administrators can always see this.
+#expose_dataset_path = False
+
 # ---- Per-Tool Job Management ----------------------------------------------
 
 # Per-tool job handler and runner overrides. Parameters can be included to define multiple
