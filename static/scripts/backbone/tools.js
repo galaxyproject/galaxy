@@ -45,6 +45,13 @@ var Tool = BaseModel.extend({
 });
 
 /**
+ * Wrap collection of tools for fast access/manipulation.
+ */
+var ToolCollection = Backbone.Collection.extend({
+    model: Tool
+});
+
+/**
  * Label or section header in tool panel.
  */
 var ToolPanelLabel = BaseModel.extend({});
@@ -149,6 +156,8 @@ var ToolSearch = BaseModel.extend({
  */
 var ToolPanel = Backbone.Collection.extend({
     url: "/tools",
+    tools: new ToolCollection(),
+    
     parse: function(response) {
         // Recursive function to parse tool panel elements.
         var parse_elt = function(elt_dict) {
@@ -173,6 +182,27 @@ var ToolPanel = Backbone.Collection.extend({
     initialize: function(options) {
         this.tool_search = options.tool_search;
         this.tool_search.on("change:results", this.apply_search_results, this);
+        this.on("reset", this.populate_tools, this);
+    },
+    
+    /**
+     * Populate tool collection from panel elements.
+     */
+    populate_tools: function() {
+        var self = this;
+        self.tools = new ToolCollection(); 
+        this.each(function(panel_elt) {
+            if (panel_elt instanceof ToolPanelSection) {
+                _.each(panel_elt.attributes.elems, function (section_elt) {
+                    if (section_elt instanceof Tool) {
+                        self.tools.push(section_elt);
+                    }
+                });
+            }
+            else if (panel_elt instanceof Tool) {
+                self.tools.push(panel_elt);
+            }
+        });
     },
     
     clear_search_results: function() {
@@ -358,34 +388,51 @@ var ToolPanelView = Backbone.View.extend({
      */
     initialize: function(options) {
         this.collection.tool_search.on("change:results", this.handle_search_results, this);
+        
+        this.tool_link_click_fn = null;
+        if (options && 'tool_link_click_fn' in options) {
+            this.tool_link_click_fn = options.tool_link_click_fn;
+        }
     },
     
     render: function() {
-        var this_el = this.$el;
+        var self = this;
         
         // Render search.
         var search_view = new ToolSearchView( {model: this.collection.tool_search} );
         search_view.render();
-        this_el.append(search_view.$el);
+        self.$el.append(search_view.$el);
         
         // Render panel.
         this.collection.each(function(panel_elt) {
             if (panel_elt instanceof ToolPanelSection) {
                 var section_title_view = new ToolPanelSectionView({model: panel_elt});
                 section_title_view.render();
-                this_el.append(section_title_view.$el);
+                self.$el.append(section_title_view.$el);
             }
             else if (panel_elt instanceof Tool) {
                 var tool_view = new ToolLinkView({model: panel_elt, className: "toolTitleNoSection"});
                 tool_view.render();
-                this_el.append(tool_view.$el);
+                self.$el.append(tool_view.$el);
             }
             else if (panel_elt instanceof ToolPanelLabel) {
                 var label_view = new ToolPanelLabelView({model: panel_elt});
                 label_view.render();
-                this_el.append(label_view.$el);
+                self.$el.append(label_view.$el);
             }
         });
+        
+        // Setup tool link click handling.
+        if (self.tool_link_click_fn) {
+            self.$el.find("a.tool-link").click(function() {
+                // Tool id is always the first class.
+                var tool_id = $(this).attr('class').split(/\s+/)[0];
+                
+                self.tool_link_click_fn(self.collection.tools.get(tool_id));
+                return false;
+            });
+        }
+        
         return this;
     },
     
