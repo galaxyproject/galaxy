@@ -97,7 +97,7 @@
             <when value="perform_indel_calling">
               <param name="skip_indel_calling_above_sample_depth" type="integer" value="250" label="Skip INDEL calling if the average per-sample depth is above" />
             </when>
-            <when value="do_no_perform_indel_calling" />
+            <when value="do_not_perform_indel_calling" />
           </conditional>
           <param name="gap_open_sequencing_error_probability" type="integer" value="40" label="Phred-scaled gap open sequencing error probability" />
           <repeat name="platform_list_repeat" title="Platform for INDEL candidates">
