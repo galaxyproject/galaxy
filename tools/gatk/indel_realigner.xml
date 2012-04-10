@@ -122,29 +122,28 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_bam" type="data" format="bam" label="BAM file">
+        <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;">
           <validator type="unspecified_build" />
           <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" >
           <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
           </options>
           <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
         </param>
       </when>
-      <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_bam" type="data" format="bam" label="BAM file" >
-        </param>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file">
+      <when value="history">
+        <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options>
-            <filter type="data_meta" key="dbkey" ref="input_bam" /> <!-- FIX ME!!!! -->
+            <filter type="data_meta" key="dbkey" ref="input_bam" />
           </options>
         </param>
       </when>
     </conditional>
-    <param name="target_intervals" type="data" format="gatk_interval,bed,picard_interval_list" label="Restrict realignment to provided intervals" />
-    <repeat name="rod_bind" title="Binding for reference-ordered data">
+    <param name="target_intervals" type="data" format="gatk_interval,bed,picard_interval_list" label="Restrict realignment to provided intervals" help="-targetIntervals,--targetIntervals &amp;lt;targetIntervals&amp;gt;" />
+    <repeat name="rod_bind" title="Binding for reference-ordered data" help="-known,--knownAlleles &amp;lt;knownAlleles&amp;gt;">
         <conditional name="rod_bind_type">
           <param name="rod_bind_type_selector" type="select" label="Binding Type">
             <option value="dbsnp" selected="True">dbSNP</option>
@@ -167,8 +166,8 @@
           </when>
         </conditional>
     </repeat>
-    <param name="lod_threshold" type="float" value="5.0" label="LOD threshold above which the realigner will proceed to realign" />
-    <param name="knowns_only" type="boolean" checked="False" truevalue="-knownsOnly" falsevalue="" label="Use only known indels provided as RODs"/>
+    <param name="lod_threshold" type="float" value="5.0" label="LOD threshold above which the realigner will proceed to realign" help="-LOD,--LODThresholdForCleaning &amp;lt;LODThresholdForCleaning&amp;gt;" />
+    <param name="knowns_only" type="boolean" checked="False" truevalue="-knownsOnly" falsevalue="" label="Use only known indels provided as RODs" help="-knownsOnly"/>
     
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
@@ -391,19 +390,19 @@
       </when>
       <when value="advanced">
         
-        <param name="entropy_threshold" type="float" value="0.15" label="percentage of mismatching base quality scores at a position to be considered having high entropy" />
-        <param name="simplify_bam" type="boolean" checked="False" truevalue="-simplifyBAM" falsevalue="" label="Simplify BAM"/>
-        <param name="consensus_determination_model" type="select" label="Consensus Determination Model">
+        <param name="entropy_threshold" type="float" value="0.15" label="percentage of mismatching base quality scores at a position to be considered having high entropy" help="-entropy,--entropyThreshold &amp;lt;entropyThreshold&amp;gt;" />
+        <param name="simplify_bam" type="boolean" checked="False" truevalue="-simplifyBAM" falsevalue="" label="Simplify BAM" help="-simplifyBAM,--simplifyBAM"/>
+        <param name="consensus_determination_model" type="select" label="Consensus Determination Model" help="-model,--consensusDeterminationModel &amp;lt;consensusDeterminationModel&amp;gt;">
           <option value="KNOWNS_ONLY">KNOWNS_ONLY</option>
           <option value="USE_READS" selected="True">USE_READS</option>
           <option value="USE_SW">USE_SW</option>
         </param>
-        <param name="max_insert_size_for_movement" type="integer" value="3000" label="Maximum insert size of read pairs that we attempt to realign" />
-        <param name="max_positional_move_allowed" type="integer" value="200" label="Maximum positional move in basepairs that a read can be adjusted during realignment" />
-        <param name="max_consensuses" type="integer" value="30" label="Max alternate consensuses to try" />
-        <param name="max_reads_for_consensuses" type="integer" value="120" label="Max reads (chosen randomly) used for finding the potential alternate consensuses" />
-        <param name="max_reads_for_realignment" type="integer" value="20000" label="Max reads allowed at an interval for realignment" />
-        <param name="no_original_alignment_tags" type="boolean" checked="False" truevalue="--noOriginalAlignmentTags" falsevalue="" label="Don't output the original cigar or alignment start tags for each realigned read in the output bam"/> 
+        <param name="max_insert_size_for_movement" type="integer" value="3000" label="Maximum insert size of read pairs that we attempt to realign" help="-maxIsize,--maxIsizeForMovement &amp;lt;maxIsizeForMovement&amp;gt;" />
+        <param name="max_positional_move_allowed" type="integer" value="200" label="Maximum positional move in basepairs that a read can be adjusted during realignment" help="-maxPosMove,--maxPositionalMoveAllowed &amp;lt;maxPositionalMoveAllowed&amp;gt;" />
+        <param name="max_consensuses" type="integer" value="30" label="Max alternate consensuses to try" help="-maxConsensuses,--maxConsensuses &amp;lt;maxConsensuses&amp;gt;" />
+        <param name="max_reads_for_consensuses" type="integer" value="120" label="Max reads (chosen randomly) used for finding the potential alternate consensuses" help="-greedy,--maxReadsForConsensuses &amp;lt;maxReadsForConsensuses&amp;gt;" />
+        <param name="max_reads_for_realignment" type="integer" value="20000" label="Max reads allowed at an interval for realignment" help="-maxReads,--maxReadsForRealignment &amp;lt;maxReadsForRealignment&amp;gt;" />
+        <param name="no_original_alignment_tags" type="boolean" checked="False" truevalue="--noOriginalAlignmentTags" falsevalue="" label="Don't output the original cigar or alignment start tags for each realigned read in the output bam" help="-noTags,--noOriginalAlignmentTags"/> 
       </when>
     </conditional>
   </inputs>

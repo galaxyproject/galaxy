@@ -155,13 +155,13 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat name="input_bams" title="Sample BAM file" min="1">
+        <repeat name="input_bams" title="BAM file" min="1" help="-I,--input_file &amp;lt;input_file&amp;gt;">
             <param name="input_bam" type="data" format="bam" label="BAM file">
               <validator type="unspecified_build" />
               <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
             </param>
         </repeat>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/> does not yet work in a repeat...--> 
           </options>
@@ -169,15 +169,15 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat name="input_bams" title="Sample BAM file" min="1">
+        <repeat name="input_bams" title="BAM file" min="1" help="-I,--input_file &amp;lt;input_file&amp;gt;">
             <param name="input_bam" type="data" format="bam" label="BAM file" >
             </param>
         </repeat>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
-    <repeat name="rod_bind" title="Binding for reference-ordered data">
+    <repeat name="rod_bind" title="Binding for reference-ordered data" help="-D,--dbsnp &amp;lt;dbsnp&amp;gt;">
         <conditional name="rod_bind_type">
           <param name="rod_bind_type_selector" type="select" label="Binding Type">
             <option value="dbsnp" selected="True">dbSNP</option>
@@ -201,14 +201,14 @@
         </conditional>
     </repeat>
     
-    <param name="genotype_likelihoods_model" type="select" label="Genotype likelihoods calculation model to employ">
+    <param name="genotype_likelihoods_model" type="select" label="Genotype likelihoods calculation model to employ" help="-glm,--genotype_likelihoods_model &amp;lt;genotype_likelihoods_model&amp;gt;">
       <option value="BOTH" selected="True">BOTH</option>
       <option value="SNP">SNP</option>
       <option value="INDEL">INDEL</option>
     </param>
     
-    <param name="standard_min_confidence_threshold_for_calling" type="float" value="30.0" label="The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be called" />
-    <param name="standard_min_confidence_threshold_for_emitting" type="float" value="30.0" label="The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be emitted (and filtered if less than the calling threshold)" />
+    <param name="standard_min_confidence_threshold_for_calling" type="float" value="30.0" label="The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be called" help="-stand_call_conf,--standard_min_confidence_threshold_for_calling &amp;lt;standard_min_confidence_threshold_for_calling&amp;gt;" />
+    <param name="standard_min_confidence_threshold_for_emitting" type="float" value="30.0" label="The minimum phred-scaled confidence threshold at which variants not at 'trigger' track sites should be emitted (and filtered if less than the calling threshold)" help="-stand_emit_conf,--standard_min_confidence_threshold_for_emitting &amp;lt;standard_min_confidence_threshold_for_emitting&amp;gt;" />
 
     
     <conditional name="gatk_param_type">
@@ -431,14 +431,14 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="p_nonref_model" type="select" label="Non-reference probability calculation model to employ">
+        <param name="p_nonref_model" type="select" label="Non-reference probability calculation model to employ" help="-pnrm,--p_nonref_model &amp;lt;p_nonref_model&amp;gt;">
           <option value="EXACT" selected="True">EXACT</option>
           <option value="GRID_SEARCH">GRID_SEARCH</option>
         </param>
-        <param name="heterozygosity" type="float" value="1e-3" label="Heterozygosity value used to compute prior likelihoods for any locus" />
-        <param name="pcr_error_rate" type="float" value="1e-4" label="The PCR error rate to be used for computing fragment-based likelihoods" />
+        <param name="heterozygosity" type="float" value="1e-3" label="Heterozygosity value used to compute prior likelihoods for any locus" help="-hets,--heterozygosity &amp;lt;heterozygosity&amp;gt;" />
+        <param name="pcr_error_rate" type="float" value="1e-4" label="The PCR error rate to be used for computing fragment-based likelihoods" help="-pcr_error,--pcr_error_rate &amp;lt;pcr_error_rate&amp;gt;" />
         <conditional name="genotyping_mode_type">
-          <param name="genotyping_mode" type="select" label="How to determine the alternate allele to use for genotyping">
+          <param name="genotyping_mode" type="select" label="How to determine the alternate allele to use for genotyping" help="-gt_mode,--genotyping_mode &amp;lt;genotyping_mode&amp;gt;">
             <option value="DISCOVERY" selected="True">DISCOVERY</option>
             <option value="GENOTYPE_GIVEN_ALLELES">GENOTYPE_GIVEN_ALLELES</option>
           </param>
@@ -446,32 +446,32 @@
             <!-- Do nothing here -->
           </when>
           <when value="GENOTYPE_GIVEN_ALLELES">
-            <param name="input_alleles_rod" type="data" format="vcf" label="Alleles ROD file" />
+            <param name="input_alleles_rod" type="data" format="vcf" label="Alleles ROD file" help="-alleles,--alleles &amp;lt;alleles&amp;gt;" />
           </when>
         </conditional>
-        <param name="output_mode" type="select" label="Should we output confident genotypes (i.e. including ref calls) or just the variants?">
+        <param name="output_mode" type="select" label="Should we output confident genotypes (i.e. including ref calls) or just the variants?" help="-out_mode,--output_mode &amp;lt;output_mode&amp;gt;">
           <option value="EMIT_VARIANTS_ONLY" selected="True">EMIT_VARIANTS_ONLY</option>
           <option value="EMIT_ALL_CONFIDENT_SITES">EMIT_ALL_CONFIDENT_SITES</option>
           <option value="EMIT_ALL_SITES">EMIT_ALL_SITES</option>
         </param>
-        <param name="compute_SLOD" type="boolean" truevalue="--computeSLOD" falsevalue="" label="Compute the SLOD" />
-        <param name="min_base_quality_score" type="integer" value="17" label="Minimum base quality required to consider a base for calling" />
-        <param name="max_deletion_fraction" type="float" value="0.05" label="Maximum fraction of reads with deletions spanning this locus for it to be callable" help="to disable, set to &lt; 0 or &gt; 1" />
-        <param name="max_alternate_alleles" type="integer" value="5" label="Maximum number of alternate alleles to genotype" />
-        <param name="min_indel_count_for_genotyping" type="integer" value="5" label="Minimum number of consensus indels required to trigger genotyping run" />
-        <param name="indel_heterozygosity" type="float" value="0.000125" label="Heterozygosity for indel calling" help="1.0/8000==0.000125"/>
-        <param name="indelGapContinuationPenalty" type="float" value="10.0" label="Indel gap continuation penalty" />
-        <param name="indelGapOpenPenalty" type="float" value="45.0" label="Indel gap open penalty" />
-        <param name="indelHaplotypeSize" type="integer" value="80" label="Indel haplotype size" />
-        <param name="doContextDependentGapPenalties" type="boolean" truevalue="--doContextDependentGapPenalties" falsevalue="" label="Vary gap penalties by context" />
-        <param name="annotation" type="select" multiple="True" display="checkboxes" label="Annotation Types">
+        <param name="compute_SLOD" type="boolean" truevalue="--computeSLOD" falsevalue="" label="Compute the SLOD" help="--computeSLOD" />
+        <param name="min_base_quality_score" type="integer" value="17" label="Minimum base quality required to consider a base for calling" help="-mbq,--min_base_quality_score &amp;lt;min_base_quality_score&amp;gt;" />
+        <param name="max_deletion_fraction" type="float" value="0.05" label="Maximum fraction of reads with deletions spanning this locus for it to be callable" help="to disable, set to &lt; 0 or &gt; 1 (-deletions,--max_deletion_fraction &amp;lt;max_deletion_fraction&amp;gt;)" />
+        <param name="max_alternate_alleles" type="integer" value="5" label="Maximum number of alternate alleles to genotype" help="-maxAlleles,--max_alternate_alleles &amp;lt;max_alternate_alleles&amp;gt;" />
+        <param name="min_indel_count_for_genotyping" type="integer" value="5" label="Minimum number of consensus indels required to trigger genotyping run" help="-minIndelCnt,--min_indel_count_for_genotyping &amp;lt;min_indel_count_for_genotyping&amp;gt;" />
+        <param name="indel_heterozygosity" type="float" value="0.000125" label="Heterozygosity for indel calling" help="1.0/8000==0.000125 (-indelHeterozygosity,--indel_heterozygosity &amp;lt;indel_heterozygosity&amp;gt;)"/>
+        <param name="indelGapContinuationPenalty" type="float" value="10.0" label="Indel gap continuation penalty" help="--indelGapContinuationPenalty" />
+        <param name="indelGapOpenPenalty" type="float" value="45.0" label="Indel gap open penalty" help="--indelGapOpenPenalty" />
+        <param name="indelHaplotypeSize" type="integer" value="80" label="Indel haplotype size" help="--indelHaplotypeSize" />
+        <param name="doContextDependentGapPenalties" type="boolean" truevalue="--doContextDependentGapPenalties" falsevalue="" label="Vary gap penalties by context" help="--doContextDependentGapPenalties" />
+        <param name="annotation" type="select" multiple="True" display="checkboxes" label="Annotation Types" help="-A,--annotation &amp;lt;annotation&amp;gt;">
           <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
           <options from_data_table="gatk_annotations">
             <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
             <filter type="static_value" value="UnifiedGenotyper" column="tools_valid_for"/>
           </options>
         </param>
-        <repeat name="additional_annotations" title="Additional annotation">
+        <repeat name="additional_annotations" title="Additional annotation" help="-A,--annotation &amp;lt;annotation&amp;gt;">
           <param name="additional_annotation_name" type="text" value="" label="Annotation name" />
         </repeat>
 <!--
@@ -488,7 +488,7 @@
           </when>
         </conditional>
 -->
-        <param name="group" type="select" multiple="True" display="checkboxes" label="Annotation Interfaces/Groups">
+        <param name="group" type="select" multiple="True" display="checkboxes" label="Annotation Interfaces/Groups" help="-G,--group &amp;lt;group&amp;gt;">
             <option value="RodRequiringAnnotation">RodRequiringAnnotation</option>
             <option value="Standard">Standard</option>
             <option value="Experimental">Experimental</option>
@@ -497,14 +497,14 @@
             <!-- <option value="none">none</option> -->
         </param>
     <!--     <param name="family_string" type="text" value="" label="Family String"/> -->
-        <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" >
+        <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" help="-XA,--excludeAnnotation &amp;lt;excludeAnnotation&amp;gt;" >
           <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
           <options from_data_table="gatk_annotations">
             <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
             <filter type="static_value" value="UnifiedGenotyper" column="tools_valid_for"/>
           </options>
         </param>
-        <param name="multiallelic" type="boolean" truevalue="--multiallelic" falsevalue="" label="Allow the discovery of multiple alleles (SNPs only)" />
+        <param name="multiallelic" type="boolean" truevalue="--multiallelic" falsevalue="" label="Allow the discovery of multiple alleles (SNPs only)" help="--multiallelic" />
       </when>
     </conditional>
   </inputs>

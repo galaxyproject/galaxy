@@ -190,13 +190,13 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat name="input_bams" title="BAM file" min="1">
+        <repeat name="input_bams" title="BAM file" min="1" help="-I,--input_file &amp;lt;input_file&amp;gt;">
             <param name="input_bam" type="data" format="bam" label="BAM file">
               <validator type="unspecified_build" />
               <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
             </param>
         </repeat>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/> does not yet work in a repeat...--> 
           </options>
@@ -204,27 +204,26 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat name="input_bams" title="BAM file" min="1">
-            <param name="input_bam" type="data" format="bam" label="BAM file" >
-            </param>
+        <repeat name="input_bams" title="BAM file" min="1" help="-I,--input_file &amp;lt;input_file&amp;gt;">
+            <param name="input_bam" type="data" format="bam" label="BAM file" />
         </repeat>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
-    <param name="input_calculate_coverage_over_genes" type="data" format="data" label="RefSeq Rod" optional="True" />
+    <param name="input_calculate_coverage_over_genes" type="data" format="data" label="RefSeq Rod" optional="True" help="-geneList,--calculateCoverageOverGenes &amp;lt;calculateCoverageOverGenes&amp;gt;" />
     
-    <param name="partition_type" type="select" label="Partition type for depth of coverage" multiple="True" display="checkboxes">
+    <param name="partition_type" type="select" label="Partition type for depth of coverage" multiple="True" display="checkboxes" help="-pt,--partitionType &amp;lt;partitionType&amp;gt;">
       <option value="sample" selected="True">sample</option>
       <option value="readgroup">readgroup</option>
       <option value="library">library</option>
     </param>
     
-    <repeat name="summary_coverage_threshold_group" title="Summary coverage threshold">
+    <repeat name="summary_coverage_threshold_group" title="Summary coverage threshold" help="-ct,--summaryCoverageThreshold &amp;lt;summaryCoverageThreshold&amp;gt;">
         <param name="summary_coverage_threshold" type="integer" value="15" label="for summary file outputs, report the % of bases covered to &gt;= this number" />
     </repeat>
     
-    <param name="output_format" type="select" label="Output format" >
+    <param name="output_format" type="select" label="Output format" help="--outputFormat &amp;lt;outputFormat&amp;gt;" >
       <option value="csv">csv</option>
       <option value="table">table</option>
       <option value="rtable" selected="True">rtable</option>
@@ -450,21 +449,21 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="ignore_deletion_sites" type="boolean" truevalue="--ignoreDeletionSites" falsevalue="" checked="False" label="Ignore sites consisting only of deletions" />
-        <param name="include_deletions" type="boolean" truevalue="--includeDeletions" falsevalue="" checked="False" label="Include information on deletions" />
-        <param name="max_base_quality" type="integer" value="127" label="Maximum quality of bases to count towards depth" />
-        <param name="min_base_quality" type="integer" value="-1" label="Minimum quality of bases to count towards depth" />
-        <param name="max_mapping_quality" type="integer" value="2147483647" label="Maximum mapping quality of reads to count towards depth." />
-        <param name="min_mapping_quality" type="integer" value="127" label="Minimum mapping quality of reads to count towards depth" />
-        <param name="n_bins" type="integer" value="499" label="Number of bins to use for granular binning" />
-        <param name="omit_depth_output_at_each_base" type="boolean" truevalue="--omitDepthOutputAtEachBase" falsevalue="" checked="False" label="Omit the output of the depth of coverage at each base" />
-        <param name="omit_interval_statistics" type="boolean" truevalue="--omitIntervalStatistics" falsevalue="" checked="False" label="Omit the per-interval statistics section" />
-        <param name="omit_locus_table" type="boolean" truevalue="--omitLocusTable" falsevalue="" checked="False" label="Do not calculate the per-sample per-depth counts of loci" />
-        <param name="omit_per_sample_stats" type="boolean" truevalue="--omitPerSampleStats" falsevalue="" checked="False" label="Omit the summary files per-sample." />
-        <param name="print_base_counts" type="boolean" truevalue="--printBaseCounts" falsevalue="" checked="False" label="Add base counts to per-locus output" />
-        <param name="print_bin_endpoints_and_exit" type="boolean" truevalue="--printBinEndpointsAndExit" falsevalue="" checked="False" label="Print the bin values and exits immediately" />
-        <param name="start" type="integer" value="1" label="Starting (left endpoint) for granular binning" />
-        <param name="stop" type="integer" value="500" label="Ending (right endpoint) for granular binning" />
+        <param name="ignore_deletion_sites" type="boolean" truevalue="--ignoreDeletionSites" falsevalue="" checked="False" label="Ignore sites consisting only of deletions" help="--ignoreDeletionSites" />
+        <param name="include_deletions" type="boolean" truevalue="--includeDeletions" falsevalue="" checked="False" label="Include information on deletions" help="-dels,--includeDeletions" />
+        <param name="max_base_quality" type="integer" value="127" label="Maximum quality of bases to count towards depth" help="--maxBaseQuality &amp;lt;maxBaseQuality&amp;gt;" />
+        <param name="min_base_quality" type="integer" value="-1" label="Minimum quality of bases to count towards depth" help="-mbq,--minBaseQuality &amp;lt;minBaseQuality&amp;gt;" />
+        <param name="max_mapping_quality" type="integer" value="2147483647" label="Maximum mapping quality of reads to count towards depth." help="--maxMappingQuality &amp;lt;maxMappingQuality&amp;gt;" />
+        <param name="min_mapping_quality" type="integer" value="127" label="Minimum mapping quality of reads to count towards depth" help="-mmq,--minMappingQuality &amp;lt;minMappingQuality&amp;gt;" />
+        <param name="n_bins" type="integer" value="499" label="Number of bins to use for granular binning" help="--nBins &amp;lt;nBins&amp;gt;" />
+        <param name="omit_depth_output_at_each_base" type="boolean" truevalue="--omitDepthOutputAtEachBase" falsevalue="" checked="False" label="Omit the output of the depth of coverage at each base" help="-omitBaseOutput,--omitDepthOutputAtEachBase" />
+        <param name="omit_interval_statistics" type="boolean" truevalue="--omitIntervalStatistics" falsevalue="" checked="False" label="Omit the per-interval statistics section" help="-omitIntervals,--omitIntervalStatistics" />
+        <param name="omit_locus_table" type="boolean" truevalue="--omitLocusTable" falsevalue="" checked="False" label="Do not calculate the per-sample per-depth counts of loci" help="-omitLocusTable,--omitLocusTable" />
+        <param name="omit_per_sample_stats" type="boolean" truevalue="--omitPerSampleStats" falsevalue="" checked="False" label="Omit the summary files per-sample." help="-omitSampleSummary,--omitPerSampleStats" />
+        <param name="print_base_counts" type="boolean" truevalue="--printBaseCounts" falsevalue="" checked="False" label="Add base counts to per-locus output" help="-baseCounts,--printBaseCounts" />
+        <param name="print_bin_endpoints_and_exit" type="boolean" truevalue="--printBinEndpointsAndExit" falsevalue="" checked="False" label="Print the bin values and exits immediately" help="--printBinEndpointsAndExit" />
+        <param name="start" type="integer" value="1" label="Starting (left endpoint) for granular binning" help="--start &amp;lt;start&amp;gt;" />
+        <param name="stop" type="integer" value="500" label="Ending (right endpoint) for granular binning" help="--stop &amp;lt;stop&amp;gt;" />
       </when>
     </conditional>
   </inputs>

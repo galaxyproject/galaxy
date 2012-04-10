@@ -150,13 +150,13 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" />
-        <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." />
-        <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" help="Not needed for all annotations." >
+        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" help="-V,--variant &amp;lt;variant&amp;gt;"/>
+        <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." help="--intervals"/>
+        <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" help="Not needed for all annotations. (-I,--input_file &amp;lt;input_file&amp;gt;)" >
           <validator type="unspecified_build" />
           <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
@@ -164,11 +164,11 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" />
-        <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files." />
-        <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" >
+        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" help="-V,--variant &amp;lt;variant&amp;gt;"/>
+        <param name="input_variant_bti" type="boolean" truevalue="-BTI variant" falsevalue="" label="Increase efficiency for small variant files."  help="--intervals"/>
+        <param name="input_bam" type="data" format="bam" label="BAM file" optional="True" help="Not needed for all annotations. (-I,--input_file &amp;lt;input_file&amp;gt;)" >
         </param>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     <conditional name="annotations_type">
@@ -180,7 +180,7 @@
           <!-- no extra options here -->
       </when>
       <when value="choose">
-        <param name="annotations" type="select" multiple="True" display="checkboxes" label="Annotations to apply" >
+        <param name="annotations" type="select" multiple="True" display="checkboxes" label="Annotations to apply" help="-A,--annotation &amp;lt;annotation&amp;gt;" >
           <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
           <options from_data_table="gatk_annotations">
             <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
@@ -190,17 +190,17 @@
       </when>
     </conditional>
     
-    <repeat name="additional_annotations" title="Additional annotation">
+    <repeat name="additional_annotations" title="Additional annotation" help="-A,--annotation &amp;lt;annotation&amp;gt;">
       <param name="additional_annotation_name" type="text" value="" label="Annotation name" />
     </repeat>
     
-    <repeat name="comp_rod_bind" title="Binding for reference-ordered comparison data">
+    <repeat name="comp_rod_bind" title="Binding for reference-ordered comparison data" help="-comp,--comp &amp;lt;comp&amp;gt;">
       <param name="comp_input_rod" type="data" format="vcf" label="ROD file" />
       <param name="comp_rod_name" type="text" value="Unnamed" label="ROD Name"/>
     </repeat>
     
     <conditional name="dbsnp_rod_bind_type">
-      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file">
+      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file" help="-D,--dbsnp &amp;lt;dbsnp&amp;gt;">
         <option value="set_dbsnp" selected="True">Set dbSNP</option>
         <option value="exclude_dbsnp">Don't set dbSNP</option>
       </param>
@@ -213,13 +213,13 @@
       </when>
     </conditional>
     
-    <repeat name="resource_rod_bind" title="Binding for reference-ordered resource data">
+    <repeat name="resource_rod_bind" title="Binding for reference-ordered resource data" help="-resource,--resource &amp;lt;resource&amp;gt;">
       <param name="resource_input_rod" type="data" format="vcf" label="ROD file" />
       <param name="resource_rod_name" type="text" value="Unnamed" label="ROD Name"/>
     </repeat>
     
     <conditional name="snpEff_rod_bind_type">
-      <param name="snpEff_rod_bind_type_selector" type="select" label="Provide a snpEff reference-ordered data file">
+      <param name="snpEff_rod_bind_type_selector" type="select" label="Provide a snpEff reference-ordered data file" help="-snpEffFile,--snpEffFile &amp;lt;snpEffFile&amp;gt;">
         <option value="set_snpEff">Set snpEff</option>
         <option value="exclude_snpEff" selected="True">Don't set snpEff</option>
       </param>
@@ -232,7 +232,7 @@
       </when>
     </conditional>
     
-    <repeat name="expressions" title="Expression">
+    <repeat name="expressions" title="Expression" help="-E,--expression &amp;lt;expression&amp;gt;">
       <param name="expression" type="text" value="" label="Expression"/>
     </repeat>
     
@@ -447,16 +447,16 @@
       </when>
     </conditional>
     
-    <param name="annotation_group" type="select" multiple="True" display="checkboxes" label="annotation interfaces/groups to apply to variant calls">
+    <param name="annotation_group" type="select" multiple="True" display="checkboxes" label="annotation interfaces/groups to apply to variant calls" help="-G,--group &amp;lt;group&amp;gt;">
       <option value="RodRequiringAnnotation">RodRequiringAnnotation</option>
       <option value="Standard">Standard</option>
       <option value="Experimental">Experimental</option>
       <option value="WorkInProgress">WorkInProgress</option>
       <option value="RankSumTest">RankSumTest</option>
     </param>
-    <param name="family_string" type="text" value="" label="Family String"/>
-    <param name="mendel_violation_genotype_quality_threshold" type="float" value="0.0" label="genotype quality treshold in order to annotate mendelian violation ratio."/>
-    <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" >
+    <param name="family_string" type="text" value="" label="Family String" help="--family_string"/>
+    <param name="mendel_violation_genotype_quality_threshold" type="float" value="0.0" label="genotype quality treshold in order to annotate mendelian violation ratio." help="-mvq,--MendelViolationGenotypeQualityThreshold &amp;lt;MendelViolationGenotypeQualityThreshold&amp;gt;"/>
+    <param name="exclude_annotations" type="select" multiple="True" display="checkboxes" label="Annotations to exclude" help="-XA,--excludeAnnotation &amp;lt;excludeAnnotation&amp;gt;" >
       <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
       <options from_data_table="gatk_annotations">
         <filter type="multiple_splitter" column="tools_valid_for" separator=","/>

@@ -95,8 +95,8 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variant" type="data" format="vcf" label="Input variant file" />
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="input_variant" type="data" format="vcf" label="Input variant file" help="-V,--variant &amp;lt;variant&amp;gt;" />
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
@@ -104,13 +104,13 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variant" type="data" format="vcf" label="Input variant file" />
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="input_variant" type="data" format="vcf" label="Input variant file" help="-V,--variant &amp;lt;variant&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
     <conditional name="dbsnp_rod_bind_type">
-      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file">
+      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file" help="-D,--dbsnp &amp;lt;dbsnp&amp;gt;">
         <option value="set_dbsnp" selected="True">Set dbSNP</option>
         <option value="exclude_dbsnp">Don't set dbSNP</option>
       </param>
@@ -123,8 +123,8 @@
       </when>
     </conditional>
     
-    <param name="warn_on_errors" type="boolean" checked="False" truevalue="-warnOnErrors" falsevalue="" label="instead of terminating the run at the first error, print warning messages for each error seen. "/>
-    <param name="do_not_validate_filtered_records" type="boolean" checked="False" truevalue="-doNotValidateFilteredRecords" falsevalue="" label="do not try to validate records that are FILTERed. "/>
+    <param name="warn_on_errors" type="boolean" checked="False" truevalue="-warnOnErrors" falsevalue="" label="instead of terminating the run at the first error, print warning messages for each error seen." help="-warnOnErrors,--warnOnErrors"/>
+    <param name="do_not_validate_filtered_records" type="boolean" checked="False" truevalue="-doNotValidateFilteredRecords" falsevalue="" label="do not try to validate records that are FILTERed." help="-doNotValidateFilteredRecords,--doNotValidateFilteredRecords"/>
     
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">

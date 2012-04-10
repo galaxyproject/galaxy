@@ -109,8 +109,8 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" />
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" help="-V,--variant &amp;lt;variant&amp;gt;" />
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
@@ -118,14 +118,14 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" />
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" help="-V,--variant &amp;lt;variant&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
     
     <repeat name="variant_filters" title="Variant Filters">
-        <param name="filter_expression" value="AB &lt; 0.2 || MQ0 &gt; 50" type="text" label="Filter expression" help="JEXL formatted expressions">
+        <param name="filter_expression" value="AB &lt; 0.2 || MQ0 &gt; 50" type="text" label="Filter expression" help="JEXL formatted expressions (-filter,--filterExpression &amp;lt;filterExpression&amp;gt;)">
             <sanitizer>
               <valid initial="string.printable">
                <remove value="&apos;"/>
@@ -133,8 +133,8 @@
               <mapping initial="none"/>
             </sanitizer>
         </param>
-        <param name="filter_name" value="custom_filter" type="text" label="Filter name"/>
-        <param name="is_genotype_filter" type="boolean" truevalue="genotypeFilter" falsevalue="filter" label="Use filter at the individual sample level" />
+        <param name="filter_name" value="custom_filter" type="text" label="Filter name" help="-filterName,--filterName &amp;lt;filterName&amp;gt;"/>
+        <param name="is_genotype_filter" type="boolean" truevalue="genotypeFilter" falsevalue="filter" label="Use filter at the individual sample level" help="Use -G_filter,--genotypeFilterExpression &amp;lt;genotypeFilterExpression&amp;gt; and -G_filterName,--genotypeFilterName &amp;lt;genotypeFilterName&amp;gt; for filter type" />
     </repeat>
     
 
@@ -148,9 +148,9 @@
         <!-- Do nothing here -->
       </when>
       <when value="set_mask">
-        <param name="input_mask_rod" type="data" format="bed,gatk_dbsnp,vcf" label="Mask ROD file" />
-        <param name="mask_rod_name" type="text" value="Mask" label="Mask Name"/>
-        <param name="mask_extension" type="integer" value="0" label="Mask Extension"/>
+        <param name="input_mask_rod" type="data" format="bed,gatk_dbsnp,vcf" label="Mask ROD file" help="--mask &amp;lt;mask&amp;gt;" />
+        <param name="mask_rod_name" type="text" value="Mask" label="Mask Name" help="-maskName,--maskName &amp;lt;maskName&amp;gt;"/>
+        <param name="mask_extension" type="integer" value="0" label="Mask Extension" help="-maskExtend,--maskExtension &amp;lt;maskExtension&amp;gt;"/>
       </when>
     </conditional>    
     
@@ -375,12 +375,12 @@
         <!-- Do nothing here -->
       </when>
       <when value="cluster_snp">
-        <param name="cluster_size" type="integer" value="3" label="The number of SNPs which make up a cluster "/>
-        <param name="cluster_window_size" type="integer" value="0" label="The window size (in bases) in which to evaluate clustered SNPs"/>
+        <param name="cluster_size" type="integer" value="3" label="The number of SNPs which make up a cluster" help="-cluster,--clusterSize &amp;lt;clusterSize&amp;gt;"/>
+        <param name="cluster_window_size" type="integer" value="0" label="The window size (in bases) in which to evaluate clustered SNPs" help="-window,--clusterWindowSize &amp;lt;clusterWindowSize&amp;gt;"/>
       </when>
     </conditional>
     
-    <param name="missing_values_in_expressions_should_evaluate_as_failing" type="boolean" truevalue="--missingValuesInExpressionsShouldEvaluateAsFailing" falsevalue="" label="Should missing values be considered failing the expression" />
+    <param name="missing_values_in_expressions_should_evaluate_as_failing" type="boolean" truevalue="--missingValuesInExpressionsShouldEvaluateAsFailing" falsevalue="" label="Should missing values be considered failing the expression" help="--missingValuesInExpressionsShouldEvaluateAsFailing" />
     
   </inputs>
   <outputs>

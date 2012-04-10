@@ -104,12 +104,12 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat name="variants" title="Variant" min="1">
-          <param name="input_variants" type="data" format="vcf" label="Variant file to annotate" />
+        <repeat name="variants" title="Variant" min="1" help="-input,--input &amp;lt;input&amp;gt;">
+          <param name="input_variants" type="data" format="vcf" label="Variant file to annotate"/>
         </repeat>
-        <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" />
-        <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" />
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" help="-recalFile,--recal_file &amp;lt;recal_file&amp;gt;" />
+        <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" help="-tranchesFile,--tranches_file &amp;lt;tranches_file&amp;gt;" />
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="variants[0].input_variants" column="dbkey"/> -->
           </options>
@@ -117,12 +117,12 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat name="variants" title="Variant" min="1">
+        <repeat name="variants" title="Variant" min="1" help="-input,--input &amp;lt;input&amp;gt;">
           <param name="input_variants" type="data" format="vcf" label="Variant file to annotate" />
         </repeat>
-        <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" />
-        <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" />
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="input_recal" type="data" format="gatk_recal" label="Variant Recalibration file" help="-recalFile,--recal_file &amp;lt;recal_file&amp;gt;" />
+        <param name="input_tranches" type="data" format="gatk_tranche" label="Variant Tranches file" help="-tranchesFile,--tranches_file &amp;lt;tranches_file&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
@@ -337,12 +337,12 @@
       </when>
     </conditional>
     
-        <param name="mode" type="select" label="Recalibration mode">
+        <param name="mode" type="select" label="Recalibration mode" help="-mode,--mode &amp;lt;mode&amp;gt;">
           <option value="SNP" selected="True">SNP</option>
           <option value="INDEL">INDEL</option>
           <option value="BOTH">BOTH</option>
         </param>
-       <repeat name="ignore_filters" title="Ignore Filter">
+       <repeat name="ignore_filters" title="Ignore Filter" help="-ignoreFilter,--ignore_filter &amp;lt;ignore_filter&amp;gt;">
           <conditional name="ignore_filter_type">
             <param name="ignore_filter_type_selector" type="select" label="Filter Type">
               <option value="HARD_TO_VALIDATE">HARD_TO_VALIDATE</option>
@@ -352,9 +352,11 @@
             <when value="custom">
               <param name="filter_name" type="text" value="" label="Filter name"/>
             </when>
+            <when value="HARD_TO_VALIDATE" />
+            <when value="LowQual" />
           </conditional>
         </repeat>
-    <param name="ts_filter_level" type="float" label="truth sensitivity level at which to start filtering, used here to indicate filtered variants in plots" value="99.0"/>
+    <param name="ts_filter_level" type="float" label="truth sensitivity level at which to start filtering, used here to indicate filtered variants in plots" value="99.0" help="-ts_filter_level,--ts_filter_level &amp;lt;ts_filter_level&amp;gt;"/>
   </inputs>
   <outputs>
     <data format="vcf" name="output_variants" label="${tool.name} on ${on_string} (Variants File)" />

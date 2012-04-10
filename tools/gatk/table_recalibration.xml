@@ -120,28 +120,31 @@
     #end if
   </command>
   <inputs>
-    <param name="input_recal" type="data" format="csv" label="Covariates table recalibration file" />
+    <param name="input_recal" type="data" format="csv" label="Covariates table recalibration file" help="-recalFile,--recal_file &amp;lt;recal_file&amp;gt;" />
     <conditional name="reference_source">
       <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
         <option value="cached">Locally cached</option>
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_bam" type="data" format="bam" label="BAM file">
+        <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;">
           <validator type="unspecified_build" />
           <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" >
           <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
           </options>
           <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
         </param>
       </when>
-      <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_bam" type="data" format="bam" label="BAM file" >
+      <when value="history">
+        <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
+          <options>
+            <filter type="data_meta" key="dbkey" ref="input_bam" />
+          </options>
         </param>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
     
@@ -367,7 +370,7 @@
       </when>
       <when value="advanced">
         <conditional name="default_read_group_type">
-          <param name="default_read_group_type_selector" type="select" label="Set default Read Group">
+          <param name="default_read_group_type_selector" type="select" label="Set default Read Group" help="--default_read_group">
             <option value="default" selected="True">Don't Set</option>
             <option value="set">Set</option>
           </param>
@@ -378,14 +381,14 @@
             <param name="default_read_group" type="text" value="Unknown" label="If a read has no read group then default to the provided String"/>
           </when>
         </conditional>
-        <param name="default_platform" type="select" label="Set default Platform">
+        <param name="default_platform" type="select" label="Set default Platform" help="--default_platform">
           <option value="default" selected="True">Don't Set</option>
           <option value="illumina">illumina</option>
           <option value="454">454</option>
           <option value="solid">solid</option>
         </param>
         <conditional name="force_read_group_type">
-          <param name="force_read_group_type_selector" type="select" label="Force Read Group">
+          <param name="force_read_group_type_selector" type="select" label="Force Read Group" help="--force_read_group">
             <option value="default" selected="True">Don't Force</option>
             <option value="set">Force</option>
           </param>
@@ -396,13 +399,13 @@
             <param name="force_read_group" type="text" value="Unknown" label="If provided, the read group ID of EVERY read will be forced to be the provided String."/>
           </when>
         </conditional>
-        <param name="force_platform" type="select" label="Force Platform">
+        <param name="force_platform" type="select" label="Force Platform" help="--force_platform">
           <option value="default" selected="True">Don't Force</option>
           <option value="illumina">illumina</option>
           <option value="454">454</option>
           <option value="solid">solid</option>
         </param>
-        <param name="exception_if_no_tile" type="boolean" checked="False" truevalue="--exception_if_no_tile" falsevalue="" label="Throw an exception when no tile can be found"/>
+        <param name="exception_if_no_tile" type="boolean" checked="False" truevalue="--exception_if_no_tile" falsevalue="" label="Throw an exception when no tile can be found" help="--exception_if_no_tile"/>
         <conditional name="solid_options_type">
           <param name="solid_options_type_selector" type="select" label="Set SOLiD specific options">
             <option value="default" selected="True">Don't Set</option>
@@ -412,14 +415,14 @@
             <!-- do nothing here -->
           </when>
           <when value="set">
-            <param name="solid_recal_mode" type="select" label="How should we recalibrate solid bases in which the reference was inserted">
+            <param name="solid_recal_mode" type="select" label="How should we recalibrate solid bases in which the reference was inserted" help="-sMode,--solid_recal_mode &amp;lt;solid_recal_mode&amp;gt;">
               <option value="default" selected="True">Don't set</option>
               <option value="DO_NOTHING">DO_NOTHING</option>
               <option value="SET_Q_ZERO">SET_Q_ZERO</option>
               <option value="SET_Q_ZERO_BASE_N">SET_Q_ZERO_BASE_N</option>
               <option value="REMOVE_REF_BIAS">REMOVE_REF_BIAS</option>
             </param>
-            <param name="solid_nocall_strategy" type="select" label="Behavior of the recalibrator when it encounters no calls">
+            <param name="solid_nocall_strategy" type="select" label="Behavior of the recalibrator when it encounters no calls" help="-solid_nocall_strategy,--solid_nocall_strategy &amp;lt;solid_nocall_strategy&amp;gt;">
               <option value="default" selected="True">Don't set</option>
               <option value="THROW_EXCEPTION">THROW_EXCEPTION</option>
               <option value="LEAVE_READ_UNRECALIBRATED">LEAVE_READ_UNRECALIBRATED</option>
@@ -427,13 +430,13 @@
             </param>
           </when>
         </conditional>
-        <param name="simplify_bam" type="boolean" checked="False" truevalue="-simplifyBAM" falsevalue="" label="Simplify BAM"/>
-        <param name="window_size_nqs" type="integer" value="5" label="Window size used by MinimumNQSCovariate"/>
-        <param name="homopolymer_nback" type="integer" value="7" label="Number of previous bases to look at in HomopolymerCovariate" />
-        <param name="preserve_qscores_less_than" type="integer" value="5" label="Bases with quality scores less than this threshold won't be recalibrated"/>
-        <param name="smoothing" type="integer" value="1" label="smoothing"/>
-        <param name="max_quality_score" type="integer" value="50" label="Max quality score"/>
-        <param name="do_not_write_original_quals" type="boolean" checked="False" truevalue="--doNotWriteOriginalQuals" falsevalue="" label="Do Not Write Original Quality tag"/>
+        <param name="simplify_bam" type="boolean" checked="False" truevalue="-simplifyBAM" falsevalue="" label="Simplify BAM" help="-simplifyBAM,--simplifyBAM"/>
+        <param name="window_size_nqs" type="integer" value="5" label="Window size used by MinimumNQSCovariate" help="--window_size_nqs"/>
+        <param name="homopolymer_nback" type="integer" value="7" label="Number of previous bases to look at in HomopolymerCovariate" help="-nback,--homopolymer_nback &amp;lt;homopolymer_nback&amp;gt;" />
+        <param name="preserve_qscores_less_than" type="integer" value="5" label="Bases with quality scores less than this threshold won't be recalibrated" help="-pQ,--preserve_qscores_less_than &amp;lt;preserve_qscores_less_than&amp;gt;"/>
+        <param name="smoothing" type="integer" value="1" label="smoothing" help="-sm,--smoothing &amp;lt;smoothing&amp;gt;"/>
+        <param name="max_quality_score" type="integer" value="50" label="Max quality score" help="-maxQ,--max_quality_score &amp;lt;max_quality_score&amp;gt;"/>
+        <param name="do_not_write_original_quals" type="boolean" checked="False" truevalue="--doNotWriteOriginalQuals" falsevalue="" label="Do Not Write Original Quality tag" help="-noOQs,--doNotWriteOriginalQuals"/>
       </when>
     </conditional>
   </inputs>

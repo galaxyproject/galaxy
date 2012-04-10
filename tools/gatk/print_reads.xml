@@ -106,13 +106,13 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat name="input_bams" title="Sample BAM file" min="1">
+        <repeat name="input_bams" title="BAM file" min="1" help="-I,--input_file &amp;lt;input_file&amp;gt;">
             <param name="input_bam" type="data" format="bam" label="BAM file">
               <validator type="unspecified_build" />
               <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
             </param>
         </repeat>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/> does not yet work in a repeat...--> 
           </options>
@@ -120,21 +120,21 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat name="input_bams" title="Sample BAM file" min="1">
+        <repeat name="input_bams" title="BAM file" min="1" help="-I,--input_file &amp;lt;input_file&amp;gt;">
             <param name="input_bam" type="data" format="bam" label="BAM file" >
             </param>
         </repeat>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
-    <param name="number" type="integer" value="-1" label="Print the first n reads from the file, discarding the rest" />
-    <param name="platform" type="text" value="" label="Exclude all reads with this platform from the output" />
-    <param name="read_group" type="text" value="" label="Exclude all reads with this read group from the output" />
-    <repeat name="sample_file_repeat" title="File containing a list of samples to include">
+    <param name="number" type="integer" value="-1" label="Print the first n reads from the file, discarding the rest" help="-n,--number &amp;lt;number&amp;gt;" />
+    <param name="platform" type="text" value="" label="Exclude all reads with this platform from the output" help="-platform,--platform &amp;lt;platform&amp;gt;" />
+    <param name="read_group" type="text" value="" label="Exclude all reads with this read group from the output" help="-readGroup,--readGroup &amp;lt;readGroup&amp;gt;" />
+    <repeat name="sample_file_repeat" title="File containing a list of samples to include" help="-sf,--sample_file &amp;lt;sample_file&amp;gt;">
         <param name="input_sample_file" type="data" format="text" label="Sample file" />
     </repeat>
-    <repeat name="sample_name_repeat" title="Sample name to be included in the analysis">
+    <repeat name="sample_name_repeat" title="Sample name to be included in the analysis" help="-sn,--sample_name &amp;lt;sample_name&amp;gt;">
         <param name="sample_name" type="text" label="Sample name" />
     </repeat>
     

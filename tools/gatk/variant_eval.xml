@@ -163,10 +163,10 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat name="variants" title="Variant" min="1">
+        <repeat name="variants" title="Variant" min="1" help="-eval,--eval &amp;lt;eval&amp;gt;">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
         </repeat>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/> -->
           </options>
@@ -174,21 +174,21 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat name="variants" title="Variant" min="1">
+        <repeat name="variants" title="Variant" min="1" help="-eval,--eval &amp;lt;eval&amp;gt;">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
         </repeat>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
-    <repeat name="comp_rod_bind" title="Binding for reference-ordered comparison data">
+    <repeat name="comp_rod_bind" title="Binding for reference-ordered comparison data" help="-comp,--comp &amp;lt;comp&amp;gt;">
       <param name="comp_input_rod" type="data" format="vcf" label="Comparison ROD file" />
       <param name="comp_rod_name" type="text" value="Unnamed" label="Comparison ROD Name"/>
-      <param name="comp_known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Use Comparison ROD as known_names" />
+      <param name="comp_known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Use Comparison ROD as known_names" help="-knownName,--known_names &amp;lt;known_names&amp;gt;"/>
     </repeat>
     
     <conditional name="dbsnp_rod_bind_type">
-      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file">
+      <param name="dbsnp_rod_bind_type_selector" type="select" label="Provide a dbSNP reference-ordered data file" help="-D,--dbsnp &amp;lt;dbsnp&amp;gt;">
         <option value="set_dbsnp" selected="True">Set dbSNP</option>
         <option value="exclude_dbsnp">Don't set dbSNP</option>
       </param>
@@ -198,7 +198,7 @@
       <when value="set_dbsnp">
         <param name="dbsnp_input_rod" type="data" format="vcf" label="dbSNP ROD file" />
         <param name="dbsnp_rod_name" type="hidden" value="dbsnp" label="dbSNP ROD Name"/>
-        <param name="dbsnp_known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Use dbSNP ROD as known_names" />
+        <param name="dbsnp_known_names" type="boolean" truevalue="--known_names" falsevalue="" label="Use dbSNP ROD as known_names" help="-knownName,--known_names &amp;lt;known_names&amp;gt;" />
       </when>
     </conditional>
     
@@ -424,7 +424,7 @@
       </when>
       <when value="advanced">
         <repeat name="stratifications" title="Stratification">
-          <param name="select_exps" value="" type="text" label="Stratification Expression">
+          <param name="select_exps" value="" type="text" label="Stratification Expression" help="-select,--select_exps &amp;lt;select_exps&amp;gt;">
             <sanitizer>
               <valid initial="string.printable">
                <remove value="&apos;"/>
@@ -432,14 +432,14 @@
               <mapping initial="none"/>
             </sanitizer>
           </param>
-          <param name="select_name" value="" type="text" label="Name"/>
+          <param name="select_name" value="" type="text" label="Name" help="-selectName,--select_names &amp;lt;select_names&amp;gt;"/>
         </repeat>
         
-        <repeat name="samples" title="Sample">
+        <repeat name="samples" title="Sample" help="-sn,--sample &amp;lt;sample&amp;gt;">
           <param name="sample" value="" type="text" label="Derive eval and comp contexts using only these sample genotypes, when genotypes are available in the original context"/>
         </repeat>
         
-        <param name="stratification_modules" type="select" multiple="True" display="checkboxes" label="Stratification modules to apply to the eval track(s)" >
+        <param name="stratification_modules" type="select" multiple="True" display="checkboxes" label="Stratification modules to apply to the eval track(s)" help="-ST,--stratificationModule &amp;lt;stratificationModule&amp;gt;" >
           <!-- do these need individual options also? gatk wiki has little info -->
           <option value="AlleleFrequency" />
           <option value="AlleleCount" />
@@ -454,13 +454,13 @@
           <option value="Sample" />
           <option value="IntervalStratification" />
         </param>
-        <param name="do_not_use_all_standard_stratifications" checked="false" type="boolean" truevalue="--doNotUseAllStandardStratifications" falsevalue="" label="Do not use the standard stratification modules by default" />
+        <param name="do_not_use_all_standard_stratifications" checked="false" type="boolean" truevalue="--doNotUseAllStandardStratifications" falsevalue="" label="Do not use the standard stratification modules by default" help="-noST,--doNotUseAllStandardStratifications" />
         
-        <repeat name="only_variants_of_type" title="only Variants Of Type">
+        <repeat name="only_variants_of_type" title="only Variants Of Type" help="--onlyVariantsOfType">
           <param name="variant_type" type="text" value="" label="only variants of these types will be considered during the evaluation"/>
         </repeat>
         
-        <param name="eval_modules" type="select" multiple="True" display="checkboxes" label="Eval modules to apply to the eval track(s)" >
+        <param name="eval_modules" type="select" multiple="True" display="checkboxes" label="Eval modules to apply to the eval track(s)" help="-EV,--evalModule &amp;lt;evalModule&amp;gt;" >
           <!-- do these need individual options also? gatk wiki has little info -->
           <option value="ACTransitionTable" />
           <option value="AlleleFrequencyComparison" />
@@ -479,15 +479,15 @@
           <option value="TiTvVariantEvaluator" />
           <option value="VariantQualityScore" />
         </param>
-        <param name="do_not_use_all_standard_modules" checked="false" type="boolean" truevalue="--doNotUseAllStandardModules" falsevalue="" label="Do not use the standard eval modules by default" />
+        <param name="do_not_use_all_standard_modules" checked="false" type="boolean" truevalue="--doNotUseAllStandardModules" falsevalue="" label="Do not use the standard eval modules by default" help="-noEV,--doNotUseAllStandardModules" />
         
-        <param name="num_samples" type="integer" label="Number of samples (used if no samples are available in the VCF file " value="0"/>
-        <param name="min_phase_quality" type="float" label="Minimum phasing quality " value="10.0"/>
-        <param name="family" type="text" value="" label="If provided, genotypes in will be examined for mendelian violations: this argument is a string formatted as dad+mom=child where these parameters determine which sample names are examined"/>
-        <param name="mendelian_violation_qual_threshold" type="integer" label="Minimum genotype QUAL score for each trio member required to accept a site as a violation" value="50"/>
-        <param name="ancestral_alignments" type="data" format="fasta" optional="True" label="Fasta file with ancestral alleles" />
-        <param name="known_cnvs" type="data" format="bed,gatk_interval,picard_interval_list" optional="True" label="File containing tribble-readable features describing a known list of copy number variants" />
-        <param name="strat_intervals" type="data" format="bed,gatk_interval,picard_interval_list" optional="True" label="File containing tribble-readable features for the IntervalStratificiation" />
+        <param name="num_samples" type="integer" label="Number of samples (used if no samples are available in the VCF file" value="0" help="-ns,--numSamples &amp;lt;numSamples&amp;gt;"/>
+        <param name="min_phase_quality" type="float" label="Minimum phasing quality " value="10.0" help="-mpq,--minPhaseQuality &amp;lt;minPhaseQuality&amp;gt;"/>
+        <param name="family" type="text" value="" label="If provided, genotypes in will be examined for mendelian violations: this argument is a string formatted as dad+mom=child where these parameters determine which sample names are examined" help="--family_structure"/>
+        <param name="mendelian_violation_qual_threshold" type="integer" label="Minimum genotype QUAL score for each trio member required to accept a site as a violation" value="50" help="-mvq,--mendelianViolationQualThreshold &amp;lt;mendelianViolationQualThreshold&amp;gt;"/>
+        <param name="ancestral_alignments" type="data" format="fasta" optional="True" label="Fasta file with ancestral alleles" help="-aa,--ancestralAlignments &amp;lt;ancestralAlignments&amp;gt;" />
+        <param name="known_cnvs" type="data" format="bed,gatk_interval,picard_interval_list" optional="True" label="File containing tribble-readable features describing a known list of copy number variants" help="-knownCNVs,--knownCNVs &amp;lt;knownCNVs&amp;gt;" />
+        <param name="strat_intervals" type="data" format="bed,gatk_interval,picard_interval_list" optional="True" label="File containing tribble-readable features for the IntervalStratificiation" help="-stratIntervals,--stratIntervals &amp;lt;stratIntervals&amp;gt;" />
         
       </when>
     </conditional>

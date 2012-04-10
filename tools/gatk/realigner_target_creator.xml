@@ -110,11 +110,11 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_bam" type="data" format="bam" label="BAM file">
+        <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;">
           <validator type="unspecified_build" />
           <validator type="dataset_metadata_in_data_table" table_name="gatk_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
         </param>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" >
           <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
           </options>
@@ -122,17 +122,16 @@
         </param>
       </when>
       <when value="history">
-        <param name="input_bam" type="data" format="bam" label="BAM file" >
-        </param>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file">
+        <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options>
-            <filter type="data_meta" key="dbkey" ref="input_bam" /> <!-- FIX ME!!!! -->
+            <filter type="data_meta" key="dbkey" ref="input_bam" />
           </options>
         </param>
       </when>
     </conditional>
     
-    <repeat name="rod_bind" title="Binding for reference-ordered data">
+    <repeat name="rod_bind" title="Binding for reference-ordered data" help="-known,--known &amp;lt;known&amp;gt;">
         <conditional name="rod_bind_type">
           <param name="rod_bind_type_selector" type="select" label="Binding Type">
             <option value="dbsnp" selected="True">dbSNP</option>
@@ -376,10 +375,10 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="windowSize" type="integer" value="10" label="Window size for calculating entropy or SNP clusters (windowSize)" />
-        <param name="mismatchFraction" type="float" value="0.15" label="Fraction of base qualities needing to mismatch for a position to have high entropy (mismatchFraction)" help="to disable set to &lt;= 0 or &gt; 1"/>
-        <param name="minReadsAtLocus" type="integer" value="4" label="Minimum reads at a locus to enable using the entropy calculation (minReadsAtLocus)" />
-        <param name="maxIntervalSize" type="integer" value="500" label="Maximum interval size" />
+        <param name="windowSize" type="integer" value="10" label="Window size for calculating entropy or SNP clusters (windowSize)" help="-window,--windowSize &amp;lt;windowSize&amp;gt;" />
+        <param name="mismatchFraction" type="float" value="0.15" label="Fraction of base qualities needing to mismatch for a position to have high entropy (mismatchFraction)" help="to disable set to &lt;= 0 or &gt; 1 (-mismatch,--mismatchFraction &amp;lt;mismatchFraction&amp;gt;)"/>
+        <param name="minReadsAtLocus" type="integer" value="4" label="Minimum reads at a locus to enable using the entropy calculation (minReadsAtLocus)" help="-minReads,--minReadsAtLocus &amp;lt;minReadsAtLocus&amp;gt;" />
+        <param name="maxIntervalSize" type="integer" value="500" label="Maximum interval size" help="-maxInterval,--maxIntervalSize &amp;lt;maxIntervalSize&amp;gt;" />
       </when>
     </conditional>
   </inputs>

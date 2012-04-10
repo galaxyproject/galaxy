@@ -115,13 +115,13 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here.">
+        <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here (-V,--variant &amp;lt;variant&amp;gt;)">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
           <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
             <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
           </param>
         </repeat>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <!-- <filter type="data_meta" key="dbkey" ref="input_variants.input_variant" column="dbkey"/> -->
           </options>
@@ -129,17 +129,17 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here.">
+        <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here (-V,--variant &amp;lt;variant&amp;gt;)">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
           <param name="input_variant_name" type="text" value="" label="Variant name" help="Names must be unique">
             <validator type="length" min="1" message="You must provide a unique name for this set of variants" />
           </param>
         </repeat>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
-    <param name="genotype_merge_option" type="select" label="How should we merge genotype records across records for samples shared across the ROD files" >
+    <param name="genotype_merge_option" type="select" label="How should we merge genotype records across records for samples shared across the ROD files" help="-genotypeMergeOptions,--genotypemergeoption &amp;lt;genotypemergeoption&amp;gt;" >
       <option value="UNIQUIFY" />
       <option value="PRIORITIZE" selected="true"/>
       <option value="UNSORTED" />
@@ -367,18 +367,18 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="filtered_records_merge_type" type="select" label="How should we deal with records seen at the same site in the VCF, but with different FILTER fields? " >
+        <param name="filtered_records_merge_type" type="select" label="How should we deal with records seen at the same site in the VCF, but with different FILTER fields?" help="-filteredRecordsMergeType,--filteredrecordsmergetype &amp;lt;filteredrecordsmergetype&amp;gt;" >
           <option value="KEEP_IF_ANY_UNFILTERED" selected="true"/>
           <option value="KEEP_IF_ALL_UNFILTERED" />
         </param>
         
-        <param name="print_complex_merges" checked="false" type="boolean" truevalue="--printComplexMerges" falsevalue="" label="Print out interesting sites requiring complex compatibility merging" />
-        <param name="filtered_are_uncalled" checked="false" type="boolean" truevalue="--filteredAreUncalled" falsevalue="" label="If true, then filtered VCFs are treated as uncalled, so that filtered set annotation don't appear in the combined VCF" />
-        <param name="minimal_vcf" checked="false" type="boolean" truevalue="--minimalVCF" falsevalue="" label="If true, then the output VCF will contain no INFO or genotype INFO field" />
+        <param name="print_complex_merges" checked="false" type="boolean" truevalue="--printComplexMerges" falsevalue="" label="Print out interesting sites requiring complex compatibility merging" help="-printComplexMerges,--printComplexMerges" />
+        <param name="filtered_are_uncalled" checked="false" type="boolean" truevalue="--filteredAreUncalled" falsevalue="" label="If true, then filtered VCFs are treated as uncalled, so that filtered set annotation don't appear in the combined VCF" help="-filteredAreUncalled,--filteredAreUncalled" />
+        <param name="minimal_vcf" checked="false" type="boolean" truevalue="--minimalVCF" falsevalue="" label="If true, then the output VCF will contain no INFO or genotype INFO field" help="-minimalVCF,--minimalVCF" />
         
-        <param name="set_key" type="text" value="" label="Key, by default set, in the INFO key=value tag emitted describing which set the combined VCF record came from."/>
-        <param name="assume_identical_samples" checked="false" type="boolean" truevalue="--assumeIdenticalSamples" falsevalue="" label="If true, assume input VCFs have identical sample sets and disjoint calls so that one can simply perform a merge sort to combine the VCFs into one, drastically reducing the runtime." />
-        <param name="minimum_n" type="integer" value="1" label="Combine variants and output site only if variant is present in at least N input files."/>
+        <param name="set_key" type="text" value="" label="Key, by default set, in the INFO key=value tag emitted describing which set the combined VCF record came from." help="-setKey,--setKey &amp;lt;setKey&amp;gt;"/>
+        <param name="assume_identical_samples" checked="false" type="boolean" truevalue="--assumeIdenticalSamples" falsevalue="" label="If true, assume input VCFs have identical sample sets and disjoint calls so that one can simply perform a merge sort to combine the VCFs into one, drastically reducing the runtime." help="-assumeIdenticalSamples,--assumeIdenticalSamples" />
+        <param name="minimum_n" type="integer" value="1" label="Combine variants and output site only if variant is present in at least N input files." help="-minN,--minimumN &amp;lt;minimumN&amp;gt;"/>
         
       </when>
     </conditional>

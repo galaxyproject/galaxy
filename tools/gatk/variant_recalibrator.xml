@@ -34,9 +34,9 @@
         #end if
         #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
         #if $rod_binding.rod_bind_type.rod_training_type.rod_training_type_selector == "not_training_truth_known":
-        -d "--resource:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+            -d "--resource:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #else:
-        -d "--resource:${rod_bind_name},%(file_type)s,known=${rod_binding.rod_bind_type.rod_training_type.known},training=${rod_binding.rod_bind_type.rod_training_type.training},truth=${rod_binding.rod_bind_type.rod_training_type.truth},bad=${rod_binding.rod_bind_type.rod_training_type.bad},prior=${rod_binding.rod_bind_type.rod_training_type.prior}" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+            -d "--resource:${rod_bind_name},%(file_type)s,known=${rod_binding.rod_bind_type.rod_training_type.known},training=${rod_binding.rod_bind_type.rod_training_type.training},truth=${rod_binding.rod_bind_type.rod_training_type.truth},bad=${rod_binding.rod_bind_type.rod_training_type.bad},prior=${rod_binding.rod_bind_type.rod_training_type.prior}" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
         #end if
     #end for
     
@@ -156,10 +156,10 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <repeat name="variants" title="Variant" min="1">
+        <repeat name="variants" title="Variant" min="1" help="-input,--input &amp;lt;input&amp;gt;">
           <param name="input_variants" type="data" format="vcf" label="Variant file to recalibrate" />
         </repeat>
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
           <!--  <filter type="data_meta" key="dbkey" ref="variants[0].input_variants" column="dbkey"/> -->
           </options>
@@ -167,14 +167,14 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <repeat name="variants" title="Variant" min="1">
+        <repeat name="variants" title="Variant" min="1" help="-input,--input &amp;lt;input&amp;gt;">
           <param name="input_variants" type="data" format="vcf" label="Variant file to recalibrate" />
         </repeat>
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
-    <repeat name="rod_bind" title="Binding for reference-ordered data">
+    <repeat name="rod_bind" title="Binding for reference-ordered data" help="-resource,--resource &amp;lt;resource&amp;gt;">
         <conditional name="rod_bind_type">
           <param name="rod_bind_type_selector" type="select" label="Binding Type">
             <option value="dbsnp" selected="True">dbSNP</option>
@@ -185,6 +185,7 @@
             <option value="omni">OMNI</option>
             <option value="mask">Mask</option>
             <option value="custom">Custom</option>
+            <option value="comp">Comp</option>
           </param>
           <when value="variant">
               <param name="input_rod" type="data" format="vcf" label="Variant ROD file" />
@@ -225,6 +226,25 @@
                   </when>
               </conditional>
           </when>
+          <when value="mask">
+              <param name="input_rod" type="data" format="vcf" label="ROD file" />
+              <conditional name="rod_training_type">
+                  <param name="rod_training_type_selector" type="select" label="Use as training/truth/known sites">
+                      <option value="is_training_truth_known">Set training/truth/known sites</option>
+                      <option value="not_training_truth_known" selected="True">Don't Set options</option>
+                  </param>
+                  <when value="not_training_truth_known">
+                      <!-- do nothing here -->
+                  </when>
+                  <when value="is_training_truth_known">
+                      <param name="known" type="boolean" label="Is Known Site" truevalue="true" falsevalue="false"/>
+                      <param name="training" type="boolean" label="Is Training Site" truevalue="true" falsevalue="false"/>
+                      <param name="truth" type="boolean" label="Is Truth Site" truevalue="true" falsevalue="false"/>
+                      <param name="bad" type="boolean" label="Is Bad Site" truevalue="true" falsevalue="false"/>
+                      <param name="prior" type="float" label="prior probability of being true" value="12.0"/>
+                  </when>
+              </conditional>
+          </when>          
           <when value="dbsnp">
               <param name="input_rod" type="data" format="vcf" label="ROD file" />
               <conditional name="rod_training_type">
@@ -343,7 +363,7 @@
         </conditional>
     </repeat>
     
-    <param name="annotations" type="select" multiple="True" display="checkboxes" label="annotations which should used for calculations">
+    <param name="annotations" type="select" multiple="True" display="checkboxes" label="annotations which should used for calculations" help="-an,--use_annotation &amp;lt;use_annotation&amp;gt;">
       <!-- load the available annotations from an external configuration file, since additional ones can be added to local installs -->
       <options from_data_table="gatk_annotations">
         <filter type="multiple_splitter" column="tools_valid_for" separator=","/>
@@ -351,11 +371,11 @@
       </options>
     </param>
     
-    <repeat name="additional_annotations" title="Additional annotation">
+    <repeat name="additional_annotations" title="Additional annotation" help="-an,--use_annotation &amp;lt;use_annotation&amp;gt;">
       <param name="additional_annotation_name" type="text" value="" label="Annotation name" />
     </repeat>
     
-    <param name="mode" type="select" label="Recalibration mode">
+    <param name="mode" type="select" label="Recalibration mode" help="-mode,--mode &amp;lt;mode&amp;gt;">
         <option value="SNP" selected="True">SNP</option>
         <option value="INDEL">INDEL</option>
         <option value="BOTH">BOTH</option>
@@ -581,29 +601,29 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="max_gaussians" type="integer" label="maximum number of Gaussians to try during variational Bayes Algorithm" value="10"/>
-        <param name="max_iterations" type="integer" label="maximum number of maximum number of VBEM iterations to be performed in variational Bayes Algorithm" value="100"/>
-        <param name="num_k_means" type="integer" label="number of k-means iterations to perform in order to initialize the means of the Gaussians in the Gaussian mixture model" value="30"/>
-        <param name="std_threshold" type="float" label="If a variant has annotations more than -std standard deviations away from mean then don't use it for building the Gaussian mixture model." value="8.0"/>
-        <param name="qual_threshold" type="float" label="If a known variant has raw QUAL value less than -qual then don't use it for building the Gaussian mixture model." value="80.0"/>
-        <param name="shrinkage" type="float" label="shrinkage parameter in variational Bayes algorithm" value="1.0"/>
-        <param name="dirichlet" type="float" label="dirichlet parameter in variational Bayes algorithm" value="0.001"/>
-        <param name="prior_counts" type="float" label="number of prior counts to use in variational Bayes algorithm" value="20.0"/>
+        <param name="max_gaussians" type="integer" label="maximum number of Gaussians to try during variational Bayes Algorithm" value="10" help="-mG,--maxGaussians &amp;lt;maxGaussians&amp;gt;"/>
+        <param name="max_iterations" type="integer" label="maximum number of maximum number of VBEM iterations to be performed in variational Bayes Algorithm" value="100" help="-mI,--maxIterations &amp;lt;maxIterations&amp;gt;"/>
+        <param name="num_k_means" type="integer" label="number of k-means iterations to perform in order to initialize the means of the Gaussians in the Gaussian mixture model" value="30" help="-nKM,--numKMeans &amp;lt;numKMeans&amp;gt;"/>
+        <param name="std_threshold" type="float" label="If a variant has annotations more than -std standard deviations away from mean then don't use it for building the Gaussian mixture model." value="8.0" help="-std,--stdThreshold &amp;lt;stdThreshold&amp;gt;"/>
+        <param name="qual_threshold" type="float" label="If a known variant has raw QUAL value less than -qual then don't use it for building the Gaussian mixture model." value="80.0" help="-qual,--qualThreshold &amp;lt;qualThreshold&amp;gt;"/>
+        <param name="shrinkage" type="float" label="shrinkage parameter in variational Bayes algorithm" value="1.0" help="-shrinkage,--shrinkage &amp;lt;shrinkage&amp;gt;"/>
+        <param name="dirichlet" type="float" label="dirichlet parameter in variational Bayes algorithm" value="0.001" help="-dirichlet,--dirichlet &amp;lt;dirichlet&amp;gt;"/>
+        <param name="prior_counts" type="float" label="number of prior counts to use in variational Bayes algorithm" value="20.0" help="-priorCounts,--priorCounts &amp;lt;priorCounts&amp;gt;"/>
         <conditional name="bad_variant_selector">
           <param name="bad_variant_selector_type" type="select" label="How to specify bad variants">
             <option value="percent" selected="True">Percent</option>
             <option value="min_num">Number</option>
           </param>
           <when value="percent">
-            <param name="percent_bad_variants" type="float" label="percentage of the worst scoring variants to use when building the Gaussian mixture model of bad variants. 0.07 means bottom 7 percent." value="0.03"/>
+            <param name="percent_bad_variants" type="float" label="percentage of the worst scoring variants to use when building the Gaussian mixture model of bad variants. 0.07 means bottom 7 percent." value="0.03" help="-percentBad,--percentBadVariants &amp;lt;percentBadVariants&amp;gt;"/>
           </when>
           <when value="min_num">
-            <param name="min_num_bad_variants" type="integer" label="minimum amount of worst scoring variants to use when building the Gaussian mixture model of bad variants. Will override -percentBad arugment if necessary" value="2000"/>
+            <param name="min_num_bad_variants" type="integer" label="minimum amount of worst scoring variants to use when building the Gaussian mixture model of bad variants. Will override -percentBad arugment if necessary" value="2000" help="-minNumBad,--minNumBadVariants &amp;lt;minNumBadVariants&amp;gt;"/>
           </when>
         </conditional>
-        <param name="target_titv" type="float" label="expected novel Ti/Tv ratio to use when calculating FDR tranches and for display on optimization curve output figures. (approx 2.15 for whole genome experiments). ONLY USED FOR PLOTTING PURPOSES!" value="2.15"/>
-        <param name="ts_tranche" type="text" label="levels of novel false discovery rate (FDR, implied by ti/tv) at which to slice the data. (in percent, that is 1.0 for 1 percent)" value="100.0, 99.9, 99.0, 90.0"/>
-        <repeat name="ignore_filters" title="Ignore Filter">
+        <param name="target_titv" type="float" label="expected novel Ti/Tv ratio to use when calculating FDR tranches and for display on optimization curve output figures. (approx 2.15 for whole genome experiments). ONLY USED FOR PLOTTING PURPOSES!" value="2.15" help="-titv,--target_titv &amp;lt;target_titv&amp;gt;"/>
+        <param name="ts_tranche" type="text" label="levels of novel false discovery rate (FDR, implied by ti/tv) at which to slice the data. (in percent, that is 1.0 for 1 percent)" value="100.0, 99.9, 99.0, 90.0" help="-tranche,--TStranche &amp;lt;TStranche&amp;gt;"/>
+        <repeat name="ignore_filters" title="Ignore Filter" help="-ignoreFilter,--ignore_filter &amp;lt;ignore_filter&amp;gt;">
           <conditional name="ignore_filter_type">
             <param name="ignore_filter_type_selector" type="select" label="Filter Type">
               <option value="HARD_TO_VALIDATE">HARD_TO_VALIDATE</option>
@@ -613,9 +633,11 @@
             <when value="custom">
               <param name="filter_name" type="text" value="" label="Filter name"/>
             </when>
+            <when value="HARD_TO_VALIDATE" />
+            <when value="LowQual" />
           </conditional>
         </repeat>
-        <param name="ts_filter_level" type="float" label="truth sensitivity level at which to start filtering, used here to indicate filtered variants in plots" value="99.0"/>
+        <param name="ts_filter_level" type="float" label="truth sensitivity level at which to start filtering, used here to indicate filtered variants in plots" value="99.0" help="-ts_filter_level,--ts_filter_level &amp;lt;ts_filter_level&amp;gt;"/>
       </when>
     </conditional>
   </inputs>

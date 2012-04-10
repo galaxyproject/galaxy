@@ -162,8 +162,8 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input_variant" type="data" format="vcf" label="Variant file to select" />
-        <param name="ref_file" type="select" label="Using reference genome">
+        <param name="input_variant" type="data" format="vcf" label="Variant file to select" help="-V,--variant &amp;lt;variant&amp;gt;" />
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
           <options from_data_table="gatk_picard_indexes">
             <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
           </options>
@@ -171,12 +171,12 @@
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
-        <param name="input_variant" type="data" format="vcf" label="Variant file to select" />
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="input_variant" type="data" format="vcf" label="Variant file to select" help="-V,--variant &amp;lt;variant&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
       </when>
     </conditional>
     
-    <repeat name="select_expressions_repeat" title="Criteria to use when selecting the data">
+    <repeat name="select_expressions_repeat" title="Criteria to use when selecting the data" help="-select,--select_expressions &amp;lt;select_expressions&amp;gt;">
         <param name="select_expressions" type="text" label="JEXL expression">
             <sanitizer>
               <valid initial="string.printable">
@@ -187,18 +187,18 @@
         </param>
     </repeat>
     
-    <param name="input_concordance" type="data" format="vcf" label="Output variants that were also called in this comparison track" optional="True"/>
-    <param name="input_discordance" type="data" format="vcf" label="Output variants that were not called in this comparison track" optional="True"/>
+    <param name="input_concordance" type="data" format="vcf" label="Output variants that were also called in this comparison track" optional="True" help="-conc,--concordance &amp;lt;concordance&amp;gt;"/>
+    <param name="input_discordance" type="data" format="vcf" label="Output variants that were not called in this comparison track" optional="True" help="-disc,--discordance &amp;lt;discordance&amp;gt;"/>
     
-    <repeat name="sample_name_repeat" title="Include Samples by name">
+    <repeat name="sample_name_repeat" title="Include Samples by name" help="-sn,--sample_name &amp;lt;sample_name&amp;gt;">
         <param name="sample_name" type="text" label="Include genotypes from this sample"/>
     </repeat>
     
-    <repeat name="exclude_sample_name_repeat" title="Exclude Samples by name">
+    <repeat name="exclude_sample_name_repeat" title="Exclude Samples by name" help="-xl_sn,--exclude_sample_name &amp;lt;exclude_sample_name&amp;gt;">
         <param name="exclude_sample_name" type="text" label="Exclude genotypes from this sample"/>
     </repeat>
     
-    <param name="exclude_filtered" type="boolean" truevalue="--excludeFiltered" falsevalue="" label="Don't include filtered loci in the analysis" />
+    <param name="exclude_filtered" type="boolean" truevalue="--excludeFiltered" falsevalue="" label="Don't include filtered loci in the analysis" help="-ef,--excludeFiltered" />
     
     <conditional name="gatk_param_type">
       <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
@@ -422,31 +422,31 @@
       </when>
       <when value="advanced">
         
-        <repeat name="exclude_sample_file_repeat" title="Exclude Samples by file">
+        <repeat name="exclude_sample_file_repeat" title="Exclude Samples by file" help="-xl_sf,--exclude_sample_file &amp;lt;exclude_sample_file&amp;gt;">
             <param name="exclude_sample_file" type="data" format="txt" label="File containing a list of samples (one per line) to exclude"/>
         </repeat>
         
-        <repeat name="sample_file_repeat" title="Samples by file">
+        <repeat name="sample_file_repeat" title="Samples by file" help="-sf,--sample_file &amp;lt;sample_file&amp;gt;">
             <param name="sample_file" type="data" format="txt" label="File containing a list of samples (one per line) to include" />
         </repeat>
         
-        <param name="input_keep_ids" type="data" format="text" label="Only emit sites whose ID is found in this file" optional="True"/>
+        <param name="input_keep_ids" type="data" format="text" label="Only emit sites whose ID is found in this file" optional="True" help="-IDs,--keepIDs &amp;lt;keepIDs&amp;gt;"/>
         
-        <param name="keep_original_AC" type="boolean" truevalue="--keepOriginalAC" falsevalue="" label="Don't update the AC, AF, or AN values in the INFO field after selecting" />
+        <param name="keep_original_AC" type="boolean" truevalue="--keepOriginalAC" falsevalue="" label="Don't update the AC, AF, or AN values in the INFO field after selecting" help="-keepOriginalAC,--keepOriginalAC" />
         
-        <param name="mendelian_violation" type="boolean" truevalue="--mendelianViolation" falsevalue="" label="output mendelian violation sites only" />
+        <param name="mendelian_violation" type="boolean" truevalue="--mendelianViolation" falsevalue="" label="output mendelian violation sites only" help="-mv,--mendelianViolation" />
         
-        <param name="mendelian_violation_qual_threshold" type="float" label="Minimum genotype QUAL score for each trio member required to accept a site as a mendelian violation" value="0" />
+        <param name="mendelian_violation_qual_threshold" type="float" label="Minimum genotype QUAL score for each trio member required to accept a site as a mendelian violation" value="0" help="-mvq,--mendelianViolationQualThreshold &amp;lt;mendelianViolationQualThreshold&amp;gt;" />
         
-        <param name="remove_fraction_genotypes" type="float" label="Selects a fraction (a number between 0 and 1) of the total genotypes at random from the variant track and sets them to nocall" value="0" min="0" max="1" />
+        <param name="remove_fraction_genotypes" type="float" label="Selects a fraction (a number between 0 and 1) of the total genotypes at random from the variant track and sets them to nocall" value="0" min="0" max="1" help="-fractionGenotypes,--remove_fraction_genotypes &amp;lt;remove_fraction_genotypes&amp;gt;" />
         
-        <param name="restrict_alleles_to" type="select" label="Select only variants of a particular allelicity">
+        <param name="restrict_alleles_to" type="select" label="Select only variants of a particular allelicity" help="-restrictAllelesTo,--restrictAllelesTo &amp;lt;restrictAllelesTo&amp;gt;">
             <option value="ALL" selected="True">ALL</option>
             <option value="MULTIALLELIC">MULTIALLELIC</option>
             <option value="BIALLELIC">BIALLELIC</option>
         </param>
         
-        <repeat name="sample_expressions_repeat" title="Regular expression to select many samples from the ROD tracks provided">
+        <repeat name="sample_expressions_repeat" title="Regular expression to select many samples from the ROD tracks provided" help="-se,--sample_expressions &amp;lt;sample_expressions&amp;gt;">
             <param name="sample_expressions" type="text" label="Regular expression">
                 <sanitizer>
                   <valid initial="string.printable">
@@ -467,16 +467,16 @@
             <!-- Do nothing here -->
           </when>
           <when value="select_random_fraction">
-            <param name="select_random_fraction" type="float" value="0" label="Fraction" min="0" max="1"/>
+            <param name="select_random_fraction" type="float" value="0" label="Fraction" min="0" max="1" help="-fraction,--select_random_fraction &amp;lt;select_random_fraction&amp;gt;"/>
           </when>
           <when value="select_random_number">
-            <param name="select_random_number" type="integer" value="0" label="Count" />
+            <param name="select_random_number" type="integer" value="0" label="Count" help="-number,--select_random_number &amp;lt;select_random_number&amp;gt;" />
           </when>
         </conditional>
         
-        <param name="exclude_non_variants" type="boolean" truevalue="--excludeNonVariants" falsevalue="" label="Don't include loci found to be non-variant after the subsetting procedure" />
+        <param name="exclude_non_variants" type="boolean" truevalue="--excludeNonVariants" falsevalue="" label="Don't include loci found to be non-variant after the subsetting procedure" help="-env,--excludeNonVariants" />
         
-        <param name="select_type_to_include" type="select" label="Select only a certain type of variants from the input file" multiple="True" display="checkboxes">
+        <param name="select_type_to_include" type="select" label="Select only a certain type of variants from the input file" multiple="True" display="checkboxes" help="-selectType,--selectTypeToInclude &amp;lt;selectTypeToInclude&amp;gt;">
             <option value="INDEL">INDEL</option>
             <option value="SNP">SNP</option>
             <option value="MIXED">MIXED</option>
