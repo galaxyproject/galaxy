@@ -21,12 +21,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         GET /api/histories/{encoded_history_id}/contents
         Displays a collection (list) of history contents
-        """        
+        """
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
         except Exception, e:
             return str( e )
-                       
         rval = []
         try:
             for dataset in history.datasets:
@@ -67,7 +66,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 item = self.encode_all_ids( trans, item )
         except Exception, e:
             item = "Error in history API at listing dataset"
-            log.error( item + ": %s" % str(e) )               
+            log.error( item + ": %s" % str(e) )
             trans.response.status = 500
         return item
 
