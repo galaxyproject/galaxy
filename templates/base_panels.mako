@@ -47,10 +47,14 @@
     <!--[if lt IE 7]>
     ${h.js( 'IE7', 'ie7-recalc' )}
     <![endif]-->
-    <script type="text/javascript">
-        var image_path = '${h.url_for("/static/images")}';
-    </script>
     ${h.js( 'jquery', 'libs/underscore', 'libs/backbone', 'libs/handlebars.runtime', 'backbone/ui' )}
+    <script type="text/javascript">
+        // Set up needed paths.
+        var galaxy_paths = new GalaxyPaths({
+            root_path: '${h.url_for( "/" )}',
+            image_path: '${h.url_for( "/static/images" )}'
+        });
+    </script>
 </%def>
 
 ## Default late-load javascripts

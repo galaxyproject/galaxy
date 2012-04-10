@@ -207,8 +207,7 @@ extend( CanvasManager.prototype, {
         var patterns = this.patterns,
             dummy_context = this.dummy_context,
             image = new Image();
-        // FIXME: where does image_path come from? not in browser.mako...
-        image.src = image_path + path;
+        image.src = galaxy_paths.attributes.image_path + path;
         image.onload = function() {
             patterns[key] = dummy_context.createPattern( image, "repeat" );
         }

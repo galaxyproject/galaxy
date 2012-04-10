@@ -188,7 +188,7 @@ $.extend( Node.prototype, {
                         .appendTo( "body" )
                         .append(
                             $("<div class='buttons'></div>").append(
-                                $("<img/>").attr("src", image_path + '/delete_icon.png').click( function() {
+                                $("<img/>").attr("src", galaxy_paths.attributes.image_path + '/delete_icon.png').click( function() {
                                     $.each( terminal.connectors, function( _, x ) {
                                         x.destroy();
                                     });
@@ -335,13 +335,13 @@ $.extend( Node.prototype, {
                     .css( { display: 'none' } )
                     .append(
                         $("<div class='buttons'></div>").append(
-                            $("<img/>").attr('src', image_path + '/fugue/asterisk-small-outline.png').click( function() {
+                            $("<img/>").attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-outline.png').click( function() {
                                 if ($.inArray(output.name, node.workflow_outputs) != -1){
                                     node.workflow_outputs.splice($.inArray(output.name, node.workflow_outputs), 1);
-                                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                                    callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-outline.png');
                                 }else{
                                     node.workflow_outputs.push(output.name);
-                                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                                    callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small.png');
                                 }
                                 workflow.has_changes = true;
                                 canvas_manager.draw_overview();
@@ -355,19 +355,19 @@ $.extend( Node.prototype, {
                 callout.show();
                 r.append(callout);
                 if ($.inArray(output.name, node.workflow_outputs) === -1){
-                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                    callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-outline.png');
                 }else{
-                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                    callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small.png');
                 }
                 r.hover(
                     function(){
-                        callout.find('img').attr('src', image_path + '/fugue/asterisk-small-yellow.png');
+                        callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-yellow.png');
                     },
                     function(){
                         if ($.inArray(output.name, node.workflow_outputs) === -1){
-                            callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                            callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-outline.png');
                         }else{
-                            callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                            callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small.png');
                         }                            
                     });
             }
@@ -793,18 +793,18 @@ function prebuild_node( type, title_text, tool_id ) {
     f.append( title );
     f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );    
     var b = $("<div class='toolFormBody'></div>");
-    var tmp = "<div><img height='16' align='middle' src='" +image_path+ "/loading_small_white_bg.gif'/> loading tool info...</div>";
+    var tmp = "<div><img height='16' align='middle' src='" +galaxy_paths.attributes.image_path+ "/loading_small_white_bg.gif'/> loading tool info...</div>";
     b.append( tmp );
     node.form_html = tmp;
     f.append( b );
     // Fix width to computed width
     // Now add floats
     var buttons = $("<div class='buttons' style='float: right;'></div>");
-    buttons.append( $("<img/>").attr("src", image_path + '/delete_icon.png').click( function( e ) {
+    buttons.append( $("<img/>").attr("src", galaxy_paths.attributes.image_path + '/delete_icon.png').click( function( e ) {
         node.destroy();
     } ).hover( 
-        function() { $(this).attr( "src", image_path + "/delete_icon_dark.png" ); },
-        function() { $(this).attr( "src", image_path + "/delete_icon.png" ); }
+        function() { $(this).attr( "src", galaxy_paths.attributes.image_path + "/delete_icon_dark.png" ); },
+        function() { $(this).attr( "src", galaxy_paths.attributes.image_path + "/delete_icon.png" ); }
     ) );
     // Place inside container
     f.appendTo( "#canvas-container" );

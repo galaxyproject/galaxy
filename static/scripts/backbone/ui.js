@@ -1,6 +1,16 @@
 /**
  * Utility models and views for Galaxy objects.
  */
+ 
+/**
+ * Necessary Galaxy paths.
+ */
+var GalaxyPaths = Backbone.Model.extend({
+    defaults: {
+        root_path: "",
+        image_path: ""
+    }
+});
 
 /**
  * Clickable button represented as an icon.
