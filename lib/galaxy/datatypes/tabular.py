@@ -23,6 +23,7 @@ class Tabular( data.Text ):
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0 )
     MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, no_value=[] )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
@@ -179,6 +180,9 @@ class Tabular( data.Text ):
     def make_html_peek_header( self, dataset, skipchars=[], column_names=[], column_number_format='%s', column_parameter_alias={}, **kwargs ):
         out = []
         try:
+            if not column_names and dataset.metadata.column_names:
+                column_names = dataset.metadata.column_names
+
             column_headers = [None] * dataset.metadata.columns
 
             # fill in empty headers with data from column_names
