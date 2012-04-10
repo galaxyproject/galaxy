@@ -245,17 +245,17 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <repeat name="pedigree" title="Pedigree file" help="-ped,--pedigree &lt;pedigree&gt;">
+        <repeat name="pedigree" title="Pedigree file" help="-ped,--pedigree &amp;lt;pedigree&amp;gt;">
             <param name="pedigree_file" type="data" format="txt" label="Pedigree files for samples"/>
         </repeat>
-        <repeat name="pedigree_string_repeat" title="Pedigree string" help="-pedString,--pedigreeString &lt;pedigreeString&gt;">
+        <repeat name="pedigree_string_repeat" title="Pedigree string" help="-pedString,--pedigreeString &amp;lt;pedigreeString&amp;gt;">
             <param name="pedigree_string" type="text" value="" label="Pedigree string for samples"/>
         </repeat>
-        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information" help="-pedValidationType,--pedigreeValidationType &lt;pedigreeValidationType&gt;">
+        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information" help="-pedValidationType,--pedigreeValidationType &amp;lt;pedigreeValidationType&amp;gt;">
           <option value="STRICT" selected="True">STRICT</option>
           <option value="SILENT">SILENT</option>
         </param>
-        <repeat name="read_filter" title="Read Filter" help="-rf,--read_filter &lt;read_filter&gt;">
+        <repeat name="read_filter" title="Read Filter" help="-rf,--read_filter &amp;lt;read_filter&amp;gt;">
             <conditional name="read_filter_type">
               <param name="read_filter_type_selector" type="select" label="Read Filter Type">
                 <option value="BadCigar">BadCigar</option>
@@ -357,20 +357,20 @@
               </when>
             </conditional>
         </repeat>
-        <repeat name="input_interval_repeat" title="Operate on Genomic intervals" help="-L,--intervals &lt;intervals&gt;">
+        <repeat name="input_interval_repeat" title="Operate on Genomic intervals" help="-L,--intervals &amp;lt;intervals&amp;gt;">
           <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
         </repeat>
-        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals" help="-XL,--excludeIntervals &lt;excludeIntervals&gt;">
+        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals" help="-XL,--excludeIntervals &amp;lt;excludeIntervals&amp;gt;">
           <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
         </repeat>
         
-        <param name="interval_set_rule" type="select" label="Interval set rule" help="-isr,--interval_set_rule &lt;interval_set_rule&gt;">
+        <param name="interval_set_rule" type="select" label="Interval set rule" help="-isr,--interval_set_rule &amp;lt;interval_set_rule&amp;gt;">
           <option value="UNION" selected="True">UNION</option>
           <option value="INTERSECTION">INTERSECTION</option>
         </param>
         
         <conditional name="downsampling_type">
-          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="-dt,--downsampling_type &lt;downsampling_type&gt;">
+          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="-dt,--downsampling_type &amp;lt;downsampling_type&amp;gt;">
             <option value="NONE" selected="True">NONE</option>
             <option value="ALL_READS">ALL_READS</option>
             <option value="BY_SAMPLE">BY_SAMPLE</option>
@@ -385,10 +385,10 @@
                       <option value="downsample_to_coverage">Downsample by Coverage</option>
                   </param>
                   <when value="downsample_to_fraction">
-                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1" help="-dfrac,--downsample_to_fraction &lt;downsample_to_fraction&gt;"/>
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1" help="-dfrac,--downsample_to_fraction &amp;lt;downsample_to_fraction&amp;gt;"/>
                   </when>
                   <when value="downsample_to_coverage">
-                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0" help="-dcov,--downsample_to_coverage &lt;downsample_to_coverage&gt;"/>
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0" help="-dcov,--downsample_to_coverage &amp;lt;downsample_to_coverage&amp;gt;"/>
                   </when>
               </conditional>
           </when>
@@ -399,34 +399,34 @@
                       <option value="downsample_to_coverage">Downsample by Coverage</option>
                   </param>
                   <when value="downsample_to_fraction">
-                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1" help="-dfrac,--downsample_to_fraction &lt;downsample_to_fraction&gt;"/>
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1" help="-dfrac,--downsample_to_fraction &amp;lt;downsample_to_fraction&amp;gt;"/>
                   </when>
                   <when value="downsample_to_coverage">
-                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0" help="-dcov,--downsample_to_coverage &lt;downsample_to_coverage&gt;"/>
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0" help="-dcov,--downsample_to_coverage &amp;lt;downsample_to_coverage&amp;gt;"/>
                   </when>
               </conditional>
           </when>
         </conditional>
-        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine" help="-baq,--baq &lt;baq&gt;">
+        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine" help="-baq,--baq &amp;lt;baq&amp;gt;">
           <option value="OFF" selected="True">OFF</option>
           <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
           <option value="RECALCULATE">RECALCULATE</option>
         </param>
-        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets. -baqGOP,--baqGapOpenPenalty &lt;baqGapOpenPenalty&gt;" />
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets. -baqGOP,--baqGapOpenPenalty &amp;lt;baqGapOpenPenalty&amp;gt;" />
         <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" help="-OQ,--useOriginalQualities" />
-        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1" help="-DBQ,--defaultBaseQualities &lt;defaultBaseQualities&gt;"/>
-        <param name="validation_strictness" type="select" label="How strict should we be with validation" help="-S,--validation_strictness &lt;validation_strictness&gt;">
+        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1" help="-DBQ,--defaultBaseQualities &amp;lt;defaultBaseQualities&amp;gt;"/>
+        <param name="validation_strictness" type="select" label="How strict should we be with validation" help="-S,--validation_strictness &amp;lt;validation_strictness&amp;gt;">
           <option value="STRICT" selected="True">STRICT</option>
           <option value="LENIENT">LENIENT</option>
           <option value="SILENT">SILENT</option>
           <!-- <option value="DEFAULT_STRINGENCY">DEFAULT_STRINGENCY</option> listed in docs, but not valid value...-->
         </param>
-        <param name="interval_merging" type="select" label="Interval merging rule" help="-im,--interval_merging &lt;interval_merging&gt;">
+        <param name="interval_merging" type="select" label="Interval merging rule" help="-im,--interval_merging &amp;lt;interval_merging&amp;gt;">
           <option value="ALL" selected="True">ALL</option>
           <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
         </param>
         
-        <repeat name="read_group_black_list_repeat" title="Read group black list" help="-rgbl,--read_group_black_list &lt;read_group_black_list&gt;">
+        <repeat name="read_group_black_list_repeat" title="Read group black list" help="-rgbl,--read_group_black_list &amp;lt;read_group_black_list&amp;gt;">
           <conditional name="read_group_black_list_type">
             <param name="read_group_black_list_type_selector" type="select" label="Type of reads read group black list">
               <option value="file" selected="True">Filters in file</option>
