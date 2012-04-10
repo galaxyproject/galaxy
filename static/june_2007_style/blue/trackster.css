@@ -80,6 +80,10 @@ input{font:10px verdana;}
 .filters-icon:hover{background:transparent url(../images/fugue/ui-slider-050.png) no-repeat;}
 .remove-icon,.overview-close{background:transparent url(../images/fugue/cross-small-bw.png) no-repeat;}
 .icon-button.remove-icon:hover,.overview-close:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
+.icon-button.toggle{background:transparent url(../images/fugue/toggle-bw.png) no-repeat;margin-right:0px;}
+.icon-button.toggle:hover{background:transparent url(../images/fugue/toggle.png) no-repeat;}
+.icon-button.toggle-expand{background:transparent url(../images/fugue/toggle-expand-bw.png) no-repeat;margin-right:0px;}
+.icon-button.toggle-expand:hover{background:transparent url(../images/fugue/toggle-expand.png) no-repeat;}
 .icon-button.cross-circle{background:transparent url(../images/fugue/cross-circle-bw.png) no-repeat;margin-right:0px;}
 .icon-button.cross-circle:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
 .icon-button.plus-button{background:transparent url(../images/fugue/plus-button-bw.png) no-repeat;}
