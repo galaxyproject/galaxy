@@ -1,4 +1,4 @@
-<tool id="bwa_wrapper" name="Map with BWA for Illumina" version="1.2.2">
+<tool id="bwa_wrapper" name="Map with BWA for Illumina" version="1.2.3">
   <description></description>
   <parallelism method="basic"></parallelism>
   <command interpreter="python">
@@ -45,7 +45,7 @@
         --mismatchPenalty=$params.mismatchPenalty
         --gapOpenPenalty=$params.gapOpenPenalty
         --gapExtensPenalty=$params.gapExtensPenalty
-        --suboptAlign=$params.suboptAlign
+        --suboptAlign="${params.suboptAlign}"
         --noIterSearch=$params.noIterSearch
         --outputTopN=$params.outputTopN
         --outputTopNDisc=$params.outputTopNDisc
@@ -122,7 +122,7 @@
         <param name="mismatchPenalty" type="integer" value="3" label="Mismatch penalty (aln -M)" help="BWA will not search for suboptimal hits with a score lower than [value]" />
         <param name="gapOpenPenalty" type="integer" value="11" label="Gap open penalty (aln -O)" />
         <param name="gapExtensPenalty" type="integer" value="4" label="Gap extension penalty (aln -E)" />
-        <param name="suboptAlign" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Proceed with suboptimal alignments even if the top hit is a repeat (aln -R)" help="For paired-end reads only. By default, BWA only searches for suboptimal alignments if the top hit is unique. Using this option has no effect on accuracy for single-end reads. It is mainly designed for improving the alignment accuracy of paired-end reads. However, the pairing procedure will be slowed down, especially for very short reads (~32bp)" />
+        <param name="suboptAlign" type="integer" optional="True" label="Proceed with suboptimal alignments if there are no more than INT equally best hits. (aln -R)" help="For paired-end reads only. By default, BWA only searches for suboptimal alignments if the top hit is unique. Using this option has no effect on accuracy for single-end reads. It is mainly designed for improving the alignment accuracy of paired-end reads. However, the pairing procedure will be slowed down, especially for very short reads (~32bp)" />
         <param name="noIterSearch" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Disable iterative search (aln -N)" help="All hits with no more than maxDiff differences will be found. This mode is much slower than the default" />
         <param name="outputTopN" type="integer" value="3" label="Maximum number of alignments to output in the XA tag for reads paired properly (samse/sampe -n)" help="If a read has more than INT hits, the XA tag will not be written" />
         <param name="outputTopNDisc" type="integer" value="10" label="Maximum number of alignments to output in the XA tag for disconcordant read pairs (excluding singletons) (sampe -N)" help="For paired-end reads only. If a read has more than INT hits, the XA tag will not be written" />
@@ -226,7 +226,7 @@ SOLID, HELICOS, IONTORRENT and PACBIO" />
       <param name="mismatchPenalty" value="3" />
       <param name="gapOpenPenalty" value="11" />
       <param name="gapExtensPenalty" value="4" />
-      <param name="suboptAlign" value="true" />
+      <param name="suboptAlign" value="" />
       <param name="noIterSearch" value="true" />
       <param name="outputTopN" value="3" />
       <param name="outputTopNDisc" value="10" />
@@ -263,7 +263,7 @@ SOLID, HELICOS, IONTORRENT and PACBIO" />
       <param name="mismatchPenalty" value="3" />
       <param name="gapOpenPenalty" value="11" />
       <param name="gapExtensPenalty" value="4" />
-      <param name="suboptAlign" value="true" />
+      <param name="suboptAlign" value="" />
       <param name="noIterSearch" value="true" />
       <param name="outputTopN" value="3" />
       <param name="outputTopNDisc" value="10" />
