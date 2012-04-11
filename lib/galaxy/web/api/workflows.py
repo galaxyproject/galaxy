@@ -18,9 +18,9 @@ class WorkflowsAPIController(BaseAPIController):
     def index(self, trans, **kwd):
         """
         GET /api/workflows
-        Displays a collection of workflows
+
+        Displays a collection of workflows.
         """
-        # List parameters of a specific workflow
         rval = []
         for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).filter_by(
                 user=trans.user, deleted=False).order_by(
@@ -38,10 +38,12 @@ class WorkflowsAPIController(BaseAPIController):
             item['url'] = url_for('workflow', id=encoded_id)
             rval.append(item)
         return rval
+
     @web.expose_api
     def show(self, trans, id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}
+
         Displays information needed to run a workflow from the command line.
         """
         workflow_id = id
@@ -72,28 +74,29 @@ class WorkflowsAPIController(BaseAPIController):
                 # p = step.get_required_parameters()
         item['inputs'] = inputs
         return item
+
     @web.expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/workflows
+
         We're not creating workflows from the api.  Just execute for now.
+
         However, we will import them if installed_repository_file is specified
         """
         if 'workflow_id' not in payload:
             # create new
             if 'installed_repository_file' in payload:
                 workflow_controller = trans.webapp.controllers[ 'workflow' ]
-                result = workflow_controller.import_workflow( trans=trans, 
+                result = workflow_controller.import_workflow( trans=trans,
                                                               cntrller='api',
                                                               **payload)
                 return result
             trans.response.status = 403
             return "Either workflow_id or installed_repository_file must be specified"
-        
         if 'installed_repository_file' in payload:
             trans.response.status = 403
             return "installed_repository_file may not be specified with workflow_id"
-
         stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(
                         trans.security.decode_id(payload['workflow_id']))
         if stored_workflow.user != trans.user and not trans.user_is_admin():
@@ -215,3 +218,4 @@ class WorkflowsAPIController(BaseAPIController):
         trans.sa_session.add( workflow_invocation )
         trans.sa_session.flush()
         return rval
+

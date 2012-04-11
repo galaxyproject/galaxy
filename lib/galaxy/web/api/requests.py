@@ -1,19 +1,17 @@
 """
 API operations on a sample tracking system.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
+import logging
+from galaxy import util, web
 from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
 
 class RequestsAPIController( BaseAPIController ):
-    update_types = Bunch( REQUEST = 'request_state' )
-    update_type_values = [v[1] for v in update_types.items()]
+    _update_types = Bunch( REQUEST = 'request_state' )
+    _update_type_values = [v[1] for v in _update_types.items()]
     @web.expose_api
     def index( self, trans, **kwd ):
         """
@@ -77,7 +75,7 @@ class RequestsAPIController( BaseAPIController ):
             return "Missing required 'update_type' parameter.  Please consult the API documentation for help."
         else:
             update_type = payload.pop( 'update_type' )
-        if update_type not in self.update_type_values:
+        if update_type not in self._update_type_values:
             trans.response.status = 400
             return "Invalid value for 'update_type' parameter ( %s ) specified.  Please consult the API documentation for help." % update_type
         try:
