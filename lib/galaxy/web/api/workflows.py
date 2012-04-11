@@ -104,10 +104,7 @@ class WorkflowsAPIController(BaseAPIController):
         ### RPARK: dictionary containing which workflows to change and edit ###
         param_map = {};
         if (payload.has_key('parameters') ):
-            #if (payload['parameters']):
             param_map = payload['parameters'];
-            print("PARAMETER MAP:");
-            print(param_map);
         # ------------------------------------------------------------------------------- #        
             
 
@@ -200,24 +197,11 @@ class WorkflowsAPIController(BaseAPIController):
                 
                 ####################################################
                 ####################################################
-                #print("CHECKING WORKFLOW STEPS:")
-                #print(step.tool_id);
-                #print(step.state.inputs);
-                #print("upgard messages");
-                #print(step.state);
-                #print("\n");
                 # RPARK: IF TOOL_NAME IN PARAMETER MAP #
                 if step.tool_id in param_map:
-                    #print("-------------------------FOUND IN PARAMETER DICTIONARY")
-                    #print(param_map[step.tool_id]);
                     change_param = param_map[step.tool_id]['param'];
                     change_value = param_map[step.tool_id]['value'];
-                    #step.state.inputs['refGenomeSource']['index'] = "crapolo";
-                    #print(step.state.inputs[change_param]);
                     step.state.inputs[change_param] = change_value;
-                    #print(step.state.inputs[change_param]);
-                    #print(param_map[step.tool_id][change_value]);
-                    #print("--------------------------------------------------")
                 ####################################################
                 ####################################################
                 
