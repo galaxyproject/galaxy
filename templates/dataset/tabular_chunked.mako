@@ -39,11 +39,7 @@
         $(document).ready(function(){
             fillTable();
             $(window).scroll(function(){
-                console.log($(window).scrollTop());
-                console.log($(document).height());
-                console.log($(window).height());
-                // if ($(window).scrollTop() == $(document).height() - $(window).height()){
-                if ($(document).height() - $(window).scrollTop() <=  $(window).height()){
+                if ($(window).scrollTop() == $(document).height() - $(window).height()){
                     fillTable();
                 }
             });
