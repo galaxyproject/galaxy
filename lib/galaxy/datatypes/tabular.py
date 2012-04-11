@@ -13,11 +13,13 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 import galaxy_utils.sequence.vcf
 from sniff import *
+from galaxy.util.json import to_json_string
 
 log = logging.getLogger(__name__)
 
 class Tabular( data.Text ):
     """Tab delimited data"""
+    CHUNK_SIZE = 20000
 
     """Add metadata elements"""
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
@@ -33,15 +35,15 @@ class Tabular( data.Text ):
         that contain numerical values in the dataset.  A skip parameter is
         used because various tabular data types reuse this function, and
         their data type classes are responsible to determine how many invalid
-        comment lines should be skipped. Using None for skip will cause skip 
-        to be zero, but the first line will be processed as a header. A 
-        max_data_lines parameter is used because various tabular data types 
-        reuse this function, and their data type classes are responsible to 
+        comment lines should be skipped. Using None for skip will cause skip
+        to be zero, but the first line will be processed as a header. A
+        max_data_lines parameter is used because various tabular data types
+        reuse this function, and their data type classes are responsible to
         determine how many data lines should be processed to ensure that the
-        non-optional metadata parameters are properly set; if used, optional 
-        metadata parameters will be set to None, unless the entire file has 
-        already been read. Using None (default) for max_data_lines will 
-        process all data lines. 
+        non-optional metadata parameters are properly set; if used, optional
+        metadata parameters will be set to None, unless the entire file has
+        already been read. Using None (default) for max_data_lines will
+        process all data lines.
 
         Items of interest:
         1. We treat 'overwrite' as always True (we always want to set tabular metadata when called).
@@ -58,7 +60,7 @@ class Tabular( data.Text ):
         column_type_set_order = [ 'int', 'float', 'list', 'str'  ] #Order to set column types in
         default_column_type = column_type_set_order[-1] # Default column type is lowest in list
         column_type_compare_order = list( column_type_set_order ) #Order to compare column types
-        column_type_compare_order.reverse() 
+        column_type_compare_order.reverse()
         def type_overrules_type( column_type1, column_type2 ):
             if column_type1 is None or column_type1 == column_type2:
                 return False
@@ -75,13 +77,13 @@ class Tabular( data.Text ):
             try:
                 int( column_text )
                 return True
-            except: 
+            except:
                 return False
         def is_float( column_text ):
             try:
                 float( column_text )
                 return True
-            except: 
+            except:
                 if column_text.strip().lower() == 'na':
                     return True #na is special cased to be a float
                 return False
@@ -126,7 +128,7 @@ class Tabular( data.Text ):
                             if type_overrules_type( column_type, column_types[field_count] ):
                                 column_types[field_count] = column_type
                     if i == 0 and requested_skip is None:
-                        # This is our first line, people seem to like to upload files that have a header line, but do not 
+                        # This is our first line, people seem to like to upload files that have a header line, but do not
                         # start with '#' (i.e. all column types would then most likely be detected as str).  We will assume
                         # that the first line is always a header (this was previous behavior - it was always skipped).  When
                         # the requested skip is None, we only use the data from the first line if we have no other data for
@@ -148,7 +150,7 @@ class Tabular( data.Text ):
                     break
                 i += 1
             dataset_fh.close()
-                        
+
         #we error on the larger number of columns
         #first we pad our column_types by using data from first line
         if len( first_line_column_types ) > len( column_types ):
@@ -177,6 +179,7 @@ class Tabular( data.Text ):
         except Exception, exc:
             out = "Can't create peek %s" % str( exc )
         return out
+
     def make_html_peek_header( self, dataset, skipchars=[], column_names=[], column_number_format='%s', column_parameter_alias={}, **kwargs ):
         out = []
         try:
@@ -212,6 +215,7 @@ class Tabular( data.Text ):
         except Exception, exc:
             raise Exception, "Can't create peek header %s" % str( exc )
         return "".join( out )
+
     def make_html_peek_rows( self, dataset, skipchars=[], **kwargs ):
         out = []
         try:
@@ -233,6 +237,28 @@ class Tabular( data.Text ):
         except Exception, exc:
             raise Exception, "Can't create peek rows %s" % str( exc )
         return "".join( out )
+
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
+        #TODO Prevent failure when displaying extremely long > 50kb lines.
+        if to_ext:
+            return self._serve_raw(trans, dataset, to_ext)
+        if chunk:
+            ck_index = int(chunk)
+            f = open(dataset.file_name)
+            f.seek(ck_index * self.CHUNK_SIZE)
+            # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
+            if f.tell() != 0:
+                cursor = f.read(1)
+                while cursor and cursor != '\n':
+                    cursor = f.read(1)
+            ck_data = f.read(self.CHUNK_SIZE)
+            cursor = f.read(1)
+            while cursor and ck_data[-1] != '\n':
+                ck_data += cursor
+                cursor = f.read(1)
+            return to_json_string({'ck_data': ck_data, 'ck_index': ck_index+1})
+        return trans.fill_template( "/dataset/tabular_chunked.mako",dataset = dataset)
+
     def set_peek( self, dataset, line_count=None, is_multi_byte=False):
         super(Tabular, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
         if dataset.metadata.comment_lines:
@@ -281,7 +307,7 @@ class Sam( Tabular ):
     def sniff( self, filename ):
         """
         Determines whether the file is in SAM format
-        
+
         A file in SAM format consists of lines of tab-separated data.
         The following header line may be the first line:
         @QNAME  FLAG    RNAME   POS     MAPQ    CIGAR   MRNM    MPOS    ISIZE   SEQ     QUAL
@@ -290,12 +316,12 @@ class Sam( Tabular ):
         Data in the OPT column is optional and can consist of tab-separated data
 
         For complete details see http://samtools.sourceforge.net/SAM1.pdf
-        
+
         Rules for sniffing as True:
             There must be 11 or more columns of data on each line
             Columns 2 (FLAG), 4(POS), 5 (MAPQ), 8 (MPOS), and 9 (ISIZE) must be numbers (9 can be negative)
             We will only check that up to the first 5 alignments are correctly formatted.
-        
+
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Sam().sniff( fname )
         False
@@ -311,7 +337,7 @@ class Sam( Tabular ):
                 line = line.strip()
                 if not line:
                     break #EOF
-                if line: 
+                if line:
                     if line[0] != '@':
                         linePieces = line.split('\t')
                         if len(linePieces) < 11:
@@ -373,10 +399,10 @@ class Sam( Tabular ):
         if result != 0:
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
-    
+
     def get_track_type( self ):
         return "ReadTrack", {"data": "bam", "index": "summary_tree"}
-    
+
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
@@ -402,7 +428,7 @@ class Pileup( Tabular ):
         """
         Checks for 'pileup-ness'
 
-        There are two main types of pileup: 6-column and 10-column. For both, 
+        There are two main types of pileup: 6-column and 10-column. For both,
         the first three and last two columns are the same. We only check the
         first three to allow for some personalization of the format.
 
@@ -436,27 +462,27 @@ class Pileup( Tabular ):
 
 class ElandMulti( Tabular ):
     file_ext = 'elandmulti'
-    
+
     def sniff( self, filename ):
         return False
-        
+
 class Vcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
-    
+
     file_ext = 'vcf'
     column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]
-    
+
     MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
     MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True )
-    
+
     def sniff( self, filename ):
         headers = get_headers( filename, '\n', count=1 )
         return headers[0][0].startswith("##fileformat=VCF")
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
-            
+
     def get_track_type( self ):
         return "VcfTrack", {"data": "tabix", "index": "summary_tree"}
 
@@ -500,10 +526,10 @@ class Eland( Tabular ):
     def sniff( self, filename ):
         """
         Determines whether the file is in ELAND export format
-        
+
         A file in ELAND export format consists of lines of tab-separated data.
         There is no header.
-        
+
         Rules for sniffing as True:
             There must be 22 columns on each line
             LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
@@ -522,7 +548,7 @@ class Eland( Tabular ):
                 line = line.strip()
                 if not line:
                     break #EOF
-                if line: 
+                if line:
                     linePieces = line.split('\t')
                     if len(linePieces) != 22:
                         return False
@@ -568,7 +594,7 @@ class Eland( Tabular ):
             #else:
             #    # Otherwise, read the whole thing and set num data lines.
             for i, line in enumerate(dataset_fh):
-                if line: 
+                if line:
                     linePieces = line.split('\t')
                     if len(linePieces) != 22:
                         raise Exception('%s:%d:Corrupt line!' % (dataset.file_name,i))
@@ -586,5 +612,5 @@ class Eland( Tabular ):
             dataset.metadata.tiles = ["%04d" % int(t) for t in tiles.keys()]
             dataset.metadata.barcodes = filter(lambda x: x != '0', barcodes.keys()) + ['NoIndex' for x in barcodes.keys() if x == '0']
             dataset.metadata.reads = reads.keys()
-    
-    
+
+

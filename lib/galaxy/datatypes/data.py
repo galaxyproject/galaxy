@@ -39,7 +39,7 @@ class Data( object ):
     'test'
     >>> type( DataTest.metadata_spec.test.param )
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
-    
+
     """
     __metaclass__ = DataMeta
     # Add metadata elements
@@ -60,7 +60,7 @@ class Data( object ):
     primary_file_name = 'index'
     #A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
-    
+
     def __init__(self, **kwd):
         """Initialize the datatype"""
         object.__init__(self, **kwd)
@@ -118,7 +118,7 @@ class Data( object ):
             to_check = dataset.metadata.items()
         for key, value in to_check:
             if key in skip or ( not check and dataset.metadata.spec[key].get( "optional" ) ):
-                continue #we skip check for optional and nonrequested values here 
+                continue #we skip check for optional and nonrequested values here
             if not value:
                 return True
         return False
@@ -142,6 +142,7 @@ class Data( object ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def display_peek(self, dataset ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -163,6 +164,158 @@ class Data( object ):
         except Exception, exc:
             out = "Can't create peek %s" % str( exc )
         return out
+
+    def _archive_composite_dataset( self, trans, data=None, **kwd ):
+        # save a composite object into a compressed archive for downloading
+        params = util.Params( kwd )
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        outfname = data.name[0:150]
+        outfname = ''.join(c in valid_chars and c or '_' for c in outfname)
+        if (params.do_action == None):
+            params.do_action = 'zip' # default
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        if not data:
+            msg = "You must select at least one dataset"
+            messagetype = 'error'
+        else:
+            error = False
+            try:
+                if (params.do_action == 'zip'):
+                    # Can't use mkstemp - the file must not exist first
+                    tmpd = tempfile.mkdtemp()
+                    tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
+                    if ziptype == '64':
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+                    else:
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                    archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
+                elif params.do_action == 'tgz':
+                    archive = util.streamball.StreamBall( 'w|gz' )
+                elif params.do_action == 'tbz':
+                    archive = util.streamball.StreamBall( 'w|bz2' )
+            except (OSError, zipfile.BadZipFile):
+                error = True
+                log.exception( "Unable to create archive for download" )
+                msg = "Unable to create archive for %s for download, please report this error" % outfname
+                messagetype = 'error'
+            if not error:
+                current_user_roles = trans.get_current_user_roles()
+                ext = data.extension
+                path = data.file_name
+                fname = os.path.split(path)[-1]
+                efp = data.extra_files_path
+                htmlname = os.path.splitext(outfname)[0]
+                if not htmlname.endswith(ext):
+                    htmlname = '%s_%s' % (htmlname,ext)
+                archname = '%s.html' % htmlname # fake the real nature of the html file
+                try:
+                    archive.add(data.file_name,archname)
+                except IOError:
+                    error = True
+                    log.exception( "Unable to add composite parent %s to temporary library download archive" % data.file_name)
+                    msg = "Unable to create archive for download, please report this error"
+                    messagetype = 'error'
+                for root, dirs, files in os.walk(efp):
+                    for fname in files:
+                        fpath = os.path.join(root,fname)
+                        rpath = os.path.relpath(fpath,efp)
+                        try:
+                            archive.add( fpath,rpath )
+                        except IOError:
+                            error = True
+                            log.exception( "Unable to add %s to temporary library download archive" % rpath)
+                            msg = "Unable to create archive for download, please report this error"
+                            messagetype = 'error'
+                            continue
+                if not error:
+                    if params.do_action == 'zip':
+                        archive.close()
+                        tmpfh = open( tmpf )
+                        # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
+                        trans.response.set_content_type( "application/x-zip-compressed" )
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname 
+                        return tmpfh
+                    else:
+                        trans.response.set_content_type( "application/x-tar" )
+                        outext = 'tgz'
+                        if params.do_action == 'tbz':
+                            outext = 'tbz'
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext) 
+                        archive.wsgi_status = trans.response.wsgi_status()
+                        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                        return archive.stream
+        return trans.show_error_message( msg )
+
+    def _serve_raw(self, trans, dataset, to_ext):
+        trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+        trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
+        return open( dataset.file_name )
+
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+        """ Old display method, for transition """
+        #Relocate all composite datatype display to a common location.
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+        composite_extensions.append('html') # for archiving composite datatypes
+        if isinstance( dataset, basestring ):
+            return dataset
+        if filename and filename != "index":
+            # For files in extra_files_path
+            file_path = trans.app.object_store.get_filename(dataset, extra_dir='dataset_%s_files' % dataset.id, alt_name=filename)
+            if os.path.exists( file_path ):
+                if os.path.isdir( file_path ):
+                    return trans.show_error_message( "Directory listing is not allowed." ) #TODO: Reconsider allowing listing of directories?
+                mime, encoding = mimetypes.guess_type( file_path )
+                if not mime:
+                    try:
+                        mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
+                    except:
+                        mime = "text/plain"
+                trans.response.set_content_type( mime )
+                return open( file_path )
+            else:
+                return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
+        trans.response.set_content_type(dataset.get_mime())
+        trans.log_event( "Display dataset id: %s" % str( dataset.id ) )
+        from galaxy import datatypes #DBTODO REMOVE THIS AT REFACTOR
+        if to_ext or isinstance(dataset.datatype, datatypes.binary.Binary): # Saving the file, or binary file
+            if dataset.extension in composite_extensions:
+                return self._archive_composite_dataset( trans, dataset, **kwd )
+            else:
+                trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
+                if not to_ext:
+                    to_ext = dataset.extension
+                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+                trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
+                return open( dataset.file_name )
+        if not os.path.exists( dataset.file_name ):
+            raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % dataset.file_name )
+        max_peek_size = 1000000 # 1 MB
+        if isinstance(dataset.datatype, datatypes.images.Html):
+            max_peek_size = 10000000 # 10 MB for html
+        if not preview or isinstance(dataset.datatype, datatypes.images.Image) or os.stat( dataset.file_name ).st_size < max_peek_size:
+            if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
+                # Sanitize anytime we respond with plain text/html content.
+                return sanitize_html(open( dataset.file_name ).read())
+            return open( dataset.file_name )
+        else:
+            trans.response.set_content_type( "text/html" )
+            return trans.stream_template_mako( "/dataset/large_file.mako",
+                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
+                                            data = dataset )
+        """Returns dataset contents for display.
+        This allows for customization of subtype displays"""
+        file_path = trans.app.object_store.get_filename(dataset, extra_dir='dataset_%s_files' % dataset.id, alt_name=filename)
+        if size:
+            return open(dataset.file_path).read(size)
+        else:
+            open(dataset.file_path)
+
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
         try:
@@ -183,11 +336,11 @@ class Data( object ):
                 info = info.replace( '\r', '<br/>' )
             if info.find( '\n' ) >= 0:
                 info = info.replace( '\n', '<br/>' )
-                
+
             # Convert to unicode to display non-ascii characters.
             if type( info ) is not unicode:
                 info = unicode( info, 'utf-8')
-                
+
             return info
         except:
             return "info unavailable"
@@ -272,7 +425,7 @@ class Data( object ):
     def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, set_output_history=True):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )
-        
+
         if converter is None:
             raise Exception( "A converter does not exist for %s to %s." % ( original_dataset.ext, target_type ) )
         #Generate parameter dictionary
@@ -284,7 +437,7 @@ class Data( object ):
                 params[value.name] = deps[value.name]
             elif value.type == 'data':
                 input_name = key
-            
+
         params[input_name] = original_dataset
         #Run converter, job is dispatched through Queue
         converted_dataset = converter.execute( trans, incoming=params, set_output_hid=visible, set_output_history=set_output_history)[1]
@@ -351,18 +504,18 @@ class Data( object ):
     @property
     def has_resolution(self):
         return False
-    
-    
 
-    def merge( split_files, output_file): 
+
+
+    def merge( split_files, output_file):
         """
         TODO: Do we need to merge gzip files using gzjoin? cat seems to work,
         but might be brittle. Need to revisit this.
         """
         if len(split_files) == 1:
-            cmd = 'mv -f %s %s' % ( split_files[0], output_file ) 
+            cmd = 'mv -f %s %s' % ( split_files[0], output_file )
         else:
-            cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file ) 
+            cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file )
         result = os.system(cmd)
         if result != 0:
             raise Exception('Result %s from %s' % (result, cmd))
@@ -377,7 +530,7 @@ class Text( Data ):
 
     def write_from_stream(self, dataset, stream):
         """Writes data from a stream"""
-        # write it twice for now 
+        # write it twice for now
         fd, temp_name = tempfile.mkstemp()
         while 1:
             chunk = stream.read(1048576)
@@ -468,11 +621,11 @@ class Text( Data ):
         """
         if split_params is None:
             return
-            
+
         if len(input_datasets) > 1:
             raise Exception("Text file splitting does not support multiple files")
         input_files = [ds.file_name for ds in input_datasets]
-        
+
         lines_per_file = None
         chunk_size = None
         if split_params['split_mode'] == 'number_of_parts':
@@ -501,7 +654,7 @@ class Text( Data ):
             chunk_size = int(split_params['split_size'])
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
-        
+
         f = open(input_files[0], 'rt')
         try:
             chunk_idx = 0
@@ -562,7 +715,7 @@ def get_test_fname( fname ):
 def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=[] ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
-    
+
     ## >>> fname = get_test_fname('4.bed')
     ## >>> get_file_peek(fname)
     ## 'chr22    30128507    31828507    uc003bnx.1_cds_2_0_chr22_29227_f    0    +\n'
@@ -601,11 +754,12 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
             lines.append( line )
             count += 1
     temp.close()
-    if file_type in [ 'gzipped', 'binary' ]: 
-        text = "%s file" % file_type 
+    if file_type in [ 'gzipped', 'binary' ]:
+        text = "%s file" % file_type
     else:
         try:
             text = unicode( '\n'.join( lines ), 'utf-8' )
         except UnicodeDecodeError:
             text = "binary/unknown file"
     return text
+

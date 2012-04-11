@@ -723,6 +723,8 @@ div.toolTitle{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:1
 div.toolSectionBody div.toolPanelLabel{padding-top:5px;padding-bottom:5px;margin-left:16px;margin-right:10px;display:list-item;list-style:none outside;}
 div.toolTitleNoSection{padding-bottom:5px;font-weight:bold;}
 #tool-search{padding-top:5px;padding-bottom:10px;position:relative;}
+#loading_indicator{position:fixed;right:10px;top:10px;height:32px;width:32px;background:url(largespinner.gif);}
+#content_table td{text-align:right;white-space:nowrap;padding:2px 10px;}
 .icon-button.display{background:url(history-buttons.png) no-repeat 0px 0px;}
 .icon-button.display:hover{background:url(history-buttons.png) no-repeat 0px -26px;}
 .icon-button.display_disabled{background:url(history-buttons.png) no-repeat 0px -52px;}
