@@ -12,11 +12,11 @@ python workflow_execute.py <api_key> <galaxy_url>/api/workflows f2db41e1fa331b3e
 'param=tool=name=value'
 
 Example 
-python workflow_execute_rpark.py 35a24ae2643785ff3d046c98ea362c7f http://localhost:8080/api/workflows 1cd8e2f6b131e891 'Test API' '69=ld=a799d38679e985db' '70=ld=33b43b4e7093c91f' 'param=peakcalling_spp=aligner=bwa' 
+python workflow_execute_parameters.py 35a24ae2643785ff3d046c98ea362c7f http://localhost:8080/api/workflows 1cd8e2f6b131e891 'Test API' '69=ld=a799d38679e985db' '70=ld=33b43b4e7093c91f' 'param=peakcalling_spp=aligner=bwa' 
 
-python workflow_execute_rpark.py 35a24ae2643785ff3d046c98ea362c7f http://localhost:8080/api/workflows 1cd8e2f6b131e891 'Test API' '69=ld=a799d38679e985db' '70=ld=33b43b4e7093c91f' 'param=peakcalling_spp=aligner=arachne' 'param=bowtie_wrapper=suppressHeader=True'
+python workflow_execute_parameters.py 35a24ae2643785ff3d046c98ea362c7f http://localhost:8080/api/workflows 1cd8e2f6b131e891 'Test API' '69=ld=a799d38679e985db' '70=ld=33b43b4e7093c91f' 'param=peakcalling_spp=aligner=arachne' 'param=bowtie_wrapper=suppressHeader=True'
 
-python workflow_execute_rpark.py 35a24ae2643785ff3d046c98ea362c7f http://localhost:8080/api/workflows 1cd8e2f6b131e891 'Test API' '69=ld=a799d38679e985db' '70=ld=33b43b4e7093c91f' 'param=peakcalling_spp=aligner=bowtie' 'param=bowtie_wrapper=suppressHeader=True' 'param=peakcalling_spp=window_size=1000' 
+python workflow_execute_parameters.py 35a24ae2643785ff3d046c98ea362c7f http://localhost:8080/api/workflows 1cd8e2f6b131e891 'Test API' '69=ld=a799d38679e985db' '70=ld=33b43b4e7093c91f' 'param=peakcalling_spp=aligner=bowtie' 'param=bowtie_wrapper=suppressHeader=True' 'param=peakcalling_spp=window_size=1000' 
 
 """
 
