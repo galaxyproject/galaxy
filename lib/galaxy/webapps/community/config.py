@@ -39,8 +39,6 @@ class Configuration( object ):
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
-        # web API
-        self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )

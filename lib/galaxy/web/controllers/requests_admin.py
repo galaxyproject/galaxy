@@ -625,9 +625,6 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitions ):
             or not scp_configs.get( 'user_name', '' ) \
             or not scp_configs.get( 'password', '' ):
             err_msg += "Error in external service login information. "
-        # Make sure web API is enabled and API key exists
-        if not trans.app.config.enable_api:
-            err_msg += "The 'enable_api = True' setting is not correctly set in the Galaxy config file. "
         if not trans.user.api_keys:
             err_msg += "Set your API Key in your User Preferences to transfer datasets. "
         # Check if library_import_dir is set

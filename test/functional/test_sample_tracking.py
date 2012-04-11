@@ -853,7 +853,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         sample_dataset_ids = [ self.security.encode_id( dataset.id ) for dataset in request1_sample1.datasets ]
         strings_displayed = [ 'Manage "%s" datasets' % request1_sample1.name ]
         strings_displayed_count = [ ( galaxy.model.SampleDataset.transfer_status.NOT_STARTED, len( request1_sample1.datasets ) ) ]
-        strings_displayed_after_submit = [ "Error in sequencer login information. The 'enable_api = True' setting is not correctly set in the Galaxy config file. Set your API Key in your User Preferences to transfer datasets." ]
+        strings_displayed_after_submit = [ "Error in sequencer login information. Please set your API Key in your User Preferences to transfer datasets." ]
         strings_not_displayed = [ galaxy.model.SampleDataset.transfer_status.IN_QUEUE,
                                   galaxy.model.SampleDataset.transfer_status.TRANSFERRING,
                                   galaxy.model.SampleDataset.transfer_status.ADD_TO_LIBRARY,

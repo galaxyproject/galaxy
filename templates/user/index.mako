@@ -12,9 +12,7 @@
         %if webapp == 'galaxy':
             <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller, webapp=webapp )}">${_('Manage your information')}</a></li>
             <li><a href="${h.url_for( controller='user', action='set_default_permissions', cntrller=cntrller, webapp=webapp )}">${_('Change default permissions')}</a> for new histories</li>
-            %if trans.app.config.enable_api:
-                <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller, webapp=webapp )}">${_('Manage your API keys')}</a></li>
-            %endif
+            <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller, webapp=webapp )}">${_('Manage your API keys')}</a></li>
             %if trans.app.config.enable_openid:
                 <li><a href="${h.url_for( controller='user', action='openid_manage', cntrller=cntrller, webapp=webapp )}">${_('Manage OpenIDs')}</a> linked to your account</li>
             %endif

@@ -504,9 +504,6 @@ use_interactive = True
 #enable_openid = False
 #openid_config_file = openid_conf.xml
 
-# Enable the (experimental! beta!) Web API.  Documentation forthcoming.
-#enable_api = False
-
 # Optional list of email addresses of API users who can make calls on behalf of
 # other users
 #api_allow_run_as = None
