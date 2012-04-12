@@ -29,7 +29,7 @@ class UserOpenIDGrid( grids.Grid ):
     default_filter = { "openid" : "All" }
     default_sort_key = "-create_time"
     columns = [
-        grids.TextColumn( "OpenID URL", key="openid", link=( lambda x: dict( operation='openid_auth', login_button="Login", openid_url=x.openid if not x.provider else '', openid_provider=x.provider, auto_associate=True ) ) ),
+        grids.TextColumn( "OpenID URL", key="openid", link=( lambda x: dict( action='openid_auth', login_button="Login", openid_url=x.openid if not x.provider else '', openid_provider=x.provider, auto_associate=True ) ) ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
     ]
     operations = [
@@ -395,8 +395,6 @@ class User( BaseUIController, UsesFormDefinitions ):
                                                        action='openid_disassociate',
                                                        use_panels=use_panels,
                                                        id=kwd['id'] ) )
-            elif operation == 'openid_auth':
-                return trans.response.send_redirect( url_for( controller='user', action='openid_auth', **kwd ) )
         
         kwd['redirect'] = kwd.get( 'redirect', url_for( controller='user', action='openid_manage', use_panels=True ) )
         kwd['openid_providers'] = trans.app.openid_providers
