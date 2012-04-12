@@ -7,7 +7,7 @@
 <%def name="grid_body( grid )">
     ${make_grid( grid )}
     <h2>Associate more OpenIDs</h2>
-    ${render_openid_form( kwargs['referer'], True, kwargs['openid_providers'] )}
+    ${render_openid_form( kwargs['redirect'], True, kwargs['openid_providers'] )}
 </%def>
 
 <%def name="center_panel()">

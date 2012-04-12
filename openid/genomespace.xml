@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<provider id="genomespace" name="GenomeSpace">
+<provider id="genomespace" name="GenomeSpace" never_associate_with_user="True">
     <op_endpoint_url>https://identity.genomespace.org/identityServer/xrd.jsp</op_endpoint_url>
     <sreg>
         <field name="nickname" required="True">

@@ -76,6 +76,7 @@ UserOpenID.table = Table( "galaxy_user_openid", metadata,
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "openid", TEXT, index=True, unique=True ),
+    Column( "provider", TrimmedString( 255 ) ),
     )
 
 History.table = Table( "history", metadata,

@@ -9,6 +9,9 @@ from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
 
+NO_PROVIDER_ID = 'None'
+RESERVED_PROVIDER_IDS = [ NO_PROVIDER_ID ]
+
 class OpenIDProvider( object ):
     '''An OpenID Provider object.'''
     @classmethod
@@ -22,7 +25,9 @@ class OpenIDProvider( object ):
         op_endpoint_url = provider_elem.find( 'op_endpoint_url' )
         if op_endpoint_url is not None:
             op_endpoint_url = op_endpoint_url.text
+        never_associate_with_user = string_as_bool( provider_elem.get( 'never_associate_with_user', 'False' ) )
         assert (provider_id and provider_name and op_endpoint_url), Exception( "OpenID Provider improperly configured" )
+        assert provider_id not in RESERVED_PROVIDER_IDS, Exception( 'Specified OpenID Provider uses a reserved id: %s' % ( provider_id ) )
         sreg_required = []
         sreg_optional = []
         use_for = {}
@@ -45,8 +50,8 @@ class OpenIDProvider( object ):
             sreg_required = None
             sreg_optional = None
             use_for = None
-        return cls( provider_id, provider_name, op_endpoint_url, sreg_required, sreg_optional, use_for, store_user_preference )
-    def __init__( self, id, name, op_endpoint_url, sreg_required=None, sreg_optional=None, use_for=None, store_user_preference=None ):
+        return cls( provider_id, provider_name, op_endpoint_url, sreg_required=sreg_required, sreg_optional=sreg_optional, use_for=use_for, store_user_preference=store_user_preference, never_associate_with_user=never_associate_with_user )
+    def __init__( self, id, name, op_endpoint_url, sreg_required=None, sreg_optional=None, use_for=None, store_user_preference=None, never_associate_with_user=None ):
         '''When sreg options are not specified, defaults are used.'''
         self.id = id
         self.name = name
@@ -71,6 +76,10 @@ class OpenIDProvider( object ):
             self.store_user_preference = store_user_preference
         else:
             self.store_user_preference = {}
+        if never_associate_with_user:
+            self.never_associate_with_user = True
+        else:
+            self.never_associate_with_user = False
     def post_authentication( self, trans, openid_manager, info ):
         sreg_attributes = openid_manager.get_sreg( info )
         for store_pref_name, store_pref_value_name in self.store_user_preference.iteritems():
@@ -80,9 +89,12 @@ class OpenIDProvider( object ):
                 raise Exception( 'Only sreg is currently supported.' )
         trans.sa_session.add( trans.user )
         trans.sa_session.flush()
+    def has_post_authentication_actions( self ):
+        return bool( self.store_user_preference )
 
 class OpenIDProviders( object ):
     '''Collection of OpenID Providers'''
+    NO_PROVIDER_ID = NO_PROVIDER_ID
     @classmethod
     def from_file( cls, filename ):
         try:
@@ -107,6 +119,7 @@ class OpenIDProviders( object ):
             self.providers = providers
         else:
             self.providers = odict()
+        self._banned_identifiers = [ provider.op_endpoint_url for provider in self.providers.itervalues() if provider.never_associate_with_user ]
     def __iter__( self ):
         for provider in self.providers.itervalues():
             yield provider
@@ -115,3 +128,5 @@ class OpenIDProviders( object ):
             return self.providers[ name ]
         else:
             return default
+    def new_provider_from_identifier( self, identifier ):
+        return OpenIDProvider( None, identifier, identifier, never_associate_with_user = identifier in self._banned_identifiers )
