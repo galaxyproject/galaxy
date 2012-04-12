@@ -8,7 +8,7 @@
  * Simple base model for any visible element. Includes useful attributes and ability 
  * to set and track visibility.
  */
-var BaseModel = Backbone.Model.extend({
+var BaseModel = Backbone.RelationalModel.extend({
     defaults: {
         name: null,
         hidden: false
@@ -35,13 +35,37 @@ var Tool = BaseModel.extend({
     defaults: {
         description: null,
         target: null,
-        params: []
+        inputs: []
     },
     
+    relations: [
+        {
+            type: Backbone.HasMany,
+            key: 'inputs',
+            relatedModel: 'ToolInput',
+            reverseRelation: {
+                key: 'tool'
+            }
+        }
+    ],
+    
+    urlRoot: galaxy_paths.attributes.root_path + 'api/tools',
+        
     apply_search_results: function(results) {
         ( _.indexOf(results, this.attributes.id) !== -1 ? this.show() : this.hide() );
         return this.is_visible();
     }
+});
+
+/**
+ * A tool input.
+ */
+var ToolInput = Backbone.RelationalModel.extend({
+    
+    initialize: function() {
+        this.attributes.html = unescape(this.attributes.html);
+    }
+        
 });
 
 /**
@@ -379,6 +403,10 @@ var ToolSearchView = Backbone.View.extend({
     }
 });
 
+/**
+ * Tool panel view. Events triggered include:
+ * tool_link_click(click event, tool_model)
+ */
 var ToolPanelView = Backbone.View.extend({
     tagName: 'div',
     className: 'toolMenu',
@@ -386,13 +414,8 @@ var ToolPanelView = Backbone.View.extend({
     /**
      * Waits for collection to load and then renders.
      */
-    initialize: function(options) {
+    initialize: function() {
         this.collection.tool_search.on("change:results", this.handle_search_results, this);
-        
-        this.tool_link_click_fn = null;
-        if (options && 'tool_link_click_fn' in options) {
-            this.tool_link_click_fn = options.tool_link_click_fn;
-        }
     },
     
     render: function() {
@@ -422,16 +445,15 @@ var ToolPanelView = Backbone.View.extend({
             }
         });
         
-        // Setup tool link click handling.
-        if (self.tool_link_click_fn) {
-            self.$el.find("a.tool-link").click(function() {
-                // Tool id is always the first class.
-                var tool_id = $(this).attr('class').split(/\s+/)[0];
+        // Setup tool link click eventing.
+        self.$el.find("a.tool-link").click(function(e) {
+            // Tool id is always the first class.
+            var 
+                tool_id = $(this).attr('class').split(/\s+/)[0],
+                tool = self.collection.tools.get(tool_id);
                 
-                self.tool_link_click_fn(self.collection.tools.get(tool_id));
-                return false;
-            });
-        }
+            self.trigger("tool_link_click", e, tool);
+        });
         
         return this;
     },
@@ -444,5 +466,64 @@ var ToolPanelView = Backbone.View.extend({
         else {
             $("#search-no-results").hide();
         }
+    }
+});
+
+/**
+ * View for working with a tool: setting parameters and inputs and executing the tool.
+ */
+var ToolFormView = Backbone.View.extend({
+    className: 'toolForm',
+    template: Handlebars.templates.tool_form,
+    
+    render: function() {
+        this.$el.children().remove();
+        this.$el.append( this.template(this.model.toJSON()) );
+    }
+});
+
+
+/**
+ * Integrated tool menu + tool execution.
+ */
+var IntegratedToolMenuAndView = Backbone.View.extend({
+    className: 'toolMenuAndView',
+    
+    initialize: function() {
+        this.tool_panel_view = new ToolPanelView({collection: this.collection});
+        this.tool_form_view = new ToolFormView();
+    },
+    
+    render: function() {
+        // Render and append tool panel.
+        this.tool_panel_view.render();
+        this.tool_panel_view.$el.css("float", "left");
+        this.$el.append(this.tool_panel_view.$el);
+        
+        // Append tool form view.
+        this.tool_form_view.$el.hide();
+        this.$el.append(this.tool_form_view.$el);
+        
+        // On tool link click, show tool.
+        var self = this;
+        this.tool_panel_view.on("tool_link_click", function(e, tool) {
+            // Prevents click from activating link:
+            e.preventDefault();
+            // Show tool that was clicked on:
+            self.show_tool(tool);
+        });
+    },
+    
+    /**
+     * Fetch and display tool.
+     */
+    show_tool: function(tool) {
+        var self = this;
+        tool.fetch().done( function() {
+            self.tool_form_view.model = tool;
+            self.tool_form_view.render();
+            self.tool_form_view.$el.show();
+            $('#left').width("650px");
+        });
     }
 });
