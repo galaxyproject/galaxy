@@ -598,7 +598,7 @@ class ToolSection( object ):
         """ Return a dict that includes section's attributes. """
         section_elts = []
         for key, val in self.elems.items():
-            section_elts.append( val.to_dict( trans ) )  
+            section_elts.append( val.to_dict( trans, for_link=True ) )  
         return { 'type': 'section', 'id': self.id, 'name': self.name, 'version': self.version, 'elems': section_elts }
 
 class ToolSectionLabel( object ):
@@ -611,7 +611,7 @@ class ToolSectionLabel( object ):
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
         
-    def to_dict( self, trans ):
+    def to_dict( self, trans, **kwargs ):
         """ Return a dict that includes label's attributes. """
         return { 'type': 'label', 'id': self.id, 'name': self.text, 'version': self.version }
 
@@ -691,6 +691,14 @@ class ToolOutput( object ):
 
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
+        
+    def to_dict( self ):
+        return {
+            'name': self.name,
+            'format': self.format,
+            'label': self.label,
+            'hidden': self.hidden
+        }
 
 class ToolRequirement( object ):
     """
@@ -2392,20 +2400,48 @@ class Tool:
             return True
         return False
         
-    def to_dict( self, trans ):
-        """ Return dict of tool attributes. """
+    def to_dict( self, trans, for_link=False, for_display=False ):
+        """ Returns dict of tool. """
         
-        # Create tool link.
-        if not self.tool_type.startswith( 'data_source' ):
-            link = url_for( controller='tool_runner', tool_id=self.id )
-        else:
-            link = url_for( self.action, **self.get_static_param_values( trans ) )    
+        # Basic information
+        tool_dict = { 'id': self.id, 'name': self.name,
+                      'version': self.version, 'description': self.description }
+        
+        if for_link:
+            # Create tool link.
+            if not self.tool_type.startswith( 'data_source' ):
+                link = url_for( controller='tool_runner', tool_id=self.id )
+            else:
+                link = url_for( self.action, **self.get_static_param_values( trans ) )
             
-        return  { 'type': 'tool', 'id': self.id, 'name': self.name, 'link': link, 
-                  'version': self.version, 'description': self.description,
-                  'min_width': self.uihints.get( 'minwidth', -1 ),
-                  'target': self.target,
-                  'hidden': self._is_hidden_for_user( trans.user ) }
+            # Basic information
+            tool_dict.update( { 'type': 'tool', 'link': link, 
+                                'min_width': self.uihints.get( 'minwidth', -1 ),
+                                'target': self.target } )
+                                
+        if for_display:
+            # Dictify inputs.
+            inputs = []
+            for name, input in self.inputs.items():
+                param_dict = { 'name' : name, 'label' : input.label }
+                if isinstance( input, DataToolParameter ):
+                    param_dict.update( { 'type' : 'data', 'html' : urllib.quote( input.get_html( trans ) ) } )
+                elif isinstance( input, SelectToolParameter ):
+                    param_dict.update( { 'type' : 'select', 'html' : urllib.quote( input.get_html( trans ) ) } )
+                elif isinstance( input, Conditional ):
+                    # TODO.
+                    pass
+                else:
+                    param_dict.update( { 'type' : '??', 'init_value' : input.value, \
+                                         'html' : urllib.quote( input.get_html( trans ) ) } )
+                inputs.append( param_dict )
+                
+            tool_dict[ 'inputs' ] = inputs
+                        
+            # Dictify outputs.
+            pass
+        
+        return tool_dict
 
 class DataSourceTool( Tool ):
     """

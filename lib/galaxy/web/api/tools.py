@@ -6,7 +6,7 @@ class ToolsController( BaseAPIController ):
     RESTful controller for interactions with tools.
     """
     
-    @web.json
+    @web.expose_api
     def index( self, trans, **kwds ):
         """
         GET /api/tools: returns a list of tools defined by parameters
@@ -22,11 +22,11 @@ class ToolsController( BaseAPIController ):
         # Create return value.
         return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster )
 
-    @web.expose_api
+    @web.json
     def show( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}
         Returns tool information, including parameters and inputs.
         """
-        return self.app.toolbox.tools_by_id[ id ].to_dict( trans, all=True )
+        return self.app.toolbox.tools_by_id[ id ].to_dict( trans, for_display=True )
         
