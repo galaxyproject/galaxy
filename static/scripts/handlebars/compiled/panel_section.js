@@ -10,7 +10,7 @@ templates['panel_section'] = template(function (Handlebars,depth0,helpers,partia
   stack1 = foundHelper || depth0.id;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "id", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">\n    <a href=\"#\"><span>";
+  buffer += escapeExpression(stack1) + "\">\n    <a href=\"javascript:void(0)\"><span>";
   foundHelper = helpers.name;
   stack1 = foundHelper || depth0.name;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
