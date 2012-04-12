@@ -1109,7 +1109,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         sname = stored.name
         sname = ''.join(c in valid_chars and c or '_' for c in sname)[0:150]
-        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-Workflow-%s.ga" % ( sname )
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % ( sname )
         trans.response.set_content_type( 'application/galaxy-archive' )
         return stored_dict
     @web.expose
