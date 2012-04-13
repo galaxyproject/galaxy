@@ -60,8 +60,6 @@ class User( BaseUIController, UsesFormDefinitions ):
         auto_associate = util.string_as_bool( kwd.get( 'auto_associate', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         action = 'login'
-        if not redirect:
-            redirect = url_for( '/' )
         consumer = trans.app.openid_manager.get_consumer( trans )
         if openid_url:
             openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier( openid_url )
@@ -113,7 +111,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         consumer = trans.app.openid_manager.get_consumer( trans )
         info = consumer.complete( kwd, trans.request.url )
         display_identifier = info.getDisplayIdentifier()
-        redirect = kwd.get( 'redirect', url_for( '/' ) )
+        redirect = kwd.get( 'redirect', '' )
         openid_provider = kwd.get( 'openid_provider', None )
         if info.status == trans.app.openid_manager.FAILURE and display_identifier:
             message = "Login via OpenID failed.  The technical reason for this follows, please include this message in your email if you need to %s to resolve this problem: %s" % ( contact, info.message )
@@ -163,6 +161,8 @@ class User( BaseUIController, UsesFormDefinitions ):
                     openid_provider_obj.post_authentication( trans, trans.app.openid_manager, info )
                     if redirect:
                         message = '%s<br>Click <a href="%s"><strong>here</strong></a> to return to the page you were previously viewing.' % ( message, redirect )
+                if redirect and status != "error":
+                    return trans.response.send_redirect( redirect )
                 return trans.response.send_redirect( url_for( controller='user',
                                                        action='openid_manage',
                                                        use_panels=True,
@@ -173,6 +173,8 @@ class User( BaseUIController, UsesFormDefinitions ):
                 trans.handle_user_login( user_openid.user, webapp )
                 trans.log_event( "User logged in via OpenID: %s" % display_identifier )
                 openid_provider_obj.post_authentication( trans, trans.app.openid_manager, info )
+                if not redirect:
+                    redirect = url_for( '/' )
                 return trans.response.send_redirect( redirect )
             trans.sa_session.add( user_openid )
             trans.sa_session.flush()
@@ -252,14 +254,19 @@ class User( BaseUIController, UsesFormDefinitions ):
                         message = '%s<li><a href="%s" target="_blank">%s</a></li>' % ( message, url_for( controller='user', action='openid_auth', openid_provider=openid.id, redirect=redirect, auto_associate=True ), openid.name )
                     message = "%s</ul>" % ( message )
                     return trans.response.send_redirect( url_for( controller='user',
-                                                       action='openid_manage',
-                                                       use_panels=True,
-                                                       redirect=redirect,
-                                                       message=message,
-                                                       status='info' ) )
-                if not redirect:
-                    redirect = url_for( '/' )
-                return trans.response.send_redirect( redirect )
+                                                                   action='openid_manage',
+                                                                   use_panels=use_panels,
+                                                                   redirect=redirect,
+                                                                   message=message,
+                                                                   status='info' ) )
+                if redirect:
+                    return trans.response.send_redirect( redirect )
+                return trans.response.send_redirect( url_for( controller='user',
+                                                               action='openid_manage',
+                                                               use_panels=use_panels,
+                                                               redirect=redirect,
+                                                               message=message,
+                                                               status='info' ) )
         if kwd.get( 'create_user_button', False ):
             password = kwd.get( 'password', '' )
             confirm = kwd.get( 'confirm', '' )
@@ -304,9 +311,14 @@ class User( BaseUIController, UsesFormDefinitions ):
                                                                redirect=redirect,
                                                                message=message,
                                                                status='info' ) )
-                        if not redirect:
-                            redirect = url_for( '/' )
-                        return trans.response.send_redirect( redirect )
+                        if redirect:
+                            return trans.response.send_redirect( redirect )
+                        return trans.response.send_redirect( url_for( controller='user',
+                                                                       action='openid_manage',
+                                                                       use_panels=use_panels,
+                                                                       redirect=redirect,
+                                                                       message=message,
+                                                                       status='info' ) ) 
                 else:
                     message = error
                     status = 'error'
