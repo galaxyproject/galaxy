@@ -56,7 +56,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         openid_provider = kwd.get( 'openid_provider', '' )
         if not openid_provider or openid_url:
             openid_provider = trans.app.openid_providers.NO_PROVIDER_ID #empty fields cause validation errors
-        redirect = kwd.get( 'redirect', '' )
+        redirect = kwd.get( 'redirect', '' ).strip()
         auto_associate = util.string_as_bool( kwd.get( 'auto_associate', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         action = 'login'
@@ -68,7 +68,9 @@ class User( BaseUIController, UsesFormDefinitions ):
         if not openid_url and openid_provider == trans.app.openid_providers.NO_PROVIDER_ID:
             message = 'An OpenID provider was not specified'
         elif openid_provider_obj:
-            process_url = trans.request.base.rstrip( '/' ) + url_for( controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate )
+            if not redirect:
+                redirect = ' '
+            process_url = trans.request.base.rstrip( '/' ) + url_for( controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate ) #None of these values can be empty, or else a verification error will occur
             request = None
             try:
                 request = consumer.begin( openid_provider_obj.op_endpoint_url )
@@ -111,7 +113,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         consumer = trans.app.openid_manager.get_consumer( trans )
         info = consumer.complete( kwd, trans.request.url )
         display_identifier = info.getDisplayIdentifier()
-        redirect = kwd.get( 'redirect', '' )
+        redirect = kwd.get( 'redirect', '' ).strip()
         openid_provider = kwd.get( 'openid_provider', None )
         if info.status == trans.app.openid_manager.FAILURE and display_identifier:
             message = "Login via OpenID failed.  The technical reason for this follows, please include this message in your email if you need to %s to resolve this problem: %s" % ( contact, info.message )
@@ -223,7 +225,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         status = kwd.get( 'status', 'done' )
         email = kwd.get( 'email', '' )
         username = kwd.get( 'username', '' )
-        redirect = kwd.get( 'redirect', '' )
+        redirect = kwd.get( 'redirect', '' ).strip()
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         openids = trans.galaxy_session.openids
@@ -408,13 +410,13 @@ class User( BaseUIController, UsesFormDefinitions ):
                                                        use_panels=use_panels,
                                                        id=kwd['id'] ) )
         
-        kwd['redirect'] = kwd.get( 'redirect', url_for( controller='user', action='openid_manage', use_panels=True ) )
+        kwd['redirect'] = kwd.get( 'redirect', url_for( controller='user', action='openid_manage', use_panels=True ) ).strip()
         kwd['openid_providers'] = trans.app.openid_providers
         return self.user_openid_grid( trans, **kwd )
     @web.expose
     def login( self, trans, webapp='galaxy', redirect_url='', refresh_frames=[], **kwd ):
         '''Handle Galaxy Log in'''
-        redirect = kwd.get( 'redirect', trans.request.referer )
+        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
@@ -462,7 +464,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         status = kwd.get( 'status', 'done' )
         email = kwd.get( 'email', '' )
         password = kwd.get( 'password', '' )
-        redirect = kwd.get( 'redirect', trans.request.referer )
+        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
         if not user:
@@ -522,7 +524,7 @@ class User( BaseUIController, UsesFormDefinitions ):
         username = util.restore_text( params.get( 'username', '' ) )
         subscribe = params.get( 'subscribe', '' )
         subscribe_checked = CheckboxField.is_checked( subscribe )
-        redirect = kwd.get( 'redirect', trans.request.referer )
+        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         is_admin = cntrller == 'admin' and trans.user_is_admin
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
