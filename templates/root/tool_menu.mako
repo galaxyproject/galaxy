@@ -16,8 +16,8 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.handlebars( "tool_link", "panel_label", "panel_section", "tool_search" )}
-    ${h.js( "galaxy.base", "json2", "autocomplete_tagging", "backbone/tools" )}
+    ${h.templates( "tool_link", "panel_label", "panel_section", "tool_search" )}
+    ${h.js( "galaxy.base", "json2", "autocomplete_tagging", "mvc/tools" )}
     
     <%
         # Set up for creating tool panel.

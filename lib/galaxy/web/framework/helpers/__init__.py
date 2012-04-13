@@ -61,12 +61,12 @@ def js( *args ):
     """
     return js_helper( '/static/scripts/', *args )
     
-def handlebars( *args ):
+def templates( *args ):
     """
     Take a list of template names (no extension) and return appropriate
     string of script tags.
     """
-    return js_helper( '/static/scripts/handlebars/compiled/', *args )
+    return js_helper( '/static/scripts/templates/compiled/', *args )
     
 # Hashes
 
