@@ -520,6 +520,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%;margin-top
 #overlay.is_modal #overlay-background{background:rgba(0, 0, 0, 0.5);}
 .dialog-box-container{position:relative;margin-top:80px;margin-right:auto;margin-left:auto;}
 .dialog-box-wrapper{position:relative;padding:1em;background-color:rgba(0, 0, 0, 0.5);-moz-border-radius:1em;-webkit-border-radius:1em;}
+#dialog-box.dialog-box{min-width:660px;margin:-250px 0 0 -330px;}
 .dialog-box{border:solid #999 1px;background:white;z-index:80000;}
 #overlay.is_modal .dialog-box .body{min-width:600px;}
 .dialog-box .body{padding:5px;overflow:auto;max-height:500px;min-width:300px;}
