@@ -199,7 +199,7 @@ class ToolModule( WorkflowModule ):
             # TODO: If workflows are ever enhanced to use tool version
             # in addition to tool id, enhance the selection process here
             # to retrieve the correct version of the tool.
-            tool_version = self.__get_tool_version( trans, tool_id )
+            tool_version = Class.__get_tool_version( trans, tool_id )
             if tool_version:
                 tool_version_ids = tool_version.get_version_ids( trans.app )
                 for tool_version_id in tool_version_ids:
@@ -219,7 +219,8 @@ class ToolModule( WorkflowModule ):
             module.post_job_actions = pjadict
             return module
         return None
-    def __get_tool_version( self, trans, tool_id ):
+    @classmethod
+    def __get_tool_version( cls, trans, tool_id ):
         # Return a ToolVersion if one exists for tool_id.
         return trans.sa_session.query( trans.app.model.ToolVersion ) \
                                .filter( trans.app.model.ToolVersion.table.c.tool_id == tool_id ) \
