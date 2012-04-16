@@ -505,7 +505,7 @@ def _purge_folder( folder, app, remove_from_disk, info_only = False ):
 class CleanupDatasetsApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, config ):
-        if config.database_connection is None:
+        if config.database_connection is False:
             config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
         self.object_store = build_object_store_from_config( config )
         # Setup the database engine and ORM
