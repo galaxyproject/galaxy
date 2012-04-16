@@ -456,10 +456,14 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
                     # Create a new repository_metadata table row.
                     repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
                     trans.sa_session.add( repository_metadata )
-                    trans.sa_session.flush()
-                    # If this is the first record stored for this repository, see if we need to send any email alerts.
-                    if len( repository.downloadable_revisions ) == 1:
-                        handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
+                    try:
+                        trans.sa_session.flush()
+                        # If this is the first record stored for this repository, see if we need to send any email alerts.
+                        if len( repository.downloadable_revisions ) == 1:
+                            handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
+                    except TypeError, e:
+                        message = "Unable to save metadata for this repository probably due to a tool config file that doesn't conform to the Cheetah template syntax."
+                        status = 'error'
                 else:
                     repository_metadata = get_latest_repository_metadata( trans, id )
                     if repository_metadata:
@@ -467,9 +471,13 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
                         repository_metadata.changeset_revision = changeset_revision
                         repository_metadata.metadata = metadata_dict
                         trans.sa_session.add( repository_metadata )
-                        trans.sa_session.flush()
+                        try:
+                            trans.sa_session.flush()
+                        except TypeError, e:
+                            message = "Unable to save metadata for this repository probably due to a tool config file that doesn't conform to the Cheetah template syntax."
+                            status = 'error'
                     else:
-                        # There are no tools in the repository, and we're setting metadat on the repository tip.
+                        # There are no tools in the repository, and we're setting metadata on the repository tip.
                         repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
                         trans.sa_session.add( repository_metadata )
                         trans.sa_session.flush()
@@ -739,12 +747,12 @@ def compare_datatypes( ancestor_datatypes, current_datatypes ):
             # Currently the only way to differentiate datatypes is by name.
             ancestor_datatype_dtype = ancestor_datatype[ 'dtype' ]
             ancestor_datatype_extension = ancestor_datatype[ 'extension' ]
-            ancestor_datatype_mimetype = ancestor_datatype[ 'mimetype' ]
+            ancestor_datatype_mimetype = ancestor_datatype.get( 'mimetype', None )
             found_in_current = False
             for current_datatype in current_datatypes:
                 if current_datatype[ 'dtype' ] == ancestor_datatype_dtype and \
                     current_datatype[ 'extension' ] == ancestor_datatype_extension and \
-                    current_datatype[ 'mimetype' ] == ancestor_datatype_mimetype:
+                    current_datatype.get( 'mimetype', None ) == ancestor_datatype_mimetype:
                     found_in_current = True
                     break
             if not found_in_current:
