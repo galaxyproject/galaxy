@@ -255,7 +255,7 @@ class JobHandlerQueue( object ):
         else:
             log.info( "sending stop signal to worker thread" )
             self.running = False
-            if not self.track_jobs_in_database:
+            if not self.app.config.track_jobs_in_database:
                 self.queue.put( self.STOP_SIGNAL )
             self.sleeper.wake()
             log.info( "job handler queue stopped" )
@@ -352,7 +352,7 @@ class JobHandlerStopQueue( object ):
         else:
             log.info( "sending stop signal to worker thread" )
             self.running = False
-            if not self.track_jobs_in_database:
+            if not self.app.config.track_jobs_in_database:
                 self.queue.put( self.STOP_SIGNAL )
             self.sleeper.wake()
             log.info( "job handler stop queue stopped" )

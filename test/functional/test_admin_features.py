@@ -30,7 +30,7 @@ class TestDataSecurity( TwillTestCase ):
                                                                                                  password=password,
                                                                                                  username='admin-user',
                                                                                                  webapp='galaxy',
-                                                                                                 referer='' )
+                                                                                                 redirect='' )
         if not username_taken:
             raise AssertionError, "The public name (%s) is already being used by another user, but no error was displayed" \
                 % 'admin-user'
@@ -40,14 +40,14 @@ class TestDataSecurity( TwillTestCase ):
                                                                                                  password=password,
                                                                                                  username='h',
                                                                                                  webapp='galaxy',
-                                                                                                 referer='' )
+                                                                                                 redirect='' )
         if not invalid_username:
             raise AssertionError, "The public name (%s) is is invalid, but no error was displayed" % username
         previously_created, username_taken, invalid_username = self.create_new_account_as_admin( email=email,
                                                                                                  password=password,
                                                                                                  username='regular-user3',
                                                                                                  webapp='galaxy',
-                                                                                                 referer='' )
+                                                                                                 redirect='' )
         # Get the user object for later tests
         global regular_user3
         regular_user3 = get_user( email )

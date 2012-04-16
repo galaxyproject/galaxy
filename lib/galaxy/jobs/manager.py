@@ -186,7 +186,6 @@ class JobManagerQueue( object ):
                 self.queue.put( self.STOP_SIGNAL )
             self.sleeper.wake()
             log.info( "job manager queue stopped" )
-            self.dispatcher.shutdown()
 
 class JobManagerStopQueue( object ):
     """
