@@ -267,7 +267,6 @@
     <sniffer type="galaxy.datatypes.images:Ppm"/>
     <sniffer type="galaxy.datatypes.images:Psd"/>
     <sniffer type="galaxy.datatypes.images:Xbm"/>
-    <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Rgb"/>
     <sniffer type="galaxy.datatypes.images:Pbm"/>
     <sniffer type="galaxy.datatypes.images:Pgm"/>
