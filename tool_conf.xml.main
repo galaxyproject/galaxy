@@ -213,12 +213,6 @@
     <tool file="phenotype_association/vcf2pgSnp.xml" />
     <tool file="phenotype_association/dividePgSnpAlleles.xml" />
   </section>
-  <section name="Genome Diversity" id="gd">
-    <tool file="genome_diversity/extract_primers.xml" />
-    <tool file="genome_diversity/select_snps.xml" />
-    <tool file="genome_diversity/select_restriction_enzymes.xml" />
-    <tool file="genome_diversity/extract_flanking_dna.xml" />
-  </section>
   <label text="NGS Toolbox Beta" id="ngs" />
   <section name="NGS: QC and manipulation" id="cshl_library_information">
     <label text="Illumina data" id="illumina" />
