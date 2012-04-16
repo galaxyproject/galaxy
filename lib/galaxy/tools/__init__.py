@@ -565,7 +565,7 @@ class ToolBox( object ):
             # Produce panel.
             rval = []
             for elt in panel_elts:
-                rval.append( elt.to_dict( trans ) )
+                rval.append( elt.to_dict( trans, for_link=True ) )
         else:
             tools = []
             for id, tool in self.app.toolbox.tools_by_id.items():
@@ -594,11 +594,11 @@ class ToolSection( object ):
         copy.elems = self.elems.copy()
         return copy
         
-    def to_dict( self, trans ):
+    def to_dict( self, trans, for_link=False ):
         """ Return a dict that includes section's attributes. """
         section_elts = []
         for key, val in self.elems.items():
-            section_elts.append( val.to_dict( trans, for_link=True ) )  
+            section_elts.append( val.to_dict( trans, for_link=for_link ) )
         return { 'type': 'section', 'id': self.id, 'name': self.name, 'version': self.version, 'elems': section_elts }
 
 class ToolSectionLabel( object ):
