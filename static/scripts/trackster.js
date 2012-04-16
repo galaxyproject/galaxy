@@ -1363,7 +1363,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         var submit_nav = function(e) {
             if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27 ) {
                 if ((e.keyCode || e.which) !== 27) { // Not escape key
-                    view.go_to( $(this).val() );
+                    browser_router.navigate($(this).val(), {trigger: true});
                 }
                 $(this).hide();
                 $(this).val('');
@@ -1517,9 +1517,40 @@ extend( View.prototype, DrawableCollection.prototype, {
             this.intro_div.hide();
         }
     },
+    /**
+     * Handles navigate calls and aggregates calls as needed.
+     */
+    navigate: function(new_chrom, new_low, new_high, delay) {
+        // Stop previous timer.
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+        
+        if (delay) {
+            // To aggregate calls, use timer and only navigate once
+            // location has stabilized. 
+            var self = this;
+            this.timer = setTimeout(function () {
+                var chrom = self.chrom_select.val();
+                if (new_chrom === chrom && new_low === self.low && new_high === self.high) {
+                    browser_router.navigate(new_chrom + ":" + new_low + "-" + new_high);
+                }
+            }, 500 );
+        }
+        else {
+            browser_router.navigate(new_chrom + ":" + new_low + "-" + new_high);
+        }
+    },
     update_location: function(low, high) {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
         this.nav_input.val( this.chrom + ':' + commatize(low) + '-' + commatize(high) );
+        
+        // Update location. Only update when there is a valid chrom; when loading vis, there may 
+        // not be a valid chrom.
+        var chrom = view.chrom_select.val();
+        if (chrom !== "") {
+            this.navigate(chrom, view.low, view.high, true);
+        }
     },
     /**
      * Load chrom data for the view. Returns a jQuery Deferred.
@@ -1571,6 +1602,15 @@ extend( View.prototype, DrawableCollection.prototype, {
         return chrom_data;
     },
     change_chrom: function(chrom, low, high) {
+        var view = this;
+        // If chrom data is still loading, wait for it.
+        if (!view.chrom_data) {
+            view.load_chroms_deferred.then(function() {
+                view.change_chrom(chrom, low, high);
+            });
+            return;
+        }
+        
         // Don't do anything if chrom is "None" (hackish but some browsers already have this set), or null/blank
         if (!chrom || chrom === "None") {
             return;
@@ -1658,6 +1698,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.move_delta( fraction * span );
     },
     move_delta: function(delta_chrom) {
+        // Update low, high.
         var view = this;
         var current_chrom_span = view.high - view.low;
         // Check for left and right boundaries
@@ -1671,7 +1712,12 @@ extend( View.prototype, DrawableCollection.prototype, {
             view.high -= delta_chrom;
             view.low -= delta_chrom;
         }
+                
         view.request_redraw();
+        
+        // Navigate.
+        var chrom = view.chrom_select.val();
+        this.navigate(chrom, view.low, view.high, true);
     },
     /**
      * Add a drawable to the view.
@@ -1755,6 +1801,8 @@ extend( View.prototype, DrawableCollection.prototype, {
      * that requestAnimationFrame can manage redrawing.
      */
     _redraw: function(nodraw) {
+        // TODO: move this code to function that does location setting.
+        
         // Clear because requested redraw is being handled now.
         this.requested_redraw = false;
         
@@ -1774,6 +1822,10 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.low = Math.floor(low);
         this.high = Math.ceil(high);
         
+        this.update_location(this.low, this.high);
+        
+        // -- Drawing code --
+        
         // Calculate resolution in both pixels/base and bases/pixel; round bases/pixels for tile calculations.
         // TODO: require minimum difference in new resolution to update?
         this.resolution_b_px = (this.high - this.low) / this.viewport_container.width();
@@ -1792,7 +1844,6 @@ extend( View.prototype, DrawableCollection.prototype, {
             this.overview_highlight.css({ left: left_px, width: width_px });
         }
         
-        this.update_location(this.low, this.high);
         if (!nodraw) {
             var track, force, clear_after;
             for (var i = 0, len = this.tracks_to_be_redrawn.length; i < len; i++) {

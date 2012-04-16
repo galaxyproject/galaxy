@@ -42,7 +42,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic", "jquery.tipsy" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic", "jquery.tipsy", "mvc/visualization" )}
 
 <script type="text/javascript">
     //
@@ -156,6 +156,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         });
     };
     
+    var browser_router;
     $(function() {
         // Create and initialize menu.
         var 
@@ -211,7 +212,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                         view.has_changes = false;
                         
                         // Needed to set URL when first saving a visualization.
-                        window.history.pushState({}, "", vis_info.url);
+                        window.history.pushState({}, "", vis_info.url + window.location.hash);
                     },
                     error: function() { 
                         show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
@@ -278,6 +279,12 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 }
             });
         %endif
+
+        //
+        // Set up router.
+        //
+        browser_router = new TrackBrowserRouter({view: view});
+        Backbone.history.start();
         
         /**
          * Initialization for editor-specific functions.

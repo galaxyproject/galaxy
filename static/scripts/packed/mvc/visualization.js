@@ -1,0 +1,1 @@
+var TrackBrowserRouter=Backbone.Router.extend({initialize:function(a){this.view=a.view;this.route(/([\w]+)$/,"change_location");this.route(/([\w]+\:[\d,]+-[\d,]+)$/,"change_location")},change_location:function(a){this.view.go_to(a)}});
