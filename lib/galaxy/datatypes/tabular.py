@@ -25,7 +25,7 @@ class Tabular( data.Text ):
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0 )
     MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
-    MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
@@ -180,7 +180,13 @@ class Tabular( data.Text ):
             out = "Can't create peek %s" % str( exc )
         return out
 
-    def make_html_peek_header( self, dataset, skipchars=[], column_names=[], column_number_format='%s', column_parameter_alias={}, **kwargs ):
+    def make_html_peek_header( self, dataset, skipchars=None, column_names=None, column_number_format='%s', column_parameter_alias=None, **kwargs ):
+        if skipchars is None:
+            skipchars = []
+        if column_names is None:
+            column_names = []
+        if column_parameter_alias is None:
+            column_parameter_alias = {}
         out = []
         try:
             if not column_names and dataset.metadata.column_names:
@@ -216,7 +222,9 @@ class Tabular( data.Text ):
             raise Exception, "Can't create peek header %s" % str( exc )
         return "".join( out )
 
-    def make_html_peek_rows( self, dataset, skipchars=[], **kwargs ):
+    def make_html_peek_rows( self, dataset, skipchars=None, **kwargs ):
+        if skipchars is None:
+            skipchars = []
         out = []
         try:
             if not dataset.peek:
@@ -504,8 +512,10 @@ class Eland( Tabular ):
                              'POSITION', 'STRAND', 'DESC', 'SRAS', 'PRAS', 'PART_CHROM'
                              'PART_CONTIG', 'PART_OFFSET', 'PART_STRAND', 'FILT'
                              ]
-    def make_html_table( self, dataset, skipchars=[] ):
+    def make_html_table( self, dataset, skipchars=None ):
         """Create HTML table, used for displaying peek"""
+        if skipchars is None:
+            skipchars = []
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
             # Generate column header
