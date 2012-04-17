@@ -122,6 +122,7 @@ def app_factory( global_conf, **kwargs ):
                                 'permissions',
                                 path_prefix='/api/libraries/:library_id',
                                 parent_resources=dict( member_name='library', collection_name='libraries' ) )      
+    webapp.api_mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.api_mapper.resource( 'library', 'libraries', path_prefix='/api' )
     webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
     webapp.api_mapper.resource( 'request', 'requests', path_prefix='/api' )
