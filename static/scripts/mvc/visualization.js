@@ -9,6 +9,12 @@ var TrackBrowserRouter = Backbone.Router.extend({
         // NOTE: parentheses are used to denote parameters returned to callback.
         this.route(/([\w]+)$/, 'change_location');
         this.route(/([\w]+\:[\d,]+-[\d,]+)$/, 'change_location');
+        
+        // Handle navigate events from view.
+        var self = this;
+        self.view.on("navigate", function(new_loc) {
+            self.navigate(new_loc);
+        });
     },
     
     change_location: function(new_loc) {

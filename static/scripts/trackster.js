@@ -1296,6 +1296,8 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
 
 /**
  * View object manages complete viz view, including tracks and user interactions.
+ * Events triggered:
+ *      navigate: when browser view changes to a new locations
  */
 var View = function(obj_dict) {
     extend(obj_dict, {
@@ -1318,6 +1320,7 @@ var View = function(obj_dict) {
     this.canvas_manager = new CanvasManager( this.container.get(0).ownerDocument );
     this.reset();
 };
+_.extend( View.prototype, Backbone.Events);
 extend( View.prototype, DrawableCollection.prototype, {
     init: function() {
         // Attribute init.
@@ -1363,7 +1366,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         var submit_nav = function(e) {
             if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27 ) {
                 if ((e.keyCode || e.which) !== 27) { // Not escape key
-                    browser_router.navigate($(this).val(), {trigger: true});
+                    view.go_to( $(this).val() );
                 }
                 $(this).hide();
                 $(this).val('');
@@ -1518,9 +1521,10 @@ extend( View.prototype, DrawableCollection.prototype, {
         }
     },
     /**
-     * Handles navigate calls and aggregates calls as needed.
+     * Triggers navigate events as needed. If there is a delay,
+     * then event is triggered only after navigation has stopped.
      */
-    navigate: function(new_chrom, new_low, new_high, delay) {
+    trigger_navigate: function(new_chrom, new_low, new_high, delay) {
         // Stop previous timer.
         if (this.timer) {
             clearTimeout(this.timer);
@@ -1533,12 +1537,12 @@ extend( View.prototype, DrawableCollection.prototype, {
             this.timer = setTimeout(function () {
                 var chrom = self.chrom_select.val();
                 if (new_chrom === chrom && new_low === self.low && new_high === self.high) {
-                    browser_router.navigate(new_chrom + ":" + new_low + "-" + new_high);
+                    self.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
                 }
             }, 500 );
         }
         else {
-            browser_router.navigate(new_chrom + ":" + new_low + "-" + new_high);
+            view.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
         }
     },
     update_location: function(low, high) {
@@ -1549,7 +1553,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         // not be a valid chrom.
         var chrom = view.chrom_select.val();
         if (chrom !== "") {
-            this.navigate(chrom, view.low, view.high, true);
+            this.trigger_navigate(chrom, view.low, view.high, true);
         }
     },
     /**
@@ -1717,7 +1721,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         
         // Navigate.
         var chrom = view.chrom_select.val();
-        this.navigate(chrom, view.low, view.high, true);
+        this.trigger_navigate(chrom, view.low, view.high, true);
     },
     /**
      * Add a drawable to the view.

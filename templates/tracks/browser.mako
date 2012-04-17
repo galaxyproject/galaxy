@@ -56,7 +56,16 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         chrom_url = "${h.url_for( action='chroms' )}",
         dataset_state_url = "${h.url_for( action='dataset_state' )}",
         converted_datasets_state_url = "${h.url_for( action='converted_datasets_state' )}",
-        view;
+        view,
+        browser_router;
+        
+    /**
+     * Set up router.
+     */
+    var set_up_router = function(options) {
+        browser_router = new TrackBrowserRouter(options);
+        Backbone.history.start();   
+    };
             
     /**
      * Use a popup grid to add more tracks.
@@ -254,6 +263,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                          JSON.parse('${ h.to_json_string( config['bookmarks'] ) }')
                                          );
             init_editor();
+            set_up_router({view: view});
         %else:
             var continue_fn = function() {
                 view = create_visualization( {
@@ -263,6 +273,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 } );
                 view.editor = true;
                 init_editor();
+                set_up_router({view: view});
                 hide_modal();
             };
             $.ajax({
@@ -279,12 +290,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 }
             });
         %endif
-
-        //
-        // Set up router.
-        //
-        browser_router = new TrackBrowserRouter({view: view});
-        Backbone.history.start();
         
         /**
          * Initialization for editor-specific functions.
