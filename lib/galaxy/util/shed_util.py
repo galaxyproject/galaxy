@@ -214,11 +214,14 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                         elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
                 
             sniffers = datatypes_config_root.find( 'sniffers' )
+        else:
+            sniffers = None
         fd, proprietary_datatypes_config = tempfile.mkstemp()
         os.write( fd, '<?xml version="1.0"?>\n' )
         os.write( fd, '<datatypes>\n' )
         os.write( fd, '%s' % util.xml_to_string( registration ) )
-        os.write( fd, '%s' % util.xml_to_string( sniffers ) )
+        if sniffers:
+            os.write( fd, '%s' % util.xml_to_string( sniffers ) )
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
         os.chmod( proprietary_datatypes_config, 0644 )
