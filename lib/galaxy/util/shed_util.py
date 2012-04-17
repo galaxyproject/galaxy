@@ -462,10 +462,22 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
     tool_tests = []
     if tool.tests:
         for ttb in tool.tests:
+            required_files = []
+            for required_file in ttb.required_files:
+                value, extra = required_file
+                required_files.append( ( value ) )
+            inputs = []
+            for input in ttb.inputs:
+                name, value, extra = input
+                inputs.append( ( name, value ) )
+            outputs = []
+            for output in ttb.outputs:
+                name, file_name, extra = output
+                outputs.append( ( name, os.path.split( file_name )[ 1 ] ) )
             test_dict = dict( name=ttb.name,
-                              required_files=ttb.required_files,
-                              inputs=ttb.inputs,
-                              outputs=ttb.outputs )
+                              required_files=required_files,
+                              inputs=inputs,
+                              outputs=outputs )
             tool_tests.append( test_dict )
     tool_dict = dict( id=tool.id,
                       guid=guid,
