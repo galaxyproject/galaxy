@@ -838,7 +838,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 tool_version_dicts.append( repository_metadata.tool_versions )
                 if current_changeset_revision == changeset_revision:
                     break
-        if repository_metadata.tool_versions:
+        if tool_version_dicts:
             return to_json_string( tool_version_dicts )
         return ''
     @web.expose
