@@ -6,9 +6,56 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
-        var DATASET_URL = "${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( dataset.id ))}";
-        var DATASET_COLS = ${dataset.metadata.columns};
+
+        var DATASET_URL   = "${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( dataset.id ))}";
+        var DATASET_COLS  = ${dataset.metadata.columns};
+        var DATASET_TYPES = ${dataset.metadata.column_types};
+
         var current_chunk = 0;
+
+        function renderCell(cell_contents, index, colspan){
+            if (colspan !== undefined){
+                return '<td colspan="'+ colspan + '" class="stringalign">' + cell_contents + '</td>';
+            }
+            else if (DATASET_TYPES[index] == 'str'){
+                /* Left align all str columns, right align the rest */
+                return '<td class="stringalign">'+ cell_contents + '</td>';
+            }
+            else{
+                return '<td>'+ cell_contents + '</td>';
+            }
+        }
+
+        function renderRow(line){
+            /* Check length of cells to ensure this is a complete row. */
+            var cells = line.split('\t');
+            var rowstr = '<tr>';
+            if (cells.length == DATASET_COLS){
+                $.each(cells, function(index, cell_contents){
+                    rowstr += renderCell(cell_contents, index);
+                });
+            }
+            else if(cells.length > DATASET_COLS){
+                /* SAM file or like format with optional metadata included */
+                $.each(cells.slice(0, DATASET_COLS -1), function(index, cell_contents){
+                    rowstr += renderCell(cell_contents, index);
+                });
+                rowstr += renderCell(cells.slice(DATASET_COLS -1).join('\t'), DATASET_COLS-1);
+            }
+            else if(DATASET_COLS > 5 && cells.length == DATASET_COLS - 1 ){
+                /* SAM file or like format with optional metadata missing */
+                $.each(cells, function(index, cell_contents){
+                    rowstr += renderCell(cell_contents, index);
+                });
+                rowstr += '<td></td>';
+            }
+            else{
+                /* Comment line, just return the one cell*/
+                rowstr += renderCell(line, 0, DATASET_COLS);
+            }
+            rowstr += '</tr>';
+            return rowstr;
+        }
 
         function fillTable(){
             if (current_chunk !== -1){
@@ -16,16 +63,8 @@
                 $.getJSON(DATASET_URL, {chunk: current_chunk}, function (result) {
                     if (result.ck_data !== ""){
                         var lines = result.ck_data.split('\n');
-                        $.each(lines, function(){
-                            var line = this;
-                            var cells = line.split('\t');
-                            /* Check length of cells to ensure this is a complete row. */
-                            if (cells.length == DATASET_COLS){
-                                table.append('<tr><td>' + cells.join('</td><td>') + '</td></tr>');
-                            }
-                            else{
-                                table.append('<tr><td colspan="'+ DATASET_COLS+ '">' + line + '</td></tr>');
-                            }
+                        $.each(lines, function(index, line){
+                            table.append(renderRow(line));
                         });
                         current_chunk = result.ck_index;
                     }
