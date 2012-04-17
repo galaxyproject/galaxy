@@ -310,12 +310,11 @@ var ToolLinkView = BaseView.extend({
 var ToolPanelLabelView = BaseView.extend({
     tagName: 'div',
     className: 'toolPanelLabel',
-    template: Handlebars.templates.panel_label,
 
     render: function() {
-        this.$el.append( this.template(this.model.toJSON()) );
+        this.$el.append( $("<span/>").text(this.model.attributes.name) );
         return this;
-    },
+    }
 });
 
 /**

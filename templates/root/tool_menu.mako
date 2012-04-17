@@ -16,7 +16,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.templates( "tool_link", "panel_label", "panel_section", "tool_search" )}
+    ${h.templates( "tool_link", "panel_section", "tool_search" )}
     ${h.js( "galaxy.base", "json2", "autocomplete_tagging", "mvc/tools" )}
     
     <%
