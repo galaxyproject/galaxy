@@ -80,7 +80,7 @@
                 
                 <p>${item.history.user.username | h}</p>
                 
-                <div><img src="http://www.gravatar.com/avatar/${h.md5(item.history.user.email)}?d=identicon&s=150"></div>
+                <div><img src="https://secure.gravatar.com/avatar/${h.md5(item.history.user.email)}?d=identicon&s=150"></div>
 
                 ## Page meta. 
                 
