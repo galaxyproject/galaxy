@@ -3,6 +3,7 @@ from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy.util import inflector
+from galaxy.util.sanitize_html import sanitize_html
 from cgi import escape
 import metadata
 import zipfile
