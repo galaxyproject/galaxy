@@ -50,7 +50,6 @@
                 row.append($('<td>'));
             }
             else{
-                /* SAM file or like format with optional metadata missing */
                 /* Comment line, just return the one cell*/
                 row.append(renderCell(line, 0, DATASET_COLS));
             }

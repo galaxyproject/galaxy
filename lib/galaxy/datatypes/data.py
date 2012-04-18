@@ -5,9 +5,36 @@ from galaxy.util.bunch import Bunch
 from galaxy.util import inflector
 from galaxy.util.sanitize_html import sanitize_html
 from cgi import escape
+import mimetypes
 import metadata
 import zipfile
 from metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
+
+
+if sys.version_info[:2] < ( 2, 6 ):
+    zipfile.BadZipFile = zipfile.error
+if sys.version_info[:2] < ( 2, 5 ):
+    zipfile.LargeZipFile = zipfile.error
+
+tmpd = tempfile.mkdtemp()
+comptypes=[]
+ziptype = '32'
+tmpf = os.path.join( tmpd, 'compression_test.zip' )
+try:
+    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+    archive.close()
+    comptypes.append( 'zip' )
+    ziptype = '64'
+except RuntimeError:
+    log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
+except (TypeError, zipfile.LargeZipFile):    # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
+    log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
+    comptypes.append( 'zip' )
+try:
+    os.unlink( tmpf )
+except OSError:
+    pass
+os.rmdir( tmpd )
 
 log = logging.getLogger(__name__)
 
@@ -256,16 +283,16 @@ class Data( object ):
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
         """ Old display method, for transition """
         #Relocate all composite datatype display to a common location.
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
         composite_extensions.append('html') # for archiving composite datatypes
-        if isinstance( dataset, basestring ):
-            return dataset
+        if isinstance( data, basestring ):
+            return data
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = trans.app.object_store.get_filename(dataset, extra_dir='dataset_%s_files' % dataset.id, alt_name=filename)
+            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
                     return trans.show_error_message( "Directory listing is not allowed." ) #TODO: Reconsider allowing listing of directories?
@@ -279,43 +306,36 @@ class Data( object ):
                 return open( file_path )
             else:
                 return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
-        trans.response.set_content_type(dataset.get_mime())
-        trans.log_event( "Display dataset id: %s" % str( dataset.id ) )
+        trans.response.set_content_type(data.get_mime())
+        trans.log_event( "Display dataset id: %s" % str( data.id ) )
         from galaxy import datatypes #DBTODO REMOVE THIS AT REFACTOR
-        if to_ext or isinstance(dataset.datatype, datatypes.binary.Binary): # Saving the file, or binary file
-            if dataset.extension in composite_extensions:
-                return self._archive_composite_dataset( trans, dataset, **kwd )
+        if to_ext or isinstance(data.datatype, datatypes.binary.Binary): # Saving the file, or binary file
+            if data.extension in composite_extensions:
+                return self._archive_composite_dataset( trans, data, **kwd )
             else:
-                trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
+                trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
                 if not to_ext:
-                    to_ext = dataset.extension
+                    to_ext = data.extension
                 valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+                fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
                 trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
-                return open( dataset.file_name )
-        if not os.path.exists( dataset.file_name ):
-            raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % dataset.file_name )
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, to_ext)
+                return open( data.file_name )
+        if not os.path.exists( data.file_name ):
+            raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
         max_peek_size = 1000000 # 1 MB
-        if isinstance(dataset.datatype, datatypes.images.Html):
+        if isinstance(data.datatype, datatypes.images.Html):
             max_peek_size = 10000000 # 10 MB for html
-        if not preview or isinstance(dataset.datatype, datatypes.images.Image) or os.stat( dataset.file_name ).st_size < max_peek_size:
+        if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
-                return sanitize_html(open( dataset.file_name ).read())
-            return open( dataset.file_name )
+                return sanitize_html(open( data.file_name ).read())
+            return open( data.file_name )
         else:
             trans.response.set_content_type( "text/html" )
             return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
-                                            data = dataset )
-        """Returns dataset contents for display.
-        This allows for customization of subtype displays"""
-        file_path = trans.app.object_store.get_filename(dataset, extra_dir='dataset_%s_files' % dataset.id, alt_name=filename)
-        if size:
-            return open(dataset.file_path).read(size)
-        else:
-            open(dataset.file_path)
+                                            truncated_data = open( data.file_name ).read(max_peek_size),
+                                            data = data)
 
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
