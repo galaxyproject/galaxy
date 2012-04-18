@@ -104,13 +104,41 @@ class BlastXml( GenericXml ):
         for f in split_files:
             h = open(f)
             body = False
-            header = []
+            header = h.readline()
+            if not header:
+                out.close()
+                h.close()
+                raise ValueError("BLAST XML file %s was empty" % f)
+            if header.strip() != '<?xml version="1.0"?>':
+                out.write(header) #for diagnosis
+                out.close()
+                h.close()
+                raise ValueError("%s is not an XML file!" % f)
+            line = h.readline()
+            header += line
+            if line.strip() not in ['<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
+                                    '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">']:
+                out.write(header) #for diagnosis
+                out.close()
+                h.close()
+                raise ValueError("%s is not a BLAST XML file!" % f)
             while True:
                 line = h.readline()
-                header.append(line)
+                if not line:
+                    out.write(header) #for diagnosis
+                    out.close()
+                    h.close()
+                    raise ValueError("BLAST XML file %s ended prematurely" % f)
+                header += line
                 if "<Iteration>" in line:
                     break
-            header = "".join(header)
+                if len(header) > 10000:
+                    #Something has gone wrong, don't load too much into memory!
+                    #Write what we have to the merged file for diagnostics
+                    out.write(header)
+                    out.close()
+                    h.close()
+                    raise ValueError("BLAST XML file %s has too long a header!" % f)
             if "<BlastOutput>" not in header:
                 out.close()
                 h.close()
