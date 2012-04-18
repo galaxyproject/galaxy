@@ -21,6 +21,7 @@ dialect_to_egg = {
 def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     # Check the value in the migrate_tools.version database table column to verify that the number is in
     # sync with the number of version scripts in ~/lib/galaxy/tools/migrate/versions.
+    running_functional_tests = galaxy_config_file.endswith( '.sample' )
     dialect = ( url.split( ':', 1 ) )[0]
     try:
         egg = dialect_to_egg[ dialect ]
@@ -54,51 +55,52 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
         config_arg = ''
         if os.path.abspath( os.path.join( os.getcwd(), 'universe_wsgi.ini' ) ) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
-        # Automatically update the value of the migrate_tools.version database table column.
-        cmd = 'sh manage_tools.sh%s upgrade'  % config_arg
-        proc = subprocess.Popen( args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
-        return_code = proc.wait()
-        output = proc.stdout.read( 32768 )
-        if return_code != 0:
-            raise Exception( "Error attempting to update the value of migrate_tools.version: %s" % output )
-        elif missing_tool_configs:
-            if len( tool_panel_configs ) == 1:
-                plural = ''
-                tool_panel_config_file_names = tool_panel_configs[ 0 ]
-            else:
-                plural = 's'
-                tool_panel_config_file_names = ', '.join( tool_panel_configs )
-            msg = "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-            msg += "\n\nThe list of files at the end of this message refers to tools that are configured to load into the tool panel for\n"
-            msg += "this Galaxy instance, but have been removed from the Galaxy distribution.  These tools can be automatically installed\n"
-            msg += "from the Galaxy tool shed at http://toolshed.g2.bx.psu.edu.\n\n"
-            msg += "To skip this process, attempt to start your Galaxy server again (e.g., sh run.sh or whatever you use).  If you do this,\n"
-            msg += "be aware that these tools will no longer be available in your Galaxy tool panel, and entries for each of them should\n"
-            msg += "be removed from your file%s named %s.\n\n" % ( plural, tool_panel_config_file_names )
-            msg += "CRITICAL NOTE IF YOU PLAN TO INSTALL\n"
-            msg += "The location in which the tool repositories will be installed is the value of the 'tool_path' attribute in the <tool>\n"
-            msg += 'tag of the file named ./migrated_tool_conf.xml (i.e., <toolbox tool_path="../shed_tools">).  The default location\n'
-            msg += "setting is '../shed_tools', which may be problematic for some cluster environments, so make sure to change it before\n"
-            msg += "you execute the installation process if appropriate.  The configured location must be outside of the Galaxy installation\n"
-            msg += "directory or it must be in a sub-directory protected by a properly configured .hgignore file if the directory is within\n"
-            msg += "the Galaxy installation directory hierarchy.  This is because tool shed repositories will be installed using mercurial's\n"
-            msg += "clone feature, which creates .hg directories and associated mercurial repository files.  Not having .hgignore properly\n"
-            msg += "configured could result in undesired behavior when modifying or updating your local Galaxy instance or the tool shed\n"
-            msg += "repositories if they are in directories that pose conflicts.  See mercurial's .hgignore documentation at the following\n"
-            msg += "URL for details.\n\nhttp://mercurial.selenic.com/wiki/.hgignore\n\n"
-            msg += output
-            msg += "After the installation process finishes, you can start your Galaxy server.  As part of this installation process,\n"
-            msg += "entries for each of the following tool config files will be added to the file named ./migrated_tool_conf.xml, so these\n"
-            msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these files should be\n"
-            msg += "removed from your file%s named %s, but only after the installation process finishes.\n\n" % ( plural, tool_panel_config_file_names )
-            for i, missing_tool_config in enumerate( missing_tool_configs ):
-                msg += "%s\n" % missing_tool_config
-                # Should we do the following?
-                #if i > 10:
-                #    msg += "\n...and %d more tools...\n" % ( len( missing_tool_configs ) - ( i + 1 ) )
-                #    break
-            msg += "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
-            raise Exception( msg )
+        if not running_functional_tests:
+            # Automatically update the value of the migrate_tools.version database table column.
+            cmd = 'sh manage_tools.sh%s upgrade'  % config_arg
+            proc = subprocess.Popen( args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
+            return_code = proc.wait()
+            output = proc.stdout.read( 32768 )
+            if return_code != 0:
+                raise Exception( "Error attempting to update the value of migrate_tools.version: %s" % output )
+            elif missing_tool_configs:
+                if len( tool_panel_configs ) == 1:
+                    plural = ''
+                    tool_panel_config_file_names = tool_panel_configs[ 0 ]
+                else:
+                    plural = 's'
+                    tool_panel_config_file_names = ', '.join( tool_panel_configs )
+                msg = "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+                msg += "\n\nThe list of files at the end of this message refers to tools that are configured to load into the tool panel for\n"
+                msg += "this Galaxy instance, but have been removed from the Galaxy distribution.  These tools can be automatically installed\n"
+                msg += "from the Galaxy tool shed at http://toolshed.g2.bx.psu.edu.\n\n"
+                msg += "To skip this process, attempt to start your Galaxy server again (e.g., sh run.sh or whatever you use).  If you do this,\n"
+                msg += "be aware that these tools will no longer be available in your Galaxy tool panel, and entries for each of them should\n"
+                msg += "be removed from your file%s named %s.\n\n" % ( plural, tool_panel_config_file_names )
+                msg += "CRITICAL NOTE IF YOU PLAN TO INSTALL\n"
+                msg += "The location in which the tool repositories will be installed is the value of the 'tool_path' attribute in the <tool>\n"
+                msg += 'tag of the file named ./migrated_tool_conf.xml (i.e., <toolbox tool_path="../shed_tools">).  The default location\n'
+                msg += "setting is '../shed_tools', which may be problematic for some cluster environments, so make sure to change it before\n"
+                msg += "you execute the installation process if appropriate.  The configured location must be outside of the Galaxy installation\n"
+                msg += "directory or it must be in a sub-directory protected by a properly configured .hgignore file if the directory is within\n"
+                msg += "the Galaxy installation directory hierarchy.  This is because tool shed repositories will be installed using mercurial's\n"
+                msg += "clone feature, which creates .hg directories and associated mercurial repository files.  Not having .hgignore properly\n"
+                msg += "configured could result in undesired behavior when modifying or updating your local Galaxy instance or the tool shed\n"
+                msg += "repositories if they are in directories that pose conflicts.  See mercurial's .hgignore documentation at the following\n"
+                msg += "URL for details.\n\nhttp://mercurial.selenic.com/wiki/.hgignore\n\n"
+                msg += output
+                msg += "After the installation process finishes, you can start your Galaxy server.  As part of this installation process,\n"
+                msg += "entries for each of the following tool config files will be added to the file named ./migrated_tool_conf.xml, so these\n"
+                msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these files should be\n"
+                msg += "removed from your file%s named %s, but only after the installation process finishes.\n\n" % ( plural, tool_panel_config_file_names )
+                for i, missing_tool_config in enumerate( missing_tool_configs ):
+                    msg += "%s\n" % missing_tool_config
+                    # Should we do the following?
+                    #if i > 10:
+                    #    msg += "\n...and %d more tools...\n" % ( len( missing_tool_configs ) - ( i + 1 ) )
+                    #    break
+                msg += "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
+                raise Exception( msg )
     else:
         log.info( "At migrate_tools version %d" % db_schema.version )
 
