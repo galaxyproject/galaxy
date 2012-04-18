@@ -6,7 +6,7 @@ from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
 from galaxy.util.shed_util import copy_sample_loc_file, generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
-from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, to_html_escaped, to_html_str
+from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, to_html_escaped, to_html_str, update_repository
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -284,10 +284,15 @@ def new_workflow_metadata_required( trans, id, metadata_dict ):
     # record is not needed.
     return False
 def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo_dir ):
-    # Browse the repository tip files on disk to generate metadata.  This is faster than
-    # the generate_metadata_for_changeset_revision() method below because fctx.data() does
-    # not have to be written to disk to load tools.  also, since changeset_revision is the
-    # repository tip, we handle things like .loc.sample files here.
+    """
+    Browse the repository tip files on disk to generate metadata.  This is faster than the
+    generate_metadata_for_changeset_revision() method below because fctx.data() does not have
+    to be written to disk to load tools.  We also handle things like .loc.sample files and
+    invalid_tool_configs here, while they are ignored in older revisions.
+    """
+    # If a push from the command line is occurring, update the repository files on disk before setting metadata.
+    returncode, tmp_name = update_repository( os.getcwd(), os.path.abspath( repo_dir ), changeset_revision )
+    # TODO: handle error if returncode is not 0?
     metadata_dict = {}
     invalid_files = []
     invalid_tool_configs = []
@@ -319,22 +324,26 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
                     full_path = os.path.abspath( os.path.join( root, name ) )
                     if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
                              or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
-                        try:
-                            tool = load_tool( trans, full_path )
-                            valid = True
-                        except Exception, e:
-                            valid = False
-                            invalid_files.append( ( name, str( e ) ) )
-                            invalid_tool_configs.append( name )
-                        if valid and tool is not None:
-                            can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
-                            if can_set_metadata:
-                                # Update the list of metadata dictionaries for tools in metadata_dict.
-                                tool_config = os.path.join( root, name )
-                                repository_clone_url = generate_clone_url( trans, id )
-                                metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
-                            else:
+                        # Make sure we're looking at a tool config and not a display application config or something else.
+                        element_tree = util.parse_xml( full_path )
+                        element_tree_root = element_tree.getroot()
+                        if element_tree_root.tag == 'tool':
+                            try:
+                                tool = load_tool( trans, full_path )
+                                valid = True
+                            except Exception, e:
+                                valid = False
+                                invalid_files.append( ( name, str( e ) ) )
                                 invalid_tool_configs.append( name )
+                            if valid and tool is not None:
+                                can_set_metadata, invalid_files = check_tool_input_params( trans, name, tool, sample_files, invalid_files )
+                                if can_set_metadata:
+                                    # Update the list of metadata dictionaries for tools in metadata_dict.
+                                    tool_config = os.path.join( root, name )
+                                    repository_clone_url = generate_clone_url( trans, id )
+                                    metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
+                                else:
+                                    invalid_tool_configs.append( name )
                 # Find all exported workflows
                 elif name.endswith( '.ga' ):
                     try:
@@ -355,7 +364,6 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
     # Browse repository files within a change set to generate metadata.
     metadata_dict = {}
     invalid_files = []
-    invalid_tool_configs = []
     sample_files = []
     tmp_datatypes_config = None
     # Find datatypes_conf.xml if it exists.
@@ -394,25 +402,26 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
             fh.close()
             if not ( check_binary( tmp_filename ) or check_image( tmp_filename ) or check_gzip( tmp_filename )[ 0 ]
                      or check_bz2( tmp_filename )[ 0 ] or check_zip( tmp_filename ) ):
-                try:
-                    tool = load_tool( trans, tmp_filename )
-                    valid = True
-                except Exception, e:
-                    invalid_files.append( ( filename, str( e ) ) )
-                    invalid_tool_configs.append( filename )
-                    valid = False
-                if valid and tool is not None:
-                    # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
-                    # here is the relative path to the config file within the change set context, something
-                    # like filtering.xml, but when the change set was the repository tip, the value was
-                    # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
-                    # anything, but may result in a bit of confusion when maintaining the code / data over time.
-                    # IMPORTANT NOTE:  Here we are assuming that since the current change set is not the repository
-                    # tip, we do not have to handle any .loc.sample files since they would have been handled previously.
-                    repository_clone_url = generate_clone_url( trans, id )
-                    metadata_dict = generate_tool_metadata( filename, tool, repository_clone_url, metadata_dict )
-                else:
-                   invalid_tool_configs.append( filename ) 
+                # Make sure we're looking at a tool config and not a display application config or something else.
+                element_tree = util.parse_xml( tmp_filename )
+                element_tree_root = element_tree.getroot()
+                if element_tree_root.tag == 'tool':
+                    try:
+                        tool = load_tool( trans, tmp_filename )
+                        valid = True
+                    except Exception, e:
+                        invalid_files.append( ( filename, str( e ) ) )
+                        valid = False
+                    if valid and tool is not None:
+                        # Update the list of metadata dictionaries for tools in metadata_dict.  Note that filename
+                        # here is the relative path to the config file within the change set context, something
+                        # like filtering.xml, but when the change set was the repository tip, the value was
+                        # something like database/community_files/000/repo_1/filtering.xml.  This shouldn't break
+                        # anything, but may result in a bit of confusion when maintaining the code / data over time.
+                        # IMPORTANT NOTE:  Here we are assuming that since the current change set is not the repository
+                        # tip, we do not have to handle any .loc.sample files since they would have been handled previously.
+                        repository_clone_url = generate_clone_url( trans, id )
+                        metadata_dict = generate_tool_metadata( filename, tool, repository_clone_url, metadata_dict )
             try:
                 os.unlink( tmp_filename )
             except:
@@ -427,13 +436,6 @@ def generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision
                     metadata_dict = generate_workflow_metadata( '', exported_workflow_dict, metadata_dict )
             except Exception, e:
                 invalid_files.append( ( name, str( e ) ) )
-    """
-    FIXME: Handling invalid tools in change sets that are not the repository tip are a bit complex, so this is currently not
-    supported.  One example is the Emboss tools that have a <code file> tag set, which requires the file to exist in a location
-    that can be found.
-    if invalid_tool_configs:
-        metadata_dict[ 'invalid_tools' ] = invalid_tool_configs
-    """
     return metadata_dict, invalid_files
 def set_repository_metadata( trans, id, changeset_revision, content_alert_str='', **kwd ):
     """Set repository metadata"""
@@ -563,8 +565,8 @@ def reset_all_repository_metadata( trans, id, **kwd ):
                         create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
                         # Keep track of the changeset_revisions that we've persisted.
                         changeset_revisions.append( ancestor_changeset_revision )
-                        ancestor_changeset_revision = None
-                        ancestor_metadata_dict = None
+                        ancestor_changeset_revision = current_changeset_revision
+                        ancestor_metadata_dict = current_metadata_dict
                 else:
                     # We're either at the first change set in the change log or we have just created or updated
                     # a repository_metadata record.  At this point we set the ancestor changeset to the current
