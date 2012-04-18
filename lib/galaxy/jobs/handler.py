@@ -207,14 +207,14 @@ class JobHandlerQueue( object ):
                 continue
             # don't run jobs for which the input dataset was deleted
             if idata.deleted:
-                JobWrapper( job, self ).fail( "input data %d (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
+                JobWrapper( job, self ).fail( "input data %s (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
-                JobWrapper( job, self ).fail( "input data %d is in error state" % ( idata.hid ) )
+                JobWrapper( job, self ).fail( "input data %s is in error state" % ( idata.hid ) )
                 return JOB_INPUT_ERROR
             elif idata.state == idata.states.FAILED_METADATA:
-                JobWrapper( job, self ).fail( "input data %d failed to properly set metadata" % ( idata.hid ) )
+                JobWrapper( job, self ).fail( "input data %s failed to properly set metadata" % ( idata.hid ) )
                 return JOB_INPUT_ERROR
             elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
                 # need to requeue
