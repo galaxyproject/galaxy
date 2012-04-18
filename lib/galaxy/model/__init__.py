@@ -1555,7 +1555,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                     name = field[ 'name' ]
                 else:
                     name = field[ 'label' ]
-                tmp_dict[ name ] = content[ field[ 'name' ] ]
+                tmp_dict[ name ] = content.get( field[ 'name' ] )
             template_data[template.name] = tmp_dict
         return template_data
     def templates_json( self, use_name=False ):
