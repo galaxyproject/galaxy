@@ -322,7 +322,7 @@ class UsesVisualization( SharableItemSecurity ):
                 if hda_ldda == "hda":
                     dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
                 else:
-                    dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(dataset_id) )
+                    dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( dataset_id )
 
                 try:
                     prefs = track_dict['prefs']
