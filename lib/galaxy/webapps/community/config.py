@@ -98,6 +98,7 @@ class Configuration( object ):
         self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
+        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def get_bool( self, key, default ):

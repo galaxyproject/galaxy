@@ -21,7 +21,6 @@ dialect_to_egg = {
 def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     # Check the value in the migrate_tools.version database table column to verify that the number is in
     # sync with the number of version scripts in ~/lib/galaxy/tools/migrate/versions.
-    running_functional_tests = galaxy_config_file.endswith( '.sample' )
     dialect = ( url.split( ':', 1 ) )[0]
     try:
         egg = dialect_to_egg[ dialect ]
@@ -55,7 +54,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
         config_arg = ''
         if os.path.abspath( os.path.join( os.getcwd(), 'universe_wsgi.ini' ) ) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
-        if not running_functional_tests:
+        if not app.config.running_functional_tests:
             # Automatically update the value of the migrate_tools.version database table column.
             cmd = 'sh manage_tools.sh%s upgrade'  % config_arg
             proc = subprocess.Popen( args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )

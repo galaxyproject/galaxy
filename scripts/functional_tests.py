@@ -275,6 +275,7 @@ def main():
                                    library_import_dir = library_import_dir,
                                    user_library_import_dir = user_library_import_dir,
                                    global_conf = global_conf,
+                                   running_functional_tests=True,
                                    **kwargs )
         log.info( "Embedded Universe application started" )
     # ---- Run webserver ------------------------------------------------------
