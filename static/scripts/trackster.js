@@ -4496,11 +4496,15 @@ var FeatureTrack = function(view, container, obj_dict) {
     TiledTrack.call(this, view, container, obj_dict);
 
     // Define and restore track configuration.
+    var 
+        block_color = get_random_color(),
+        reverse_strand_color = get_random_color( [ block_color, "#ffffff" ] );
     this.config = new DrawableConfig( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: block_color },
+            { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: reverse_strand_color },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
               help: 'Show the number of items in each bin when drawing summary histogram' },
@@ -5651,6 +5655,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             // -1 because end is not included in feature; see FeaturePainter documentation for details.
             feature_end = feature[2] - 1,
             feature_name = feature[3],
+            feature_strand = (feature.length > 4 ? feature[4] : null),
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             draw_start = f_start,
@@ -5658,7 +5663,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale + this.get_top_padding(width),
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
-            block_color = this.prefs.block_color,
+            block_color = block_color = (!feature_strand || feature_strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color);
             label_color = this.prefs.label_color;
         
         // Set global alpha.
@@ -5676,8 +5681,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         } 
         else { // Mode is either Squish or Pack:
             // Feature details.
-            var feature_strand = feature[4],
-                feature_ts = feature[5],
+            var feature_ts = feature[5],
                 feature_te = feature[6],
                 feature_blocks = feature[7],
                 // Whether we are drawing full height or squished features
