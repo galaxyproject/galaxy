@@ -5655,7 +5655,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             // -1 because end is not included in feature; see FeaturePainter documentation for details.
             feature_end = feature[2] - 1,
             feature_name = feature[3],
-            feature_strand = (feature.length > 4 ? feature[4] : null),
+            feature_strand = feature[4],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             draw_start = f_start,

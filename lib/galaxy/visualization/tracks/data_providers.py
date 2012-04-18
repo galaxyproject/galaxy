@@ -19,7 +19,7 @@ from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Vcf
-from galaxy.datatypes.interval import Bed, Gff, Gtf, ENCODEPeak
+from galaxy.datatypes.interval import Interval, Bed, Gff, Gtf, ENCODEPeak
 
 from pysam import csamtools, ctabix
 
@@ -67,8 +67,7 @@ class TracksDataProvider( object ):
         """
         Write data in region defined by chrom, start, and end to a file.
         """
-        # Override.
-        pass
+        raise Exception( "Unimplemented Function" )
         
     def valid_chroms( self ):
         """
@@ -81,23 +80,19 @@ class TracksDataProvider( object ):
         Returns true if dataset has data in the specified genome window, false
         otherwise.
         """
-        # Override.
-        pass
+        raise Exception( "Unimplemented Function" )
         
     def get_iterator( self, chrom, start, end ):
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
-        # Override.
-        pass
+        raise Exception( "Unimplemented Function" )
         
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
         Process data from an iterator to a format that can be provided to client.
         """
-        # Override.
-        pass
-        
+        raise Exception( "Unimplemented Function" )        
         
     def get_data( self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs ):
         """ 
@@ -270,18 +265,96 @@ class TabixDataProvider( FilterableMixin, TracksDataProvider ):
         out.close()
 
 #
-# -- BED data providers --
+# -- Interval data providers --
 #
 
-class BedDataProvider( TracksDataProvider ):
+class IntervalDataProvider( TracksDataProvider ):
     """
-    Abstract class that processes BED data from native format to payload format.
+    Processes BED data from native format to payload format.
     
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
     
     def get_iterator( self, chrom, start, end ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Function" )
+            
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
+        Provides
+        """
+        # Build data to return. Payload format is:
+        # [ <guid/offset>, <start>, <end>, <name>, <strand> ]
+        # 
+        # First three entries are mandatory, others are optional.
+        #
+        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        no_detail = ( "no_detail" in kwargs )
+        rval = []
+        message = None
+        # Subtract one b/c columns are 1-based but indices are 0-based.
+        col_fn = lambda col: None if col is None else col - 1
+        start_col = self.original_dataset.metadata.startCol - 1
+        end_col = self.original_dataset.metadata.endCol - 1
+        strand_col = col_fn( self.original_dataset.metadata.strandCol )
+        name_col = col_fn( self.original_dataset.metadata.nameCol )
+        for count, line in enumerate( iterator ):
+            if count < start_val:
+                continue
+            if max_vals and count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                break
+            
+            feature = line.split()
+            length = len(feature)
+            # Unique id is just a hash of the line
+            payload = [ hash(line), int( feature[start_col] ), int( feature [end_col] ) ]
+
+            if no_detail:
+                rval.append( payload )
+                continue
+
+            # Name, strand.
+            if name_col:
+                payload.append( feature[name_col] )
+            if strand_col:
+                # Put empty name as placeholder.
+                if not name_col: payload.append( "" )
+                payload.append( feature[strand_col] )
+
+            # Score (filter data)    
+            if length >= 5 and filter_cols and filter_cols[0] == "Score":
+                try:
+                    payload.append( float( feature[4] ) )
+                except:
+                    payload.append( feature[4] )
+
+            rval.append( payload )
+
+        return { 'data': rval, 'message': message }
+
+    def write_data_to_file( self, chrom, start, end, filename ):
+        raise Exception( "Unimplemented Function" )
+
+class IntervalTabixDataProvider( TabixDataProvider, IntervalDataProvider ):
+    """
+    Provides data from a BED file indexed via tabix.
+    """
+    pass
+
+
+#
+# -- BED data providers --
+#
+
+class BedDataProvider( TracksDataProvider ):
+    """
+    Processes BED data from native format to payload format.
+    
+    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
+    """
+    
+    def get_iterator( self, chrom, start, end ):
+        raise Exception( "Unimplemented Method" )
             
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
@@ -359,7 +432,7 @@ class BedTabixDataProvider( TabixDataProvider, BedDataProvider ):
     Provides data from a BED file indexed via tabix.
     """
     pass
-
+    
 class RawBedDataProvider( BedDataProvider ):
     """
     Provide data from BED file.
@@ -1113,7 +1186,12 @@ class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
-    "tabix": { Vcf: VcfTabixDataProvider, Bed: BedTabixDataProvider, ENCODEPeak: ENCODEPeakTabixDataProvider, "default" : TabixDataProvider },
+    "tabix": { 
+        Vcf: VcfTabixDataProvider,
+        Bed: BedTabixDataProvider,
+        ENCODEPeak: ENCODEPeakTabixDataProvider,
+        Interval: IntervalTabixDataProvider,
+        "default" : TabixDataProvider },
     "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
     "bam": SamDataProvider,

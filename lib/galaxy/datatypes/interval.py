@@ -328,6 +328,9 @@ class Interval( Tabular ):
 
     def get_track_resolution( self, dataset, start, end):
         return None
+        
+    def get_track_type( self ):
+        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
 
 class BedGraph( Interval ):
     """Tab delimited chrom/start/end/datavalue dataset"""
