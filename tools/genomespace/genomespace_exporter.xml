@@ -27,7 +27,7 @@
         #if $filename:
             --filename "${filename}"
         #else:
-            --filename "Galaxy History Item ${__app__.security.encode_id( $input1.id )} - ${input1.hid}: ${input1.name}.${input1.ext}"
+            --filename "Galaxy History Item ${__app__.security.encode_id( $input1.id )} (${__app__.security.encode_id( $output_log.id )}) - ${input1.hid}: ${input1.name}.${input1.ext}"
         #end if
         --file_type "${input1.ext}"
         --content_type "${input1.get_mime()}"
