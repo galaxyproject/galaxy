@@ -1669,6 +1669,11 @@ extend( View.prototype, DrawableCollection.prototype, {
                 view.low = Math.max(low, 0);
                 view.high = Math.min(high, view.max_high);
             }
+            else {
+                // Low and high undefined, so view is whole chome.
+                view.low = 0;
+                view.high = view.max_high;
+            }
             view.reset_overview();
             view.request_redraw();
         }
