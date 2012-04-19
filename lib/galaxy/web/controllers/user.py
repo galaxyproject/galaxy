@@ -10,7 +10,7 @@ from random import choice
 from galaxy.web.form_builder import * 
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.framework.helpers import iff
-from galaxy.security.validate_user_input import validate_email, validate_publicname, validate_password
+from galaxy.security.validate_user_input import validate_email, validate_publicname, validate_password, transform_publicname
 
 log = logging.getLogger( __name__ )
 
@@ -341,7 +341,7 @@ class User( BaseUIController, UsesFormDefinitions ):
                                     email=email,
                                     password='',
                                     confirm='',
-                                    username=username,
+                                    username=transform_publicname( trans, username ),
                                     header='',
                                     use_panels=use_panels,
                                     redirect=redirect,
@@ -581,7 +581,7 @@ class User( BaseUIController, UsesFormDefinitions ):
                                     email=email,
                                     password=password,
                                     confirm=confirm,
-                                    username=username,
+                                    username=transform_publicname( trans, username ),
                                     subscribe_checked=subscribe_checked,
                                     user_type_fd_id_select_field=user_type_fd_id_select_field,
                                     user_type_form_definition=user_type_form_definition,
