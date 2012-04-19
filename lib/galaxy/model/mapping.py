@@ -1204,6 +1204,9 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
         implicitly_converted_datasets=relation( 
             ImplicitlyConvertedDatasetAssociation, 
             primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
+        implicitly_converted_parent_datasets=relation( 
+            ImplicitlyConvertedDatasetAssociation, 
+            primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_id == HistoryDatasetAssociation.table.c.id ) ),
         children=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),

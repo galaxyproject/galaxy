@@ -1125,7 +1125,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         # metadata_safe = True means to only clear when assoc.metadata_safe == False
-        for assoc in self.implicitly_converted_datasets:
+        for assoc in self.implicitly_converted_datasets + self.implicitly_converted_parent_datasets:
             if not metadata_safe or not assoc.metadata_safe:
                 assoc.clear( purge = purge )
     def get_display_name( self ):
