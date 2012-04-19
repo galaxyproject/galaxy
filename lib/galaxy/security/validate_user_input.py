@@ -42,6 +42,7 @@ def transform_publicname( trans, publicname, user=None ):
     elif publicname not in [ 'None', None, '' ]:
         publicname = publicname.lower()
         publicname = re.sub( VALID_PUBLICNAME_SUB, FILL_CHAR, publicname )
+        publicname = publicname.ljust( 4, FILL_CHAR )[:255]
         if not trans.sa_session.query( trans.app.model.User ).filter_by( username=publicname ).first():
             return publicname
     return ''
