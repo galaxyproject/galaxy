@@ -4956,8 +4956,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Returns true if data can be subsetted.
      */
     can_subset: function(data) {
-        // Do not subset summary tree data or entries with a message.
-        if (data.dataset_type === "summary_tree" || data.message) {
+        // Do not subset summary tree data, entries with a message, or data with no detail.
+        if (data.dataset_type === "summary_tree" || data.message || data.extra_info === "no_detail")  {
             return false;
         }
 
