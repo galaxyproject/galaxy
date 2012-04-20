@@ -28,7 +28,6 @@ def __main__():
     parser.add_option( '-I', '--max-intron-length', dest='max_intron_length', 
                         help='The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read.' )
     parser.add_option( '-g', '--max_multihits', dest='max_multihits', help='Maximum number of alignments to be allowed' )
-    parser.add_option( '', '--initial-read-mismatches', dest='initial_read_mismatches', help='Number of mismatches allowed in the initial read mapping' )
     parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
     parser.add_option( '', '--seg-length', dest='seg_length', help='Minimum length of read segments' )
     parser.add_option( '', '--library-type', dest='library_type', help='TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.' )
@@ -53,15 +52,10 @@ def __main__():
     parser.add_option( '', '--no-novel-indels', action="store_true", dest='no_novel_indels', help="Skip indel search. Indel search is enabled by default.")
     # Types of search.
     parser.add_option( '', '--microexon-search', action="store_true", dest='microexon_search', help='With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.')
-    parser.add_option( '', '--closure-search', action="store_true", dest='closure_search', help='Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (<= 50bp)')
-    parser.add_option( '', '--no-closure-search', action="store_false", dest='closure_search' )
     parser.add_option( '', '--coverage-search', action="store_true", dest='coverage_search', help='Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.')
     parser.add_option( '', '--no-coverage-search', action="store_false", dest='coverage_search' )
     parser.add_option( '', '--min-segment-intron', dest='min_segment_intron', help='Minimum intron length that may be found during split-segment search' )
     parser.add_option( '', '--max-segment-intron', dest='max_segment_intron', help='Maximum intron length that may be found during split-segment search' )
-    parser.add_option( '', '--min-closure-exon', dest='min_closure_exon', help='Minimum length for exonic hops in potential splice graph' )
-    parser.add_option( '', '--min-closure-intron', dest='min_closure_intron', help='Minimum intron length that may be found during closure search' )
-    parser.add_option( '', '--max-closure-intron', dest='max_closure_intron', help='Maximum intron length that may be found during closure search' )
     parser.add_option( '', '--min-coverage-intron', dest='min_coverage_intron', help='Minimum intron length that may be found during coverage search' )
     parser.add_option( '', '--max-coverage-intron', dest='max_coverage_intron', help='Maximum intron length that may be found during coverage search' )
 
@@ -175,16 +169,10 @@ def __main__():
                 opts += ' --coverage-search --min-coverage-intron %s --max-coverage-intron %s' % ( options.min_coverage_intron, options.max_coverage_intron )
             else:
                 opts += ' --no-coverage-search'
-            if options.closure_search:
-                opts += ' --closure-search --min-closure-exon %s --min-closure-intron %s --max-closure-intron %s'  % ( options.min_closure_exon, options.min_closure_intron, options.max_closure_intron ) 
-            else:
-                opts += ' --no-closure-search'
             if options.microexon_search:
                 opts += ' --microexon-search'
             if options.single_paired == 'paired':
                 opts += ' --mate-std-dev %s' % options.mate_std_dev
-            if options.initial_read_mismatches:
-                opts += ' --initial-read-mismatches %d' % int( options.initial_read_mismatches )
             if options.seg_mismatches:
                 opts += ' --segment-mismatches %d' % int( options.seg_mismatches )
             if options.seg_length:

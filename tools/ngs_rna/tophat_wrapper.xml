@@ -1,5 +1,5 @@
 <tool id="tophat" name="Tophat for Illumina" version="0.5">
-    <!-- Wrapper compatible with Tophat versions 1.3.0 to 1.4.1 -->
+    <!-- Wrapper compatible with Tophat versions 1.3.0 to 2.0.0 -->
     <description>Find splice junctions using RNA-seq data</description>
     <version_command>tophat --version</version_command>
     <requirements>
@@ -38,7 +38,6 @@
                     -g $singlePaired.sParams.max_multihits
                     --min-segment-intron $singlePaired.sParams.min_segment_intron
                     --max-segment-intron $singlePaired.sParams.max_segment_intron
-                    --initial-read-mismatches=$singlePaired.sParams.initial_read_mismatches
                     --seg-mismatches=$singlePaired.sParams.seg_mismatches
                     --seg-length=$singlePaired.sParams.seg_length
                     --library-type=$singlePaired.sParams.library_type
@@ -66,14 +65,6 @@
                         #end if
                     #end if
 
-                    #if $singlePaired.sParams.closure_search.use_search == "Yes":
-                        --closure-search
-                        --min-closure-exon $singlePaired.sParams.closure_search.min_closure_exon
-                        --min-closure-intron $singlePaired.sParams.closure_search.min_closure_intron
-                        --max-closure-intron $singlePaired.sParams.closure_search.max_closure_intron
-                    #else:
-                        --no-closure-search
-                    #end if
                     #if $singlePaired.sParams.coverage_search.use_search == "Yes":
                         --coverage-search
                         --min-coverage-intron $singlePaired.sParams.coverage_search.min_coverage_intron
@@ -99,7 +90,6 @@
                     -g $singlePaired.pParams.max_multihits
                     --min-segment-intron $singlePaired.pParams.min_segment_intron
                     --max-segment-intron $singlePaired.pParams.max_segment_intron
-                    --initial-read-mismatches=$singlePaired.pParams.initial_read_mismatches
                     --seg-mismatches=$singlePaired.pParams.seg_mismatches
                     --seg-length=$singlePaired.pParams.seg_length
                     --library-type=$singlePaired.pParams.library_type
@@ -127,14 +117,6 @@
                         #end if
                     #end if
 
-                    #if $singlePaired.pParams.closure_search.use_search == "Yes":
-                        --closure-search
-                        --min-closure-exon $singlePaired.pParams.closure_search.min_closure_exon
-                        --min-closure-intron $singlePaired.pParams.closure_search.min_closure_intron
-                        --max-closure-intron $singlePaired.pParams.closure_search.max_closure_intron
-                    #else:
-                        --no-closure-search
-                    #end if
                     #if $singlePaired.pParams.coverage_search.use_search == "Yes":
                         --coverage-search
                         --min-coverage-intron $singlePaired.pParams.coverage_search.min_coverage_intron
@@ -206,7 +188,6 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
                   <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
-                  <param name="initial_read_mismatches" type="integer" min="0" value="2" label="Number of mismatches allowed in the initial read mapping" />
                   <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
                   <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
                   
@@ -245,19 +226,6 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
                       <when value="No" />
                   </conditional> <!-- /own_junctions -->
                   
-                  <!-- Closure search. -->
-                  <conditional name="closure_search">
-                    <param name="use_search" type="select" label="Use Closure Search">
-                      <option value="No">No</option>
-                      <option value="Yes">Yes</option>
-                    </param>
-                    <when value="Yes">
-                        <param name="min_closure_exon" type="integer" value="50" label="During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50." />
-                        <param name="min_closure_intron" type="integer" value="50" label="Minimum intron length that may be found during closure search" />
-                        <param name="max_closure_intron" type="integer" value="5000" label="Maximum intron length that may be found during closure search" />
-                    </when>
-                    <when value="No" />
-                  </conditional>
                   <!-- Coverage search. -->
                   <conditional name="coverage_search">
                     <param name="use_search" type="select" label="Use Coverage Search">
@@ -312,7 +280,6 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
                   <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
-                  <param name="initial_read_mismatches" type="integer" min="0" value="2" label="Number of mismatches allowed in the initial read mapping" />
                   <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
                   <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
                   <!-- Options for supplying own junctions. -->
@@ -350,19 +317,6 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
                       <when value="No" />
                   </conditional> <!-- /own_junctions -->
                   
-                  <!-- Closure search. -->
-                  <conditional name="closure_search">
-                    <param name="use_search" type="select" label="Use Closure Search">
-                      <option value="No">No</option>
-                      <option value="Yes">Yes</option>
-                    </param>
-                    <when value="Yes">
-                        <param name="min_closure_exon" type="integer" value="50" label="During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50." />
-                        <param name="min_closure_intron" type="integer" value="50" label="Minimum intron length that may be found during closure search" />
-                        <param name="max_closure_intron" type="integer" value="5000" label="Maximum intron length that may be found during closure search" />
-                    </when>
-                    <when value="No" />
-                  </conditional>
                   <!-- Coverage search. -->
                   <conditional name="coverage_search">
                     <param name="use_search" type="select" label="Use Coverage Search">
@@ -500,7 +454,7 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
         <test>
             <!-- Tophat commands:
             bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -526,10 +480,6 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
             <param name="no_novel_juncs" value="No" />
-            <param name="use_search" value="Yes" />
-            <param name="min_closure_exon" value="50" />
-            <param name="min_closure_intron" value="50" />
-            <param name="max_closure_intron" value="5000" />
             <param name="use_search" value="Yes" />
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
@@ -643,17 +593,11 @@ This is a list of implemented Tophat options::
   -G/--GTF [GTF 2.2 file]           Supply TopHat with a list of gene model annotations. TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping.
   -j/--raw-juncs [juncs file]       Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-], left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive.
   -no-novel-juncs                   Only look for junctions indicated in the supplied GFF file. (ignored without -G)
-  --no-closure-search               Disables the mate pair closure-based search for junctions. Currently, has no effect - closure search is off by default.
-  --closure-search                  Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (about or less than 50bp)
   --no-coverage-search              Disables the coverage based search for junctions.
   --coverage-search                 Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.
   --microexon-search                With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.
-  --butterfly-search                TopHat will use a slower but potentially more sensitive algorithm to find junctions in addition to its standard search. Consider using this if you expect that your experiment produced a lot of reads from pre-mRNA, that fall within the introns of your transcripts.
   --segment-mismatches              Read segments are mapped independently, allowing up to this many mismatches in each segment alignment. The default is 2.
   --segment-length                  Each read is cut up into segments, each at least this long. These segments are mapped independently. The default is 25.
-  --min-closure-exon                During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50.
-  --min-closure-intron              The minimum intron length that may be found during closure search. The default is 50.
-  --max-closure-intron              The maximum intron length that may be found during closure search. The default is 5000.
   --min-coverage-intron             The minimum intron length that may be found during coverage search. The default is 50.
   --max-coverage-intron             The maximum intron length that may be found during coverage search. The default is 20000.
   --min-segment-intron              The minimum intron length that may be found during split-segment search. The default is 50.
