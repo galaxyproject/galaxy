@@ -511,7 +511,7 @@ extend(DataManager.prototype, Cache.prototype, {
             console.log("\t", this.key_ary[i], this.obj_cache[this.key_ary[i]]);
         }
         */
-        
+                
         // Look for entry and return if it's a deferred or if data available is compatible with mode.
         var entry = this.get(low, high);
         if ( entry && 
@@ -1502,7 +1502,17 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.add_label_track( new LabelTrack( this, { content_div: this.top_labeltrack } ) );
         this.add_label_track( new LabelTrack( this, { content_div: this.nav_labeltrack } ) );
         
-        $(window).bind("resize", function() { view.resize_window(); });
+        $(window).bind("resize", function() {
+            // Stop previous timer.
+            if (this.resize_timer) {
+                clearTimeout(this.resize_timer);
+            }
+            
+            // When function activated, resize window and redraw.
+            this.resize_timer = setTimeout(function () {
+                view.resize_window();
+            }, 500 );
+        });
         $(document).bind("redraw", function() { view.redraw(); });
         
         this.reset();
@@ -1532,13 +1542,10 @@ extend( View.prototype, DrawableCollection.prototype, {
         
         if (delay) {
             // To aggregate calls, use timer and only navigate once
-            // location has stabilized. 
+            // location has stabilized.
             var self = this;
             this.timer = setTimeout(function () {
-                var chrom = self.chrom_select.val();
-                if (new_chrom === chrom && new_low === self.low && new_high === self.high) {
-                    self.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
-                }
+                self.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
             }, 500 );
         }
         else {
@@ -4956,8 +4963,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Returns true if data can be subsetted.
      */
     can_subset: function(data) {
-        // Do not subset summary tree data or entries with a message.
-        if (data.dataset_type === "summary_tree" || data.message) {
+        // Do not subset summary tree data, entries with a message, or data with no detail.
+        if (data.dataset_type === "summary_tree" || data.message || data.extra_info === "no_detail")  {
             return false;
         }
 
