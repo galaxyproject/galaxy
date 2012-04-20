@@ -1,0 +1,73 @@
+<display id="igb_bed" version="1.0.0" name="display in IGB">
+    
+    <link id="Local" name="Local">
+        <url>http://localhost:7085/UnibrowControl?version=${bed_file.dbkey}&amp;${position}&amp;loadresidues=false&amp;feature_url_0=${bed_file.url}&amp;sym_name_0=${thenicename}&amp;sym_method_0=${bed_file.url}&amp;query_url=${bed_file.url}&amp;server_url=galaxy</url>
+        <param type="data" name="bed_file_for_name" viewable="False"/>
+        <param type="template" name="thenicename" viewable="False" strip="True">
+            #import re
+            #set nm=$bed_file_for_name.name
+            ${re.sub('\W',"_",nm)}
+        </param>
+        <param type="data" name="bed_file" url="${thenicename}_${DATASET_HASH}.bed" strip_https="True" />
+        <param type="template" name="position" strip="True" >
+            #set chrom, start, end = $bed_file.datatype.get_estimated_display_viewport( $bed_file )
+            #if $chrom is not None:
+                seqid=${chrom}&amp;start=${start}&amp;end=${int(end) + 1}
+            #else:
+                seqid=&amp;start=&amp;end=
+            #end if
+        </param>
+    </link>
+    
+    <link id="Web" name="Web">
+        <url>$jnlp.url</url>
+        <param type="data" name="bed_file_for_name" viewable="False"/>
+        <param type="template" name="thenicename" viewable="False" strip="True">
+            #import re
+            #set nm=$bed_file_for_name.name
+            ${re.sub('\W',"_",nm)}
+        </param>
+        <param type="data" name="bed_file" url="${thenicename}_${DATASET_HASH}.bed" strip_https="True" />
+        <param type="template" name="position" strip="True" >
+            #set chrom, start, end = $bed_file.datatype.get_estimated_display_viewport( $bed_file )
+            #if $chrom is not None:
+                seqid=${chrom}&amp;start=${start}&amp;end=${int(end) + 1}
+            #else:
+                seqid=&amp;start=&amp;end=
+            #end if
+        </param>
+        <param type="template" name="jnlp" url="${thenicename}_${DATASET_HASH}.jnlp" viewable="True" strip_https="True" mimetype="application/x-java-jnlp-file">
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;jnlp spec=&quot;6.0+&quot; version=&quot;&quot; codebase=&quot;http://www.bioviz.org/igb/releases/current/&quot; &gt;
+	&lt;information&gt;
+		&lt;title&gt;IGB&lt;/title&gt;
+		&lt;vendor&gt;Genoviz Project&lt;/vendor&gt;
+		&lt;homepage href=&quot;http://genoviz.sourceforge.net/&quot; /&gt;
+		&lt;description&gt;Integrated Genome Browser&lt;/description&gt;
+		&lt;icon href=&quot;igb.gif&quot;/&gt;
+		&lt;offline-allowed/&gt;
+		&lt;shortcut online=&quot;true&quot;&gt;
+			&lt;desktop/&gt;
+			&lt;menu submenu=&quot;IGB&quot; /&gt;
+		&lt;/shortcut&gt;
+	&lt;/information&gt;
+	&lt;security&gt;
+		&lt;all-permissions/&gt;
+	&lt;/security&gt;
+	&lt;resources&gt;
+		&lt;java version=&quot;1.6+&quot; initial-heap-size=&quot;32m&quot; max-heap-size=&quot;1024m&quot;/&gt;
+		&lt;jar href=&quot;igb_exe.jar&quot; main=&quot;true&quot; /&gt;
+                &lt;jar href=&quot;igb-i18n.jar&quot; /&gt;
+                &lt;property name=&quot;apple.laf.useScreenMenuBar&quot; value=&quot;true&quot; /&gt;
+		&lt;property name=&quot;http.agent&quot; value=&quot;IGB (Webstart)&quot; /&gt;
+	&lt;/resources&gt;
+	&lt;application-desc main-class=&quot;com.affymetrix.main.Main&quot;&gt;
+		&lt;argument&gt;-prefs&lt;/argument&gt;
+		&lt;argument&gt;http://www.bioviz.org/igb/releases/current/igb_prefs.xml&lt;/argument&gt;
+		&lt;argument&gt;-href&lt;/argument&gt;
+                &lt;argument&gt;http://localhost:7085/UnibrowControl?version=${bed_file.dbkey}&amp;${position}&amp;loadresidues=false&amp;feature_url_0=${bed_file.url}&amp;sym_name_0=${thenicename}&amp;sym_method_0=${bed_file.url}&amp;query_url=${bed_file.url}&amp;server_url=galaxy &lt;/argument&gt;
+	&lt;/application-desc&gt;
+&lt;/jnlp&gt;
+        </param>
+    </link>
+</display>
