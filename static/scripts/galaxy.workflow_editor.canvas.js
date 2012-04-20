@@ -492,8 +492,23 @@ $.extend( Workflow.prototype, {
             // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
             $.each(this.nodes, function (k, node ){
                 if (node.type === 'tool'){
-                    node.post_job_actions = {};
-                    node_changed = true;
+                    var node_changed = false;
+                    if (node.post_job_actions == null){
+                        node.post_job_actions = {};
+                        node_changed = true;
+                    }
+                    var pjas_to_rem = [];
+                    $.each(node.post_job_actions, function(pja_id, pja){
+                        if (pja.action_type == "HideDatasetAction"){
+                            pjas_to_rem.push(pja_id);
+                        }
+                    });
+                    if (pjas_to_rem.length > 0 && node == workflow.active_node) {
+                        $.each(pjas_to_rem, function(i, pja_name){
+                            node_changed = true;
+                            delete node.post_job_actions[pja_name];
+                        });
+                    }
                     if (using_workflow_outputs){
                         $.each(node.output_terminals, function(ot_id, ot){
                             var create_pja = true;
