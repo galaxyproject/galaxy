@@ -10,6 +10,7 @@
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
       <display file="igv/bam.xml" />
+      <display file="igb/bam.xml" />
     </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
@@ -19,6 +20,7 @@
       <converter file="bed_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
       <!-- <display file="ucsc/interval_as_bed.xml" /> -->
       <display file="genetrack.xml" />
+      <display file="igb/bed.xml" />
     </datatype>
     <datatype extension="bedgraph" type="galaxy.datatypes.interval:BedGraph" display_in_upload="true" />
     <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
@@ -31,9 +33,11 @@
     </datatype>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml" />
+      <display file="igb/bb.xml" />
     </datatype>
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigwig.xml" />
+      <display file="igb/bigwig.xml" />
     </datatype>
     <!-- MSI added Datatypes -->
     <datatype extension="csv" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true" /> <!-- FIXME: csv is 'tabular'ized data, but not 'tab-delimited'; the class used here is intended for 'tab-delimited' -->
@@ -176,6 +180,7 @@
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
       <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
+      <display file="igb/wig.xml" />
     </datatype>
     <datatype extension="summary_tree" type="galaxy.datatypes.binary:Binary" subclass="True" />
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="True" />
