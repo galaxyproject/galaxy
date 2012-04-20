@@ -3,7 +3,6 @@ Middleware for handling hg authentication for users pushing change sets to local
 """
 import os, logging
 from sqlalchemy import *
-from mercurial import ui, hg
 from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import REMOTE_USER, AUTH_TYPE
 

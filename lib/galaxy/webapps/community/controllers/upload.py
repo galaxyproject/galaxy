@@ -3,7 +3,7 @@ from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
 from common import *
-from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file
+from galaxy.util.shed_util import get_configured_ui, handle_sample_tool_data_table_conf_file
 from mercurial import hg, ui, commands
 
 log = logging.getLogger( __name__ )
@@ -144,7 +144,7 @@ class UploadController( BaseUIController ):
                     handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
                 if ok:
                     # Update the repository files for browsing.
-                    update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
+                    update_repository( repo )
                     # Get the new repository tip.
                     if tip != repository.tip:
                         if ( isgzip or isbz2 ) and uncompress_file:

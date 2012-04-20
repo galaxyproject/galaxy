@@ -10,6 +10,7 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
+from galaxy.util.shed_util import get_configured_ui
 from common import *
 from mercurial import hg, ui, patch, commands
 
@@ -792,18 +793,33 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # Tell the caller if the repository includes Galaxy tools so the page
         # enabling selection of the tool panel section can be displayed.
         includes_tools = 'tools' in repository_metadata.metadata
+        # Get the changelog rev for this changeset_revision.
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
         repo_info_dict = {}
-        repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
+        repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision, str( ctx.rev() ) )
         encoded_repo_info_dict = encode( repo_info_dict )
         # Redirect back to local Galaxy to perform install.
         url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s' % \
             ( galaxy_url, url_for( '/', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
         return trans.response.send_redirect( url )
     @web.expose
+    def get_ctx_rev( self, trans, **kwd ):
+        """Given a repository and changeset_revision, return the correct ctx.rev() value."""
+        repository_name = kwd[ 'name' ]
+        repository_owner = kwd[ 'owner' ]
+        changeset_revision = kwd[ 'changeset_revision' ]
+        repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
+        if ctx:
+            return str( ctx.rev() )
+        return ''
+    @web.expose
     def get_readme( self, trans, **kwd ):
-        """
-        If the received changeset_revision includes a file named readme (case ignored), return it's contents.
-        """
+        """If the received changeset_revision includes a file named readme (case ignored), return it's contents."""
         repository_name = kwd[ 'name' ]
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
@@ -903,13 +919,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             fh.close()
                             if not ( check_binary( tmp_filename ) or check_image( tmp_filename ) or check_gzip( tmp_filename )[ 0 ]
                                      or check_bz2( tmp_filename )[ 0 ] or check_zip( tmp_filename ) ):
-                                try:
-                                    tool = load_tool( trans, tmp_filename )
-                                    valid = True
-                                except:
-                                    valid = False
-                                if valid and tool is not None:
-                                    tool_guids.append( generate_tool_guid( trans, repository, tool ) )
+                                # Make sure we're looking at a tool config and not a display application config or something else.
+                                element_tree = util.parse_xml( tmp_filename )
+                                element_tree_root = element_tree.getroot()
+                                if element_tree_root.tag == 'tool':
+                                    try:
+                                        tool = load_tool( trans, tmp_filename )
+                                        valid = True
+                                    except:
+                                        valid = False
+                                    if valid and tool is not None:
+                                        tool_guids.append( generate_tool_guid( trans, repository, tool ) )
                             try:
                                 os.unlink( tmp_filename )
                             except:
@@ -927,11 +947,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                 metadata_tool_guids.append( tool_dict[ 'guid' ] )
                             metadata_tool_guids.sort()
                             if tool_guids == metadata_tool_guids:
-                                # We've found the repository_metadata record whose changeset_revision
-                                # value has been updated.
+                                # We've found the repository_metadata record whose changeset_revision value has been updated.
                                 if from_update_manager:
                                     return update
                                 url += repository_metadata.changeset_revision
+                                # Get the ctx_rev for the discovered changeset_revision.
+                                latest_ctx = get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
+                                url += '&latest_ctx_rev=%s' % str( latest_ctx.rev() )
                                 found = True
                                 break
                         if not found:
@@ -941,7 +963,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                 return no_update
                             url += changeset_revision
                     else:
-                        # There are not tools in the changeset_revision, so no tool updates are possible.
+                        # There are no tools in the changeset_revision, so no tool updates are possible.
                         if from_update_manager:
                             return no_update
                         url += changeset_revision
@@ -1168,13 +1190,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         new_hgweb_config.flush()
         shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     def __create_hgrc_file( self, repository ):
-        # At this point, an entry for the repository is required to be in the hgweb.config
-        # file so we can call repository.repo_path.
-        # Since we support both http and https, we set push_ssl to False to override
-        # the default (which is True) in the mercurial api.
-        # The hg purge extension purges all files and directories not being tracked by
-        # mercurial in the current repository.  It'll remove unknown files and empty
-        # directories.  This is used in the update_for_browsing() method.
+        # At this point, an entry for the repository is required to be in the hgweb.config file so we can call repository.repo_path.
+        # Since we support both http and https, we set push_ssl to False to override the default (which is True) in the mercurial api.
+        # The hg purge extension purges all files and directories not being tracked by mercurial in the current repository.  It'll
+        # remove unknown files and empty directories.  This is not currently used because it is not supported in the mercurial API.
         repo = hg.repository( get_configured_ui(), path=repository.repo_path )
         fp = repo.opener( 'hgrc', 'wb' )
         fp.write( '[paths]\n' )
@@ -1198,7 +1217,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         current_working_dir = os.getcwd()
         # Update repository files for browsing.
-        update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
+        update_repository( repo )
         is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
@@ -1314,7 +1333,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     repo.commit( user=trans.user.username, text=commit_message )
                 handle_email_alerts( trans, repository )
                 # Update the repository files for browsing.
-                update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
+                update_repository( repo )
                 # Get the new repository tip.
                 repo = hg.repository( get_configured_ui(), repo_dir )
                 if tip != repository.tip:
@@ -1868,7 +1887,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         break
                 if found:
                     break
-            metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, repository_id, ctx, changeset_revision, repo_dir )
+            metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, repository_id, ctx, changeset_revision, repo, repo_dir )
         else:
             for filename in ctx:
                 if filename == tool_config:

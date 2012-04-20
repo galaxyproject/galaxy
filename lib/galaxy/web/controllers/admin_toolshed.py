@@ -3,6 +3,7 @@ from galaxy.web.controllers.admin import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
 from galaxy import tools
+from mercurial import hg
 
 log = logging.getLogger( __name__ )
 
@@ -290,58 +291,45 @@ class AdminToolshed( AdminGalaxy ):
             current_working_dir = os.getcwd()
             installed_repository_names = []
             for name, repo_info_tuple in repo_info_dict.items():
-                description, repository_clone_url, changeset_revision = repo_info_tuple
+                description, repository_clone_url, changeset_revision, ctx_rev = repo_info_tuple
                 clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, changeset_revision ) )
                 relative_install_dir = os.path.join( clone_dir, name )
                 if os.path.exists( clone_dir ):
                     # Repository and revision has already been cloned.
                     message += 'Revision <b>%s</b> of repository <b>%s</b> was previously installed.<br/>' % ( changeset_revision, name )
                 else:
-                    returncode, tmp_name = clone_repository( name, clone_dir, current_working_dir, repository_clone_url )
-                    if returncode == 0:
-                        returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, changeset_revision )
-                        if returncode == 0:
-                            owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
-                            tool_shed = clean_tool_shed_url( tool_shed_url )
-                            tool_shed_repository, metadata_dict = load_repository_contents( trans,
-                                                                                            repository_name=name,
-                                                                                            description=description,
-                                                                                            owner=owner,
-                                                                                            changeset_revision=changeset_revision,
-                                                                                            tool_path=tool_path,
-                                                                                            repository_clone_url=repository_clone_url,
-                                                                                            relative_install_dir=relative_install_dir,
-                                                                                            current_working_dir=current_working_dir,
-                                                                                            tmp_name=tmp_name,
-                                                                                            tool_shed=tool_shed,
-                                                                                            tool_section=tool_section,
-                                                                                            shed_tool_conf=shed_tool_conf )
-                            if 'tools' in metadata_dict:
-                                # Get the tool_versions from the tool shed for each tool in the installed change set.
-                                url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-                                    ( tool_shed_url, name, owner, changeset_revision )
-                                response = urllib2.urlopen( url )
-                                text = response.read()
-                                response.close()
-                                if text:
-                                    tool_version_dicts = from_json_string( text )
-                                    handle_tool_versions( trans.app, tool_version_dicts, tool_shed_repository )
-                                else:
-                                    message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % name
-                                    message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
-                                    message += "from the installed repository's <b>Repository Actions</b> menu.  "
-                                    status = 'error'
-                            installed_repository_names.append( name )
+                    clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+                    owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
+                    tool_shed = clean_tool_shed_url( tool_shed_url )
+                    tool_shed_repository, metadata_dict = load_repository_contents( trans,
+                                                                                    repository_name=name,
+                                                                                    description=description,
+                                                                                    owner=owner,
+                                                                                    changeset_revision=changeset_revision,
+                                                                                    ctx_rev=ctx_rev,
+                                                                                    tool_path=tool_path,
+                                                                                    repository_clone_url=repository_clone_url,
+                                                                                    relative_install_dir=relative_install_dir,
+                                                                                    current_working_dir=current_working_dir,
+                                                                                    tool_shed=tool_shed,
+                                                                                    tool_section=tool_section,
+                                                                                    shed_tool_conf=shed_tool_conf )
+                    if 'tools' in metadata_dict:
+                        # Get the tool_versions from the tool shed for each tool in the installed change set.
+                        url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                            ( tool_shed_url, name, owner, changeset_revision )
+                        response = urllib2.urlopen( url )
+                        text = response.read()
+                        response.close()
+                        if text:
+                            tool_version_dicts = from_json_string( text )
+                            handle_tool_versions( trans.app, tool_version_dicts, tool_shed_repository )
                         else:
-                            tmp_stderr = open( tmp_name, 'rb' )
-                            message += '%s<br/>' % tmp_stderr.read()
-                            tmp_stderr.close()
+                            message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % name
+                            message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
+                            message += "from the installed repository's <b>Repository Actions</b> menu.  "
                             status = 'error'
-                    else:
-                        tmp_stderr = open( tmp_name, 'rb' )
-                        message += '%s<br/>' % tmp_stderr.read()
-                        tmp_stderr.close()
-                        status = 'error'
+                    installed_repository_names.append( name )
             if installed_repository_names:                
                 installed_repository_names.sort()
                 num_repositories_installed = len( installed_repository_names )
@@ -375,7 +363,7 @@ class AdminToolshed( AdminGalaxy ):
             if len( decoded_repo_info_dict ) == 1:
                 name = decoded_repo_info_dict.keys()[ 0 ]
                 repo_info_tuple = decoded_repo_info_dict[ name ]
-                description, repository_clone_url, changeset_revision = repo_info_tuple
+                description, repository_clone_url, changeset_revision, ctx_rev = repo_info_tuple
                 owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
                 url = '%s/repository/get_readme?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( tool_shed_url, name, owner, changeset_revision )
                 response = urllib2.urlopen( url )
@@ -444,79 +432,82 @@ class AdminToolshed( AdminGalaxy ):
         repository_clone_url = generate_clone_url( trans, repository )
         clone_dir = os.path.join( tool_path, self.__generate_tool_path( repository_clone_url, repository.installed_changeset_revision ) )
         relative_install_dir = os.path.join( clone_dir, repository.name )
-        returncode, tmp_name = clone_repository( repository.name, clone_dir, current_working_dir, repository_clone_url )
-        if returncode == 0:
-            returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, repository.installed_changeset_revision )
-            if returncode == 0:
-                if repository.includes_tools:
-                    # Get the location in the tool panel in which each tool was originally loaded.
-                    metadata = repository.metadata
-                    if 'tool_panel_section' in metadata:
-                        tool_panel_dict = metadata[ 'tool_panel_section' ]
-                        if not tool_panel_dict:
-                            tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+        tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
+        if not repository.ctx_rev:
+            # The ctx_rev column was introduced late, so may be null for some installed ToolShedRepositories.
+            ctx_rev = get_ctx_rev( tool_shed_url, repository.name, repository.owner, repository.installed_changeset_revision )
+        else:
+            ctx_rev = repository.ctx_rev
+        clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+        if repository.includes_tools:
+            # Get the location in the tool panel in which each tool was originally loaded.
+            metadata = repository.metadata
+            if 'tool_panel_section' in metadata:
+                tool_panel_dict = metadata[ 'tool_panel_section' ]
+                if not tool_panel_dict:
+                    tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+            else:
+                tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+            # TODO: Fix this to handle the case where the tools are distributed across in more than 1 ToolSection.  The
+            # following assumes everything was loaded into 1 section (or no section) in the tool panel.
+            tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+            tool_section_dict = tool_section_dicts[ 0 ]
+            original_section_id = tool_section_dict[ 'id' ]
+            original_section_name = tool_section_dict[ 'name' ]
+            if no_changes_checked:
+                if original_section_id in [ '' ]:
+                    tool_section = None
+                else:
+                    section_key = 'section_%s' % str( original_section_id )
+                    if section_key in trans.app.toolbox.tool_panel:
+                        tool_section = trans.app.toolbox.tool_panel[ section_key ]
                     else:
-                        tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
-                    # TODO: Fix this to handle the case where the tools are distributed across in more than 1 ToolSection.  The
-                    # following assumes everything was loaded into 1 section (or no section) in the tool panel.
-                    tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
-                    tool_section_dict = tool_section_dicts[ 0 ]
-                    original_section_id = tool_section_dict[ 'id' ]
-                    original_section_name = tool_section_dict[ 'name' ]
-                    if no_changes_checked:
-                        if original_section_id in [ '' ]:
-                            tool_section = None
-                        else:
-                            section_key = 'section_%s' % str( original_section_id )
-                            if section_key in trans.app.toolbox.tool_panel:
-                                tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                            else:
-                                # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
-                                elem = Element( 'section' )
-                                elem.attrib[ 'name' ] = original_section_name
-                                elem.attrib[ 'id' ] = original_section_id
-                                elem.attrib[ 'version' ] = ''
-                                tool_section = tools.ToolSection( elem )
-                                trans.app.toolbox.tool_panel[ section_key ] = tool_section
+                        # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
+                        elem = Element( 'section' )
+                        elem.attrib[ 'name' ] = original_section_name
+                        elem.attrib[ 'id' ] = original_section_id
+                        elem.attrib[ 'version' ] = ''
+                        tool_section = tools.ToolSection( elem )
+                        trans.app.toolbox.tool_panel[ section_key ] = tool_section
+            else:
+                # The user elected to change the tool panel section to contain the tools.
+                new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
+                tool_panel_section = kwd.get( 'tool_panel_section', '' )
+                if new_tool_panel_section:
+                    section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+                    new_section_key = 'section_%s' % str( section_id )
+                    if new_section_key in trans.app.toolbox.tool_panel:
+                        # Appending a tool to an existing section in trans.app.toolbox.tool_panel
+                        log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
+                        tool_section = trans.app.toolbox.tool_panel[ new_section_key ]
                     else:
-                        # The user elected to change the tool panel section to contain the tools.
-                        new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
-                        tool_panel_section = kwd.get( 'tool_panel_section', '' )
-                        if new_tool_panel_section:
-                            section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-                            new_section_key = 'section_%s' % str( section_id )
-                            if new_section_key in trans.app.toolbox.tool_panel:
-                                # Appending a tool to an existing section in trans.app.toolbox.tool_panel
-                                log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
-                                tool_section = trans.app.toolbox.tool_panel[ new_section_key ]
-                            else:
-                                # Appending a new section to trans.app.toolbox.tool_panel
-                                log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
-                                elem = Element( 'section' )
-                                elem.attrib[ 'name' ] = new_tool_panel_section
-                                elem.attrib[ 'id' ] = section_id
-                                elem.attrib[ 'version' ] = ''
-                                tool_section = tools.ToolSection( elem )
-                                trans.app.toolbox.tool_panel[ new_section_key ] = tool_section
-                        elif tool_panel_section:
-                            section_key = 'section_%s' % tool_panel_section
-                            tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                        else:
-                            tool_section = None
-                tool_shed_repository, metadata_dict = load_repository_contents( trans,
-                                                                                repository_name=repository.name,
-                                                                                description=repository.description,
-                                                                                owner=repository.owner,
-                                                                                changeset_revision=repository.installed_changeset_revision,
-                                                                                tool_path=tool_path,
-                                                                                repository_clone_url=repository_clone_url,
-                                                                                relative_install_dir=relative_install_dir,
-                                                                                current_working_dir=current_working_dir,
-                                                                                tmp_name=tmp_name,
-                                                                                tool_shed=repository.tool_shed,
-                                                                                tool_section=tool_section,
-                                                                                shed_tool_conf=shed_tool_conf )
-                repository.uninstalled = False
+                        # Appending a new section to trans.app.toolbox.tool_panel
+                        log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
+                        elem = Element( 'section' )
+                        elem.attrib[ 'name' ] = new_tool_panel_section
+                        elem.attrib[ 'id' ] = section_id
+                        elem.attrib[ 'version' ] = ''
+                        tool_section = tools.ToolSection( elem )
+                        trans.app.toolbox.tool_panel[ new_section_key ] = tool_section
+                elif tool_panel_section:
+                    section_key = 'section_%s' % tool_panel_section
+                    tool_section = trans.app.toolbox.tool_panel[ section_key ]
+                else:
+                    tool_section = None
+        tool_shed_repository, metadata_dict = load_repository_contents( trans,
+                                                                        repository_name=repository.name,
+                                                                        description=repository.description,
+                                                                        owner=repository.owner,
+                                                                        changeset_revision=repository.installed_changeset_revision,
+                                                                        ctx_rev=ctx_rev,
+                                                                        tool_path=tool_path,
+                                                                        repository_clone_url=repository_clone_url,
+                                                                        relative_install_dir=relative_install_dir,
+                                                                        current_working_dir=current_working_dir,
+                                                                        tool_shed=repository.tool_shed,
+                                                                        tool_section=tool_section,
+                                                                        shed_tool_conf=shed_tool_conf )
+        repository.uninstalled = False
         repository.deleted = False
         trans.sa_session.add( repository )
         trans.sa_session.flush()
@@ -606,41 +597,32 @@ class AdminToolshed( AdminGalaxy ):
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         latest_changeset_revision = params.get( 'latest_changeset_revision', None )
+        latest_ctx_rev = params.get( 'latest_ctx_rev', None )
         repository = get_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed_url, name, owner, changeset_revision )
-        if changeset_revision and latest_changeset_revision:
+        if changeset_revision and latest_changeset_revision and latest_ctx_rev:
             if changeset_revision == latest_changeset_revision:
                 message = "The cloned tool shed repository named '%s' is current (there are no updates available)." % name
             else:
                 current_working_dir = os.getcwd()
                 shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )
                 if relative_install_dir:
-                    repo_files_dir = os.path.join( relative_install_dir, name )
-                    returncode, tmp_name = pull_repository( current_working_dir, repo_files_dir, name )
-                    if returncode == 0:
-                        returncode, tmp_name = update_repository( current_working_dir, repo_files_dir, latest_changeset_revision )
-                        if returncode == 0:
-                            # Update the repository metadata.
-                            repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
-                            tool_shed = clean_tool_shed_url( tool_shed_url )
-                            metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url )
-                            repository.metadata = metadata_dict
-                            # Update the repository changeset_revision in the database.
-                            repository.changeset_revision = latest_changeset_revision
-                            repository.update_available = False
-                            trans.sa_session.add( repository )
-                            trans.sa_session.flush()
-                            message = "The cloned repository named '%s' has been updated to change set revision '%s'." % \
-                                ( name, latest_changeset_revision )
-                        else:
-                            tmp_stderr = open( tmp_name, 'rb' )
-                            message = tmp_stderr.read()
-                            tmp_stderr.close()
-                            status = 'error'
-                    else:
-                        tmp_stderr = open( tmp_name, 'rb' )
-                        message = tmp_stderr.read()
-                        tmp_stderr.close()
-                        status = 'error'
+                    repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, name ) )
+                    repo = hg.repository( get_configured_ui(), path=repo_files_dir )
+                    repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
+                    pull_repository( repo, repository_clone_url, latest_ctx_rev )
+                    update_repository( repo, latest_ctx_rev )
+                    # Update the repository metadata.
+                    tool_shed = clean_tool_shed_url( tool_shed_url )
+                    metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url )
+                    repository.metadata = metadata_dict
+                    # Update the repository changeset_revision in the database.
+                    repository.changeset_revision = latest_changeset_revision
+                    repository.ctx_rev = latest_ctx_rev
+                    repository.update_available = False
+                    trans.sa_session.add( repository )
+                    trans.sa_session.flush()
+                    message = "The cloned repository named '%s' has been updated to change set revision '%s'." % \
+                        ( name, latest_changeset_revision )
                 else:
                     message = "The directory containing the cloned repository named '%s' cannot be found." % name
                     status = 'error'

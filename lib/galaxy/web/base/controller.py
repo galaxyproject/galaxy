@@ -1325,8 +1325,7 @@ class Admin( object ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
-            cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                                  .first()
+            cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ).first()
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         webapp=webapp,
                                         cloned_repositories=cloned_repositories,
