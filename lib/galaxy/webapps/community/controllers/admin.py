@@ -3,6 +3,7 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util import inflector
+from galaxy.util.shed_util import get_configured_ui
 from common import *
 from repository import RepositoryListGrid, CategoryListGrid
 from mercurial import hg

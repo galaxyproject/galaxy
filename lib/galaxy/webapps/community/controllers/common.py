@@ -5,7 +5,7 @@ from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-from galaxy.util.shed_util import copy_sample_loc_file, generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
+from galaxy.util.shed_util import copy_sample_loc_file, get_configured_ui, generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
 from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, to_html_escaped, to_html_str, update_repository
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
@@ -283,7 +283,7 @@ def new_workflow_metadata_required( trans, id, metadata_dict ):
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
     # record is not needed.
     return False
-def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo_dir ):
+def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo, repo_dir ):
     """
     Browse the repository tip files on disk to generate metadata.  This is faster than the
     generate_metadata_for_changeset_revision() method below because fctx.data() does not have
@@ -291,8 +291,7 @@ def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, re
     invalid_tool_configs here, while they are ignored in older revisions.
     """
     # If a push from the command line is occurring, update the repository files on disk before setting metadata.
-    returncode, tmp_name = update_repository( os.getcwd(), os.path.abspath( repo_dir ), changeset_revision )
-    # TODO: handle error if returncode is not 0?
+    update_repository( repo, str( ctx.rev() ) )
     metadata_dict = {}
     invalid_files = []
     invalid_tool_configs = []
@@ -449,7 +448,7 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
     invalid_files = []
     if ctx is not None:
         if changeset_revision == repository.tip:
-            metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo_dir )
+            metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo, repo_dir )
         else:
             metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, changeset_revision, repo_dir )
         if metadata_dict:
@@ -543,7 +542,7 @@ def reset_all_repository_metadata( trans, id, **kwd ):
             current_changeset_revision = str( repo.changectx( changeset ) )
             ctx = get_changectx_for_changeset( repo, current_changeset_revision )
             if current_changeset_revision == repository.tip:
-                current_metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, current_changeset_revision, repo_dir )
+                current_metadata_dict, invalid_files = generate_metadata_for_repository_tip( trans, id, ctx, current_changeset_revision, repo, repo_dir )
             else:
                 current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, id, ctx, current_changeset_revision, repo_dir )
             if current_metadata_dict:
@@ -780,15 +779,6 @@ def change_set_is_malicious( trans, id, changeset_revision, **kwd ):
     if repository_metadata:
         return repository_metadata.malicious
     return False
-def get_configured_ui():
-    # Configure any desired ui settings.
-    _ui = ui.ui()
-    # The following will suppress all messages.  This is
-    # the same as adding the following setting to the repo
-    # hgrc file' [ui] section:
-    # quiet = True
-    _ui.setconfig( 'ui', 'quiet', True )
-    return _ui
 def get_user( trans, id ):
     """Get a user from the database by id"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
@@ -891,9 +881,10 @@ def check_file_contents( trans ):
                 return True
     return False
 def update_for_browsing( trans, repository, current_working_dir, commit_message='' ):
-    # Make a copy of a repository's files for browsing, remove from disk all files that
-    # are not tracked, and commit all added, modified or removed files that have not yet
-    # been committed.
+    # This method id deprecated, but we'll keep it around for a while in case we need it.  The problem is that hg purge
+    # is not supported by the mercurial API.
+    # Make a copy of a repository's files for browsing, remove from disk all files that are not tracked, and commit all
+    # added, modified or removed files that have not yet been committed.
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
     # The following will delete the disk copy of only the files in the repository.

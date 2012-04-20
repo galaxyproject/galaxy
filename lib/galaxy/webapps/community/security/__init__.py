@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify
 from galaxy.model.orm import *
-from mercurial import hg, ui
 
 log = logging.getLogger(__name__)
 
