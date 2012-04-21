@@ -919,10 +919,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             fh.close()
                             if not ( check_binary( tmp_filename ) or check_image( tmp_filename ) or check_gzip( tmp_filename )[ 0 ]
                                      or check_bz2( tmp_filename )[ 0 ] or check_zip( tmp_filename ) ):
-                                # Make sure we're looking at a tool config and not a display application config or something else.
-                                element_tree = util.parse_xml( tmp_filename )
-                                element_tree_root = element_tree.getroot()
-                                if element_tree_root.tag == 'tool':
+                                try:
+                                    # Make sure we're looking at a tool config and not a display application config or something else.
+                                    element_tree = util.parse_xml( tmp_filename )
+                                    element_tree_root = element_tree.getroot()
+                                    is_tool = element_tree_root.tag == 'tool'
+                                except:
+                                    is_tool = False
+                                if is_tool:
                                     try:
                                         tool = load_tool( trans, tmp_filename )
                                         valid = True
