@@ -924,7 +924,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     element_tree = util.parse_xml( tmp_filename )
                                     element_tree_root = element_tree.getroot()
                                     is_tool = element_tree_root.tag == 'tool'
-                                except:
+                                except Exception, e:
+                                    log.debug( "Error parsing %s, exception: %s" % ( tmp_filename, str( e ) ) )
                                     is_tool = False
                                 if is_tool:
                                     try:

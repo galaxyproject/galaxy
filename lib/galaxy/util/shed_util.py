@@ -411,10 +411,15 @@ def generate_metadata( toolbox, relative_install_dir, repository_clone_url ):
                     full_path = os.path.abspath( os.path.join( root, name ) )
                     if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
                              or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
-                        # Make sure we're looking at a tool config and not a display application config or something else.
-                        element_tree = util.parse_xml( full_path )
-                        element_tree_root = element_tree.getroot()
-                        if element_tree_root.tag == 'tool':
+                        try:
+                            # Make sure we're looking at a tool config and not a display application config or something else.
+                            element_tree = util.parse_xml( full_path )
+                            element_tree_root = element_tree.getroot()
+                            is_tool = element_tree_root.tag == 'tool'
+                        except Exception, e:
+                            log.debug( "Error parsing %s, exception: %s" % ( full_path, str( e ) ) )
+                            is_tool = False
+                        if is_tool:
                             try:
                                 tool = toolbox.load_tool( full_path )
                             except Exception, e:
