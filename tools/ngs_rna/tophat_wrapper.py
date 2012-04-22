@@ -171,7 +171,7 @@ def __main__():
                 opts += ' --no-coverage-search'
             if options.microexon_search:
                 opts += ' --microexon-search'
-            if options.single_paired == 'paired':
+            if options.single_paired == 'paired' and options.mate_std_dev:
                 opts += ' --mate-std-dev %s' % options.mate_std_dev
             if options.seg_mismatches:
                 opts += ' --segment-mismatches %d' % int( options.seg_mismatches )
