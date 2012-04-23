@@ -86,8 +86,6 @@ input{font:10px verdana;}
 .icon-button.toggle-expand:hover{background:transparent url(../images/fugue/toggle-expand.png) no-repeat;}
 .icon-button.cross-circle{background:transparent url(../images/fugue/cross-circle-bw.png) no-repeat;margin-right:0px;}
 .icon-button.cross-circle:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
-.icon-button.plus-button{background:transparent url(../images/fugue/plus-button-bw.png) no-repeat;}
-.icon-button.plus-button:hover{background:transparent url(../images/fugue/plus-button.png) no-repeat;}
 .icon-button.block--plus{background:transparent url(../images/fugue/block--plus-bw.png) no-repeat;}
 .icon-button.block--plus:hover{background:transparent url(../images/fugue/block--plus.png) no-repeat;}
 .icon-button.bookmarks{background:transparent url(../images/fugue/bookmarks-bw.png) no-repeat;}

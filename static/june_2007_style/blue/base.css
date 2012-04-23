@@ -751,9 +751,10 @@ div.toolTitleNoSection{padding-bottom:5px;font-weight:bold;}
 .icon-button.go-to-full-screen{background:url(fugue.png) no-repeat 0px -286px;}
 .icon-button.import{background:url(fugue.png) no-repeat 0px -312px;}
 .icon-button.plus-button{background:url(fugue.png) no-repeat 0px -338px;}
-.icon-button.gear{background:url(fugue.png) no-repeat 0px -364px;}
-.icon-button.chart_curve{background:url(fugue.png) no-repeat 0px -390px;}
-.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -416px;}
+.icon-button.plus-button:hover{background:url(fugue.png) no-repeat 0px -364px;}
+.icon-button.gear{background:url(fugue.png) no-repeat 0px -390px;}
+.icon-button.chart_curve{background:url(fugue.png) no-repeat 0px -416px;}
+.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -442px;}
 div.historyItem-error .state-icon{background:url(history-states.png) no-repeat 0px 0px;}
 div.historyItem-empty .state-icon{background:url(history-states.png) no-repeat 0px -25px;}
 div.historyItem-queued .state-icon{background:url(history-states.png) no-repeat 0px -50px;}
