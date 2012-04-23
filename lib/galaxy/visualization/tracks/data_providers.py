@@ -1071,28 +1071,22 @@ class GtfTabixDataProvider( TabixDataProvider ):
             else:
                 feature = []
                 features[ transcript_id ] = feature
-            feature.append( line )
-            
-        # Set up iterator for features.
-        def features_iterator():
-            for transcript_id, feature in features.items():
-                for line in feature: 
-                    yield line
-                    
+            feature.append( GFFInterval( None, line.split( '\t') ) )
+                                
         # Process data.
         filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
         results = []
         message = None
 
-        # TODO: remove reader-wrapper and create features directly.
-        for count, feature in enumerate( GFFReaderWrapper( features_iterator() ) ):
+        for count, intervals in enumerate( features.values() ):
             if count < start_val:
                 continue
             if count-start_val >= max_vals:
                 message = ERROR_MAX_VALS % ( max_vals, "reads" )
                 break
-                
+            
+            feature = GFFFeature( None, intervals=intervals )    
             payload = package_gff_feature( feature, no_detail=no_detail, filter_cols=filter_cols )
             payload.insert( 0, feature.intervals[ 0 ].attributes[ 'transcript_id' ] )
             results.append( payload )
