@@ -876,6 +876,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository = get_repository_by_name_and_owner( trans, name, owner )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
+        latest_ctx = get_changectx_for_changeset( repo, changeset_revision )
         from_update_manager = webapp == 'update_manager'
         if from_update_manager:
             update = 'true'
@@ -889,6 +890,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             # If changeset_revision is the repository tip, we know there are no additional updates for the tools.
             if from_update_manager:
                 return no_update
+            # Return the same value for changeset_revision and latest_changeset_revision.
             url += repository.tip
         else:
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
@@ -902,9 +904,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 else:
                     # Return the same value for changeset_revision and latest_changeset_revision.
                     url += changeset_revision
-                    # Get the ctx_rev for the changeset_revision.
-                    latest_ctx = get_changectx_for_changeset( repo, changeset_revision )
-                    url += '&latest_ctx_rev=%s' % str( latest_ctx.rev() )
             else:
                 # The changeset_revision column in the repository_metadata table has been
                 # updated with a new changeset_revision value since the repository was cloned.
@@ -965,7 +964,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                 url += repository_metadata.changeset_revision
                                 # Get the ctx_rev for the discovered changeset_revision.
                                 latest_ctx = get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
-                                url += '&latest_ctx_rev=%s' % str( latest_ctx.rev() )
                                 found = True
                                 break
                         if not found:
@@ -979,6 +977,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         if from_update_manager:
                             return no_update
                         url += changeset_revision
+        url += '&latest_ctx_rev=%s' % str( latest_ctx.rev() )
         return trans.response.send_redirect( url )
     @web.expose
     def browse_repositories( self, trans, **kwd ):
