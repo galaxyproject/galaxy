@@ -475,13 +475,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
                 # and the user clicked the operation button without checking any of the check boxes.
                 return trans.show_error_message( "No items were selected." )
-        workflow_names = [ item.lower() for item in util.listify( kwd.get( 'workflow_name', '' ) ) ]
-        exact_matches = params.get( 'exact_matches', '' )
-        exact_matches_checked = CheckboxField.is_checked( exact_matches )
-        match_tuples = []
-        ok = True
-        if workflow_names:
-            ok, match_tuples = self.__search_repository_metadata( trans, exact_matches_checked, workflow_names=workflow_names )
+        if 'find_workflows_button' in kwd:
+            workflow_names = [ item.lower() for item in util.listify( kwd.get( 'workflow_name', '' ) ) ]
+            exact_matches = params.get( 'exact_matches', '' )
+            exact_matches_checked = CheckboxField.is_checked( exact_matches )
+            match_tuples = []
+            ok = True
+            if workflow_names:
+                ok, match_tuples = self.__search_repository_metadata( trans, exact_matches_checked, workflow_names=workflow_names )
+            else:
+                ok, match_tuples = self.__search_repository_metadata( trans, exact_matches_checked, workflow_names=[], all_workflows=True )
             if ok:
                 kwd[ 'match_tuples' ] = match_tuples
                 # Render the list view
@@ -506,6 +509,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
             else:
                 message = "No search performed - each field must contain the same number of comma-separated items."
                 status = "error"
+        else:
+            exact_matches_checked = False
+            workflow_names = []
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
         return trans.fill_template( '/webapps/community/repository/find_workflows.mako',
                                     webapp=webapp,
@@ -593,7 +599,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
-    def __search_repository_metadata( self, trans, exact_matches_checked, tool_ids='', tool_names='', tool_versions='', workflow_names='' ):
+    def __search_repository_metadata( self, trans, exact_matches_checked, tool_ids='', tool_names='', tool_versions='', workflow_names='', all_workflows=False ):
         match_tuples = []
         ok = True
         for repository_metadata in trans.sa_session.query( model.RepositoryMetadata ):
@@ -661,6 +667,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     for workflow_name in workflow_names:
                         if self.__in_workflow_dict( workflow_dict, exact_matches_checked, workflow_name ):
                             match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
+            elif all_workflows and 'workflows' in metadata:
+                match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
         return ok, match_tuples
     def __in_workflow_dict( self, workflow_dict, exact_matches_checked, workflow_name ):
         workflow_dict_workflow_name = workflow_dict[ 'name' ].lower()
