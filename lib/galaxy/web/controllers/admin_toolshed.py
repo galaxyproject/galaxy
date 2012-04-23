@@ -2,7 +2,9 @@ import urllib2
 from galaxy.web.controllers.admin import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
-from galaxy import tools
+from galaxy import eggs, tools
+
+eggs.require( 'mercurial' )
 from mercurial import hg
 
 log = logging.getLogger( __name__ )

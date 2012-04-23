@@ -11,6 +11,9 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.model.item_attrs import UsesItemRatings
+
+from galaxy import eggs
+eggs.require('mercurial')
 from mercurial import hg, ui, commands
 
 log = logging.getLogger( __name__ )

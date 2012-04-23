@@ -12,6 +12,9 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from galaxy.util.shed_util import get_configured_ui
 from common import *
+
+from galaxy import eggs
+eggs.require('mercurial')
 from mercurial import hg, ui, patch, commands
 
 log = logging.getLogger( __name__ )

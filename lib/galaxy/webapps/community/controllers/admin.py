@@ -6,7 +6,11 @@ from galaxy.util import inflector
 from galaxy.util.shed_util import get_configured_ui
 from common import *
 from repository import RepositoryListGrid, CategoryListGrid
+
+from galaxy import eggs
+eggs.require('mercurial')
 from mercurial import hg
+
 import logging
 
 log = logging.getLogger( __name__ )

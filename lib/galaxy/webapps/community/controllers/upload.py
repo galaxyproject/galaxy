@@ -4,6 +4,9 @@ from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
 from common import *
 from galaxy.util.shed_util import get_configured_ui, handle_sample_tool_data_table_conf_file
+
+from galaxy import eggs
+eggs.require('mercurial')
 from mercurial import hg, ui, commands
 
 log = logging.getLogger( __name__ )

@@ -6,6 +6,8 @@ from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.model.orm import *
+
+pkg_resources.require( 'mercurial' )
 from mercurial import ui, commands
 
 pkg_resources.require( 'elementtree' )

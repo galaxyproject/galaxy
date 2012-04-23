@@ -1,6 +1,9 @@
 import os, logging
 from galaxy.web.base.controller import *
 from galaxy.webapps.community.controllers.common import *
+
+from galaxy import eggs
+eggs.require('mercurial')
 from mercurial.hgweb.hgwebdir_mod import hgwebdir
 from mercurial.hgweb.request import wsgiapplication
 
