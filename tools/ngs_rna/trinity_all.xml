@@ -1,5 +1,5 @@
 <tool id="trinity_all" name="Trinity" version="0.0.1">
-    <!-- Run all steps of Trinity-Inchworm, Chrysalis, and Butterfly-in a single step. Wrapper status is alpha. -->
+    <!-- Supports Trinity r2012-04-22-beta and perhaps a few versions earlier. Wrapper is alpha status. -->
     <description>De novo assembly of RNA-Seq data</description>
     <requirements>
         <requirement type="package">trinity</requirement>
@@ -35,8 +35,10 @@
             #end if
         #end if
         
+        --kmer_method meryl
+        
         ## CPU and butterfly options.
-        --CPU 4 --run_butterfly --bfly_opts "-V 10 --stderr" > $trinity_log 2>&amp;1 
+        --CPU 4 --bfly_opts "-V 10 --stderr" > $trinity_log 2>&amp;1 
     </command>
     <inputs>
         <conditional name="inputs">
