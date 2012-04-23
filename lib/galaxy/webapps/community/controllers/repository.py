@@ -874,6 +874,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changeset_revision = params.get( 'changeset_revision', None )
         webapp = params.get( 'webapp', 'community' )
         repository = get_repository_by_name_and_owner( trans, name, owner )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
         from_update_manager = webapp == 'update_manager'
         if from_update_manager:
             update = 'true'
@@ -884,8 +886,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
                 ( repository.name, repository.user.username, changeset_revision )
         if changeset_revision == repository.tip:
-            # If changeset_revision is the repository tip, then
-            # we know there are no additional updates for the tools.
+            # If changeset_revision is the repository tip, we know there are no additional updates for the tools.
             if from_update_manager:
                 return no_update
             url += repository.tip
@@ -898,12 +899,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 # repository, then we know there are no additional updates for the tools.
                 if from_update_manager:
                     return no_update
-                url += changeset_revision
+                else:
+                    # Return the same value for changeset_revision and latest_changeset_revision.
+                    url += changeset_revision
+                    # Get the ctx_rev for the changeset_revision.
+                    latest_ctx = get_changectx_for_changeset( repo, changeset_revision )
+                    url += '&latest_ctx_rev=%s' % str( latest_ctx.rev() )
             else:
                 # The changeset_revision column in the repository_metadata table has been
                 # updated with a new changeset_revision value since the repository was cloned.
-                repo_dir = repository.repo_path
-                repo = hg.repository( get_configured_ui(), repo_dir )
                 # Load each tool in the repository's changeset_revision to generate a list of
                 # tool guids, since guids differentiate tools by id and version.
                 ctx = get_changectx_for_changeset( repo, changeset_revision )
