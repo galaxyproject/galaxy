@@ -1024,7 +1024,7 @@ class GFFDataProvider( TracksDataProvider ):
         """
         start, end = int( start ), int( end )
         source = open( self.original_dataset.file_name )
-        
+    
         def features_in_region_iter():
             offset = 0
             for feature in GFFReaderWrapper( source, fix_strand=True ):
@@ -1034,7 +1034,7 @@ class GFFDataProvider( TracksDataProvider ):
                     yield feature, offset
                 offset += feature.raw_size
         return features_in_region_iter()
-        
+            
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
         Process data from an iterator to a format that can be provided to client.
@@ -1056,6 +1056,47 @@ class GFFDataProvider( TracksDataProvider ):
             results.append( payload )
 
             
+        return { 'data': results, 'message': message }
+        
+class GtfTabixDataProvider( TabixDataProvider ):
+    
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        # Loop through lines and group by transcript_id; each group is a feature.
+        features = {}
+        for count, line in enumerate( iterator ):
+            line_attrs = parse_gff_attributes( line.split('\t')[8] )
+            transcript_id = line_attrs[ 'transcript_id' ]
+            if transcript_id in features:
+                feature = features[ transcript_id ]
+            else:
+                feature = []
+                features[ transcript_id ] = feature
+            feature.append( line )
+            
+        # Set up iterator for features.
+        def features_iterator():
+            for transcript_id, feature in features.items():
+                for line in feature: 
+                    yield line
+                    
+        # Process data.
+        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        no_detail = ( "no_detail" in kwargs )
+        results = []
+        message = None
+
+        # TODO: remove reader-wrapper and create features directly.
+        for count, feature in enumerate( GFFReaderWrapper( features_iterator() ) ):
+            if count < start_val:
+                continue
+            if count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "reads" )
+                break
+                
+            payload = package_gff_feature( feature, no_detail=no_detail, filter_cols=filter_cols )
+            payload.insert( 0, feature.intervals[ 0 ].attributes[ 'transcript_id' ] )
+            results.append( payload )
+                        
         return { 'data': results, 'message': message }
 
 #
@@ -1189,6 +1230,7 @@ dataset_type_name_to_data_provider = {
     "tabix": { 
         Vcf: VcfTabixDataProvider,
         Bed: BedTabixDataProvider,
+        Gtf: GtfTabixDataProvider,
         ENCODEPeak: ENCODEPeakTabixDataProvider,
         Interval: IntervalTabixDataProvider,
         "default" : TabixDataProvider },

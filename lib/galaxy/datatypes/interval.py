@@ -953,6 +953,9 @@ class Gtf( Gff ):
         dataset.metadata.attribute_types = attribute_types
         dataset.metadata.attributes = len( attribute_types )
         Gff.set_meta( self, dataset, overwrite = overwrite, skip = i )
+        
+    def get_track_type( self ):
+        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
 
 
 class Wiggle( Tabular, _RemoteCallMixin ):
