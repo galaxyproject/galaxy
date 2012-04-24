@@ -203,11 +203,10 @@ class RenameDatasetAction(DefaultJobAction):
     @classmethod
     def get_config_form(cls, trans):
         form = """
-            if ((pja.action_arguments !== undefined) && (pja.action_arguments.newname !== undefined)){
+            if (pja.action_arguments && pja.action_arguments.newname){
                 p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
                           <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=\\"" + pja.action_arguments.newname.replace(/"/g, "&quot;") + "\\"/>";
             }
-            
             else{
                 p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
                           <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=''/>";
