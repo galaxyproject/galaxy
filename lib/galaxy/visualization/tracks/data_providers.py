@@ -1293,16 +1293,17 @@ def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
                 feature.end
                 ]
     
-    # HACK: remove interval with name 'transcript' from feature. 
+    # HACK: ignore interval with name 'transcript' from feature. 
     # Cufflinks puts this interval in each of its transcripts, 
     # and they mess up trackster by covering the feature's blocks.
     # This interval will always be a feature's first interval,
-    # and the GFF's third column is its feature name. 
+    # and the GFF's third column is its feature name.
+    feature_intervals = feature.intervals
     if feature.intervals[0].fields[2] == 'transcript':
-        feature.intervals = feature.intervals[1:]
+        feature_intervals = feature.intervals[1:]
     # Add blocks.
-    block_sizes = [ (interval.end - interval.start ) for interval in feature.intervals ]
-    block_starts = [ ( interval.start - feature.start ) for interval in feature.intervals ]
+    block_sizes = [ (interval.end - interval.start ) for interval in feature_intervals ]
+    block_starts = [ ( interval.start - feature.start ) for interval in feature_intervals ]
     blocks = zip( block_sizes, block_starts )
     payload.append( [ ( feature.start + block[1], feature.start + block[1] + block[0] ) for block in blocks ] )
     
