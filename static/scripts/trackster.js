@@ -24,6 +24,28 @@ exports.extend = extend;
 };
 
 /**
+ * Provides support for server-state based deferred. Server is repeatedly polled, and when
+ * condition is met, deferred is resolved.
+ */
+var server_state_deferred = function(url, url_params, interval, success_fn) {
+    var deferred = $.Deferred(),
+        go = function() {
+            $.getJSON(url, url_params, function(result) {
+                if (success_fn(result)) {
+                    // Result is good, so resolve.
+                    deferred.resolve(result);
+                }
+                else {
+                    // Result not good, try again.
+                    setTimeout(go, interval);
+                }
+            });
+        };
+    go();
+    return deferred;
+};
+
+/**
  * Find browser's requestAnimationFrame method or fallback on a setTimeout 
  */
 var requestAnimationFrame = (function(){
@@ -2180,7 +2202,7 @@ extend(Tool.prototype, {
         $.extend(url_params, this.get_param_values_dict());
         
         // Run tool.
-        // TODO: rewrite to use $.when():
+        // TODO: rewrite to use server state deferred.
         var json_run_tool = function() {
             $.getJSON(rerun_tool_url, url_params, function(response) {
                 if (response === "no converter") {
@@ -3972,13 +3994,22 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             
             // Tool-execution specific post-draw init:
             
-            // Reset dataset check, data URL, wait time.
-            self.data_url = default_data_url;
-            self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+            // Reset dataset state, wait time.
             self.dataset_state_url = converted_datasets_state_url;
-            // Get dataset state to indexing.
-            $.getJSON(self.dataset_state_url, {dataset_id : self.dataset_id, hda_ldda: self.hda_ldda}, function(track_data) {});
-            
+            self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+
+            // Reset data URL when dataset indexing has completed/when not pending.
+            $.when(
+                // Set up deferred to check dataset state until it is not pending.
+                server_state_deferred(self.dataset_state_url,
+                                      {dataset_id : self.dataset_id, hda_ldda: self.hda_ldda},
+                                      self.data_query_wait,
+                                      function(result) { return result !== "pending" })
+            ).then(function() {
+                // Dataset is indexed, so use default data URL.
+                self.data_url = default_data_url;
+            });
+                        
             // Reset post-draw actions function.
             self.postdraw_actions = self.normal_postdraw_actions;
         };
