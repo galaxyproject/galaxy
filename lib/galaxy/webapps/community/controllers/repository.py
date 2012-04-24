@@ -755,10 +755,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if not includes_tools and 'tools' in repository_metadata.metadata:
                 includes_tools = True
             repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
-            repository_id = trans.security.encode_id( repository.id )
+            # Get the changelog rev for this changeset_revision.
+            repo_dir = repository.repo_path
+            repo = hg.repository( get_configured_ui(), repo_dir )
             changeset_revision = repository_metadata.changeset_revision
+            ctx = get_changectx_for_changeset( repo, changeset_revision )
+            repository_id = trans.security.encode_id( repository.id )
             repository_clone_url = generate_clone_url( trans, repository_id )
-            repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision )
+            repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision, str( ctx.rev() ) )
         return encode( repo_info_dict ), includes_tools
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
