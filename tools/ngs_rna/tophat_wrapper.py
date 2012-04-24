@@ -58,6 +58,15 @@ def __main__():
     parser.add_option( '', '--max-segment-intron', dest='max_segment_intron', help='Maximum intron length that may be found during split-segment search' )
     parser.add_option( '', '--min-coverage-intron', dest='min_coverage_intron', help='Minimum intron length that may be found during coverage search' )
     parser.add_option( '', '--max-coverage-intron', dest='max_coverage_intron', help='Maximum intron length that may be found during coverage search' )
+    
+    # Fusion search options.
+    parser.add_option( '', '--fusion-search', action='store_true', dest='fusion_search' )
+    parser.add_option( '', '--fusion-anchor-length', dest='fusion_anchor_length' )
+    parser.add_option( '', '--fusion-min-dist', dest='fusion_min_dist' )
+    parser.add_option( '', '--fusion-read-mismatches', dest='fusion_read_mismatches' )
+    parser.add_option( '', '--fusion-multireads', dest='fusion_multireads' )
+    parser.add_option( '', '--fusion-multipairs', dest='fusion_multipairs' )
+    parser.add_option( '', '--fusion-ignore-chromosomes', dest='fusion_ignore_chromosomes' )
 
     # Wrapper options.
     parser.add_option( '-1', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format' )
@@ -181,13 +190,22 @@ def __main__():
                 opts += ' --min-segment-intron %d' % int( options.min_segment_intron )
             if options.max_segment_intron:
                 opts += ' --max-segment-intron %d' % int( options.max_segment_intron )
+            
+            # Fusion search options.
+            if options.fusion_search:
+                opts += ' --fusion-search --fusion-anchor-length %i --fusion-min-dist %i --fusion-read-mismatches %i --fusion-multireads %i --fusion-multipairs %i --fusion-ignore-chromosomes %s' % \
+                          ( int( options.fusion_anchor_length ), int( options.fusion_min_dist ),
+                            int( options.fusion_read_mismatches ), int( options.fusion_multireads ),
+                            int( options.fusion_multipairs ), options.fusion_ignore_chromosomes )
+                                        
             cmd = cmd % ( opts, index_path, reads )
+            
         except Exception, e:
             # Clean up temp dirs
             if os.path.exists( tmp_index_dir ):
                 shutil.rmtree( tmp_index_dir )
             stop_err( 'Something is wrong with the alignment parameters and the alignment could not be run\n' + str( e ) )
-    #print cmd
+    print cmd
 
     # Run
     try:
@@ -195,7 +213,6 @@ def __main__():
         tmp_stdout = open( tmp_out, 'wb' )
         tmp_err = tempfile.NamedTemporaryFile().name
         tmp_stderr = open( tmp_err, 'wb' )
-        print cmd
         proc = subprocess.Popen( args=cmd, shell=True, cwd=".", stdout=tmp_stdout, stderr=tmp_stderr )
         returncode = proc.wait()
         tmp_stderr.close()

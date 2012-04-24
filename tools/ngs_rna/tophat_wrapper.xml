@@ -83,6 +83,16 @@
             #if str($params.microexon_search) == "Yes":
                 --microexon-search
             #end if
+            
+            #if $params.fusion_search.do_search == "Yes":
+                --fusion-search
+                --fusion-anchor-length $params.fusion_search.anchor_len
+                --fusion-min-dist $params.fusion_search.min_dist
+                --fusion-read-mismatches $params.fusion_search.read_mismatches
+                --fusion-multireads $params.fusion_search.multireads
+                --fusion-multipairs $params.fusion_search.multipairs
+                --fusion-ignore-chromosomes $params.fusion_search.ignore_chromosomes
+            #end if
         #end if
     </command>
     <inputs>
@@ -200,10 +210,29 @@
                 </when>
                 <when value="No" />
               </conditional>
+              
+              <!-- Microexon search params -->
               <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </param>
+              
+              <!-- Fusion mapping. -->
+              <conditional name="fusion_search">
+                  <param name="do_search" type="select" label="Do Fusion Search">
+                      <option selected="true" value="No">No</option>
+                      <option value="Yes">Yes</option>
+                  </param>
+                  <when value="No" />
+                  <when value="Yes">
+                      <param name="anchor_len" type="integer" value="20" label="Anchor Length" help="A 'supporting' read must map to both sides of a fusion by at least this many bases."/>
+                      <param name="min_dist" type="integer" value="10000000" label="Minimum Distance" help="For intra-chromosomal fusions, TopHat-Fusion tries to find fusions separated by at least this distance."/>
+                      <param name="read_mismatches" type="integer" value="2" label="Read Mismatches" help="Reads support fusions if they map across fusion with at most this many mismatches."/>
+                      <param name="multireads" type="integer" value="2" label="Multireads" help="Reads that map to more than this many places will be ignored. It may be possible that a fusion is supported by reads (or pairs) that map to multiple places."/>
+                      <param name="multipairs" type="integer" value="2" label="Multipairs" help="Pairs that map to more than this many places will be ignored."/>
+                      <param name="ignore_chromosomes" type="text" value='' label="Ignore some chromosomes such as chrM when detecting fusion break points"/>
+                  </when>
+              </conditional>
             </when>  <!-- full -->
       </conditional>  <!-- params -->
     </inputs>
@@ -353,6 +382,14 @@
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
             <param name="microexon_search" value="Yes" />
+            <!-- Fusion search params -->
+            <param name="do_search" value="Yes" />            
+            <param name="anchor_len" value="21" />
+            <param name="min_dist" value="10000021" />
+            <param name="read_mismatches" value="3" />
+            <param name="multireads" value="4" />
+            <param name="multipairs" value="5" />
+            <param name="ignore_chromosomes" value="chrM"/>
             <output name="insertions" file="tophat_out3i.bed" />
             <output name="deletions" file="tophat_out3d.bed" />
             <output name="junctions" file="tophat_out3j.bed" />
@@ -390,6 +427,14 @@
             <param name="no_novel_juncs" value="No" />
             <param name="use_search" value="No" />
             <param name="microexon_search" value="Yes" />
+            <!-- Fusion search params -->
+            <param name="do_search" value="Yes" />            
+            <param name="anchor_len" value="21" />
+            <param name="min_dist" value="10000021" />
+            <param name="read_mismatches" value="3" />
+            <param name="multireads" value="4" />
+            <param name="multipairs" value="5" />
+            <param name="ignore_chromosomes" value="chrM"/>
             <output name="junctions" file="tophat_out4j.bed" />
             <output name="accepted_hits" file="tophat_out4h.bam" compare="sim_size" />
         </test>
