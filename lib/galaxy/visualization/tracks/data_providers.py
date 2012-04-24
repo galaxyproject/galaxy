@@ -1009,9 +1009,9 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
 
         return { 'data': results, 'message': message }
 
-class GFFDataProvider( TracksDataProvider ):
+class RawGFFDataProvider( TracksDataProvider ):
     """
-    Provide data from GFF file.
+    Provide data from GFF file that has not been indexed.
     
     NOTE: this data provider does not use indices, and hence will be very slow
     for large datasets.
@@ -1059,9 +1059,16 @@ class GFFDataProvider( TracksDataProvider ):
         return { 'data': results, 'message': message }
         
 class GtfTabixDataProvider( TabixDataProvider ):
+    """
+    Returns data from GTF datasets that are indexed via tabix.
+    """
     
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         # Loop through lines and group by transcript_id; each group is a feature.
+        
+        # TODO: extend this code or use code in gff_util to process GFF/3 as well
+        # and then create a generic GFFDataProvider that can be used with both
+        # raw and tabix datasets.
         features = {}
         for count, line in enumerate( iterator ):
             line_attrs = parse_gff_attributes( line.split('\t')[8] )

@@ -486,7 +486,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         data = None
         # TODO: for raw data requests, map dataset type to provider using dict in data_providers.py
         if isinstance( dataset.datatype, Gff ):
-            data = GFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
+            data = RawGFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
             data[ 'extra_info' ] = None
         elif isinstance( dataset.datatype, Bed ):
