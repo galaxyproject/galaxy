@@ -356,6 +356,7 @@
     
     <label text="RNA-seq" id="rna_seq" />
     <tool file="ngs_rna/tophat_wrapper.xml" />
+    <tool file="ngs_rna/tophat2_wrapper.xml" />
     <tool file="ngs_rna/tophat_color_wrapper.xml" />
     <tool file="ngs_rna/cufflinks_wrapper.xml" />
     <tool file="ngs_rna/cuffcompare_wrapper.xml" />
