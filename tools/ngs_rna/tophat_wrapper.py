@@ -20,10 +20,6 @@ def __main__():
                                                                                 where each end is 50bp, you should set -r to be 200. There is no default, \
                                                                                 and this parameter is required for paired end runs.')
     parser.add_option( '', '--mate-std-dev', dest='mate_std_dev', help='Standard deviation of distribution on inner distances between male pairs.' )
-    parser.add_option( '-n', '--transcriptome-mismatches', dest='transcriptome_mismatches' )
-    parser.add_option( '', '--genome-read-mismatches', dest='genome_read_mismatches' )
-    parser.add_option( '', '--read-mismatches', dest='read_mismatches' )
-    parser.add_option( '', '--bowtie-n', action="store_true", dest='bowtie_n' )
     parser.add_option( '-a', '--min-anchor-length', dest='min_anchor_length', 
                         help='The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction.' )
     parser.add_option( '-m', '--splice-mismatches', dest='splice_mismatches', help='The maximum number of mismatches that can appear in the anchor region of a spliced alignment.' )
@@ -32,6 +28,7 @@ def __main__():
     parser.add_option( '-I', '--max-intron-length', dest='max_intron_length', 
                         help='The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read.' )
     parser.add_option( '-g', '--max_multihits', dest='max_multihits', help='Maximum number of alignments to be allowed' )
+    parser.add_option( '', '--initial-read-mismatches', dest='initial_read_mismatches', help='Number of mismatches allowed in the initial read mapping' )
     parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
     parser.add_option( '', '--seg-length', dest='seg_length', help='Minimum length of read segments' )
     parser.add_option( '', '--library-type', dest='library_type', help='TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.' )
@@ -56,21 +53,17 @@ def __main__():
     parser.add_option( '', '--no-novel-indels', action="store_true", dest='no_novel_indels', help="Skip indel search. Indel search is enabled by default.")
     # Types of search.
     parser.add_option( '', '--microexon-search', action="store_true", dest='microexon_search', help='With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.')
+    parser.add_option( '', '--closure-search', action="store_true", dest='closure_search', help='Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (<= 50bp)')
+    parser.add_option( '', '--no-closure-search', action="store_false", dest='closure_search' )
     parser.add_option( '', '--coverage-search', action="store_true", dest='coverage_search', help='Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.')
     parser.add_option( '', '--no-coverage-search', action="store_false", dest='coverage_search' )
     parser.add_option( '', '--min-segment-intron', dest='min_segment_intron', help='Minimum intron length that may be found during split-segment search' )
     parser.add_option( '', '--max-segment-intron', dest='max_segment_intron', help='Maximum intron length that may be found during split-segment search' )
+    parser.add_option( '', '--min-closure-exon', dest='min_closure_exon', help='Minimum length for exonic hops in potential splice graph' )
+    parser.add_option( '', '--min-closure-intron', dest='min_closure_intron', help='Minimum intron length that may be found during closure search' )
+    parser.add_option( '', '--max-closure-intron', dest='max_closure_intron', help='Maximum intron length that may be found during closure search' )
     parser.add_option( '', '--min-coverage-intron', dest='min_coverage_intron', help='Minimum intron length that may be found during coverage search' )
     parser.add_option( '', '--max-coverage-intron', dest='max_coverage_intron', help='Maximum intron length that may be found during coverage search' )
-    
-    # Fusion search options.
-    parser.add_option( '', '--fusion-search', action='store_true', dest='fusion_search' )
-    parser.add_option( '', '--fusion-anchor-length', dest='fusion_anchor_length' )
-    parser.add_option( '', '--fusion-min-dist', dest='fusion_min_dist' )
-    parser.add_option( '', '--fusion-read-mismatches', dest='fusion_read_mismatches' )
-    parser.add_option( '', '--fusion-multireads', dest='fusion_multireads' )
-    parser.add_option( '', '--fusion-multipairs', dest='fusion_multipairs' )
-    parser.add_option( '', '--fusion-ignore-chromosomes', dest='fusion_ignore_chromosomes' )
 
     # Wrapper options.
     parser.add_option( '-1', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format' )
@@ -176,25 +169,22 @@ def __main__():
                 # Max options do not work for Tophat v1.2.0, despite documentation to the contrary. (Fixed in version 1.3.1)
                 # need to warn user of this fact
                 #sys.stdout.write( "Max insertion length and max deletion length options don't work in Tophat v1.2.0\n" )
-                
-            if options.transcriptome_mismatches:
-                opts += ' --transcriptome-mismatches %i' % int( options.transcriptome_mismatches )
-            if options.genome_read_mismatches:
-                opts += ' --genome-read-mismatches %i' % int( options.genome_read_mismatches )
-            if options.read_mismatches:
-                opts += ' --read-mismatches %i' % int( options.read_mismatches )
-            if options.bowtie_n:
-                opts += ' --bowtie-n'
 
             # Search type options.
             if options.coverage_search:
                 opts += ' --coverage-search --min-coverage-intron %s --max-coverage-intron %s' % ( options.min_coverage_intron, options.max_coverage_intron )
             else:
                 opts += ' --no-coverage-search'
+            if options.closure_search:
+                opts += ' --closure-search --min-closure-exon %s --min-closure-intron %s --max-closure-intron %s'  % ( options.min_closure_exon, options.min_closure_intron, options.max_closure_intron ) 
+            else:
+                opts += ' --no-closure-search'
             if options.microexon_search:
                 opts += ' --microexon-search'
-            if options.single_paired == 'paired' and options.mate_std_dev:
+            if options.single_paired == 'paired':
                 opts += ' --mate-std-dev %s' % options.mate_std_dev
+            if options.initial_read_mismatches:
+                opts += ' --initial-read-mismatches %d' % int( options.initial_read_mismatches )
             if options.seg_mismatches:
                 opts += ' --segment-mismatches %d' % int( options.seg_mismatches )
             if options.seg_length:
@@ -203,22 +193,13 @@ def __main__():
                 opts += ' --min-segment-intron %d' % int( options.min_segment_intron )
             if options.max_segment_intron:
                 opts += ' --max-segment-intron %d' % int( options.max_segment_intron )
-            
-            # Fusion search options.
-            if options.fusion_search:
-                opts += ' --fusion-search --fusion-anchor-length %i --fusion-min-dist %i --fusion-read-mismatches %i --fusion-multireads %i --fusion-multipairs %i --fusion-ignore-chromosomes %s' % \
-                          ( int( options.fusion_anchor_length ), int( options.fusion_min_dist ),
-                            int( options.fusion_read_mismatches ), int( options.fusion_multireads ),
-                            int( options.fusion_multipairs ), options.fusion_ignore_chromosomes )
-                                        
             cmd = cmd % ( opts, index_path, reads )
-            
         except Exception, e:
             # Clean up temp dirs
             if os.path.exists( tmp_index_dir ):
                 shutil.rmtree( tmp_index_dir )
             stop_err( 'Something is wrong with the alignment parameters and the alignment could not be run\n' + str( e ) )
-    print cmd
+    #print cmd
 
     # Run
     try:
@@ -226,6 +207,7 @@ def __main__():
         tmp_stdout = open( tmp_out, 'wb' )
         tmp_err = tempfile.NamedTemporaryFile().name
         tmp_stderr = open( tmp_err, 'wb' )
+        print cmd
         proc = subprocess.Popen( args=cmd, shell=True, cwd=".", stdout=tmp_stdout, stderr=tmp_stderr )
         returncode = proc.wait()
         tmp_stderr.close()
