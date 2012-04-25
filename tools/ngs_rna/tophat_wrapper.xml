@@ -38,6 +38,13 @@
         ## Set params.
         --settings=$params.settingsType
         #if $params.settingsType == "full":
+            -n $params.transcriptome_mismatches
+            --genome-read-mismatches $params.genome_read_mismatches
+            --read-mismatches $params.read_mismatches
+            #if str($params.bowtie_n) == "Yes":
+                --bowtie-n
+            #end if
+        
             -a $params.anchor_length
             -m $params.splice_mismatches
             -i $params.min_intron_length
@@ -140,6 +147,13 @@
                   <option value="fr-unstranded">FR Unstranded</option>
                   <option value="fr-firststrand">FR First Strand</option>
                   <option value="fr-secondstrand">FR Second Strand</option>
+              </param>
+              <param name="transcriptome_mismatches" type="integer" value="2" label="Transcriptome mismatches" help="Maximum number of mismatches allowed when reads are aligned to the transcriptome. When Bowtie2 is used, this number is also used to decide whether or not to further re-align some of the transcriptome-mapped reads to the genome.	If the alignment score of the best alignment among multiple candidates for a read is lower than 'bowtie2-min-score', which is internally defined as (max_penalty - 1) * max_mismatches, then the reads will be kept for re-alignment through the rest of the pipeline.  You can specify max_penalty via '--b2-mp' option." />
+              <param name="genome_read_mismatches" type="integer" value="2" label="Genome read mismatches" help="When whole reads are first mapped on the genome, this many mismatches in each read alignment are allowed. The default is 2. This number is also used to decide whether to further re-align some of the reads (by splitting them into segments) with a similar scoring threshold scheme as described for the --transcriptome-mismatches option above." />
+              <param name="read_mismatches" type="integer" value="2" label="Final read mismatches" help="Final read alignments having more than these many mismatches are discarded." />
+              <param name="bowtie_n" type="select" label="Use bowtie -n mode">
+                  <option selected="true" value="No">No</option>
+                  <option value="Yes">Yes</option>
               </param>
               <param name="anchor_length" type="integer" value="8" label="Anchor length (at least 3)" help="Report junctions spanned by reads with at least this many bases on each side of the junction." />
               <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
@@ -362,6 +376,10 @@
             <param name="ownFile" value="tophat_in1.fasta"/>
             <param name="settingsType" value="full"/>
             <param name="library_type" value="FR Unstranded"/>
+            <param name="transcriptome_mismatches" value="2"/>
+            <param name="genome_read_mismatches" value="2"/>
+            <param name="read_mismatches" value="2"/>
+            <param name="bowtie_n" value="No"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
             <param name="min_intron_length" value="70"/>
@@ -410,6 +428,10 @@
             <param name="mate_inner_distance" value="20"/>
             <param name="settingsType" value="full"/>
             <param name="library_type" value="FR Unstranded"/>
+            <param name="transcriptome_mismatches" value="3"/>
+            <param name="genome_read_mismatches" value="4"/>
+            <param name="read_mismatches" value="5"/>
+            <param name="bowtie_n" value="Yes"/>
             <param name="mate_std_dev" value="20"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>

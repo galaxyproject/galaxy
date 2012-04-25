@@ -20,6 +20,10 @@ def __main__():
                                                                                 where each end is 50bp, you should set -r to be 200. There is no default, \
                                                                                 and this parameter is required for paired end runs.')
     parser.add_option( '', '--mate-std-dev', dest='mate_std_dev', help='Standard deviation of distribution on inner distances between male pairs.' )
+    parser.add_option( '-n', '--transcriptome-mismatches', dest='transcriptome_mismatches' )
+    parser.add_option( '', '--genome-read-mismatches', dest='genome_read_mismatches' )
+    parser.add_option( '', '--read-mismatches', dest='read_mismatches' )
+    parser.add_option( '', '--bowtie-n', action="store_true", dest='bowtie_n' )
     parser.add_option( '-a', '--min-anchor-length', dest='min_anchor_length', 
                         help='The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction.' )
     parser.add_option( '-m', '--splice-mismatches', dest='splice_mismatches', help='The maximum number of mismatches that can appear in the anchor region of a spliced alignment.' )
@@ -172,6 +176,15 @@ def __main__():
                 # Max options do not work for Tophat v1.2.0, despite documentation to the contrary. (Fixed in version 1.3.1)
                 # need to warn user of this fact
                 #sys.stdout.write( "Max insertion length and max deletion length options don't work in Tophat v1.2.0\n" )
+                
+            if options.transcriptome_mismatches:
+                opts += ' --transcriptome-mismatches %i' % int( options.transcriptome_mismatches )
+            if options.genome_read_mismatches:
+                opts += ' --genome-read-mismatches %i' % int( options.genome_read_mismatches )
+            if options.read_mismatches:
+                opts += ' --read-mismatches %i' % int( options.read_mismatches )
+            if options.bowtie_n:
+                opts += ' --bowtie-n'
 
             # Search type options.
             if options.coverage_search:
