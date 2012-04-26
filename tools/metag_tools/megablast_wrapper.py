@@ -56,7 +56,7 @@ def __main__():
         stop_err( 'Cannot locate the target database directory. Please check your location file.' )
 
     # arguments for megablast
-    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s > /dev/null" \
+    megablast_command = "blastn -task megablast -db %s -query %s -out %s -outfmt '6 qseqid sgi slen ppos length mismatch gaps qstart qend sstart send evalue bitscore' -num_threads 2 -word_size %s -perc_identity %s -evalue %s -dust %s > /dev/null" \
         % ( options.db_build, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, options.filter_query ) 
 
     print megablast_command
@@ -96,11 +96,9 @@ def __main__():
         line = line.rstrip( '\r\n' )
         fields = line.split()
         try:
-            # get gi and length of that gi seq
-            gi, gi_len = fields[1].split( '_' )
             # convert the last column (causing problem in filter tool) to float
             fields[-1] = float( fields[-1] )
-            new_line = "%s\t%s\t%s\t%s\t%0.1f" % ( fields[0], gi, gi_len, '\t'.join( fields[2:-1] ), fields[-1] )
+            new_line = "%s\t%0.1f" % ( '\t'.join( fields[:-1] ), fields[-1] )
         except:
             new_line = line
             invalid_lines += 1
