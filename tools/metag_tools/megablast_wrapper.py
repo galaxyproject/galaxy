@@ -15,6 +15,10 @@ usage: %prog [options]
 usage: %prog db_build input_file word_size identity_cutoff eval_cutoff filter_query index_dir output_file
 """
 
+# This version (April 26, 2012) replaces megablast with blast+ blastn
+# There is now no need to augment NCBI-formatted databases and these can be
+# directly downloaded from NCBI ftp site
+
 import os, subprocess, sys, tempfile
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
@@ -29,11 +33,11 @@ def stop_err( msg ):
 def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
-    query_filename = options.input.strip()
-    output_filename = options.output.strip()
-    mega_word_size = options.word_size        # -W
-    mega_iden_cutoff = options.identity_cutoff      # -p
-    mega_evalue_cutoff = options.eval_cutoff      # -e
+    query_filename = options.input.strip() # -query
+    output_filename = options.output.strip() # -out
+    mega_word_size = options.word_size        # -word_size
+    mega_iden_cutoff = options.identity_cutoff      # -perc_identity
+    mega_evalue_cutoff = options.eval_cutoff      # -evalue
     mega_temp_output = tempfile.NamedTemporaryFile().name
     GALAXY_DATA_INDEX_DIR = options.index_dir
     DB_LOC = "%s/blastdb.loc" % GALAXY_DATA_INDEX_DIR
@@ -56,7 +60,7 @@ def __main__():
         stop_err( 'Cannot locate the target database directory. Please check your location file.' )
 
     # arguments for megablast
-    megablast_command = "blastn -task megablast -db %s -query %s -out %s -outfmt '6 qseqid sgi slen ppos length mismatch gaps qstart qend sstart send evalue bitscore' -num_threads 2 -word_size %s -perc_identity %s -evalue %s -dust %s > /dev/null" \
+    megablast_command = "blastn -task megablast -db %s -query %s -out %s -outfmt '6 qseqid sgi slen ppos length mismatch gaps qstart qend sstart send evalue bitscore' -num_threads 8 -word_size %s -perc_identity %s -evalue %s -dust %s > /dev/null" \
         % ( options.db_build, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, options.filter_query ) 
 
     print megablast_command
@@ -88,7 +92,7 @@ def __main__():
             os.unlink( mega_temp_output )
         if os.path.exists( tmp ):
             os.unlink( tmp )
-        stop_err( 'Error indexing reference sequence. ' + str( e ) )
+        stop_err( 'Cannot execute megaablast. ' + str( e ) )
 
     output = open( output_filename, 'w' )
     invalid_lines = 0
@@ -96,7 +100,7 @@ def __main__():
         line = line.rstrip( '\r\n' )
         fields = line.split()
         try:
-            # convert the last column (causing problem in filter tool) to float
+            # convert the last column (bit-score as this is causing problem in filter tool) to float
             fields[-1] = float( fields[-1] )
             new_line = "%s\t%0.1f" % ( '\t'.join( fields[:-1] ), fields[-1] )
         except:
