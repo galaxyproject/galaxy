@@ -1,9 +1,9 @@
 <tool id="tophat2" name="Tophat2" version="0.5">
     <!-- Wrapper compatible with Tophat version 2.0.0 -->
     <description>Gapped-read mapper for RNA-seq data</description>
-    <version_command>tophat --version</version_command>
+    <version_command>tophat2 --version</version_command>
     <requirements>
-        <requirement type="package">tophat</requirement>
+        <requirement type="package">tophat2</requirement>
     </requirements>
     <command interpreter="python">
         tophat2_wrapper.py
