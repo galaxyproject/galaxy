@@ -1,0 +1,109 @@
+<tool id="bowtie2" name="Bowtie2" version="0.1">
+    <!-- Wrapper compatible with Bowtie version 2.0.0 -->
+    <description>is a short-read mapper</description>
+    <version_command>bowtie2 --version</version_command>
+    <requirements>
+        <requirement type="package">bowtie2</requirement>
+    </requirements>
+    <command interpreter="python">
+        bowtie2_wrapper.py
+        
+        ## Change this to accommodate the number of threads you have available.
+        --num-threads="4"
+
+        ## Outputs.
+        --output=$output
+
+        ## Handle reference file.
+        #if $refGenomeSource.genomeSource == "history":
+            --own-file=$refGenomeSource.ownFile
+        #else:
+            --indexes-path="${refGenomeSource.index.fields.path}"
+        #end if
+
+        ## Are reads single-end or paired?
+        --single-paired=$singlePaired.sPaired
+
+        ## First input file always required.
+        --input1=$input1
+        
+        ## Second input only if input is paired-end.
+        #if $singlePaired.sPaired == "paired"
+            --input2=$singlePaired.input2
+        #end if
+
+        ## Set params.
+        --settings=$params.settingsType
+    </command>
+    <inputs>
+        <conditional name="singlePaired">
+            <param name="sPaired" type="select" label="Is this library mate-paired?">
+              <option value="single">Single-end</option>
+              <option value="paired">Paired-end</option>
+            </param>
+            <when value="single">
+                <param format="fastqsanger" name="input1" type="data" label="FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33"/>
+            </when>
+            <when value="paired">
+                <param format="fastqsanger" name="input1" type="data" label="FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
+                <param format="fastqsanger" name="input2" type="data" label="FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
+                <!-- TODO: paired-end specific parameters. -->
+            </when>
+        </conditional>
+        <conditional name="refGenomeSource">
+          <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
+            <option value="indexed">Use a built-in index</option>
+            <option value="history">Use one from the history</option>
+          </param>
+          <when value="indexed">
+            <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+              <options from_data_table="bowtie2_indexes">
+                <filter type="sort_by" column="2"/>
+                <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+              </options>
+            </param>
+          </when>
+          <when value="history">
+            <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
+          </when>  <!-- history -->
+        </conditional>  <!-- refGenomeSource -->
+        <conditional name="params">
+            <param name="settingsType" type="select" label="Bowtie settings to use" help="You can use the default settings or set custom values for any of Bowtie's parameters.">
+              <option value="preSet">Use Defaults</option>
+              <option value="full">Full parameter list</option>
+            </param>
+            <when value="preSet" />
+            <!-- Full/advanced params. -->
+            <when value="full">
+            </when>  <!-- full -->
+      </conditional>  <!-- params -->
+    </inputs>
+
+    <outputs>
+        <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
+          <actions>
+            <conditional name="refGenomeSource.genomeSource">
+              <when value="indexed">
+                <action type="metadata" name="dbkey">
+                  <option type="from_data_table" name="bowtie2_indexes" column="1" offset="0">
+                    <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+                    <filter type="param_value" ref="refGenomeSource.index" column="0"/>
+                  </option>
+                </action>
+              </when>
+              <when value="history">
+                <action type="metadata" name="dbkey">
+                  <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
+                </action>
+              </when>
+            </conditional>
+          </actions>
+        </data>
+    </outputs>
+
+    <tests>
+    </tests>
+
+    <help>
+    </help>
+</tool>

@@ -336,6 +336,7 @@
     <tool file="sr_mapping/lastz_wrapper.xml" />
     <tool file="sr_mapping/lastz_paired_reads_wrapper.xml" />
     <tool file="sr_mapping/bowtie_wrapper.xml" />
+    <tool file="sr_mapping/bowtie2_wrapper.xml" />
     <tool file="sr_mapping/bowtie_color_wrapper.xml" />
     <tool file="sr_mapping/bwa_wrapper.xml" />
     <tool file="sr_mapping/bwa_color_wrapper.xml" />
