@@ -7,18 +7,27 @@ from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
+from paste.httpexceptions import *
 
 log = logging.getLogger( __name__ )
 
 class LibrariesController( BaseAPIController ):
     
     @web.expose_api
-    def index( self, trans, **kwd ):
+    def index( self, trans, deleted='False', **kwd ):
         """
         GET /api/libraries
+        GET /api/libraries/deleted
         Displays a collection (list) of libraries.
         """
-        query = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.deleted == False )
+        query = trans.sa_session.query( trans.app.model.Library )
+        deleted = util.string_as_bool( deleted )
+        if deleted:
+            route = 'deleted_library'
+            query = query.filter( trans.app.model.Library.table.c.deleted == True )
+        else:
+            route = 'library'
+            query = query.filter( trans.app.model.Library.table.c.deleted == False )
         current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
@@ -32,31 +41,32 @@ class LibrariesController( BaseAPIController ):
         rval = []
         for library in query:
             item = library.get_api_value()
-            item['url'] = url_for( 'library', id=trans.security.encode_id( library.id ) )
+            item['url'] = url_for( route, id=trans.security.encode_id( library.id ) )
             item['id'] = trans.security.encode_id( item['id'] )
             rval.append( item )
         return rval
 
     @web.expose_api
-    def show( self, trans, id, **kwd ):
+    def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/libraries/{encoded_library_id}
+        GET /api/libraries/deleted/{encoded_library_id}
         Displays information about a library.
         """
         library_id = id
+        deleted = util.string_as_bool( deleted )
         params = util.Params( kwd )
         try:
             decoded_library_id = trans.security.decode_id( library_id )
         except TypeError:
-            trans.response.status = 400
-            return "Malformed library id ( %s ) specified, unable to decode." % str( library_id )
+            raise HTTPBadRequest( detail='Malformed library id ( %s ) specified, unable to decode.' % id )
         try:
             library = trans.sa_session.query( trans.app.model.Library ).get( decoded_library_id )
+            assert library.deleted == deleted
         except:
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
-            trans.response.status = 400
-            return "Invalid library id ( %s ) specified." % str( library_id )
+            raise HTTPBadRequest( detail='Invalid library id ( %s ) specified.' % id )
         item = library.get_api_value( view='element' )
         #item['contents_url'] = url_for( 'contents', library_id=library_id )
         item['contents_url'] = url_for( 'library_contents', library_id=library_id )
@@ -69,13 +79,11 @@ class LibrariesController( BaseAPIController ):
         Creates a new library.
         """
         if not trans.user_is_admin():
-            trans.response.status = 403
-            return "You are not authorized to create a new library."
+            raise HTTPForbidden( detail='You are not authorized to create a new library.' )
         params = util.Params( payload )
         name = util.restore_text( params.get( 'name', None ) )
         if not name:
-            trans.response.status = 400
-            return "Missing required parameter 'name'."
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
         description = util.restore_text( params.get( 'description', '' ) )
         synopsis = util.restore_text( params.get( 'synopsis', '' ) )
         if synopsis in [ 'None', None ]:
@@ -91,3 +99,22 @@ class LibrariesController( BaseAPIController ):
         rval['name'] = name
         rval['id'] = encoded_id
         return [ rval ]
+
+    @web.expose_api
+    def delete( self, trans, id, **kwd ):
+        if not trans.user_is_admin():
+            raise HTTPForbidden( detail='You are not authorized to delete libraries.' )
+        try:
+            decoded_id = trans.security.decode_id( id )
+        except TypeError:
+            raise HTTPBadRequest( detail='Malformed library id ( %s ) specified, unable to decode.' % id )
+        try:
+            library = trans.sa_session.query( trans.app.model.Library ).get( decoded_id )
+        except:
+            library = None
+        if not library:
+            raise HTTPBadRequest( detail='Invalid library id ( %s ) specified.' % id )
+        library.deleted = True
+        trans.sa_session.add( library )
+        trans.sa_session.flush()
+        return library.get_api_value( view='element', value_mapper={ 'id' : trans.security.encode_id } )
