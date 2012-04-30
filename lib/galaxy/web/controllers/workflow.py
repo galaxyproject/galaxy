@@ -1145,7 +1145,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
+            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true&no_reset=true' % \
                 ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp )
             response = urllib2.urlopen( workflow_url )
             workflow_text = response.read()
