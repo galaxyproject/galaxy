@@ -1338,11 +1338,6 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 tool = trans.app.toolbox.get_tool( job.tool_id )
                 param_values = job.get_param_values( trans.app )
                 associations = cleanup_param_values( tool.inputs, param_values )
-                # Doing it this way breaks dynamic parameters, backed out temporarily.
-                # def extract_callback( input, value, prefixed_name, prefixed_label ):
-                #     if isinstance( value, UnvalidatedValue ):
-                #         return str( value )
-                # visit_input_values( tool.inputs, param_values, extract_callback )
                 step = model.WorkflowStep()
                 step.type = 'tool'
                 step.tool_id = job.tool_id
@@ -2043,13 +2038,11 @@ def cleanup_param_values( inputs, values ):
                 group_values = values[key]
                 for i, rep_values in enumerate( group_values ):
                     rep_index = rep_values['__index__']
-                    prefix = "%s_%d|" % ( key, rep_index )
-                    cleanup( prefix, input.inputs, group_values[i] )
+                    cleanup( "%s%s_%d|" % (prefix, key, rep_index ), input.inputs, group_values[i] )
             elif isinstance( input, Conditional ):
                 group_values = values[input.name]
                 current_case = group_values['__current_case__']
-                prefix = "%s|" % ( key )
-                cleanup( prefix, input.cases[current_case].inputs, group_values )
+                cleanup( "%s%s|" % ( prefix, key ), input.cases[current_case].inputs, group_values )
     cleanup( "", inputs, values )
     return associations
 
