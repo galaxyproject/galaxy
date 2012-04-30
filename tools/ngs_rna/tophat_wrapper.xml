@@ -7,111 +7,150 @@
     </requirements>
     <command interpreter="python">
         tophat_wrapper.py
-        
-        ## Change this to accommodate the number of threads you have available.
-        --num-threads="4"
+            ## Change this to accommodate the number of threads you have available.
+            --num-threads="4"
 
-        ## Provide outputs.
-        --junctions-output=$junctions
-        --hits-output=$accepted_hits
+            ## Provide outputs.
+            --junctions-output=$junctions
+            --hits-output=$accepted_hits
 
-        ## Handle reference file.
-        #if $refGenomeSource.genomeSource == "history":
-            --own-file=$refGenomeSource.ownFile
-        #else:
-            --indexes-path="${refGenomeSource.index.fields.path}"
-        #end if
-
-        ## Are reads single-end or paired?
-        --single-paired=$singlePaired.sPaired
-
-        ## First input file always required.
-        --input1=$input1
-        
-        ## Second input only if input is paired-end.
-        #if $singlePaired.sPaired == "paired"
-            --input2=$singlePaired.input2
-            -r $singlePaired.mate_inner_distance
-            --mate-std-dev=$singlePaired.mate_std_dev
-        #end if
-
-        ## Set params.
-        --settings=$params.settingsType
-        #if $params.settingsType == "full":
-            -a $params.anchor_length
-            -m $params.splice_mismatches
-            -i $params.min_intron_length
-            -I $params.max_intron_length
-            -g $params.max_multihits
-            --min-segment-intron $params.min_segment_intron
-            --max-segment-intron $params.max_segment_intron
-            --initial-read-mismatches=$params.initial_read_mismatches
-            --seg-mismatches=$params.seg_mismatches
-            --seg-length=$params.seg_length
-            --library-type=$params.library_type
-            
-            ## Closure search.
-            #if $params.closure_search.use_search == "Yes":
-                --closure-search
-                --min-closure-exon $params.closure_search.min_closure_exon
-                --min-closure-intron $params.closure_search.min_closure_intron
-                --max-closure-intron $params.closure_search.max_closure_intron
+            ## Handle reference file.
+            #if $refGenomeSource.genomeSource == "history":
+                --own-file=$refGenomeSource.ownFile
             #else:
-                --no-closure-search
-            #end if
-            
-            ## Indel search.
-            #if $params.indel_search.allow_indel_search == "Yes":
-                ## --allow-indels
-                --max-insertion-length $params.indel_search.max_insertion_length
-                --max-deletion-length $params.indel_search.max_deletion_length
-            #else:
-                --no-novel-indels
+                --indexes-path="${refGenomeSource.index.fields.path}"
             #end if
 
-            ## Supplying junctions parameters.
-            #if $params.own_junctions.use_junctions == "Yes":
-                #if $params.own_junctions.gene_model_ann.use_annotations == "Yes":
-                    -G $params.own_junctions.gene_model_ann.gene_annotation_model
-                #end if
-                #if $params.own_junctions.raw_juncs.use_juncs == "Yes":
-                    -j $params.own_junctions.raw_juncs.raw_juncs
-                #end if
-                ## TODO: No idea why a string cast is necessary, but it is:
-                #if str($params.own_junctions.no_novel_juncs) == "Yes":
-                    --no-novel-juncs
-                #end if
-            #end if
+            ## Are reads single-end or paired?
+            --single-paired=$singlePaired.sPaired
 
-            #if $params.coverage_search.use_search == "Yes":
-                --coverage-search
-                --min-coverage-intron $params.coverage_search.min_coverage_intron
-                --max-coverage-intron $params.coverage_search.max_coverage_intron
+            ## First input file always required.
+            --input1=$input1
+
+            ## Set params based on whether reads are single-end or paired.
+            #if $singlePaired.sPaired == "single":
+                --settings=$singlePaired.sParams.sSettingsType
+                #if $singlePaired.sParams.sSettingsType == "full":
+                    -a $singlePaired.sParams.anchor_length
+                    -m $singlePaired.sParams.splice_mismatches
+                    -i $singlePaired.sParams.min_intron_length
+                    -I $singlePaired.sParams.max_intron_length
+                    -g $singlePaired.sParams.max_multihits
+                    --min-segment-intron $singlePaired.sParams.min_segment_intron
+                    --max-segment-intron $singlePaired.sParams.max_segment_intron
+                    --initial-read-mismatches=$singlePaired.sParams.initial_read_mismatches
+                    --seg-mismatches=$singlePaired.sParams.seg_mismatches
+                    --seg-length=$singlePaired.sParams.seg_length
+                    --library-type=$singlePaired.sParams.library_type
+                    
+                    ## Indel search.
+                    #if $singlePaired.sParams.indel_search.allow_indel_search == "Yes":
+                        ## --allow-indels
+                        --max-insertion-length $singlePaired.sParams.indel_search.max_insertion_length
+                        --max-deletion-length $singlePaired.sParams.indel_search.max_deletion_length
+                    #else:
+                        --no-novel-indels
+                    #end if
+
+                    ## Supplying junctions parameters.
+                    #if $singlePaired.sParams.own_junctions.use_junctions == "Yes":
+                        #if $singlePaired.sParams.own_junctions.gene_model_ann.use_annotations == "Yes":
+                            -G $singlePaired.sParams.own_junctions.gene_model_ann.gene_annotation_model
+                        #end if
+                        #if $singlePaired.sParams.own_junctions.raw_juncs.use_juncs == "Yes":
+                            -j $singlePaired.sParams.own_junctions.raw_juncs.raw_juncs
+                        #end if
+                        ## TODO: No idea why a string cast is necessary, but it is:
+                        #if str($singlePaired.sParams.own_junctions.no_novel_juncs) == "Yes":
+                            --no-novel-juncs
+                        #end if
+                    #end if
+
+                    #if $singlePaired.sParams.closure_search.use_search == "Yes":
+                        --closure-search
+                        --min-closure-exon $singlePaired.sParams.closure_search.min_closure_exon
+                        --min-closure-intron $singlePaired.sParams.closure_search.min_closure_intron
+                        --max-closure-intron $singlePaired.sParams.closure_search.max_closure_intron
+                    #else:
+                        --no-closure-search
+                    #end if
+                    #if $singlePaired.sParams.coverage_search.use_search == "Yes":
+                        --coverage-search
+                        --min-coverage-intron $singlePaired.sParams.coverage_search.min_coverage_intron
+                        --max-coverage-intron $singlePaired.sParams.coverage_search.max_coverage_intron
+                    #else:
+                        --no-coverage-search
+                    #end if
+                    ## TODO: No idea why the type conversion is necessary, but it seems to be.
+                    #if str($singlePaired.sParams.microexon_search) == "Yes":
+                        --microexon-search
+                    #end if
+                #end if
             #else:
-                --no-coverage-search
+                --input2=$singlePaired.input2
+                -r $singlePaired.mate_inner_distance
+                --settings=$singlePaired.pParams.pSettingsType
+                #if $singlePaired.pParams.pSettingsType == "full":
+                    --mate-std-dev=$singlePaired.pParams.mate_std_dev
+                    -a $singlePaired.pParams.anchor_length
+                    -m $singlePaired.pParams.splice_mismatches
+                    -i $singlePaired.pParams.min_intron_length
+                    -I $singlePaired.pParams.max_intron_length
+                    -g $singlePaired.pParams.max_multihits
+                    --min-segment-intron $singlePaired.pParams.min_segment_intron
+                    --max-segment-intron $singlePaired.pParams.max_segment_intron
+                    --initial-read-mismatches=$singlePaired.pParams.initial_read_mismatches
+                    --seg-mismatches=$singlePaired.pParams.seg_mismatches
+                    --seg-length=$singlePaired.pParams.seg_length
+                    --library-type=$singlePaired.pParams.library_type
+                    
+                    ## Indel search.
+                    #if $singlePaired.pParams.indel_search.allow_indel_search == "Yes":
+                        ## --allow-indels
+                        --max-insertion-length $singlePaired.pParams.indel_search.max_insertion_length
+                        --max-deletion-length $singlePaired.pParams.indel_search.max_deletion_length
+                    #else:
+                        --no-novel-indels
+                    #end if
+
+                    ## Supplying junctions parameters.
+                    #if $singlePaired.pParams.own_junctions.use_junctions == "Yes":
+                        #if $singlePaired.pParams.own_junctions.gene_model_ann.use_annotations == "Yes":
+                            -G $singlePaired.pParams.own_junctions.gene_model_ann.gene_annotation_model
+                        #end if
+                        #if $singlePaired.pParams.own_junctions.raw_juncs.use_juncs == "Yes":
+                            -j $singlePaired.pParams.own_junctions.raw_juncs.raw_juncs
+                        #end if
+                        ## TODO: No idea why type cast is necessary, but it is:
+                        #if str($singlePaired.pParams.own_junctions.no_novel_juncs) == "Yes":
+                            --no-novel-juncs
+                        #end if
+                    #end if
+
+                    #if $singlePaired.pParams.closure_search.use_search == "Yes":
+                        --closure-search
+                        --min-closure-exon $singlePaired.pParams.closure_search.min_closure_exon
+                        --min-closure-intron $singlePaired.pParams.closure_search.min_closure_intron
+                        --max-closure-intron $singlePaired.pParams.closure_search.max_closure_intron
+                    #else:
+                        --no-closure-search
+                    #end if
+                    #if $singlePaired.pParams.coverage_search.use_search == "Yes":
+                        --coverage-search
+                        --min-coverage-intron $singlePaired.pParams.coverage_search.min_coverage_intron
+                        --max-coverage-intron $singlePaired.pParams.coverage_search.max_coverage_intron
+                    #else:
+                        --no-coverage-search
+                    #end if
+                    ## TODO: No idea why the type conversion is necessary, but it seems to be.
+                    #if str ($singlePaired.pParams.microexon_search) == "Yes":
+                        --microexon-search
+                   #end if
+                #end if
             #end if
-            ## TODO: No idea why the type conversion is necessary, but it seems to be.
-            #if str($params.microexon_search) == "Yes":
-                --microexon-search
-            #end if
-        #end if
     </command>
     <inputs>
-        <conditional name="singlePaired">
-            <param name="sPaired" type="select" label="Is this library mate-paired?">
-              <option value="single">Single-end</option>
-              <option value="paired">Paired-end</option>
-            </param>
-            <when value="single">
-                <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ dataset" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33"/>
-            </when>
-            <when value="paired">
-                <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ dataset--forward reads" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
-                <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ dataset--reverse reads" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
-                <param name="mate_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs" />
-                <param name="mate_std_dev" type="integer" value="20" label="Std. Dev for Distance between Mate Pairs"  help="The standard deviation for the distribution on inner distances between mate pairs."/>
-            </when>
-        </conditional>
+        <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
         <conditional name="refGenomeSource">
           <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
             <option value="indexed">Use a built-in index</option>
@@ -129,109 +168,221 @@
             <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
           </when>  <!-- history -->
         </conditional>  <!-- refGenomeSource -->
-        <conditional name="params">
-            <param name="settingsType" type="select" label="TopHat settings to use" help="You can use the default settings or set custom values for any of Tophat's parameters.">
-              <option value="preSet">Use Defaults</option>
-              <option value="full">Full parameter list</option>
+        <conditional name="singlePaired">
+            <param name="sPaired" type="select" label="Is this library mate-paired?">
+              <option value="single">Single-end</option>
+              <option value="paired">Paired-end</option>
             </param>
-            <when value="preSet" />
-            <!-- Full/advanced params. -->
-            <when value="full">
-              <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
-                  <option value="fr-unstranded">FR Unstranded</option>
-                  <option value="fr-firststrand">FR First Strand</option>
-                  <option value="fr-secondstrand">FR Second Strand</option>
-              </param>
-              <param name="anchor_length" type="integer" value="8" label="Anchor length (at least 3)" help="Report junctions spanned by reads with at least this many bases on each side of the junction." />
-              <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
-              <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
-              <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
-              <conditional name="indel_search">
-                  <param name="allow_indel_search" type="select" label="Allow indel search">
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
+            <when value="single">
+              <conditional name="sParams">
+                <param name="sSettingsType" type="select" label="TopHat settings to use" help="You can use the default settings or set custom values for any of Tophat's parameters.">
+                  <option value="preSet">Use Defaults</option>
+                  <option value="full">Full parameter list</option>
+                </param>
+                <when value="preSet" />
+                <!-- Full/advanced params. -->
+                <when value="full">
+                  <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
+                      <option value="fr-unstranded">FR Unstranded</option>
+                      <option value="fr-firststrand">FR First Strand</option>
+                      <option value="fr-secondstrand">FR Second Strand</option>
                   </param>
-                  <when value="No"/>
-                  <when value="Yes">
-                     <param name="max_insertion_length" type="integer" value="3" label="Max insertion length." help="The maximum insertion length." />
-                     <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
-                  </when>
-              </conditional>
-    alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
-              <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
-              <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
-              <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
-              <param name="initial_read_mismatches" type="integer" min="0" value="2" label="Number of mismatches allowed in the initial read mapping" />
-              <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
-              <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
-          
-              <!-- Options for supplying own junctions. -->
-              <conditional name="own_junctions">
-                  <param name="use_junctions" type="select" label="Use Own Junctions">
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                  </param>
-                  <when value="Yes">
-                      <conditional name="gene_model_ann">
-                         <param name="use_annotations" type="select" label="Use Gene Annotation Model">
-                            <option value="No">No</option>
-                            <option value="Yes">Yes</option>
-                         </param>
-                         <when value="No" />
-                         <when value="Yes">
-                           <param format="gtf" name="gene_annotation_model" type="data" label="Gene Model Annotations" help="TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping."/>
-                         </when>
-                      </conditional>
-                      <conditional name="raw_juncs">
-                         <param name="use_juncs" type="select" label="Use Raw Junctions">
-                            <option value="No">No</option>
-                            <option value="Yes">Yes</option>
-                         </param>
-                         <when value="No" />
-                         <when value="Yes">
-                           <param format="interval" name="raw_juncs" type="data" label="Raw Junctions" help="Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-] left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive."/>
-                         </when>
-                      </conditional>
-                      <param name="no_novel_juncs" type="select" label="Only look for supplied junctions">
+                  <param name="anchor_length" type="integer" value="8" label="Anchor length (at least 3)" help="Report junctions spanned by reads with at least this many bases on each side of the junction." />
+                  <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
+                  <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
+                  <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
+                  <conditional name="indel_search">
+                      <param name="allow_indel_search" type="select" label="Allow indel search">
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                      </param>
+                      <when value="No"/>
+                      <when value="Yes">
+                         <param name="max_insertion_length" type="integer" value="3" label="Max insertion length." help="The maximum insertion length." />
+                         <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
+                      </when>
+                  </conditional>
+alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
+                  <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
+                  <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
+                  <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
+                  <param name="initial_read_mismatches" type="integer" min="0" value="2" label="Number of mismatches allowed in the initial read mapping" />
+                  <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
+                  <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
+                  
+                  <!-- Options for supplying own junctions. -->
+                  <conditional name="own_junctions">
+                      <param name="use_junctions" type="select" label="Use Own Junctions">
                         <option value="No">No</option>
                         <option value="Yes">Yes</option>
                       </param>
-                  </when>
-                  <when value="No" />
-              </conditional> <!-- /own_junctions -->
-              
-              <!-- Closure search. -->
-              <conditional name="closure_search">
-                <param name="use_search" type="select" label="Use Closure Search">
-                  <option value="No">No</option>
-                  <option value="Yes">Yes</option>
-                </param>
-                <when value="Yes">
-                    <param name="min_closure_exon" type="integer" value="50" label="During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50." />
-                    <param name="min_closure_intron" type="integer" value="50" label="Minimum intron length that may be found during closure search" />
-                    <param name="max_closure_intron" type="integer" value="5000" label="Maximum intron length that may be found during closure search" />
-                </when>
-                <when value="No" />
-              </conditional>
-          
-              <!-- Coverage search. -->
-              <conditional name="coverage_search">
-                <param name="use_search" type="select" label="Use Coverage Search">
-                    <option selected="true" value="Yes">Yes</option>
+                      <when value="Yes">
+                          <conditional name="gene_model_ann">
+                             <param name="use_annotations" type="select" label="Use Gene Annotation Model">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                             </param>
+                             <when value="No" />
+                             <when value="Yes">
+                               <param format="gtf" name="gene_annotation_model" type="data" label="Gene Model Annotations" help="TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping."/>
+                             </when>
+                          </conditional>
+                          <conditional name="raw_juncs">
+                             <param name="use_juncs" type="select" label="Use Raw Junctions">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                             </param>
+                             <when value="No" />
+                             <when value="Yes">
+                               <param format="interval" name="raw_juncs" type="data" label="Raw Junctions" help="Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-] left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive."/>
+                             </when>
+                          </conditional>
+                          <param name="no_novel_juncs" type="select" label="Only look for supplied junctions">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                          </param>
+                      </when>
+                      <when value="No" />
+                  </conditional> <!-- /own_junctions -->
+                  
+                  <!-- Closure search. -->
+                  <conditional name="closure_search">
+                    <param name="use_search" type="select" label="Use Closure Search">
+                      <option value="No">No</option>
+                      <option value="Yes">Yes</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="min_closure_exon" type="integer" value="50" label="During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50." />
+                        <param name="min_closure_intron" type="integer" value="50" label="Minimum intron length that may be found during closure search" />
+                        <param name="max_closure_intron" type="integer" value="5000" label="Maximum intron length that may be found during closure search" />
+                    </when>
+                    <when value="No" />
+                  </conditional>
+                  <!-- Coverage search. -->
+                  <conditional name="coverage_search">
+                    <param name="use_search" type="select" label="Use Coverage Search">
+                        <option selected="true" value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="min_coverage_intron" type="integer" value="50" label="Minimum intron length that may be found during coverage search" />
+                        <param name="max_coverage_intron" type="integer" value="20000" label="Maximum intron length that may be found during coverage search" />
+                    </when>
+                    <when value="No" />
+                  </conditional>
+                  <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
                     <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </param>
+                </when>  <!-- full -->
+              </conditional>  <!-- sParams -->
+            </when>  <!--  single -->
+            <when value="paired">
+              <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
+              <param name="mate_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs" />
+              <conditional name="pParams">
+                <param name="pSettingsType" type="select" label="TopHat settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
+                  <option value="preSet">Commonly used</option>
+                  <option value="full">Full parameter list</option>
                 </param>
-                <when value="Yes">
-                    <param name="min_coverage_intron" type="integer" value="50" label="Minimum intron length that may be found during coverage search" />
-                    <param name="max_coverage_intron" type="integer" value="20000" label="Maximum intron length that may be found during coverage search" />
-                </when>
-                <when value="No" />
-              </conditional>
-              <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
-                <option value="No">No</option>
-                <option value="Yes">Yes</option>
-              </param>
-            </when>  <!-- full -->
-      </conditional>  <!-- params -->
+                <when value="preSet" />
+                <!-- Full/advanced params. -->
+                <when value="full">
+                    <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
+                        <option value="fr-unstranded">FR Unstranded</option>
+                        <option value="fr-firststrand">FR First Strand</option>
+                        <option value="fr-secondstrand">FR Second Strand</option>
+                    </param>
+                    <param name="mate_std_dev" type="integer" value="20" label="Std. Dev for Distance between Mate Pairs"  help="The standard deviation for the distribution on inner distances between mate pairs."/>
+                  <param name="anchor_length" type="integer" value="8" label="Anchor length (at least 3)" help="Report junctions spanned by reads with at least this many bases on each side of the junction." />
+                  <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
+                  <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
+                  <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
+                  <conditional name="indel_search">
+                      <param name="allow_indel_search" type="select" label="Allow indel search">
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                      </param>
+                      <when value="No"/>
+                      <when value="Yes">
+                         <param name="max_insertion_length" type="integer" value="3" label="Max insertion length." help="The maximum insertion length." />
+                         <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
+                      </when>
+                  </conditional>
+                  <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
+                  <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
+                  <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
+                  <param name="initial_read_mismatches" type="integer" min="0" value="2" label="Number of mismatches allowed in the initial read mapping" />
+                  <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
+                  <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
+                  <!-- Options for supplying own junctions. -->
+                  <conditional name="own_junctions">
+                      <param name="use_junctions" type="select" label="Use Own Junctions">
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                      </param>
+                      <when value="Yes">
+                          <conditional name="gene_model_ann">
+                             <param name="use_annotations" type="select" label="Use Gene Annotation Model">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                             </param>
+                             <when value="No" />
+                             <when value="Yes">
+                               <param format="gtf" name="gene_annotation_model" type="data" label="Gene Model Annotations" help="TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping."/>
+                             </when>
+                          </conditional>
+                          <conditional name="raw_juncs">
+                             <param name="use_juncs" type="select" label="Use Raw Junctions">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                             </param>
+                             <when value="No" />
+                             <when value="Yes">
+                               <param format="interval" name="raw_juncs" type="data" label="Raw Junctions" help="Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-] left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive."/>
+                             </when>
+                          </conditional>
+                          <param name="no_novel_juncs" type="select" label="Only look for supplied junctions">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                          </param>
+                      </when>
+                      <when value="No" />
+                  </conditional> <!-- /own_junctions -->
+                  
+                  <!-- Closure search. -->
+                  <conditional name="closure_search">
+                    <param name="use_search" type="select" label="Use Closure Search">
+                      <option value="No">No</option>
+                      <option value="Yes">Yes</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="min_closure_exon" type="integer" value="50" label="During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50." />
+                        <param name="min_closure_intron" type="integer" value="50" label="Minimum intron length that may be found during closure search" />
+                        <param name="max_closure_intron" type="integer" value="5000" label="Maximum intron length that may be found during closure search" />
+                    </when>
+                    <when value="No" />
+                  </conditional>
+                  <!-- Coverage search. -->
+                  <conditional name="coverage_search">
+                    <param name="use_search" type="select" label="Use Coverage Search">
+                        <option selected="true" value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="min_coverage_intron" type="integer" value="50" label="Minimum intron length that may be found during coverage search" />
+                        <param name="max_coverage_intron" type="integer" value="20000" label="Maximum intron length that may be found during coverage search" />
+                    </when>
+                    <when value="No" />
+                  </conditional>
+                  <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </param>
+                </when>  <!-- full -->
+              </conditional>  <!-- pParams -->
+            </when>  <!-- paired -->
+        </conditional>
     </inputs>
 
     <outputs>
@@ -320,11 +471,11 @@
             tophat -o tmp_dir -p 1 tophat_in1 test-data/tophat_in2.fastqsanger
             Rename the files in tmp_dir appropriately
             -->
-            <param name="sPaired" value="single" />
             <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
             <param name="genomeSource" value="indexed" />
             <param name="index" value="tophat_test" />
-            <param name="settingsType" value="preSet" />
+            <param name="sPaired" value="single" />
+            <param name="sSettingsType" value="preSet" />
             <output name="junctions" file="tophat_out1j.bed" />
             <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" />
         </test>
@@ -335,13 +486,13 @@
             tophat -o tmp_dir -p 1 -r 20 tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
             Rename the files in tmp_dir appropriately
             -->
-            <param name="sPaired" value="paired" />
             <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
-            <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger" />
             <param name="genomeSource" value="history" />
             <param name="ownFile" ftype="fasta" value="tophat_in1.fasta" />
+            <param name="sPaired" value="paired" />
+            <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger" />
             <param name="mate_inner_distance" value="20" />
-            <param name="settingsType" value="preSet" />
+            <param name="pSettingsType" value="preSet" />
             <output name="junctions" file="tophat_out2j.bed" />
             <output name="accepted_hits" file="tophat_out2h.bam" compare="sim_size" />
         </test>
@@ -349,15 +500,15 @@
         <test>
             <!-- Tophat commands:
             bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
-            <param name="sPaired" value="single"/>
             <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
             <param name="genomeSource" value="history"/>
             <param name="ownFile" value="tophat_in1.fasta"/>
-            <param name="settingsType" value="full"/>
+            <param name="sPaired" value="single"/>
+            <param name="sSettingsType" value="full"/>
             <param name="library_type" value="FR Unstranded"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
@@ -395,13 +546,13 @@
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
-            <param name="sPaired" value="paired"/>
             <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
-            <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger"/>
             <param name="genomeSource" value="indexed"/>
             <param name="index" value="tophat_test"/>
+            <param name="sPaired" value="paired"/>
+            <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger"/>
             <param name="mate_inner_distance" value="20"/>
-            <param name="settingsType" value="full"/>
+            <param name="pSettingsType" value="full"/>
             <param name="library_type" value="FR Unstranded"/>
             <param name="mate_std_dev" value="20"/>
             <param name="anchor_length" value="8"/>
@@ -493,15 +644,16 @@ This is a list of implemented Tophat options::
   -j/--raw-juncs [juncs file]       Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-], left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive.
   -no-novel-juncs                   Only look for junctions indicated in the supplied GFF file. (ignored without -G)
   --no-closure-search               Disables the mate pair closure-based search for junctions. Currently, has no effect - closure search is off by default.
-  --closure-search                  Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the
-  --min-closure-exon                During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50.
-  --min-closure-intron              The minimum intron length that may be found during closure search. The default is 50.
-  --max-closure-intron              The maximum intron length that may be found during closure search. The default is 5000. expected inner distance between mates is small (about or less than 50bp)
+  --closure-search                  Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (about or less than 50bp)
   --no-coverage-search              Disables the coverage based search for junctions.
   --coverage-search                 Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.
   --microexon-search                With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.
+  --butterfly-search                TopHat will use a slower but potentially more sensitive algorithm to find junctions in addition to its standard search. Consider using this if you expect that your experiment produced a lot of reads from pre-mRNA, that fall within the introns of your transcripts.
   --segment-mismatches              Read segments are mapped independently, allowing up to this many mismatches in each segment alignment. The default is 2.
   --segment-length                  Each read is cut up into segments, each at least this long. These segments are mapped independently. The default is 25.
+  --min-closure-exon                During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50.
+  --min-closure-intron              The minimum intron length that may be found during closure search. The default is 50.
+  --max-closure-intron              The maximum intron length that may be found during closure search. The default is 5000.
   --min-coverage-intron             The minimum intron length that may be found during coverage search. The default is 50.
   --max-coverage-intron             The maximum intron length that may be found during coverage search. The default is 20000.
   --min-segment-intron              The minimum intron length that may be found during split-segment search. The default is 50.
