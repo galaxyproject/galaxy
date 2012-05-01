@@ -73,7 +73,7 @@
         %endfor
     %else:
         <div class="form-row">
-            External service login information is not set.  Select the <b>Edit request type</b> option in the <b>Configuration options</b> menu.
+            External service login information is not set.  Select the <b>Edit request type</b> option in the <b>Request type actions</b> menu.
         </div>
     %endif
 </div>
