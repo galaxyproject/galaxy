@@ -108,15 +108,13 @@
                                     <td><b>version</b></td>
                                     <td><b>requirements</b></td>
                                 </tr>
-                                %for tool_dict in tool_dicts:
+                                %for index, tool_dict in enumerate( tool_dicts ):
                                     <tr>
                                         <td>
-                                            <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, webapp=webapp )}">
-                                                    ${tool_dict[ 'name' ]}
-                                                </a>
+                                            <div style="float:left;" class="menubutton split popup" id="tool-${index}-popup">
+                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, webapp=webapp )}">${tool_dict[ 'name' ]}</a>
                                             </div>
-                                            <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
+                                            <div popupmenu="tool-${index}-popup">
                                                 <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ], webapp=webapp )}">View tool metadata</a>
                                             </div>
                                         </td>
