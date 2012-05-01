@@ -702,19 +702,13 @@ class ToolOutput( object ):
 
 class ToolRequirement( object ):
     """
-    Represents an external requirement that must be available for the tool to
-    run (for example, a program, package, or library). Requirements can 
-    optionally assert a specific version, or reference a command to execute a
-    fabric script.  If fabric is used, the type is 'fabfile' and the version
-    attribute is not used since the fabric script includes all necessary
-    information for automatic dependency installation.
+    Represents an external requirement that must be available for the tool to run (for example, a program, package, or library).
+    Requirements can optionally assert a specific version.
     """
-    def __init__( self, name=None, type=None, version=None, fabfile=None, method=None ):
+    def __init__( self, name=None, type=None, version=None ):
         self.name = name
         self.type = type
         self.version = version
-        self.fabfile = fabfile
-        self.method = method
 
 class ToolParallelismInfo(object):
     """
@@ -1339,19 +1333,8 @@ class Tool:
         for requirement_elem in requirements_elem.findall( 'requirement' ):
             name = util.xml_text( requirement_elem )
             type = requirement_elem.get( "type", "package" )
-            if type == 'fabfile':
-                # The fabric script will include all necessary information for
-                # automatically installing the tool dependencies.
-                fabfile = requirement_elem.get( "fabfile" )
-                method = requirement_elem.get( "method" )
-                version = None
-            else:
-                # For backward compatibility, requirements tag sets should not require the
-                # use of a fabric script.
-                version = requirement_elem.get( "version" )
-                fabfile = None
-                method = None
-            requirement = ToolRequirement( name=name, type=type, version=version, fabfile=fabfile, method=method )
+            version = requirement_elem.get( "version", None )
+            requirement = ToolRequirement( name=name, type=type, version=version )
             self.requirements.append( requirement )
     def check_workflow_compatible( self ):
         """
