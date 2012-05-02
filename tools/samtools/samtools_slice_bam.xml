@@ -20,7 +20,7 @@
       <test>
           <param name="input_bam" value="gatk/fake_phiX_reads_1.bam" ftype="bam" />
           <param name="input_interval" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
-          <output name="output_log" file="gatk/fake_phiX_reads_1.bam" ftype="bam" />
+          <output name="output_bam" file="gatk/fake_phiX_reads_1.bam" ftype="bam" />
       </test>
   </tests>
   <help>
