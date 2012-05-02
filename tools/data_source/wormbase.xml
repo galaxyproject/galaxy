@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<tool name="Wormbase" id="wormbase" tool_type="data_source">
+<tool name="WormBase" id="wormbase" tool_type="data_source" version="1.0.1">
     <description>server</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://www.wormbase.org/db/seq/gbgff/c_elegans/" check_values="false" target="_top"> 
+    <inputs action="http://www.wormbase.org/tools/genome/gbrowse/c_elegans/" check_values="false" target="_top"> 
         <display>go to Wormbase server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=wormbase" />
     </inputs>
