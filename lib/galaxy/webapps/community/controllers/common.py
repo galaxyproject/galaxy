@@ -5,7 +5,7 @@ from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-from galaxy.util.shed_util import copy_sample_loc_file, get_configured_ui, generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
+from galaxy.util.shed_util import copy_sample_file, get_configured_ui, generate_datatypes_metadata, generate_tool_metadata, generate_workflow_metadata
 from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, to_html_escaped, to_html_str, update_repository
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
@@ -209,13 +209,13 @@ def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
                 if options.index_file or options.missing_index_file:
                     # Make sure the repository contains the required xxx.loc.sample file.
                     index_file = options.index_file or options.missing_index_file
-                    index_head, index_tail = os.path.split( index_file )
+                    index_file_path, index_file_name = os.path.split( index_file )
                     sample_found = False
                     for sample_file in sample_files:
-                        sample_head, sample_tail = os.path.split( sample_file )
-                        if sample_tail == '%s.sample' % index_tail:
-                            copy_sample_loc_file( trans.app, sample_file )
-                            options.index_file = index_tail
+                        sample_file_path, sample_file_name = os.path.split( sample_file )
+                        if sample_file_name == '%s.sample' % index_file_name:
+                            copy_sample_file( trans.app, sample_file )
+                            options.index_file = index_file_name
                             options.missing_index_file = None
                             if options.tool_data_table:
                                 options.tool_data_table.missing_index_file = None
@@ -224,7 +224,7 @@ def check_tool_input_params( trans, name, tool, sample_files, invalid_files ):
                     if not sample_found:
                         can_set_metadata = False
                         correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
-                        correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_tail )
+                        correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
                         invalid_files.append( ( name, correction_msg ) )
     return can_set_metadata, invalid_files
 def new_tool_metadata_required( trans, id, metadata_dict ):
@@ -283,8 +283,7 @@ def new_workflow_metadata_required( trans, id, metadata_dict ):
         else:
             # There is no saved repository metadata, so we need to create a new repository_metadata table record.
             return True
-    # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table
-    # record is not needed.
+    # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table record is not needed.
     return False
 def generate_metadata_for_repository_tip( trans, id, ctx, changeset_revision, repo, repo_dir ):
     """

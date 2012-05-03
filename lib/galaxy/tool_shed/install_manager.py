@@ -156,9 +156,15 @@ class InstallManager( object ):
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
                 repository_tools_tups = handle_missing_data_table_entry( self.app, self.tool_path, sample_files, repository_tools_tups )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = handle_missing_index_file( self.app, self.tool_path, sample_files, repository_tools_tups )
-                # Handle tools that use fabric scripts to install dependencies.
-                handle_tool_dependencies( current_working_dir, relative_install_dir, repository_tools_tups )                
+                repository_tools_tups, sample_files_copied = handle_missing_index_file( self.app, self.tool_path, sample_files, repository_tools_tups )
+                # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
+                copy_sample_files( self.app, sample_files, sample_files_copied=sample_files_copied )
+                if 'tool_dependencies_config' in metadata_dict:
+                    # Install tool dependencies.
+                    status, message = handle_tool_dependencies( self.app, repository_clone_url, metadata_dict[ 'tool_dependencies_config' ] )
+                    if status != 'ok' and message:
+                        print 'The following error occurred while installing tool dependencies:'
+                        print message
                 add_to_tool_panel( self.app,
                                    repository_name,
                                    repository_clone_url,
@@ -215,7 +221,7 @@ class InstallManager( object ):
                                                                                    ctx_rev )
             if 'tools' in metadata_dict:
                 # Get the tool_versions from the tool shed for each tool in the installed change set.
-                url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy&no_reset=true' % \
                     ( tool_shed_url, tool_shed_repository.name, self.repository_owner, changeset_revision )
                 response = urllib2.urlopen( url )
                 text = response.read()

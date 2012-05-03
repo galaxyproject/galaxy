@@ -1,4 +1,4 @@
-import os, tempfile, shutil, subprocess, logging, string, urllib2
+import sys, os, tempfile, shutil, subprocess, logging, string, urllib2
 from datetime import date, datetime, timedelta
 from time import strftime, gmtime
 from galaxy import util
@@ -6,6 +6,9 @@ from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.model.orm import *
+
+from galaxy import eggs
+import pkg_resources
 
 pkg_resources.require( 'mercurial' )
 from mercurial import ui, commands
@@ -215,7 +218,6 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                         # The value of proprietary_path must be an absolute path due to job_working_directory.
                         elem.attrib[ 'proprietary_path' ] = os.path.abspath( relative_head )
                         elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
-                
             sniffers = datatypes_config_root.find( 'sniffers' )
         else:
             sniffers = None
@@ -270,8 +272,7 @@ def clean_tool_shed_url( tool_shed_url ):
     return tool_shed_url.rstrip( '/' )
 def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
     """
-    Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present
-    in the cloned repository.
+    Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present in the cloned repository.
     """
     commands.clone( get_configured_ui(),
                     repository_clone_url,
@@ -279,17 +280,28 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
                     pull=True,
                     noupdate=False,
                     rev=[ ctx_rev ] )
-def copy_sample_loc_file( app, filename ):
-    """Copy xxx.loc.sample to ~/tool-data/xxx.loc.sample and ~/tool-data/xxx.loc"""
-    head, sample_loc_file = os.path.split( filename )
-    loc_file = sample_loc_file.replace( '.sample', '' )
-    tool_data_path = os.path.abspath( app.config.tool_data_path )
+def copy_sample_file( app, filename, dest_path=None ):
+    """
+    Copy xxx.loc.sample to dest_path/xxx.loc.sample and dest_path/xxx.loc.  The default value for dest_path is ~/tool-data.
+    """
+    if dest_path is None:
+        dest_path = os.path.abspath( app.config.tool_data_path )
+    sample_file_path, sample_file_name = os.path.split( filename )
+    copied_file = sample_file_name.replace( '.sample', '' )
     # It's ok to overwrite the .sample version of the file.
-    shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
-    # Only create the .loc file if it does not yet exist.  We don't  
-    # overwrite it in case it contains stuff proprietary to the local instance.
-    if not os.path.exists( os.path.join( tool_data_path, loc_file ) ):
-        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
+    shutil.copy( os.path.abspath( filename ), os.path.join( dest_path, sample_file_name ) )
+    # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it contains stuff proprietary to the local instance.
+    if not os.path.exists( os.path.join( dest_path, copied_file ) ):
+        shutil.copy( os.path.abspath( filename ), os.path.join( dest_path, copied_file ) )
+def copy_sample_files( app, sample_files, sample_files_copied=None, dest_path=None ):
+    """
+    Copy all files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
+    are contained in sample_files_copied.  The default value for dest_path is ~/tool-data.
+    """
+    sample_files_copied = util.listify( sample_files_copied )
+    for filename in sample_files:
+        if filename not in sample_files_copied:
+            copy_sample_file( app, filename, dest_path=dest_path )
 def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, installed_changeset_revision, tool_dicts, converter_path=None, display_path=None ):
     return dict( tool_shed=tool_shed,
                  repository_name=name,
@@ -336,7 +348,7 @@ def generate_clone_url( trans, repository ):
     tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
     return '%s/repos/%s/%s' % ( tool_shed_url, repository.owner, repository.name )
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):
-    """Update the received metadata_dict with changes that have been applied to the received datatypes_config."""
+    """Update the received metadata_dict with information from the parsed datatypes_config."""
     tree = ElementTree.parse( datatypes_config )
     root = tree.getroot()
     ElementInclude.include( root )
@@ -454,21 +466,9 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
     # Handle tool.requirements.
     tool_requirements = []
     for tr in tool.requirements:
-        name=tr.name
-        type=tr.type
-        if type == 'fabfile':
-            version = None
-            fabfile = tr.fabfile
-            method = tr.method
-        else:
-            version = tr.version
-            fabfile = None
-            method = None
-        requirement_dict = dict( name=name,
-                                 type=type,
-                                 version=version,
-                                 fabfile=fabfile,
-                                 method=method )
+        requirement_dict = dict( name=tr.name,
+                                 type=tr.type,
+                                 version=tr.version )
         tool_requirements.append( requirement_dict )
     # Handle tool.tests.
     tool_tests = []
@@ -732,7 +732,7 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             break
     return converter_path, display_path
 def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
-    url = '%s/repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( tool_shed_url, name, owner, changeset_revision )
+    url = '%s/repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy&no_reset=true' % ( tool_shed_url, name, owner, changeset_revision )
     response = urllib2.urlopen( url )
     ctx_rev = response.read()
     response.close()
@@ -893,27 +893,27 @@ def handle_missing_data_table_entry( app, tool_path, sample_files, repository_to
     return repository_tools_tups
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups ):
     """Inspect each tool to see if it has any input parameters that are dynamically generated select lists that depend on a .loc file."""
-    missing_files_handled = []
+    sample_files_copied = []
     for index, repository_tools_tup in enumerate( repository_tools_tups ):
         tup_path, guid, repository_tool = repository_tools_tup
         params_with_missing_index_file = repository_tool.params_with_missing_index_file
         for param in params_with_missing_index_file:
             options = param.options
-            missing_head, missing_tail = os.path.split( options.missing_index_file )
-            if missing_tail not in missing_files_handled:
+            missing_file_path, missing_file_name = os.path.split( options.missing_index_file )
+            if missing_file_name not in sample_files_copied:
                 # The repository must contain the required xxx.loc.sample file.
                 for sample_file in sample_files:
-                    sample_head, sample_tail = os.path.split( sample_file )
-                    if sample_tail == '%s.sample' % missing_tail:
-                        copy_sample_loc_file( app, sample_file )
+                    sample_file_path, sample_file_name = os.path.split( sample_file )
+                    if sample_file_name == '%s.sample' % missing_file_name:
+                        copy_sample_file( app, sample_file )
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
                             options.tool_data_table.handle_found_index_file( options.missing_index_file )
-                        missing_files_handled.append( missing_tail )
+                        sample_files_copied.append( options.missing_index_file )
                         break
         # Reload the tool into the local list of repository_tools_tups.
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
-    return repository_tools_tups
+    return repository_tools_tups, sample_files_copied
 def handle_sample_tool_data_table_conf_file( app, filename ):
     """
     Parse the incoming filename and add new entries to the in-memory
@@ -1038,7 +1038,8 @@ def load_datatype_items( app, repository, relative_install_dir, deactivate=False
             # Load or deactivate proprietary datatype display applications
             app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict, deactivate=deactivate )
 def load_repository_contents( trans, repository_name, description, owner, changeset_revision, ctx_rev, tool_path, repository_clone_url,
-                              relative_install_dir, current_working_dir, tool_shed=None, tool_section=None, shed_tool_conf=None ):
+                              relative_install_dir, current_working_dir, tool_shed=None, tool_section=None, shed_tool_conf=None,
+                              install_tool_dependencies=False ):
     """Generate the metadata for the installed tool shed repository, among other things."""
     # It is critical that the installed repository is updated to the desired changeset_revision before metadata is set because the
     # process for setting metadata uses the repository files on disk.  This method is called when an admin is installing a new repository
@@ -1063,8 +1064,9 @@ def load_repository_contents( trans, repository_name, description, owner, change
             # Handle missing data table entries for tool parameters that are dynamically generated select lists.
             repository_tools_tups = handle_missing_data_table_entry( trans.app, tool_path, sample_files, repository_tools_tups )
             # Handle missing index files for tool parameters that are dynamically generated select lists.
-            repository_tools_tups = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
-            # Handle tools that use fabric scripts to install dependencies.
+            repository_tools_tups, sample_files_copied = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
+            # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
+            copy_sample_files( trans.app, sample_files, sample_files_copied=sample_files_copied )
             handle_tool_dependencies( current_working_dir, relative_install_dir, repository_tools_tups )
             add_to_tool_panel( app=trans.app,
                                repository_name=repository_name,
