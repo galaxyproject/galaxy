@@ -1167,7 +1167,6 @@ class HistoryDatasetAssociation( DatasetInstance ):
                      deleted = hda.deleted,
                      visible = hda.visible,
                      state = hda.state,
-                     file_name = hda.file_name,
                      file_size = int( hda.get_size() ),
                      data_type = hda.ext,
                      genome_build = hda.dbkey,
