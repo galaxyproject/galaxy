@@ -50,6 +50,7 @@ def get_genomespace_site_urls():
 def get_directory( url_opener, dm_url, path ):
     url = dm_url
     i = None
+    dir_dict = {}
     for i, sub_path in enumerate( path ):
         url = "%s/%s" % ( url, sub_path )
         dir_request = urllib2.Request( url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' } )
@@ -57,7 +58,7 @@ def get_directory( url_opener, dm_url, path ):
         try:
             dir_dict = simplejson.loads( url_opener.open( dir_request ).read() )
         except urllib2.HTTPError, e:
-            #print "e", e, url #punting, assuming lack of permisions at this low of a level...
+            #print "e", e, url #punting, assuming lack of permissions at this low of a level...
             continue
         break
     if i is not None:
@@ -68,6 +69,9 @@ def get_directory( url_opener, dm_url, path ):
 
 def get_default_directory( url_opener, dm_url ):
     return get_directory( url_opener, dm_url, ["defaultdirectory"] )[0]
+
+def get_personal_directory( url_opener, dm_url ):
+    return get_directory( url_opener, dm_url, [ "%s/personaldirectory" % ( GENOMESPACE_API_VERSION_STRING ) ] )[0]
 
 def create_directory( url_opener, directory_dict, new_dir, dm_url ):
     payload = { "isDirectory": True }
@@ -134,7 +138,9 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
         genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
         dm_url = genomespace_site_dict['dmServer']
         #get default directory
-        directory_dict = get_default_directory( url_opener, dm_url )['directory']
+        directory_dict = get_default_directory( url_opener, dm_url ).get( 'directory', None )
+        if directory_dict is None:
+            return []
         #what directory to stuff this in
         recurse_directory_dict( url_opener, rval, directory_dict.get( 'url' ) )
     
@@ -150,7 +156,7 @@ def send_file_to_genomespace( genomespace_site, username, token, source_filename
         directory_dict, target_directory = get_directory( url_opener, dm_url, [ "%s/%s/%s" % ( GENOMESPACE_API_VERSION_STRING, 'file', target_directory[1] ) ] + target_directory[2:] )
         directory_dict = directory_dict['directory']
     else:
-        directory_dict = get_default_directory( url_opener, dm_url )['directory']
+        directory_dict = get_personal_directory( url_opener, dm_url )['directory'] #this is the base for the auto-generated galaxy export directories
     #what directory to stuff this in
     target_directory_dict = create_directory( url_opener, directory_dict, target_directory, dm_url )
     #get upload url
@@ -208,6 +214,6 @@ if __name__ == '__main__':
     
     (options, args) = parser.parse_args()
     
-    send_file_to_genomespace( options.genomespace_site, options.username, options.token, options.dataset, map( binascii.unhexlify, options.subdirectory ), options.filename, options.file_type, options.content_type, options.log )
+    send_file_to_genomespace( options.genomespace_site, options.username, options.token, options.dataset, map( binascii.unhexlify, options.subdirectory ), binascii.unhexlify( options.filename ), options.file_type, options.content_type, options.log )
 
 

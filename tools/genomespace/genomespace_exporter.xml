@@ -25,9 +25,9 @@
             --subdirectory "${ binascii.hexlify( str( $base_url ).split( '://', 1 )[-1] ) }" ##Protocol removed by request
         #end if
         #if $filename:
-            --filename "${filename}"
+            --filename "${ binascii.hexlify( str( $filename ) ) }"
         #else:
-            --filename "Galaxy History Item ${__app__.security.encode_id( $input1.id )} (${__app__.security.encode_id( $output_log.id )}) - ${input1.hid}: ${input1.name}.${input1.ext}"
+            --filename "${ binascii.hexlify( "Galaxy History Item %s (%s) - %s: %s.%s" % ( $__app__.security.encode_id( $input1.id ), $__app__.security.encode_id( $output_log.id ), $input1.hid, $input1.name, $input1.ext ) ) }"
         #end if
         --file_type "${input1.ext}"
         --content_type "${input1.get_mime()}"
@@ -36,7 +36,6 @@
     <inputs>
         <param format="data" name="input1" type="data" label="Send this dataset to GenomeSpace" />
         <param name="base_url" type="baseurl" />
-        <!-- <param name="subdirectory" type="text" size="80" help="Leave blank to generate automatically" /> -->
         <param name="subdirectory" type="drill_down" display="radio" hierarchy="exact" multiple="False" label="Choose Target Directory" dynamic_options="galaxy_code_get_genomespace_folders( genomespace_site = 'prod', trans=__trans__, value=__value__, input_dataset=input1 )" help="Leave blank to generate automatically"/>
         <param name="filename" type="text" size="80" help="Leave blank to generate automatically" />
     </inputs>
