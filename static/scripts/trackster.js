@@ -5706,7 +5706,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale + this.get_top_padding(width),
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
-            block_color = block_color = (!feature_strand || feature_strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color);
+            // For now, assume '.' === '+'
+            block_color = block_color = (!feature_strand || feature_strand === "+" || feature_strand === "." ? this.prefs.block_color : this.prefs.reverse_strand_color);
             label_color = this.prefs.label_color;
         
         // Set global alpha.
@@ -5823,17 +5824,21 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
                     // Draw thin block.
                     ctx.fillStyle = block_color;
-                    ctx.fillRect(block_start, y_center + (thick_height-thin_height)/2 + 1, block_end - block_start, thin_height );
+                    ctx.fillRect(block_start, y_center + (thick_height-thin_height)/2 + 1, block_end - block_start, thin_height);
 
                     // If block intersects with thick region, draw block as thick.
                     // - No thick is sometimes encoded as thick_start == thick_end, so don't draw in that case
                     if (thick_start !== undefined && feature_te > feature_ts && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
                             block_thick_end = Math.min(block_end, thick_end);
-                        ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
+                        ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
+                        // FIXME: for GFF datasets, only one block of many may be fetched, so it is not possible to 
+                        // determine if feature has only one block. Hence, Ffr now, do not use b/c color is used to encoding 
+                        // strand.
+                        /*
                         if ( feature_blocks.length === 1 && mode === "Pack") {
                             // Exactly one block means we have no introns, but do have a distinct "thick" region,
-                            // draw arrows over it if in pack mode
+                            // draw arrows over it if in pack mode.
                             if (feature_strand === "+") {
                                 ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
                             } else if (feature_strand === "-") {
@@ -5844,8 +5849,9 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                                 block_thick_start += 2;
                                 block_thick_end -= 2;
                             }
-                            ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
-                        }   
+                            ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
+                        }
+                        */
                     }
                     // Draw individual connectors if required
                     if ( this.draw_individual_connectors && last_block_start ) {
