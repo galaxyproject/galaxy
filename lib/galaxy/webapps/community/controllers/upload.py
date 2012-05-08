@@ -122,6 +122,8 @@ class UploadController( BaseUIController ):
                     else:
                         content_alert_str = ''
                     commands.add( repo.ui, repo, full_path )
+                    # Convert from unicode to prevent "TypeError: array item must be char"
+                    full_path = full_path.encode('ascii', 'replace')
                     try:
                         commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
                     except Exception, e:
