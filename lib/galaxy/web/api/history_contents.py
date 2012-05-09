@@ -55,7 +55,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         try:
             item = content.get_api_value( view='element' )
             if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-                 item['file_name'] = hda.file_name
+                 item['file_name'] = content.file_name
             if not item['deleted']:
                 # Problem: Method url_for cannot use the dataset controller
                 # Get the environment from DefaultWebTransaction and use default webapp mapper instead of webapp API mapper
