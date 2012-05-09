@@ -1126,8 +1126,10 @@ class HistoryDatasetAssociation( DatasetInstance ):
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         # metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:
-            if not metadata_safe or not assoc.metadata_safe:
+            if not assoc.deleted and ( not metadata_safe or not assoc.metadata_safe ):
                 assoc.clear( purge = purge )
+        for assoc in self.implicitly_converted_parent_datasets:
+            assoc.clear( purge = purge, delete_dataset = False )
     def get_display_name( self ):
         ## Name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format.
         hda_name = self.name
@@ -1626,12 +1628,14 @@ class ImplicitlyConvertedDatasetAssociation( object ):
         self.purged = purged
         self.metadata_safe = metadata_safe
 
-    def clear( self, purge = False ):
+    def clear( self, purge = False, delete_dataset = True ):
         self.deleted = True
         if self.dataset:
-            self.dataset.deleted = True
-            self.dataset.purged = purge
-        if purge: #do something with purging
+            if delete_dataset:
+                self.dataset.deleted = True
+            if purge:
+                self.dataset.purged = True
+        if purge and self.dataset.deleted: #do something with purging
             self.purged = True
             try: os.unlink( self.file_name )
             except Exception, e: print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
