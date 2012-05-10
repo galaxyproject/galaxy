@@ -2,7 +2,7 @@
   <description>amino-acid changes caused by a set of SNPs</description>
 
   <command interpreter="perl">
-    codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep strand=${strand_source.strand_col} > $out_file1
+    codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep strand=${strand_source.strand_col} unique=$uniqpos > $out_file1
   </command>
 
   <inputs>
@@ -16,6 +16,10 @@
     <param name="keep" type="select" label="Keep columns from SNP dataset">
       <option value="0" selected="true">No</option>
       <option value="1">Yes</option>
+    </param>
+    <param name="uniqpos" type="select" label="Only report each SNP position once">
+      <option value="1" selected="true">Yes</option>
+      <option value="0">No</option>
     </param>
     <conditional name="strand_source">
       <param name="strand_choice" type="select" label="Strand info">
@@ -54,6 +58,7 @@
       <param name="input2" ftype="interval" value="codingSnps_inputGenes1.bed" dbkey="hg18" />
       <param name="strand_choice" value="all_pos" />
       <param name="strand_col" value="+" />
+      <param name="uniqpos" value="0" />
       <output name="output" file="codingSnps_output1.interval" />
     </test>
     <test>
@@ -62,6 +67,7 @@
       <param name="col1" value="4" />
       <param name="strand_choice" value="all_pos" />
       <param name="strand_col" value="+" />
+      <param name="uniqpos" value="0" />
       <output name="output" file="codingSnps_output2.interval" />
     </test>
     <test>

@@ -39,7 +39,7 @@
 
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>Galaxy Tool Shed</div>
+        <div class='unified-panel-header-inner'>${trans.app.shed_counter.valid_tools} valid tools on ${trans.app.shed_counter.generation_time}</div>
     </div>
     <div class="page-container" style="padding: 10px;">
         <div class="toolMenu">
@@ -70,6 +70,9 @@
                         %if trans.user:
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_repositories', webapp='community' )}">Browse my repositories</a>
+                            </div>
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository', webapp='community' )}">Browse my invalid tools</a>
                             </div>
                         %endif
                     </div>

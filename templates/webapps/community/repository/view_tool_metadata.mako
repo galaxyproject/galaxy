@@ -254,7 +254,7 @@
                                 </td>
                                 <td>
                                     %for required_file in required_files:
-                                        ${required_file[0]}<br/>
+                                        ${required_file}<br/>
                                     %endfor
                                 </td>
                             </tr>

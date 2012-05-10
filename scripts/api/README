@@ -3,7 +3,6 @@ until the documentation is written.
 
 Set these options in universe_wsgi.ini and start the server:
 
-enable_api = True
 admin_users = you@example.org
 library_import_dir = /path/to/some/directory
 

@@ -9,7 +9,11 @@ from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
+
+from galaxy import eggs
+eggs.require('mercurial')
 from mercurial import hg, ui
+
 log = logging.getLogger( __name__ )
 
 class User( object ):

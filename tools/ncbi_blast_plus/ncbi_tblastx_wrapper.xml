@@ -1,6 +1,6 @@
 <tool id="ncbi_tblastx_wrapper" name="NCBI BLAST+ tblastx" version="0.0.11">
     <description>Search translated nucleotide database with translated nucleotide query sequence(s)</description>
-    <!-- If job splitting is enabled, break up the query file into batches of 500 sequences -->
+    <!-- If job splitting is enabled, break up the query file into four -->
     <parallelism method="multi" split_inputs="query" split_mode="number_of_parts" split_size="4" shared_inputs="subject" merge_outputs="output1"></parallelism>
     <version_command>tblastx -version</version_command>
     <command interpreter="python">hide_stderr.py

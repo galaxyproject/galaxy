@@ -1,4 +1,5 @@
 <tool id="tophat" name="Tophat for Illumina" version="1.5.0">
+    <!-- Wrapper compatible with Tophat versions 1.3.0 to 1.4.1 -->
     <description>Find splice junctions using RNA-seq data</description>
     <version_command>tophat --version</version_command>
     <requirements>
@@ -386,14 +387,6 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
 
     <outputs>
         <data format="bed" name="insertions" label="${tool.name} on ${on_string}: insertions" from_work_dir="tophat_out/insertions.bed">
-            <filter>
-                (
-                    ( ( 'sParams' in singlePaired ) and ( 'indel_search' in singlePaired['sParams'] ) and 
-                      ( singlePaired['sParams']['indel_search']['allow_indel_search'] == 'Yes' ) ) or 
-                    ( ( 'pParams' in singlePaired ) and ( 'indel_search' in singlePaired['pParams'] ) and 
-                      ( singlePaired['pParams']['indel_search']['allow_indel_search'] == 'Yes' ) )
-                )
-            </filter>
             <actions>
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
@@ -413,14 +406,6 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
             </actions>
         </data>
         <data format="bed" name="deletions" label="${tool.name} on ${on_string}: deletions" from_work_dir="tophat_out/deletions.bed">
-            <filter>
-                (
-                    ( ( 'sParams' in singlePaired ) and ( 'indel_search' in singlePaired['sParams'] ) and 
-                      ( singlePaired['sParams']['indel_search']['allow_indel_search'] == 'Yes' ) ) or 
-                    ( ( 'pParams' in singlePaired ) and ( 'indel_search' in singlePaired['pParams'] ) and 
-                      ( singlePaired['pParams']['indel_search']['allow_indel_search'] == 'Yes' ) )
-                )
-            </filter>
             <actions>
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">

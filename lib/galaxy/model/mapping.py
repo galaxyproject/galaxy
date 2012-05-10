@@ -76,6 +76,7 @@ UserOpenID.table = Table( "galaxy_user_openid", metadata,
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "openid", TEXT, index=True, unique=True ),
+    Column( "provider", TrimmedString( 255 ) ),
     )
 
 History.table = Table( "history", metadata,
@@ -143,6 +144,12 @@ HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_dataset_
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "site", TrimmedString( 255 ) ) )
+    
+HistoryDatasetAssociationSubset.table = Table( "history_dataset_association_subset", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "history_dataset_association_subset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "location", Unicode(255), index=True) )
 
 ImplicitlyConvertedDatasetAssociation.table = Table( "implicitly_converted_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -375,6 +382,7 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "owner", TrimmedString( 255 ), index=True ),
     Column( "installed_changeset_revision", TrimmedString( 255 ) ),
     Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "ctx_rev", TrimmedString( 10 ) ),
     Column( "metadata", JSONType, nullable=True ),
     Column( "includes_datatypes", Boolean, index=True, default=False ),
     Column( "update_available", Boolean, default=False ),
@@ -421,7 +429,8 @@ Job.table = Table( "job", metadata,
     Column( "job_runner_external_id", String( 255 ) ), 
     Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "imported", Boolean, default=False, index=True ),
-    Column( "params", TrimmedString(255), index=True ) )
+    Column( "params", TrimmedString(255), index=True ),
+    Column( "handler", TrimmedString( 255 ), index=True ) )
     
 JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -483,6 +492,19 @@ JobImportHistoryArchive.table = Table( "job_import_history_archive", metadata,
     Column( "archive_dir", TEXT )
     )
 
+GenomeIndexToolData.table = Table( "genome_index_tool_data", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "deferred_job_id", Integer, ForeignKey( "deferred_job.id" ), index=True ),
+    Column( "transfer_job_id", Integer, ForeignKey( "transfer_job.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "fasta_path", String( 255 ) ),
+    Column( "created_time", DateTime, default=now ),
+    Column( "modified_time", DateTime, default=now, onupdate=now ),
+    Column( "indexer", String( 64 ) ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    )
+    
 Task.table = Table( "task", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1196,6 +1218,9 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
         implicitly_converted_datasets=relation( 
             ImplicitlyConvertedDatasetAssociation, 
             primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
+        implicitly_converted_parent_datasets=relation( 
+            ImplicitlyConvertedDatasetAssociation, 
+            primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_id == HistoryDatasetAssociation.table.c.id ) ),
         children=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),
@@ -1231,6 +1256,13 @@ assign_mapper( context, Dataset, Dataset.table,
 assign_mapper( context, HistoryDatasetAssociationDisplayAtAuthorization, HistoryDatasetAssociationDisplayAtAuthorization.table,
     properties=dict( history_dataset_association = relation( HistoryDatasetAssociation ),
                      user = relation( User ) ) )
+                     
+assign_mapper( context, HistoryDatasetAssociationSubset, HistoryDatasetAssociationSubset.table,
+    properties=dict( hda = relation( HistoryDatasetAssociation,
+                        primaryjoin=( HistoryDatasetAssociationSubset.table.c.history_dataset_association_id == HistoryDatasetAssociation.table.c.id ) ),
+                     subset = relation( HistoryDatasetAssociation,
+                        primaryjoin=( HistoryDatasetAssociationSubset.table.c.history_dataset_association_subset_id == HistoryDatasetAssociation.table.c.id ) )
+                    ) )
 
 assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvertedDatasetAssociation.table, 
     properties=dict( parent_hda=relation( 
@@ -1493,6 +1525,13 @@ assign_mapper( context, JobExportHistoryArchive, JobExportHistoryArchive.table,
 assign_mapper( context, JobImportHistoryArchive, JobImportHistoryArchive.table,
     properties=dict( job = relation( Job ), history = relation( History ) ) )
 
+assign_mapper( context, GenomeIndexToolData, GenomeIndexToolData.table,
+    properties=dict( job = relation( Job ),
+                     dataset = relation( Dataset ),
+                     user = relation( User ),
+                     deferred = relation( DeferredJob, backref='deferred_job' ),
+                     transfer = relation( TransferJob, backref='transfer_job' ) ) )
+                     
 assign_mapper( context, PostJobAction, PostJobAction.table,
     properties=dict(workflow_step = relation( WorkflowStep, backref='post_job_actions', primaryjoin=(WorkflowStep.table.c.id == PostJobAction.table.c.workflow_step_id))))
 

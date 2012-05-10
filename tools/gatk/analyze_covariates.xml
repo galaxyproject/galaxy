@@ -24,7 +24,7 @@
    '
   </command>
   <inputs>
-    <param name="input_recal" type="data" format="csv" label="Covariates table recalibration file" />
+    <param name="input_recal" type="data" format="csv" label="Covariates table recalibration file" help="-recalFile,--recal_file &amp;lt;recal_file&amp;gt;" />
     <conditional name="analysis_param_type">
       <param name="analysis_param_type_selector" type="select" label="Basic or Advanced options">
         <option value="basic" selected="True">Basic</option>
@@ -34,11 +34,11 @@
         <!-- Do nothing here -->
       </when>
       <when value="advanced">
-        <param name="ignore_q" type="integer" value="5" label="Ignore bases with reported quality less than this number."/>
-        <param name="num_read_groups" type="integer" value="-1" label="Only process N read groups."/>
-        <param name="max_quality_score" type="integer" value="50" label="Max quality score"/>
-        <param name="max_histogram_value" type="integer" value="0" label="Max histogram value"/>
-        <param name="do_indel_quality" type="boolean" truevalue="--do_indel_quality" falsevalue="" label="Do indel quality"/>
+        <param name="ignore_q" type="integer" value="5" label="Ignore bases with reported quality less than this number." help="-ignoreQ,--ignoreQ &amp;lt;ignoreQ&amp;gt; "/>
+        <param name="num_read_groups" type="integer" value="-1" label="Only process N read groups." help="-numRG,--numRG &amp;lt;numRG&amp;gt;"/>
+        <param name="max_quality_score" type="integer" value="50" label="Max quality score" help="-maxQ,--max_quality_score &amp;lt;max_quality_score&amp;gt;"/>
+        <param name="max_histogram_value" type="integer" value="0" label="Max histogram value" help="-maxHist,--max_histogram_value &amp;lt;max_histogram_value&amp;gt;"/>
+        <param name="do_indel_quality" type="boolean" truevalue="--do_indel_quality" falsevalue="" label="Do indel quality" help="--do_indel_quality"/>
       </when>
     </conditional>
   </inputs>

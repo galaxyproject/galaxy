@@ -1,11 +1,9 @@
 """
 API operations on the contents of a history.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
+import logging
+from galaxy import web
 from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
 
 import pkg_resources
@@ -21,12 +19,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         GET /api/histories/{encoded_history_id}/contents
         Displays a collection (list) of history contents
-        """        
+        """
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
         except Exception, e:
             return str( e )
-                       
         rval = []
         try:
             for dataset in history.datasets:
@@ -57,6 +54,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return str( e )
         try:
             item = content.get_api_value( view='element' )
+            if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+                 item['file_name'] = content.file_name
             if not item['deleted']:
                 # Problem: Method url_for cannot use the dataset controller
                 # Get the environment from DefaultWebTransaction and use default webapp mapper instead of webapp API mapper
@@ -67,7 +66,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 item = self.encode_all_ids( trans, item )
         except Exception, e:
             item = "Error in history API at listing dataset"
-            log.error( item + ": %s" % str(e) )               
+            log.error( item + ": %s" % str(e) )
             trans.response.status = 500
         return item
 
@@ -77,7 +76,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         POST /api/libraries/{encoded_history_id}/contents
         Creates a new history content item (file, aka HistoryDatasetAssociation).
         """
-        params = util.Params( payload )
         from_ld_id = payload.get( 'from_ld_id', None )
 
         try:
@@ -95,7 +93,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             except Exception, e:
                 return str( e )
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
-            history.add_dataset( hda )
             trans.sa_session.flush()
             return hda.get_api_value()
         else:

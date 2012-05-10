@@ -24,6 +24,28 @@ exports.extend = extend;
 };
 
 /**
+ * Provides support for server-state based deferred. Server is repeatedly polled, and when
+ * condition is met, deferred is resolved.
+ */
+var server_state_deferred = function(url, url_params, interval, success_fn) {
+    var deferred = $.Deferred(),
+        go = function() {
+            $.getJSON(url, url_params, function(result) {
+                if (success_fn(result)) {
+                    // Result is good, so resolve.
+                    deferred.resolve(result);
+                }
+                else {
+                    // Result not good, try again.
+                    setTimeout(go, interval);
+                }
+            });
+        };
+    go();
+    return deferred;
+};
+
+/**
  * Find browser's requestAnimationFrame method or fallback on a setTimeout 
  */
 var requestAnimationFrame = (function(){
@@ -207,8 +229,7 @@ extend( CanvasManager.prototype, {
         var patterns = this.patterns,
             dummy_context = this.dummy_context,
             image = new Image();
-        // FIXME: where does image_path come from? not in browser.mako...
-        image.src = image_path + path;
+        image.src = galaxy_paths.attributes.image_path + path;
         image.onload = function() {
             patterns[key] = dummy_context.createPattern( image, "repeat" );
         }
@@ -393,8 +414,8 @@ var
     DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
-    DATA_PENDING = "Preparing data. This takes seconds for a small dataset but longer for a large dataset.<br/>\
-                    You can save and close the visualization and preparation will continue.<br/>",
+    DATA_PENDING = "Preparing data. This is very fast for a small dataset but can take a long time for a large dataset. \
+                    If visualization is saved and closed, preparation will continue in the background.",
     DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ",
     DATA_LOADING = "Loading data...",
     DATA_OK = "Ready for display",
@@ -512,7 +533,7 @@ extend(DataManager.prototype, Cache.prototype, {
             console.log("\t", this.key_ary[i], this.obj_cache[this.key_ary[i]]);
         }
         */
-        
+                
         // Look for entry and return if it's a deferred or if data available is compatible with mode.
         var entry = this.get(low, high);
         if ( entry && 
@@ -1297,6 +1318,8 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
 
 /**
  * View object manages complete viz view, including tracks and user interactions.
+ * Events triggered:
+ *      navigate: when browser view changes to a new locations
  */
 var View = function(obj_dict) {
     extend(obj_dict, {
@@ -1319,6 +1342,7 @@ var View = function(obj_dict) {
     this.canvas_manager = new CanvasManager( this.container.get(0).ownerDocument );
     this.reset();
 };
+_.extend( View.prototype, Backbone.Events);
 extend( View.prototype, DrawableCollection.prototype, {
     init: function() {
         // Attribute init.
@@ -1500,7 +1524,17 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.add_label_track( new LabelTrack( this, { content_div: this.top_labeltrack } ) );
         this.add_label_track( new LabelTrack( this, { content_div: this.nav_labeltrack } ) );
         
-        $(window).bind("resize", function() { view.resize_window(); });
+        $(window).bind("resize", function() {
+            // Stop previous timer.
+            if (this.resize_timer) {
+                clearTimeout(this.resize_timer);
+            }
+            
+            // When function activated, resize window and redraw.
+            this.resize_timer = setTimeout(function () {
+                view.resize_window();
+            }, 500 );
+        });
         $(document).bind("redraw", function() { view.redraw(); });
         
         this.reset();
@@ -1518,9 +1552,38 @@ extend( View.prototype, DrawableCollection.prototype, {
             this.intro_div.hide();
         }
     },
+    /**
+     * Triggers navigate events as needed. If there is a delay,
+     * then event is triggered only after navigation has stopped.
+     */
+    trigger_navigate: function(new_chrom, new_low, new_high, delay) {
+        // Stop previous timer.
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+        
+        if (delay) {
+            // To aggregate calls, use timer and only navigate once
+            // location has stabilized.
+            var self = this;
+            this.timer = setTimeout(function () {
+                self.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
+            }, 500 );
+        }
+        else {
+            view.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
+        }
+    },
     update_location: function(low, high) {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
         this.nav_input.val( this.chrom + ':' + commatize(low) + '-' + commatize(high) );
+        
+        // Update location. Only update when there is a valid chrom; when loading vis, there may 
+        // not be a valid chrom.
+        var chrom = view.chrom_select.val();
+        if (chrom !== "") {
+            this.trigger_navigate(chrom, view.low, view.high, true);
+        }
     },
     /**
      * Load chrom data for the view. Returns a jQuery Deferred.
@@ -1572,6 +1635,15 @@ extend( View.prototype, DrawableCollection.prototype, {
         return chrom_data;
     },
     change_chrom: function(chrom, low, high) {
+        var view = this;
+        // If chrom data is still loading, wait for it.
+        if (!view.chrom_data) {
+            view.load_chroms_deferred.then(function() {
+                view.change_chrom(chrom, low, high);
+            });
+            return;
+        }
+        
         // Don't do anything if chrom is "None" (hackish but some browsers already have this set), or null/blank
         if (!chrom || chrom === "None") {
             return;
@@ -1626,6 +1698,11 @@ extend( View.prototype, DrawableCollection.prototype, {
                 view.low = Math.max(low, 0);
                 view.high = Math.min(high, view.max_high);
             }
+            else {
+                // Low and high undefined, so view is whole chome.
+                view.low = 0;
+                view.high = view.max_high;
+            }
             view.reset_overview();
             view.request_redraw();
         }
@@ -1659,6 +1736,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.move_delta( fraction * span );
     },
     move_delta: function(delta_chrom) {
+        // Update low, high.
         var view = this;
         var current_chrom_span = view.high - view.low;
         // Check for left and right boundaries
@@ -1672,7 +1750,12 @@ extend( View.prototype, DrawableCollection.prototype, {
             view.high -= delta_chrom;
             view.low -= delta_chrom;
         }
+                
         view.request_redraw();
+        
+        // Navigate.
+        var chrom = view.chrom_select.val();
+        this.trigger_navigate(chrom, view.low, view.high, true);
     },
     /**
      * Add a drawable to the view.
@@ -1756,6 +1839,8 @@ extend( View.prototype, DrawableCollection.prototype, {
      * that requestAnimationFrame can manage redrawing.
      */
     _redraw: function(nodraw) {
+        // TODO: move this code to function that does location setting.
+        
         // Clear because requested redraw is being handled now.
         this.requested_redraw = false;
         
@@ -1775,6 +1860,10 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.low = Math.floor(low);
         this.high = Math.ceil(high);
         
+        this.update_location(this.low, this.high);
+        
+        // -- Drawing code --
+        
         // Calculate resolution in both pixels/base and bases/pixel; round bases/pixels for tile calculations.
         // TODO: require minimum difference in new resolution to update?
         this.resolution_b_px = (this.high - this.low) / this.viewport_container.width();
@@ -1793,7 +1882,6 @@ extend( View.prototype, DrawableCollection.prototype, {
             this.overview_highlight.css({ left: left_px, width: width_px });
         }
         
-        this.update_location(this.low, this.high);
         if (!nodraw) {
             var track, force, clear_after;
             for (var i = 0, len = this.tracks_to_be_redrawn.length; i < len; i++) {
@@ -1811,7 +1899,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         }
     },
     zoom_in: function (point, container) {
-        if (this.max_high === 0 || this.high - this.low < this.min_separation) {
+        if (this.max_high === 0 || this.high - this.low <= this.min_separation) {
             return;
         }
         var span = this.high - this.low,
@@ -2114,7 +2202,7 @@ extend(Tool.prototype, {
         $.extend(url_params, this.get_param_values_dict());
         
         // Run tool.
-        // TODO: rewrite to use $.when():
+        // TODO: rewrite to use server state deferred.
         var json_run_tool = function() {
             $.getJSON(rerun_tool_url, url_params, function(response) {
                 if (response === "no converter") {
@@ -3329,18 +3417,15 @@ extend(Track.prototype, Drawable.prototype, {
      * Hide any elements that are part of the tracks contents area. Should
      * remove as approprite, the track will be redrawn by show_contents.
      */
-    hide_contents : function () {
-        // Clear contents by removing any elements that are contained in
-        // the tracks content_div
-        this.content_div.children().remove();
-        // Hide the content div
-        this.content_div.hide();
-        // And any y axis labels (common to several track types)
+    hide_contents: function () {
+        // Hide tiles.
+        this.tiles_div.hide();
+        // Hide any y axis labels (common to several track types)
         this.container_div.find(".yaxislabel, .track-resize").hide()
     },
-    show_contents : function() {
+    show_contents: function() {
         // Show the contents div and labels (if present)
-        this.content_div.show();
+        this.tiles_div.show();
         this.container_div.find(".yaxislabel, .track-resize").show()
         // Request a redraw of the content
         this.request_draw();
@@ -3402,7 +3487,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
         // about track status.
         var init_deferred = $.Deferred();
-        $.getJSON(converted_datasets_state_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
+        $.getJSON(this.dataset_check_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
                  function (result) {
             if (!result || result === "error" || result.kind === "error") {
                 track.container_div.addClass("error");
@@ -3424,7 +3509,7 @@ extend(Track.prototype, Drawable.prototype, {
                 track.tiles_div.html(DATA_PENDING);
                 //$("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif").appendTo(track.tiles_div);
                 setTimeout(function() { track.init(); }, track.data_query_wait);
-            } else if (result['status'] === "data") {
+            } else if (result === "data" || result['status'] === "data") {
                 if (result['valid_chroms']) {
                     track.valid_chroms = result['valid_chroms'];
                     track.update_icons();
@@ -3897,28 +3982,37 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.data_query_wait = 1000;
         this.dataset_check_url = dataset_state_url;
         
-        /**
-         * Predraw init sets up postdraw init.
-         */
-        this.predraw_init = function() {
-            // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
-            var track = this; 
-            var post_init = function() {
-                if (track.data_manager.size() === 0) {
-                    // Track still drawing initial data, so do nothing.
-                    setTimeout(post_init, 300);
-                }
-                else {
-                    // Track drawing done: reset dataset check, data URL, wait time and get dataset state to start
-                    // indexing.
-                    track.data_url = default_data_url;
-                    track.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
-                    track.dataset_state_url = converted_datasets_state_url;
-                    $.getJSON(track.dataset_state_url, {dataset_id : track.dataset_id, hda_ldda: track.hda_ldda}, function(track_data) {});
-                }
-            };
-            post_init();
-        }
+        //
+        // Set up one-time, post-draw to clear tool execution settings.
+        //
+        this.normal_postdraw_actions = this.postdraw_actions;
+        this.postdraw_actions = function(tiles, width, w_scale, clear_after) {
+            var self = this;
+            
+            // Do normal postdraw init.
+            self.normal_postdraw_actions(tiles, width, w_scale, clear_after);
+            
+            // Tool-execution specific post-draw init:
+            
+            // Reset dataset state, wait time.
+            self.dataset_state_url = converted_datasets_state_url;
+            self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+
+            // Reset data URL when dataset indexing has completed/when not pending.
+            $.when(
+                // Set up deferred to check dataset state until it is not pending.
+                server_state_deferred(self.dataset_state_url,
+                                      {dataset_id : self.dataset_id, hda_ldda: self.hda_ldda},
+                                      self.data_query_wait,
+                                      function(result) { return result !== "pending" })
+            ).then(function() {
+                // Dataset is indexed, so use default data URL.
+                self.data_url = default_data_url;
+            });
+                        
+            // Reset post-draw actions function.
+            self.postdraw_actions = self.normal_postdraw_actions;
+        };
     }
 });
 
@@ -4252,6 +4346,7 @@ var ReferenceTrack = function (view) {
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
     this.data_manager = new ReferenceTrackDataManager(DATA_CACHE_SIZE, this, false);
+    this.hide_contents();
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     build_header_div: function() {},
@@ -4269,7 +4364,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         if (w_scale > this.view.canvas_manager.char_width_px) {
             if (seq.data === null) {
-                track.content_div.css("height", "0px");
+                this.hide_contents();
                 return;
             }
             var canvas = ctx.canvas;
@@ -4280,17 +4375,10 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 var c_start = Math.floor(c * w_scale);
                 ctx.fillText(seq[c], c_start, 10);
             }
+            this.show_contents();
             return new Tile(track, tile_index, resolution, canvas, seq);
         }
-        this.content_div.css("height", "0px");
-    },
-    /**
-     * If there is a tile with sequence data, set content div so that data is visible.
-     */
-    after_show_tile: function(tile) {
-        if (tile) {
-            this.content_div.css("height", "12px");
-        }
+        this.hide_contents();
     }
 });
 
@@ -4451,11 +4539,15 @@ var FeatureTrack = function(view, container, obj_dict) {
     TiledTrack.call(this, view, container, obj_dict);
 
     // Define and restore track configuration.
+    var 
+        block_color = get_random_color(),
+        reverse_strand_color = get_random_color( [ block_color, "#ffffff" ] );
     this.config = new DrawableConfig( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: block_color },
+            { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: reverse_strand_color },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
               help: 'Show the number of items in each bin when drawing summary histogram' },
@@ -4902,8 +4994,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Returns true if data can be subsetted.
      */
     can_subset: function(data) {
-        // Do not subset summary tree data or entries with a message.
-        if (data.dataset_type === "summary_tree" || data.message) {
+        // Do not subset summary tree data, entries with a message, or data with no detail.
+        if (data.dataset_type === "summary_tree" || data.message || data.extra_info === "no_detail")  {
             return false;
         }
 
@@ -5606,6 +5698,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             // -1 because end is not included in feature; see FeaturePainter documentation for details.
             feature_end = feature[2] - 1,
             feature_name = feature[3],
+            feature_strand = feature[4],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             draw_start = f_start,
@@ -5613,7 +5706,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale + this.get_top_padding(width),
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
-            block_color = this.prefs.block_color,
+            // For now, assume '.' === '+'
+            block_color = block_color = (!feature_strand || feature_strand === "+" || feature_strand === "." ? this.prefs.block_color : this.prefs.reverse_strand_color);
             label_color = this.prefs.label_color;
         
         // Set global alpha.
@@ -5631,8 +5725,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         } 
         else { // Mode is either Squish or Pack:
             // Feature details.
-            var feature_strand = feature[4],
-                feature_ts = feature[5],
+            var feature_ts = feature[5],
                 feature_te = feature[6],
                 feature_blocks = feature[7],
                 // Whether we are drawing full height or squished features
@@ -5731,17 +5824,21 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
                     // Draw thin block.
                     ctx.fillStyle = block_color;
-                    ctx.fillRect(block_start, y_center + (thick_height-thin_height)/2 + 1, block_end - block_start, thin_height );
+                    ctx.fillRect(block_start, y_center + (thick_height-thin_height)/2 + 1, block_end - block_start, thin_height);
 
                     // If block intersects with thick region, draw block as thick.
                     // - No thick is sometimes encoded as thick_start == thick_end, so don't draw in that case
                     if (thick_start !== undefined && feature_te > feature_ts && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
                             block_thick_end = Math.min(block_end, thick_end);
-                        ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
+                        ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
+                        // FIXME: for GFF datasets, only one block of many may be fetched, so it is not possible to 
+                        // determine if feature has only one block. Hence, Ffr now, do not use b/c color is used to encoding 
+                        // strand.
+                        /*
                         if ( feature_blocks.length === 1 && mode === "Pack") {
                             // Exactly one block means we have no introns, but do have a distinct "thick" region,
-                            // draw arrows over it if in pack mode
+                            // draw arrows over it if in pack mode.
                             if (feature_strand === "+") {
                                 ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
                             } else if (feature_strand === "-") {
@@ -5752,8 +5849,9 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                                 block_thick_start += 2;
                                 block_thick_end -= 2;
                             }
-                            ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height );
-                        }   
+                            ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
+                        }
+                        */
                     }
                     // Draw individual connectors if required
                     if ( this.draw_individual_connectors && last_block_start ) {

@@ -55,7 +55,13 @@
                             <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repositories', webapp='community' )}">Browse all repositories</a>
                         </div>
                         <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='reset_all_repository_metadata', webapp='community' )}">Reset all metadata</a>
+                        </div>
+                        <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repository_metadata', webapp='community' )}">Browse metadata</a>
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='admin', webapp='community' )}">Browse invalid tools</a>
                         </div>
                     </div>
                 </div>
@@ -86,6 +92,12 @@
                         </div>
                     </div>
                 </div>
+                <div class="toolSectionTitle">
+                    Statistics
+                </div>
+                    <div class="toolTitle">
+                        <a target="galaxy_main" href="${h.url_for( controller='admin', action='regenerate_statistics', webapp='community' )}">View shed statistics</a>
+                    </div>
             </div>
         </div>    
     </div>

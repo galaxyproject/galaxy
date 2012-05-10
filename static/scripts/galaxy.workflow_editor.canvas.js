@@ -188,7 +188,7 @@ $.extend( Node.prototype, {
                         .appendTo( "body" )
                         .append(
                             $("<div class='buttons'></div>").append(
-                                $("<img/>").attr("src", image_path + '/delete_icon.png').click( function() {
+                                $("<img/>").attr("src", galaxy_paths.attributes.image_path + '/delete_icon.png').click( function() {
                                     $.each( terminal.connectors, function( _, x ) {
                                         x.destroy();
                                     });
@@ -331,17 +331,17 @@ $.extend( Node.prototype, {
             }
             var r = $("<div class='form-row dataRow'>" + label + "</div>" );
             if (node.type == 'tool'){
-                var callout = $("<div class='callout'></div>")
+                var callout = $("<div class='callout "+label+"'></div>")
                     .css( { display: 'none' } )
                     .append(
                         $("<div class='buttons'></div>").append(
-                            $("<img/>").attr('src', image_path + '/fugue/asterisk-small-outline.png').click( function() {
+                            $("<img/>").attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-outline.png').click( function() {
                                 if ($.inArray(output.name, node.workflow_outputs) != -1){
                                     node.workflow_outputs.splice($.inArray(output.name, node.workflow_outputs), 1);
-                                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                                    callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-outline.png');
                                 }else{
                                     node.workflow_outputs.push(output.name);
-                                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                                    callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small.png');
                                 }
                                 workflow.has_changes = true;
                                 canvas_manager.draw_overview();
@@ -355,20 +355,20 @@ $.extend( Node.prototype, {
                 callout.show();
                 r.append(callout);
                 if ($.inArray(output.name, node.workflow_outputs) === -1){
-                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                    callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-outline.png');
                 }else{
-                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                    callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small.png');
                 }
                 r.hover(
                     function(){
-                        callout.find('img').attr('src', image_path + '/fugue/asterisk-small-yellow.png');
+                        callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-yellow.png');
                     },
                     function(){
                         if ($.inArray(output.name, node.workflow_outputs) === -1){
-                            callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                            callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small-outline.png');
                         }else{
-                            callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
-                        }                            
+                            callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small.png');
+                        }
                     });
             }
             r.css({  position:'absolute',
@@ -477,59 +477,65 @@ $.extend( Workflow.prototype, {
     },
     rectify_workflow_outputs : function() {
         // Find out if we're using workflow_outputs or not.
-        var using_workflow_outputs = false;
+        var using_workflow_outputs, has_existing_pjas = false;
         $.each( this.nodes, function ( k, node ) {
             if (node.workflow_outputs && node.workflow_outputs.length > 0){
                 using_workflow_outputs = true;
             }
+            $.each(node.post_job_actions, function(pja_id, pja){
+                if (pja.action_type === "HideDatasetAction"){
+                    has_existing_pjas = true;
+                }
+            });
         });
-        if (using_workflow_outputs == false){
-            //We're done, leave PJAs alone.
-            return true;
+        if (using_workflow_outputs !== false || has_existing_pjas !== false){
+            // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
+            $.each(this.nodes, function (k, node ){
+                if (node.type === 'tool'){
+                    var node_changed = false;
+                    if (node.post_job_actions == null){
+                        node.post_job_actions = {};
+                        node_changed = true;
+                    }
+                    var pjas_to_rem = [];
+                    $.each(node.post_job_actions, function(pja_id, pja){
+                        if (pja.action_type == "HideDatasetAction"){
+                            pjas_to_rem.push(pja_id);
+                        }
+                    });
+                    if (pjas_to_rem.length > 0 && node == workflow.active_node) {
+                        $.each(pjas_to_rem, function(i, pja_name){
+                            node_changed = true;
+                            delete node.post_job_actions[pja_name];
+                        });
+                    }
+                    if (using_workflow_outputs){
+                        $.each(node.output_terminals, function(ot_id, ot){
+                            var create_pja = true;
+                            $.each(node.workflow_outputs, function(i, wo_name){
+                                if (ot.name === wo_name){
+                                    create_pja = false;
+                                }
+                            });
+                            if (create_pja === true){
+                                node_changed = true;
+                                var pja = {
+                                    action_type : "HideDatasetAction",
+                                    output_name : ot.name,
+                                    action_arguments : {}
+                                }
+                                node.post_job_actions['HideDatasetAction'+ot.name] = null;
+                                node.post_job_actions['HideDatasetAction'+ot.name] = pja;
+                            }
+                        });
+                    }
+                    // lastly, if this is the active node, and we made changes, reload the display at right.
+                    if (workflow.active_node == node && node_changed === true) {
+                        workflow.reload_active_node();
+                    }
+                }
+            });
         }
-        wf = this;
-        $.each(this.nodes, function (k, node ){
-            if (node.type == 'tool'){
-                var node_changed = false;
-                if (node.post_job_actions == null){
-                    node.post_job_actions = {};
-                }
-                var pjas_to_rem = [];
-                $.each(node.post_job_actions, function(pja_id, pja){
-                    if (pja.action_type == "HideDatasetAction"){
-                        pjas_to_rem.push(pja_id);
-                    }
-                });
-                if (pjas_to_rem.length > 0 && node == workflow.active_node) {
-                    $.each(pjas_to_rem, function(i, pja_name){
-                        node_changed = true;
-                        delete node.post_job_actions[pja_name];
-                    });
-                }
-                $.each(node.output_terminals, function(ot_id, ot){
-                    var create_pja = true;
-                    $.each(node.workflow_outputs, function(i, wo_name){
-                        if (ot.name == wo_name){
-                            create_pja = false;
-                        }
-                    });
-                    if (create_pja == true){
-                        node_changed = true;
-                        var pja = {
-                            action_type : "HideDatasetAction", 
-                            output_name : ot.name, 
-                            action_arguments : {}
-                        }
-                        node.post_job_actions['HideDatasetAction'+ot.name] = null;
-                        node.post_job_actions['HideDatasetAction'+ot.name] = pja;                    
-                    }
-                });
-                // lastly, if this is the active node, and we made changes, reload the display at right.
-                 if (wf.active_node == node && node_changed == true) {
-                     wf.reload_active_node();
-                 }
-            }
-        });
     },
     to_simple : function () {
         var nodes = {};
@@ -580,6 +586,7 @@ $.extend( Workflow.prototype, {
         var max_id = 0;
         wf.name = data.name;
         // First pass, nodes
+        var using_workflow_outputs = false;
         $.each( data.steps, function( id, step ) {
             var node = prebuild_node( "tool", step.name, step.tool_id );
             node.init_field_data( step );
@@ -589,6 +596,20 @@ $.extend( Workflow.prototype, {
             node.id = step.id;
             wf.nodes[ node.id ] = node;
             max_id = Math.max( max_id, parseInt( id ) );
+            // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
+            // Check for either, and then add outputs in the next pass.
+            if (!using_workflow_outputs && node.type === 'tool'){
+                if (node.workflow_outputs.length > 0){
+                    using_workflow_outputs = true;
+                }
+                else{
+                    $.each(node.post_job_actions, function(pja_id, pja){
+                        if (pja.action_type === "HideDatasetAction"){
+                            using_workflow_outputs = true;
+                        }
+                    });
+                }
+            }
         });
         wf.id_counter = max_id + 1;
         // Second pass, connections
@@ -603,6 +624,17 @@ $.extend( Workflow.prototype, {
                     c.redraw();
                 }
             });
+            if(using_workflow_outputs && node.type === 'tool'){
+                // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
+                $.each(node.output_terminals, function(ot_id, ot){
+                    if(node.post_job_actions['HideDatasetAction'+ot.name] === undefined){
+                        node.workflow_outputs.push(ot.name);
+                        callout = $(node.element).find('.callout.'+ot.name);
+                        callout.find('img').attr('src', galaxy_paths.attributes.image_path + '/fugue/asterisk-small.png');
+                        workflow.has_changes = true;
+                    }
+                });
+            }
         });
     },
     check_changes_in_active_form : function() {
@@ -793,18 +825,18 @@ function prebuild_node( type, title_text, tool_id ) {
     f.append( title );
     f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );    
     var b = $("<div class='toolFormBody'></div>");
-    var tmp = "<div><img height='16' align='middle' src='" +image_path+ "/loading_small_white_bg.gif'/> loading tool info...</div>";
+    var tmp = "<div><img height='16' align='middle' src='" +galaxy_paths.attributes.image_path+ "/loading_small_white_bg.gif'/> loading tool info...</div>";
     b.append( tmp );
     node.form_html = tmp;
     f.append( b );
     // Fix width to computed width
     // Now add floats
     var buttons = $("<div class='buttons' style='float: right;'></div>");
-    buttons.append( $("<img/>").attr("src", image_path + '/delete_icon.png').click( function( e ) {
+    buttons.append( $("<img/>").attr("src", galaxy_paths.attributes.image_path + '/delete_icon.png').click( function( e ) {
         node.destroy();
     } ).hover( 
-        function() { $(this).attr( "src", image_path + "/delete_icon_dark.png" ); },
-        function() { $(this).attr( "src", image_path + "/delete_icon.png" ); }
+        function() { $(this).attr( "src", galaxy_paths.attributes.image_path + "/delete_icon_dark.png" ); },
+        function() { $(this).attr( "src", galaxy_paths.attributes.image_path + "/delete_icon.png" ); }
     ) );
     // Place inside container
     f.appendTo( "#canvas-container" );

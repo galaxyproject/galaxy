@@ -1,4 +1,4 @@
-<tool id="megablast_wrapper" name="Megablast" version="1.1.0">
+<tool id="megablast_wrapper" name="Megablast" version="1.2.0">
     <description> compare short reads against htgs, nt, and wgs databases</description>
     <command interpreter="python">
       megablast_wrapper.py
@@ -16,15 +16,15 @@
         <param name="source_select" type="select" display="radio" label="against target database">
             <options from_data_table="blastdb" />
         </param>
-        <param name="word_size" type="select" label="using word size" help="Size of best perfect match (-W)">
+        <param name="word_size" type="select" label="using word size" help="Size of best perfect match (-word_size)">
             <option value="28">28</option>
             <option value="16">16</option>
         </param>
-        <param name="iden_cutoff" type="float" size="15" value="90.0" label="report hits above this identity (-p)" help="no cutoff if 0" />
-        <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff (-e)" />
-        <param name="filter_query" type="select" label="Filter out low complexity regions? (-F)">
-            <option value="T">Yes</option>
-            <option value="F">No</option>
+        <param name="iden_cutoff" type="float" size="15" value="90.0" label="report hits above this identity (-perc_identity)" help="no cutoff if 0" />
+        <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff (-evalue)" />
+        <param name="filter_query" type="select" label="Filter out low complexity regions? (-dust)">
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
         </param>
     </inputs>
     <outputs>
@@ -41,7 +41,7 @@
             <param name="word_size" value="28" />
             <param name="iden_cutoff" value="99.0" />
             <param name="evalue_cutoff" value="10.0" />
-            <param name="filter_query" value="T" />
+            <param name="filter_query" value="yes" />
             <output name="output1" file="megablast_wrapper_test1.out"/> 
         </test>
     </tests>
@@ -55,7 +55,7 @@
 
 **What it does**
 
-This tool runs **megablast** (for information about megablast, please see the reference below) a high performance nucleotide local aligner developed by Webb Miller and colleagues.
+This tool runs **megablast** function of BLAST+ blastn tool - a high performance nucleotide local aligner developed by Webb Miller and colleagues.
 
 -----
 

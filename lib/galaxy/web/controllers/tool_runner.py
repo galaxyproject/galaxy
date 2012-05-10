@@ -58,6 +58,8 @@ class ToolRunner( BaseUIController ):
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             return "Tool '%s' does not exist, kwd=%s " % (tool_id, kwd)
+        if tool.require_login and not trans.user:
+            return trans.response.send_redirect( url_for( controller='user', action='login', cntrller='user', message="You must be logged in to use this tool.", status="info", redirect=url_for( controller='/tool_runner', action='index', tool_id=tool_id, **kwd ) ) )
         params = util.Params( kwd, sanitize = False ) #Sanitize parameters when substituting into command line via input wrappers
         #do param translation here, used by datasource tools
         if tool.input_translator:

@@ -117,6 +117,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # -- Files and directories
 
+# Path where genome builds are stored. This defaults to tool-data/genome
+#genome_data_path = tool-data/genome
+
 # Dataset files are stored in this directory.
 #file_path = database/files
 
@@ -151,7 +154,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Directory where chrom len files are kept, currently mainly used by trackster
 #len_file_path = tool-data/shared/ucsc/chrom
 
-
 # Datatypes config file, defines what data (file) types are available in
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
@@ -171,6 +173,14 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Path to the directory containing the external_service_types defined in the config.
 #external_service_type_path = external_service_types
+
+# Tools with a number of outputs not known until runtime can write these
+# outputs to a directory for collection by Galaxy when the job is done.
+# Previously, this directory was new_file_path, but using one global directory
+# can cause performance problems, so using job_working_directory ('.' or cwd
+# when a job is run) is encouraged.  By default, both are checked to avoid
+# breaking existing tools.
+#collect_outputs_from = new_file_path,job_working_directory
 
 # -- Mail and notification
 
@@ -497,9 +507,6 @@ use_interactive = True
 #enable_openid = False
 #openid_config_file = openid_conf.xml
 
-# Enable the (experimental! beta!) Web API.  Documentation forthcoming.
-#enable_api = False
-
 # Optional list of email addresses of API users who can make calls on behalf of
 # other users
 #api_allow_run_as = None
@@ -542,14 +549,32 @@ use_interactive = True
 
 # -- Job Execution
 
-# If running multiple Galaxy processes, one can be designated as the job
-# runner.  For more information, see:
-# http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Web%20Application%20Scaling
-#enable_job_running = True
+# To increase performance of job execution and the web interface, you can
+# separate Galaxy into multiple processes.  There are more than one way to do
+# this, and they are explained in detail in the documentation:
+#
+#   http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Web%20Application%20Scaling
+#
+# By default, Galaxy manages and executes jobs from within a single process and
+# notifies itself of new jobs via in-memory queues.  If you change job_manager
+# and job_handlers from their default values, notification will instead be done
+# using the `state` and `handler` columns of the job table in the database.
 
-# Should jobs be tracked through the database, rather than in memory.
-# Necessary if you're running the load balanced setup.
-#track_jobs_in_database = False
+# Identify the server_name (the string following server: at the top of this
+# file) which should be designated as the job manager (only one):
+#job_manager = main
+
+# Identify the server_name(s) which should be designated as job handlers
+# (responsible for starting, tracking, finishing, and cleaning up jobs) as a
+# comma-separated list.
+#job_handlers = main
+
+# By default, a handler from job_handlers will be selected at random if the
+# tool to run does specify a handler below in [galaxy:tool_handlers].  If you
+# want certain handlers to only handle jobs for tools/params explicitly
+# assigned below, use default_job_handlers to specify which handlers should be
+# used for jobs without explicit handlers.
+#default_job_handlers = main
 
 # This enables splitting of jobs into tasks, if specified by the particular tool config.
 # This is a new feature and not recommended for production servers yet.
@@ -653,20 +678,40 @@ use_interactive = True
 #pbs_stage_path = 
 #pbs_dataset_server = 
 
+<<<<<<< local
 # The URL to the myExperiment instance being used (omit scheme but include port)
 myexperiment_url = www.myexperiment.org:80
 
 # ---- Tool Job Runners -----------------------------------------------------
+=======
+# This option allows users to see the full path of datasets via the "View
+# Details" option in the history.  Administrators can always see this.
+#expose_dataset_path = False
+>>>>>>> other
 
-# Individual per-tool job runner overrides. Parameters can be included to define 
-# multiple runners per tool. E.g. to run Cufflinks jobs initiated from Trackster 
+# ---- Per-Tool Job Management ----------------------------------------------
+
+# Per-tool job handler and runner overrides. Parameters can be included to define multiple
+# runners per tool. E.g. to run Cufflinks jobs initiated from Trackster
 # differently than standard Cufflinks jobs:
-# cufflinks = local:///
-# cufflinks[source@trackster] = local:///
-# If not listed here, a tool will run with the runner defined with 
-# default_cluster_job_runner.
+#
+#   cufflinks = local:///
+#   cufflinks[source@trackster] = local:///
+
+[galaxy:tool_handlers]
+
+# By default, Galaxy will select a handler at random from the list of
+# job_handlers set above.  You can override as in the following examples:
+#
+#upload1 = upload_handler
+#cufflinks[source@trackster] = realtime_handler
 
 [galaxy:tool_runners]
+
+# If not listed here, a tool will run with the runner defined with 
+# default_cluster_job_runner.  These overrides for local:/// are done because
+# these tools can fetch data from remote sites, which may not be suitable to
+# run on a cluster (if it does not have access to the Internet, for example).
 
 biomart = local:///
 encode_db1 = local:///

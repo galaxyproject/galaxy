@@ -1,6 +1,8 @@
 import re
 
 VALID_PUBLICNAME_RE = re.compile( "^[a-z0-9\-]+$" )
+VALID_PUBLICNAME_SUB = re.compile( "[^a-z0-9\-]" )
+FILL_CHAR = '-'
 
 def validate_email( trans, email, user=None, check_dup=True ):
     message = ''
@@ -29,6 +31,20 @@ def validate_publicname( trans, publicname, user=None ):
         return "Public name must contain only lower-case letters, numbers and '-'"
     if trans.sa_session.query( trans.app.model.User ).filter_by( username=publicname ).first():
         return "Public name is taken; please choose another"
+    return ''
+
+def transform_publicname( trans, publicname, user=None ):
+    # User names must be at least four characters in length and contain only lower-case
+    # letters, numbers, and the '-' character.
+    #TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
+    if user and user.username == publicname:
+        return publicname
+    elif publicname not in [ 'None', None, '' ]:
+        publicname = publicname.lower()
+        publicname = re.sub( VALID_PUBLICNAME_SUB, FILL_CHAR, publicname )
+        publicname = publicname.ljust( 4, FILL_CHAR )[:255]
+        if not trans.sa_session.query( trans.app.model.User ).filter_by( username=publicname ).first():
+            return publicname
     return ''
 
 def validate_password( trans, password, confirm ):

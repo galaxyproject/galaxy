@@ -103,36 +103,38 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
-    # If enabled, add the web API
-    if asbool( kwargs.get( 'enable_api', False ) ):
-        add_api_controllers( webapp, app )
-        webapp.api_mapper.resource( 'content',
-                                    'contents',
-                                    controller='library_contents',
-                                    name_prefix='library_',
-                                    path_prefix='/api/libraries/:library_id', 
-                                    parent_resources=dict( member_name='library', collection_name='libraries' ) )
-        webapp.api_mapper.resource( 'content',
-                                    'contents',
-                                    controller='history_contents',
-                                    name_prefix='history_',
-                                    path_prefix='/api/histories/:history_id', 
-                                    parent_resources=dict( member_name='history', collection_name='histories' ) )
-        webapp.api_mapper.resource( 'permission',
-                                    'permissions',
-                                    path_prefix='/api/libraries/:library_id',
-                                    parent_resources=dict( member_name='library', collection_name='libraries' ) )      
-        webapp.api_mapper.resource( 'library', 'libraries', path_prefix='/api' )
-        webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
-        webapp.api_mapper.resource( 'request', 'requests', path_prefix='/api' )
-        webapp.api_mapper.resource( 'form', 'forms', path_prefix='/api' )
-        webapp.api_mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
-        webapp.api_mapper.resource( 'role', 'roles', path_prefix='/api' )
-        webapp.api_mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
-        webapp.api_mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
-        webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
-        webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
-        #webapp.api_mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
+    
+    # Add the web API
+    add_api_controllers( webapp, app )
+    webapp.api_mapper.resource( 'content',
+                                'contents',
+                                controller='library_contents',
+                                name_prefix='library_',
+                                path_prefix='/api/libraries/:library_id', 
+                                parent_resources=dict( member_name='library', collection_name='libraries' ) )
+    webapp.api_mapper.resource( 'content',
+                                'contents',
+                                controller='history_contents',
+                                name_prefix='history_',
+                                path_prefix='/api/histories/:history_id', 
+                                parent_resources=dict( member_name='history', collection_name='histories' ) )
+    webapp.api_mapper.resource( 'permission',
+                                'permissions',
+                                path_prefix='/api/libraries/:library_id',
+                                parent_resources=dict( member_name='library', collection_name='libraries' ) )      
+    webapp.api_mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
+    webapp.api_mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
+    webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
+    webapp.api_mapper.resource( 'request', 'requests', path_prefix='/api' )
+    webapp.api_mapper.resource( 'form', 'forms', path_prefix='/api' )
+    webapp.api_mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
+    webapp.api_mapper.resource( 'role', 'roles', path_prefix='/api' )
+    webapp.api_mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+    webapp.api_mapper.resource( 'tool', 'tools', path_prefix='/api' )
+    webapp.api_mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
+    webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
+    webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
+    #webapp.api_mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware

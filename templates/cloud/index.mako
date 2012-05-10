@@ -71,7 +71,7 @@
                     </div>
                     <div class="form-row">
                         <label for="id_secret">Secret Key</label>
-                        <input type="text" size="120" name="secret" id="id_secret"/><br/>
+                        <input type="password" size="120" name="secret" id="id_secret"/><br/>
                     </div>
                     <div class="form-row">
                         <label for="id_instance_type">Instance Type</label>

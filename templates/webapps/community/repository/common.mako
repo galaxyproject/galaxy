@@ -95,7 +95,7 @@
                         <div class="form-row">
                             <table width="100%">
                                 <tr bgcolor="#D8D8D8" width="100%">
-                                    <td><b>Tools</b><i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i></td>
+                                    <td><b>Valid tools</b><i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i></td>
                                 </tr>
                             </table>
                         </div>
@@ -108,15 +108,13 @@
                                     <td><b>version</b></td>
                                     <td><b>requirements</b></td>
                                 </tr>
-                                %for tool_dict in tool_dicts:
+                                %for index, tool_dict in enumerate( tool_dicts ):
                                     <tr>
                                         <td>
-                                            <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
-                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, webapp=webapp )}">
-                                                    ${tool_dict[ 'name' ]}
-                                                </a>
+                                            <div style="float:left;" class="menubutton split popup" id="tool-${index}-popup">
+                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, webapp=webapp )}">${tool_dict[ 'name' ]}</a>
                                             </div>
-                                            <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
+                                            <div popupmenu="tool-${index}-popup">
                                                 <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ], webapp=webapp )}">View tool metadata</a>
                                             </div>
                                         </td>
@@ -140,6 +138,31 @@
                                             %else:
                                                 none
                                             %endif
+                                        </td>
+                                    </tr>
+                                %endfor
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                    %endif
+                    %if 'invalid_tools' in metadata:
+                        <div class="form-row">
+                            <table width="100%">
+                                <tr bgcolor="#D8D8D8" width="100%">
+                                    <td><b>Invalid tools</b><i> - click the tool config file name to see why the tool is invalid</i></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <% invalid_tool_configs = metadata[ 'invalid_tools' ] %>
+                            <table class="grid">
+                                %for invalid_tool_config in invalid_tool_configs:
+                                    <tr>
+                                        <td>
+                                            <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=invalid_tool_config, changeset_revision=changeset_revision, webapp=webapp )}">
+                                                ${invalid_tool_config}
+                                            </a>
                                         </td>
                                     </tr>
                                 %endfor

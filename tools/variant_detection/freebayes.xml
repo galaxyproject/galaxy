@@ -241,7 +241,7 @@
             <option value="do_not_set" selected="True">Do not set</option>
             <option value="set">Set</option>
           </param>
-          <when value="do_no_set">
+          <when value="do_not_set">
             <!-- do nothing here -->
           </when>
           <when value="set">
@@ -257,7 +257,7 @@
             <option value="do_not_set" selected="True">Do not set</option>
             <option value="set">Set</option>
           </param>
-          <when value="do_no_set">
+          <when value="do_not_set">
             <!-- do nothing here -->
           </when>
           <when value="set">
@@ -289,7 +289,7 @@
             <option value="do_not_set" selected="True">Do not set</option>
             <option value="set">Set</option>
           </param>
-          <when value="do_no_set">
+          <when value="do_not_set">
             <!-- do nothing here -->
           </when>
           <when value="set">
@@ -311,7 +311,7 @@
             <option value="do_not_set" selected="True">Do not set</option>
             <option value="set">Set</option>
           </param>
-          <when value="do_no_set">
+          <when value="do_not_set">
             <!-- do nothing here -->
           </when>
           <when value="set">
@@ -352,7 +352,7 @@
             <option value="do_not_set" selected="True">Do not set</option>
             <option value="set">Set</option>
           </param>
-          <when value="do_no_set">
+          <when value="do_not_set">
             <!-- do nothing here -->
           </when>
           <when value="set">
@@ -368,7 +368,7 @@
             <option value="do_not_set" selected="True">Do not set</option>
             <option value="set">Set</option>
           </param>
-          <when value="do_no_set">
+          <when value="do_not_set">
             <!-- do nothing here -->
           </when>
           <when value="set">
@@ -384,7 +384,7 @@
             <option value="do_not_set" selected="True">Do not set</option>
             <option value="set">Set</option>
           </param>
-          <when value="do_no_set">
+          <when value="do_not_set">
             <!-- do nothing here -->
           </when>
           <when value="set">

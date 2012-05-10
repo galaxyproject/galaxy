@@ -43,6 +43,8 @@ class UniverseApplication( object ):
         # Load security policy
         self.security_agent = self.model.security_agent
         self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )
-        self.openid_providers = OpenIDProviders() #TODO: Add OpenID support
+        # TODO: Add OpenID support
+        self.openid_providers = OpenIDProviders()
+        self.shed_counter = self.model.shed_counter
     def shutdown( self ):
         pass

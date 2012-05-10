@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool id="freebayes_wrapper" name="Call SNPS with Freebayes" version="0.5.0">
+<tool id="freebayes_wrapper" name="Call SNPS with Freebayes" version="0.5.0" hidden="True">
   <requirements>
     <requirement type="package">freebayes</requirement>
   </requirements>

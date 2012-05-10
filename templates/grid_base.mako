@@ -804,10 +804,10 @@
                                     id = 'grid-%d-popup' % i
                                 # Determine appropriate class
                                 cls = ""
-                                if column.attach_popup or href:
+                                if column.attach_popup:
                                     cls = "menubutton"
-                                if column.attach_popup and href:
-                                    cls = "menubutton split"
+                                    if href:
+                                        cls += " split"
 
                             %>
                             <td ${nowrap}>

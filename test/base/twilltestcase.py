@@ -13,6 +13,7 @@ from markupsafe import escape
 from elementtree import ElementTree
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
+from galaxy.util.json import from_json_string
 from base.asserts import verify_assertions
 
 buffer = StringIO.StringIO()
@@ -34,7 +35,15 @@ class TwillTestCase( unittest.TestCase ):
         self.host = os.environ.get( 'GALAXY_TEST_HOST' )
         self.port = os.environ.get( 'GALAXY_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
-        self.file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR' )
+        self.file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', None )
+        self.tool_shed_test_file = os.environ.get( 'GALAXY_TOOL_SHED_TEST_FILE', None )
+        if self.tool_shed_test_file:
+            f = open( self.tool_shed_test_file, 'r' )
+            text = f.read()
+            f.close()
+            self.shed_tools_dict = from_json_string( text )
+        else:
+            self.shed_tools_dict = {}
         self.keepOutdir = os.environ.get( 'GALAXY_TEST_SAVE', '' )
         if self.keepOutdir > '':
            try:
@@ -42,8 +51,6 @@ class TwillTestCase( unittest.TestCase ):
            except:
                pass
         self.home()
-
-        #self.set_history()
 
     # Functions associated with files
     def files_diff( self, file1, file2, attributes=None ):
@@ -162,17 +169,25 @@ class TwillTestCase( unittest.TestCase ):
             if line_diff_count > lines_diff:
                 raise AssertionError, "Failed to find '%s' in history data. (lines_diff=%i):\n" % ( contains, lines_diff )
 
-    def get_filename( self, filename ):
-        full = os.path.join( self.file_dir, filename)
-        return os.path.abspath(full)
+    def get_filename( self, filename, shed_tool_id=None ):
+        if shed_tool_id and self.shed_tools_dict:
+            file_dir = self.shed_tools_dict[ shed_tool_id ]
+            if not file_dir:
+                file_dir = self.file_dir
+        else:
+            file_dir = self.file_dir
+        return os.path.abspath( os.path.join( file_dir, filename ) )
 
     def save_log( *path ):
         """Saves the log to a file"""
         filename = os.path.join( *path )
         file(filename, 'wt').write(buffer.getvalue())
 
-    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab = False, metadata = None, composite_data = None ):
-        """Uploads a file"""
+    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, shed_tool_id=None ):
+        """
+        Uploads a file.  If shed_tool_id has a value, we're testing tools migrated from the distribution to the tool shed,
+        so the tool-data directory of test data files is contained in the installed tool shed repository.
+        """
         self.visit_url( "%s/tool_runner?tool_id=upload1" % self.url )
         try: 
             self.refresh_form( "file_type", ftype ) #Refresh, to support composite files
@@ -182,11 +197,11 @@ class TwillTestCase( unittest.TestCase ):
                     tc.fv( "1", "files_metadata|%s" % elem.get( 'name' ), elem.get( 'value' ) )
             if composite_data:
                 for i, composite_file in enumerate( composite_data ):
-                    filename = self.get_filename( composite_file.get( 'value' ) )
+                    filename = self.get_filename( composite_file.get( 'value' ), shed_tool_id=shed_tool_id )
                     tc.formfile( "1", "files_%i|file_data" % i, filename )
                     tc.fv( "1", "files_%i|space_to_tab" % i, composite_file.get( 'space_to_tab', False ) )
             else:
-                filename = self.get_filename( filename )
+                filename = self.get_filename( filename, shed_tool_id=shed_tool_id )
                 tc.formfile( "1", "file_data", filename )
                 tc.fv( "1", "space_to_tab", space_to_tab )
             tc.submit("runtool_btn")
@@ -204,6 +219,7 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError, "Invalid hid (%s) created when uploading file %s" % ( hid, filename )
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
+
     def upload_url_paste( self, url_paste, ftype='auto', dbkey='unspecified (?)' ):
         """Pasted data in the upload utility"""
         self.visit_page( "tool_runner/index?tool_id=upload1" )
@@ -612,6 +628,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = '1 dataset copied to 1 history'
         self.check_page_for_string( check_str )
         self.home()
+
     def get_hids_in_history( self ):
         """Returns the list of hid values for items in a history"""
         data_list = self.get_history_as_data_list()
@@ -620,6 +637,7 @@ class TwillTestCase( unittest.TestCase ):
             hid = elem.get('hid')
             hids.append(hid)
         return hids
+
     def get_hids_in_histories( self ):
         """Returns the list of hids values for items in all histories"""
         data_list = self.get_histories_as_data_list()
@@ -635,7 +653,7 @@ class TwillTestCase( unittest.TestCase ):
         fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
         return temp_prefix
 
-    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None ):
+    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None, shed_tool_id=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait:
             self.wait( maxseconds=maxseconds ) #wait for job to finish
@@ -674,7 +692,7 @@ class TwillTestCase( unittest.TestCase ):
                     errmsg += str( err )
                     raise AssertionError( errmsg )
             if filename is not None:
-                local_name = self.get_filename( filename )
+                local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
                 temp_name = self.makeTfname(fname = filename)
                 file( temp_name, 'wb' ).write(data)
                 if self.keepOutdir > '':
@@ -708,7 +726,7 @@ class TwillTestCase( unittest.TestCase ):
                         else:
                             raise Exception, 'Unimplemented Compare type: %s' % compare
                         if extra_files:
-                            self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
+                            self.verify_extra_files_content( extra_files, elem.get( 'id' ), shed_tool_id=shed_tool_id )
                     except AssertionError, err:
                         errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
                         errmsg += str( err )
@@ -727,21 +745,21 @@ class TwillTestCase( unittest.TestCase ):
         os.remove( temp_name )
         return temp_local, temp_temp
 
-    def verify_extra_files_content( self, extra_files, hda_id ):
+    def verify_extra_files_content( self, extra_files, hda_id, shed_tool_id=None ):
         files_list = []
         for extra_type, extra_value, extra_name, extra_attributes in extra_files:
             if extra_type == 'file':
                 files_list.append( ( extra_name, extra_value, extra_attributes ) )
             elif extra_type == 'directory':
-                for filename in os.listdir( self.get_filename( extra_value ) ):
+                for filename in os.listdir( self.get_filename( extra_value, shed_tool_id=shed_tool_id ) ):
                     files_list.append( ( filename, os.path.join( extra_value, filename ), extra_attributes ) )
             else:
                 raise ValueError, 'unknown extra_files type: %s' % extra_type
         for filename, filepath, attributes in files_list:
-            self.verify_composite_datatype_file_content( filepath, hda_id, base_name = filename, attributes = attributes )
+            self.verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, shed_tool_id=shed_tool_id )
         
-    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name = None, attributes = None ):
-        local_name = self.get_filename( file_name )
+    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, shed_tool_id=None ):
+        local_name = self.get_filename( file_name, shed_tool_id=shed_tool_id )
         if base_name is None:
             base_name = os.path.split(file_name)[-1]
         temp_name = self.makeTfname(fname = base_name)
@@ -808,13 +826,13 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( genome_build == dbkey )
 
     # Functions associated with user accounts
-    def create( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', referer='' ):
+    def create( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', redirect='' ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
         tc.fv( '1', 'email', email )
         tc.fv( '1', 'webapp', webapp )
-        tc.fv( '1', 'referer', referer )
+        tc.fv( '1', 'redirect', redirect )
         tc.fv( '1', 'password', password )
         tc.fv( '1', 'confirm', password )
         tc.fv( '1', 'username', username )
@@ -918,10 +936,10 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.check_page_for_string( 'Default history permissions have been changed.' )
         self.home()
-    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', referer='' ):
+    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', redirect='' ):
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
-            self.create( email=email, password=password, username=username, webapp=webapp, referer=referer )
+            self.create( email=email, password=password, username=username, webapp=webapp, redirect=redirect )
         if previously_created:
             # The acount has previously been created, so just login.
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
@@ -929,7 +947,7 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_url( "%s/user/login?use_panels=False" % self.url )
             tc.fv( '1', 'email', email )
             tc.fv( '1', 'webapp', webapp )
-            tc.fv( '1', 'referer', referer )
+            tc.fv( '1', 'redirect', redirect )
             tc.fv( '1', 'password', password )
             tc.submit( 'login_button' )
     def logout( self ):
@@ -997,8 +1015,8 @@ class TwillTestCase( unittest.TestCase ):
     def last_page( self ):
         return tc.browser.get_html()
 
-    def load_cookies( self, file ):
-        filename = self.get_filename(file)
+    def load_cookies( self, file, shed_tool_id=None ):
+        filename = self.get_filename( file, shed_tool_id=shed_tool_id )
         tc.load_cookies(filename)
 
     def reload_page( self ):
@@ -1194,14 +1212,14 @@ class TwillTestCase( unittest.TestCase ):
     # Dataset Security stuff
     # Tests associated with users
     def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser',
-                                     username='regular-user4', webapp='galaxy', referer='' ):
+                                     username='regular-user4', webapp='galaxy', redirect='' ):
         """Create a new account for another user"""
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=admin" % self.url )
         tc.fv( '1', 'email', email )
         tc.fv( '1', 'webapp', webapp )
-        tc.fv( '1', 'referer', referer )
+        tc.fv( '1', 'redirect', redirect )
         tc.fv( '1', 'password', password )
         tc.fv( '1', 'confirm', password )
         tc.fv( '1', 'username', username )
@@ -1792,9 +1810,10 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-    def add_datasets_to_sample( self, request_id, sample_id, sample_datasets, strings_displayed=[], strings_displayed_after_submit=[] ):
+    def add_datasets_to_sample( self, request_id, sample_id, external_service_id, sample_datasets, strings_displayed=[], strings_displayed_after_submit=[] ):
         # visit the dataset selection page
-        url = "%s/requests_admin/select_datasets_to_transfer?cntrller=requests_admin&sample_id=%s&request_id=%s" % ( self.url, sample_id, request_id )
+        url = "%s/requests_admin/select_datasets_to_transfer?cntrller=requests_admin&sample_id=%s&request_id=%s&external_service_id=%s" % \
+            ( self.url, sample_id, request_id, external_service_id )
         self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )

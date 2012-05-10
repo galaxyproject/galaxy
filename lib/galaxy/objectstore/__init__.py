@@ -223,7 +223,7 @@ class DiskObjectStore(ObjectStore):
         if not os.path.exists(path):
             return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
     
-    def _construct_path(self, obj, old_style=False, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def _construct_path(self, obj, old_style=False, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, **kwargs):
         """ Construct the expected absolute path for accessing the object
             identified by `obj`.id.
         
@@ -963,6 +963,9 @@ class DistributedObjectStore(ObjectStore):
         return self.__call_method('get_filename', obj, ObjectNotFound, True, **kwargs)
 
     def update_from_file(self, obj, **kwargs):
+        if kwargs.get('create', False):
+            self.create(obj, **kwargs)
+            kwargs['create'] = False
         return self.__call_method('update_from_file', obj, ObjectNotFound, True, **kwargs)
 
     def get_object_url(self, obj, **kwargs):

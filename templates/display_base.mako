@@ -248,7 +248,7 @@
         <div style="overflow: auto; height: 100%;">
             <div style="padding: 10px;">
             
-                <div style="float: right;"><img src="http://www.gravatar.com/avatar/${h.md5(item.user.email)}?d=identicon"></div>
+                <div style="float: right;"><img src="https://secure.gravatar.com/avatar/${h.md5(item.user.email)}?d=identicon"></div>
             
                 <h4>Author</h4>
                 

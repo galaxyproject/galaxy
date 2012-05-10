@@ -1119,7 +1119,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         sname = stored.name
         sname = ''.join(c in valid_chars and c or '_' for c in sname)[0:150]
-        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-Workflow-%s.ga" % ( sname )
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % ( sname )
         trans.response.set_content_type( 'application/galaxy-archive' )
         return stored_dict
     @web.expose
@@ -1160,7 +1160,7 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
+            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true&no_reset=true' % \
                 ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp )
             response = urllib2.urlopen( workflow_url )
             workflow_text = response.read()
@@ -1354,11 +1354,6 @@ class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAn
                 tool = trans.app.toolbox.get_tool( job.tool_id )
                 param_values = job.get_param_values( trans.app )
                 associations = cleanup_param_values( tool.inputs, param_values )
-                # Doing it this way breaks dynamic parameters, backed out temporarily.
-                # def extract_callback( input, value, prefixed_name, prefixed_label ):
-                #     if isinstance( value, UnvalidatedValue ):
-                #         return str( value )
-                # visit_input_values( tool.inputs, param_values, extract_callback )
                 step = model.WorkflowStep()
                 step.type = 'tool'
                 step.tool_id = job.tool_id
@@ -2059,13 +2054,11 @@ def cleanup_param_values( inputs, values ):
                 group_values = values[key]
                 for i, rep_values in enumerate( group_values ):
                     rep_index = rep_values['__index__']
-                    prefix = "%s_%d|" % ( key, rep_index )
-                    cleanup( prefix, input.inputs, group_values[i] )
+                    cleanup( "%s%s_%d|" % (prefix, key, rep_index ), input.inputs, group_values[i] )
             elif isinstance( input, Conditional ):
                 group_values = values[input.name]
                 current_case = group_values['__current_case__']
-                prefix = "%s|" % ( key )
-                cleanup( prefix, input.cases[current_case].inputs, group_values )
+                cleanup( "%s%s|" % ( prefix, key ), input.cases[current_case].inputs, group_values )
     cleanup( "", inputs, values )
     return associations
 

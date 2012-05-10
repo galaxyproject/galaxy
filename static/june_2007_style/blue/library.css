@@ -1,9 +1,9 @@
 .libraryRow{background-color:#ebd9b2;}
-.datasetHighlighted{background-color:#C1C9E5;}
+.datasetHighlighted{background-color:#DFE5F9;}
 .libraryItemDeleted-True{font-style:italic;}
 div.libraryItemBody{padding:4px 4px 2px 4px;}
 li.folderRow,li.datasetRow{border-top:solid 1px #ddd;}
-li.folderRow:hover,li.datasetRow:hover{background-color:#C1C9E5;}
+li.folderRow:hover,li.datasetRow:hover{background-color:#DFE5F9;}
 img.expanderIcon{padding-right:4px;}
 input.datasetCheckbox,li,ul{padding:0;margin:0;}
 .rowTitle{padding:2px;}

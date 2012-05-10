@@ -25,6 +25,11 @@
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bowtie_indices.loc" />
     </table>
+    <!-- Locations of indexes in the Bowtie2 mapper format -->
+    <table name="bowtie2_indexes" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/bowtie2_indices.loc" />
+    </table>
     <!-- Locations of indexes in the Bowtie color-space mapper format -->
     <table name="bowtie_indexes_color" comment_char="#">
         <columns>value, dbkey, name, path</columns>

@@ -1,0 +1,40 @@
+<tool id="samtools_slice_bam" name="Slice BAM" version="0.0.1">
+  <description>by provided regions</description>
+  <requirements>
+      <requirement type="package">samtools</requirement>
+  </requirements>
+  <command interpreter="python">samtools_slice_bam.py
+    "${input_bam}"
+    "${input_bam.metadata.bam_index}"
+    "${input_interval}"
+    "${output_bam}"
+  </command>
+  <inputs>
+    <param name="input_bam" type="data" format="bam" label="BAM file" />
+    <param name="input_interval" type="data" format="bed" label="BED file" />
+  </inputs>
+  <outputs>
+    <data format="bam" name="output_bam"/>
+  </outputs>
+  <tests>
+      <test>
+          <param name="input_bam" value="gatk/fake_phiX_reads_1.bam" ftype="bam" />
+          <param name="input_interval" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <output name="output_bam" file="gatk/fake_phiX_reads_1.bam" ftype="bam" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+ Accepts an input BAM file and an input BED file and creates an output BAM file containing only those alignments that overlap the provided BED intervals.
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `Li H, Handsaker B, Wysoker A, Fennell T, Ruan J, Homer N, Marth G, Abecasis G, Durbin R; 1000 Genome Project Data Processing Subgroup. The Sequence Alignment/Map format and SAMtools. Bioinformatics. 2009 Aug 15;25(16):2078-9. &lt;http://www.ncbi.nlm.nih.gov/pubmed/19505943&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>

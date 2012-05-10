@@ -37,7 +37,7 @@
                     placeholder = 'type to filter';
                 } else {
                     $('.multiinput').addClass('disabled');
-                    $('.multiinput', select.parent().prev()).removeClass('disabled');
+                    $('.multiinput', select.closest('.form-row')).removeClass('disabled');
                     select.attr('multiple', 'multiple').attr('size', 8);
                     placeholder = 'type to filter, [enter] to select all';
                 }

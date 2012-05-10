@@ -34,6 +34,17 @@ class Binary( data.Data ):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
 
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+        trans.response.set_content_type(dataset.get_mime())
+        trans.log_event( "Display dataset id: %s" % str( dataset.id ) )
+        trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
+        to_ext = dataset.extension
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+        trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
+        return open( dataset.file_name )
+
 class Ab1( Binary ):
     """Class describing an ab1 binary sequence file"""
     file_ext = "ab1"

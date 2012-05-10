@@ -65,11 +65,11 @@
 
     <% form_action = h.url_for( cntrller=cntrller, use_panels=use_panels ) %>
 
-    ${render_login_form( form_action=form_action, openid_provider=openid_provider )}
+    ${render_login_form( form_action=form_action )}
 
     <br/>
 
-    ${render_registration_form( form_action=form_action, openid_provider=openid_provider )}
+    ${render_registration_form( form_action=form_action )}
 
     </div>
     </div>

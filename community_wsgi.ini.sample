@@ -4,7 +4,12 @@
 
 use = egg:Paste#http
 port = 9009
+
+# The address on which to listen.  By default, only listen to localhost (the tool shed will not
+# be accessible over the network).  Use '0.0.0.0' to listen on all available network interfaces.
+#host = 0.0.0.0
 host = 127.0.0.1
+
 use_threadpool = true
 threadpool_workers = 10
 

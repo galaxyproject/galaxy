@@ -250,7 +250,7 @@ class RootController( BaseUIController, UsesHistory, UsesAnnotations ):
                     valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
                     fname = data.name
                     fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, toext)
+                    trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-%s-[%s]%s"' % (data.hid, fname, toext)
                 trans.log_event( "Display dataset id: %s" % str(id) )
                 try:
                     return open( data.file_name )

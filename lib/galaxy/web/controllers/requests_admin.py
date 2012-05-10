@@ -199,6 +199,11 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitions ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        sample_id = params.get( 'sample_id', None )
+        try:
+            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             sample_dataset_id = params.get( 'id', None )
@@ -269,11 +274,6 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitions ):
                                                                   **kwd ) )
 
         # Render the grid view
-        sample_id = params.get( 'sample_id', None )
-        try:
-            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Manage "%s" datasets'  % sample.name
@@ -493,6 +493,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitions ):
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='select_datasets_to_transfer',
                                                           request_id=trans.security.encode_id( request.id ),
+                                                          external_service_id=trans.security.encode_id( external_service.id ),
                                                           status=status,
                                                           message=message ) )
     def __create_sample_datasets( self, trans, sample, selected_datasets_to_transfer, external_service ):
@@ -624,9 +625,6 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitions ):
             or not scp_configs.get( 'user_name', '' ) \
             or not scp_configs.get( 'password', '' ):
             err_msg += "Error in external service login information. "
-        # Make sure web API is enabled and API key exists
-        if not trans.app.config.enable_api:
-            err_msg += "The 'enable_api = True' setting is not correctly set in the Galaxy config file. "
         if not trans.user.api_keys:
             err_msg += "Set your API Key in your User Preferences to transfer datasets. "
         # Check if library_import_dir is set

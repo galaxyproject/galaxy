@@ -45,14 +45,28 @@ def css( *args ):
     """
     return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css?v=%s" % server_starttime ) for name in args ] )
         
-def js( *args ):
+def js_helper( prefix, *args ):
     """
-    Take a list of javascript names (no extension) and return appropriate
+    Take a prefix and list of javascript names and return appropriate
     string of script tags.
 
     Cache-bust with time that server started running on
     """
-    return "\n".join( [ javascript_include_tag( "/static/scripts/" + name + ".js?v=%s" % server_starttime ) for name in args ] )
+    return "\n".join( [ javascript_include_tag( prefix + name + ".js?v=%s" % server_starttime ) for name in args ] )
+    
+def js( *args ):
+    """
+    Take a prefix and list of javascript names and return appropriate
+    string of script tags.
+    """
+    return js_helper( '/static/scripts/', *args )
+    
+def templates( *args ):
+    """
+    Take a list of template names (no extension) and return appropriate
+    string of script tags.
+    """
+    return js_helper( '/static/scripts/templates/compiled/', *args )
     
 # Hashes
 

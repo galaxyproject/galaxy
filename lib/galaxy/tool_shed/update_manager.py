@@ -34,7 +34,7 @@ class UpdateManager( object ):
         log.info( 'Transfer job restarter shutting down...' )
     def check_for_update( self, repository ):
         tool_shed_url = get_url_from_repository_tool_shed( self.app, repository )
-        url = '%s/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&webapp=update_manager' % \
+        url = '%s/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&webapp=update_manager&no_reset=true' % \
             ( tool_shed_url, repository.name, repository.owner, repository.changeset_revision )
         response = urllib2.urlopen( url )
         text = response.read()

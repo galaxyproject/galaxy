@@ -314,6 +314,11 @@ div.unified-panel-body {
     -webkit-border-radius: 1em;
 }
 
+#dialog-box.dialog-box{
+    min-width: 660px;
+    margin: -250px 0 0 -330px;
+}
+
 .dialog-box {
     border: solid #999 1px;
     background: white;
@@ -407,14 +412,26 @@ div.unified-panel-body {
     }
 
     .title {
-        .navbar.brand();
+
+        position: absolute;
+        left: 0;
+        top: 0;
+
         font-family: verdana;
         font-weight: bold;
+        font-size: 20px;
+        line-height: 1;
         color: white;
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
         margin-left: -15px;
         z-index: 2000;
+
+        img {
+            display: inline; 
+            width: 26px; 
+            vertical-align: top;
+        }
         a {
             color: white;
             text-decoration: none;
@@ -1210,6 +1227,10 @@ a.action-button {
 .menubutton {
     .btn();
 
+    &:hover { .btn.hover(); }
+    &:active { .btn.active(); }
+    &:focus { .tab-focus(); }
+
     display: inline-block;
     cursor: pointer;
     position: relative;
@@ -1223,11 +1244,21 @@ a.action-button {
     // padding: 1px 0.25em;
     // margin: -1px -0.25em;
     
+    a {
+        text-decoration: none;
+    }
+
     .label {
         position: relative;
-        // display: block;
+        display: inline-block;
         border-right: none;
         text-decoration: none;
+        text-align: left;
+        // The following properties truncate the text and force the button to have one line
+        max-height: 2*@baseLineHeight;
+        line-height: @baseLineHeight;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     &.popup .label {
@@ -1235,21 +1266,16 @@ a.action-button {
         padding-right: 6px;
     }
 
-    &.popup {
+    &.popup, &.popup.split {
+        padding-right: 18px;
         &:after {
             margin-top: 6px;
+            position: absolute;
+            top: 2px;
+            right: 6px;
             .caret();
         }
     }
-
-    &.popup.split {
-        &:after {
-            margin-top: 6px;
-            margin-left: 0px;
-            .caret();
-        }
-    }
-
 }
 
 // A split menu button, the main button has an action, the arrow causes the
@@ -1401,8 +1427,6 @@ div.permissionContainer {
     padding: 0;
 }
 
-@import "base_sprites";
-
 .tipsy {
     padding: 5px;
     font-size: 10px;
@@ -1521,19 +1545,19 @@ div.historyItem-failed_metadata {
 div.historyItem-error {
     // border-color: @history_error_border;
     background: @history_error_bg;
-    .state-icon {
-        -sprite-group: history-states;
-        -sprite-image: data_error.png;
-    }
+    // .state-icon {
+    //     -sprite-group: history-states;
+    //     -sprite-image: data_error.png;
+    // }
 }
 
 div.historyItem-empty {
     // border-color: @history_error_border;
     background: @history_error_bg;
-    .state-icon {
-        -sprite-group: history-states;
-        -sprite-image: data_empty.png;
-    }
+    // .state-icon {
+    //     -sprite-group: history-states;
+    //     -sprite-image: data_empty.png;
+    // }
 }
 
 div.historyItem-running {
@@ -1561,11 +1585,11 @@ div.historyItem-upload {
 }
 
 div.historyItem-queued {
-    // background: @history_queued_bg;
-    .state-icon {
-        -sprite-group: history-states;
-        -sprite-image: data_queued.png;
-    }
+    background: @history_queued_bg;
+    // .state-icon {
+    //     -sprite-group: history-states;
+    //     -sprite-image: data_queued.png;
+    // }
 }
 
 div.historyItem-noPermission {
@@ -1606,21 +1630,15 @@ pre.peek {
 
 // ==== Tool menu styles 
 
-body.toolMenuPage
+.toolMenuContainer
 {
-    background: white;
     color: @base_text;
     background: @menu_bg_over;
-    margin: 5px;
-    margin-right: 10px;
-    margin-left: 10px;
+    margin-top: 5px;
 }
 
-hr
-{
-    border: none;
-    height: 0px;
-    margin-top: 0px;
+.unified-panel-body .toolMenu {
+	padding: 10px;
 }
 
 div.toolSectionPad
@@ -1632,7 +1650,7 @@ div.toolSectionPad
 }
 
 div.toolSectionWrapper {
-    // margin-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 div.toolSectionDetailsInner
@@ -1648,8 +1666,8 @@ div.toolSectionTitle
 
 div.toolPanelLabel
 {
-  //padding-top: 10px;
-  //padding-bottom: 5px;
+  padding-top: 10px;
+  padding-bottom: 5px;
   font-weight: bold;
   color: gray;
   text-transform: uppercase;
@@ -1677,7 +1695,44 @@ div.toolSectionBody div.toolPanelLabel
 
 div.toolTitleNoSection
 {
-  padding-bottom: 0px;
+  padding-bottom: 5px;
   font-weight: bold;
 }
 
+#tool-search {
+    padding-top: 5px;
+    padding-bottom: 10px;
+    position: relative;
+}
+
+// Dataset Display Styles
+
+#loading_indicator{
+    position:fixed;
+    right:10px;
+    top:10px;
+    height:32px;
+    width:32px;
+    background:url(largespinner.gif);
+}
+
+#content_table td{
+    text-align:right;
+    white-space:nowrap;
+    padding:2px 10px;
+}
+
+#content_table td.stringalign{
+    text-align:left;
+}
+
+// ==== Integrated tool form styles
+
+.toolMenuAndView .toolForm
+{
+	float: left;
+	background-color: white;
+	margin: 10px;
+}
+
+@import "base_sprites";

@@ -132,6 +132,7 @@ class Job( object ):
         self.job_runner_external_id = None
         self.post_job_actions = []
         self.imported = False
+        self.handler = None
 
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
@@ -171,14 +172,11 @@ class Job( object ):
             if not dataset.deleted:
                 return False
         return True
-    def mark_deleted( self, enable_job_running=True, track_jobs_in_database=False ):
+    def mark_deleted( self, track_jobs_in_database=False ):
         """
         Mark this job as deleted, and mark any output datasets as discarded.
         """
-        # This could be handled with *just* track_jobs_in_database, but I
-        # didn't want to make setting track_jobs_in_database required in
-        # non-runner configs.
-        if not enable_job_running or track_jobs_in_database:
+        if track_jobs_in_database:
             self.state = Job.states.DELETED_NEW
         else:
             self.state = Job.states.DELETED
@@ -302,6 +300,20 @@ class JobImportHistoryArchive( object ):
         self.job = job
         self.history = history
         self.archive_dir=archive_dir
+
+class GenomeIndexToolData( object ):
+    def __init__( self, job=None, params=None, dataset=None, deferred_job=None, \
+                  transfer_job=None, fasta_path=None, created_time=None, modified_time=None, \
+                  dbkey=None, user=None, indexer=None ):
+        self.job = job
+        self.dataset = dataset
+        self.fasta_path = fasta_path
+        self.user = user
+        self.indexer = indexer
+        self.created_time = created_time
+        self.modified_time = modified_time
+        self.deferred = deferred_job
+        self.transfer = transfer_job
 
 class DeferredJob( object ):
     states = Bunch( NEW = 'new',
@@ -1128,8 +1140,10 @@ class HistoryDatasetAssociation( DatasetInstance ):
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         # metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:
-            if not metadata_safe or not assoc.metadata_safe:
+            if not assoc.deleted and ( not metadata_safe or not assoc.metadata_safe ):
                 assoc.clear( purge = purge )
+        for assoc in self.implicitly_converted_parent_datasets:
+            assoc.clear( purge = purge, delete_dataset = False )
     def get_display_name( self ):
         ## Name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format.
         hda_name = self.name
@@ -1188,6 +1202,12 @@ class HistoryDatasetAssociationDisplayAtAuthorization( object ):
         self.history_dataset_association = hda
         self.user = user
         self.site = site
+        
+class HistoryDatasetAssociationSubset( object ):
+    def __init__(self, hda, subset, location):
+        self.hda = hda
+        self.subset = subset
+        self.location = location
 
 class Library( object, APIItem ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
@@ -1536,21 +1556,26 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             else:
                 return template.get_widgets( trans.user )
         return []
-    def templates_dict( self ):
+    def templates_dict( self, use_name=False ):
         """
         Returns a dict of template info
         """
+        #TODO: Should have a method that allows names and labels to be returned together in a structured way
         template_data = {}
         for temp_info in self.info_association:
             template = temp_info.template
             content = temp_info.info.content
             tmp_dict = {}
             for field in template.fields:
-                tmp_dict[field['label']] = content[field['name']]
+                if use_name:
+                    name = field[ 'name' ]
+                else:
+                    name = field[ 'label' ]
+                tmp_dict[ name ] = content.get( field[ 'name' ] )
             template_data[template.name] = tmp_dict
         return template_data
-    def templates_json( self ):
-        return simplejson.dumps( self.templates_dict() )
+    def templates_json( self, use_name=False ):
+        return simplejson.dumps( self.templates_dict( use_name=use_name ) )
 
     def get_display_name( self ):
         """
@@ -1617,12 +1642,14 @@ class ImplicitlyConvertedDatasetAssociation( object ):
         self.purged = purged
         self.metadata_safe = metadata_safe
 
-    def clear( self, purge = False ):
+    def clear( self, purge = False, delete_dataset = True ):
         self.deleted = True
         if self.dataset:
-            self.dataset.deleted = True
-            self.dataset.purged = purge
-        if purge: #do something with purging
+            if delete_dataset:
+                self.dataset.deleted = True
+            if purge:
+                self.dataset.purged = True
+        if purge and self.dataset.deleted: #do something with purging
             self.purged = True
             try: os.unlink( self.file_name )
             except Exception, e: print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
@@ -2620,8 +2647,8 @@ class APIKeys( object ):
 
 class ToolShedRepository( object ):
     def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
-                  changeset_revision=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False, uninstalled=False,
-                  dist_to_shed=False ):
+                  changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False,
+                   uninstalled=False, dist_to_shed=False ):
         self.id = id
         self.create_time = create_time
         self.tool_shed = tool_shed
@@ -2630,6 +2657,7 @@ class ToolShedRepository( object ):
         self.owner = owner
         self.installed_changeset_revision = installed_changeset_revision
         self.changeset_revision = changeset_revision
+        self.ctx_rev = ctx_rev
         self.metadata = metadata
         self.includes_datatypes = includes_datatypes
         self.update_available = update_available

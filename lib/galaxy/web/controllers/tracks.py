@@ -486,7 +486,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         data = None
         # TODO: for raw data requests, map dataset type to provider using dict in data_providers.py
         if isinstance( dataset.datatype, Gff ):
-            data = GFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
+            data = RawGFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
             data[ 'extra_info' ] = None
         elif isinstance( dataset.datatype, Bed ):
@@ -932,6 +932,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         # Set input datasets for tool. If running on region, extract and use subset
         # when possible.
         #
+        location = "%s:%i-%i" % ( chrom, low, high )
         for jida in original_job.input_datasets:
             # If param set previously by config actions, do nothing.
             if jida.name in params_set:
@@ -943,48 +944,67 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             elif run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
                 # Dataset is indexed and hence a subset can be extracted and used
                 # as input.
-                track_type, data_sources = input_dataset.datatype.get_track_type()
-                data_source = data_sources[ 'data' ]
-                converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
-                deps = input_dataset.get_converted_dataset_deps( trans, data_source )
-                            
-                # Create new HDA for input dataset's subset.
-                new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext, \
-                                                                         dbkey=input_dataset.dbkey, \
-                                                                         create_dataset=True, \
-                                                                         sa_session=trans.sa_session,
-                                                                         name="Subset [%s:%i-%i] of data %i" % \
-                                                                             ( chrom, low, high, input_dataset.hid ),
-                                                                         visible=False )
-                target_history.add_dataset( new_dataset )
-                trans.sa_session.add( new_dataset )
-                trans.app.security_agent.set_all_dataset_permissions( new_dataset.dataset, hda_permissions )
-            
-                # Write subset of data to new dataset
-                data_provider_class = get_data_provider( original_dataset=input_dataset )
-                data_provider = data_provider_class( original_dataset=input_dataset, 
-                                                     converted_dataset=converted_dataset,
-                                                     dependencies=deps )
-                trans.app.object_store.create( new_dataset.dataset )
-                data_provider.write_data_to_file( chrom, low, high, new_dataset.file_name )
-            
-                # TODO: (a) size not working; (b) need to set peek.
-                new_dataset.set_size()
-                new_dataset.info = "Data subset for trackster"
-                new_dataset.set_dataset_state( trans.app.model.Dataset.states.OK )
                 
-                # Set metadata.
-                if trans.app.config.set_metadata_externally:
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':new_dataset }, overwrite=False )
+                # Look for subset.
+                subset_dataset_association = trans.sa_session.query( trans.app.model.HistoryDatasetAssociationSubset ) \
+                                                             .filter_by( hda=input_dataset, location=location ) \
+                                                             .first()
+                if subset_dataset_association:
+                    # Data subset exists.
+                    subset_dataset = subset_dataset_association.subset
                 else:
-                    message = 'Attributes updated'
-                    new_dataset.set_meta()
-                    new_dataset.datatype.after_setting_metadata( new_dataset )
+                    # Need to create subset.
+                    track_type, data_sources = input_dataset.datatype.get_track_type()
+                    data_source = data_sources[ 'data' ]
+                    converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
+                    deps = input_dataset.get_converted_dataset_deps( trans, data_source )
+                            
+                    # Create new HDA for input dataset's subset.
+                    new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext, \
+                                                                             dbkey=input_dataset.dbkey, \
+                                                                             create_dataset=True, \
+                                                                             sa_session=trans.sa_session,
+                                                                             name="Subset [%s] of data %i" % \
+                                                                                 ( location, input_dataset.hid ),
+                                                                             visible=False )
+                    target_history.add_dataset( new_dataset )
+                    trans.sa_session.add( new_dataset )
+                    trans.app.security_agent.set_all_dataset_permissions( new_dataset.dataset, hda_permissions )
+            
+                    # Write subset of data to new dataset
+                    data_provider_class = get_data_provider( original_dataset=input_dataset )
+                    data_provider = data_provider_class( original_dataset=input_dataset, 
+                                                         converted_dataset=converted_dataset,
+                                                         dependencies=deps )
+                    trans.app.object_store.create( new_dataset.dataset )
+                    data_provider.write_data_to_file( chrom, low, high, new_dataset.file_name )
+            
+                    # TODO: (a) size not working; (b) need to set peek.
+                    new_dataset.set_size()
+                    new_dataset.info = "Data subset for trackster"
+                    new_dataset.set_dataset_state( trans.app.model.Dataset.states.OK )
+                
+                    # Set metadata.
+                    # TODO: set meta internally if dataset is small enough?
+                    if trans.app.config.set_metadata_externally:
+                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, 
+                                                                                                     trans, incoming = { 'input1':new_dataset }, 
+                                                                                                     overwrite=False, job_params={ "source" : "trackster" } )
+                    else:
+                        message = 'Attributes updated'
+                        new_dataset.set_meta()
+                        new_dataset.datatype.after_setting_metadata( new_dataset )
+                        
+                    # Add HDA subset association.
+                    subset_association = trans.app.model.HistoryDatasetAssociationSubset( hda=input_dataset, subset=new_dataset, location=location )
+                    trans.sa_session.add( subset_association )
+                    
+                    subset_dataset = new_dataset
                     
                 trans.sa_session.flush()
                 
                 # Add dataset to tool's parameters.
-                if not set_param_value( tool_params, jida.name, new_dataset ):
+                if not set_param_value( tool_params, jida.name, subset_dataset ):
                     return to_json_string( { "error" : True, "message" : "error setting parameter %s" % jida.name } )
         
         #        

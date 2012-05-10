@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<tool name="GenomeSpace Exporter" id="genomespace_exporter" require_login="True" version="0.0.1">
+    <description> - send data to GenomeSpace</description>
+    <command interpreter="python">genomespace_exporter.py 
+        --genomespace_site "prod"
+        #assert $__user_id__ != 'Anonymous', Exception( 'You must be logged in to use this tool.' )
+        #set $user = $__app__.model.User.get( $__user_id__ )
+        #set $username = $user.preferences.get( 'genomespace_username', None )
+        #set $token = $user.preferences.get( 'genomespace_token', None )
+        #assert None not in ( $username, $token ), Exception( 'You must associate a GenomeSpace OpenID with your account and log in with it.' )
+        #import binascii
+        --username "${username}"
+        --token "${token}"
+        --dataset "${input1}"
+        #if $subdirectory:
+            #for $subd in str( $subdirectory ).split( '/' ):
+                #if not $subd:
+                    --subdirectory "${ binascii.hexlify( '/' ) }"
+                #else:
+                    --subdirectory "${ binascii.hexlify( $subd ) }"
+                #end if
+            #end for
+        #else:
+            --subdirectory "${ binascii.hexlify( 'galaxy_export' ) }"
+            --subdirectory "${ binascii.hexlify( str( $base_url ).split( '://', 1 )[-1] ) }" ##Protocol removed by request
+        #end if
+        #if $filename:
+            --filename "${ binascii.hexlify( str( $filename ) ) }"
+        #else:
+            --filename "${ binascii.hexlify( "Galaxy History Item %s (%s) - %s: %s.%s" % ( $__app__.security.encode_id( $input1.id ), $__app__.security.encode_id( $output_log.id ), $input1.hid, $input1.name, $input1.ext ) ) }"
+        #end if
+        --file_type "${input1.ext}"
+        --content_type "${input1.get_mime()}"
+        --log "${output_log}"
+    </command>
+    <inputs>
+        <param format="data" name="input1" type="data" label="Send this dataset to GenomeSpace" />
+        <param name="base_url" type="baseurl" />
+        <param name="subdirectory" type="drill_down" display="radio" hierarchy="exact" multiple="False" label="Choose Target Directory" dynamic_options="galaxy_code_get_genomespace_folders( genomespace_site = 'prod', trans=__trans__, value=__value__, input_dataset=input1 )" help="Leave blank to generate automatically"/>
+        <param name="filename" type="text" size="80" help="Leave blank to generate automatically" />
+    </inputs>
+    <outputs>
+        <data format="html" name="output_log" />
+    </outputs>
+    <help>
+       This Tool allows you to export data to GenomeSpace. You must have logged in using your GenomeSpace OpenID. You can associate your OpenID credentials under the User Preferences panel.
+    </help>
+    <options refresh="True"/>
+    <code file="genomespace_exporter.py" />
+</tool>

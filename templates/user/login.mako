@@ -50,7 +50,7 @@
 
         %if trans.app.config.enable_openid:
             <br/>
-            ${render_openid_form( referer, False, openid_providers )}
+            ${render_openid_form( redirect, False, openid_providers )}
         %endif
 
     %endif
@@ -59,7 +59,7 @@
 
 </%def>
 
-<%def name="render_login_form( form_action=None, openid_provider='' )">
+<%def name="render_login_form( form_action=None )">
 
     <%
         if form_action is None:
@@ -76,8 +76,7 @@
                 <label>Email address:</label>
                 <input type="text" name="email" value="${email}" size="40"/>
                 <input type="hidden" name="webapp" value="${webapp}" size="40"/>
-                <input type="hidden" name="referer" value="${referer}" size="40"/>
-                <input type="hidden" name="openid_provider" value="${openid_provider}" />
+                <input type="hidden" name="redirect" value="${redirect}" size="40"/>
             </div>
             <div class="form-row">
                 <label>Password:</label>
@@ -94,7 +93,7 @@
 
 </%def>
 
-<%def name="render_openid_form( referer, auto_associate, openid_providers )">
+<%def name="render_openid_form( redirect, auto_associate, openid_providers )">
     <div class="toolForm">
         <div class="toolFormTitle">OpenID Login</div>
         <form name="openid" id="openid" action="${h.url_for( controller='user', action='openid_auth' )}" method="post" target="_parent" >
@@ -102,8 +101,7 @@
                 <label>OpenID URL:</label>
                 <input type="text" name="openid_url" size="60" style="background-image:url('${h.url_for( '/static/images/openid-16x16.gif' )}' ); background-repeat: no-repeat; padding-right: 20px; background-position: 99% 50%;"/>
                 <input type="hidden" name="webapp" value="${webapp}" size="40"/>
-                <input type="hidden" name="referer" value="${referer}" size="40"/>
-                <input type="hidden" name="auto_associate" value="${auto_associate}" size="40"/>
+                <input type="hidden" name="redirect" value="${redirect}" size="40"/>
             </div>
             <div class="form-row">
                 Or, authenticate with your <select name="openid_provider">

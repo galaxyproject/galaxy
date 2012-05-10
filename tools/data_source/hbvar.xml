@@ -1,22 +1,18 @@
 <?xml version="1.0"?>
-<tool name="HbVar" id="hbvar">
+<tool name="HbVar" id="hbvar" tool_type="data_source" version="2.0.0">
 	
 	<description>Human Hemoglobin Variants and Thalassemias</description>
 	
-	<command/>
+	<command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
 	
 	<inputs action="http://globin.bx.psu.edu/cgi-bin/hbvar/query_vars3" check_values="false" method="get" target="_top">
 		<display>go to HbVar database $GALAXY_URL $tool_id</display>
-		<param name="GALAXY_URL" type="baseurl" value="/tool_runner/hbvar" />
-		<param name="tool_id" type="hidden" value = "hbvar"/>
 	</inputs>
 	
 	<uihints minwidth="800"/>
 	
-	<code file="hbvar_filter.py"/>
-	
 	<outputs>
-		<data name="output" format="txt" />
+		<data name="output" format="auto" />
 	</outputs>
 	
 	<options sanitize="False" refresh="True"/>

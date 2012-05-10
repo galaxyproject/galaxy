@@ -1,6 +1,7 @@
 from __init__ import ToolAction
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.util.odict import odict
+from galaxy.util.json import to_json_string
 
 import logging
 log = logging.getLogger( __name__ )
@@ -8,7 +9,7 @@ log = logging.getLogger( __name__ )
 class SetMetadataToolAction( ToolAction ):
     """Tool action used for setting external metadata on an existing dataset"""
     
-    def execute( self, tool, trans, incoming = {}, set_output_hid = False, overwrite = True, history=None ):
+    def execute( self, tool, trans, incoming = {}, set_output_hid = False, overwrite = True, history=None, job_params=None ):
         for name, value in incoming.iteritems():
             if isinstance( value, trans.app.model.HistoryDatasetAssociation ):
                 dataset = value
@@ -30,6 +31,8 @@ class SetMetadataToolAction( ToolAction ):
         job.tool_id = tool.id
         if trans.user:
             job.user_id = trans.user.id
+        if job_params:
+            job.params = to_json_string( job_params )
         start_job_state = job.state #should be job.states.NEW
         try:
             # For backward compatibility, some tools may not have versions yet.

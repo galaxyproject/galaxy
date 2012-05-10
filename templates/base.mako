@@ -26,7 +26,14 @@
   ## <!--[if lt IE 7]>
   ## <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
   ## <![endif]-->
-  ${h.js( "jquery", "galaxy.base" )}
+  ${h.js( "jquery", "galaxy.base", "libs/underscore", "libs/backbone", "libs/backbone-relational", "libs/handlebars.runtime", "mvc/ui" )}
+  <script type="text/javascript">
+      // Set up needed paths.
+      var galaxy_paths = new GalaxyPaths({
+          root_path: '${h.url_for( "/" )}',
+          image_path: '${h.url_for( "/static/images" )}'
+      });
+  </script>
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.

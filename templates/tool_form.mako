@@ -32,23 +32,29 @@
         });
 
         // For drilldown parameters: add expand/collapse buttons and collapse initially-collapsed elements
-        $( 'li ul.toolParameterExpandableCollapsable' ).each( function() {
-            var el = $(this),
-                parent_li = el.parent('li'),
-                sub_ul = el.remove();
-
-            parent_li.find( 'span' ).wrapInner( '<a/>' ).find( 'a' ).click( function() {
-                sub_ul.toggle();
-                $(this).html( sub_ul.is(":hidden") ? '[+]' : '[-]' );
+        $( 'div.drilldown-container' ).each( function() {
+            $(this).find('span.form-toggle' ).each( function() {
+                var show_hide_click_elt = $(this);
+                var group_id = show_hide_click_elt.attr('id').substring( 0, show_hide_click_elt.attr('id').lastIndexOf( '-click' ) );
+                $('#' + group_id + '-container').each( function() {
+                    var show_hide_elt = $(this);
+                    if (  show_hide_click_elt.hasClass( 'toggle-expand' ) ) {
+                        show_hide_elt.hide();
+                    }
+                    show_hide_click_elt.click( function() {
+                        if ( show_hide_click_elt.hasClass("toggle") ){
+                            show_hide_click_elt.addClass("toggle-expand");
+                            show_hide_click_elt.removeClass("toggle");
+                            show_hide_elt.slideUp( 'fast' );
+                        }
+                        else {
+                            show_hide_click_elt.addClass("toggle");
+                            show_hide_click_elt.removeClass("toggle-expand");
+                            show_hide_elt.slideDown( 'fast' );
+                        }
+                    });
+                });
             });
-            parent_li.append( sub_ul );
-        });
-
-        $( 'ul ul.toolParameterExpandableCollapsable' ).each( function(i) {
-            var el = $(this);
-            if (el.attr("default_state") === "collapsed") {
-                el.hide();
-            }
         });
 
         function checkUncheckAll( name, check ) {
@@ -212,7 +218,7 @@
     # Field may contain characters submitted by user and these characters may be unicode; handle non-ascii characters gracefully.
     field_html = field.get_html( prefix )
     if type( field_html ) is not unicode:
-        field_html = unicode( field_html, 'utf-8' )
+        field_html = unicode( field_html, 'utf-8', 'replace' )
 
     if param.type == "hidden":
         return field_html

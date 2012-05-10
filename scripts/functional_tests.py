@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, shutil
+import os, sys, shutil, tempfile, re
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -32,6 +32,13 @@ from galaxy.app import UniverseApplication
 from galaxy.web import buildapp
 from galaxy import tools
 from galaxy.util import bunch
+from galaxy import util
+from galaxy.util.json import to_json_string
+
+import nose.core
+import nose.config
+import nose.loader
+import nose.plugins.manager
 
 log = logging.getLogger( "functional_tests.py" )
 
@@ -40,28 +47,131 @@ default_galaxy_test_port_min = 8000
 default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
+migrated_tool_panel_config = 'migrated_tools_conf.xml'
+installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 
-def main():
-    
+def parse_tool_panel_config( config, shed_tools_dict ):
+    """
+    Parse a shed-related tool panel config to generate the shed_tools_dict. This only happens when testing tools installed from the tool shed.
+    """
+    last_galaxy_test_file_dir = None
+    last_tested_repository_name = None
+    last_tested_changeset_revision = None
+    tree = util.parse_xml( config )
+    root = tree.getroot()
+    for elem in root:
+        if elem.tag == 'tool':
+            galaxy_test_file_dir, \
+            last_tested_repository_name, \
+            last_tested_changeset_revision = get_installed_repository_info( elem,
+                                                                            last_galaxy_test_file_dir,
+                                                                            last_tested_repository_name,
+                                                                            last_tested_changeset_revision )
+            if galaxy_test_file_dir:
+                if galaxy_test_file_dir != last_galaxy_test_file_dir:
+                    if not os.path.isabs( galaxy_test_file_dir ):
+                        galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
+                guid = elem.get( 'guid' )
+                shed_tools_dict[ guid ] = galaxy_test_file_dir
+                last_galaxy_test_file_dir = galaxy_test_file_dir
+        elif elem.tag == 'section':
+            for section_elem in elem:
+                if section_elem.tag == 'tool':
+                    galaxy_test_file_dir, \
+                    last_tested_repository_name, \
+                    last_tested_changeset_revision = get_installed_repository_info( section_elem,
+                                                                                    last_galaxy_test_file_dir,
+                                                                                    last_tested_repository_name,
+                                                                                    last_tested_changeset_revision )
+                    if galaxy_test_file_dir:
+                        if galaxy_test_file_dir != last_galaxy_test_file_dir:
+                            if not os.path.isabs( galaxy_test_file_dir ):
+                                galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
+                        guid = section_elem.get( 'guid' )
+                        shed_tools_dict[ guid ] = galaxy_test_file_dir
+                        last_galaxy_test_file_dir = galaxy_test_file_dir
+    return shed_tools_dict
+
+def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision ):
+    """
+    Return the GALAXY_TEST_FILE_DIR, the containing repository name and the change set revision for the tool elem.
+    This only happens when testing tools installed from the tool shed.
+    """
+    tool_config_path = elem.get( 'file' )
+    installed_tool_path_items = tool_config_path.split( '/repos/' )
+    sans_shed = installed_tool_path_items[ 1 ]
+    path_items = sans_shed.split( '/' )
+    repository_owner = path_items[ 0 ]
+    repository_name = path_items[ 1 ]
+    changeset_revision = path_items[ 2 ]
+    if repository_name != last_tested_repository_name or changeset_revision != last_tested_changeset_revision:
+        # Locate the test-data directory.
+        installed_tool_path = os.path.join( installed_tool_path_items[ 0 ], 'repos', repository_owner, repository_name, changeset_revision )
+        for root, dirs, files in os.walk( installed_tool_path ):
+            if 'test-data' in dirs:
+                return os.path.join( root, 'test-data' ), repository_name, changeset_revision
+        return None, repository_name, changeset_revision
+    return last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision
+
+def run_tests( test_config ):
+    loader = nose.loader.TestLoader( config=test_config )
+    plug_loader = test_config.plugins.prepareTestLoader( loader )
+    if plug_loader is not None:
+        loader = plug_loader
+    tests = loader.loadTestsFromNames( test_config.testNames )
+    test_runner = nose.core.TextTestRunner( stream=test_config.stream,
+                                            verbosity=test_config.verbosity,
+                                            config=test_config )
+    plug_runner = test_config.plugins.prepareTestRunner( test_runner )
+    if plug_runner is not None:
+        test_runner = plug_runner
+    return test_runner.run( tests )
+
+def main():    
     # ---- Configuration ------------------------------------------------------
-    
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
     galaxy_test_save = os.environ.get( 'GALAXY_TEST_SAVE', None)
-
-    if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
-        os.environ['HTTP_ACCEPT_LANGUAGE'] = default_galaxy_locales
-    galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
-    if not os.path.isabs( galaxy_test_file_dir ):
-        galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
-    start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ   
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
-    tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
-    tool_data_table_config_path = 'tool_data_table_conf.xml'
-    tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
-    use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
+    if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
+        os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
+    testing_migrated_tools = '-migrated' in sys.argv
+    testing_installed_tools = '-installed' in sys.argv
+
+    if testing_migrated_tools or testing_installed_tools:
+        sys.argv.pop()
+        # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
+        galaxy_tool_shed_test_file = 'shed_tools_dict'
+        # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
+        fd, tmp_tool_panel_conf = tempfile.mkstemp()
+        os.write( fd, '<?xml version="1.0"?>\n' )
+        os.write( fd, '<toolbox>\n' )
+        os.write( fd, '<tool file="data_source/upload.xml"/>\n' )
+        os.write( fd, '</toolbox>\n' )
+        os.close( fd )
+        tool_config_file = tmp_tool_panel_conf
+        galaxy_test_file_dir = None
+        library_import_dir = None
+        user_library_import_dir = None
+        # Exclude all files except test_toolbox.py.
+        ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
+    else:
+        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
+        galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
+        if not os.path.isabs( galaxy_test_file_dir ):
+            galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
+        library_import_dir = galaxy_test_file_dir
+        user_library_import_dir = os.path.join( galaxy_test_file_dir, 'users' )
+        ignore_files = ()
+
+    start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
     if os.path.exists( 'tool_data_table_conf.test.xml' ):
         tool_data_table_config_path = 'tool_data_table_conf.test.xml'
+    else:    
+        tool_data_table_config_path = 'tool_data_table_conf.xml'
+    tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
+    use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
+    
     if start_server:
         psu_production = False
         galaxy_test_proxy_port = None
@@ -126,38 +236,21 @@ def main():
             try:
                 os.makedirs( dir )
             except OSError:
-                pass
-            
+                pass 
     print "Database connection:", database_connection
-    
-    # What requires these?
-    # handy for (eg) functional tests to save outputs?        
-    if galaxy_test_save:
-    	os.environ['GALAXY_TEST_SAVE'] = galaxy_test_save
-    # pass in through script setenv
-    # will leave a copy of ALL test validate files        
-    os.environ['GALAXY_TEST_HOST'] = galaxy_test_host
-    os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
-    # ---- Build Application --------------------------------------------------
-       
-    app = None
-            
+    # ---- Build Application -------------------------------------------------- 
+    app = None 
     if start_server:
-        
         global_conf = { '__file__' : 'universe_wsgi.ini.sample' }
         if psu_production:
             global_conf = None
-
         if not database_connection.startswith( 'sqlite://' ):
-            kwargs['database_engine_option_max_overflow'] = '20'
-
+            kwargs[ 'database_engine_option_max_overflow' ] = '20'
         if tool_dependency_dir is not None:
-            kwargs['tool_dependency_dir'] = tool_dependency_dir
-
+            kwargs[ 'tool_dependency_dir' ] = tool_dependency_dir
         if use_distributed_object_store:
-            kwargs['object_store'] = 'distributed'
-            kwargs['distributed_object_store_config_file'] = 'distributed_object_store_conf.xml.sample'
-
+            kwargs[ 'object_store' ] = 'distributed'
+            kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         # Build the Universe Application
         app = UniverseApplication( job_queue_workers = 5,
                                    id_secret = 'changethisinproductiontoo',
@@ -179,21 +272,17 @@ def main():
                                    allow_user_deletion = True,
                                    admin_users = 'test@bx.psu.edu',
                                    allow_library_path_paste = True,
-                                   library_import_dir = galaxy_test_file_dir,
-                                   user_library_import_dir = os.path.join( galaxy_test_file_dir, 'users' ),
+                                   library_import_dir = library_import_dir,
+                                   user_library_import_dir = user_library_import_dir,
                                    global_conf = global_conf,
+                                   running_functional_tests=True,
                                    **kwargs )
-        
-        log.info( "Embedded Universe application started" );
-        
+        log.info( "Embedded Universe application started" )
     # ---- Run webserver ------------------------------------------------------
-    
     server = None
     
     if start_server:
-        
-        webapp = buildapp.app_factory( dict(), use_translogger = False, static_enabled = False, app=app )
-
+        webapp = buildapp.app_factory( dict(), use_translogger=False, static_enabled=False, app=app )
         if galaxy_test_port is not None:
             server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
         else:
@@ -217,7 +306,6 @@ def main():
 
         t = threading.Thread( target=server.serve_forever )
         t.start()
-
         # Test if the server is up
         for i in range( 10 ):
             conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port ) # directly test the app, not the proxy
@@ -227,85 +315,83 @@ def main():
             time.sleep( 0.1 )
         else:
             raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
-            
         # Test if the proxy server is up
         if psu_production:
             conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_proxy_port ) # directly test the app, not the proxy
             conn.request( "GET", "/" )
             if not conn.getresponse().status == 200:
                 raise Exception( "Test HTTP proxy server did not return '200 OK'" )
-            
         log.info( "Embedded web server started" )
-
-    
     # ---- Load toolbox for generated tests -----------------------------------
-    
     # We don't add the tests to the path until everything is up and running
     new_path = [ os.path.join( cwd, "test" ) ]
     new_path.extend( sys.path[1:] )
     sys.path = new_path
-    
     import functional.test_toolbox
-    
-    if app:
-        # TODO: provisions for loading toolbox from file when using external server
-        functional.test_toolbox.toolbox = app.toolbox
-        functional.test_toolbox.build_tests()
-    else:
-        # FIXME: This doesn't work at all now that toolbox requires an 'app' instance
-        #        (to get at datatypes, might just pass a datatype registry directly)
-        datatypes_registry = galaxy.datatypes.registry.Registry()
-        datatypes_registry.load_datatypes()
-        my_app = bunch.Bunch( datatypes_registry )
-        test_toolbox.toolbox = tools.ToolBox( 'tool_conf.xml.test', 'tools', my_app )
-
     # ---- Find tests ---------------------------------------------------------
-    
     if galaxy_test_proxy_port:
         log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
     else:
         log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
-    
     success = False
-    
     try:
-        
-        import nose.core
-        import nose.config
-        import nose.loader
-        import nose.plugins.manager
-        
-        test_config = nose.config.Config( env = os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
-        test_config.configure( sys.argv )
-        
-        loader = nose.loader.TestLoader( config = test_config )
-        
-        plug_loader = test_config.plugins.prepareTestLoader( loader )
-        if plug_loader is not None:
-            loader = plug_loader
-        
-        tests = loader.loadTestsFromNames( test_config.testNames )
-        
-        test_runner = nose.core.TextTestRunner(
-            stream = test_config.stream,
-            verbosity = test_config.verbosity,
-            config = test_config)
-        
-        plug_runner = test_config.plugins.prepareTestRunner( test_runner )
-        if plug_runner is not None:
-            test_runner = plug_runner
-        
-        result = test_runner.run( tests )
-        
-        success = result.wasSuccessful()
-        
+        # What requires these? Handy for (eg) functional tests to save outputs?        
+        if galaxy_test_save:
+            os.environ[ 'GALAXY_TEST_SAVE' ] = galaxy_test_save
+        # Pass in through script setenv, will leave a copy of ALL test validate files        
+        os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
+        if testing_migrated_tools or testing_installed_tools:
+            shed_tools_dict = {}
+            if testing_migrated_tools:
+                shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
+            elif testing_installed_tools:
+                for shed_tool_config in installed_tool_panel_configs:
+                    shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
+            # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
+            shed_tools_file = open( galaxy_tool_shed_test_file, 'w' )
+            shed_tools_file.write( to_json_string( shed_tools_dict ) )
+            shed_tools_file.close()
+            if not os.path.isabs( galaxy_tool_shed_test_file ):
+                galaxy_tool_shed_test_file = os.path.join( os.getcwd(), galaxy_tool_shed_test_file )
+            os.environ[ 'GALAXY_TOOL_SHED_TEST_FILE' ] = galaxy_tool_shed_test_file
+            if testing_installed_tools:
+                # Eliminate the migrated_tool_panel_config from the app's tool_configs, append the list of installed_tool_panel_configs,
+                # and reload the app's toolbox.
+                relative_migrated_tool_panel_config = os.path.join( app.config.root, migrated_tool_panel_config )
+                tool_configs = app.config.tool_configs
+                if relative_migrated_tool_panel_config in tool_configs:
+                    tool_configs.remove( relative_migrated_tool_panel_config )
+                for installed_tool_panel_config in installed_tool_panel_configs:
+                    tool_configs.append( installed_tool_panel_config )
+                app.toolbox = tools.ToolBox( tool_configs, app.config.tool_path, app )
+            functional.test_toolbox.toolbox = app.toolbox
+            functional.test_toolbox.build_tests( testing_shed_tools=True )
+            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
+            test_config.configure( sys.argv )
+            result = run_tests( test_config )    
+            success = result.wasSuccessful()
+            try:
+                os.unlink( tmp_tool_panel_conf )
+            except:
+                log.info( "Unable to remove temporary file: %s" % tmp_tool_panel_conf )
+            try:
+                os.unlink( galaxy_tool_shed_test_file )
+            except:
+                log.info( "Unable to remove file: %s" % galaxy_tool_shed_test_file )
+        else:
+            functional.test_toolbox.toolbox = app.toolbox
+            functional.test_toolbox.build_tests()
+            if galaxy_test_file_dir:
+                os.environ[ 'GALAXY_TEST_FILE_DIR' ] = galaxy_test_file_dir
+            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
+            test_config.configure( sys.argv )
+            result = run_tests( test_config )    
+            success = result.wasSuccessful()
     except:
         log.exception( "Failure running tests" )
         
     log.info( "Shutting down" )
-    
-    # ---- Teardown -----------------------------------------------------------
-    
+    # ---- Tear down -----------------------------------------------------------
     if server:
         log.info( "Shutting down embedded web server" )
         server.server_close()
@@ -330,7 +416,6 @@ def main():
                     shutil.rmtree( dir )
             except:
                 pass
-        
     if success:
         return 0
     else:

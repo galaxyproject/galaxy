@@ -62,3 +62,13 @@
         </form>
     </div>
 </div>
+%if readme_text:
+    <div class="toolForm">
+        <div class="toolFormTitle">Repository README file (may contain important installation or license information)</div>
+        <div class="toolFormBody">
+            <div class="form-row">
+                <pre>${readme_text}</pre>
+            </div>
+        </div>
+    </div>
+%endif

@@ -26,7 +26,7 @@
     <div class="toolFormTitle">Search repositories for workflows</div>
     <div class="toolFormBody">
         <div class="form-row">
-            Enter a workflow name to find repositories that contain workflows matching the search criteria.<br/><br/>
+            Enter a workflow name to find repositories that contain workflows matching the search criteria, or leave blank to find all repositories that contain a workflow.<br/><br/>
             Comma-separated strings may be entered to expand search criteria.
         </div>
         <div style="clear: both"></div>
@@ -46,7 +46,7 @@
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
-                <input type="submit" value="Search repositories"/>
+                <input type="submit" name="find_workflows_button" value="Search repositories"/>
             </div>
         </form>
     </div>

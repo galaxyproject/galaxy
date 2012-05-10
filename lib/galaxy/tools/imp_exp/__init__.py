@@ -1,5 +1,6 @@
 import os, shutil, logging, tempfile, simplejson
 from galaxy import model
+from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.json import *
@@ -324,6 +325,8 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
                         "annotation" : to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags" : get_item_tag_dict( obj ),
                     }
+                if isinstance( obj, UnvalidatedValue ):
+                    return obj.__str__()
                 return simplejson.JSONEncoder.default( self, obj )
         
         #
@@ -415,8 +418,13 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
                 params_dict[ name ] = value
             job_attrs[ 'params' ] = params_dict
     
-            # Get input, output datasets.
-            input_datasets = [ assoc.dataset.hid for assoc in job.input_datasets ]
+            # -- Get input, output datasets. --
+            
+            input_datasets = []
+            for assoc in job.input_datasets:
+                # Optional data inputs will not have a dataset.
+                if assoc.dataset:
+                    input_datasets.append( assoc.dataset.hid )
             job_attrs[ 'input_datasets' ] = input_datasets
             output_datasets = [ assoc.dataset.hid for assoc in job.output_datasets ]
             job_attrs[ 'output_datasets' ] = output_datasets

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<tool name="GenomeSpace Importer" id="genomespace_importer" tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.1">
+    <description> - receive data from GenomeSpace</description>
+    <command interpreter="python">genomespace_importer.py
+        --genomespace_site "prod"
+        #assert $__user_id__ != 'Anonymous', Exception( 'You must be logged in to use this tool.' )
+        #set $user = $__app__.model.User.get( $__user_id__ )
+        #set $username = $user.preferences.get( 'genomespace_username', None )
+        #set $token = $user.preferences.get( 'genomespace_token', None )
+        #assert None not in ( $username, $token ), Exception( 'You must associate a GenomeSpace OpenID with your account and log in with it.' )
+        --username "${username}"
+        --token "${token}"
+        --json_parameter_file "${output_file1}"
+    </command>
+    <inputs check_values="False">
+        <!-- <param name="file_name" type="text" value="" /> -->
+        <param name="URL" type="hidden" value="" />
+    </inputs>
+    <outputs>
+        <data format="auto" name="output_file1" />
+    </outputs>
+    <help>
+       some help text here...
+    </help>
+    <options refresh="True"/>
+</tool>

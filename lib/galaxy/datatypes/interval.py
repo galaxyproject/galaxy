@@ -328,6 +328,9 @@ class Interval( Tabular ):
 
     def get_track_resolution( self, dataset, start, end):
         return None
+        
+    def get_track_type( self ):
+        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
 
 class BedGraph( Interval ):
     """Tab delimited chrom/start/end/datavalue dataset"""
@@ -950,6 +953,9 @@ class Gtf( Gff ):
         dataset.metadata.attribute_types = attribute_types
         dataset.metadata.attributes = len( attribute_types )
         Gff.set_meta( self, dataset, overwrite = overwrite, skip = i )
+        
+    def get_track_type( self ):
+        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
 
 
 class Wiggle( Tabular, _RemoteCallMixin ):

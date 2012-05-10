@@ -54,7 +54,7 @@ def __main__():
     parser.add_option( '-M', '--mismatchPenalty', dest='mismatchPenalty', help='Mismatch penalty' )
     parser.add_option( '-O', '--gapOpenPenalty', dest='gapOpenPenalty', help='Gap open penalty' )
     parser.add_option( '-E', '--gapExtensPenalty', dest='gapExtensPenalty', help='Gap extension penalty' )
-    parser.add_option( '-R', '--suboptAlign', dest='suboptAlign', help='Proceed with suboptimal alignments even if the top hit is a repeat' )
+    parser.add_option( '-R', '--suboptAlign', dest='suboptAlign', default=None, help='Proceed with suboptimal alignments even if the top hit is a repeat' )
     parser.add_option( '-N', '--noIterSearch', dest='noIterSearch', help='Disable iterative search' )
     parser.add_option( '-T', '--outputTopN', dest='outputTopN', help='Maximum number of alignments to output in the XA tag for reads paired properly' )
     parser.add_option( '', '--outputTopNDisc', dest='outputTopNDisc', help='Maximum number of alignments to output in the XA tag for disconcordant read pairs (excluding singletons)' )
@@ -182,8 +182,8 @@ def __main__():
             seed = '-l %s' % options.seed
         else:
             seed = ''
-        if options.suboptAlign == 'true':
-            suboptAlign = '-R'
+        if options.suboptAlign:
+            suboptAlign = '-R "%s"' % ( options.suboptAlign )
         else:
             suboptAlign = ''
         if options.noIterSearch == 'true':

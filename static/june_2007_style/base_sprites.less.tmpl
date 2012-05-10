@@ -88,15 +88,39 @@
 }
 .icon-button.plus-button {
     -sprite-group: fugue;
+    -sprite-image: fugue/plus-button-bw.png;
+}
+.icon-button.plus-button:hover {
+    -sprite-group: fugue;
     -sprite-image: fugue/plus-button.png;
 }
 .icon-button.gear {
     -sprite-group: fugue;
     -sprite-image: fugue/gear.png;
 }
+.icon-button.chart_curve {
+    -sprite-group: fugue;
+    -sprite-image: silk/chart_curve.png;
+}
 
 .text-and-autocomplete-select {
     -sprite-group: fugue;
     -sprite-image: fugue/control-270.png;
     -sprite-horiz-position: right;
+}
+
+
+div.historyItem-error .state-icon {
+    -sprite-group: history-states;
+    -sprite-image: data_error.png;
+}
+
+div.historyItem-empty .state-icon {
+    -sprite-group: history-states;
+    -sprite-image: data_empty.png;
+}
+
+div.historyItem-queued .state-icon {
+    -sprite-group: history-states;
+    -sprite-image: data_queued.png;
 }

@@ -27,14 +27,14 @@
     <tool file="data_source/epigraph_import.xml" />
     <tool file="data_source/epigraph_import_test.xml" />
     <tool file="data_source/hbvar.xml" />
-    <tool file="data_source/genomespace_file_browser_prod.xml" />
-    <!-- <tool file="data_source/genomespace_file_browser_test.xml" />
-    <tool file="data_source/genomespace_file_browser_dev.xml" /> -->
+    <tool file="genomespace/genomespace_file_browser_prod.xml" />
+    <tool file="genomespace/genomespace_importer.xml" />
     <tool file="validation/fix_errors.xml" />
   </section>
   <section name="Send Data" id="send">
     <tool file="data_destination/epigraph.xml" />
     <tool file="data_destination/epigraph_test.xml" />
+    <tool file="genomespace/genomespace_exporter.xml" />
   </section>
   <section name="ENCODE Tools" id="EncodeTools">
     <tool file="encode/gencode_partition.xml" />
@@ -336,6 +336,7 @@
     <tool file="sr_mapping/lastz_wrapper.xml" />
     <tool file="sr_mapping/lastz_paired_reads_wrapper.xml" />
     <tool file="sr_mapping/bowtie_wrapper.xml" />
+    <tool file="sr_mapping/bowtie2_wrapper.xml" />
     <tool file="sr_mapping/bowtie_color_wrapper.xml" />
     <tool file="sr_mapping/bwa_wrapper.xml" />
     <tool file="sr_mapping/bwa_color_wrapper.xml" />
@@ -356,6 +357,7 @@
     
     <label text="RNA-seq" id="rna_seq" />
     <tool file="ngs_rna/tophat_wrapper.xml" />
+    <tool file="ngs_rna/tophat2_wrapper.xml" />
     <tool file="ngs_rna/tophat_color_wrapper.xml" />
     <tool file="ngs_rna/cufflinks_wrapper.xml" />
     <tool file="ngs_rna/cuffcompare_wrapper.xml" />
@@ -382,6 +384,7 @@
     <tool file="samtools/pileup_interval.xml" />
     <tool file="samtools/samtools_flagstat.xml" />
     <tool file="samtools/samtools_rmdup.xml" />
+    <tool file="samtools/samtools_slice_bam.xml" />
   </section>
   <section name="NGS: GATK Tools (beta)" id="gatk">
     <label text="Alignment Utilities" id="gatk_bam_utilities"/>
@@ -477,15 +480,10 @@
     <tool file="phenotype_association/lps.xml" />
     <tool file="phenotype_association/hilbertvis.xml" />
     <tool file="phenotype_association/freebayes.xml" />
+    <tool file="variant_detection/freebayes.xml" />
     <tool file="phenotype_association/master2pg.xml" />
     <tool file="phenotype_association/vcf2pgSnp.xml" />
     <tool file="phenotype_association/dividePgSnpAlleles.xml" />
-  </section>
-  <section name="Genome Diversity" id="gd">
-    <tool file="genome_diversity/extract_primers.xml" />
-    <tool file="genome_diversity/select_snps.xml" />
-    <tool file="genome_diversity/select_restriction_enzymes.xml" />
-    <tool file="genome_diversity/extract_flanking_dna.xml" />
   </section>
   <section name="VCF Tools" id="vcf_tools">
     <tool file="vcf_tools/intersect.xml" />

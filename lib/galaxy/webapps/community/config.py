@@ -39,8 +39,6 @@ class Configuration( object ):
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
-        # web API
-        self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
@@ -84,6 +82,12 @@ class Configuration( object ):
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.log_events = False
         self.cloud_controller_instance = False
+        self.server_name = ''
+        self.job_manager = ''
+        self.default_job_handlers = []
+        self.job_handlers = []
+        self.tool_handlers = []
+        self.tool_runners = []
         # Proxy features
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
@@ -94,6 +98,7 @@ class Configuration( object ):
         self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
+        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def get_bool( self, key, default ):

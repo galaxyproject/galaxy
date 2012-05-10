@@ -20,28 +20,27 @@ class HistoriesController( BaseAPIController, UsesHistory ):
         GET /api/histories
         GET /api/histories/deleted
         Displays a collection (list) of histories.
-        """               
+        """
         rval = []
         deleted = util.string_as_bool( deleted )
-
         try:
-            query = trans.sa_session.query( trans.app.model.History ).filter_by( user=trans.user, deleted=deleted ).order_by(
-                desc(trans.app.model.History.table.c.update_time)).all()           
-        except Exception, e:
-            rval = "Error in history API"
-            log.error( rval + ": %s" % str(e) )
-            trans.response.status = 500
-            
-        if not rval:
-            try:
+            if trans.user:
+                query = trans.sa_session.query(trans.app.model.History ).filter_by( user=trans.user, deleted=deleted ).order_by(
+                    desc(trans.app.model.History.table.c.update_time)).all()
                 for history in query:
                     item = history.get_api_value(value_mapper={'id':trans.security.encode_id})
                     item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                     rval.append( item )
-            except Exception, e:
-                rval = "Error in history API at constructing return list"
-                log.error( rval + ": %s" % str(e) )
-                trans.response.status = 500
+            elif trans.galaxy_session.current_history:
+                #No user, this must be session authentication with an anonymous user.
+                history = trans.galaxy_session.current_history
+                item = history.get_api_value(value_mapper={'id':trans.security.encode_id})
+                item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
+                rval.append(item)
+        except Exception, e:
+            rval = "Error in history API"
+            log.error( rval + ": %s" % str(e) )
+            trans.response.status = 500
         return rval
 
     @web.expose_api
@@ -54,7 +53,7 @@ class HistoriesController( BaseAPIController, UsesHistory ):
         history_id = id
         params = util.Params( kwd )
         deleted = util.string_as_bool( deleted )
-        
+
         def traverse( datasets ):
             rval = {}
             states = trans.app.model.Dataset.states
@@ -65,15 +64,13 @@ class HistoriesController( BaseAPIController, UsesHistory ):
                 if not item['deleted']:
                     rval[item['state']] = rval[item['state']] + 1
             return rval
-            
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True, deleted=deleted )
         except Exception, e:
             return str( e )
-            
         try:
             item = history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
-            num_sets = len( [hda.id for hda in history.datasets if not hda.deleted] )            
+            num_sets = len( [hda.id for hda in history.datasets if not hda.deleted] )
             states = trans.app.model.Dataset.states
             state = states.ERROR
             if num_sets == 0:
@@ -87,7 +84,7 @@ class HistoriesController( BaseAPIController, UsesHistory ):
                 elif summary[states.QUEUED] > 0:
                     state = states.QUEUED
                 elif summary[states.OK] == num_sets:
-                    state = states.OK                       
+                    state = states.OK
                 item['contents_url'] = url_for( 'history_contents', history_id=history_id )
                 item['state_details'] = summary
             item['state'] = state
@@ -108,7 +105,7 @@ class HistoriesController( BaseAPIController, UsesHistory ):
         if payload.get( 'name', None ):
             hist_name = util.restore_text( payload['name'] )
         new_history = trans.app.model.History( user=trans.user, name=hist_name )
-        
+
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
         item = new_history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
@@ -124,8 +121,8 @@ class HistoriesController( BaseAPIController, UsesHistory ):
         # a request body is optional here
         purge = False
         if kwd.get( 'payload', None ):
-            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )        
-        
+            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
+
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
         except Exception, e:

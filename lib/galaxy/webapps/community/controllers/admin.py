@@ -3,9 +3,14 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util import inflector
+from galaxy.util.shed_util import get_configured_ui
 from common import *
 from repository import RepositoryListGrid, CategoryListGrid
+
+from galaxy import eggs
+eggs.require('mercurial')
 from mercurial import hg
+
 import logging
 
 log = logging.getLogger( __name__ )
@@ -321,7 +326,7 @@ class RepositoryMetadataListGrid( grids.Grid ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             repo = hg.repository( get_configured_ui(), repository.repo_path )
-            ctx = get_changectx_for_changeset( trans, repo, repository_metadata.changeset_revision )
+            ctx = get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
             return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
     class ToolsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
@@ -457,6 +462,31 @@ class AdminController( BaseUIController, Admin ):
                                                    status=status ) )
     @web.expose
     @web.require_admin
+    def reset_all_repository_metadata( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if 'reset_all_repository_metadata_button' in kwd:
+            count = 0
+            for repository in trans.sa_session.query( trans.model.Repository ) \
+                                              .filter( trans.model.Repository.table.c.deleted == False ):
+                try:
+                    reset_all_repository_metadata( trans, trans.security.encode_id( repository.id ) )
+                    log.debug( "Reset metadata on repository %s" % repository.name )
+                    count += 1
+                except Exception, e:
+                    log.debug( "Error attempting to reset metadata on repository %s: %s" % ( repository.name, str( e ) ) )
+            message = "Reset metadata on %d repositories" % count
+            trans.response.send_redirect( web.url_for( controller='admin',
+                                                       action='browse_repository_metadata',
+                                                       webapp='community',
+                                                       message=util.sanitize_text( message ),
+                                                       status=status ) )
+        return trans.fill_template( '/webapps/community/admin/reset_all_repository_metadata.mako',
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
     def browse_repositories( self, trans, **kwd ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
@@ -525,6 +555,18 @@ class AdminController( BaseUIController, Admin ):
                                                                       changeset_revision=v ) )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def regenerate_statistics( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if 'regenerate_statistics_button' in kwd:
+            trans.app.shed_counter.generate_statistics()
+            message = "Successfully regenerated statistics"
+        return trans.fill_template( '/webapps/community/admin/statistics.mako',
+                                    message=message,
+                                    status=status )
     @web.expose
     @web.require_admin
     def delete_repository( self, trans, **kwd ):

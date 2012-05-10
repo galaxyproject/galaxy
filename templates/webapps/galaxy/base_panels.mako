@@ -110,7 +110,7 @@
     %endif
 
     ## Cloud menu.
-    %if app.config.get_bool( 'enable_cloud_control', False ):
+    %if app.config.get_bool( 'enable_cloud_launch', False ):
         <%
             menu_options = [
                              [_('New Cloud Cluster'), h.url_for( controller='/cloud', action='index' ) ],
@@ -166,8 +166,7 @@
         menu_options.append( [ _('Saved Datasets'), h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
         if app.config.get_bool( 'enable_pages', False ):
             menu_options.append( [ _('Saved Pages'), h.url_for( controller='/page', action='list' ), "_top" ] )
-        if app.config.enable_api:
-            menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
+        menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
         if app.config.use_remote_user:
             menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
 
@@ -184,12 +183,12 @@
     </div>
     
     ## Logo, layered over tabs to be clickable
-    <div class="title" style="position: absolute; top: 0; left: 0; white-space: nowrap;">
+    <div class="title">
         <a href="${app.config.get( 'logo_url', '/' )}">
-        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="display: inline; width: 26px; vertical-align: top;">
+        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
         Galaxy
         %if app.config.brand:
-            <span class='brand'>/ ${app.config.brand}</span>
+            <span>/ ${app.config.brand}</span>
         %endif
         </a>
     </div>

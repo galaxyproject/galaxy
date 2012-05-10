@@ -83,7 +83,7 @@ class TaskedJobRunner( object ):
                 for task in tasks:
                     tw = TaskWrapper(task, job_wrapper.queue)
                     task_wrappers.append(tw)
-                    self.app.job_manager.dispatcher.put(tw)
+                    self.app.job_manager.job_handler.dispatcher.put(tw)
                 tasks_incomplete = False
                 count_complete = 0
                 sleep_time = 1

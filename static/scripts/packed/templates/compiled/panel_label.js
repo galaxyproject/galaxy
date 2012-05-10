@@ -1,0 +1,1 @@
+(function(){var b=Handlebars.template,a=Handlebars.templates=Handlebars.templates||{};a.panel_label=b(function(e,n,d,l,k){d=d||e.helpers;var i="",c,h,o=this,f="function",m=d.helperMissing,g=void 0,j=this.escapeExpression;i+="<span>";h=d.name;c=h||n.name;if(typeof c===f){c=c.call(n,{hash:{}})}else{if(c===g){c=m.call(n,"name",{hash:{}})}}i+=j(c)+"</span>";return i})})();

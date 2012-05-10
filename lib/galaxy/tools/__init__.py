@@ -5,7 +5,7 @@ import pkg_resources
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -31,6 +31,7 @@ from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
 from galaxy.util.shed_util import *
+from galaxy.web import url_for
 
 from galaxy.visualization.tracks.visual_analytics import TracksterConfig
 
@@ -114,17 +115,17 @@ class ToolBox( object ):
             tool_path = self.tool_root_dir
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self.integrated_tool_panel_config_has_contents
-        for elem in root:
+        for index, elem in enumerate( root ):
             if parsing_shed_tool_conf:
                 config_elems.append( elem )
             if elem.tag == 'tool':
-                self.load_tool_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict, guid=elem.get( 'guid' ) )
+                self.load_tool_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict, guid=elem.get( 'guid' ), index=index )
             elif elem.tag == 'workflow':
-                self.load_workflow_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict )
+                self.load_workflow_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
             elif elem.tag == 'section':
-                self.load_section_tag_set( elem, tool_path, load_panel_dict )
+                self.load_section_tag_set( elem, tool_path, load_panel_dict, index=index )
             elif elem.tag == 'label':
-                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel )
+                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
@@ -286,7 +287,7 @@ class ToolBox( object ):
                                              self.app.model.ToolShedRepository.table.c.owner == owner,
                                              self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
                               .first()
-    def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None ):
+    def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
         try:
             path = elem.get( "file" )
             if guid is None:
@@ -354,10 +355,13 @@ class ToolBox( object ):
                 if load_panel_dict:
                     panel_dict[ key ] = tool
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
-            integrated_panel_dict[ key ] = tool
+            if key in integrated_panel_dict or index is None:
+                integrated_panel_dict[ key ] = tool
+            else:
+                integrated_panel_dict.insert( index, key, tool )
         except:
             log.exception( "Error reading tool from path: %s" % path )
-    def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict ):
+    def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         try:
             # TODO: should id be encoded?
             workflow_id = elem.get( 'id' )
@@ -367,16 +371,22 @@ class ToolBox( object ):
             if load_panel_dict:
                 panel_dict[ key ] = workflow
             # Always load workflows into the integrated_panel_dict.
-            integrated_panel_dict[ key ] = workflow
+            if key in integrated_panel_dict or index is None:
+                integrated_panel_dict[ key ] = workflow
+            else:
+                integrated_panel_dict.insert( index, key, workflow )
         except:
             log.exception( "Error loading workflow: %s" % workflow_id )
-    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict ):
+    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         label = ToolSectionLabel( elem )
         key = 'label_' + label.id
-        if not self.integrated_tool_panel_config_has_contents:
+        if load_panel_dict:
             panel_dict[ key ] = label
-        integrated_panel_dict[ key ] = label
-    def load_section_tag_set( self, elem, tool_path, load_panel_dict ):
+        if key in integrated_panel_dict or index is None:
+            integrated_panel_dict[ key ] = label
+        else:
+            integrated_panel_dict.insert( index, key, label )
+    def load_section_tag_set( self, elem, tool_path, load_panel_dict, index=None ):
         key = 'section_' + elem.get( "id" )
         if key in self.tool_panel:
             section = self.tool_panel[ key ]
@@ -390,17 +400,20 @@ class ToolBox( object ):
         else:
             integrated_section = ToolSection( elem )
             integrated_elems = integrated_section.elems
-        for sub_elem in elem:
+        for sub_index, sub_elem in enumerate( elem ):
             if sub_elem.tag == 'tool':
-                self.load_tool_tag_set( sub_elem, elems, integrated_elems, tool_path, load_panel_dict, guid=sub_elem.get( 'guid' ) )
+                self.load_tool_tag_set( sub_elem, elems, integrated_elems, tool_path, load_panel_dict, guid=sub_elem.get( 'guid' ), index=sub_index )
             elif sub_elem.tag == 'workflow':
-                self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict )
+                self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
             elif sub_elem.tag == 'label':
-                self.load_label_tag_set( sub_elem, elems, integrated_elems )
+                self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
-        self.integrated_tool_panel[ key ] = integrated_section
+        if key in self.integrated_tool_panel or index is None:
+            self.integrated_tool_panel[ key ] = integrated_section
+        else:
+            self.integrated_tool_panel.insert( index, key, integrated_section )
     def load_tool( self, config_file, guid=None ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
@@ -474,17 +487,119 @@ class ToolBox( object ):
         Returns a SQLAlchemy session
         """
         return self.app.model.context
+        
+    def to_dict( self, trans, in_panel=True, trackster=False ):
+        
+        def filter_for_panel( item, filters ):
+            """
+            Filters tool panel elements so that only those that are compatible
+            with provided filters are kept.
+            """
+            def _apply_filter( filter_item, filter_list ):
+                for filter_method in filter_list:
+                    if not filter_method( filter_item ):
+                        return False
+                return True
+            if isinstance( item, Tool ):
+                if _apply_filter( item, filters[ 'tool' ] ):
+                    return item
+            elif isinstance( item, ToolSectionLabel ):
+                if _apply_filter( item, filters[ 'label' ] ): 
+                    return item
+            elif isinstance( item, ToolSection ):
+                # Filter section item-by-item. Only show a label if there are 
+                # non-filtered tools below it.
+                
+                if _apply_filter( item, filters[ 'section' ] ):
+                    cur_label_key = None
+                    tools_under_label = False
+                    filtered_elems = item.elems.copy()
+                    for key, section_item in item.elems.items():
+                        if isinstance( section_item, Tool ):
+                            # Filter tool.
+                            if _apply_filter( section_item, filters[ 'tool' ] ):
+                                tools_under_label = True
+                            else:
+                                del filtered_elems[ key ]
+                        elif isinstance( section_item, ToolSectionLabel ):
+                            # If there is a label and it does not have tools, 
+                            # remove it.
+                            if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
+                                del filtered_elems[ cur_label_key ]
+                            
+                            # Reset attributes for new label.
+                            cur_label_key = key
+                            tools_under_label = False
+                            
+                    
+                    # Handle last label.
+                    if cur_label_key and not tools_under_label:
+                        del filtered_elems[ cur_label_key ]
+                            
+                    # Only return section if there are elements.
+                    if len( filtered_elems ) != 0:
+                        copy = item.copy()
+                        copy.elems = filtered_elems
+                        return copy
+                    
+            return None
+        
+        #    
+        # Dictify toolbox.
+        # 
+        
+        if in_panel:
+            panel_elts = [ val for val in self.tool_panel.itervalues() ]
+            
+            # Filter if necessary.
+            filters = dict( tool=[ lambda x: not x._is_hidden_for_user( trans.user ) ], section=[], label=[] ) #hidden tools filter
+            if trackster:
+                filters[ 'tool' ].append( lambda x: x.trackster_conf ) # If tool has a trackster config, it can be used in Trackster.
+            filtered_panel_elts = []
+            for index, elt in enumerate( panel_elts ):
+                elt = filter_for_panel( elt, filters )
+                if elt:
+                    filtered_panel_elts.append( elt )
+            panel_elts = filtered_panel_elts
+            
+            # Produce panel.
+            rval = []
+            for elt in panel_elts:
+                rval.append( elt.to_dict( trans, for_link=True ) )
+        else:
+            tools = []
+            for id, tool in self.app.toolbox.tools_by_id.items():
+                tools.append( tool.to_dict( trans ) )
+            rval = tools
+
+        return rval
     
 class ToolSection( object ):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
     """
-    def __init__( self, elem ):
-        self.name = elem.get( "name" )
-        self.id = elem.get( "id" )
-        self.version = elem.get( "version" ) or ''
+    def __init__( self, elem=None ):
+        f = lambda elem, val: elem is not None and elem.get( val ) or ''
+        self.name = f( elem, 'name' )
+        self.id = f( elem, 'id' )
+        self.version = f( elem, 'version' )
         self.elems = odict()
+        
+    def copy( self ):
+        copy = ToolSection()
+        copy.name = self.name
+        copy.id = self.id
+        copy.version = self.version
+        copy.elems = self.elems.copy()
+        return copy
+        
+    def to_dict( self, trans, for_link=False ):
+        """ Return a dict that includes section's attributes. """
+        section_elts = []
+        for key, val in self.elems.items():
+            section_elts.append( val.to_dict( trans, for_link=for_link ) )
+        return { 'type': 'section', 'id': self.id, 'name': self.name, 'version': self.version, 'elems': section_elts }
 
 class ToolSectionLabel( object ):
     """
@@ -495,6 +610,10 @@ class ToolSectionLabel( object ):
         self.text = elem.get( "text" )
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
+        
+    def to_dict( self, trans, **kwargs ):
+        """ Return a dict that includes label's attributes. """
+        return { 'type': 'label', 'id': self.id, 'name': self.text, 'version': self.version }
 
 class DefaultToolState( object ):
     """
@@ -572,22 +691,24 @@ class ToolOutput( object ):
 
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
+        
+    def to_dict( self ):
+        return {
+            'name': self.name,
+            'format': self.format,
+            'label': self.label,
+            'hidden': self.hidden
+        }
 
 class ToolRequirement( object ):
     """
-    Represents an external requirement that must be available for the tool to
-    run (for example, a program, package, or library). Requirements can 
-    optionally assert a specific version, or reference a command to execute a
-    fabric script.  If fabric is used, the type is 'fabfile' and the version
-    attribute is not used since the fabric script includes all necessary
-    information for automatic dependency installation.
+    Represents an external requirement that must be available for the tool to run (for example, a program, package, or library).
+    Requirements can optionally assert a specific version.
     """
-    def __init__( self, name=None, type=None, version=None, fabfile=None, method=None ):
+    def __init__( self, name=None, type=None, version=None ):
         self.name = name
         self.type = type
         self.version = version
-        self.fabfile = fabfile
-        self.method = method
 
 class ToolParallelismInfo(object):
     """
@@ -625,6 +746,8 @@ class Tool:
         self.check_values = True
         self.nginx_upload = False
         self.input_required = False
+        self.display_interface = True
+        self.require_login = False
         # Define a place to keep track of all input parameters.  These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -669,31 +792,35 @@ class Tool:
         if tool_version:
             return tool_version.get_version_ids( self.app )
         return []
-    def get_job_runner( self, job_params=None ):
-        # Look through runners to find one with matching parameters.
-        selected_runner = None
-        if len( self.job_runners ) == 1:
-            # Most tools have a single runner.
-            selected_runner = self.job_runners[0]
+    def __get_job_run_config( self, run_configs, key, job_params=None ):
+        # Look through runners/handlers to find one with matching parameters.
+        available_configs = []
+        if len( run_configs ) == 1:
+            # Most tools have a single config.
+            return run_configs[0][ key ] # return to avoid random when this will be the case most of the time
         elif job_params is None:
-            # Use job runner with no params
-            for runner in self.job_runners:
-                if "params" not in runner:
-                    selected_runner = runner
+            # Use job config with no params
+            for config in run_configs:
+                if "params" not in config:
+                    available_configs.append( config )
         else:
-            # Find runner with matching parameters.
-            for runner in self.job_runners:
-                if "params" in runner:
+            # Find config with matching parameters.
+            for config in run_configs:
+                if "params" in config:
                     match = True
-                    runner_params = runner[ "params" ]
+                    config_params = config[ "params" ]
                     for param, value in job_params.items():
-                        if param not in runner_params or \
-                           runner_params[ param ] != job_params[ param ]:
+                        if param not in config_params or \
+                           config_params[ param ] != job_params[ param ]:
                            match = False
                            break
                     if match:
-                        selected_runner = runner
-        return selected_runner[ "url" ]
+                        available_configs.append( config )
+        return random.choice( available_configs )[ key ]
+    def get_job_runner( self, job_params=None ):
+        return self.__get_job_run_config( self.job_runners, key='url', job_params=job_params )
+    def get_job_handler( self, job_params=None ):
+        return self.__get_job_run_config( self.job_handlers, key='name', job_params=job_params )
     def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -721,6 +848,8 @@ class Tool:
         # Useful i.e. when an indeterminate number of outputs are created by 
         # a tool.
         self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
+        self.display_interface = util.string_as_bool( root.get( 'display_interface', str( self.display_interface ) ) )
+        self.require_login = util.string_as_bool( root.get( 'require_login', str( self.require_login ) ) )
         # Load input translator, used by datasource tools to change 
         # names/values of incoming parameters
         self.input_translator = root.find( "request_param_translation" )
@@ -758,6 +887,12 @@ class Tool:
             self.parallelism = ToolParallelismInfo(parallelism)
         else:
             self.parallelism = None
+        # Set job handler(s). Each handler is a dict with 'url' and, optionally, 'params'.
+        self_id = self.id.lower()
+        self.job_handlers = [ { "name" : name } for name in self.app.config.default_job_handlers ]
+        # Set custom handler(s) if they're defined.
+        if self_id in self.app.config.tool_handlers:
+            self.job_handlers = self.app.config.tool_handlers[ self_id ]
         # Set job runner(s). Each runner is a dict with 'url' and, optionally, 'params'.
         if self.app.config.start_job_runners is None:
             # Jobs are always local regardless of tool config if no additional
@@ -767,7 +902,6 @@ class Tool:
             # Set job runner to the cluster default
             self.job_runners = [ { "url" : self.app.config.default_cluster_job_runner } ]
             # Set custom runner(s) if they're defined.
-            self_id = self.id.lower()
             if self_id in self.app.config.tool_runners:
                 self.job_runners = self.app.config.tool_runners[ self_id ]
         # Is this a 'hidden' tool (hidden in tool menu)
@@ -843,7 +977,7 @@ class Tool:
         self.is_workflow_compatible = self.check_workflow_compatible()
         # Trackster configuration.
         trackster_conf = root.find( "trackster_conf" )
-        if trackster_conf:
+        if trackster_conf is not None:
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
@@ -1199,19 +1333,8 @@ class Tool:
         for requirement_elem in requirements_elem.findall( 'requirement' ):
             name = util.xml_text( requirement_elem )
             type = requirement_elem.get( "type", "package" )
-            if type == 'fabfile':
-                # The fabric script will include all necessary information for
-                # automatically installing the tool dependencies.
-                fabfile = requirement_elem.get( "fabfile" )
-                method = requirement_elem.get( "method" )
-                version = None
-            else:
-                # For backward compatibility, requirements tag sets should not require the
-                # use of a fabric script.
-                version = requirement_elem.get( "version" )
-                fabfile = None
-                method = None
-            requirement = ToolRequirement( name=name, type=type, version=version, fabfile=fabfile, method=method )
+            version = requirement_elem.get( "version", None )
+            requirement = ToolRequirement( name=name, type=type, version=version )
             self.requirements.append( requirement )
     def check_workflow_compatible( self ):
         """
@@ -1326,6 +1449,8 @@ class Tool:
             # on the standard run form) or "URL" (a parameter provided by
             # external data source tools). 
             if "runtool_btn" not in incoming and "URL" not in incoming:
+                if not self.display_interface:
+                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
         # Process incoming data
         if not( self.check_values ):
@@ -1374,6 +1499,8 @@ class Tool:
                 state.page += 1
                 # Fill in the default values for the next page
                 self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
+                if not self.display_interface:
+                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
                 return 'tool_form.mako', dict( errors=errors, tool_state=state )
         else:
             try:
@@ -1386,6 +1513,8 @@ class Tool:
             except:
                 pass
             # Just a refresh, render the form with updated state and errors.
+            if not self.display_interface:
+                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):
@@ -2110,7 +2239,7 @@ class Tool:
                     shutil.rmtree(temp_file_path)
             except:
                 continue
-    def collect_child_datasets( self, output):
+    def collect_child_datasets( self, output, job_working_directory ):
         """
         Look for child dataset files, create HDA and attach to parent.
         """
@@ -2118,7 +2247,12 @@ class Tool:
         # Loop through output file names, looking for generated children in 
         # form of 'child_parentId_designation_visibility_extension'
         for name, outdata in output.items():
-            for filename in glob.glob(os.path.join(self.app.config.new_file_path,"child_%i_*" % outdata.id) ):
+            filenames = []
+            if 'new_file_path' in self.app.config.collect_outputs_from:
+                filenames.extend( glob.glob(os.path.join(self.app.config.new_file_path,"child_%i_*" % outdata.id) ) )
+            if 'job_working_directory' in self.app.config.collect_outputs_from:
+                filenames.extend( glob.glob(os.path.join(job_working_directory,"child_%i_*" % outdata.id) ) )
+            for filename in filenames:
                 if not name in children:
                     children[name] = {}
                 fields = os.path.basename(filename).split("_")
@@ -2138,7 +2272,7 @@ class Tool:
                                                                           sa_session=self.sa_session )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(child_dataset.dataset, filename, create=True)
+                self.app.object_store.update_from_file(child_dataset.dataset, file_name=filename, create=True)
                 self.sa_session.add( child_dataset )
                 self.sa_session.flush()
                 child_dataset.set_size()
@@ -2170,7 +2304,7 @@ class Tool:
                     self.sa_session.add( child_dataset )
                     self.sa_session.flush()
         return children
-    def collect_primary_datasets( self, output):
+    def collect_primary_datasets( self, output, job_working_directory ):
         """
         Find any additional datasets generated by a tool and attach (for 
         cases where number of outputs is not known in advance).
@@ -2180,7 +2314,12 @@ class Tool:
         # datasets in form of:
         #     'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
         for name, outdata in output.items():
-            for filename in glob.glob(os.path.join(self.app.config.new_file_path,"primary_%i_*" % outdata.id) ):
+            filenames = []
+            if 'new_file_path' in self.app.config.collect_outputs_from:
+                filenames.extend( glob.glob(os.path.join(self.app.config.new_file_path,"primary_%i_*" % outdata.id) ) )
+            if 'job_working_directory' in self.app.config.collect_outputs_from:
+                filenames.extend( glob.glob(os.path.join(job_working_directory,"primary_%i_*" % outdata.id) ) )
+            for filename in filenames:
                 if not name in primary_datasets:
                     primary_datasets[name] = {}
                 fields = os.path.basename(filename).split("_")
@@ -2205,7 +2344,7 @@ class Tool:
                 self.sa_session.add( primary_data )
                 self.sa_session.flush()
                 # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(primary_data.dataset, filename, create=True)
+                self.app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
                 primary_data.set_size()
                 primary_data.name = "%s (%s)" % ( outdata.name, designation )
                 primary_data.info = outdata.info
@@ -2238,6 +2377,54 @@ class Tool:
                     self.sa_session.add( new_data )
                     self.sa_session.flush()
         return primary_datasets
+        
+    def _is_hidden_for_user( self, user ):
+        if self.hidden or ( not user and self.require_login ):
+            return True
+        return False
+        
+    def to_dict( self, trans, for_link=False, for_display=False ):
+        """ Returns dict of tool. """
+        
+        # Basic information
+        tool_dict = { 'id': self.id, 'name': self.name,
+                      'version': self.version, 'description': self.description }
+        
+        if for_link:
+            # Create tool link.
+            if not self.tool_type.startswith( 'data_source' ):
+                link = url_for( controller='tool_runner', tool_id=self.id )
+            else:
+                link = url_for( self.action, **self.get_static_param_values( trans ) )
+            
+            # Basic information
+            tool_dict.update( { 'type': 'tool', 'link': link, 
+                                'min_width': self.uihints.get( 'minwidth', -1 ),
+                                'target': self.target } )
+                                
+        if for_display:
+            # Dictify inputs.
+            inputs = []
+            for name, input in self.inputs.items():
+                param_dict = { 'name' : name, 'label' : input.label }
+                if isinstance( input, DataToolParameter ):
+                    param_dict.update( { 'type' : 'data', 'html' : urllib.quote( input.get_html( trans ) ) } )
+                elif isinstance( input, SelectToolParameter ):
+                    param_dict.update( { 'type' : 'select', 'html' : urllib.quote( input.get_html( trans ) ) } )
+                elif isinstance( input, Conditional ):
+                    # TODO.
+                    pass
+                else:
+                    param_dict.update( { 'type' : '??', 'init_value' : input.value, \
+                                         'html' : urllib.quote( input.get_html( trans ) ) } )
+                inputs.append( param_dict )
+                
+            tool_dict[ 'inputs' ] = inputs
+                        
+            # Dictify outputs.
+            pass
+        
+        return tool_dict
 
 class DataSourceTool( Tool ):
     """
@@ -2368,6 +2555,9 @@ class ExportHistoryTool( Tool ):
     
 class ImportHistoryTool( Tool ):
     tool_type = 'import_history'
+
+class GenomeIndexTool( Tool ):
+    tool_type = 'index_genome'
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}

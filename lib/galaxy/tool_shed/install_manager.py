@@ -7,6 +7,7 @@ from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
 from galaxy.util.odict import odict
+
 log = logging.getLogger( __name__ )
 
 class InstallManager( object ):
@@ -119,7 +120,7 @@ class InstallManager( object ):
                                 is_displayed = True
         return is_displayed, tool_sections
     def handle_repository_contents( self, current_working_dir, repository_clone_url, relative_install_dir, repository_elem, repository_name, description,
-                                    changeset_revision, tmp_name ):
+                                    changeset_revision, ctx_rev ):
         # Generate the metadata for the installed tool shed repository, among other things.  It is critical that the installed repository is
         # updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
         # The values for the keys in each of the following dictionaries will be a list to allow for the same tool to be displayed in multiple places
@@ -144,6 +145,7 @@ class InstallManager( object ):
                                                                       repository_name,
                                                                       description,
                                                                       changeset_revision,
+                                                                      ctx_rev,
                                                                       repository_clone_url,
                                                                       metadata_dict,
                                                                       dist_to_shed=True )
@@ -154,9 +156,15 @@ class InstallManager( object ):
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
                 repository_tools_tups = handle_missing_data_table_entry( self.app, self.tool_path, sample_files, repository_tools_tups )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = handle_missing_index_file( self.app, self.tool_path, sample_files, repository_tools_tups )
-                # Handle tools that use fabric scripts to install dependencies.
-                handle_tool_dependencies( current_working_dir, relative_install_dir, repository_tools_tups )                
+                repository_tools_tups, sample_files_copied = handle_missing_index_file( self.app, self.tool_path, sample_files, repository_tools_tups )
+                # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
+                copy_sample_files( self.app, sample_files, sample_files_copied=sample_files_copied )
+                if 'tool_dependencies_config' in metadata_dict:
+                    # Install tool dependencies.
+                    status, message = handle_tool_dependencies( self.app, repository_clone_url, metadata_dict[ 'tool_dependencies_config' ] )
+                    if status != 'ok' and message:
+                        print 'The following error occurred while installing tool dependencies:'
+                        print message
                 add_to_tool_panel( self.app,
                                    repository_name,
                                    repository_clone_url,
@@ -166,11 +174,6 @@ class InstallManager( object ):
                                    self.migrated_tools_config,
                                    tool_panel_dict=tool_panel_dict_for_display,
                                    new_install=True )
-                # Remove the temporary file
-                try:
-                    os.unlink( tmp_name )
-                except:
-                    pass
         if 'datatypes_config' in metadata_dict:
             datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
@@ -193,7 +196,7 @@ class InstallManager( object ):
                 self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
         return tool_shed_repository, metadata_dict
     def install_repository( self, repository_elem ):
-        # Install a single repository, loading contained tools into the tool config.
+        # Install a single repository, loading contained tools into the tool panel.
         name = repository_elem.get( 'name' )
         description = repository_elem.get( 'description' )
         changeset_revision = repository_elem.get( 'changeset_revision' )
@@ -206,65 +209,55 @@ class InstallManager( object ):
             tool_shed_url = self.__get_url_from_tool_shed( self.tool_shed )
             repository_clone_url = os.path.join( tool_shed_url, 'repos', self.repository_owner, name )
             relative_install_dir = os.path.join( clone_dir, name )
-            returncode, tmp_name = clone_repository( name, clone_dir, current_working_dir, repository_clone_url )
-            if returncode == 0:
-                returncode, tmp_name = update_repository( current_working_dir, relative_install_dir, changeset_revision )
-                if returncode == 0:
-                    tool_shed_repository, metadata_dict = self.handle_repository_contents( current_working_dir,
-                                                                                           repository_clone_url,
-                                                                                           relative_install_dir,
-                                                                                           repository_elem,
-                                                                                           name,
-                                                                                           description,
-                                                                                           changeset_revision,
-                                                                                           tmp_name )
-                    if 'tools' in metadata_dict:
-                        # Get the tool_versions from the tool shed for each tool in the installed change set.
-                        url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-                            ( tool_shed_url, tool_shed_repository.name, self.repository_owner, changeset_revision )
-                        response = urllib2.urlopen( url )
-                        text = response.read()
-                        response.close()
-                        if text:
-                            tool_version_dicts = from_json_string( text )
-                            handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
-                        else:
-                            # Set the tool versions since they seem to be missing for this repository in the tool shed.
-                            # CRITICAL NOTE: These default settings may not properly handle all parent/child associations.
-                            for tool_dict in metadata_dict[ 'tools' ]:
-                                flush_needed = False
-                                tool_id = tool_dict[ 'guid' ]
-                                old_tool_id = tool_dict[ 'id' ]
-                                tool_version = tool_dict[ 'version' ]
-                                tool_version_using_old_id = get_tool_version( self.app, old_tool_id )
-                                tool_version_using_guid = get_tool_version( self.app, tool_id )
-                                if not tool_version_using_old_id:
-                                    tool_version_using_old_id = self.app.model.ToolVersion( tool_id=old_tool_id,
-                                                                                            tool_shed_repository=tool_shed_repository )
-                                    self.app.sa_session.add( tool_version_using_old_id )
-                                    self.app.sa_session.flush()
-                                if not tool_version_using_guid:
-                                    tool_version_using_guid = self.app.model.ToolVersion( tool_id=tool_id,
-                                                                                          tool_shed_repository=tool_shed_repository )
-                                    self.app.sa_session.add( tool_version_using_guid )
-                                    self.app.sa_session.flush()
-                                # Associate the two versions as parent / child.
-                                tool_version_association = get_tool_version_association( self.app,
-                                                                                         tool_version_using_old_id,
-                                                                                         tool_version_using_guid )
-                                if not tool_version_association:
-                                    tool_version_association = self.app.model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
-                                                                                                      parent_id=tool_version_using_old_id.id )
-                                    self.app.sa_session.add( tool_version_association )
-                                    self.app.sa_session.flush()
+            ctx_rev = get_ctx_rev( tool_shed_url, name, self.repository_owner, changeset_revision )
+            clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+            tool_shed_repository, metadata_dict = self.handle_repository_contents( current_working_dir,
+                                                                                   repository_clone_url,
+                                                                                   relative_install_dir,
+                                                                                   repository_elem,
+                                                                                   name,
+                                                                                   description,
+                                                                                   changeset_revision,
+                                                                                   ctx_rev )
+            if 'tools' in metadata_dict:
+                # Get the tool_versions from the tool shed for each tool in the installed change set.
+                url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy&no_reset=true' % \
+                    ( tool_shed_url, tool_shed_repository.name, self.repository_owner, changeset_revision )
+                response = urllib2.urlopen( url )
+                text = response.read()
+                response.close()
+                if text:
+                    tool_version_dicts = from_json_string( text )
+                    handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
                 else:
-                    tmp_stderr = open( tmp_name, 'rb' )
-                    print "Error updating repository ', name, "': ', str( tmp_stderr.read() )
-                    tmp_stderr.close()
-            else:
-                tmp_stderr = open( tmp_name, 'rb' )
-                print "Error cloning repository '", name, "': ", str( tmp_stderr.read() )
-                tmp_stderr.close()
+                    # Set the tool versions since they seem to be missing for this repository in the tool shed.
+                    # CRITICAL NOTE: These default settings may not properly handle all parent/child associations.
+                    for tool_dict in metadata_dict[ 'tools' ]:
+                        flush_needed = False
+                        tool_id = tool_dict[ 'guid' ]
+                        old_tool_id = tool_dict[ 'id' ]
+                        tool_version = tool_dict[ 'version' ]
+                        tool_version_using_old_id = get_tool_version( self.app, old_tool_id )
+                        tool_version_using_guid = get_tool_version( self.app, tool_id )
+                        if not tool_version_using_old_id:
+                            tool_version_using_old_id = self.app.model.ToolVersion( tool_id=old_tool_id,
+                                                                                    tool_shed_repository=tool_shed_repository )
+                            self.app.sa_session.add( tool_version_using_old_id )
+                            self.app.sa_session.flush()
+                        if not tool_version_using_guid:
+                            tool_version_using_guid = self.app.model.ToolVersion( tool_id=tool_id,
+                                                                                  tool_shed_repository=tool_shed_repository )
+                            self.app.sa_session.add( tool_version_using_guid )
+                            self.app.sa_session.flush()
+                        # Associate the two versions as parent / child.
+                        tool_version_association = get_tool_version_association( self.app,
+                                                                                 tool_version_using_old_id,
+                                                                                 tool_version_using_guid )
+                        if not tool_version_association:
+                            tool_version_association = self.app.model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
+                                                                                              parent_id=tool_version_using_old_id.id )
+                            self.app.sa_session.add( tool_version_association )
+                            self.app.sa_session.flush()
     @property
     def non_shed_tool_panel_configs( self ):
         # Get the non-shed related tool panel config file names from the Galaxy config - the default is tool_conf.xml.
@@ -276,7 +269,6 @@ class InstallManager( object ):
             root = tree.getroot()
             tool_path = root.get( 'tool_path', None )
             if tool_path is None:
-                # There will be a problem here if the user has defined 2 non-shed related configs.
                 config_filenames.append( config_filename )
         return config_filenames
     def __get_url_from_tool_shed( self, tool_shed ):

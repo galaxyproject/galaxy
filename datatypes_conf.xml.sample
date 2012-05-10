@@ -10,6 +10,7 @@
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
       <display file="igv/bam.xml" />
+      <display file="igb/bam.xml" />
     </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
@@ -19,6 +20,7 @@
       <converter file="bed_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
       <!-- <display file="ucsc/interval_as_bed.xml" /> -->
       <display file="genetrack.xml" />
+      <display file="igb/bed.xml" />
     </datatype>
     <datatype extension="bedgraph" type="galaxy.datatypes.interval:BedGraph" display_in_upload="true" />
     <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
@@ -31,9 +33,11 @@
     </datatype>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml" />
+      <display file="igb/bb.xml" />
     </datatype>
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigwig.xml" />
+      <display file="igb/bigwig.xml" />
     </datatype>
     <!-- MSI added Datatypes -->
     <datatype extension="csv" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true" /> <!-- FIXME: csv is 'tabular'ized data, but not 'tab-delimited'; the class used here is intended for 'tab-delimited' -->
@@ -81,7 +85,11 @@
     <datatype extension="gff3" type="galaxy.datatypes.interval:Gff3" display_in_upload="true"/>
     <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
     <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
-    <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true"/>
+    <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true">
+        <converter file="gff_to_bgzip_converter.xml" target_datatype="bgzip"/>
+        <converter file="gff_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+        <converter file="gff_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+    </datatype>
     <datatype extension="h5" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" />
     <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
@@ -170,13 +178,13 @@
       <display file="igv/vcf.xml" />
       <display file="rviewer/vcf.xml" inherit="True"/>
     </datatype>
-    <datatype extension="bcf" type="galaxy.datatypes.binary:Binary" subclass="True"/>
-    <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
+    <datatype extension="bcf" type="galaxy.datatypes.binary:Binary" subclass="True" display_in_upload="True"/>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
       <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
+      <display file="igb/wig.xml" />
     </datatype>
     <datatype extension="summary_tree" type="galaxy.datatypes.binary:Binary" subclass="True" />
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="True" />
@@ -268,7 +276,6 @@
     <sniffer type="galaxy.datatypes.images:Ppm"/>
     <sniffer type="galaxy.datatypes.images:Psd"/>
     <sniffer type="galaxy.datatypes.images:Xbm"/>
-    <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Rgb"/>
     <sniffer type="galaxy.datatypes.images:Pbm"/>
     <sniffer type="galaxy.datatypes.images:Pgm"/>

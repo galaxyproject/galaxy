@@ -10,7 +10,7 @@ toolbox = None
 
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
-    def do_it( self, testdef ):
+    def do_it( self, testdef, shed_tool_id=None ):
         # If the test generation had an error, raise
         if testdef.error:
             if testdef.exception:
@@ -35,7 +35,12 @@ class ToolTestCase( TwillTestCase ):
             children = extra.get( 'children', [] )
             metadata = extra.get( 'metadata', [] )
             composite_data = extra.get( 'composite_data', [] )
-            self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ), metadata = metadata, composite_data = composite_data )
+            self.upload_file( fname,
+                              ftype=extra.get( 'ftype', 'auto' ),
+                              dbkey=extra.get( 'dbkey', 'hg17' ),
+                              metadata=metadata,
+                              composite_data=composite_data,
+                              shed_tool_id=shed_tool_id )
             print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
             #Post upload attribute editing
             edit_attributes = extra.get( 'edit_attributes', [] )
@@ -94,7 +99,7 @@ class ToolTestCase( TwillTestCase ):
             elem_hid = elem.get( 'hid' )
             elem_index += 1
             try:
-                self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes )
+                self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes, shed_tool_id=shed_tool_id )
             except Exception, e:
                 print >>sys.stderr, self.get_job_stdout( elem.get( 'id' ), format=True )
                 print >>sys.stderr, self.get_job_stderr( elem.get( 'id' ), format=True )
@@ -138,7 +143,7 @@ class ToolTestCase( TwillTestCase ):
                     expanded_inputs[value.name] = declared_inputs[value.name]
         return expanded_inputs
 
-def build_tests():
+def build_tests( testing_shed_tools=False ):
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
     classes for all of its tests and put them into this modules globals() so
@@ -148,21 +153,30 @@ def build_tests():
         return
     # Push all the toolbox tests to module level
     G = globals()
+    # Eliminate all previous tests from G.
+    for key, val in G.items():
+        if key.startswith( 'TestForTool_' ):
+            del G[ key ]
     for i, tool_id in enumerate( toolbox.tools_by_id ):
         tool = toolbox.get_tool( tool_id )
         if tool.tests:
-            # Create a new subclass of ToolTestCase dynamically adding methods
-            # names test_tool_XXX that run each test defined in the tool.
-            n = "TestForTool_" + tool.id.replace( ' ', '_' )
-            s = ( ToolTestCase, )
-            d = dict()
+            # Create a new subclass of ToolTestCase, dynamically adding methods
+            # named test_tool_XXX that run each test defined in the tool config.
+            name = "TestForTool_" + tool.id.replace( ' ', '_' )
+            baseclasses = ( ToolTestCase, )
+            namespace = dict()
             for j, testdef in enumerate( tool.tests ):
-                def make_test_method( td ):
+                def make_test_method( td, shed_tool_id=None ):
                     def test_tool( self ):
-                        self.do_it( td )
+                        self.do_it( td, shed_tool_id=shed_tool_id )
                     return test_tool
-                m = make_test_method( testdef )
-                m.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
-                d['test_tool_%06d' % j] = m
-            G[ n ] = new.classobj( n, s, d )
-
+                if testing_shed_tools:
+                    test_method = make_test_method( testdef, shed_tool_id=tool.id )
+                else:
+                    test_method = make_test_method( testdef )
+                test_method.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
+                namespace[ 'test_tool_%06d' % j ] = test_method
+            # The new.classobj function returns a new class object, with name name, derived
+            # from baseclasses (which should be a tuple of classes) and with namespace dict.
+            new_class_obj = new.classobj( name, baseclasses, namespace )
+            G[ name ] = new_class_obj

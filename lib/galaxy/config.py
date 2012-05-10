@@ -42,8 +42,7 @@ class Configuration( object ):
         tempfile.tempdir = self.new_file_path
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
-        # web API
-        self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
+        self.genome_data_path = kwargs.get( "genome_data_path", "tool-data/genome" )
         # Galaxy OpenID settings
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.openid_config = kwargs.get( 'openid_config_file', 'openid_conf.xml' )
@@ -86,6 +85,7 @@ class Configuration( object ):
         self.allow_user_dataset_purge = string_as_bool( kwargs.get( "allow_user_dataset_purge", "False" ) )
         self.allow_user_impersonation = string_as_bool( kwargs.get( "allow_user_impersonation", "False" ) )
         self.new_user_dataset_access_role_default_private = string_as_bool( kwargs.get( "new_user_dataset_access_role_default_private", "False" ) )
+        self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
@@ -105,6 +105,7 @@ class Configuration( object ):
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
+        self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
         # External Service types used in sample tracking
         self.external_service_type_config_file = resolve_path( kwargs.get( 'external_service_type_config_file', 'external_service_types_conf.xml' ), self.root )
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
@@ -184,14 +185,43 @@ class Configuration( object ):
         # Heartbeat log file name override
         if global_conf is not None:
             self.heartbeat_log = global_conf.get( 'heartbeat_log', 'heartbeat.log' )
-        #Store per-tool runner configs.
+        # Determine which 'server:' this is
+        self.server_name = 'main'
+        for arg in sys.argv:
+            # Crummy, but PasteScript does not give you a way to determine this
+            if arg.lower().startswith('--server-name='):
+                self.server_name = arg.split('=', 1)[-1]
+        # Store advanced job management config
+        self.job_manager = kwargs.get('job_manager', self.server_name).strip()
+        self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
+        self.default_job_handlers = [ x.strip() for x in kwargs.get('default_job_handlers', ','.join( self.job_handlers ) ).split(',') ]
+        # Use database for IPC unless this is a standalone server (or multiple servers doing self dispatching in memory)
+        self.track_jobs_in_database = True
+        if ( len( self.job_handlers ) == 1 ) and ( self.job_handlers[0] == self.server_name ) and ( self.job_manager == self.server_name ):
+            self.track_jobs_in_database = False
+        # Store per-tool runner configs
+        self.tool_handlers = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_handlers', 'name' )
+        self.tool_runners = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_runners', 'url' )
+        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
+        # Cloud configuration options
+        self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
+        # Galaxy messaging (AMQP) configuration options
+        self.amqp = {}
         try:
-            tool_runners_config = global_conf_parser.items("galaxy:tool_runners")
+            amqp_config = global_conf_parser.items("galaxy_amqp")
+        except ConfigParser.NoSectionError:
+            amqp_config = {}
+        for k, v in amqp_config:
+            self.amqp[k] = v
+        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
+    def __read_tool_job_config( self, global_conf_parser, section, key ):
+        try:
+            tool_runners_config = global_conf_parser.items( section )
 
             # Process config to group multiple configs for the same tool.
-            tool_runners = {}
+            rval = {}
             for entry in tool_runners_config:
-                tool_config, url = entry
+                tool_config, val = entry
                 tool = None
                 runner_dict = {}
                 if tool_config.find("[") != -1:
@@ -206,29 +236,18 @@ class Configuration( object ):
                     tool = tool_config
 
                 # Add runner URL.
-                runner_dict[ 'url' ] = url
+                runner_dict[ key ] = val
 
                 # Create tool entry if necessary.
-                if tool not in tool_runners:
-                    tool_runners[ tool ] = []
+                if tool not in rval:
+                    rval[ tool ] = []
 
                 # Add entry to runners.
-                tool_runners[ tool ].append( runner_dict )
+                rval[ tool ].append( runner_dict )
 
-            self.tool_runners = tool_runners
+            return rval
         except ConfigParser.NoSectionError:
-            self.tool_runners = []
-        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
-        # Cloud configuration options
-        self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
-        # Galaxy messaging (AMQP) configuration options
-        self.amqp = {}
-        try:
-            amqp_config = global_conf_parser.items("galaxy_amqp")
-        except ConfigParser.NoSectionError:
-            amqp_config = {}
-        for k, v in amqp_config:
-            self.amqp[k] = v
+            return []
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def get_bool( self, key, default ):
@@ -238,16 +257,6 @@ class Configuration( object ):
             return default
     def check( self ):
         paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
-        # Look for any tool shed configs and retrieve the tool_path attribute from the <toolbox> tag.
-        tool_configs = self.tool_configs
-        if self.migrated_tools_config not in tool_configs:
-            tool_configs.append( self.migrated_tools_config )
-        for config_filename in tool_configs:
-            tree = parse_xml( config_filename )
-            root = tree.getroot()
-            tool_path = root.get( 'tool_path' )
-            if tool_path not in [ None, False ]:
-                paths_to_check.append( resolve_path( tool_path, self.root ) )
         # Check that required directories exist
         for path in paths_to_check:
             if path not in [ None, False ] and not os.path.isdir( path ):

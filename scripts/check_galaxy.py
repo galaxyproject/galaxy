@@ -249,7 +249,7 @@ class Browser:
         #return((p.id, p.status))
 
     def diff(self):
-        self.get("/datasets/%s/display/index" % self.id)
+        self.get("/datasets/%s/display/display?to_ext=bed" % self.id)
         data = tc.browser.get_html()
         tmp = tempfile.mkstemp()
         dprint("tmp file: %s" % tmp[1])

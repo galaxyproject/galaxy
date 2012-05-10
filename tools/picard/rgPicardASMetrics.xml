@@ -2,7 +2,7 @@
   <command interpreter="python">
     picard_wrapper.py -i "$input_file" -d "$html_file.files_path" -t "$html_file"
     --assumesorted "$sorted" -b "$bisulphite" --adaptors "$adaptors" --maxinsert "$maxinsert" -n "$out_prefix" --datatype "$input_file.ext"
-    -j ${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/CollectAlignmentSummaryMetrics.jar
+    -j ${GALAXY_DATA_INDEX_DIR}/shared/jars/picard/CollectAlignmentSummaryMetrics.jar  --tmpdir "${__new_file_path__}" 
 #if $genomeSource.refGenomeSource == "history":
     --ref-file "$genomeSource.ownFile"
 #else

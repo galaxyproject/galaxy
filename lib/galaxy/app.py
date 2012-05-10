@@ -12,6 +12,7 @@ from galaxy.objectstore import build_object_store_from_config
 import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
+from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 
@@ -90,6 +91,8 @@ class UniverseApplication( object ):
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
         load_history_imp_exp_tools( self.toolbox )
+        # Load genome indexer tool.
+        load_genome_index_tools( self.toolbox )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
@@ -124,8 +127,9 @@ class UniverseApplication( object ):
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from jobs import transfer_manager
             self.transfer_manager = transfer_manager.TransferManager( self )
-        # Start the job queue
-        self.job_manager = jobs.JobManager( self )
+        # Start the job manager
+        from jobs import manager
+        self.job_manager = manager.JobManager( self )
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue

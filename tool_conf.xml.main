@@ -208,15 +208,10 @@
     <tool file="phenotype_association/lps.xml" />
     <tool file="phenotype_association/hilbertvis.xml" />
     <tool file="phenotype_association/freebayes.xml" />
+    <tool file="variant_detection/freebayes.xml" />
     <tool file="phenotype_association/master2pg.xml" />
     <tool file="phenotype_association/vcf2pgSnp.xml" />
     <tool file="phenotype_association/dividePgSnpAlleles.xml" />
-  </section>
-  <section name="Genome Diversity" id="gd">
-    <tool file="genome_diversity/extract_primers.xml" />
-    <tool file="genome_diversity/select_snps.xml" />
-    <tool file="genome_diversity/select_restriction_enzymes.xml" />
-    <tool file="genome_diversity/extract_flanking_dna.xml" />
   </section>
   <label text="NGS Toolbox Beta" id="ngs" />
   <section name="NGS: QC and manipulation" id="cshl_library_information">
@@ -318,10 +313,16 @@
     <tool file="gatk/variant_eval.xml" />
     <tool file="gatk/variant_combine.xml" />
   </section>
+  <section name="NGS: Variant Detection" id="variant_detection">
+    <tool file="variant_detection/freebayes.xml" />
+  </section>
   <section name="NGS: Indel Analysis" id="indel_analysis">
     <tool file="indels/sam_indel_filter.xml" />
     <tool file="indels/indel_sam2interval.xml" />
     <tool file="indels/indel_analysis.xml" />
+  </section>
+  <section name="NGS: Variant Detection" id="variant_detection">
+    <tool file="variant_detection/freebayes.xml" />
   </section>
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />
