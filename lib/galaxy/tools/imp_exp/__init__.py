@@ -1,5 +1,6 @@
 import os, shutil, logging, tempfile, simplejson
 from galaxy import model
+from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.json import *
@@ -324,6 +325,8 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
                         "annotation" : to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags" : get_item_tag_dict( obj ),
                     }
+                if isinstance( obj, UnvalidatedValue ):
+                    return obj.__str__()
                 return simplejson.JSONEncoder.default( self, obj )
         
         #
