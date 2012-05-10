@@ -123,15 +123,8 @@ class UploadController( BaseUIController ):
                         content_alert_str = ''
                     commands.add( repo.ui, repo, full_path )
                     # Convert from unicode to prevent "TypeError: array item must be char"
-                    full_path = full_path.encode('ascii', 'replace')
-                    try:
-                        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
-                    except Exception, e:
-                        # I never have a problem with commands.commit on a Mac, but in the test/production
-                        # tool shed environment, it occasionally throws a "TypeError: array item must be char"
-                        # exception.  If this happens, we'll try the following.
-                        repo.dirstate.write()
-                        repo.commit( user=trans.user.username, text=commit_message )
+                    full_path = full_path.encode( 'ascii', 'replace' )
+                    commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
                     if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
                         # Handle the special case where a tool_data_table_conf.xml.sample
                         # file is being uploaded by parsing the file and adding new entries
@@ -205,18 +198,18 @@ class UploadController( BaseUIController ):
         repo = hg.repository( get_configured_ui(), repo_dir )
         files_to_remove = []
         content_alert_str = ''
+        undesirable_dirs_removed = 0
+        undesirable_files_removed = 0
         ok, message = self.__check_archive( tar )
         if not ok:
             tar.close()
             uploaded_file.close()
-            return ok, message, files_to_remove, content_alert_str
+            return ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
         else:
             if upload_point is not None:
                 full_path = os.path.abspath( os.path.join( repo_dir, upload_point ) )
             else:
                 full_path = os.path.abspath( repo_dir )
-            undesirable_dirs_removed = 0
-            undesirable_files_removed = 0
             filenames_in_archive = []
             for tarinfo_obj in tar.getmembers():
                 ok = os.path.basename( tarinfo_obj.name ) not in undesirable_files
@@ -253,14 +246,11 @@ class UploadController( BaseUIController ):
                             if full_name not in filenames_in_archive:
                                 files_to_remove.append( full_name )
                 for repo_file in files_to_remove:
-                    # Remove files in the repository (relative to the upload point)
-                    # that are not in the uploaded archive.
+                    # Remove files in the repository (relative to the upload point) that are not in the uploaded archive.
                     try:
                         commands.remove( repo.ui, repo, repo_file, force=True )
                     except Exception, e:
-                        # I never have a problem with commands.remove on a Mac, but in the test/production
-                        # tool shed environment, it throws an exception whenever I delete all files from a
-                        # repository.  If this happens, we'll try the following.
+                        log.debug( "Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str( e ))
                         relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
                         repo.dirstate.remove( relative_selected_file )
                         repo.dirstate.write()
@@ -294,18 +284,11 @@ class UploadController( BaseUIController ):
                     # appending them to the shed's tool_data_table_conf.xml file on disk.
                     error, message = handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
                     if error:
-                        return False, message, files_to_remove, content_alert_str
+                        return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
                 if filename_in_archive.endswith( '.loc.sample' ):
                     # Handle the special case where a xxx.loc.sample file is being uploaded by copying it to ~/tool-data/xxx.loc.
                     copy_sample_file( trans.app, filename_in_archive )
-            try:
-                commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
-            except Exception, e:
-                # I never have a problem with commands.commit on a Mac, but in the test/production
-                # tool shed environment, it occasionally throws a "TypeError: array item must be char"
-                # exception.  If this happens, we'll try the following.
-                repo.dirstate.write()
-                repo.commit( user=trans.user.username, text=commit_message )
+            commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
             # See if the content of the change set was valid.
             admin_only = len( repository.downloadable_revisions ) != 1
             handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
