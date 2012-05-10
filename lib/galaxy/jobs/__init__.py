@@ -144,9 +144,12 @@ class JobWrapper( object ):
                 self.file_name = dataset.file_name
                 self.metadata = dict()
                 self.children = []
-        jeha = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
-        if jeha:
-            out_data[ "output_file" ] = FakeDatasetAssociation( dataset=jeha.dataset )
+        special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
+        if not special:
+            special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
+        if special:
+            out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
+            
         # These can be passed on the command line if wanted as $userId $userEmail
         if job.history and job.history.user: # check for anonymous user!
             userId = '%d' % job.history.user.id
@@ -442,6 +445,9 @@ class JobWrapper( object ):
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data, self.working_directory)
+        gitd = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
+        if gitd:
+            self.tool.collect_associated_files({'' : gitd}, self.working_directory)
         # Create generated output children and primary datasets and add to param_dict
         collected_datasets = {'children':self.tool.collect_child_datasets(out_data, self.working_directory),'primary':self.tool.collect_primary_datasets(out_data, self.working_directory)}
         param_dict.update({'__collected_datasets__':collected_datasets})
@@ -480,6 +486,7 @@ class JobWrapper( object ):
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
+            galaxy.tools.genome_index.GenomeIndexToolWrapper( self.job_id ).postprocessing( self.sa_session, self.app )
             self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
@@ -535,9 +542,11 @@ class JobWrapper( object ):
                 else:
                     return self.false_path
         job = self.get_job()
-        # Job output datasets are combination of output datasets, library datasets, and jeha datasets.
-        jeha = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
-        jeha_false_path = None
+        # Job output datasets are combination of history, library, jeha and gitd datasets.
+        special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
+        if not special:
+            special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
+        false_path = None
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
             self.output_hdas_and_paths = {}
@@ -546,14 +555,14 @@ class JobWrapper( object ):
                 dsp = DatasetPath( hda.dataset.id, hda.dataset.file_name, false_path )
                 self.output_paths.append( dsp )
                 self.output_hdas_and_paths[name] = hda, dsp
-            if jeha:
-                jeha_false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % jeha.dataset.id ) )
+            if special:
+                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % special.dataset.id ) )
         else:
             results = [ ( da.name, da.dataset, DatasetPath( da.dataset.dataset.id, da.dataset.file_name ) ) for da in job.output_datasets + job.output_library_datasets ]
             self.output_paths = [t[2] for t in results]
             self.output_hdas_and_paths = dict([(t[0],  t[1:]) for t in results])
-        if jeha:
-            dsp = DatasetPath( jeha.dataset.id, jeha.dataset.file_name, jeha_false_path )
+        if special:
+            dsp = DatasetPath( special.dataset.id, special.dataset.file_name, false_path )
             self.output_paths.append( dsp )
         return self.output_paths
 

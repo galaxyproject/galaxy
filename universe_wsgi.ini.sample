@@ -117,6 +117,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # -- Files and directories
 
+# Path where genome builds are stored. This defaults to tool-data/genome
+#genome_data_path = tool-data/genome
+
 # Dataset files are stored in this directory.
 #file_path = database/files
 

@@ -2556,6 +2556,9 @@ class ExportHistoryTool( Tool ):
 class ImportHistoryTool( Tool ):
     tool_type = 'import_history'
 
+class GenomeIndexTool( Tool ):
+    tool_type = 'index_genome'
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool ]:

@@ -301,6 +301,20 @@ class JobImportHistoryArchive( object ):
         self.history = history
         self.archive_dir=archive_dir
 
+class GenomeIndexToolData( object ):
+    def __init__( self, job=None, params=None, dataset=None, deferred_job=None, \
+                  transfer_job=None, fasta_path=None, created_time=None, modified_time=None, \
+                  dbkey=None, user=None, indexer=None ):
+        self.job = job
+        self.dataset = dataset
+        self.fasta_path = fasta_path
+        self.user = user
+        self.indexer = indexer
+        self.created_time = created_time
+        self.modified_time = modified_time
+        self.deferred = deferred_job
+        self.transfer = transfer_job
+
 class DeferredJob( object ):
     states = Bunch( NEW = 'new',
                     WAITING = 'waiting',

@@ -492,6 +492,19 @@ JobImportHistoryArchive.table = Table( "job_import_history_archive", metadata,
     Column( "archive_dir", TEXT )
     )
 
+GenomeIndexToolData.table = Table( "genome_index_tool_data", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "deferred_job_id", Integer, ForeignKey( "deferred_job.id" ), index=True ),
+    Column( "transfer_job_id", Integer, ForeignKey( "transfer_job.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "fasta_path", String( 255 ) ),
+    Column( "created_time", DateTime, default=now ),
+    Column( "modified_time", DateTime, default=now, onupdate=now ),
+    Column( "indexer", String( 64 ) ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    )
+    
 Task.table = Table( "task", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1512,6 +1525,13 @@ assign_mapper( context, JobExportHistoryArchive, JobExportHistoryArchive.table,
 assign_mapper( context, JobImportHistoryArchive, JobImportHistoryArchive.table,
     properties=dict( job = relation( Job ), history = relation( History ) ) )
 
+assign_mapper( context, GenomeIndexToolData, GenomeIndexToolData.table,
+    properties=dict( job = relation( Job ),
+                     dataset = relation( Dataset ),
+                     user = relation( User ),
+                     deferred = relation( DeferredJob, backref='deferred_job' ),
+                     transfer = relation( TransferJob, backref='transfer_job' ) ) )
+                     
 assign_mapper( context, PostJobAction, PostJobAction.table,
     properties=dict(workflow_step = relation( WorkflowStep, backref='post_job_actions', primaryjoin=(WorkflowStep.table.c.id == PostJobAction.table.c.workflow_step_id))))
 

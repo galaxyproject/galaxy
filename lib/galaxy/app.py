@@ -12,6 +12,7 @@ from galaxy.objectstore import build_object_store_from_config
 import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
+from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 
@@ -90,6 +91,8 @@ class UniverseApplication( object ):
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
         load_history_imp_exp_tools( self.toolbox )
+        # Load genome indexer tool.
+        load_genome_index_tools( self.toolbox )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
