@@ -86,8 +86,7 @@
     <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
     <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
     <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true">
-        <converter file="gff_to_bgzip_converter.xml" target_datatype="bgzip"/>
-        <converter file="gff_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+        <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
         <converter file="gff_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
     </datatype>
     <datatype extension="h5" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" />

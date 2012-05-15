@@ -955,7 +955,7 @@ class Gtf( Gff ):
         Gff.set_meta( self, dataset, overwrite = overwrite, skip = i )
         
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
+        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree"}
 
 
 class Wiggle( Tabular, _RemoteCallMixin ):
