@@ -3757,7 +3757,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
         
         // Step (c) for (re)moving tiles when clear_after is false.
-        if (!clear_after) { this.tiles_div.children(".remove").remove(); }
+        if (!clear_after) { this.tiles_div.children(".remove").removeClass("remove").remove(); }
                 
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         var track = this;
