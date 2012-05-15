@@ -176,10 +176,6 @@ class Genomes( object ):
         Returns true if there is reference data for the specified dbkey. If dbkey is custom, 
         dbkey_owner is needed to determine if there is reference data.
         """
-        # Initialize built-in builds if necessary.
-        if not self.available_genomes:
-            self._init_references( trans )
-
         # Look for key in built-in builds.
         if dbkey in self.available_genomes:
             # There is built-in reference data.
