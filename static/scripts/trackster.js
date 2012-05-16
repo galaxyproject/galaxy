@@ -3089,7 +3089,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
             tile.stale = true;
             track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
             $(".tipsy").hide();
-            track.request_draw();
+            track.request_draw(true);
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
             e.stopPropagation();
@@ -3100,7 +3100,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
             tile.stale = true;
             track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
             $(".tipsy").hide();
-            track.request_draw();
+            track.request_draw(true);
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
             e.stopPropagation();
