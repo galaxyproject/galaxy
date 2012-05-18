@@ -43,6 +43,7 @@ class Configuration( object ):
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         self.genome_data_path = kwargs.get( "genome_data_path", "tool-data/genome" )
+        self.rsync_url = kwargs.get( "rsync_url", "rsync://scofield.bx.psu.edu/indexes" )
         # Galaxy OpenID settings
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.openid_config = kwargs.get( 'openid_config_file', 'openid_conf.xml' )

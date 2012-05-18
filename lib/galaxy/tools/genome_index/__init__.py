@@ -16,7 +16,7 @@ def load_genome_index_tools( toolbox ):
         <tool id="__GENOME_INDEX__" name="Index Genome" version="0.1" tool_type="genome_index">
           <type class="GenomeIndexTool" module="galaxy.tools"/>
           <action module="galaxy.tools.actions.index_genome" class="GenomeIndexToolAction"/>
-          <command>$__GENOME_INDEX_COMMAND__ $output_file $output_file.files_path</command>
+          <command>$__GENOME_INDEX_COMMAND__ $output_file $output_file.files_path $__app__.config.rsync_url</command>
           <inputs>
             <param name="__GENOME_INDEX_COMMAND__" type="hidden"/>
           </inputs>
@@ -85,7 +85,7 @@ class GenomeIndexToolWrapper( object ):
             if indexer == '2bit':
                 indexdata = os.path.join( workingdir, '%s.2bit' % dbkey )
                 destination = os.path.join( basepath, 'seq', '%s.2bit' % dbkey )
-                location.append( dict( line='\t'.join( [ 'seq', dbkey, os.path.join( destination, '%s.2bit' % dbkey ) ] ), file= os.path.join( locbase, 'alignseq.loc' ) ) )
+                location.append( dict( line='\t'.join( [ 'seq', dbkey, destination ] ), file= os.path.join( locbase, 'alignseq.loc' ) ) )
             elif indexer == 'bowtie':
                 self._ex_tar( workingdir, 'cs.tar' )
                 destination = os.path.join( basepath, 'bowtie_index' )
@@ -153,17 +153,52 @@ class GenomeIndexToolWrapper( object ):
                 log.debug( 'Moving %s to %s' % ( indexdata, destination ) )
                 shutil.move( indexdata, destination )
                 if indexer not in [ '2bit' ]:
-                    genome = '%s.fa'
+                    genome = '%s.fa' % dbkey
                     target = os.path.join( destination, genome )
-                    farel = os.path.relpath( os.path.join( basepath, 'seq', genome ), destination )
-                    os.symlink( farel, target )
+                    fasta = os.path.abspath( os.path.join( basepath, 'seq', genome ) )
+                    self._check_link( fasta, target )
                     if os.path.exists( os.path.join( destination, 'cs' ) ):
                         target = os.path.join( destination, 'cs', genome )
-                        farel = os.path.relpath( os.path.join( basepath, 'seq', genome ), os.path.join( destination, 'cs' ) )
-                        os.symlink( os.path.join( farel, target ) )
+                        fasta = os.path.abspath( os.path.join( basepath, 'seq', genome ) )
+                        self._check_link( fasta, target )
             for line in location:
                 self._add_line( line[ 'file' ], line[ 'line' ] )
         
+    def _check_link( self, targetfile, symlink ):
+        target = os.path.relpath( targetfile, os.path.dirname( symlink ) )
+        filename = os.path.basename( targetfile )
+        if not os.path.exists( targetfile ): # this should never happen.
+            raise Exception, "%s not found. Unable to proceed without a FASTA file. Aborting." % targetfile
+        if os.path.exists( symlink ) and os.path.islink( symlink ):
+            if os.path.realpath( symlink ) == os.path.abspath( targetfile ): # symlink exists, points to the correct FASTA file.
+                return
+            else: # no it doesn't. Make a new one, and this time do it right.
+                os.remove( symlink )
+                os.symlink( target, symlink )
+                return
+        elif not os.path.exists( symlink ): # no symlink to the FASTA file. Create one.
+            os.symlink( target, symlink )
+            return
+        elif os.path.exists( symlink ) and not os.path.islink( symlink ):
+            if self._hash_file( targetfile ) == self._hash_file( symlink ): # files are identical. No need to panic.
+                return
+            else:
+                if os.path.getsize( symlink ) == 0: # somehow an empty file got copied instead of the symlink. Delete with extreme prejudice.
+                    os.remove( symlink )
+                    os.symlink( target, symlink )
+                    return
+                else:
+                    raise Exception, "Regular file %s exists, is not empty, contents do not match %s." % ( symlink, targetfile )
+    
+    def _hash_file( self, filename ):
+        import hashlib
+        md5 = hashlib.md5()
+        with open( filename, 'rb' ) as f: 
+            for chunk in iter( lambda: f.read( 8192 ), b'' ): 
+                 md5.update( chunk )
+        return md5.digest()
+
+    
     def _ex_tar( self, directory, filename ):
         fh = tarfile.open( os.path.join( directory, filename ) )
         fh.extractall( path=directory )
@@ -181,4 +216,5 @@ class GenomeIndexToolWrapper( object ):
         if newline not in origlines:
             origlines.append( newline )
             with open( filepath, 'w+' ) as destfile:
+                origlines.append( '' )
                 destfile.write( '\n'.join( origlines ) )

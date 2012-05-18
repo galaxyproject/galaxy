@@ -23,7 +23,8 @@ class DataAdmin( BaseUIController ):
                      downloaded='state-color-running',
                      new='state-color-new',
                      ok='panel-done-message',
-                     error='panel-error-message'
+                     error='panel-error-message',
+                     queued='state-color-waiting'
                     )
 
     @web.expose
