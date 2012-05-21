@@ -1,6 +1,7 @@
-/* Trackster
-    2010-2011: James Taylor, Kanwei Li, Jeremy Goecks
-*/
+/**
+ * Trackster visualization. Trackster is both a genome browser and a visual 
+ * analysis environment that combines both visualization and analysis tools.
+ */
 
 var class_module = function(require, exports) {
     
