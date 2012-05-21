@@ -1,18 +1,17 @@
 '''
-Summary tree data structure for aggregation
-
-10/20/2010: Changed version to 2 as we no longer look at bottom level, for better performance
+Summary tree data structure for feature aggregation across large genomic regions.
 '''
 
 import sys, os
 import cPickle
 
-VERSION = 2
+# TODO: What are the performance implications of setting min level to 1? Data
+# structure size and/or query speed? It would be nice to have level 1 data
+# so that client does not have to compute it.
 MIN_LEVEL = 2
 
 class SummaryTree:
     def __init__( self, block_size, levels, draw_cutoff, detail_cutoff ):
-        self.version = VERSION
         self.chrom_blocks = {}
         self.levels = levels
         self.draw_cutoff = draw_cutoff
@@ -26,20 +25,22 @@ class SummaryTree:
         
     def insert_range( self, chrom, start, end ):
         """ Inserts a feature at chrom:start-end into the tree. """
+        
+        # Get or set up chrom blocks.
         if chrom in self.chrom_blocks:
             blocks = self.chrom_blocks[ chrom ]
         else:
             blocks = self.chrom_blocks[ chrom ] = {}
             self.chrom_stats[ chrom ] = {}
-            for level in range( MIN_LEVEL, self.levels+1 ):
+            for level in range( MIN_LEVEL, self.levels + 1 ):
                 blocks[ level ] = {}
             
-           
-        for level in range( MIN_LEVEL, self.levels+1 ):
+        # Insert feature into all matching blocks at all levels.
+        for level in range( MIN_LEVEL, self.levels + 1 ):
             block_level = blocks[ level ]
             starting_block = self.find_block( start, level )
             ending_block = self.find_block( end, level )
-            for block in range( starting_block, ending_block+1 ):
+            for block in range( starting_block, ending_block + 1 ):
                 if block in block_level:
                     block_level[ block ] += 1
                 else:
@@ -47,6 +48,10 @@ class SummaryTree:
         
     def finish( self ):
         """ Checks for cutoff and only stores levels above it """
+        
+        # TODO: not storing all counts is lossy. To fix, store all counts
+        # and then dynamically set draw/detail level either on load or
+        # use cutoffs in query function.
         for chrom, blocks in self.chrom_blocks.iteritems():
             cur_best = 999
             for level in range( self.levels, MIN_LEVEL-1, -1 ):
@@ -75,11 +80,11 @@ class SummaryTree:
             elif "draw_level" in stats and level <= stats[ "draw_level" ]:
                 return "draw"
             blocks = self.chrom_blocks[ chrom ]
-            results = [  ]
+            results = []
             multiplier = self.block_size ** level
             starting_block = self.find_block( start, level )
             ending_block = self.find_block( end, level )
-            for block in range( starting_block, ending_block+1 ):
+            for block in range( starting_block, ending_block + 1 ):
                 if block in blocks[ level ]:
                     results.append(  ( block * multiplier, blocks[ level ][ block ] )  )
             return results
