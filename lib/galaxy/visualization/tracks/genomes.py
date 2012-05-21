@@ -1,4 +1,4 @@
-import os, re
+import os, re, sys
 from bx.seq.twobit import TwoBitFile
 from galaxy.util.json import from_json_string
 from galaxy import model
