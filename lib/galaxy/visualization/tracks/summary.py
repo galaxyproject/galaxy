@@ -21,9 +21,11 @@ class SummaryTree:
         self.chrom_stats = {}
     
     def find_block( self, num, level ):
+        """ Returns block that num is in for level. """
         return ( num / self.block_size ** level )
         
     def insert_range( self, chrom, start, end ):
+        """ Inserts a feature at chrom:start-end into the tree. """
         if chrom in self.chrom_blocks:
             blocks = self.chrom_blocks[ chrom ]
         else:
@@ -44,7 +46,7 @@ class SummaryTree:
                     block_level[ block ] = 1
         
     def finish( self ):
-        ''' Checks for cutoff and only stores levels above it '''
+        """ Checks for cutoff and only stores levels above it """
         for chrom, blocks in self.chrom_blocks.iteritems():
             cur_best = 999
             for level in range( self.levels, MIN_LEVEL-1, -1 ):
@@ -65,6 +67,7 @@ class SummaryTree:
             self.chrom_blocks[ chrom ] = dict( [  ( key, value ) for key, value in blocks.iteritems() if key >= cur_best ] )
         
     def query( self, chrom, start, end, level ):
+        """ Queries tree for data. """
         if chrom in self.chrom_blocks:
             stats = self.chrom_stats[ chrom ]
             if "detail_level" in stats and level <= stats[ "detail_level" ]:
@@ -84,6 +87,7 @@ class SummaryTree:
         return None
         
     def write( self, filename ):
+        """ Writes tree to file. """
         self.finish()
         cPickle.dump( self, open( filename, 'wb' ), 2 )
         

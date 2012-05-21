@@ -415,8 +415,8 @@ var
     DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
-    DATA_PENDING = "Preparing data. This is very fast for a small dataset but can take a long time for a large dataset. \
-                    If visualization is saved and closed, preparation will continue in the background.",
+    DATA_PENDING = "Preparing data. This can take a while for a large dataset. \
+                    If the visualization is saved and closed, preparation will continue in the background.",
     DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ",
     DATA_LOADING = "Loading data...",
     DATA_OK = "Ready for display",
