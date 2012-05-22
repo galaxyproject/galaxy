@@ -3038,8 +3038,9 @@ var Tile = function(track, index, resolution, canvas, data) {
     this.low = tile_bounds[0];
     this.high = tile_bounds[1];
     this.resolution = resolution;
-    // Wrap element in div for background.
-    this.html_elt = $("<div class='track-tile'/>").append(canvas);
+    // Wrap element in div for background and explicitly set height. Use canvas
+    // height attribute because canvas may not have height if it is not in document yet.
+    this.html_elt = $("<div class='track-tile'/>").append(canvas).height( $(canvas).attr("height") )
     this.data = data;
     this.stale = false;
 };
@@ -3920,7 +3921,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         if (this.left_offset) {
             left -= this.left_offset;
         }
-        tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
+        tile_element.css({ position: 'absolute', top: 0, left: left });
         
         if ( tile_element.hasClass("remove") ) {
             // Step (b) for (re)moving tiles. See _draw() function for description of algorithm
