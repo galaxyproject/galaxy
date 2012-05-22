@@ -202,7 +202,11 @@ class GenomeTransferPlugin( DataTransfer ):
             os.chmod( destfilepath, 0644 )
             fastaline = '\t'.join( [ dbkey, dbkey, params[ 'intname' ], os.path.abspath( destfilepath ) ] )
             self._add_line( 'all_fasta', fastaline )
-            job.state = self.app.model.DeferredJob.states.OK
+            if params[ 'indexes' ] is not None:
+                job.state = self.app.model.DeferredJob.states.WAITING
+                job.params[ 'indexjobs' ] = []
+            else:
+                job.state = self.app.model.DeferredJob.states.OK
             job.params[ 'type' ] = 'finish_transfer'
             transfer.path = os.path.abspath(destfilepath)
             transfer.state = 'done'
@@ -213,6 +217,7 @@ class GenomeTransferPlugin( DataTransfer ):
                 for indexer in params[ 'indexes' ]:
                     incoming = dict(indexer=indexer, dbkey=params[ 'dbkey' ], intname=params[ 'intname' ], path=transfer.path, user=params['user']  )
                     deferred = self.tool.execute( self, set_output_hid=False, history=None, incoming=incoming, transfer=transfer, deferred=job )
+                    job.params[ 'indexjobs' ].append( deferred[0].id )
             return self.app.model.DeferredJob.states.OK
                     
     def _check_compress( self, filepath ):

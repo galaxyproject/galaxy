@@ -34,32 +34,82 @@
    </div>
 </%def>
 <p>The genome build and any selected indexers have been added to the job queue. Below you will see the status of each job.</p>
-<div id="jobStatus" data-job="${mainjob}">
-%for jobentry in jobs:
-    <div class="${jobentry['style']} dialog-box" id="job${jobentry['jobid']}" data-state="${jobentry['state']}" data-jobid="${jobentry['jobid']}" data-type="${jobentry['type']}">
-        <span class="inline">${jobentry['type']}</span>
-    </div>
-%endfor
-</div>
+<table id="jobStatus">
+</table>
 <a href="${h.url_for( controller='data_admin', action='manage_data' )}">Return to the download form</a>
 <script type="text/javascript">
-    function getNewHtml(jobid) {
-        $.get('${h.url_for( controller='data_admin', action='ajax_statusupdate' )}', { jobid: jobid }, function(data) {
-            $('#jobStatus').html(data);
-        });
-        $('#jobStatus').children().each(function() {
-            state = $(this).attr('class');
-            //alert(state);
-            if (state != 'panel-done-message dialog-box' && state != 'panel-error-message dialog-box') {
-                setJobRefreshers();
-                return;
+    jobs = ${jsonjobs}
+    
+    function makeHTML(jobrow) {
+        jc = 'jobrow ' + jobrow['style'];
+        djid = jobrow['jobid'];
+        jt = jobrow['type'];
+        idval = jt + '-job-' + djid;
+        return '<tr id="' + idval + '" class="' + jc + '" data-status="' + jobrow['status'] + '" data-jobid="' + djid + '" data-jobtype="' + jt + '">' +
+               '<td style="padding: 0px 5px 0px 30px;">' + jobrow['label'] + '</td>' +
+               '<td style="padding: 0px 5px;">' + jobrow['status'] + '</td></tr>';
+    }
+    
+    function getNewHtml(jobid, jobtype, elm) {
+        $.get('${h.url_for( controller='data_admin', action='job_status' )}', { jobid: jobid, jobtype: jobtype }, function(data) {
+            jsondata = JSON.parse(data);
+            status = jsondata['status'];
+            htmldata = makeHTML(jsondata);
+            idval = '#' + jobtype + '-job-' + jobid;
+            if (htmldata != undefined) {
+                $(elm).replaceWith(htmldata);
             }
         });
     }
-    function setJobRefreshers() {
-        $('#jobStatus').delay(3000).queue(function(n) { getNewHtml($(this).attr('data-job')); n(); }).fadeIn(750);
+    
+    function checkJobs() {
+        var alldone = true;
+        var mainjob;
+        $('.jobrow').each(function() {
+            status = $(this).attr('data-status');
+            if ($(this).attr('data-jobtype') == 'deferred') {
+                mainjob = $(this).attr('data-jobid');
+            }
+            if (status != 'done' && status != 'error' && status != 'ok') {
+                alldone = false;
+                getNewHtml($(this).attr('data-jobid'), $(this).attr('data-jobtype'), $(this));
+            }
+        });
+        if (!alldone) {
+            checkForNewJobs(mainjob);
+            $('#jobStatus').delay(3000).queue(function(n) {
+                checkJobs();
+                n();
+            });
+        }
     }
+    
+    function checkForNewJobs(mainjob) {
+        $.get('${h.url_for( controller='data_admin', action='get_jobs' )}', { jobid: mainjob }, function(data) {
+            jsondata = JSON.parse(data);
+            for (i in jsondata) {
+                if (jobs[i] == undefined) {
+                    $('#jobStatus').append(makeHTML(jsondata[i]));
+                    jobs.push(jsondata[i]);
+                }
+            }
+        });
+    }
+    
     $(document).ready(function() {
-        setJobRefreshers();
+        for (job in jobs) {
+            jobrow = jobs[job];
+            $('#jobStatus').append(makeHTML(jobrow));
+            if (jobrow['type'] == 'deferred') {
+                $('#jobStatus').delay(5000).queue(function(n) {
+                    checkForNewJobs(jobrow['jobid']);
+                    n();
+                }).fadeIn();
+            }
+        }
+        $('#jobStatus').delay(3000).queue(function(n) { 
+            checkJobs();
+            n(); 
+        }).fadeIn();
     });
 </script>

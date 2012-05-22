@@ -58,7 +58,7 @@ class ManagedIndexer():
     
     def _do_rsync( self, idxpath ):
         self._log( 'Trying rsync at %s/%s%s' % ( self.rsync_url, self.genome, idxpath ) )
-        result = subprocess.call( shlex.split( 'rsync %s %s/%s%s .' % ( self.rsync_opts, self.rsync_url, self.genome, idxpath ) ) )
+        result = subprocess.call( shlex.split( 'rsync %s %s/%s%s .' % ( self.rsync_opts, self.rsync_url, self.genome, idxpath ) ), stderr=self.logfile )
         if result != 0:
             self._log( 'Rsync failed or index not found. Generating.' )
         else:

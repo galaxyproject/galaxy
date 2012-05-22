@@ -143,34 +143,57 @@ class DataAdmin( BaseUIController ):
     def monitor_status( self, trans, **kwd ):
         params = util.Params( kwd )
         jobid = params.get( 'job', '' )
-        chains = params.get( 'chains', [] )
         jobs = self._get_jobs( jobid, trans )
-        return trans.fill_template( '/admin/data_admin/download_status.mako', mainjob=jobid, jobs=jobs )
+        jsonjobs = json.dumps( jobs )
+        return trans.fill_template( '/admin/data_admin/download_status.mako', mainjob=jobid, jobs=jobs, jsonjobs=jsonjobs )
         
     @web.expose
     @web.require_admin
-    def ajax_statusupdate( self, trans, **kwd ):
+    def get_jobs( self, trans, **kwd ):
         sa_session = trans.app.model.context.current
         jobs = []
         params = util.Params( kwd )
         jobid = params.get( 'jobid', '' )
         jobs = self._get_jobs( jobid, trans )
-        return trans.fill_template( '/admin/data_admin/ajax_statusupdate.mako', mainjob=jobid, jobs=jobs )
+        return trans.fill_template( '/admin/data_admin/ajax_status.mako', json=json.dumps( jobs ) )
+        
+    @web.expose
+    @web.require_admin
+    def job_status( self, trans, **kwd ):
+        params = util.Params( kwd )
+        jobid = params.get( 'jobid', None )
+        jobtype = params.get( 'jobtype', None )
+        fillvals = None
+        fillvals = self._get_job( jobid, jobtype, trans )
+        return trans.fill_template( '/admin/data_admin/ajax_status.mako', json=json.dumps( fillvals ) )
+        
+    def _get_job( self, jobid, jobtype, trans ):
+        sa = trans.app.model.context.current
+        if jobtype == 'liftover':
+            job = sa.query( model.TransferJob ).filter_by( id=jobid ).first()
+            joblabel = 'Download liftOver'
+        elif jobtype == 'transfer':
+            job = sa.query( model.TransferJob ).filter_by( id=jobid ).first()
+            joblabel = 'Download Genome'
+        elif jobtype == 'deferred':
+            job = sa.query( model.DeferredJob ).filter_by( id=jobid ).first()
+            joblabel = 'Main Controller'
+        elif jobtype == 'index':
+            job = sa.query( model.Job ).filter_by( id=jobid ).first()
+            joblabel = 'Index Genome'
+        return dict( status=job.state, jobid=job.id, style=self.jobstyles[job.state], type=jobtype, label=joblabel )
         
     def _get_jobs( self, jobid, trans ):
         jobs = []
         job = trans.app.job_manager.deferred_job_queue.plugins['GenomeTransferPlugin'].get_job_status( jobid )
         sa_session = trans.app.model.context.current
+        jobs.append( self._get_job( job.id, 'deferred', trans ) )
+        jobs.append( self._get_job( job.transfer_job.id, 'transfer', trans ) )
         idxjobs = sa_session.query( model.GenomeIndexToolData ).filter_by( deferred_job_id=job.id, transfer_job_id=job.transfer_job.id ).all()
-        if job.params[ 'liftover' ] is not None:
+        if job.params.has_key( 'liftover' ):
             for jobid in job.params[ 'liftover' ]:
-                lo_job = trans.app.job_manager.deferred_job_queue.plugins['LiftOverTransferPlugin'].get_job_status( jobid )
-                jobs.append( dict( jobid=lo_job.id, state=lo_job.state, type='Download liftOver' ) )
+                jobs.append( self._get_job( jobid, 'liftover', trans ) )
         for idxjob in idxjobs:
-            jobentry = sa_session.query( model.Job ).filter_by( id=idxjob.job_id ).first()
-            jobs.append( dict( jobid=jobentry.id, state=jobentry.state, type='Index Genome' ) )
-        jobs.append( dict ( jobid=job.id, state=job.state, type='Main Job' ) )
-        jobs.append( dict ( jobid=job.transfer_job.id, state=job.transfer_job.state, type='Download Genome' ) )
-        for je in jobs:
-            je[ 'style' ] = self.jobstyles[ je[ 'state' ] ]
+            #print idxjob
+            jobs.append( self._get_job( idxjob.job_id, 'index', trans ) )
         return jobs
