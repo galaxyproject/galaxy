@@ -589,14 +589,14 @@ class SummaryTreeDataProvider( TracksDataProvider ):
     Summary tree data provider for the Galaxy track browser. 
     """
     
-    CACHE = LRUCache(20) # Store 20 recently accessed indices for performance
+    CACHE = LRUCache( 20 ) # Store 20 recently accessed indices for performance
     
     def valid_chroms( self ):
         st = summary_tree_from_file( self.converted_dataset.file_name )
         return st.chrom_blocks.keys()
         
     
-    def get_summary( self, chrom, start, end, **kwargs ):
+    def get_summary( self, chrom, start, end, level=None, resolution=None ):
         filename = self.converted_dataset.file_name
         st = self.CACHE[filename]
         if st is None:
@@ -613,19 +613,27 @@ class SummaryTreeDataProvider( TracksDataProvider ):
         else:
             return None
 
-        resolution = max(1, ceil(float(kwargs['resolution'])))
+        # Get or compute level.
+        if level:
+            level = int( level )
+        elif resolution:
+            resolution = max( 1, ceil( float( resolution ) ) )
+            level = ceil( log( resolution, st.block_size ) ) - 1
+            level = int( max( level, 0 ) )
+        else:
+            # Either level or resolution is required.
+            return None
 
-        level = ceil( log( resolution, st.block_size ) ) - 1
-        level = int(max( level, 0 ))
         if level <= 1:
             return "detail"
 
-        stats = st.chrom_stats[chrom]
-        results = st.query(chrom, int(start), int(end), level)
+        # Use level to get results.
+        stats = st.chrom_stats[ chrom ]
+        results = st.query( chrom, int(start), int(end), level )
         if results == "detail" or results == "draw":
             return results
         else:
-            return results, stats[level]["max"], stats[level]["avg"], stats[level]["delta"]
+            return results, stats[ level ][ "max" ], stats[ level ]["avg" ], stats[ level ][ "delta" ]
             
     def has_data( self, chrom ):
         """

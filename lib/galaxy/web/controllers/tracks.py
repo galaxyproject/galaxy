@@ -382,7 +382,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             tracks_dataset_type = data_sources['index']['name']
             converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
             indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
-            summary = indexer.get_summary( chrom, low, high, **kwargs )
+            summary = indexer.get_summary( chrom, low, high, resolution=kwargs[ 'resolution' ] )
             if summary is None:
                 return { 'dataset_type': tracks_dataset_type, 'data': None }
                 
@@ -891,6 +891,14 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
             msg = messages.PENDING
         
         return msg
+        
+    def _get_dataset( self, trans, hda_ldda, dataset_id ):
+        """ Returns either HDA or LDDA for hda/ldda and id combination. """
+        if hda_ldda == "hda":
+            return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+        else:
+            return trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+        
         
 def _get_highest_priority_msg( message_list ):
     """
