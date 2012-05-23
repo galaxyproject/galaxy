@@ -91,6 +91,39 @@
             <div class="toolFormTitle">Preview tools and inspect metadata by tool version</div>
             <div class="toolFormBody">
                 %if metadata:
+                    %if 'tool_dependencies' in metadata:
+                        <div class="form-row">
+                            <table width="100%">
+                                <tr bgcolor="#D8D8D8" width="100%">
+                                    <td><b>The following tool dependencies can optionally be automatically installed</i></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <% tool_dependencies = metadata[ 'tool_dependencies' ] %>
+                            <table class="grid">
+                                <tr>
+                                    <td><b>name</b></td>
+                                    <td><b>type</b></td>
+                                    <td><b>version</b></td>
+                                </tr>
+                                %for dependency_key, requirements_dict in tool_dependencies.items():
+                                    <%
+                                        name = requirements_dict[ 'name' ]
+                                        type = requirements_dict[ 'type' ]
+                                        version = requirements_dict[ 'version' ]
+                                    %>
+                                    <tr>
+                                        <td>${name}</td>
+                                        <td>${type}</td>
+                                        <td>${version}</td>
+                                    </tr>
+                                %endfor
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                    %endif
                     %if 'tools' in metadata:
                         <div class="form-row">
                             <table width="100%">
@@ -255,18 +288,6 @@
                         </div>
                         <div style="clear: both"></div>
                     %endif
-                %endif
-                %if can_set_metadata:
-                    <form name="set_metadata" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
-                        <div class="form-row">
-                            <div style="float: left; width: 250px; margin-right: 10px;">
-                                <input type="submit" name="set_metadata_button" value="Reset metadata"/>
-                            </div>
-                            <div class="toolParamHelp" style="clear: both;">
-                                Inspect the repository and reset the above attributes for the repository tip.
-                            </div>
-                        </div>
-                    </form>
                 %endif
             </div>
         </div>

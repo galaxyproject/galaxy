@@ -165,6 +165,37 @@
                     <div style="clear: both"></div>
                 </div>
             %endif
+            <%
+                if 'requirements' in metadata:
+                    requirements = metadata[ 'requirements' ]
+                else:
+                    requirements = None
+            %>
+            %if requirements:
+                <div class="form-row">
+                    <label>Requirements:</label>
+                    <table class="grid">
+                        <tr>
+                            <td><b>name</b></td>
+                            <td><b>version</b></td>
+                            <td><b>type</b></td>
+                        </tr>
+                        %for requirement_dict in requirements:
+                            <%
+                                requirement_name = requirement_dict[ 'name' ] or 'not provided'
+                                requirement_version = requirement_dict[ 'version' ] or 'not provided'
+                                requirement_type = requirement_dict[ 'type' ] or 'not provided'
+                            %>
+                            <tr>
+                                <td>${requirement_name}</td>
+                                <td>${requirement_version}</td>
+                                <td>${requirement_type}</td>
+                            </tr>
+                        %endfor
+                    </table>
+                    <div style="clear: both"></div>
+                </div>
+            %endif
             %if 'version_string_cmd' in metadata:
                 <div class="form-row">
                     <label>Version command string:</label>
@@ -196,25 +227,6 @@
                 <div class="form-row">
                     <label>Parallelism:</label>
                     ${tool.parallelism}
-                    <div style="clear: both"></div>
-                </div>
-            %endif
-            <%
-                if 'requirements' in metadata:
-                    requirements = metadata[ 'requirements' ]
-                else:
-                    requirements = None
-            %>
-            %if requirements:
-                <%
-                    requirements_str = ''
-                    for requirement_dict in metadata[ 'requirements' ]:
-                        requirements_str += '%s (%s), ' % ( requirement_dict[ 'name' ], requirement_dict[ 'type' ] )
-                    requirements_str = requirements_str.rstrip( ', ' )
-                %>
-                <div class="form-row">
-                    <label>Requirements:</label>
-                    ${requirements_str}
                     <div style="clear: both"></div>
                 </div>
             %endif

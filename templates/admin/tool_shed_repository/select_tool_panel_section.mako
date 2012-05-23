@@ -6,26 +6,38 @@
 %endif
 
 <div class="warningmessage">
-    The core Galaxy development team does not maintain the contents of many Galaxy tool shed repositories.  Some repository tools
-    may include code that produces malicious behavior, so be aware of what you are installing.  
-    <p/>
-    If you discover a repository that causes problems after installation, contact <a href="http://wiki.g2.bx.psu.edu/Support" target="_blank">Galaxy support</a>,
-    sending all necessary information, and appropriate action will be taken.
-    <p/>
-    <a href="http://wiki.g2.bx.psu.edu/Tool%20Shed#Contacting_the_owner_of_a_repository" target="_blank">Contact the repository owner</a> for general questions 
-    or concerns.
+    <p>
+        The core Galaxy development team does not maintain the contents of many Galaxy tool shed repositories.  Some repository tools
+        may include code that produces malicious behavior, so be aware of what you are installing.  
+    </p>
+    <p>
+        If you discover a repository that causes problems after installation, contact <a href="http://wiki.g2.bx.psu.edu/Support" target="_blank">Galaxy support</a>,
+        sending all necessary information, and appropriate action will be taken.
+    </p>
+    <p>
+        <a href="http://wiki.g2.bx.psu.edu/Tool%20Shed#Contacting_the_owner_of_a_repository" target="_blank">Contact the repository owner</a> for 
+        general questions or concerns.
+    </p>
 </div>
 <br/>
 <div class="warningmessage">
-    Installation may take a while, depending upon the size of the repository contents.  Wait until a message is displayed in your 
-    browser after clicking the <b>Install</b> button below.
+    <p>
+        Installation may take a while with large repositories or if you elect to install tool dependencies.  <b>Always wait until a message is
+        displayed in your browser after clicking the <b>Install</b> button below.</b>  If you get bored, watching your Galaxy server's paster log 
+        will help pass the time.
+    </p>
+    <p>
+        If installing tool dependencies, information about installation process will be saved in various files named with a ".log" 
+        extension in the directory: 
+        ${trans.app.config.tool_dependency_dir}/<i>package name</i>/<i>package version</i>/<i>repository owner</i>/<i>repository name</i>/<i>repository changeset revision</i>
+    </p>
 </div>
 <br/>
 
 <div class="toolForm">
     <div class="toolFormTitle">Choose the tool panel section to contain the installed tools (optional)</div>
     <div class="toolFormBody">
-        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='install_repository', tool_shed_url=tool_shed_url, repo_info_dict=repo_info_dict, includes_tools=includes_tools )}" method="post" >
+        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='install_repository', tool_shed_url=tool_shed_url, repo_info_dict=repo_info_dict, includes_tools=includes_tools, install_tool_dependencies=install_tool_dependencies )}" method="post" >
             %if shed_tool_conf_select_field:
                 <div class="form-row">
                     <label>Shed tool configuration file:</label>

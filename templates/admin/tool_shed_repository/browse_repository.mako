@@ -2,8 +2,6 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="*" />
 
-<% from galaxy.web.base.controller import tool_shed_encode, tool_shed_decode %>
-
 <br/><br/>
 <ul class="manage-table-actions">
     <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>

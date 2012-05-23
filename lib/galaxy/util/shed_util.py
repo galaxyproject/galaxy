@@ -1,17 +1,18 @@
-import sys, os, tempfile, shutil, subprocess, logging, string, urllib2
+import sys, os, tempfile, shutil, logging, string, urllib2
 from datetime import date, datetime, timedelta
 from time import strftime, gmtime
 from galaxy import util
 from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.tool_shed.tool_dependencies.install_util import install_package
 from galaxy.model.orm import *
 
 from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( 'mercurial' )
-from mercurial import ui, commands
+from mercurial import hg, ui, commands
 
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
@@ -26,6 +27,7 @@ MAPPED_CHARS = { '>' :'&gt;',
                  '&' : '&amp;',
                  '\'' : '&apos;' }
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
+NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'tool_dependencies.xml' ]
 
 class ShedCounter( object ):
     def __init__( self, model ):
@@ -203,7 +205,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
             if display_path:
                 registration.attrib[ 'proprietary_display_path' ] = display_path
             for relative_path_to_datatype_file_name in datatype_class_modules:
-                relative_head, relative_tail = os.path.split( relative_path_to_datatype_file_name )
+                datatype_file_name_path, datatype_file_name = os.path.split( relative_path_to_datatype_file_name )
                 for elem in registration.findall( 'datatype' ):
                     # Handle 'type' attribute which should be something like one of the following: 
                     # type="gmap:GmapDB"
@@ -216,7 +218,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                             # Handle the case where datatype_module is "galaxy.datatypes.gmap".
                             proprietary_datatype_module = proprietary_datatype_module.split( '.' )[ -1 ]
                         # The value of proprietary_path must be an absolute path due to job_working_directory.
-                        elem.attrib[ 'proprietary_path' ] = os.path.abspath( relative_head )
+                        elem.attrib[ 'proprietary_path' ] = os.path.abspath( datatype_file_name_path )
                         elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
             sniffers = datatypes_config_root.find( 'sniffers' )
         else:
@@ -271,9 +273,7 @@ def clean_tool_shed_url( tool_shed_url ):
         return tool_shed_url.split( ':' )[ 0 ]
     return tool_shed_url.rstrip( '/' )
 def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
-    """
-    Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present in the cloned repository.
-    """
+    """Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present in the cloned repository."""
     commands.clone( get_configured_ui(),
                     repository_clone_url,
                     dest=repository_file_dir,
@@ -281,12 +281,10 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
                     noupdate=False,
                     rev=[ ctx_rev ] )
 def copy_sample_file( app, filename, dest_path=None ):
-    """
-    Copy xxx.loc.sample to dest_path/xxx.loc.sample and dest_path/xxx.loc.  The default value for dest_path is ~/tool-data.
-    """
+    """Copy xxx.loc.sample to dest_path/xxx.loc.sample and dest_path/xxx.loc.  The default value for dest_path is ~/tool-data."""
     if dest_path is None:
         dest_path = os.path.abspath( app.config.tool_data_path )
-    sample_file_path, sample_file_name = os.path.split( filename )
+    sample_file_name = strip_path( filename )
     copied_file = sample_file_name.replace( '.sample', '' )
     # It's ok to overwrite the .sample version of the file.
     shutil.copy( os.path.abspath( filename ), os.path.join( dest_path, sample_file_name ) )
@@ -319,7 +317,7 @@ def create_or_update_tool_shed_repository( app, name, description, changeset_rev
     tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
     if not owner:
         owner = get_repository_owner( tmp_url )
-    includes_datatypes = 'datatypes_config' in metadata_dict
+    includes_datatypes = 'datatypes' in metadata_dict
     tool_shed_repository = get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision )
     if tool_shed_repository:
         tool_shed_repository.description = description
@@ -387,31 +385,111 @@ def generate_datatypes_metadata( datatypes_config, metadata_dict ):
         if datatypes:
             metadata_dict[ 'datatypes' ] = datatypes
     return metadata_dict
-def generate_metadata( toolbox, relative_install_dir, repository_clone_url ):
+def generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict ):
     """
-    Browse the repository files on disk to generate metadata.  Since we are using disk files, it is imperative that the
-    repository is updated to the desired change set revision before metadata is generated.
+    If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
+    then update the received metadata_dict with information from the parsed tool_dependencies_config.
     """
-    metadata_dict = {}
-    sample_files = []
-    datatypes_config = None
-    # Find datatypes_conf.xml if it exists.
-    for root, dirs, files in os.walk( relative_install_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name == 'datatypes_conf.xml':
-                    relative_path = os.path.join( root, name )
-                    datatypes_config = os.path.abspath( relative_path )
+    tree = ElementTree.parse( tool_dependencies_config )
+    root = tree.getroot()
+    ElementInclude.include( root )
+    tool_dependencies_dict = {}
+    if can_generate_tool_dependency_metadata( root, metadata_dict ):
+        for elem in root:
+            if elem.tag == 'package':
+                tool_dependencies_dict = generate_package_dependency_metadata( elem, tool_dependencies_dict )
+            # Handle tool dependency installation via other means here (future).
+        if tool_dependencies_dict:
+            metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
+    return metadata_dict
+def can_generate_tool_dependency_metadata( root, metadata_dict ):
+    """
+    Make sure the combination of name, version and type (the type will be the value of elem.tag) of each root element tag in the tool_dependencies.xml
+    file is defined in the <requirement> tag for at least one tool in the repository.
+    """
+    can_generate_dependency_metadata = False
+    for elem in root:
+        can_generate_dependency_metadata = False
+        tool_dependency_name = elem.get( 'name', None )
+        tool_dependency_version = elem.get( 'version', None )
+        tool_dependency_type = elem.tag
+        if tool_dependency_name and tool_dependency_version and tool_dependency_type:
+            for tool_dict in metadata_dict[ 'tools' ]:
+                requirements = tool_dict.get( 'requirements', [] )
+                for requirement_dict in requirements:
+                    requirement_name = requirement_dict.get( 'name', None )
+                    requirement_version = requirement_dict.get( 'version', None )
+                    requirement_type = requirement_dict.get( 'type', None )
+                    if requirement_name == tool_dependency_name and requirement_version == tool_dependency_version and requirement_type == tool_dependency_type:
+                        can_generate_dependency_metadata = True
+                        break
+                if not can_generate_dependency_metadata:
+                    # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
+                    # tag for any tool in the repository.
                     break
+            if not can_generate_dependency_metadata:
+                break
+    return can_generate_dependency_metadata
+def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
+    """The value of package_name must match the value of the "package" type in the tool config's <requirements> tag set."""
+    requirements_dict = {}
+    package_name = elem.get( 'name', None )
+    package_version = elem.get( 'version', None )
+    if package_name and package_version:
+        requirements_dict [ 'name' ] = package_name
+        requirements_dict [ 'type' ] = 'package'
+        requirements_dict [ 'version' ] = package_version
+        dependency_key = '%s/%s' % ( package_name, package_version )
+        fabfiles_dict = {}
+        for sub_elem in elem:
+            if sub_elem.tag == 'proprietary_fabfile':
+                requirements_dict = generate_fabfile_metadata( sub_elem, requirements_dict, proprietary=True )
+            elif sub_elem.tag == 'fabfile':
+                requirements_dict = generate_fabfile_metadata( sub_elem, requirements_dict, proprietary=False )
+            elif sub_elem.tag == 'readme':
+                requirements_dict[ 'readme' ] = sub_elem.text
+    if requirements_dict:
+        tool_dependencies_dict[ dependency_key ] = requirements_dict
+    return tool_dependencies_dict
+def generate_fabfile_metadata( elem, requirements_dict, proprietary=False ):
+    """
+    <proprietary_fabfile name="fabfile.py">
+        <method name="install_and_build">
+            <param name="download_url">ftp://emboss.open-bio.org/pub/EMBOSS/old/5.0.0/EMBOSS-5.0.0.tar.gz</param>
+            <param name="download_url">ftp://emboss.open-bio.org/pub/EMBOSS/old/5.0.0/PHYLIP-3.6b.tar.gz</param>
+        </method>
+    </proprietary_fabfile>
+    """
+    fabfiles_dict = {}
+    fabfile_name = elem.get( 'name', None )
+    if fabfile_name:
+        for method_elem in elem.findall( 'method' ):
+            method_name = method_elem.get( 'name', None )
+            if method_name:
+                params_str = ''
+                for param_elem in method_elem.findall( 'param' ):
+                    param_name = param_elem.get( 'name', None )
+                    param_value = param_elem.text
+                    if param_name and param_value:
+                        params_str += '%s=%s,' % ( param_name, param_value )
+                fabfiles_dict[ 'fabfile' ] = fabfile_name
+                fabfiles_dict[ 'method' ] = method_name
+                fabfiles_dict[ 'params' ] = params_str.rstrip( ',' )
+        if fabfiles_dict:
+            if proprietary:
+                key = 'proprietary_fabfiles'
+            else:
+                key = 'fabfiles'
+            requirements_dict[ key ] = fabfiles_dict
+    return requirements_dict
+def generate_metadata_using_disk_files( toolbox, relative_install_dir, repository_clone_url ):
+    """generate metadata using only the repository files on disk - files are not retrieved from the repository manifest."""
+    metadata_dict = {}
+    tool_dependencies_config = None
+    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
     if datatypes_config:
-        metadata_dict[ 'datatypes_config' ] = relative_path
         metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
-    # Find all special .sample files.
-    for root, dirs, files in os.walk( relative_install_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name.endswith( '.sample' ):
-                    sample_files.append( os.path.join( root, name ) )
+    sample_files = get_sample_files_from_disk( relative_install_dir )
     if sample_files:
         metadata_dict[ 'sample_files' ] = sample_files
     # Find all tool configs and exported workflows.
@@ -421,7 +499,7 @@ def generate_metadata( toolbox, relative_install_dir, repository_clone_url ):
                 dirs.remove( '.hg' )
             for name in files:
                 # Find all tool configs.
-                if name != 'datatypes_conf.xml' and name.endswith( '.xml' ):
+                if name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
                     full_path = os.path.abspath( os.path.join( root, name ) )
                     if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
                              or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
@@ -450,6 +528,10 @@ def generate_metadata( toolbox, relative_install_dir, repository_clone_url ):
                     exported_workflow_dict = from_json_string( workflow_text )
                     if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
                         metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
+    # This step must be done after metadata for tools has been defined.
+    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
+    if tool_dependencies_config:
+        metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
     return metadata_dict
 def generate_tool_guid( repository_clone_url, tool ):
     """
@@ -485,7 +567,7 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
             outputs = []
             for output in ttb.outputs:
                 name, file_name, extra = output
-                outputs.append( ( name, os.path.split( file_name )[ 1 ] ) )
+                outputs.append( ( name, strip_path( file_name ) ) )
             test_dict = dict( name=ttb.name,
                               required_files=required_files,
                               inputs=inputs,
@@ -597,7 +679,7 @@ def generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository ):
     for tool_dict in metadata[ 'tools' ]:
         guid = tool_dict[ 'guid' ]
         tool_config = tool_dict[ 'tool_config' ]
-        file_path, file_name = os.path.split( tool_config )
+        file_name = strip_path( tool_config )
         guids_and_configs[ guid ] = file_name
     # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict. 
     tree = util.parse_xml( shed_tool_conf )
@@ -638,7 +720,7 @@ def generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=N
     {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
     """
     tool_panel_dict = {}
-    file_path, file_name = os.path.split( tool_config )
+    file_name = strip_path( tool_config )
     tool_section_dicts = generate_tool_section_dicts( tool_config=file_name, tool_sections=tool_sections )
     tool_panel_dict[ guid ] = tool_section_dicts
     return tool_panel_dict
@@ -680,6 +762,52 @@ def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_
     else:
         metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
     return metadata_dict
+def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
+    """Retrieve a specified changectx from a repository"""
+    for changeset in repo.changelog:
+        ctx = repo.changectx( changeset )
+        if str( ctx ) == changeset_revision:
+            return ctx
+    return None
+def get_config( config_file, repo, repo_dir, ctx, dir ):
+    """Return config_filename if it exists in some changeset of the repository."""
+    # First look on disk.
+    for root, dirs, files in os.walk( repo_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name == config_file:
+                    dest_file_name = os.path.join( dir, name )
+                    shutil.copy( os.path.abspath( os.path.join( root, name ) ), dest_file_name )
+                    return os.path.abspath( dest_file_name )
+    # Next look in the current change set.
+    for filename in ctx:
+        ctx_file_name = strip_path( filename )
+        if ctx_file_name == config_file:
+            return get_named_tmpfile_from_ctx( ctx, filename, dir=dir )
+    # Finally look in the repository manifest.
+    for changeset in repo.changelog:
+        prev_ctx = repo.changectx( changeset )
+        for ctx_file in prev_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            if ctx_file_name == config_file:
+                return get_named_tmpfile_from_ctx( prev_ctx, filename, dir=dir )
+    return None
+def get_config_from_disk( config_file, relative_install_dir ):
+    for root, dirs, files in os.walk( relative_install_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name == config_file:
+                    return os.path.abspath( os.path.join( root, name ) )
+    return None
+def get_config_from_repository( app, config_file, repository, changeset_revision, dir, install_dir=None ):
+    """Return config_filename if it exists in some changeset of the repository using only the repository and changeset_revision."""
+    if install_dir is None:
+        install_dir = repository.repo_path( app )
+    repo_files_dir = os.path.join( install_dir, repository.name )
+    repo = hg.repository( get_configured_ui(), repo_files_dir )
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    config = get_config( config_file, repo, repo_files_dir, ctx, dir )
+    return config
 def get_configured_ui():
     # Configure any desired ui settings.
     _ui = ui.ui()
@@ -701,11 +829,11 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             for converter in elem.findall( 'converter' ):
                 converter_config = converter.get( 'file', None )
                 if converter_config:
-                    relative_head, relative_tail = os.path.split( converter_config )
+                    converter_config_file_name = strip_path( converter_config )
                     for root, dirs, files in os.walk( relative_install_dir ):
                         if root.find( '.hg' ) < 0:
                             for name in files:
-                                if name == relative_tail:
+                                if name == converter_config_file_name:
                                     # The value of converter_path must be absolute due to job_working_directory.
                                     converter_path = os.path.abspath( root )
                                     break
@@ -718,11 +846,11 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             for display_app in elem.findall( 'display' ):
                 display_config = display_app.get( 'file', None )
                 if display_config:
-                    relative_head, relative_tail = os.path.split( display_config )
+                    display_config_file_name = strip_path( display_config )
                     for root, dirs, files in os.walk( relative_install_dir ):
                         if root.find( '.hg' ) < 0:
                             for name in files:
-                                if name == relative_tail:
+                                if name == display_config_file_name:
                                     # The value of display_path must be absolute due to job_working_directory.
                                     display_path = os.path.abspath( root )
                                     break
@@ -737,18 +865,6 @@ def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
     ctx_rev = response.read()
     response.close()
     return ctx_rev
-def get_shed_tool_conf_dict( app, shed_tool_conf ):
-    """
-    Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
-    in the shed_tool_conf_dict associated with the file.
-    """
-    for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
-        if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
-            return index, shed_tool_conf_dict
-        else:
-            file_path, file_name = os.path.split( shed_tool_conf_dict[ 'config_filename' ] )
-            if shed_tool_conf == file_name:
-                return index, shed_tool_conf_dict
 def get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     sa_session = app.model.context.current
     if tool_shed.find( '//' ) > 0:
@@ -779,6 +895,26 @@ def get_repository_tools_tups( app, metadata_dict ):
             if tool:
                 repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
+def get_sample_files_from_disk( relative_install_dir ):
+    sample_files = []
+    for root, dirs, files in os.walk( relative_install_dir ):
+            if root.find( '.hg' ) < 0:
+                for name in files:
+                    if name.endswith( '.sample' ):
+                        sample_files.append( os.path.join( root, name ) )
+    return sample_files
+def get_shed_tool_conf_dict( app, shed_tool_conf ):
+    """
+    Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
+    in the shed_tool_conf_dict associated with the file.
+    """
+    for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
+        if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
+            return index, shed_tool_conf_dict
+        else:
+            file_name = strip_path( shed_tool_conf_dict[ 'config_filename' ] )
+            if shed_tool_conf == file_name:
+                return index, shed_tool_conf_dict
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
     # Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the
     # repository is installed.  This method assumes all repository tools are defined in a single shed-related tool panel config.
@@ -868,7 +1004,7 @@ def get_url_from_repository_tool_shed( app, repository ):
 def handle_missing_data_table_entry( app, tool_path, sample_files, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
-    tool_data_table_conf.xml file.
+    tool_data_table_conf.xml file.  This method is not called only from Galaxy (not the tool shed) when a repository is being installed.
     """
     missing_data_table_entry = False
     for index, repository_tools_tup in enumerate( repository_tools_tups ):
@@ -880,8 +1016,8 @@ def handle_missing_data_table_entry( app, tool_path, sample_files, repository_to
         sample_file = None
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
         for sample_file in sample_files:
-            head, tail = os.path.split( sample_file )
-            if tail == 'tool_data_table_conf.xml.sample':
+            sample_file_name = strip_path( sample_file )
+            if sample_file_name == 'tool_data_table_conf.xml.sample':
                 break
         error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_file )
         if error:
@@ -892,18 +1028,21 @@ def handle_missing_data_table_entry( app, tool_path, sample_files, repository_to
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups ):
-    """Inspect each tool to see if it has any input parameters that are dynamically generated select lists that depend on a .loc file."""
+    """
+    Inspect each tool to see if it has any input parameters that are dynamically generated select lists that depend on a .loc file.
+    This method is not called from the tool shed, but from Galaxy when a repository is being installed.
+    """
     sample_files_copied = []
     for index, repository_tools_tup in enumerate( repository_tools_tups ):
         tup_path, guid, repository_tool = repository_tools_tup
         params_with_missing_index_file = repository_tool.params_with_missing_index_file
         for param in params_with_missing_index_file:
             options = param.options
-            missing_file_path, missing_file_name = os.path.split( options.missing_index_file )
+            missing_file_name = strip_path( options.missing_index_file )
             if missing_file_name not in sample_files_copied:
                 # The repository must contain the required xxx.loc.sample file.
                 for sample_file in sample_files:
-                    sample_file_path, sample_file_name = os.path.split( sample_file )
+                    sample_file_name = strip_path( sample_file )
                     if sample_file_name == '%s.sample' % missing_file_name:
                         copy_sample_file( app, sample_file )
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
@@ -916,10 +1055,11 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
     return repository_tools_tups, sample_files_copied
 def handle_sample_tool_data_table_conf_file( app, filename ):
     """
-    Parse the incoming filename and add new entries to the in-memory
-    app.tool_data_tables dictionary as well as appending them to the
+    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary as well as appending them to the
     shed's tool_data_table_conf.xml file on disk.
     """
+    # TODO: Load an in-memory version of the tool_data_table_conf.xml file, and write it to disk
+    # from the in-memory version only when changes are made.
     error = False
     message = ''
     try:
@@ -927,6 +1067,8 @@ def handle_sample_tool_data_table_conf_file( app, filename ):
     except Exception, e:
         message = str( e )
         error = True
+    """
+    # TODO: eliminate this - the shed should not need to write this to disk...
     if not error:
         # Add an entry to the end of the tool_data_table_conf.xml file.
         tdt_config = "%s/tool_data_table_conf.xml" % app.config.root
@@ -953,42 +1095,32 @@ def handle_sample_tool_data_table_conf_file( app, filename ):
         else:
             message = "The required file named tool_data_table_conf.xml does not exist in the Galaxy install directory."
             error = True
+    """
     return error, message
-def handle_tool_dependencies( current_working_dir, repo_files_dir, repository_tools_tups ):
+def handle_tool_dependencies( app, tool_shed_repository, installed_changeset_revision, tool_dependencies_config ):
     """
-    Inspect each tool to see if it includes a "requirement" that refers to a fabric
-    script.  For those that do, execute the fabric script to install tool dependencies.
+    Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can refer to installation
+    methods in Galaxy's tool_dependencies module or to proprietary fabric scripts contained in the repository.  Future enhancements
+    to handling tool dependencies may provide installation processes in addition to fabric based processes.
+    
+    The dependencies will be installed in:
+    ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repository_owner>/<repository_name>/<installed_changeset_revision>
     """
-    for index, repository_tools_tup in enumerate( repository_tools_tups ):
-        tup_path, guid, repository_tool = repository_tools_tup
-        for requirement in repository_tool.requirements:
-            if requirement.type == 'fabfile':
-                log.debug( 'Executing fabric script to install dependencies for tool "%s"...' % repository_tool.name )
-                fabfile = requirement.fabfile
-                method = requirement.method
-                # Find the relative path to the fabfile.
-                relative_fabfile_path = None
-                for root, dirs, files in os.walk( repo_files_dir ):
-                    for name in files:
-                        if name == fabfile:
-                            relative_fabfile_path = os.path.join( root, name )
-                            break
-                if relative_fabfile_path:
-                    # cmd will look something like: fab -f fabfile.py install_bowtie
-                    cmd = 'fab -f %s %s' % ( relative_fabfile_path, method )
-                    tmp_name = tempfile.NamedTemporaryFile().name
-                    tmp_stderr = open( tmp_name, 'wb' )
-                    os.chdir( repo_files_dir )
-                    proc = subprocess.Popen( cmd, shell=True, stderr=tmp_stderr.fileno() )
-                    returncode = proc.wait()
-                    os.chdir( current_working_dir )
-                    tmp_stderr.close()
-                    if returncode != 0:
-                        # TODO: do something more here than logging the problem.
-                        tmp_stderr = open( tmp_name, 'rb' )
-                        error = tmp_stderr.read()
-                        tmp_stderr.close()
-                        log.debug( 'Problem installing dependencies for tool "%s"\n%s' % ( repository_tool.name, error ) )
+    status = 'ok'
+    message = ''
+    # Parse the tool_dependencies.xml config.
+    tree = ElementTree.parse( tool_dependencies_config )
+    root = tree.getroot()
+    ElementInclude.include( root )
+    fabric_version_checked = False
+    for elem in root:
+        if elem.tag == 'package':
+            error_message = install_package( app, elem, tool_shed_repository, installed_changeset_revision )
+            if error_message:
+                message += '  %s' % error_message
+    if message:
+        status = 'error'
+    return status, message
 def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     """
     Using the list of tool_version_dicts retrieved from the tool shed (one per changeset revison up to the currently installed changeset revision),
@@ -1019,7 +1151,13 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
 def load_datatype_items( app, repository, relative_install_dir, deactivate=False ):
     # Load proprietary datatypes.
     metadata = repository.metadata
-    datatypes_config = metadata.get( 'datatypes_config', None )
+    work_dir = make_tmp_directory()
+    datatypes_config = get_config_from_repository( app,
+                                                   'datatypes_conf.xml',
+                                                   repository,
+                                                   repository.changeset_revision,
+                                                   work_dir,
+                                                   install_dir=relative_install_dir )
     if datatypes_config:
         converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
         if converter_path or display_path:
@@ -1037,14 +1175,18 @@ def load_datatype_items( app, repository, relative_install_dir, deactivate=False
         if display_path:
             # Load or deactivate proprietary datatype display applications
             app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict, deactivate=deactivate )
+    try:
+        shutil.rmtree( work_dir )
+    except:
+        pass
 def load_repository_contents( trans, repository_name, description, owner, changeset_revision, ctx_rev, tool_path, repository_clone_url,
-                              relative_install_dir, current_working_dir, tool_shed=None, tool_section=None, shed_tool_conf=None,
-                              install_tool_dependencies=False ):
-    """Generate the metadata for the installed tool shed repository, among other things."""
-    # It is critical that the installed repository is updated to the desired changeset_revision before metadata is set because the
-    # process for setting metadata uses the repository files on disk.  This method is called when an admin is installing a new repository
-    # or reinstalling an uninstalled repository. 
-    metadata_dict = generate_metadata( trans.app.toolbox, relative_install_dir, repository_clone_url )
+                              relative_install_dir, tool_shed=None, tool_section=None, shed_tool_conf=None, install_tool_dependencies=False ):
+    """
+    Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy (never the tool shed)
+    when an admin is installing a new repository or reinstalling an uninstalled repository.
+    """
+    message = ''
+    metadata_dict = generate_metadata_using_disk_files( trans.app.toolbox, relative_install_dir, repository_clone_url )
     # Add a new record to the tool_shed_repository table if one doesn't already exist.  If one exists but is marked deleted, undelete it.  This
     # must happen before the call to add_to_tool_panel() below because tools will not be properly loaded if the repository is marked deleted.
     log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % repository_name )
@@ -1060,6 +1202,7 @@ def load_repository_contents( trans, repository_name, description, owner, change
         tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
         repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
         if repository_tools_tups:
+            work_dir = make_tmp_directory()
             sample_files = metadata_dict.get( 'sample_files', [] )
             # Handle missing data table entries for tool parameters that are dynamically generated select lists.
             repository_tools_tups = handle_missing_data_table_entry( trans.app, tool_path, sample_files, repository_tools_tups )
@@ -1067,7 +1210,21 @@ def load_repository_contents( trans, repository_name, description, owner, change
             repository_tools_tups, sample_files_copied = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
             # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
             copy_sample_files( trans.app, sample_files, sample_files_copied=sample_files_copied )
-            handle_tool_dependencies( current_working_dir, relative_install_dir, repository_tools_tups )
+            if install_tool_dependencies and 'tool_dependencies' in metadata_dict:
+                # Get the tool_dependencies.xml file from the repository.
+                tool_dependencies_config = get_config_from_repository( trans.app,
+                                                                       'tool_dependencies.xml',
+                                                                       tool_shed_repository,
+                                                                       changeset_revision,
+                                                                       work_dir )
+                # Install dependencies for repository tools.
+                status, message = handle_tool_dependencies( app=trans.app,
+                                                            tool_shed_repository=tool_shed_repository,
+                                                            installed_changeset_revision=changeset_revision,
+                                                            tool_dependencies_config=tool_dependencies_config )
+                if status != 'ok' and message:
+                    print 'The following error occurred from load_repository_contents while installing tool dependencies:'
+                    print message
             add_to_tool_panel( app=trans.app,
                                repository_name=repository_name,
                                repository_clone_url=repository_clone_url,
@@ -1077,8 +1234,17 @@ def load_repository_contents( trans, repository_name, description, owner, change
                                shed_tool_conf=shed_tool_conf,
                                tool_panel_dict=tool_panel_dict,
                                new_install=True )
-    if 'datatypes_config' in metadata_dict:
-        datatypes_config = os.path.abspath( metadata_dict[ 'datatypes_config' ] )
+            try:
+                shutil.rmtree( work_dir )
+            except:
+                pass
+    if 'datatypes' in metadata_dict:
+        work_dir = make_tmp_directory()
+        datatypes_config = get_config_from_repository( trans.app,
+                                                       'datatypes_conf.xml',
+                                                       tool_shed_repository,
+                                                       changeset_revision,
+                                                       work_dir )
         # Load data types required by tools.
         converter_path, display_path = alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, relative_install_dir, override=False )
         if converter_path or display_path:
@@ -1096,7 +1262,22 @@ def load_repository_contents( trans, repository_name, description, owner, change
         if display_path:
             # Load proprietary datatype display applications
             trans.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
-    return tool_shed_repository, metadata_dict
+        try:
+            shutil.rmtree( work_dir )
+        except:
+            pass
+    return tool_shed_repository, metadata_dict, message
+def make_tmp_directory():
+    tmp_dir = os.getenv( 'TMPDIR', '' )
+    if tmp_dir:
+        tmp_dir = tmp_dir.strip()
+    else:
+        home_dir = os.getenv( 'HOME' )
+        tmp_dir = os.path.join( home_dir, 'tmp' )
+    work_dir = os.path.join( tmp_dir, 'work_tmp' )
+    if not os.path.exists( work_dir ):
+        os.makedirs( work_dir )
+    return work_dir
 def panel_entry_per_tool( tool_section_dict ):
     # Return True if tool_section_dict looks like this.
     # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
@@ -1157,6 +1338,10 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     trans.sa_session.flush()
     # Create a list of guids for all tools that will be removed from the in-memory tool panel and config file on disk.
     guids_to_remove = [ k for k in tool_panel_dict.keys() ]
+    # Remove the tools from the toolbox's tools_by_id dictionary.
+    for guid_to_remove in guids_to_remove:
+        if guid_to_remove in trans.app.toolbox.tools_by_id:
+            del trans.app.toolbox.tools_by_id[ guid_to_remove ]
     index, shed_tool_conf_dict = get_shed_tool_conf_dict( trans.app, shed_tool_conf )
     if uninstall:
         # Remove from the shed_tool_conf file on disk.
@@ -1194,7 +1379,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
                 config_elems_to_remove.append( config_elem )
         elif config_elem.tag == 'tool':
             if config_elem.get( 'guid' ) in guids_to_remove:
-                tool_key = key = 'tool_%s' % str( config_elem.get( 'guid' ) )
+                tool_key = 'tool_%s' % str( config_elem.get( 'guid' ) )
                 if tool_key in trans.app.toolbox.tool_panel:
                     del trans.app.toolbox.tool_panel[ tool_key ]
                 if uninstall:
@@ -1213,6 +1398,9 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     if uninstall:
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         trans.app.toolbox.write_integrated_tool_panel_config_file()
+def strip_path( fpath ):
+    file_path, file_name = os.path.split( fpath )
+    return file_name
 def to_html_escaped( text ):
     """Translates the characters in text to html values"""
     translated = []

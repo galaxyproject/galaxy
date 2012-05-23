@@ -3,7 +3,7 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util import inflector
-from galaxy.util.shed_util import get_configured_ui
+from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui
 from common import *
 from repository import RepositoryListGrid, CategoryListGrid
 
@@ -462,27 +462,38 @@ class AdminController( BaseUIController, Admin ):
                                                    status=status ) )
     @web.expose
     @web.require_admin
-    def reset_all_repository_metadata( self, trans, **kwd ):
+    def reset_metadata_on_all_repositories( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        if 'reset_all_repository_metadata_button' in kwd:
-            count = 0
+        if 'reset_metadata_on_all_repositories_button' in kwd:
+            successful_count = 0
+            unsuccessful_count = 0
             for repository in trans.sa_session.query( trans.model.Repository ) \
                                               .filter( trans.model.Repository.table.c.deleted == False ):
                 try:
-                    reset_all_repository_metadata( trans, trans.security.encode_id( repository.id ) )
-                    log.debug( "Reset metadata on repository %s" % repository.name )
-                    count += 1
+                    error_message, status = reset_all_metadata_on_repository( trans, trans.security.encode_id( repository.id ) )
+                    if error_message:
+                        log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, error_message ) )
+                        unsuccessful_count += 1
+                    else:
+                        log.debug( "Successfully reset metadata on repository %s" % repository.name )
+                        successful_count += 1
                 except Exception, e:
-                    log.debug( "Error attempting to reset metadata on repository %s: %s" % ( repository.name, str( e ) ) )
-            message = "Reset metadata on %d repositories" % count
+                    log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, str( e ) ) )
+                    unsuccessful_count += 1
+            message = "Successfully reset metadata on %d %s.  " % ( successful_count,
+                                                                    inflector.cond_plural( successful_count, "repository" ) )            
+            if unsuccessful_count:
+                message += "Error setting metadata on %d %s - see the paster log for details.  " % ( unsuccessful_count,
+                                                                                                     inflector.cond_plural( unsuccessful_count,
+                                                                                                                            "repository" ) )
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='browse_repository_metadata',
                                                        webapp='community',
                                                        message=util.sanitize_text( message ),
                                                        status=status ) )
-        return trans.fill_template( '/webapps/community/admin/reset_all_repository_metadata.mako',
+        return trans.fill_template( '/webapps/community/admin/reset_metadata_on_all_repositories.mako',
                                     message=message,
                                     status=status )
     @web.expose

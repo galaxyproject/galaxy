@@ -16,6 +16,7 @@ try:
 except ImportError:
     from md5 import new as md5
 
+from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( 'docutils' )

@@ -8,7 +8,11 @@
 <div class="toolForm">
     <div class="toolFormTitle">Choose the tool panel section to contain the installed tools (optional)</div>
     <div class="toolFormBody">
-        <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+        %if repository.includes_tool_dependencies:
+            <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='install_missing_tool_dependencies', id=trans.security.encode_id( repository.id ), reinstalling=True )}" method="post" >
+        %else:
+            <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+        %endif
             <div class="form-row">
                 ${no_changes_check_box.get_html()}
                 <label style="display: inline;">No changes</label>

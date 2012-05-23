@@ -45,7 +45,7 @@ class Configuration( object ):
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         # Tool stuff
         self.tool_secret = kwargs.get( "tool_secret", "" )
-        self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
+        self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Location for dependencies
@@ -107,10 +107,26 @@ class Configuration( object ):
         else:
             return default
     def check( self ):
-        # Check that required directories exist
-        for path in self.root, self.file_path, self.template_path:
-            if not os.path.isdir( path ):
-                raise ConfigurationError("Directory does not exist: %s" % path )
+        # Check that required directories exist.
+        paths_to_check = [ self.root, self.file_path, self.tool_data_path, self.template_path ]
+        for path in paths_to_check:
+            if path not in [ None, False ] and not os.path.isdir( path ):
+                try:
+                    os.makedirs( path )
+                except Exception, e:
+                    raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
+        # Create the directories that it makes sense to create.
+        for path in self.file_path, \
+                    self.template_cache, \
+                    os.path.join( self.tool_data_path, 'shared', 'jars' ):
+            if path not in [ None, False ] and not os.path.isdir( path ):
+                try:
+                    os.makedirs( path )
+                except Exception, e:
+                    raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
+        # Check that required files exist.
+        if not os.path.isfile( self.datatypes_config ):
+            raise ConfigurationError( "File not found: %s" % self.datatypes_config )
     def is_admin_user( self, user ):
         """
         Determine if the provided user is listed in `admin_users`.

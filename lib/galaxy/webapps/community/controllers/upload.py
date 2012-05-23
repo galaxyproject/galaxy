@@ -126,16 +126,14 @@ class UploadController( BaseUIController ):
                     full_path = full_path.encode( 'ascii', 'replace' )
                     commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
                     if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
-                        # Handle the special case where a tool_data_table_conf.xml.sample
-                        # file is being uploaded by parsing the file and adding new entries
-                        # to the in-memory trans.app.tool_data_tables dictionary as well as
-                        # appending them to the shed's tool_data_table_conf.xml file on disk.
+                        # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
+                        # to the in-memory trans.app.tool_data_tables dictionary.
                         error, error_message = handle_sample_tool_data_table_conf_file( trans.app, full_path )
                         if error:
                             message = '%s<br/>%s' % ( message, error_message )
-                    if full_path.endswith( '.loc.sample' ):
-                        # Handle the special case where a xxx.loc.sample file is being uploaded by copying it to ~/tool-data/xxx.loc.
-                        copy_sample_file( trans.app, full_path )
+                    #if full_path.endswith( '.loc.sample' ):
+                    #    # Handle the special case where a xxx.loc.sample file is being uploaded by copying it to ~/tool-data/xxx.loc.
+                    #    copy_sample_file( trans.app, full_path )
                     # See if the content of the change set was valid.
                     admin_only = len( repository.downloadable_revisions ) != 1
                     handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
@@ -143,37 +141,24 @@ class UploadController( BaseUIController ):
                     # Update the repository files for browsing.
                     update_repository( repo )
                     # Get the new repository tip.
-                    if tip != repository.tip:
+                    if tip == repository.tip:
+                        message = 'No changes to repository.  '
+                    else:
                         if ( isgzip or isbz2 ) and uncompress_file:
                             uncompress_str = ' uncompressed and '
                         else:
                             uncompress_str = ' '
-                        message = "The file '%s' has been successfully%suploaded to the repository." % ( uploaded_file_filename, uncompress_str )
+                        message = "The file '%s' has been successfully%suploaded to the repository.  " % ( uploaded_file_filename, uncompress_str )
                         if istar and ( undesirable_dirs_removed or undesirable_files_removed ):
                             items_removed = undesirable_dirs_removed + undesirable_files_removed
-                            message += "  %d undesirable items (.hg .svn .git directories, .DS_Store, hgrc files, etc) were removed from the archive." % items_removed
+                            message += "  %d undesirable items (.hg .svn .git directories, .DS_Store, hgrc files, etc) were removed from the archive.  " % items_removed
                         if istar and remove_repo_files_not_in_tar and files_to_remove:
                             if upload_point is not None:
-                                message += "  %d files were removed from the repository relative to the selected upload point '%s'." % ( len( files_to_remove ), upload_point )
+                                message += "  %d files were removed from the repository relative to the selected upload point '%s'.  " % ( len( files_to_remove ), upload_point )
                             else:
-                                message += "  %d files were removed from the repository root." % len( files_to_remove )
-                    else:
-                        message = 'No changes to repository.'      
-                    # Set metadata on the repository tip.
-                    error_message, status = set_repository_metadata( trans, repository_id, repository.tip, content_alert_str=content_alert_str, **kwd )
-                    if error_message:
-                        # If there is an error, display it.
-                        message = '%s<br/>%s' % ( message, error_message )
-                        return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                          action='manage_repository',
-                                                                          id=repository_id,
-                                                                          message=message,
-                                                                          status=status ) )
-                    else:
-                        # If no error occurred in setting metadata on the repository tip, reset metadata on all
-                        # changeset revisions for the repository.  This will result in a more standardized set of
-                        # valid repository revisions that can be installed.
-                        reset_all_repository_metadata( trans, repository_id, **kwd )
+                                message += "  %d files were removed from the repository root.  " % len( files_to_remove )
+                        kwd[ 'message' ] = message
+                        set_repository_metadata_due_to_new_tip( trans, repository_id, repository, content_alert_str=content_alert_str, **kwd )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                id=repository_id,
@@ -278,16 +263,14 @@ class UploadController( BaseUIController ):
                     content_alert_str += self.__check_file_content( filename_in_archive )
                 commands.add( repo.ui, repo, filename_in_archive )
                 if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
-                    # Handle the special case where a tool_data_table_conf.xml.sample
-                    # file is being uploaded by parsing the file and adding new entries
-                    # to the in-memory trans.app.tool_data_tables dictionary as well as
-                    # appending them to the shed's tool_data_table_conf.xml file on disk.
+                    # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
+                    # to the in-memory trans.app.tool_data_tables dictionary.
                     error, message = handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
                     if error:
                         return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
-                if filename_in_archive.endswith( '.loc.sample' ):
-                    # Handle the special case where a xxx.loc.sample file is being uploaded by copying it to ~/tool-data/xxx.loc.
-                    copy_sample_file( trans.app, filename_in_archive )
+                #if filename_in_archive.endswith( '.loc.sample' ):
+                #    # Handle the special case where a xxx.loc.sample file is being uploaded by copying it to ~/tool-data/xxx.loc.
+                #    copy_sample_file( trans.app, filename_in_archive )
             commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
             # See if the content of the change set was valid.
             admin_only = len( repository.downloadable_revisions ) != 1

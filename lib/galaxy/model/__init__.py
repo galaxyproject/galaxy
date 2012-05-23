@@ -2648,7 +2648,7 @@ class APIKeys( object ):
 class ToolShedRepository( object ):
     def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
                   changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False,
-                   uninstalled=False, dist_to_shed=False ):
+                  uninstalled=False, dist_to_shed=False ):
         self.id = id
         self.create_time = create_time
         self.tool_shed = tool_shed
@@ -2664,12 +2664,36 @@ class ToolShedRepository( object ):
         self.deleted = deleted
         self.uninstalled = uninstalled
         self.dist_to_shed = dist_to_shed
+    def repo_path( self, app ):        
+        tool_shed_url = self.tool_shed
+        if tool_shed_url.find( ':' ) > 0:
+            # Eliminate the port, if any, since it will result in an invalid directory name.
+            tool_shed_url = tool_shed_url.split( ':' )[ 0 ]
+        tool_shed = tool_shed_url.rstrip( '/' )
+        for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
+            tool_path = shed_tool_conf_dict[ 'tool_path' ]
+            relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
+            if os.path.exists( relative_path ):
+                return relative_path
+        return None
     @property
     def includes_tools( self ):
         return self.metadata and 'tools' in self.metadata
     @property
+    def includes_tool_dependencies( self ):
+        return self.metadata and 'tool_dependencies' in self.metadata
+    @property
     def includes_workflows( self ):
         return self.metadata and 'workflows' in self.metadata
+
+class ToolDependency( object ):
+    def __init__( self, tool_shed_repository_id=None, installed_changeset_revision=None, name=None, version=None, type=None, uninstalled=False ):
+        self.tool_shed_repository_id = tool_shed_repository_id
+        self.installed_changeset_revision = installed_changeset_revision
+        self.name = name
+        self.version = version
+        self.type = type
+        self.uninstalled = uninstalled
 
 class ToolVersion( object ):
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):

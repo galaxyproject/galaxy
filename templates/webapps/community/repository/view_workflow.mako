@@ -16,7 +16,6 @@
     can_upload = can_push
     can_download = in_tool_shed and not is_new and ( not is_malicious or can_push )
     can_browse_contents = in_tool_shed and not is_new
-    can_set_metadata = in_tool_shed and not is_new
     can_rate = in_tool_shed and not is_new and trans.user and repository.user != trans.user
     can_view_change_log = in_tool_shed and not is_new
     if can_push:

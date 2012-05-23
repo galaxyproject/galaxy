@@ -1,13 +1,12 @@
 """
 Contains functionality needed in every web interface
 """
-import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess, binascii
+import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import config, tools, web, util
 from galaxy.util import inflector
 from galaxy.util.hash_util import *
-from galaxy.util.json import json_fix
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
@@ -2463,32 +2462,3 @@ def get_quota( trans, id ):
     id = trans.security.decode_id( id )
     quota = trans.sa_session.query( trans.model.Quota ).get( id )
     return quota
-def tool_shed_encode( val ):
-    if isinstance( val, dict ):
-        value = simplejson.dumps( val )
-    else:
-        value = val
-    a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
-    b = binascii.hexlify( value )
-    return "%s:%s" % ( a, b )
-def tool_shed_decode( value ):
-    # Extract and verify hash
-    a, b = value.split( ":" )
-    value = binascii.unhexlify( b )
-    test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
-    assert a == test
-    # Restore from string
-    values = None
-    try:
-        values = simplejson.loads( value )
-    except Exception, e:
-        log.debug( "Decoding json value from tool shed threw exception: %s" % str( e ) )
-    if values is not None:
-        try:
-            return json_fix( values )
-        except Exception, e:
-            log.debug( "Fixing decoded json value from tool shed threw exception: %s" % str( e ) )
-            fixed_values = values
-    if values is None:
-        values = value
-    return values

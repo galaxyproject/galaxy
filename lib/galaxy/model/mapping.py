@@ -390,6 +390,17 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "uninstalled", Boolean, default=False ),
     Column( "dist_to_shed", Boolean, default=False ) )
 
+ToolDependency.table = Table( "tool_dependency", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ),
+    Column( "installed_changeset_revision", TrimmedString( 255 ) ),
+    Column( "name", TrimmedString( 255 ) ),
+    Column( "version", TrimmedString( 40 ) ),
+    Column( "type", TrimmedString( 40 ) ),
+    Column( "uninstalled", Boolean, default=False ) )
+
 ToolVersion.table = Table( "tool_version", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1667,7 +1678,12 @@ assign_mapper( context, Page, Page.table,
 assign_mapper( context, ToolShedRepository, ToolShedRepository.table,
     properties=dict( tool_versions=relation( ToolVersion,
                                              primaryjoin=( ToolShedRepository.table.c.id == ToolVersion.table.c.tool_shed_repository_id ),
-                                             backref='tool_shed_repository' ) ) )
+                                             backref='tool_shed_repository' ),
+                     tool_dependencies=relation( ToolDependency,
+                                                 primaryjoin=( ToolShedRepository.table.c.id == ToolDependency.table.c.tool_shed_repository_id ),
+                                                 backref='tool_shed_repository' ) ) )
+
+assign_mapper( context, ToolDependency, ToolDependency.table )
 
 assign_mapper( context, ToolVersion, ToolVersion.table )
 

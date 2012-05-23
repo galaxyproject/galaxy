@@ -15,10 +15,9 @@ class Registry( object ):
     def __init__( self, root_dir=None, config=None ):
         self.tool_sheds = odict()
         if root_dir and config:
-            # Parse datatypes_conf.xml
+            # Parse tool_sheds_conf.xml
             tree = parse_xml( config )
             root = tree.getroot()
-            # Load datatypes and converters from config
             log.debug( 'Loading references to tool sheds from %s' % config )
             for elem in root.findall( 'tool_shed' ):
                 try:

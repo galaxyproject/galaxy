@@ -830,10 +830,8 @@ class Tool:
         if not self.name: 
             raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
-        # TODO: can this be generated automatically?
         if guid is None:
             self.id = root.get( "id" )
-            self.version = root.get( "version" )
         else:
             self.id = guid
         if not self.id: 
@@ -850,8 +848,7 @@ class Tool:
         self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
         self.display_interface = util.string_as_bool( root.get( 'display_interface', str( self.display_interface ) ) )
         self.require_login = util.string_as_bool( root.get( 'require_login', str( self.require_login ) ) )
-        # Load input translator, used by datasource tools to change 
-        # names/values of incoming parameters
+        # Load input translator, used by datasource tools to change names/values of incoming parameters
         self.input_translator = root.find( "request_param_translation" )
         if self.input_translator:
             self.input_translator = ToolInputTranslator.from_element( self.input_translator )

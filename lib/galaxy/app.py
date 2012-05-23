@@ -3,6 +3,7 @@ import sys, os, atexit
 from galaxy import config, jobs, util, tools, web
 import galaxy.tools.search
 import galaxy.tools.data
+import galaxy.tool_shed
 import galaxy.tool_shed.tool_shed_registry
 from galaxy.web import security
 import galaxy.model

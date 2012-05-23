@@ -55,6 +55,11 @@
                         * The repository's tools will not be loaded into the tool panel.
                     </div>
                 %endif
+                %if repository.includes_tool_dependencies:
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository's installed tool dependencies will remain on disk.
+                    </div>
+                %endif
                 %if repository.includes_datatypes:
                     <div class="toolParamHelp" style="clear: both;">
                         * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
@@ -71,6 +76,14 @@
                 %if repository.includes_tools:
                     <div class="toolParamHelp" style="clear: both;">
                         * The repository's tool tag sets will be removed from the tool config file in which they are defined.
+                    </div>
+                %endif
+                %if repository.includes_tool_dependencies:
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository's installed tool dependencies will be removed from disk.
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        * Each associated tool dependency record's uninstalled column in the tool_dependency database table will be set to True.
                     </div>
                 %endif
                 %if repository.includes_datatypes:
