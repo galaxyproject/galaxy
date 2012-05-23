@@ -681,16 +681,12 @@ use_interactive = True
 #pbs_stage_path = 
 #pbs_dataset_server = 
 
-<<<<<<< local
 # The URL to the myExperiment instance being used (omit scheme but include port)
 myexperiment_url = www.myexperiment.org:80
 
-# ---- Tool Job Runners -----------------------------------------------------
-=======
 # This option allows users to see the full path of datasets via the "View
 # Details" option in the history.  Administrators can always see this.
 #expose_dataset_path = False
->>>>>>> other
 
 # ---- Per-Tool Job Management ----------------------------------------------
 
