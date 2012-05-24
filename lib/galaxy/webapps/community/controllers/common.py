@@ -774,7 +774,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                 break
         if in_ctx:
             tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, dir=work_dir )
-            element_tree = util.parse_xml( tmp_config )
+            element_tree = util.parse_xml( tmp_tool_config )
             element_tree_root = element_tree.getroot()
             # Look for code files required by the tool config.
             tmp_code_files = []
