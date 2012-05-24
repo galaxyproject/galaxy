@@ -3,7 +3,7 @@ from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
 from common import *
-from galaxy.util.shed_util import get_configured_ui, handle_sample_tool_data_table_conf_file
+from galaxy.util.shed_util import get_configured_ui, reset_tool_data_tables, handle_sample_tool_data_table_conf_file
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -168,6 +168,8 @@ class UploadController( BaseUIController ):
                                                                status=status ) )
                 else:
                     status = 'error'
+                # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+                reset_tool_data_tables( trans.app )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/community/repository/upload.mako',
                                     repository=repository,

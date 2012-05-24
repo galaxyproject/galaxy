@@ -1,4 +1,5 @@
 import sys, os, tempfile, shutil, logging, string, urllib2
+import galaxy.tools.data
 from datetime import date, datetime, timedelta
 from time import strftime, gmtime
 from galaxy import util
@@ -528,10 +529,11 @@ def generate_metadata_using_disk_files( toolbox, relative_install_dir, repositor
                     exported_workflow_dict = from_json_string( workflow_text )
                     if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
                         metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
-    # This step must be done after metadata for tools has been defined.
-    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
-    if tool_dependencies_config:
-        metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
+    if 'tools' in metadata_dict:
+        # This step must be done after metadata for tools has been defined.
+        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
+        if tool_dependencies_config:
+            metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
     return metadata_dict
 def generate_tool_guid( repository_clone_url, tool ):
     """
@@ -1026,6 +1028,8 @@ def handle_missing_data_table_entry( app, tool_path, sample_files, repository_to
         # Reload the tool into the local list of repository_tools_tups.
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
+        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+        reset_tool_data_tables( app )
     return repository_tools_tups
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups ):
     """
@@ -1398,6 +1402,9 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     if uninstall:
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         trans.app.toolbox.write_integrated_tool_panel_config_file()
+def reset_tool_data_tables( app ):
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    app.tool_data_tables = galaxy.tools.data.ToolDataTableManager( app.config.tool_data_table_config_path )
 def strip_path( fpath ):
     file_path, file_name = os.path.split( fpath )
     return file_name

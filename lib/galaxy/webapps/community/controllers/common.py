@@ -7,7 +7,7 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
 from galaxy.util.shed_util import copy_sample_file, generate_datatypes_metadata, generate_tool_dependency_metadata, generate_tool_metadata
 from galaxy.util.shed_util import generate_workflow_metadata, get_changectx_for_changeset, get_config, get_configured_ui, handle_sample_tool_data_table_conf_file
-from galaxy.util.shed_util import make_tmp_directory, NOT_TOOL_CONFIGS, strip_path, to_html_escaped, to_html_str, update_repository
+from galaxy.util.shed_util import make_tmp_directory, NOT_TOOL_CONFIGS, reset_tool_data_tables, strip_path, to_html_escaped, to_html_str, update_repository
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -245,6 +245,8 @@ def check_tool_input_params( trans, repo, repo_dir, ctx, xml_file_in_ctx, tool, 
                         correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
                         invalid_files.append( ( xml_file_in_ctx, correction_msg ) )
+        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+        reset_tool_data_tables( trans.app )
     return sample_files_copied, can_set_metadata, invalid_files
 def clean_repository_metadata( trans, id, changeset_revisions ):
     # Delete all repository_metadata reecords associated with the repository that have a changeset_revision that is not in changeset_revisions.
@@ -437,16 +439,20 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
     work_dir = make_tmp_directory()
     datatypes_config = get_config( 'datatypes_conf.xml', repo, repo_dir, ctx, work_dir  )
     if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
+        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )    
     sample_files = get_sample_files( repo, repo_dir, dir=work_dir )
+    # Handle the tool_data_table_conf.xml.sample file if it is included in the repository.
+    if 'tool_data_table_conf.xml.sample' in sample_files:
+        tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', work_dir )
+        error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
     if sample_files:
         trans.app.config.tool_data_path = work_dir
     for filename in ctx:
         # Find all tool configs.
         ctx_file_name = strip_path( filename )
         if ctx_file_name not in NOT_TOOL_CONFIGS and filename.endswith( '.xml' ):
-            valid, tool = load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, work_dir )
-            if valid and tool is not None:
+            is_tool_config, valid, tool, error_message = load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, work_dir )
+            if is_tool_config and valid and tool is not None:
                 sample_files_copied, can_set_metadata, invalid_files = check_tool_input_params( trans,
                                                                                                 repo,
                                                                                                 repo_dir,
@@ -484,9 +490,11 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
                             os.unlink( os.path.join( original_tool_data_path, copied_file ) )
                         except:
                             pass
-            elif tool is not None:
-                # We have a tool config but it is invalid.
-                invalid_files.append( ( ctx_file_name, 'Problems loading tool.' ) )
+            elif is_tool_config:
+                if not error_message:
+                    error_message = 'Unknown problems loading tool.'
+                # We have a tool config but it is invalid or the tool does not properly load.
+                invalid_files.append( ( ctx_file_name, error_message ) )
                 invalid_tool_configs.append( ctx_file_name )
         # Find all exported workflows.
         elif filename.endswith( '.ga' ):
@@ -498,15 +506,18 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
                     metadata_dict = generate_workflow_metadata( '', exported_workflow_dict, metadata_dict )
             except Exception, e:
                 invalid_files.append( ( ctx_file_name, str( e ) ) )
-    # Find tool_dependencies.xml if it exists.  This step must be done after metadata for tools has been defined.
-    tool_dependencies_config = get_config( 'tool_dependencies.xml', repo, repo_dir, ctx, work_dir )
-    if tool_dependencies_config:
-        metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
+    if 'tools' in metadata_dict:
+        # Find tool_dependencies.xml if it exists.  This step must be done after metadata for tools has been defined.
+        tool_dependencies_config = get_config( 'tool_dependencies.xml', repo, repo_dir, ctx, work_dir )
+        if tool_dependencies_config:
+            metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
     if invalid_tool_configs:
         metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
     if sample_files:
         # Don't forget to reset the value of trans.app.config.tool_data_path!
         trans.app.config.tool_data_path = original_tool_data_path
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( trans.app )
     try:
         shutil.rmtree( work_dir )
     except:
@@ -737,9 +748,14 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     repository = get_repository( trans, repository_id )
     repo_files_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_files_dir )
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
     tool = None
     message = ''
     work_dir = make_tmp_directory()
+    # Load entries into the tool_data_tables if the tool requires them.
+    tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', work_dir )
+    if tool_data_table_config:
+        error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
     if changeset_revision == repository.tip:
         try:
             copied_tool_config = copy_file_from_disk( tool_config, repo_files_dir, work_dir )
@@ -750,7 +766,6 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     else:
         # Get the tool config file name from the hgweb url, something like: /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
         old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
-        ctx = get_changectx_for_changeset( repo, changeset_revision )
         in_ctx = False
         for ctx_file in ctx.files():
             ctx_file_name = strip_path( ctx_file )
@@ -784,14 +799,18 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                 pass
         else:
             tool = None
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( trans.app )
     try:
         shutil.rmtree( work_dir )
     except:
         pass
     return tool, message
 def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
+    is_tool_config = False
     tool = None
     valid = False
+    error_message = ''
     tmp_config = get_named_tmpfile_from_ctx( ctx, filename, dir=dir )
     if not ( check_binary( tmp_config ) or check_image( tmp_config ) or check_gzip( tmp_config )[ 0 ]
              or check_bz2( tmp_config )[ 0 ] or check_zip( tmp_config ) ):
@@ -799,11 +818,15 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
             # Make sure we're looking at a tool config and not a display application config or something else.
             element_tree = util.parse_xml( tmp_config )
             element_tree_root = element_tree.getroot()
-            is_tool = element_tree_root.tag == 'tool'
+            is_tool_config = element_tree_root.tag == 'tool'
         except Exception, e:
             log.debug( "Error parsing %s, exception: %s" % ( tmp_config, str( e ) ) )
-            is_tool = False
-        if is_tool:
+            is_tool_config = False
+        if is_tool_config:
+            # Load entries into the tool_data_tables if the tool requires them.
+            tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', dir )
+            if tool_data_table_config:
+                error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
             # Look for code files required by the tool config.  The directory to which dir refers should be removed by the caller.
             for code_elem in element_tree_root.findall( 'code' ):
                 code_file_name = code_elem.get( 'file' )
@@ -814,9 +837,17 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
             try:
                 tool = load_tool( trans, tmp_config )
                 valid = True
-            except:
+            except KeyError, e:
                 valid = False
-    return valid, tool
+                error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
+                error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
+                error_message += 'this error.  '
+            except Exception, e:
+                valid = False
+                error_message = str( e )
+            # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+            reset_tool_data_tables( trans.app )
+    return is_tool_config, valid, tool, error_message
 def new_tool_metadata_required( trans, id, metadata_dict ):
     """
     Compare the last saved metadata for each tool in the repository with the new metadata
@@ -1049,13 +1080,11 @@ def set_repository_metadata_due_to_new_tip( trans, id, repository, content_alert
         error_message, status = reset_all_metadata_on_repository( trans, id, **kwd )
     if error_message:
         # If there is an error, display it.
-        message += '%s<br/>%s  ' % ( message, error_message )
-        status = 'error'
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,
-                                                          message=message,
-                                                          status=status ) )
+                                                          message=error_message,
+                                                          status='error' ) )
 def update_for_browsing( trans, repository, current_working_dir, commit_message='' ):
     # This method id deprecated, but we'll keep it around for a while in case we need it.  The problem is that hg purge
     # is not supported by the mercurial API.

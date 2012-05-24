@@ -950,7 +950,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     for filename in ctx:
                         # Find all tool configs in this repository changeset_revision.
                         if filename not in NOT_TOOL_CONFIGS and filename.endswith( '.xml' ):
-                            valid, tool = load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, work_dir )
+                            is_tool_config, valid, tool, error_message = load_tool_from_tmp_directory( trans,
+                                                                                                       repo,
+                                                                                                       repo_dir,
+                                                                                                       ctx,
+                                                                                                       filename,
+                                                                                                       work_dir )
                             if valid and tool is not None:
                                 tool_guids.append( generate_tool_guid( trans, repository, tool ) )
                     tool_guids.sort()

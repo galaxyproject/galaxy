@@ -8,6 +8,7 @@ import common_util
 from galaxy import eggs
 import pkg_resources
 
+pkg_resources.require('ssh' )
 pkg_resources.require( 'Fabric' )
 
 from fabric.api import env, lcd, local
