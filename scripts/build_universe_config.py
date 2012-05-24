@@ -20,7 +20,7 @@ def merge():
     ## TODO: Expand enviroment variables here, that would
     ## also make Galaxy much easier to configure. 
 
-    parser.write(open("universe.ini", 'w'))
+    parser.write(open("universe_wsgi.ini", 'w'))
 
 if __name__ == '__main__':
     merge()
