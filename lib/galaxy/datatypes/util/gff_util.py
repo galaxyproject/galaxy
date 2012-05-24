@@ -1,9 +1,12 @@
 """
 Provides utilities for working with GFF files.
 """
+
+import copy
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.intervals.io import *
 from bx.tabular.io import Header, Comment
+from galaxy.util.odict import odict
 
 class GFFInterval( GenomicInterval ):
     """ 
@@ -48,7 +51,8 @@ class GFFFeature( GFFInterval ):
     def __init__( self, reader, chrom_col=0, feature_col=2, start_col=3, end_col=4, \
                   strand_col=6, score_col=5, default_strand='.', fix_strand=False, intervals=[], \
                   raw_size=0 ):
-        GFFInterval.__init__( self, reader, intervals[0].fields, chrom_col, feature_col, \
+        # Use copy so that first interval and feature do not share fields.
+        GFFInterval.__init__( self, reader, copy.deepcopy( intervals[0].fields ), chrom_col, feature_col, \
                               start_col, end_col, strand_col, score_col, default_strand, \
                               fix_strand=fix_strand )
         self.intervals = intervals
@@ -357,3 +361,45 @@ def gff_attributes_to_str( attrs, gff_format ):
         attrs_strs.append( format_string % ( name, value ) )
     return " ; ".join( attrs_strs )
     
+def read_unordered_gtf( iterator ):
+    """
+    Returns GTF features found in an iterator. GTF lines need not be ordered
+    or clustered for reader to work. Reader returns GFFFeature objects sorted
+    by transcript_id, chrom, and start position.
+    """
+    
+    # Aggregate intervals by transcript_id.
+    feature_intervals = odict()
+    for count, line in enumerate( iterator ):
+        line_attrs = parse_gff_attributes( line.split('\t')[8] )
+        transcript_id = line_attrs[ 'transcript_id' ]
+        if transcript_id in feature_intervals:
+            feature = feature_intervals[ transcript_id ]
+        else:
+            feature = []
+            feature_intervals[ transcript_id ] = feature
+        feature.append( GFFInterval( None, line.split( '\t' ) ) )
+    
+    # Create features.
+    chroms_features = {}
+    for count, intervals in enumerate( feature_intervals.values() ):
+        # Sort intervals by start position.
+        intervals.sort( lambda a,b: cmp( a.start, b.start ) )
+        feature = GFFFeature( None, intervals=intervals )
+        if feature.chrom not in chroms_features:
+            chroms_features[ feature.chrom ] = []
+        chroms_features[ feature.chrom ].append( feature )
+        
+    # Sort features by chrom, start position.
+    chroms_features_sorted = []
+    for chrom_features in chroms_features.values():
+        chroms_features_sorted.append( chrom_features )
+    chroms_features_sorted.sort( lambda a,b: cmp( a[0].chrom, b[0].chrom ) )
+    for features in chroms_features_sorted:
+        features.sort( lambda a,b: cmp( a.start, b.start ) )
+        
+    # Yield.
+    for chrom_features in chroms_features_sorted:
+        for feature in chrom_features:
+            yield feature
+        
