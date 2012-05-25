@@ -1,7 +1,9 @@
 /**
- * Model classes for Galaxy tools and tool panel. Models have no references to views,
- * instead using events to indicate state changes; this is advantageous because
- * multiple views can use the same object and models can be used without views.
+ * Model, view, and controller objects for Galaxy tools and tool panel.
+ *
+ * Models have no references to views, instead using events to indicate state 
+ * changes; this is advantageous because multiple views can use the same object 
+ * and models can be used without views.
  */
  
 /**
@@ -480,7 +482,6 @@ var ToolFormView = Backbone.View.extend({
         this.$el.append( this.template(this.model.toJSON()) );
     }
 });
-
 
 /**
  * Integrated tool menu + tool execution.

@@ -826,6 +826,29 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         
         return self.add_track_async( trans, output_dataset.id )
     
+    @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def circos( self, trans, hda_ldda, dataset_id ):
+        # Get dataset.
+        dataset = self._get_dataset( trans, hda_ldda, dataset_id )
+
+        # Get genome info.
+        dbkey = dataset.dbkey
+        chroms_info = self.genomes.chroms( trans, dbkey=dbkey )
+        genome = { 'dbkey': dbkey, 'chroms_info': chroms_info }
+
+        # Get summary tree data for dataset.
+        data_sources = self._get_datasources( trans, dataset )
+        tracks_dataset_type = data_sources['index']['name']
+        converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
+        indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
+        dataset_summary = []
+        for chrom_info in chroms_info[ 'chrom_info' ]:
+            summary = indexer.get_summary( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], level=4 )
+            dataset_summary.append( summary )
+
+        return trans.fill_template_mako( "visualization/circos.mako", dataset=dataset, dataset_summary=dataset_summary, genome=genome )
+    
     # -----------------
     # Helper methods.
     # -----------------
