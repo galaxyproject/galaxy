@@ -4,7 +4,6 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
 
-
 class VisualizationListGrid( grids.Grid ):
     # Grid definition
     title = "Saved Visualizations"
@@ -14,6 +13,7 @@ class VisualizationListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Title", key="title", attach_popup=True,
                          link=( lambda item: dict( controller="tracks", action="browser", id=item.id ) ) ),
+        grids.TextColumn( "Type", key="type" ),
         grids.TextColumn( "Dbkey", key="dbkey" ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
@@ -346,51 +346,31 @@ class VisualizationController( BaseUIController, Sharable, UsesAnnotations,
         
     @web.expose
     @web.require_login( "create visualizations" )
-    def create( self, trans, visualization_title="", visualization_slug="", visualization_annotation="", visualization_dbkey="" ):
+    def create( self, trans, visualization_title="", visualization_slug="", visualization_annotation="", visualization_dbkey="",
+                visualization_type="" ):
         """
         Create a new visualization
         """
-        user = trans.get_user()
         visualization_title_err = visualization_slug_err = visualization_annotation_err = ""
         if trans.request.method == "POST":
-            if not visualization_title:
-                visualization_title_err = "visualization name is required"
-            elif not visualization_slug:
-                visualization_slug_err = "visualization id is required"
-            elif not VALID_SLUG_RE.match( visualization_slug ):
-                visualization_slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif trans.sa_session.query( model.Visualization ).filter_by( user=user, slug=visualization_slug, deleted=False ).first():
-                visualization_slug_err = "visualization id must be unique"
+            rval = self.create_visualization( trans, title=visualization_title, 
+                                              slug=visualization_slug, 
+                                              annotation=visualization_annotation,
+                                              dbkey=visualization_dbkey,
+                                              type=visualization_type )
+            if isinstance( rval, dict ):
+                # Found error creating viz.
+                visualization_title_err = rval[ 'title_err' ]
+                visualization_slug_err = rval[ 'slug_err' ]
             else:
-                # Create the new stored visualization
-                visualization = model.Visualization()
-                visualization.title = visualization_title
-                visualization.slug = visualization_slug
-                visualization.dbkey = visualization_dbkey
-                visualization.type = 'trackster' # HACK: set visualization type to trackster since it's the only viz
-                visualization_annotation = sanitize_html( visualization_annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans.sa_session, trans.get_user(), visualization, visualization_annotation )
-                visualization.user = user
-                
-                # And the first (empty) visualization revision
-                visualization_revision = model.VisualizationRevision()
-                visualization_revision.title = visualization_title
-                visualization_revision.config = {}
-                visualization_revision.dbkey = visualization_dbkey
-                visualization_revision.visualization = visualization
-                visualization.latest_revision = visualization_revision
-
-                # Persist
-                session = trans.sa_session
-                session.add(visualization)
-                session.add(visualization_revision)
-                session.flush()
-
+                # Successfully created viz.
                 return trans.response.send_redirect( web.url_for( action='list' ) )
-                                
+        
+        viz_type_options = [ ( t, t ) for t in self.viz_types ]
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Create new visualization", submit_text="Submit" )
                 .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
+                .add_select( "visualization_type", "Type", options=viz_type_options, error=None )
                 .add_text( "visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
                            help="""A unique identifier that will be used for
                                 public links to this visualization. A default is generated

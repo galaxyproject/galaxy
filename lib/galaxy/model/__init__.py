@@ -2445,12 +2445,13 @@ class PageUserShareAssociation( object ):
         self.user = None
 
 class Visualization( object ):
-    def __init__( self, user=None, type=None, title=None, dbkey=None, latest_revision=None ):
+    def __init__( self, user=None, type=None, title=None, dbkey=None, slug=None, latest_revision=None ):
         self.id = None
         self.user = user
         self.type = type
         self.title = title
         self.dbkey = dbkey
+        self.slug = slug
         self.latest_revision = latest_revision
         self.revisions = []
         if self.latest_revision:

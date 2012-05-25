@@ -7,6 +7,7 @@ from time import strftime
 from galaxy import config, tools, web, util
 from galaxy.util import inflector
 from galaxy.util.hash_util import *
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
@@ -275,8 +276,45 @@ class UsesLibraryItems( SharableItemSecurity ):
 
 class UsesVisualization( SharableItemSecurity ):
     """ Mixin for controllers that use Visualization objects. """
+    
+    viz_types = [ "trackster", "circos" ]
 
     len_files = None
+    
+    def create_visualization( self, trans, title, slug, type, dbkey, annotation=None, config={} ):
+        user = trans.get_user()
+
+        # Error checking.
+        title_err = slug_err = ""
+        if not title:
+            title_err = "visualization name is required"
+        elif not slug:
+            slug_err = "visualization id is required"
+        elif not VALID_SLUG_RE.match( slug ):
+            slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
+        elif trans.sa_session.query( trans.model.Visualization ).filter_by( user=user, slug=slug, deleted=False ).first():
+            slug_err = "visualization id must be unique"
+
+        if title_err or slug_err:
+            return { 'title_err': title_err, 'slug_err': slug_err }
+
+        # Create visualization
+        visualization = trans.model.Visualization( user=user, title=title, slug=slug, dbkey=dbkey, type=type )
+        if annotation:
+            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            self.add_item_annotation( trans.sa_session, trans.user, visualization, annotation )
+
+        # And the first visualization revision
+        revision = trans.model.VisualizationRevision( visualization=visualization, title=title, config={}, dbkey=dbkey )
+        visualization.latest_revision = revision
+
+        # Persist
+        session = trans.sa_session
+        session.add(visualization)
+        session.add(revision)
+        session.flush()
+
+        return visualization
 
     def _get_dbkeys( self, trans ):
         """ Returns all valid dbkeys that a user can use in a visualization. """
