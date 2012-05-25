@@ -5,16 +5,10 @@ import sys, string
 from rpy import *
 import numpy
 
-#export PYTHONPATH=~/galaxy/lib/
-
 def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
-#infile = 'logreg_inp.tab'
-#y_col=3
-#x_cols=[1,2,3]
-#outfile='logreg_out.txt'
-#python logistic_regression_vif.py logreg_inp.tab 4 1,2,3 logreg_out2.tabular   # running test
+
 infile = sys.argv[1]
 y_col = int(sys.argv[2])-1
 x_cols = sys.argv[3].split(',')
@@ -84,17 +78,11 @@ novif=0
 set_default_mode(NO_CONVERSION)
 try:
     linear_model = r.glm(r("y ~ x"), data = r.na_exclude(dat),family="binomial")
-    #r('library(car)')
-    #r.assign('dat',dat)
-    #r.assign('ncols',len(x_cols))
-    #r.vif(r('glm(dat$y ~ ., data = na.exclude(data.frame(as.matrix(dat$x,ncol=ncols))->datx),family="binomial")')).as_py()
-    
 except RException, rex:
     stop_err("Error performing logistic regression on the input data.\nEither the response column or one of the predictor columns contain only non-numeric or invalid values.")
 if len(x_cols)>1:
     try:
-    
-        r('library(car)')
+        r('suppressPackageStartupMessages(library(car))')
         r.assign('dat',dat)
         r.assign('ncols',len(x_cols))
         vif=r.vif(r('glm(dat$y ~ ., data = na.exclude(data.frame(as.matrix(dat$x,ncol=ncols))->datx),family="binomial")'))
@@ -163,9 +151,6 @@ try:
     rsq= r.round(float((null_deviance-residual_deviance)/null_deviance), digits=5)
     null_deviance= r.round(float(null_deviance), digits=5)
     residual_deviance= r.round(float(residual_deviance), digits=5)
-
-    #rsq = r.round(float(rsq), digits=5)
-
 except:
     pass
 
