@@ -1,0 +1,1 @@
+Nagios checks for Galaxy.  check_galaxy is used to call check_galaxy.py.

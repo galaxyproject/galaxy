@@ -1,0 +1,40 @@
+#!/bin/sh
+
+if [ -z "$3" ]; then
+    echo "usage: check_galaxy <server> <username> <password>"
+    exit 3
+fi
+
+here=`dirname $0`
+var="$HOME/.check_galaxy/$1"
+
+touch $var/iterations
+iterations=`cat $var/iterations`
+if [ -z "$iterations" ]; then
+    iterations=0
+fi
+
+new_history=''
+if [ $iterations -gt 96 ]; then
+    new_history='-n'
+    echo 0 > $var/iterations
+else
+    echo `expr $iterations + 1` > $var/iterations
+fi
+
+date >> $var/log
+status=`python $here/check_galaxy.py $new_history $1 $2 $3 2>&1 | tee -a $var/log | tail -n 1`
+
+echo "$status"
+
+case "$status" in
+    "Exception: Tool never finished")
+        exit 1
+        ;;
+    "OK")
+        exit 0
+        ;;
+    *)
+        exit 2
+        ;;
+esac
