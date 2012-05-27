@@ -163,7 +163,7 @@ class TracksterSelectionGrid( grids.Grid ):
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.user_id == trans.user.id )                    
         
-class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetAssociation ):
+class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetAssociation, Sharable ):
     """
     Controller for track browser interface. Handles building a new browser from
     datasets in the current history, and display of the resulting browser.
@@ -411,83 +411,8 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         return result
         
     @web.json
-    def save( self, trans, **kwargs ):
-        session = trans.sa_session
-        vis_id = "undefined"
-        if 'vis_id' in kwargs:
-            vis_id = kwargs['vis_id'].strip('"')
-        dbkey = kwargs['dbkey']
-        # Lookup or create Visualization object 
-        if vis_id == "undefined": # new vis
-            vis = model.Visualization()
-            vis.user = trans.user
-            vis.title = kwargs['title']
-            vis.type = "trackster"
-            vis.dbkey = dbkey
-            session.add( vis )
-        else:
-            decoded_id = trans.security.decode_id( vis_id )
-            vis = session.query( model.Visualization ).get( decoded_id )
-        # Decode the payload
-        decoded_payload = simplejson.loads( kwargs['payload'] )
-        # Create new VisualizationRevision that will be attached to the viz
-        vis_rev = model.VisualizationRevision()
-        vis_rev.visualization = vis
-        vis_rev.title = vis.title
-        vis_rev.dbkey = dbkey
-        
-        def unpack_track( track_json ):
-            """ Unpack a track from its json. """
-            return {
-                "dataset_id": trans.security.decode_id( track_json['dataset_id'] ),
-                "hda_ldda": track_json.get('hda_ldda', "hda"),
-                "name": track_json['name'],
-                "track_type": track_json['track_type'],
-                "prefs": track_json['prefs'],
-                "mode": track_json['mode'],
-                "filters": track_json['filters'],
-                "tool_state": track_json['tool_state']
-            }
-        
-        def unpack_collection( collection_json ):
-            """ Unpack a collection from its json. """
-            unpacked_drawables = []
-            drawables = collection_json[ 'drawables' ]
-            for drawable_json in drawables:
-                if 'track_type' in drawable_json:
-                    drawable = unpack_track( drawable_json )
-                else:
-                    drawable = unpack_collection( drawable_json )
-                unpacked_drawables.append( drawable )
-            return {
-                "name": collection_json.get( 'name', '' ),
-                "obj_type": collection_json[ 'obj_type' ],
-                "drawables": unpacked_drawables,
-                "prefs": collection_json.get( 'prefs' , [] ),
-                "filters": collection_json.get( 'filters', None )
-            }
-
-        # TODO: unpack and validate bookmarks:
-        def unpack_bookmarks( bookmarks_json ):
-            return bookmarks_json
-        
-        # Unpack and validate view content.
-        view_content = unpack_collection( decoded_payload[ 'view' ] )
-        bookmarks = unpack_bookmarks( decoded_payload[ 'bookmarks' ] )
-        vis_rev.config = { "view": view_content, "bookmarks": bookmarks }
-        # Viewport from payload
-        if 'viewport' in decoded_payload:
-            chrom = decoded_payload['viewport']['chrom']
-            start = decoded_payload['viewport']['start']
-            end = decoded_payload['viewport']['end']
-            overview = decoded_payload['viewport']['overview']
-            vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
-        
-        vis.latest_revision = vis_rev
-        session.add( vis_rev )
-        session.flush()
-        encoded_id = trans.security.encode_id(vis.id)
-        return { "vis_id": encoded_id, "url": url_for( action='browser', id=encoded_id ) }
+    def save( self, trans, config, type, id=None, title=None, dbkey=None, annotation=None ):
+        return self.save_visualization( trans, from_json_string( config ), type, id, title, dbkey, annotation )
         
     @web.expose
     @web.require_login( "see all available libraries" )

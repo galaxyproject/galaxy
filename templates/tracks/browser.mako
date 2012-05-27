@@ -209,10 +209,11 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     url: "${h.url_for( action='save' )}",
                     type: "POST",
                     data: {
-                        'vis_id': view.vis_id,
+                        'id': view.vis_id,
                         'title': view.name,
                         'dbkey': view.dbkey,
-                        'payload': JSON.stringify(payload)
+                        'type': 'trackster',
+                        'config': JSON.stringify(payload)
                     },
                     dataType: "json",
                     success: function(vis_info) {

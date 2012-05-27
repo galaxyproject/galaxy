@@ -280,41 +280,91 @@ class UsesVisualization( SharableItemSecurity ):
     viz_types = [ "trackster", "circos" ]
 
     len_files = None
-    
+            
     def create_visualization( self, trans, title, slug, type, dbkey, annotation=None, config={} ):
-        user = trans.get_user()
+        """ Create visualiation and first revision. """
+        visualization = self._create_visualization( trans, title, type, dbkey, slug, annotation )
 
-        # Error checking.
-        title_err = slug_err = ""
-        if not title:
-            title_err = "visualization name is required"
-        elif not slug:
-            slug_err = "visualization id is required"
-        elif not VALID_SLUG_RE.match( slug ):
-            slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif trans.sa_session.query( trans.model.Visualization ).filter_by( user=user, slug=slug, deleted=False ).first():
-            slug_err = "visualization id must be unique"
-
-        if title_err or slug_err:
-            return { 'title_err': title_err, 'slug_err': slug_err }
-
-        # Create visualization
-        visualization = trans.model.Visualization( user=user, title=title, slug=slug, dbkey=dbkey, type=type )
-        if annotation:
-            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-            self.add_item_annotation( trans.sa_session, trans.user, visualization, annotation )
-
-        # And the first visualization revision
-        revision = trans.model.VisualizationRevision( visualization=visualization, title=title, config={}, dbkey=dbkey )
+        # Create and save first visualization revision
+        revision = trans.model.VisualizationRevision( visualization=visualization, title=title, config=config, dbkey=dbkey )
         visualization.latest_revision = revision
-
-        # Persist
         session = trans.sa_session
-        session.add(visualization)
-        session.add(revision)
+        session.add( revision )
         session.flush()
 
         return visualization
+        
+    def save_visualization( self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None ):
+        session = trans.sa_session
+        
+        # Create/get visualization. 
+        if not id:
+            # Create new visualization.
+            vis = self._create_visualization( trans, title, type, dbkey, slug, annotation )
+        else:
+            decoded_id = trans.security.decode_id( id )
+            vis = session.query( trans.model.Visualization ).get( decoded_id )
+            
+        # Decode the payload
+        decoded_payload = config
+        # Create new VisualizationRevision that will be attached to the viz
+        vis_rev = trans.model.VisualizationRevision()
+        vis_rev.visualization = vis
+        vis_rev.title = vis.title
+        vis_rev.dbkey = dbkey
+
+        def unpack_track( track_json ):
+            """ Unpack a track from its json. """
+            return {
+                "dataset_id": trans.security.decode_id( track_json['dataset_id'] ),
+                "hda_ldda": track_json.get('hda_ldda', 'hda'),
+                "name": track_json['name'],
+                "track_type": track_json['track_type'],
+                "prefs": track_json['prefs'],
+                "mode": track_json['mode'],
+                "filters": track_json['filters'],
+                "tool_state": track_json['tool_state']
+            }
+
+        def unpack_collection( collection_json ):
+            """ Unpack a collection from its json. """
+            unpacked_drawables = []
+            drawables = collection_json[ 'drawables' ]
+            for drawable_json in drawables:
+                if 'track_type' in drawable_json:
+                    drawable = unpack_track( drawable_json )
+                else:
+                    drawable = unpack_collection( drawable_json )
+                unpacked_drawables.append( drawable )
+            return {
+                "name": collection_json.get( 'name', '' ),
+                "obj_type": collection_json[ 'obj_type' ],
+                "drawables": unpacked_drawables,
+                "prefs": collection_json.get( 'prefs' , [] ),
+                "filters": collection_json.get( 'filters', None )
+            }
+
+        # TODO: unpack and validate bookmarks:
+        def unpack_bookmarks( bookmarks_json ):
+            return bookmarks_json
+
+        # Unpack and validate view content.
+        view_content = unpack_collection( decoded_payload[ 'view' ] )
+        bookmarks = unpack_bookmarks( decoded_payload[ 'bookmarks' ] )
+        vis_rev.config = { "view": view_content, "bookmarks": bookmarks }
+        # Viewport from payload
+        if 'viewport' in decoded_payload:
+            chrom = decoded_payload['viewport']['chrom']
+            start = decoded_payload['viewport']['start']
+            end = decoded_payload['viewport']['end']
+            overview = decoded_payload['viewport']['overview']
+            vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
+
+        vis.latest_revision = vis_rev
+        session.add( vis_rev )
+        session.flush()
+        encoded_id = trans.security.encode_id( vis.id )
+        return { "vis_id": encoded_id, "url": url_for( action='browser', id=encoded_id ) }
 
     def _get_dbkeys( self, trans ):
         """ Returns all valid dbkeys that a user can use in a visualization. """
@@ -432,6 +482,41 @@ class UsesVisualization( SharableItemSecurity ):
                 config['viewport'] = latest_revision.config['viewport']
 
         return config
+        
+    # -- Helper functions --
+        
+    def _create_visualization( self, trans, title, type, dbkey, slug=None, annotation=None ):
+        """ Create visualization but not first revision. Returns Visualization object. """
+        user = trans.get_user()
+
+        # Error checking.
+        title_err = slug_err = ""
+        if not title:
+            title_err = "visualization name is required"
+        elif slug and not VALID_SLUG_RE.match( slug ):
+            slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
+        elif slug and trans.sa_session.query( trans.model.Visualization ).filter_by( user=user, slug=slug, deleted=False ).first():
+            slug_err = "visualization identifier must be unique"
+
+        if title_err or slug_err:
+            return { 'title_err': title_err, 'slug_err': slug_err }
+            
+
+        # Create visualization
+        visualization = trans.model.Visualization( user=user, title=title, dbkey=dbkey, type=type )
+        if slug:
+            visualization.slug = slug
+        else:
+            self.create_item_slug( trans.sa_session, visualization )
+        if annotation:
+            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            self.add_item_annotation( trans.sa_session, trans.user, visualization, annotation )
+
+        session = trans.sa_session
+        session.add( visualization )
+        session.flush()
+
+        return visualization
 
 class UsesStoredWorkflow( SharableItemSecurity ):
     """ Mixin for controllers that use StoredWorkflow objects. """
@@ -1255,7 +1340,9 @@ class UsesFormDefinitions:
 
 class Sharable:
     """ Mixin for a controller that manages an item that can be shared. """
-    # Implemented methods.
+    
+    # -- Implemented methods. --
+    
     @web.expose
     @web.require_login( "share Galaxy items" )
     def set_public_username( self, trans, id, username, **kwargs ):
@@ -1268,42 +1355,50 @@ class Sharable:
         trans.sa_session.flush
         return self.sharing( trans, id, **kwargs )
         
-    # Abstract methods.
+    # -- Abstract methods. -- 
+    
     @web.expose
     @web.require_login( "modify Galaxy items" )
     def set_slug_async( self, trans, id, new_slug ):
         """ Set item slug asynchronously. """
         raise "Unimplemented Method"
+
     @web.expose
     @web.require_login( "share Galaxy items" )
     def sharing( self, trans, id, **kwargs ):
         """ Handle item sharing. """
         raise "Unimplemented Method"
+
     @web.expose
     @web.require_login( "share Galaxy items" )
     def share( self, trans, id=None, email="", **kwd ):
         """ Handle sharing an item with a particular user. """
         raise "Unimplemented Method"
+
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
         """ Display item by username and slug. """
         raise "Unimplemented Method"
-    @web.expose
+        
     @web.json
     @web.require_login( "get item name and link" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns item's name and link. """
         raise "Unimplemented Method"
+        
     @web.expose
     @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
         raise "Unimplemented Method"
-    # Helper methods.
+        
+    # -- Helper methods. --
+    
     def _make_item_accessible( self, sa_session, item ):
         """ Makes item accessible--viewable and importable--and sets item's slug. Does not flush/commit changes, however. Item must have name, user, importable, and slug attributes. """
         item.importable = True
         self.create_item_slug( sa_session, item )
+    
     def create_item_slug( self, sa_session, item ):
         """ Create item slug. Slug is unique among user's importable items for item's class. Returns true if item's slug was set; false otherwise. """
         if item.slug is None or item.slug == "":
@@ -1323,12 +1418,13 @@ class Sharable:
             slug = slug_base
             count = 1
             while sa_session.query( item.__class__ ).filter_by( user=item.user, slug=slug, importable=True ).count() != 0:
-                # Slug taken; choose a new slug based on count. This approach can handle numerous histories with the same name gracefully.
+                # Slug taken; choose a new slug based on count. This approach can handle numerous items with the same name gracefully.
                 slug = '%s-%i' % ( slug_base, count )
                 count += 1
             item.slug = slug
             return True
         return False
+    
     def get_item( self, trans, id ):
         """ Return item based on id. """
         raise "Unimplemented Method"
