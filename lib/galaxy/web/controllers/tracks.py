@@ -234,6 +234,15 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
                 rows.append( [location, name] )
         return { 'data': rows }
 
+    # TODO: this is duplicated from visualization controller; remove it once 
+    # routing incompatibilities have been resolved.
+    @web.json
+    def save( self, trans, config, type, id=None, title=None, dbkey=None, annotation=None ):
+        """
+        Save a visualization; if visualization does not have an ID, a new 
+        visualization is created. Returns JSON of visualization.
+        """
+        return self.save_visualization( trans, from_json_string( config ), type, id, title, dbkey, annotation )
         
     @web.expose
     @web.require_login()
@@ -409,11 +418,7 @@ class TracksController( BaseUIController, UsesVisualization, UsesHistoryDatasetA
         result = data_provider.get_data( chrom, low, high, int( start_val ), int( max_vals ), **kwargs )
         result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
         return result
-        
-    @web.json
-    def save( self, trans, config, type, id=None, title=None, dbkey=None, annotation=None ):
-        return self.save_visualization( trans, from_json_string( config ), type, id, title, dbkey, annotation )
-        
+                
     @web.expose
     @web.require_login( "see all available libraries" )
     def list_libraries( self, trans, **kwargs ):

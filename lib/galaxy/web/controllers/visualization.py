@@ -349,7 +349,7 @@ class VisualizationController( BaseUIController, Sharable, UsesAnnotations,
     def create( self, trans, visualization_title="", visualization_slug="", visualization_annotation="", visualization_dbkey="",
                 visualization_type="" ):
         """
-        Create a new visualization
+        Creates a new visualization or returns a form for creating visualization.
         """
         visualization_title_err = visualization_slug_err = visualization_annotation_err = ""
         if trans.request.method == "POST":
@@ -381,6 +381,14 @@ class VisualizationController( BaseUIController, Sharable, UsesAnnotations,
                 .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
                 template="visualization/create.mako" )
+                
+    @web.json
+    def save( self, trans, config, type, id=None, title=None, dbkey=None, annotation=None ):
+        """
+        Save a visualization; if visualization does not have an ID, a new 
+        visualization is created. Returns JSON of visualization.
+        """
+        return self.save_visualization( trans, from_json_string( config ), type, id, title, dbkey, annotation )
         
     @web.expose
     @web.require_login( "edit visualizations" )

@@ -305,60 +305,64 @@ class UsesVisualization( SharableItemSecurity ):
             decoded_id = trans.security.decode_id( id )
             vis = session.query( trans.model.Visualization ).get( decoded_id )
             
-        # Decode the payload
-        decoded_payload = config
         # Create new VisualizationRevision that will be attached to the viz
         vis_rev = trans.model.VisualizationRevision()
         vis_rev.visualization = vis
         vis_rev.title = vis.title
         vis_rev.dbkey = dbkey
+        
+        # -- Validate config. --
+        
+        if vis.type == 'trackster':
+            def unpack_track( track_json ):
+                """ Unpack a track from its json. """
+                return {
+                    "dataset_id": trans.security.decode_id( track_json['dataset_id'] ),
+                    "hda_ldda": track_json.get('hda_ldda', 'hda'),
+                    "name": track_json['name'],
+                    "track_type": track_json['track_type'],
+                    "prefs": track_json['prefs'],
+                    "mode": track_json['mode'],
+                    "filters": track_json['filters'],
+                    "tool_state": track_json['tool_state']
+                }
 
-        def unpack_track( track_json ):
-            """ Unpack a track from its json. """
-            return {
-                "dataset_id": trans.security.decode_id( track_json['dataset_id'] ),
-                "hda_ldda": track_json.get('hda_ldda', 'hda'),
-                "name": track_json['name'],
-                "track_type": track_json['track_type'],
-                "prefs": track_json['prefs'],
-                "mode": track_json['mode'],
-                "filters": track_json['filters'],
-                "tool_state": track_json['tool_state']
-            }
+            def unpack_collection( collection_json ):
+                """ Unpack a collection from its json. """
+                unpacked_drawables = []
+                drawables = collection_json[ 'drawables' ]
+                for drawable_json in drawables:
+                    if 'track_type' in drawable_json:
+                        drawable = unpack_track( drawable_json )
+                    else:
+                        drawable = unpack_collection( drawable_json )
+                    unpacked_drawables.append( drawable )
+                return {
+                    "name": collection_json.get( 'name', '' ),
+                    "obj_type": collection_json[ 'obj_type' ],
+                    "drawables": unpacked_drawables,
+                    "prefs": collection_json.get( 'prefs' , [] ),
+                    "filters": collection_json.get( 'filters', None )
+                }
 
-        def unpack_collection( collection_json ):
-            """ Unpack a collection from its json. """
-            unpacked_drawables = []
-            drawables = collection_json[ 'drawables' ]
-            for drawable_json in drawables:
-                if 'track_type' in drawable_json:
-                    drawable = unpack_track( drawable_json )
-                else:
-                    drawable = unpack_collection( drawable_json )
-                unpacked_drawables.append( drawable )
-            return {
-                "name": collection_json.get( 'name', '' ),
-                "obj_type": collection_json[ 'obj_type' ],
-                "drawables": unpacked_drawables,
-                "prefs": collection_json.get( 'prefs' , [] ),
-                "filters": collection_json.get( 'filters', None )
-            }
+            # TODO: unpack and validate bookmarks:
+            def unpack_bookmarks( bookmarks_json ):
+                return bookmarks_json
 
-        # TODO: unpack and validate bookmarks:
-        def unpack_bookmarks( bookmarks_json ):
-            return bookmarks_json
-
-        # Unpack and validate view content.
-        view_content = unpack_collection( decoded_payload[ 'view' ] )
-        bookmarks = unpack_bookmarks( decoded_payload[ 'bookmarks' ] )
-        vis_rev.config = { "view": view_content, "bookmarks": bookmarks }
-        # Viewport from payload
-        if 'viewport' in decoded_payload:
-            chrom = decoded_payload['viewport']['chrom']
-            start = decoded_payload['viewport']['start']
-            end = decoded_payload['viewport']['end']
-            overview = decoded_payload['viewport']['overview']
-            vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
+            # Unpack and validate view content.
+            view_content = unpack_collection( config[ 'view' ] )
+            bookmarks = unpack_bookmarks( config[ 'bookmarks' ] )
+            vis_rev.config = { "view": view_content, "bookmarks": bookmarks }
+            # Viewport from payload
+            if 'viewport' in config:
+                chrom = config['viewport']['chrom']
+                start = config['viewport']['start']
+                end = config['viewport']['end']
+                overview = config['viewport']['overview']
+                vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
+        elif type == 'circos':
+            # TODO.
+            pass
 
         vis.latest_revision = vis_rev
         session.add( vis_rev )
