@@ -10,7 +10,7 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
-class DatasetsController( BaseAPIController, UsesHistoryDatasetAssociation ):
+class DatasetsController( BaseAPIController, UsesHistoryMixinDatasetAssociationMixin ):
 
     @web.expose_api
     def index( self, trans, hda_id, **kwd ):

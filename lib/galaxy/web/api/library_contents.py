@@ -10,7 +10,7 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
-class LibraryContentsController( BaseAPIController, UsesLibrary, UsesLibraryItems ):
+class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
 
     @web.expose_api
     def index( self, trans, library_id, **kwd ):

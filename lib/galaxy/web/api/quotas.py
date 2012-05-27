@@ -2,7 +2,7 @@
 API operations on Quota objects.
 """
 import logging
-from galaxy.web.base.controller import BaseAPIController, Admin, UsesQuota, url_for
+from galaxy.web.base.controller import BaseAPIController, Admin, UsesQuotaMixin, url_for
 from galaxy import web, util
 from elementtree.ElementTree import XML
 
@@ -14,7 +14,7 @@ from galaxy.exceptions import *
 
 log = logging.getLogger( __name__ )
 
-class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuota, QuotaParamParser ):
+class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
     @web.expose_api
     @web.require_admin
     def index( self, trans, deleted='False', **kwd ):

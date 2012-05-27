@@ -177,7 +177,11 @@ class BaseAPIController( BaseController ):
     def not_implemented( self, trans, **kwd ):
         raise HTTPNotImplemented()
 
-class SharableItemSecurity:
+#        
+# -- Mixins for working with Galaxy objects. --
+#
+
+class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
     def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
@@ -197,11 +201,7 @@ class SharableItemSecurity:
                     raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
         return item
 
-#
-# TODO: need to move UsesHistory, etc. mixins to better location - perhaps lib/galaxy/model/XXX ?
-#
-
-class UsesHistoryDatasetAssociation:
+class UsesHistoryMixinDatasetAssociationMixin:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
     def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
         """ Get an HDA object by id. """
@@ -259,14 +259,14 @@ class UsesHistoryDatasetAssociation:
                 truncated = False
         return truncated, dataset_data
 
-class UsesLibrary:
+class UsesLibraryMixin:
     def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
         l = self.get_object( trans, id, 'Library' )
         if check_accessible and not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), l ) ):
             error( "LibraryFolder is not accessible to the current user" )
         return l
 
-class UsesLibraryItems( SharableItemSecurity ):
+class UsesLibraryMixinItems( SharableItemSecurityMixin ):
     def get_library_folder( self, trans, id, check_ownership=False, check_accessible=True ):
         return self.get_object( trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible )
     def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
@@ -274,7 +274,7 @@ class UsesLibraryItems( SharableItemSecurity ):
     def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
         return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
 
-class UsesVisualization( SharableItemSecurity ):
+class UsesVisualizationMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use Visualization objects. """
     
     viz_types = [ "trackster", "circos" ]
@@ -522,7 +522,7 @@ class UsesVisualization( SharableItemSecurity ):
 
         return visualization
 
-class UsesStoredWorkflow( SharableItemSecurity ):
+class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use StoredWorkflow objects. """
     def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a StoredWorkflow from the database by id, verifying ownership. """
@@ -560,7 +560,7 @@ class UsesStoredWorkflow( SharableItemSecurity ):
             # Connections by input name
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
 
-class UsesHistory( SharableItemSecurity ):
+class UsesHistoryMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use History objects. """
     def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
         """Get a History from the database by id, verifying ownership."""
@@ -580,7 +580,7 @@ class UsesHistory( SharableItemSecurity ):
             query = query.filter( trans.model.Dataset.purged == False )
         return query.all()
 
-class UsesFormDefinitions:
+class UsesFormDefinitionsMixin:
     """Mixin for controllers that use Galaxy form objects."""
     def get_all_forms( self, trans, all_versions=False, filter=None, form_type='All' ):
         """
@@ -1342,7 +1342,7 @@ class UsesFormDefinitions:
                                    selected_value=selected_value,
                                    refresh_on_change=True )
 
-class Sharable:
+class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
     
     # -- Implemented methods. --
@@ -1433,7 +1433,7 @@ class Sharable:
         """ Return item based on id. """
         raise "Unimplemented Method"
 
-class UsesQuota( object ):
+class UsesQuotaMixin( object ):
     def get_quota( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted )
 

@@ -105,7 +105,7 @@ class SingleTagContentsParser( sgmllib.SGMLParser ):
         if self.cur_tag == self.target_tag:
             self.tag_content += text
 
-class WorkflowController( BaseUIController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
+class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesAnnotations, UsesItemRatings ):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
 

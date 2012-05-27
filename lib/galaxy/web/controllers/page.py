@@ -272,8 +272,8 @@ class _PageContentProcessor( _BaseHTMLProcessor ):
         # Default behavior: 
         _BaseHTMLProcessor.unknown_endtag( self, tag )
                 
-class PageController( BaseUIController, Sharable, UsesAnnotations, UsesHistory, 
-                      UsesStoredWorkflow, UsesHistoryDatasetAssociation, UsesVisualization, UsesItemRatings ):
+class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHistoryMixin, 
+                      UsesStoredWorkflowMixin, UsesHistoryMixinDatasetAssociationMixin, UsesVisualizationMixin, UsesItemRatings ):
     
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()

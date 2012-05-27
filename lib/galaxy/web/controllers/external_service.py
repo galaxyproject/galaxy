@@ -63,7 +63,7 @@ class ExternalServiceGrid( grids.Grid ):
         grids.GridAction( "Create new external service", dict( controller='external_service', action='create_external_service' ) )
     ]
 
-class ExternalService( BaseUIController, UsesFormDefinitions ):
+class ExternalService( BaseUIController, UsesFormDefinitionsMixin ):
     external_service_grid = ExternalServiceGrid()
 
     @web.expose

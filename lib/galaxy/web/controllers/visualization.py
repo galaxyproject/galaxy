@@ -68,8 +68,8 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
 
 
-class VisualizationController( BaseUIController, Sharable, UsesAnnotations, 
-                                UsesHistoryDatasetAssociation, UsesVisualization, 
+class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations, 
+                                UsesHistoryMixinDatasetAssociationMixin, UsesVisualizationMixin, 
                                 UsesItemRatings ):
     _user_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()

@@ -4,7 +4,7 @@ from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.json import *
-from galaxy.web.base.controller import UsesHistory
+from galaxy.web.base.controller import UsesHistoryMixin
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def load_history_imp_exp_tools( toolbox ):
     toolbox.tools_by_id[ history_imp_tool.id ] = history_imp_tool
     log.debug( "Loaded history import tool: %s", history_imp_tool.id )
     
-class JobImportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
+class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
     """ 
         Class provides support for performing jobs that import a history from
         an archive.
@@ -263,7 +263,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
                 jiha.job.stderr += "Error cleaning up history import job: %s" % e
                 db_session.flush()
 
-class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
+class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
     """ 
         Class provides support for performing jobs that export a history to an
         archive. 

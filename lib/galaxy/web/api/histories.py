@@ -12,7 +12,7 @@ from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
 
-class HistoriesController( BaseAPIController, UsesHistory ):
+class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
     @web.expose_api
     def index( self, trans, deleted='False', **kwd ):
@@ -153,7 +153,7 @@ class HistoriesController( BaseAPIController, UsesHistory ):
         POST /api/histories/deleted/{encoded_quota_id}/undelete
         Undeletes a quota
         """
-        history = self.get_history( trans, id, check_ownership=True, check_accessible=False, deleted=True )
+        history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
         history.deleted = False
         trans.sa_session.add( history )
         trans.sa_session.flush()

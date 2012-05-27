@@ -428,7 +428,7 @@ class ToolVersionListGrid( grids.Grid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class )
 
-class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuota, QuotaParamParser ):
+class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()

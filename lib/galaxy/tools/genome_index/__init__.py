@@ -3,7 +3,7 @@ from galaxy import model, util
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.json import *
-from galaxy.web.base.controller import UsesHistory
+from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.tools.data import ToolDataTableManager
 
 log = logging.getLogger(__name__)
@@ -63,8 +63,6 @@ class GenomeIndexToolWrapper( object ):
 
         if gitd:
             destination = None
-            alldone = True
-            indexjobs = gitd.deferred.params[ 'indexjobs' ]
             tdtman = ToolDataTableManager()
             xmltree = tdtman.load_from_config_file(app.config.tool_data_table_config_path)
             for node in xmltree:
@@ -165,14 +163,6 @@ class GenomeIndexToolWrapper( object ):
                         self._check_link( fasta, target )
             for line in location:
                 self._add_line( line[ 'file' ], line[ 'line' ] )
-            for indexjob in indexjobs:
-                js = sa_session.query( model.Job ).filter_by( id=indexjob ).first()
-                if js.state not in [ 'ok', 'done', 'error' ]:
-                    alldone = False
-            if alldone:
-                gitd.deferred.state = 'ok'
-                sa_session.add( gitd.deferred )
-                sa_session.flush()
         
     def _check_link( self, targetfile, symlink ):
         target = os.path.relpath( targetfile, os.path.dirname( symlink ) )

@@ -190,7 +190,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         # A public history is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
-class HistoryController( BaseUIController, Sharable, UsesAnnotations, UsesItemRatings, UsesHistory ):
+class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings, UsesHistoryMixin ):
     @web.expose
     def index( self, trans ):
         return ""

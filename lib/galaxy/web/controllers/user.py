@@ -38,7 +38,7 @@ class UserOpenIDGrid( grids.Grid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.user_id == trans.user.id )
 
-class User( BaseUIController, UsesFormDefinitions ):
+class User( BaseUIController, UsesFormDefinitionsMixin ):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
     
