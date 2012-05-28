@@ -758,7 +758,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
     
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
-    def circos( self, trans, hda_ldda, dataset_id ):
+    def circster( self, trans, hda_ldda, dataset_id ):
         # Get dataset.
         dataset = self._get_dataset( trans, hda_ldda, dataset_id )
 
@@ -777,7 +777,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
             summary = indexer.get_summary( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], level=4 )
             dataset_summary.append( summary )
 
-        return trans.fill_template_mako( "visualization/circos.mako", dataset=dataset, dataset_summary=dataset_summary, genome=genome )
+        return trans.fill_template_mako( "visualization/circster.mako", dataset=dataset, dataset_summary=dataset_summary, genome=genome )
     
     # -----------------
     # Helper methods.

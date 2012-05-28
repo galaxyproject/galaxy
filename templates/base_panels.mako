@@ -61,7 +61,7 @@
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js( 'jquery.event.drag', 'jquery.event.hover', 'jquery.form', 'jquery.rating', 'galaxy.base', 'galaxy.panels' )}
+    ${h.js( 'jquery.event.drag', 'jquery.event.hover', 'jquery.form', 'jquery.rating', 'galaxy.base', 'galaxy.panels', 'jquery.tipsy' )}
     <script type="text/javascript">
         
     ensure_dd_helper();

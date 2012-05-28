@@ -277,7 +277,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
 class UsesVisualizationMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use Visualization objects. """
     
-    viz_types = [ "trackster", "circos" ]
+    viz_types = [ "trackster", "circster" ]
 
     len_files = None
             
@@ -360,7 +360,7 @@ class UsesVisualizationMixin( SharableItemSecurityMixin ):
                 end = config['viewport']['end']
                 overview = config['viewport']['overview']
                 vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
-        elif type == 'circos':
+        elif type == 'circster':
             # TODO.
             pass
 

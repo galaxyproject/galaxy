@@ -42,13 +42,16 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic", "jquery.tipsy", "mvc/visualization" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "trackster", "trackster_ui", "jquery.ui.sortable.slider", "farbtastic", "mvc/visualization" )}
 
 <script type="text/javascript">
     //
     // Place URLs here so that url_for can be used to generate them.
     // 
-    var default_data_url = "${h.url_for( action='data' )}",
+    var 
+        add_track_async_url = "${h.url_for( action='add_track_async' )}",
+        add_datasets_url = "${h.url_for( action='list_current_history_datasets' )}",
+        default_data_url = "${h.url_for( action='data' )}",
         raw_data_url = "${h.url_for( action='raw_data' )}",
         run_tool_url = "${h.url_for( action='run_tool' )}",
         rerun_tool_url = "${h.url_for( action='rerun_tool' )}",
@@ -66,60 +69,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         browser_router = new TrackBrowserRouter(options);
         Backbone.history.start();   
     };
-            
-    /**
-     * Use a popup grid to add more tracks.
-     */
-    var add_tracks = function() {
-        $.ajax({
-            url: "${h.url_for( action='list_current_history_datasets' )}",
-            data: { "f-dbkey": view.dbkey },
-            error: function() { alert( "Grid failed" ); },
-            success: function(table_html) {
-                show_modal(
-                    "Select datasets for new tracks",
-                    table_html, {
-                        "Cancel": function() {
-                            hide_modal();
-                        },
-                        "Insert": function() {
-                            var requests = [];
-                            $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                                var data,
-                                    id = $(this).val();
-                                    if ($(this).attr("name") === "id") {
-                                        data = { hda_id: id };
-                                    } else {
-                                        data = { ldda_id: id};
-                                    }
-                                    requests[requests.length] = $.ajax({
-                                        url: "${h.url_for( action='add_track_async' )}",
-                                        data: data,
-                                        dataType: "json",
-                                    });
-                            });
-                            // To preserve order, wait until there are definitions for all tracks and then add 
-                            // them sequentially.
-                            $.when.apply($, requests).then(function() {
-                                 // jQuery always returns an Array for arguments, so need to look at first element
-                                 // to determine whether multiple requests were made and consequently how to 
-                                 // map arguments to track definitions.
-                                 var track_defs = (arguments[0] instanceof Array ?  
-                                                   $.map(arguments, function(arg) { return arg[0]; }) :
-                                                   [ arguments[0] ]
-                                                   );
-                                 for (var i= 0; i < track_defs.length; i++) {
-                                     view.add_drawable( object_from_template(track_defs[i], view) ); 
-                                 }
-                            });
-                            hide_modal();
-                        }
-                    }
-                );
-            }
-        });
-    };
-
+    
     /**
      * Use a popup grid to bookmarks from a dataset.
      */
@@ -168,23 +118,22 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     var browser_router;
     $(function() {
         // Create and initialize menu.
-        var 
-        
-        buttons = new IconButtonCollection([
-            new IconButton({icon_class: 'plus-button', title: 'Add tracks', on_click: function() { add_tracks(); } }),
-            new IconButton({icon_class: 'block--plus', title: 'Add group', on_click: function() { 
+        var menu = create_icon_buttons_menu([
+            { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
+                add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
+                    _.each(tracks, function(track) {
+                        view.add_drawable( object_from_template(track, view) );  
+                    });
+                });
+            } },
+            { icon_class: 'block--plus', title: 'Add group', on_click: function() { 
                 view.add_drawable( new DrawableGroup(view, view, { name: "New Group" }) );
-            } }),
-            /*
-            new IconButton({icon_class: 'toolbox', title: 'Use tools', on_click: function() { 
-                console.log("toolbox!")
-            } }),
-            */
-            new IconButton({icon_class: 'bookmarks', title: 'Bookmarks', on_click: function() { 
+            } },
+            { icon_class: 'bookmarks', title: 'Bookmarks', on_click: function() { 
                 // HACK -- use style to determine if panel is hidden and hide/show accordingly.
                 parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));
-            } }),
-            new IconButton({icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
+            } },
+            { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
                 // Show saving dialog box
                 show_modal("Saving...", "progress");
                                     
@@ -229,15 +178,11 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                     { "Close" : hide_modal } );
                     }
                 });
-            } }),
-            new IconButton({icon_class: 'cross-circle', title: 'Close', on_click: function() { 
+            } },
+            { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
                 window.location = "${h.url_for( controller='visualization', action='list' )}";
-            } })
-        ]),
-        
-        menu = new IconButtonMenuView({
-            collection: buttons
-        });
+            } }
+        ]);
         
         menu.render();
         menu.$el.attr("style", "float: right");

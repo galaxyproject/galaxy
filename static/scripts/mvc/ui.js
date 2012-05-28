@@ -1,5 +1,24 @@
 /**
- * Utility models and views for Galaxy objects.
+ * -- Functions for creating large UI elements. --
+ */
+ 
+/**
+ * Returns an IconButtonMenuView for the provided configuration.
+ * Configuration is a list of dictionaries where each dictionary
+ * defines an icon button. Each dictionary must have the following
+ * elements: icon_class, title, and on_click.
+ */
+var create_icon_buttons_menu = function(config) {
+    // Create and initialize menu.
+    var buttons = new IconButtonCollection( 
+            _.map(config, function(button_config) { return new IconButton(button_config); })
+        );
+    
+    return new IconButtonMenuView( {collection: buttons} );
+};
+
+/**
+ * -- Utility models and views for Galaxy objects. --
  */
  
 /**

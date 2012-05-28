@@ -181,6 +181,7 @@ var ToolSearch = BaseModel.extend({
  * applies search results as they become available.
  */
 var ToolPanel = Backbone.Collection.extend({
+    // TODO: need to generate this using url_for
     url: "/tools",
     tools: new ToolCollection(),
     

@@ -26,9 +26,77 @@ var Genome = Backbone.Model.extend({
 });
 
 /**
+ * A genome browser bookmark.
+ */
+var BrowserBookmark = Backbone.Model.extend({
+    defaults: {
+        chrom: null,
+        start: 0,
+        end: 0,
+        note: ""
+    }
+});
+
+/**
+ * Bookmarks collection.
+ */
+var BrowserBookmarks = Backbone.Collection.extend({
+    model: BrowserBookmark
+});
+
+/**
+ * A visualization.
+ */
+var Visualization = Backbone.RelationalModel.extend({
+    defaults: {
+        id: "",
+        title: "",
+        type: "",
+        dbkey: "",
+        datasets: []
+    }
+});
+
+/**
+ * A Trackster visualization.
+ */
+var TracksterVisualization = Visualization.extend({
+    defaults: {
+        bookmarks: [],
+        viewport: {}
+    }
+});
+
+/**
+ * A Circster visualization.
+ */
+var CircsterVisualization = Visualization.extend({
+});
+
+/**
+ * A dataset. In Galaxy, datasets are associated with a history, so
+ * this object is also known as a HistoryDatasetAssociation.
+ */
+var Dataset = Backbone.Model.extend({
+    defaults: {
+        id: "",
+        type: "",
+        name: "",
+        hda_ldda: ""  
+    } 
+});
+
+/**
  * A histogram dataset.
  */
 var HistogramDataset = Backbone.Model.extend({
+    /*
+    defaults: {
+        data: [],
+        dataset: null,
+        max: 0  
+    },
+    */
     
     initialize: function(data) {
         // Set max across dataset.
@@ -42,9 +110,16 @@ var HistogramDataset = Backbone.Model.extend({
 });
 
 /**
- * Layout for a histogram dataset in a circos visualization.
+ * Configuration data for a Trackster track.
  */
-var CircosHistogramDatasetLayout = Backbone.Model.extend({
+var TrackConfig = Backbone.Model.extend({
+    
+});
+
+/**
+ * Layout for a histogram dataset in a circster visualization.
+ */
+var CircsterHistogramDatasetLayout = Backbone.Model.extend({
     // TODO: should accept genome and dataset and use these to generate layout data.
     
     /**
@@ -104,8 +179,8 @@ var CircosHistogramDatasetLayout = Backbone.Model.extend({
  * -- Views --
  */
  
-var CircosView = Backbone.View.extend({
-    className: 'circos',
+var CircsterView = Backbone.View.extend({
+    className: 'circster',
     
     initialize: function(options) {
         this.width = options.width;
@@ -124,7 +199,7 @@ var CircosView = Backbone.View.extend({
             dataset_arc_height = this.dataset_arc_height,
             
             // Layout chromosome arcs.
-            arcs_layout = new CircosHistogramDatasetLayout({
+            arcs_layout = new CircsterHistogramDatasetLayout({
                 genome: this.genome,
                 total_gap: this.total_gap
             }),
@@ -205,3 +280,58 @@ var TrackBrowserRouter = Backbone.Router.extend({
         this.view.go_to(new_loc);
     }
 });
+
+/**
+ * -- Helper functions.
+ */
+ 
+/**
+ * Use a popup grid to add more datasets.
+ */
+var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
+    $.ajax({
+        url: dataset_url,
+        data: { "f-dbkey": view.dbkey },
+        error: function() { alert( "Grid failed" ); },
+        success: function(table_html) {
+            show_modal(
+                "Select datasets for new tracks",
+                table_html, {
+                    "Cancel": function() {
+                        hide_modal();
+                    },
+                    "Add": function() {
+                        var requests = [];
+                        $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                            var data,
+                                id = $(this).val();
+                                if ($(this).attr("name") === "id") {
+                                    data = { hda_id: id };
+                                } else {
+                                    data = { ldda_id: id};
+                                }
+                                requests[requests.length] = $.ajax({
+                                    url: add_track_async_url,
+                                    data: data,
+                                    dataType: "json",
+                                });
+                        });
+                        // To preserve order, wait until there are definitions for all tracks and then add 
+                        // them sequentially.
+                        $.when.apply($, requests).then(function() {
+                            // jQuery always returns an Array for arguments, so need to look at first element
+                            // to determine whether multiple requests were made and consequently how to 
+                            // map arguments to track definitions.
+                            var track_defs = (arguments[0] instanceof Array ?  
+                                               $.map(arguments, function(arg) { return arg[0]; }) :
+                                               [ arguments[0] ]
+                                               );
+                            success_fn(track_defs);
+                        });
+                        hide_modal();
+                    }
+                }
+            );
+        }
+    });
+};
