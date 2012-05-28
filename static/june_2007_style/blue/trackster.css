@@ -84,16 +84,12 @@ input{font:10px verdana;}
 .icon-button.toggle:hover{background:transparent url(../images/fugue/toggle.png) no-repeat;}
 .icon-button.toggle-expand{background:transparent url(../images/fugue/toggle-expand-bw.png) no-repeat;margin-right:0px;}
 .icon-button.toggle-expand:hover{background:transparent url(../images/fugue/toggle-expand.png) no-repeat;}
-.icon-button.cross-circle{background:transparent url(../images/fugue/cross-circle-bw.png) no-repeat;margin-right:0px;}
-.icon-button.cross-circle:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
 .icon-button.block--plus{background:transparent url(../images/fugue/block--plus-bw.png) no-repeat;}
 .icon-button.block--plus:hover{background:transparent url(../images/fugue/block--plus.png) no-repeat;}
 .icon-button.bookmarks{background:transparent url(../images/fugue/bookmarks-bw.png) no-repeat;}
 .icon-button.bookmarks:hover{background:transparent url(../images/fugue/bookmarks.png) no-repeat;}
 .icon-button.toolbox{background:transparent url(../images/fugue/toolbox-bw.png) no-repeat;}
 .icon-button.toolbox:hover{background:transparent url(../images/fugue/toolbox.png) no-repeat;}
-.icon-button.disk--arrow{background:transparent url(../images/fugue/disk--arrow-bw.png) no-repeat;}
-.icon-button.disk--arrow:hover{background:transparent url(../images/fugue/disk--arrow.png) no-repeat;}
 .child-track-icon{background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;width:30px;cursor:move;}
 .track-resize{background:white url('../images/visualization/draggable_vertical.png') no-repeat top center;position:absolute;right:3px;bottom:-4px;width:14px;height:7px;border:solid #999 1px;z-index:100;}
 .bookmark{background:white;border:solid #999 1px;border-right:none;margin:0.5em;margin-right:0;padding:0.5em;}
