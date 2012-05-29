@@ -43,7 +43,6 @@ class UploadController( BaseUIController ):
         # See the handle_email_alerts() method for the definition of the scenarios.
         new_repo_alert = repository.is_new
         if params.get( 'upload_button', False ):
-            current_working_dir = os.getcwd()
             if file_data == '' and url == '':
                 message = 'No files were entered on the upload form.'
                 status = 'error'
@@ -270,9 +269,6 @@ class UploadController( BaseUIController ):
                     error, message = handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
                     if error:
                         return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
-                #if filename_in_archive.endswith( '.loc.sample' ):
-                #    # Handle the special case where a xxx.loc.sample file is being uploaded by copying it to ~/tool-data/xxx.loc.
-                #    copy_sample_file( trans.app, filename_in_archive )
             commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
             # See if the content of the change set was valid.
             admin_only = len( repository.downloadable_revisions ) != 1

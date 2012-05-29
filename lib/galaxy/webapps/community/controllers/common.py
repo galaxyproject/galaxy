@@ -547,7 +547,7 @@ def get_latest_repository_metadata( trans, id ):
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
                            .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
                            .first()
-def get_named_tmpfile_from_ctx( ctx, filename, dir=None ):
+def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     fctx = ctx[ filename ]
     fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
     tmp_filename = fh.name
@@ -574,6 +574,28 @@ def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
     if parent_id is None:
         # The tool did not change through all of the changeset revisions.
         return old_id
+def get_previous_valid_changset_revision( repository, repo, before_changeset_revision ):
+    changeset_tups = []
+    for repository_metadata in repository.downloadable_revisions:
+        changeset_revision = repository_metadata.changeset_revision
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
+        if ctx:
+            rev = '%04d' % ctx.rev()
+        else:
+            rev = '-1'
+        changeset_tups.append( ( rev, changeset_revision ) )
+    previous_changeset_revision = None
+    current_changeset_revision = None
+    for changeset_tup in sorted( changeset_tups ):
+        current_changeset_revision = changeset_tup[ 1 ]
+        if current_changeset_revision == before_changeset_revision:
+            if previous_changeset_revision:
+                return previous_changeset_revision
+            else:
+                # Return the hash value of an empty repository changlog - note that this will not be a valid changset revision.
+                return '000000000000'
+        else:
+            previous_changeset_revision = current_changeset_revision
 def get_repository( trans, id ):
     """Get a repository from the database via id"""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
@@ -743,8 +765,42 @@ def load_tool( trans, config_file ):
             ToolClass = Tool
         return ToolClass( config_file, root, trans.app )
     return None
-def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config ):
-    tool_config = strip_path( tool_config )
+def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):
+    """
+    Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value of tool_config_filename.  The value of changeset_revision
+    is a valid (downloadable) changset revision.  If changeset_revision is the repository tip, then the tool will be loaded from it's file on disk.
+    Otherwise, the tool config will be located in the repository manifest between the received valid changeset revision and the previous valid
+    changeset revision (if one exists) or the first changeset revision in the repository (if one doesn't).
+    """
+    def load_from_tmp_config( ctx, ctx_file, work_dir ):
+        tool = None
+        message = ''
+        tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
+        element_tree = util.parse_xml( tmp_tool_config )
+        element_tree_root = element_tree.getroot()
+        # Look for code files required by the tool config.
+        tmp_code_files = []
+        for code_elem in element_tree_root.findall( 'code' ):
+            code_file_name = code_elem.get( 'file' )
+            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
+            if tmp_code_file_name:
+                tmp_code_files.append( tmp_code_file_name )
+        try:
+            tool = load_tool( trans, tmp_tool_config )
+        except Exception, e:
+            tool = None
+            message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
+        for tmp_code_file in tmp_code_files:
+            try:
+                os.unlink( tmp_code_file )
+            except:
+                pass
+        try:
+            os.unlink( tmp_tool_config )
+        except:
+            pass
+        return tool, message
+    tool_config_filename = strip_path( tool_config_filename )
     repository = get_repository( trans, repository_id )
     repo_files_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_files_dir )
@@ -757,48 +813,39 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     if tool_data_table_config:
         error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
     if changeset_revision == repository.tip:
+        # Load the tool fron it's config file on disk.
         try:
-            copied_tool_config = copy_file_from_disk( tool_config, repo_files_dir, work_dir )
+            copied_tool_config = copy_file_from_disk( tool_config_filename, repo_files_dir, work_dir )
             tool = load_tool( trans, copied_tool_config )
         except Exception, e:
             tool = None
-            message = "Error loading tool: %s." % str( e )
+            message = "Error loading tool from config '%s': %s." % ( tool_config_filename, str( e ) )
     else:
-        # Get the tool config file name from the hgweb url, something like: /repos/test/convert_chars1/file/e58dcf0026c7/convert_characters.xml
-        old_tool_config_file_name = tool_config.split( '/' )[ -1 ]
-        in_ctx = False
+        found = False
+        tool = None
+        # Get the tool config from ctx if present.
         for ctx_file in ctx.files():
             ctx_file_name = strip_path( ctx_file )
-            if ctx_file_name == old_tool_config_file_name:
-                in_ctx = True
+            if ctx_file_name == tool_config_filename:
+                found = True
                 break
-        if in_ctx:
-            tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, dir=work_dir )
-            element_tree = util.parse_xml( tmp_tool_config )
-            element_tree_root = element_tree.getroot()
-            # Look for code files required by the tool config.
-            tmp_code_files = []
-            for code_elem in element_tree_root.findall( 'code' ):
-                code_file_name = code_elem.get( 'file' )
-                tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
-                if tmp_code_file_name:
-                    tmp_code_files.append( tmp_code_file_name )
-            try:
-                tool = load_tool( trans, tmp_tool_config )
-            except Exception, e:
-                tool = None
-                message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
-            for tmp_code_file in tmp_code_files:
-                try:
-                    os.unlink( tmp_code_file )
-                except:
-                    pass
-            try:
-                os.unlink( tmp_tool_config )
-            except:
-                pass
+        if found:
+            if found:
+                tool, message = load_from_tmp_config( ctx, ctx_file, work_dir )
         else:
-            tool = None
+            # Get the tool config from the repository manifest between valid changeset revisions.
+            previous_valid_changset_revision = get_previous_valid_changset_revision( repository, repo, changeset_revision )
+            for changeset in reversed_filtered_changelog( repo, previous_valid_changset_revision, changeset_revision ):
+                manifest_changeset_revision = str( repo.changectx( changeset ) )
+                manifest_ctx = repo.changectx( changeset )
+                for ctx_file in manifest_ctx.files():
+                    ctx_file_name = strip_path( ctx_file )
+                    if ctx_file_name == tool_config_filename:
+                        found = True
+                        break
+                if found:
+                    tool, message = load_from_tmp_config( manifest_ctx, ctx_file, work_dir )
+                    break
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
     try:
@@ -811,7 +858,7 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
     tool = None
     valid = False
     error_message = ''
-    tmp_config = get_named_tmpfile_from_ctx( ctx, filename, dir=dir )
+    tmp_config = get_named_tmpfile_from_ctx( ctx, filename, dir )
     if not ( check_binary( tmp_config ) or check_image( tmp_config ) or check_gzip( tmp_config )[ 0 ]
              or check_bz2( tmp_config )[ 0 ] or check_zip( tmp_config ) ):
         try:
@@ -979,6 +1026,26 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
         clean_repository_metadata( trans, id, changeset_revisions )
         add_repository_metadata_tool_versions( trans, id, changeset_revisions )
     return '', 'ok'
+def reversed_filtered_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
+    """
+    Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision, but up to and
+    including the included_upper_bounds_changeset_revision.  The value of excluded_lower_bounds_changeset_revision will be '000000000000'
+    if no valid changesets exist before included_upper_bounds_changeset_revision.
+    """
+    if excluded_lower_bounds_changeset_revision == '000000000000':
+        appending_started = True
+    else:
+        appending_started = False
+    reversed_changelog = []
+    for changeset in repo.changelog:
+        changeset_hash = str( repo.changectx( changeset ) )
+        if appending_started:
+            reversed_changelog.insert( 0, changeset )
+        if changeset_hash == excluded_lower_bounds_changeset_revision and not appending_started:
+            appending_started = True
+        if changeset_hash == included_upper_bounds_changeset_revision:
+            break
+    return reversed_changelog
 def set_repository_metadata( trans, id, changeset_revision, content_alert_str='', **kwd ):
     """
     Set repository metadata on the repository tip, returning specific error messages (if any) to alert the repository owner that the changeset

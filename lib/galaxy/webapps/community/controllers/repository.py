@@ -402,7 +402,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                             url_args=url_args,
                                                                             allow_multiple=False,
                                                                             async_compatible=False ) ]
-        # Render the list view
         return self.valid_repository_list_grid( trans, **kwd )
     @web.expose
     def browse_invalid_tools( self, trans, **kwd ):
@@ -1891,7 +1890,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         for filename in ctx:
             ctx_file_name = strip_path( filename )
             if ctx_file_name == tool_config:
-                tool_config_path = get_named_tmpfile_from_ctx( ctx, filename, dir=work_dir )
+                tool_config_path = get_named_tmpfile_from_ctx( ctx, filename, work_dir )
                 break
         metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans,
                                                                                  repo,

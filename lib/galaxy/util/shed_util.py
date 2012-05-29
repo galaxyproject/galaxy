@@ -785,14 +785,14 @@ def get_config( config_file, repo, repo_dir, ctx, dir ):
     for filename in ctx:
         ctx_file_name = strip_path( filename )
         if ctx_file_name == config_file:
-            return get_named_tmpfile_from_ctx( ctx, filename, dir=dir )
+            return get_named_tmpfile_from_ctx( ctx, filename, dir )
     # Finally look in the repository manifest.
     for changeset in repo.changelog:
         prev_ctx = repo.changectx( changeset )
         for ctx_file in prev_ctx.files():
             ctx_file_name = strip_path( ctx_file )
             if ctx_file_name == config_file:
-                return get_named_tmpfile_from_ctx( prev_ctx, filename, dir=dir )
+                return get_named_tmpfile_from_ctx( prev_ctx, filename, dir )
     return None
 def get_config_from_disk( config_file, relative_install_dir ):
     for root, dirs, files in os.walk( relative_install_dir ):
