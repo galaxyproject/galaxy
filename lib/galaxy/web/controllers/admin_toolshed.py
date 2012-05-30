@@ -613,6 +613,7 @@ class AdminToolshed( AdminGalaxy ):
         else:
             ctx_rev = repository.ctx_rev
         clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+        tool_section = None
         if repository.includes_tools:
             # Get the location in the tool panel in which each tool was originally loaded.
             metadata = repository.metadata
@@ -668,19 +669,19 @@ class AdminToolshed( AdminGalaxy ):
                     tool_section = trans.app.toolbox.tool_panel[ section_key ]
                 else:
                     tool_section = None
-        tool_shed_repository, metadata_dict, error_message  = load_repository_contents( trans,
-                                                                                        repository_name=repository.name,
-                                                                                        description=repository.description,
-                                                                                        owner=repository.owner,
-                                                                                        changeset_revision=repository.installed_changeset_revision,
-                                                                                        ctx_rev=ctx_rev,
-                                                                                        tool_path=tool_path,
-                                                                                        repository_clone_url=repository_clone_url,
-                                                                                        relative_install_dir=relative_install_dir,
-                                                                                        tool_shed=repository.tool_shed,
-                                                                                        tool_section=tool_section,
-                                                                                        shed_tool_conf=shed_tool_conf,
-                                                                                        install_tool_dependencies=install_tool_dependencies )
+        tool_shed_repository, metadata_dict, error_message = load_repository_contents( trans,
+                                                                                       repository_name=repository.name,
+                                                                                       description=repository.description,
+                                                                                       owner=repository.owner,
+                                                                                       changeset_revision=repository.installed_changeset_revision,
+                                                                                       ctx_rev=ctx_rev,
+                                                                                       tool_path=tool_path,
+                                                                                       repository_clone_url=repository_clone_url,
+                                                                                       relative_install_dir=relative_install_dir,
+                                                                                       tool_shed=repository.tool_shed,
+                                                                                       tool_section=tool_section,
+                                                                                       shed_tool_conf=shed_tool_conf,
+                                                                                       install_tool_dependencies=install_tool_dependencies )
         if error_message:
             message += error_message
             status = 'error'

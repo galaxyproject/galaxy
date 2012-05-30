@@ -201,23 +201,18 @@ def check_tool_input_params( trans, repo, repo_dir, ctx, xml_file_in_ctx, tool, 
             if options:
                 if options.tool_data_table or options.missing_tool_data_table_name:
                     # Make sure the repository contains a tool_data_table_conf.xml.sample file.
-                    sample_found = False
-                    for sample_file in sample_files:
-                        sample_file_name = strip_path( sample_file )
-                        if sample_file_name == 'tool_data_table_conf.xml.sample':
-                            sample_found = True
-                            error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, sample_file )
-                            if error:
-                                can_set_metadata = False
-                                invalid_files.append( ( sample_file_name, correction_msg ) ) 
-                            else:
-                                options.missing_tool_data_table_name = None
-                            break
-                    if not sample_found:
+                    sample_tool_data_table_conf = get_config( 'tool_data_table_conf.xml.sample', repo, repo_dir, ctx, dir )
+                    if sample_tool_data_table_conf:
+                        error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, sample_tool_data_table_conf )
+                        if error:
+                            can_set_metadata = False
+                            invalid_files.append( ( 'tool_data_table_conf.xml.sample', correction_msg ) )
+                        else:
+                            options.missing_tool_data_table_name = None
+                    else:
                         can_set_metadata = False
-                        correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
-                        correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
-                        correction_msg += "that includes the required entry to correct this error.<br/>"
+                        correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
+                        correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
                         invalid_files.append( ( xml_file_in_ctx, correction_msg ) )
                 if options.index_file or options.missing_index_file:
                     # Make sure the repository contains the required xxx.loc.sample file.
@@ -245,8 +240,8 @@ def check_tool_input_params( trans, repo, repo_dir, ctx, xml_file_in_ctx, tool, 
                         correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
                         invalid_files.append( ( xml_file_in_ctx, correction_msg ) )
-        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        reset_tool_data_tables( trans.app )
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( trans.app )
     return sample_files_copied, can_set_metadata, invalid_files
 def clean_repository_metadata( trans, id, changeset_revisions ):
     # Delete all repository_metadata reecords associated with the repository that have a changeset_revision that is not in changeset_revisions.

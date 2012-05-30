@@ -1003,10 +1003,10 @@ def get_url_from_repository_tool_shed( app, repository ):
             return shed_url
     # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
     return None
-def handle_missing_data_table_entry( app, tool_path, sample_files, repository_tools_tups ):
+def handle_missing_data_table_entry( app, repository, changeset_revision, tool_path, repository_tools_tups, dir ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
-    tool_data_table_conf.xml file.  This method is not called only from Galaxy (not the tool shed) when a repository is being installed.
+    tool_data_table_conf.xml file.  This method is called only from Galaxy (not the tool shed) when a repository is being installed.
     """
     missing_data_table_entry = False
     for index, repository_tools_tup in enumerate( repository_tools_tups ):
@@ -1015,13 +1015,11 @@ def handle_missing_data_table_entry( app, tool_path, sample_files, repository_to
             missing_data_table_entry = True
             break
     if missing_data_table_entry:
-        sample_file = None
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
-        for sample_file in sample_files:
-            sample_file_name = strip_path( sample_file )
-            if sample_file_name == 'tool_data_table_conf.xml.sample':
-                break
-        error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_file )
+        sample_tool_data_table_conf = get_config_from_repository( app, 'tool_data_table_conf.xml.sample', repository, changeset_revision, dir )
+        # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
+        # data_table_elem_names.
+        error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf )
         if error:
             # TODO: Do more here than logging an exception.
             log.debug( correction_msg )
@@ -1059,47 +1057,16 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
     return repository_tools_tups, sample_files_copied
 def handle_sample_tool_data_table_conf_file( app, filename ):
     """
-    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary as well as appending them to the
-    shed's tool_data_table_conf.xml file on disk.
+    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary as well as appending them to
+    Galaxy's tool_data_table_conf.xml file on disk.
     """
-    # TODO: Load an in-memory version of the tool_data_table_conf.xml file, and write it to disk
-    # from the in-memory version only when changes are made.
     error = False
     message = ''
     try:
-        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename )
+        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename, app.config.tool_data_table_config_path )
     except Exception, e:
         message = str( e )
         error = True
-    """
-    # TODO: eliminate this - the shed should not need to write this to disk...
-    if not error:
-        # Add an entry to the end of the tool_data_table_conf.xml file.
-        tdt_config = "%s/tool_data_table_conf.xml" % app.config.root
-        if os.path.exists( tdt_config ):
-            # Make a backup of the file since we're going to be changing it.
-            today = date.today()
-            backup_date = today.strftime( "%Y_%m_%d" )
-            tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( app.config.root, backup_date )
-            shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
-            # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
-            fh = tempfile.NamedTemporaryFile( 'wb' )
-            tmp_filename = fh.name
-            fh.close()
-            new_tdt_config = open( tmp_filename, 'wb' )
-            for i, line in enumerate( open( tdt_config, 'rb' ) ):
-                if line.find( '</tables>' ) >= 0:
-                    for new_table_elem in new_table_elems:
-                        new_tdt_config.write( '    %s\n' % util.xml_to_string( new_table_elem ).rstrip( '\n' ) )
-                    new_tdt_config.write( '</tables>\n' )
-                else:
-                    new_tdt_config.write( line )
-            new_tdt_config.close()
-            shutil.move( tmp_filename, os.path.abspath( tdt_config ) )
-        else:
-            message = "The required file named tool_data_table_conf.xml does not exist in the Galaxy install directory."
-            error = True
-    """
     return error, message
 def handle_tool_dependencies( app, tool_shed_repository, installed_changeset_revision, tool_dependencies_config ):
     """
@@ -1208,11 +1175,20 @@ def load_repository_contents( trans, repository_name, description, owner, change
         tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
         repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
         if repository_tools_tups:
-            work_dir = make_tmp_directory()
-            sample_files = metadata_dict.get( 'sample_files', [] )
             # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-            repository_tools_tups = handle_missing_data_table_entry( trans.app, tool_path, sample_files, repository_tools_tups )
+            work_dir = make_tmp_directory()
+            repository_tools_tups = handle_missing_data_table_entry( trans.app,
+                                                                     tool_shed_repository,
+                                                                     changeset_revision,
+                                                                     tool_path,
+                                                                     repository_tools_tups,
+                                                                     work_dir )
+            try:
+                shutil.rmtree( work_dir )
+            except:
+                pass
             # Handle missing index files for tool parameters that are dynamically generated select lists.
+            sample_files = metadata_dict.get( 'sample_files', [] )
             repository_tools_tups, sample_files_copied = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
             # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
             copy_sample_files( trans.app, sample_files, sample_files_copied=sample_files_copied )
@@ -1406,7 +1382,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
         trans.app.toolbox.write_integrated_tool_panel_config_file()
 def reset_tool_data_tables( app ):
     # Reset the tool_data_tables to an empty dictionary.
-    app.tool_data_tables = galaxy.tools.data.ToolDataTableManager()
+    app.tool_data_tables.data_tables = {}
 def strip_path( fpath ):
     file_path, file_name = os.path.split( fpath )
     return file_name

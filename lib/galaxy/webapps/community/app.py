@@ -36,8 +36,8 @@ class UniverseApplication( object ):
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Tag handler
         self.tag_handler = CommunityTagHandler()
-        # Tool data tables
-        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_table_config_path )
+        # Tool data tables - never pass a config file here because the tool shed should always have an empty dictionary!
+        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager()
         # The tool shed has no toolbox, but this attribute is still required.
         self.toolbox = None
         # Load security policy

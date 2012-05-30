@@ -152,7 +152,12 @@ class InstallManager( object ):
             if repository_tools_tups:
                 sample_files = metadata_dict.get( 'sample_files', [] )
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = handle_missing_data_table_entry( self.app, self.tool_path, sample_files, repository_tools_tups )
+                repository_tools_tups = handle_missing_data_table_entry( self.app,
+                                                                         tool_shed_repository,
+                                                                         changeset_revision,
+                                                                         self.tool_path,
+                                                                         repository_tools_tups,
+                                                                         work_dir )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
                 repository_tools_tups, sample_files_copied = handle_missing_index_file( self.app, self.tool_path, sample_files, repository_tools_tups )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.

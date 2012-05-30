@@ -6,7 +6,7 @@ users to configure data tables for a local Galaxy instance without needing
 to modify the tool configurations. 
 """
 
-import logging, sys, os.path
+import logging, sys, os, os.path, tempfile, shutil
 from galaxy import util
 
 log = logging.getLogger( __name__ )
@@ -15,6 +15,9 @@ class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
     def __init__( self, config_filename=None ):
         self.data_tables = {}
+        # Store config elements for on-the-fly persistence.
+        self.data_table_elems = []
+        self.data_table_elem_names = []
         if config_filename:
             self.load_from_config_file( config_filename )
     def __getitem__( self, key ):
@@ -29,14 +32,19 @@ class ToolDataTableManager( object ):
             type = table_elem.get( 'type', 'tabular' )
             assert type in tool_data_table_types, "Unknown data table type '%s'" % type
             table_elems.append( table_elem )
+            table_elem_name = table_elem.get( 'name', None )
+            if table_elem_name and table_elem_name not in self.data_table_elem_names:
+                self.data_table_elem_names.append( table_elem_name )
+                self.data_table_elems.append( table_elem )
             table = tool_data_table_types[ type ]( table_elem )
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Loaded tool data table '%s'", table.name )
         return table_elems
-    def add_new_entries_from_config_file( self, config_filename ):
+    def add_new_entries_from_config_file( self, config_filename, tool_data_table_config_path ):
         """
-        We have 2 cases to handle, files whose root tag is <tables>, for example:
+        This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
+        installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example:
         <tables>
             <!-- Location of Tmap files -->
             <table name="tmap_indexes" comment_char="#">
@@ -53,6 +61,8 @@ class ToolDataTableManager( object ):
         """
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
+        # Make a copy of the current list of data_table_elem_names so we can persist later if changes to the config file are necessary.
+        original_data_table_elem_names = [ name for name in self.data_table_elem_names ]
         if root.tag == 'tables':
             table_elems = self.load_from_config_file( config_filename )
         else:
@@ -60,11 +70,31 @@ class ToolDataTableManager( object ):
             type = root.get( 'type', 'tabular' )
             assert type in tool_data_table_types, "Unknown data table type '%s'" % type
             table_elems.append( root )
+            table_elem_name = root.get( 'name', None )
+            if table_elem_name and table_elem_name not in self.data_table_elem_names:
+                self.data_table_elem_names.append( table_elem_name )
+                self.data_table_elems.append( root )
             table = tool_data_table_types[ type ]( root )
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
-                log.debug( "Loaded tool data table '%s", table.name )
+                log.debug( "Added new tool data table '%s'", table.name )
+        if self.data_table_elem_names != original_data_table_elem_names:
+            # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
+            self.to_xml_file( tool_data_table_config_path )
         return table_elems
+    def to_xml_file( self, tool_data_table_config_path ):
+        """Write the current in-memory version of the tool_data-table_conf.xml file to disk."""
+        full_path = os.path.abspath( tool_data_table_config_path )
+        fd, filename = tempfile.mkstemp()
+        os.write( fd, '<?xml version="1.0"?>\n' )
+        os.write( fd, "<!-- Use the file tool_data_table_conf.xml.oldlocstyle if you don't want to update your loc files as changed in revision 4550:535d276c92bc-->\n" )
+        os.write( fd, '<tables>\n' )
+        for elem in self.data_table_elems:
+            os.write( fd, '%s' % util.xml_to_string( elem ) )
+        os.write( fd, '</tables>\n' )
+        os.close( fd )
+        shutil.move( filename, full_path )
+        os.chmod( full_path, 0644 )
     
 class ToolDataTable( object ):
     def __init__( self, config_element ):
