@@ -175,8 +175,8 @@
             </param>
             <when value="single">
               <conditional name="sParams">
-                <param name="sSettingsType" type="select" label="TopHat settings to use" help="You can use the default settings or set custom values for any of Tophat's parameters.">
-                  <option value="preSet">Use Defaults</option>
+                <param name="sSettingsType" type="select" label="TopHat settings to use" help="Use the Full parameter list to change default settings.">
+                  <option value="preSet">Default settings</option>
                   <option value="full">Full parameter list</option>
                 </param>
                 <when value="preSet" />
@@ -281,8 +281,8 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
               <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
               <param name="mate_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs" />
               <conditional name="pParams">
-                <param name="pSettingsType" type="select" label="TopHat settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
-                  <option value="preSet">Commonly used</option>
+                <param name="pSettingsType" type="select" label="TopHat settings to use" help="Use the Full parameter list to change default settings.">
+                  <option value="preSet">Default settings</option>
                   <option value="full">Full parameter list</option>
                 </param>
                 <when value="preSet" />
