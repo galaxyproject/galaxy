@@ -2598,8 +2598,10 @@ extend(NumberFilter.prototype, {
      * Update filter's slider.
      */
     update_ui_elt: function () {
-        // Only show filter if min != max because filter is not useful otherwise.
-        if (this.min !== this.max) {
+        // Only show filter if min < max because filter is not useful otherwise. This
+        // covers all corner cases, such as when min, max have not been defined and
+        // when min == max.
+        if (this.min < this.max) {
             this.parent_div.show();
         }
         else {
