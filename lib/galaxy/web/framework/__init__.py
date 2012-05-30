@@ -657,7 +657,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def user_is_admin( self ):
         if self.api_inherit_admin:
             return True
-        admin_users = self.app.config.get( "admin_users", "" ).split( "," )
+        admin_users = [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]
         return self.user and admin_users and self.user.email in admin_users
     def user_can_do_run_as( self ):
         run_as_users = self.app.config.get( "api_allow_run_as", "" ).split( "," )
