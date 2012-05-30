@@ -62,7 +62,6 @@ class UniverseApplication( object ):
         # However, if there is a conflict (2 datatypes with the same extension) between a proprietary datatype and a datatype
         # in the Galaxy distribution, the datatype in the Galaxy distribution will take precedence.  If there is a conflict
         # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
-        # This will also load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_datatypes()
         # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
         self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
@@ -84,6 +83,8 @@ class UniverseApplication( object ):
         if self.config.get_bool( 'enable_tool_shed_check', False ):
             from tool_shed import update_manager
             self.update_manager = update_manager.UpdateManager( self )
+        # Load proprietary datatype converters and display applications.
+        self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
         self.datatypes_registry.load_display_applications()
         # Load datatype converters defined in local datatypes_conf.xml

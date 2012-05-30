@@ -189,7 +189,11 @@ class AdminToolshed( AdminGalaxy ):
                 remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall=remove_from_disk_checked )
             if repository.includes_datatypes:
                 # Deactivate proprietary datatypes.
-                load_datatype_items( trans.app, repository, repository_install_dir, deactivate=True )
+                installed_repository_dict = load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=True )
+                if installed_repository_dict[ 'converter_path' ]:
+                    load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=True )
+                if installed_repository_dict[ 'display_path' ]:
+                    load_installed_display_applications( installed_repository_dict, deactivate=True )
             if remove_from_disk_checked:
                 try:
                     # Remove the repository from disk.

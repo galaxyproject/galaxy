@@ -1152,10 +1152,14 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
                                                                              parent_id=tool_version_using_parent_id.id )
                 sa_session.add( tool_version_association )
                 sa_session.flush()
-def load_datatype_items( app, repository, relative_install_dir, deactivate=False ):
-    # Load proprietary datatypes.
+def load_installed_datatype_converters( app, installed_repository_dict, deactivate=False ):
+    # Load or deactivate proprietary datatype converters
+    app.datatypes_registry.load_datatype_converters( app.toolbox, installed_repository_dict=installed_repository_dict, deactivate=deactivate )
+def load_installed_datatypes( app, repository, relative_install_dir, deactivate=False ):
+    # Load proprietary datatypes and return information needed for loading proprietary datatypes converters and display applications later.
     metadata = repository.metadata
     work_dir = make_tmp_directory()
+    repository_dict = None
     datatypes_config = get_config_from_repository( app,
                                                    'datatypes_conf.xml',
                                                    repository,
@@ -1173,16 +1177,14 @@ def load_datatype_items( app, repository, relative_install_dir, deactivate=False
                                                                                 tool_dicts=metadata.get( 'tools', [] ),
                                                                                 converter_path=converter_path,
                                                                                 display_path=display_path )
-        if converter_path:
-            # Load or deactivate proprietary datatype converters
-            app.datatypes_registry.load_datatype_converters( app.toolbox, installed_repository_dict=repository_dict, deactivate=deactivate )
-        if display_path:
-            # Load or deactivate proprietary datatype display applications
-            app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict, deactivate=deactivate )
     try:
         shutil.rmtree( work_dir )
     except:
         pass
+    return repository_dict
+def load_installed_display_applications( installed_repository_dict, deactivate=False ):
+    # Load or deactivate proprietary datatype display applications
+    app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict, deactivate=deactivate )
 def load_repository_contents( trans, repository_name, description, owner, changeset_revision, ctx_rev, tool_path, repository_clone_url,
                               relative_install_dir, tool_shed=None, tool_section=None, shed_tool_conf=None, install_tool_dependencies=False ):
     """
@@ -1403,8 +1405,8 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         trans.app.toolbox.write_integrated_tool_panel_config_file()
 def reset_tool_data_tables( app ):
-    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    app.tool_data_tables = galaxy.tools.data.ToolDataTableManager( app.config.tool_data_table_config_path )
+    # Reset the tool_data_tables to an empty dictionary.
+    app.tool_data_tables = galaxy.tools.data.ToolDataTableManager()
 def strip_path( fpath ):
     file_path, file_name = os.path.split( fpath )
     return file_name

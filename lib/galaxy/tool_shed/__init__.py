@@ -19,6 +19,7 @@ class InstalledRepositoryManager( object ):
         self.tool_configs = self.app.config.tool_configs
         if self.app.config.migrated_tools_config not in self.tool_configs:
             self.tool_configs.append( self.app.config.migrated_tools_config )
+        self.installed_repository_dicts = []
     def get_repository_install_dir( self, tool_shed_repository ):
         for tool_config in self.tool_configs:
             tree = ElementTree.parse( tool_config )
@@ -43,5 +44,13 @@ class InstalledRepositoryManager( object ):
                                                    .order_by( self.model.ToolShedRepository.table.c.id ):
             relative_install_dir = self.get_repository_install_dir( tool_shed_repository )
             if relative_install_dir:
-                galaxy.util.shed_util.load_datatype_items( self.app, tool_shed_repository, relative_install_dir )
+                installed_repository_dict = galaxy.util.shed_util.load_installed_datatypes( self.app, tool_shed_repository, relative_install_dir )
+                if installed_repository_dict:
+                    self.installed_repository_dicts.append( installed_repository_dict )
+    def load_proprietary_converters_and_display_applications( self, deactivate=False ):
+        for installed_repository_dict in self.installed_repository_dicts:
+            if installed_repository_dict[ 'converter_path' ]:
+                galaxy.util.shed_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
+            if installed_repository_dict[ 'display_path' ]:
+                galaxy.util.shed_util.load_installed_display_applications( installed_repository_dict, deactivate=deactivate )
            
