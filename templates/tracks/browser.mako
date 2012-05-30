@@ -47,7 +47,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 <script type="text/javascript">
     //
     // Place URLs here so that url_for can be used to generate them.
-    // 
+    //
+    galaxy_paths.set({
+        visualization_url: "${h.url_for( action='save' )}"
+    });
     var 
         add_track_async_url = "${h.url_for( action='add_track_async' )}",
         add_datasets_url = "${h.url_for( action='list_current_history_datasets' )}",
@@ -148,36 +151,29 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 
                 // FIXME: give unique IDs to Drawables and save overview as ID.
                 var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null);
-                var payload = { 
-                    'view': view.to_dict(),
+                var visualization = new TracksterVisualization({
+                    'id': view.vis_id,
+                    'title': view.name,
+                    'dbkey': view.dbkey,
+                    'type': 'trackster',
+                    'datasets': view.to_dict(),
                     'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
                     'bookmarks': bookmarks
-                };
-
-                $.ajax({
-                    url: "${h.url_for( action='save' )}",
-                    type: "POST",
-                    data: {
-                        'id': view.vis_id,
-                        'title': view.name,
-                        'dbkey': view.dbkey,
-                        'type': 'trackster',
-                        'config': JSON.stringify(payload)
-                    },
-                    dataType: "json",
-                    success: function(vis_info) {
+                });
+                
+                visualization.save()
+                    .success(function(vis_info) {
                         hide_modal();
                         view.vis_id = vis_info.vis_id;
                         view.has_changes = false;
-                        
+
                         // Needed to set URL when first saving a visualization.
                         window.history.pushState({}, "", vis_info.url + window.location.hash);
-                    },
-                    error: function() { 
+                    })
+                    .error(function() { 
                         show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
                                     { "Close" : hide_modal } );
-                    }
-                });
+                    });
             } },
             { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
                 window.location = "${h.url_for( controller='visualization', action='list' )}";

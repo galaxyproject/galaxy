@@ -2445,8 +2445,8 @@ class PageUserShareAssociation( object ):
         self.user = None
 
 class Visualization( object ):
-    def __init__( self, user=None, type=None, title=None, dbkey=None, slug=None, latest_revision=None ):
-        self.id = None
+    def __init__( self, id=None, user=None, type=None, title=None, dbkey=None, slug=None, latest_revision=None ):
+        self.id = id
         self.user = user
         self.type = type
         self.title = title

@@ -54,6 +54,24 @@ var Visualization = Backbone.RelationalModel.extend({
         type: "",
         dbkey: "",
         datasets: []
+    },
+    
+    url: function() { return galaxy_paths.get("visualization_url"); },
+    
+    /**
+     * POSTs visualization's JSON to its URL using the parameter 'vis_json'
+     * Note: This is necessary because (a) Galaxy requires keyword args and 
+     * (b) Galaxy does not handle PUT now.
+     */
+    save: function() {
+        return $.ajax({
+            url: this.url(),
+            type: "POST",
+            dataType: "json",
+            data: { 
+                vis_json: JSON.stringify(this)
+            }
+        });
     }
 });
 

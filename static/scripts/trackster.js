@@ -1368,7 +1368,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            add_tracks();
+            add_datasets();
         });
         // Another label track at bottom
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);

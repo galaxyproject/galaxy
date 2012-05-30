@@ -234,15 +234,26 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
                 rows.append( [location, name] )
         return { 'data': rows }
 
-    # TODO: this is duplicated from visualization controller; remove it once 
-    # routing incompatibilities have been resolved.
     @web.json
-    def save( self, trans, config, type, id=None, title=None, dbkey=None, annotation=None ):
+    def save( self, trans, vis_json ):
         """
         Save a visualization; if visualization does not have an ID, a new 
         visualization is created. Returns JSON of visualization.
         """
-        return self.save_visualization( trans, from_json_string( config ), type, id, title, dbkey, annotation )
+        
+        # TODO: Need from_dict to convert json to Visualization object.
+        vis_config = from_json_string( vis_json )
+        config = {
+            'view': vis_config[ 'datasets' ],
+            'bookmarks': vis_config[ 'bookmarks' ],
+            'viewport': vis_config[ 'viewport' ]
+        }
+        type = vis_config[ 'type' ]
+        id = vis_config[ 'id' ]
+        title = vis_config[ 'title' ]
+        dbkey = vis_config[ 'dbkey' ]
+        annotation = vis_config.get( 'annotation', None )
+        return self.save_visualization( trans, config, type, id, title, dbkey, annotation )
         
     @web.expose
     @web.require_login()
