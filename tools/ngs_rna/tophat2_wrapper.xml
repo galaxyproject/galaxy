@@ -105,6 +105,13 @@
                 --fusion-multipairs $params.fusion_search.multipairs
                 --fusion-ignore-chromosomes $params.fusion_search.ignore_chromosomes
             #end if
+            
+            #if $params.bowtie2_settings.b2_settings == "Yes":
+                #if $params.bowtie2_settings.preset.b2_preset == "Yes":
+                    --b2-$params.bowtie2_settings.preset.b2_preset_select
+                #end if    
+            #end if
+                        
         #end if
     </command>
     <inputs>
@@ -255,6 +262,33 @@
                       <param name="multireads" type="integer" value="2" label="Multireads" help="Reads that map to more than this many places will be ignored. It may be possible that a fusion is supported by reads (or pairs) that map to multiple places."/>
                       <param name="multipairs" type="integer" value="2" label="Multipairs" help="Pairs that map to more than this many places will be ignored."/>
                       <param name="ignore_chromosomes" type="text" value='' label="Ignore some chromosomes such as chrM when detecting fusion break points"/>
+                  </when>
+              </conditional>
+              
+              <!-- Bowtie2 settings. -->
+              <conditional name="bowtie2_settings">
+                  <param name="b2_settings" type="select" label="Set Bowtie2 settings">
+                        <option selected="true" value="No">No</option>
+                        <option value="Yes">Yes</option>
+                  </param>
+                  <when value="No" />
+                  <when value="Yes">
+                      <conditional name="preset">
+                          <param name="b2_preset" type="select" label="Use Preset options">
+                                <option selected="true" value="Yes">Yes</option>
+                                <option value="No">No</option>
+                          </param>
+                          <when value="Yes">
+                              <param name="b2_preset_select" type="select" label="Preset option">
+                                  <option value="very-fast">Very fast</option>
+                                  <option selected="true" value="fast">Fast</option>
+                                  <option value="sensitive">Sensitive</option>
+                                  <option value="very-sensitive">Very sensitive</option>
+                              </param>
+                          </when>
+                          <!-- TODO: -->
+                          <when value="No" />
+                      </conditional>
                   </when>
               </conditional>
             </when>  <!-- full -->

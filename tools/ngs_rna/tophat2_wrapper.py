@@ -64,6 +64,12 @@ def __main__():
     parser.add_option( '', '--min-coverage-intron', dest='min_coverage_intron', help='Minimum intron length that may be found during coverage search' )
     parser.add_option( '', '--max-coverage-intron', dest='max_coverage_intron', help='Maximum intron length that may be found during coverage search' )
     
+    # Bowtie2 options.
+    parser.add_option( '', '--b2-very-fast', action='store_true', dest='b2_very_fast')
+    parser.add_option( '', '--b2-fast', action='store_true', dest='b2_fast')
+    parser.add_option( '', '--b2-very-sensitive', action='store_true', dest='b2_very_sensitive')
+    parser.add_option( '', '--b2-sensitive', action='store_true', dest='b2_sensitive')
+    
     # Fusion search options.
     parser.add_option( '', '--fusion-search', action='store_true', dest='fusion_search' )
     parser.add_option( '', '--fusion-anchor-length', dest='fusion_anchor_length' )
@@ -198,6 +204,16 @@ def __main__():
                           ( int( options.fusion_anchor_length ), int( options.fusion_min_dist ),
                             int( options.fusion_read_mismatches ), int( options.fusion_multireads ),
                             int( options.fusion_multipairs ), options.fusion_ignore_chromosomes )
+                            
+            # Bowtie2 options.
+            if options.b2_very_fast:
+                opts += ' --b2-very-fast'
+            if options.b2_fast:
+                opts += ' --b2-fast'
+            if options.b2_sensitive:
+                opts += ' --b2-sensitive'
+            if options.b2_very_sensitive:
+                opts += ' --b2-very-sensitive'
                                         
             cmd = cmd % ( opts, index_path, reads )
             
