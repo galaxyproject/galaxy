@@ -29,10 +29,15 @@
         --input1=$input1
         
         ## Second input only if input is paired-end.
+        ## Also set parameters specific to paired data.
         #if $singlePaired.sPaired == "paired"
             --input2=$singlePaired.input2
             -r $singlePaired.mate_inner_distance
             --mate-std-dev=$singlePaired.mate_std_dev
+            
+            #if str($singlePaired.report_discordant_pairs) == "Yes":
+                --report-discordant-pair-alignments
+            #end if
         #end if
 
         ## Set params.
@@ -114,8 +119,13 @@
             <when value="paired">
                 <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
                 <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
-                <param name="mate_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs" />
+                <param name="mate_inner_distance" type="integer" value="300" label="Mean Inner Distance between Mate Pairs" />
                 <param name="mate_std_dev" type="integer" value="20" label="Std. Dev for Distance between Mate Pairs"  help="The standard deviation for the distribution on inner distances between mate pairs."/>
+                <!-- Discordant pairs. -->
+                <param name="report_discordant_pairs" type="select" label="Report discordant pair alignments?">
+                    <option selected="true" value="No">No</option>
+                    <option value="Yes">Yes</option>
+                </param>
             </when>
         </conditional>
         <conditional name="refGenomeSource">
@@ -125,7 +135,7 @@
           </param>
           <when value="indexed">
             <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-              <options from_data_table="tophat_indexes">
+              <options from_data_table="tophat2_indexes">
                 <filter type="sort_by" column="2"/>
                 <validator type="no_options" message="No indexes are available for the selected input dataset"/>
               </options>
@@ -334,7 +344,7 @@
         <!-- Test base-space single-end reads with pre-built index and preset parameters -->
         <test>
             <!-- TopHat commands:
-            tophat -o tmp_dir -p 1 tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat2 -o tmp_dir -p 1 tophat_in1 test-data/tophat_in2.fastqsanger
             Rename the files in tmp_dir appropriately
             -->
             <param name="sPaired" value="single" />
@@ -348,8 +358,8 @@
         <!-- Test using base-space test data: paired-end reads, index from history. -->
         <test>
             <!-- TopHat commands:
-            bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -r 20 tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            bowtie2-build -f test-data/tophat_in1.fasta tophat_in1
+            tophat2 -o tmp_dir -p 1 -r 20 tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
             Rename the files in tmp_dir appropriately
             -->
             <param name="sPaired" value="paired" />
@@ -365,8 +375,8 @@
         <!-- Test base-space single-end reads with user-supplied reference fasta and full parameters -->
         <test>
             <!-- Tophat commands:
-            bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            bowtie2-build -f test-data/tophat_in1.fasta tophat_in1
+            tophat2 -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -396,6 +406,7 @@
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
             <param name="no_novel_juncs" value="No" />
+            <param name="report_discordant_pairs" value="No" />
             <param name="use_search" value="Yes" />
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
@@ -416,7 +427,7 @@
         <!-- Test base-space paired-end reads with user-supplied reference fasta and full parameters -->
         <test>
             <!-- TopHat commands:
-            tophat -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            tophat2 -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search +report_discordant_pairs tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -447,6 +458,7 @@
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
             <param name="no_novel_juncs" value="No" />
+            <param name="report_discordant_pairs" value="Yes" />
             <param name="use_search" value="No" />
             <param name="microexon_search" value="Yes" />
             <!-- Fusion search params -->

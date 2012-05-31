@@ -24,6 +24,7 @@ def __main__():
     parser.add_option( '', '--genome-read-mismatches', dest='genome_read_mismatches' )
     parser.add_option( '', '--read-mismatches', dest='read_mismatches' )
     parser.add_option( '', '--bowtie-n', action="store_true", dest='bowtie_n' )
+    parser.add_option( '', '--report-discordant-pair-alignments', action="store_true", dest='report_discordant_pairs' )
     parser.add_option( '-a', '--min-anchor-length', dest='min_anchor_length', 
                         help='The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction.' )
     parser.add_option( '-m', '--splice-mismatches', dest='splice_mismatches', help='The maximum number of mismatches that can appear in the anchor region of a spliced alignment.' )
@@ -94,7 +95,7 @@ def __main__():
         except:
             # Tophat prefers (but doesn't require) fasta file to be in same directory, with .fa extension
             pass
-        cmd_index = 'bowtie-build %s -f %s %s' % ( space, options.own_file, index_path )
+        cmd_index = 'bowtie2-build %s -f %s %s' % ( space, options.own_file, index_path )
         try:
             tmp = tempfile.NamedTemporaryFile( dir=tmp_index_dir ).name
             tmp_stderr = open( tmp, 'wb' )
@@ -130,6 +131,8 @@ def __main__():
     opts = '-p %s %s' % ( options.num_threads, space )
     if options.single_paired == 'paired':
         opts += ' -r %s' % options.mate_inner_dist
+        if options.report_discordant_pairs:
+            opts += ' --report-discordant-pair-alignments'
     if options.settings == 'preSet':
         cmd = cmd % ( opts, index_path, reads )
     else:
