@@ -360,20 +360,32 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
     """Copy a file named filename from somewhere in the repository manifest to the directory to which dir refers."""
     filename = strip_path( filename )
     fctx = None
-    # First see if the file is in ctx.
+    found = False
+    # First see if the file is in ctx.  We have to be careful in determining if we found the correct file because multiple files
+    # with the same name may be in different directories within ctx if the repository owner moved the files as part of the change set.
+    # For example, in the following ctx.files() list, the former may have been moved to the latter:
+    # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample']
     for ctx_file in ctx.files():
         ctx_file_name = strip_path( ctx_file )
         if filename == ctx_file_name:
-            fctx = ctx[ ctx_file ]
-    else:
+            try:
+                fctx = ctx[ ctx_file ]
+                found = True
+                break
+            except:
+                continue
+    if not found:
         # Find the file in the repository manifest.
         for changeset in repo.changelog:
             prev_ctx = repo.changectx( changeset )
             for ctx_file in prev_ctx.files():
                 ctx_file_name = strip_path( ctx_file )
                 if filename == ctx_file_name:
-                    fctx = prev_ctx[ ctx_file ]
-                break
+                    try:
+                        fctx = prev_ctx[ ctx_file ]
+                        break
+                    except:
+                        continue
     if fctx:
         file_path = os.path.join( dir, filename )
         fh = open( file_path, 'wb' )
