@@ -11,6 +11,7 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, make_tmp_directory, NOT_TOOL_CONFIGS, strip_path
+from galaxy.tool_shed.encoding_util import *
 from common import *
 
 from galaxy import eggs
@@ -994,6 +995,30 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         pass
         url += '&latest_ctx_rev=%s' % str( latest_ctx.rev() )
         return trans.response.send_redirect( url )
+    @web.expose
+    def get_tool_dependencies( self, trans, **kwd ):
+        # Handle a request from a local Galaxy instance.  If the request originated with the Galaxy instances' InstallManager, the value of 'webapp'
+        # will be 'install_manager'.
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        # If the request originated with the UpdateManager, it will not include a galaxy_url.
+        galaxy_url = kwd.get( 'galaxy_url', '' )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        webapp = params.get( 'webapp', 'community' )
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        for downloadable_revision in repository.downloadable_revisions:
+            if downloadable_revision.changeset_revision == changeset_revision:
+                break
+        metadata = downloadable_revision.metadata
+        tool_dependencies = metadata.get( 'tool_dependencies', '' )
+        if webapp == 'install_manager':
+            if tool_dependencies:
+                return tool_shed_encode( tool_dependencies )
+            return ''
+        # TODO: future handler where request comes from some Galaxy admin feature.
     @web.expose
     def browse_repositories( self, trans, **kwd ):
         # We add params to the keyword dict in this method in order to rename the param

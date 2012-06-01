@@ -993,8 +993,8 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
                      .first()
 def get_url_from_repository_tool_shed( app, repository ):
     """
-    The stored value of repository.tool_shed is something like: toolshed.g2.bx.psu.edu
-    We need the URL to this tool shed, which is something like: http://toolshed.g2.bx.psu.edu/
+    The stored value of repository.tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
+    something like: http://toolshed.g2.bx.psu.edu/.
     """
     for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
         if shed_url.find( repository.tool_shed ) >= 0:
@@ -1019,7 +1019,7 @@ def handle_missing_data_table_entry( app, repository, changeset_revision, tool_p
         sample_tool_data_table_conf = get_config_from_repository( app, 'tool_data_table_conf.xml.sample', repository, changeset_revision, dir )
         # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
         # data_table_elem_names.
-        error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf )
+        error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
         if error:
             # TODO: Do more here than logging an exception.
             log.debug( correction_msg )
@@ -1055,15 +1055,15 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups, sample_files_copied
-def handle_sample_tool_data_table_conf_file( app, filename ):
+def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
     """
-    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary as well as appending them to
-    Galaxy's tool_data_table_conf.xml file on disk.
+    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur)
+    if call is from the Galaxy side (not the tool shed), the new entries will be appended to Galaxy's tool_data_table_conf.xml file on disk.
     """
     error = False
     message = ''
     try:
-        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename, app.config.tool_data_table_config_path )
+        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename, app.config.tool_data_table_config_path, persist=persist )
     except Exception, e:
         message = str( e )
         error = True

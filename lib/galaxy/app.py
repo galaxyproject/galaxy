@@ -31,6 +31,11 @@ class UniverseApplication( object ):
             db_url = self.config.database_connection
         else:
             db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
+        # Set up the tool sheds registry
+        if os.path.isfile( self.config.tool_sheds_config ):
+            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+        else:
+            self.tool_shed_registry = None
         # Initialize database / check for appropriate schema version.  # If this
         # is a new installation, we'll restrict the tool migration messaging.
         from galaxy.model.migrate.check import create_or_verify_database
@@ -47,11 +52,6 @@ class UniverseApplication( object ):
                                    self.config.database_engine_options,
                                    database_query_profiling_proxy = self.config.database_query_profiling_proxy,
                                    object_store = self.object_store )
-        # Set up the tool sheds registry
-        if os.path.isfile( self.config.tool_sheds_config ):
-            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
-        else:
-            self.tool_shed_registry = None
         # Manage installed tool shed repositories.
         self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
         # Create an empty datatypes registry.

@@ -1,4 +1,4 @@
-import sys, os, ConfigParser
+import sys, os, ConfigParser, urllib2
 import galaxy.config
 import galaxy.datatypes.registry
 from galaxy import util, tools
@@ -7,39 +7,63 @@ import galaxy.tools.search
 from galaxy.objectstore import build_object_store_from_config
 import galaxy.tool_shed.tool_shed_registry
 from galaxy.tool_shed import install_manager
-from galaxy.tool_shed.migrate.common import *
+from galaxy.tool_shed.encoding_util import *
+from galaxy.util.odict import odict
 
-def check_for_missing_tools( tool_panel_configs, latest_tool_migration_script_number ):
+REPOSITORY_OWNER = 'devteam'
+
+def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_script_number ):
     # Get the 000x_tools.xml file associated with the current migrate_tools version number.
     tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
-    migrated_tool_configs = []
+    migrated_tool_configs_dict = odict()
     tree = util.parse_xml( tools_xml_file_path )
     root = tree.getroot()
+    tool_shed = root.get( 'name' )
+    tool_shed_url = get_tool_shed_url_from_tools_xml_file_path( app, tool_shed )
     for elem in root:
         if elem.tag == 'repository':
+            tool_dependencies = []
+            tool_dependencies_dict = {}
+            repository_name = elem.get( 'name' )
+            changeset_revision = elem.get( 'changeset_revision' )
+            url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&webapp=install_manager&no_reset=true' % \
+            ( tool_shed_url, repository_name, REPOSITORY_OWNER, changeset_revision )
+            response = urllib2.urlopen( url )
+            text = response.read()
+            response.close()
+            if text:
+                tool_dependencies_dict = tool_shed_decode( text )
+                for dependency_key, requirements_dict in tool_dependencies_dict.items():
+                    tool_dependency_name = requirements_dict[ 'name' ]
+                    tool_dependency_version = requirements_dict[ 'version' ]
+                    tool_dependency_type = requirements_dict[ 'type' ]
+                    tool_dependency_readme = requirements_dict.get( 'readme', '' )
+                    tool_dependencies.append( ( tool_dependency_name, tool_dependency_version, tool_dependency_type, tool_dependency_readme ) )
             for tool_elem in elem.findall( 'tool' ):
-                migrated_tool_configs.append( tool_elem.get( 'file' ) )
+                migrated_tool_configs_dict[ tool_elem.get( 'file' ) ] = tool_dependencies
     # Parse the proprietary tool_panel_configs (the default is tool_conf.xml) and generate the list of missing tool config file names.
-    missing_tool_configs = []
+    missing_tool_configs_dict = odict()
     for tool_panel_config in tool_panel_configs:
         tree = util.parse_xml( tool_panel_config )
         root = tree.getroot()
         for elem in root:
+            missing_tool_dependencies = []
             if elem.tag == 'tool':
-                missing_tool_configs = check_tool_tag_set( elem, migrated_tool_configs, missing_tool_configs )
+                missing_tool_configs_dict = check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict )
             elif elem.tag == 'section':
                 for section_elem in elem:
                     if section_elem.tag == 'tool':
-                        missing_tool_configs = check_tool_tag_set( section_elem, migrated_tool_configs, missing_tool_configs )
-    return missing_tool_configs
-def check_tool_tag_set( elem, migrated_tool_configs, missing_tool_configs ):
+                        missing_tool_configs_dict = check_tool_tag_set( section_elem, migrated_tool_configs_dict, missing_tool_configs_dict )
+    return missing_tool_configs_dict
+def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict ):
     file_path = elem.get( 'file', None )
     if file_path:
         path, name = os.path.split( file_path )
-        if name in migrated_tool_configs:
-            missing_tool_configs.append( name )
-    return missing_tool_configs
+        if name in migrated_tool_configs_dict:
+            tool_dependencies = migrated_tool_configs_dict[ name ]
+            missing_tool_configs_dict[ name ] = tool_dependencies
+    return missing_tool_configs_dict
 def get_non_shed_tool_panel_configs( app ):
     # Get the non-shed related tool panel configs - there can be more than one, and the default is tool_conf.xml.
     config_filenames = []
@@ -52,9 +76,18 @@ def get_non_shed_tool_panel_configs( app ):
         if tool_path is None:
             config_filenames.append( config_filename )
     return config_filenames
+def get_tool_shed_url_from_tools_xml_file_path( app, tool_shed ):
+    for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
+        if shed_url.find( tool_shed ) >= 0:
+            if shed_url.endswith( '/' ):
+                shed_url = shed_url.rstrip( '/' )
+            return shed_url
+    return None
+
 class MigrateToolsApplication( object ):
     """Encapsulates the state of a basic Galaxy Universe application in order to initiate the Install Manager"""
     def __init__( self, tools_migration_config ):
+        install_dependencies = 'install_dependencies' in sys.argv
         galaxy_config_file = 'universe_wsgi.ini'
         if '-c' in sys.argv:
             pos = sys.argv.index( '-c' )
@@ -69,7 +102,7 @@ class MigrateToolsApplication( object ):
         for key, value in config_parser.items( "app:main" ):
             galaxy_config_dict[ key ] = value
         self.config = galaxy.config.Configuration( **galaxy_config_dict )
-        if self.config.database_connection is None:
+        if not self.config.database_connection:
             self.config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         self.config.update_integrated_tool_panel = True
         self.object_store = build_object_store_from_config( self.config )
@@ -106,7 +139,8 @@ class MigrateToolsApplication( object ):
                                                                                                       'scripts',
                                                                                                       'migrate_tools',
                                                                                                       tools_migration_config ),
-                                                               migrated_tools_config=self.config.migrated_tools_config )
+                                                               migrated_tools_config=self.config.migrated_tools_config,
+                                                               install_dependencies=install_dependencies )
     @property
     def sa_session( self ):
         return self.model.context.current

@@ -41,7 +41,7 @@ class ToolDataTableManager( object ):
                 self.data_tables[ table.name ] = table
                 log.debug( "Loaded tool data table '%s'", table.name )
         return table_elems
-    def add_new_entries_from_config_file( self, config_filename, tool_data_table_config_path ):
+    def add_new_entries_from_config_file( self, config_filename, tool_data_table_config_path, persist=False ):
         """
         This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
         installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example:
@@ -78,7 +78,7 @@ class ToolDataTableManager( object ):
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Added new tool data table '%s'", table.name )
-        if self.data_table_elem_names != original_data_table_elem_names:
+        if persist and self.data_table_elem_names != original_data_table_elem_names:
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
             self.to_xml_file( tool_data_table_config_path )
         return table_elems

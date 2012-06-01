@@ -6,6 +6,7 @@ pkg_resources.require( "sqlalchemy-migrate" )
 from migrate.versioning import repository, schema
 from sqlalchemy import *
 from common import *
+from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
 
@@ -44,13 +45,20 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     if latest_tool_migration_script_number != db_schema.version:
         if app.new_installation:
             # New installations will not be missing tools, so we don't need to worry about them.
-            missing_tool_configs = []
+            missing_tool_configs_dict = odict()
         else:
             tool_panel_configs = get_non_shed_tool_panel_configs( app )
             if tool_panel_configs:
-                missing_tool_configs = check_for_missing_tools( tool_panel_configs, latest_tool_migration_script_number )
+                # The missing_tool_configs_dict contents are something like:
+                # {'emboss_antigenic.xml': [('emboss', '5.0.0', 'package', '\nreadme blah blah blah\n')]}
+                missing_tool_configs_dict = check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_script_number )
             else:
-                missing_tool_configs = []
+                missing_tool_configs_dict = odict()
+        have_tool_dependencies = False
+        for k, v in missing_tool_configs_dict.items():
+            if v:
+                have_tool_dependencies = True
+                break
         config_arg = ''
         if os.path.abspath( os.path.join( os.getcwd(), 'universe_wsgi.ini' ) ) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
@@ -62,7 +70,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
             output = proc.stdout.read( 32768 )
             if return_code != 0:
                 raise Exception( "Error attempting to update the value of migrate_tools.version: %s" % output )
-            elif missing_tool_configs:
+            elif missing_tool_configs_dict:
                 if len( tool_panel_configs ) == 1:
                     plural = ''
                     tool_panel_config_file_names = tool_panel_configs[ 0 ]
@@ -71,8 +79,8 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                     tool_panel_config_file_names = ', '.join( tool_panel_configs )
                 msg = "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
                 msg += "\n\nThe list of files at the end of this message refers to tools that are configured to load into the tool panel for\n"
-                msg += "this Galaxy instance, but have been removed from the Galaxy distribution.  These tools can be automatically installed\n"
-                msg += "from the Galaxy tool shed at http://toolshed.g2.bx.psu.edu.\n\n"
+                msg += "this Galaxy instance, but have been removed from the Galaxy distribution.  These tools and their dependencies can be\n"
+                msg += "automatically installed from the Galaxy tool shed at http://toolshed.g2.bx.psu.edu.\n\n"
                 msg += "To skip this process, attempt to start your Galaxy server again (e.g., sh run.sh or whatever you use).  If you do this,\n"
                 msg += "be aware that these tools will no longer be available in your Galaxy tool panel, and entries for each of them should\n"
                 msg += "be removed from your file%s named %s.\n\n" % ( plural, tool_panel_config_file_names )
@@ -87,17 +95,45 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                 msg += "configured could result in undesired behavior when modifying or updating your local Galaxy instance or the tool shed\n"
                 msg += "repositories if they are in directories that pose conflicts.  See mercurial's .hgignore documentation at the following\n"
                 msg += "URL for details.\n\nhttp://mercurial.selenic.com/wiki/.hgignore\n\n"
-                msg += output
+                if have_tool_dependencies:
+                    msg += "The following tool dependencies can also optionally be installed (see the option flag in the command below).  If you\n"
+                    msg += "choose to install them (recommended), they will be installed within the location specified by the 'tool_dependency_dir'\n"
+                    msg += "setting in your main Galaxy configuration file (e.g., uninverse_wsgi.ini).\n"
+                    processed_tool_dependencies = []
+                    for missing_tool_config, tool_dependencies in missing_tool_configs_dict.items():
+                        for tool_dependencies_tup in tool_dependencies:
+                            if tool_dependencies_tup not in processed_tool_dependencies:
+                                msg += "------------------------------------\n"
+                                msg += "Tool Dependency\n"
+                                msg += "------------------------------------\n"
+                                msg += "Name: %s, Version: %s, Type: %s\n" % ( tool_dependencies_tup[ 0 ],
+                                                                               tool_dependencies_tup[ 1 ],
+                                                                               tool_dependencies_tup[ 2 ] )
+                                if tool_dependencies_tup[ 3 ]:
+                                    msg += "Requirements and installation information:\n"
+                                    msg += "%s\n" % tool_dependencies_tup[ 3 ]
+                                else:
+                                    msg += "\n"
+                                msg += "------------------------------------\n"
+                                processed_tool_dependencies.append( tool_dependencies_tup )
+                    msg += "\n"
+                msg += "%s" % output.replace( 'done', '' )
+                msg += "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"
+                msg += "sh ./scripts/migrate_tools/%04d_tools.sh\n" % latest_tool_migration_script_number
+                msg += "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n"
+                if have_tool_dependencies:
+                    msg += "The tool dependencies listed above will be installed along with the repositories if you add the 'install_dependencies'\n"
+                    msg += "option to the above command like this:\n\n"
+                    msg += "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"
+                    msg += "sh ./scripts/migrate_tools/%04d_tools.sh install_dependencies\n" % latest_tool_migration_script_number
+                    msg += "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n"
+                    msg += "Tool dependencies can be installed after the repositories have been installed, but installing them now is better.\n\n"
                 msg += "After the installation process finishes, you can start your Galaxy server.  As part of this installation process,\n"
                 msg += "entries for each of the following tool config files will be added to the file named ./migrated_tool_conf.xml, so these\n"
                 msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these files should be\n"
                 msg += "removed from your file%s named %s, but only after the installation process finishes.\n\n" % ( plural, tool_panel_config_file_names )
-                for i, missing_tool_config in enumerate( missing_tool_configs ):
+                for missing_tool_config, tool_dependencies in missing_tool_configs_dict.items():
                     msg += "%s\n" % missing_tool_config
-                    # Should we do the following?
-                    #if i > 10:
-                    #    msg += "\n...and %d more tools...\n" % ( len( missing_tool_configs ) - ( i + 1 ) )
-                    #    break
                 msg += "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
                 raise Exception( msg )
     else:

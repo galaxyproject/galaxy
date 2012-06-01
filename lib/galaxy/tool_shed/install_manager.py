@@ -7,9 +7,12 @@ from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
 from galaxy.util.odict import odict
+from galaxy.tool_shed.migrate.common import *
+
+REPOSITORY_OWNER = 'devteam'
 
 class InstallManager( object ):
-    def __init__( self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config ):
+    def __init__( self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config, install_dependencies ):
         """
         Check tool settings in tool_shed_install_config and install all repositories that are not already installed.  The tool
         panel configuration file is the received migrated_tools_config, which is the reserved file named migrated_tools_conf.xml.
@@ -30,9 +33,9 @@ class InstallManager( object ):
         tree = util.parse_xml( tool_shed_install_config )
         root = tree.getroot()
         self.tool_shed = clean_tool_shed_url( root.get( 'name' ) )
-        self.repository_owner = 'devteam'
+        self.repository_owner = REPOSITORY_OWNER
         for repository_elem in root:
-            self.install_repository( repository_elem )
+            self.install_repository( repository_elem, install_dependencies )
     def get_guid( self, repository_clone_url, relative_install_dir, tool_config ):
         found = False
         for root, dirs, files in os.walk( relative_install_dir ):
@@ -117,7 +120,8 @@ class InstallManager( object ):
                             if not is_displayed:
                                 is_displayed = True
         return is_displayed, tool_sections
-    def handle_repository_contents( self, repository_clone_url, relative_install_dir, repository_elem, repository_name, description, changeset_revision, ctx_rev ):
+    def handle_repository_contents( self, repository_clone_url, relative_install_dir, repository_elem, repository_name, description, changeset_revision,
+                                    ctx_rev, install_dependencies ):
         # Generate the metadata for the installed tool shed repository, among other things.  It is critical that the installed repository is
         # updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
         # The values for the keys in each of the following dictionaries will be a list to allow for the same tool to be displayed in multiple places
@@ -162,7 +166,7 @@ class InstallManager( object ):
                 repository_tools_tups, sample_files_copied = handle_missing_index_file( self.app, self.tool_path, sample_files, repository_tools_tups )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
                 copy_sample_files( self.app, sample_files, sample_files_copied=sample_files_copied )
-                if 'tool_dependencies' in metadata_dict:
+                if install_dependencies and 'tool_dependencies' in metadata_dict:
                     # Get the tool_dependencies.xml file from the repository.
                     tool_dependencies_config = get_config_from_repository( self.app,
                                                                            'tool_dependencies.xml',
@@ -220,7 +224,7 @@ class InstallManager( object ):
             except:
                 pass
         return tool_shed_repository, metadata_dict
-    def install_repository( self, repository_elem ):
+    def install_repository( self, repository_elem, install_dependencies ):
         # Install a single repository, loading contained tools into the tool panel.
         name = repository_elem.get( 'name' )
         description = repository_elem.get( 'description' )
@@ -241,7 +245,8 @@ class InstallManager( object ):
                                                                                    name,
                                                                                    description,
                                                                                    changeset_revision,
-                                                                                   ctx_rev )
+                                                                                   ctx_rev,
+                                                                                   install_dependencies )
             if 'tools' in metadata_dict:
                 # Get the tool_versions from the tool shed for each tool in the installed change set.
                 url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy&no_reset=true' % \
