@@ -268,11 +268,11 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
 
     @web.json
     def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
-        return self.genomes.chroms( trans, dbkey=dbkey, num=num, chrom=chrom, low=low )
+        return self.app.genomes.chroms( trans, dbkey=dbkey, num=num, chrom=chrom, low=low )
         
     @web.json
     def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
-        return self.genomes.reference( trans, dbkey, chrom, low, high, **kwargs )
+        return self.app.genomes.reference( trans, dbkey, chrom, low, high, **kwargs )
         
     @web.json
     def raw_data( self, trans, dataset_id, chrom, low, high, **kwargs ):
@@ -771,7 +771,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
 
         # Get genome info.
         dbkey = dataset.dbkey
-        chroms_info = self.genomes.chroms( trans, dbkey=dbkey )
+        chroms_info = self.app.genomes.chroms( trans, dbkey=dbkey )
         genome = { 'dbkey': dbkey, 'chroms_info': chroms_info }
 
         # Get summary tree data for dataset.

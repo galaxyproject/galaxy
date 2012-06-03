@@ -107,6 +107,8 @@ class Genomes( object ):
         #
         # Get len file.
         #
+        
+        # Look first in user's custom builds.
         len_file = None
         len_ds = None
         user_keys = {}
@@ -121,10 +123,11 @@ class Genomes( object ):
                 elif 'len' in dbkey_attributes:
                     len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ dbkey ][ 'len' ] ).file_name
 
+        # Look in system builds.
         if not len_file:
             len_ds = trans.db_dataset_for( dbkey )
             if not len_ds:
-                len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % dbkey )
+                len_file = self.genomes[ dbkey ].len_file
             else:
                 len_file = len_ds.file_name
             
@@ -203,7 +206,7 @@ class Genomes( object ):
         dbkey_owner is needed to determine if there is reference data.
         """
         # Look for key in built-in builds.
-        if dbkey in self.available_genomes:
+        if dbkey in self.genomes and self.genomes[ dbkey ].twobit_file:
             # There is built-in reference data.
             return True
 

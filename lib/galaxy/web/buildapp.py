@@ -132,6 +132,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
     webapp.api_mapper.resource( 'tool', 'tools', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
+    webapp.api_mapper.resource( 'genome', 'genomes', path_prefix='/api' )
     webapp.api_mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
