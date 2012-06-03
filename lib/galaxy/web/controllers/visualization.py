@@ -377,7 +377,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                 from the visualization title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
-                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=self._get_dbkeys( trans ), error=None)
+                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), error=None)
                 .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
                 template="visualization/create.mako" )

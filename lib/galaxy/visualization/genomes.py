@@ -1,4 +1,4 @@
-import os, re, sys
+import os, re, sys, glob
 from bx.seq.twobit import TwoBitFile
 from galaxy.util.json import from_json_string
 from galaxy import model
@@ -23,6 +23,15 @@ def decode_dbkey( dbkey ):
         return dbkey.split( ':' )
     else:
         return None, dbkey
+        
+class Genome( object ):
+    """
+    Encapsulates information about a known genome/dbkey.
+    """
+    def __init__( self, key, len_file=None, twobit_file=None ):
+        self.key = key
+        self.len_file = len_file
+        self.twobit_file = twobit_file
 
 
 class Genomes( object ):
@@ -31,17 +40,34 @@ class Genomes( object ):
     """
     
     def __init__( self, app ):
-        # Create list of available genomes.
-        self.available_genomes = None
-        avail_genomes = {}
+        # Create list of known genomes from len files.
+        self.genomes = {}
+        len_files = glob.glob( os.path.join( app.config.len_file_path, "*.len" ) )
+        for f in len_files:
+            key = os.path.split( f )[1].split( ".len" )[0]
+            self.genomes[ key ] = Genome( key, len_file=f )
+                
+        # Add genome data (twobit files) to genomes.
         for line in open( os.path.join( app.config.tool_data_path, "twobit.loc" ) ):
             if line.startswith("#"): continue
             val = line.split()
             if len( val ) == 2:
                 key, path = val
-                avail_genomes[ key ] = path
-        self.available_genomes = avail_genomes
-    
+                if key in self.genomes:
+                    self.genomes[ key ].twobit_file = path
+                    
+    def get_dbkeys_with_chrom_info( self, trans ):
+        """ Returns all valid dbkeys that have chromosome information. """
+
+        # All user keys have a len file.
+        user_keys = {}
+        user = trans.get_user()
+        if 'dbkeys' in user.preferences:
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+
+        dbkeys = [ (v, k) for k, v in trans.db_builds if ( ( k in self.genomes and self.genomes[ k ].len_file ) or k in user_keys ) ]
+        return dbkeys
+                    
     def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
         """
         Returns a naturally sorted list of chroms/contigs for a given dbkey.
@@ -261,4 +287,3 @@ class Genomes( object ):
             msg = messages.PENDING
 
         return msg
-    

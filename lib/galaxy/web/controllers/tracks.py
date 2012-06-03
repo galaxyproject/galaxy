@@ -173,10 +173,6 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
     histories_grid = HistorySelectionGrid()
     history_datasets_grid = HistoryDatasetsSelectionGrid()
     tracks_grid = TracksterSelectionGrid()
-    
-    def __init__(self, app ):
-        BaseUIController.__init__( self, app )
-        self.genomes = Genomes( self.app )
             
     @web.expose
     @web.require_login()
@@ -188,7 +184,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
     @web.expose
     @web.require_login()
     def new_browser( self, trans, **kwargs ):
-        return trans.fill_template( "tracks/new_browser.mako", dbkeys=self._get_dbkeys( trans ), default_dbkey=kwargs.get("default_dbkey", None) )
+        return trans.fill_template( "tracks/new_browser.mako", dbkeys=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), default_dbkey=kwargs.get("default_dbkey", None) )
             
     @web.json
     def add_track_async(self, trans, hda_id=None, ldda_id=None):

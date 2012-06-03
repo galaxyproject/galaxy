@@ -370,22 +370,6 @@ class UsesVisualizationMixin( SharableItemSecurityMixin ):
         encoded_id = trans.security.encode_id( vis.id )
         return { "vis_id": encoded_id, "url": url_for( action='browser', id=encoded_id ) }
 
-    def _get_dbkeys( self, trans ):
-        """ Returns all valid dbkeys that a user can use in a visualization. """
-
-        # Read len files.
-        if not self.len_files:
-            len_files = glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") )
-            self.len_files = [ os.path.split(f)[1].split(".len")[0] for f in len_files ] # get xxx.len
-
-        user_keys = {}
-        user = trans.get_user()
-        if 'dbkeys' in user.preferences:
-            user_keys = from_json_string( user.preferences['dbkeys'] )
-
-        dbkeys = [ (v, k) for k, v in trans.db_builds if k in self.len_files or k in user_keys ]
-        return dbkeys
-
     def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a Visualization from the database by id, verifying ownership. """
         # Load workflow from database
