@@ -32,47 +32,12 @@ class Genome( object ):
         self.key = key
         self.len_file = len_file
         self.twobit_file = twobit_file
-
-
-class Genomes( object ):
-    """
-    Provides information about available genome data and methods for manipulating that data.
-    """
-    
-    def __init__( self, app ):
-        # Create list of known genomes from len files.
-        self.genomes = {}
-        len_files = glob.glob( os.path.join( app.config.len_file_path, "*.len" ) )
-        for f in len_files:
-            key = os.path.split( f )[1].split( ".len" )[0]
-            self.genomes[ key ] = Genome( key, len_file=f )
-                
-        # Add genome data (twobit files) to genomes.
-        for line in open( os.path.join( app.config.tool_data_path, "twobit.loc" ) ):
-            if line.startswith("#"): continue
-            val = line.split()
-            if len( val ) == 2:
-                key, path = val
-                if key in self.genomes:
-                    self.genomes[ key ].twobit_file = path
-                    
-    def get_dbkeys_with_chrom_info( self, trans ):
-        """ Returns all valid dbkeys that have chromosome information. """
-
-        # All user keys have a len file.
-        user_keys = {}
-        user = trans.get_user()
-        if 'dbkeys' in user.preferences:
-            user_keys = from_json_string( user.preferences['dbkeys'] )
-
-        dbkeys = [ (v, k) for k, v in trans.db_builds if ( ( k in self.genomes and self.genomes[ k ].len_file ) or k in user_keys ) ]
-        return dbkeys
-                    
-    def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
+        
+    def to_dict( self, num=None, chrom=None, low=None ):
         """
-        Returns a naturally sorted list of chroms/contigs for a given dbkey.
-        Use either chrom or low to specify the starting chrom in the return list.
+        Returns representation of self as a dictionary.
         """
+        
         def check_int(s):
             if s.isdigit():
                 return int(s)
@@ -97,47 +62,13 @@ class Genomes( object ):
         else:
             low = 0
         
-        # If there is no dbkey owner, default to current user.
-        dbkey_owner, dbkey = decode_dbkey( dbkey )
-        if dbkey_owner:
-            dbkey_user = trans.sa_session.query( trans.app.model.User ).filter_by( username=dbkey_owner ).first()
-        else:
-            dbkey_user = trans.user
-
-        #
-        # Get len file.
-        #
-        
-        # Look first in user's custom builds.
-        len_file = None
-        len_ds = None
-        user_keys = {}
-        if dbkey_user and 'dbkeys' in dbkey_user.preferences:
-            user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
-            if dbkey in user_keys:
-                dbkey_attributes = user_keys[ dbkey ]
-                if 'fasta' in dbkey_attributes:
-                    build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
-                    len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
-                # Backwards compatibility: look for len file directly.
-                elif 'len' in dbkey_attributes:
-                    len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ dbkey ][ 'len' ] ).file_name
-
-        # Look in system builds.
-        if not len_file:
-            len_ds = trans.db_dataset_for( dbkey )
-            if not len_ds:
-                len_file = self.genomes[ dbkey ].len_file
-            else:
-                len_file = len_ds.file_name
-            
         #
         # Get chroms data:
         #   (a) chrom name, len;
         #   (b) whether there are previous, next chroms;
         #   (c) index of start chrom.
         #
-        len_file_enumerate = enumerate( open( len_file ) )
+        len_file_enumerate = enumerate( open( self.len_file ) )
         chroms = {}
         prev_chroms = False
         start_index = 0
@@ -169,11 +100,6 @@ class Genomes( object ):
             start_index = low
     
             # Read chrom data from len file.
-            # TODO: this may be too slow for very large numbers of chroms/contigs, 
-            # but try it out for now.
-            if not os.path.exists( len_file ):
-                return None
-
             for line_num, line in len_file_enumerate:
                 if line_num < low:
                     continue
@@ -197,9 +123,99 @@ class Genomes( object ):
             
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
-        return { 'reference': self.has_reference_data( trans, dbkey, dbkey_user ), 'chrom_info': to_sort, 
-                 'prev_chroms' : prev_chroms, 'next_chroms' : next_chroms, 'start_index' : start_index }
+        return {
+            'id': self.key,
+            'reference': self.twobit_file is not None, 
+            'chrom_info': to_sort, 
+            'prev_chroms' : prev_chroms, 
+            'next_chroms' : next_chroms, 
+            'start_index' : start_index
+            }
+        
+class Genomes( object ):
+    """
+    Provides information about available genome data and methods for manipulating that data.
+    """
+    
+    def __init__( self, app ):
+        # Create list of known genomes from len files.
+        self.genomes = {}
+        len_files = glob.glob( os.path.join( app.config.len_file_path, "*.len" ) )
+        for f in len_files:
+            key = os.path.split( f )[1].split( ".len" )[0]
+            self.genomes[ key ] = Genome( key, len_file=f )
+                
+        # Add genome data (twobit files) to genomes.
+        for line in open( os.path.join( app.config.tool_data_path, "twobit.loc" ) ):
+            if line.startswith("#"): continue
+            val = line.split()
+            if len( val ) == 2:
+                key, path = val
+                if key in self.genomes:
+                    self.genomes[ key ].twobit_file = path
+                    
+    def get_build( self, dbkey ):
+        """ Returns build for the given key. """
+        rval = None
+        if dbkey in self.genomes:
+            rval = self.genomes[ dbkey ]
+        return rval
+                    
+    def get_dbkeys_with_chrom_info( self, trans ):
+        """ Returns all valid dbkeys that have chromosome information. """
 
+        # All user keys have a len file.
+        user_keys = {}
+        user = trans.get_user()
+        if 'dbkeys' in user.preferences:
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+
+        dbkeys = [ (v, k) for k, v in trans.db_builds if ( ( k in self.genomes and self.genomes[ k ].len_file ) or k in user_keys ) ]
+        return dbkeys
+                    
+    def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
+        """
+        Returns a naturally sorted list of chroms/contigs for a given dbkey.
+        Use either chrom or low to specify the starting chrom in the return list.
+        """
+        
+        # If there is no dbkey owner, default to current user.
+        dbkey_owner, dbkey = decode_dbkey( dbkey )
+        if dbkey_owner:
+            dbkey_user = trans.sa_session.query( trans.app.model.User ).filter_by( username=dbkey_owner ).first()
+        else:
+            dbkey_user = trans.user
+            
+        #
+        # Get/create genome object.
+        #
+        genome = None
+
+        # Look first in user's custom builds.
+        if dbkey_user and 'dbkeys' in dbkey_user.preferences:
+            user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
+            if dbkey in user_keys:
+                dbkey_attributes = user_keys[ dbkey ]
+                if 'fasta' in dbkey_attributes:
+                    build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
+                    len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
+                # Backwards compatibility: look for len file directly.
+                elif 'len' in dbkey_attributes:
+                    len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ dbkey ][ 'len' ] ).file_name
+                if len_file:
+                    genome = Genome( dbkey, len_file=len_file )
+                    
+        
+        # Look in system builds.
+        if not genome:
+            len_ds = trans.db_dataset_for( dbkey )
+            if not len_ds:
+                genome = self.genomes[ dbkey ]
+            else:
+                gneome = Genome( dbkey, len_file=len_ds.file_name )
+            
+        return genome.to_dict( num=num, chrom=chrom, low=low )
+        
     def has_reference_data( self, trans, dbkey, dbkey_owner=None ):
         """ 
         Returns true if there is reference data for the specified dbkey. If dbkey is custom, 
