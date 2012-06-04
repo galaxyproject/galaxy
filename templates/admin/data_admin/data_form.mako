@@ -52,7 +52,6 @@
         <div class="form-row">
             <label for="source">Data Source</label>
             <select id="datasource" name="source" label="Data Source">
-                <option value="local">localhost</option>
                 <option value="UCSC">UCSC</option>
                 <option value="Broad">Broad Institute</option>
                 <option value="NCBI">NCBI</option>

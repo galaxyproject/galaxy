@@ -1,6 +1,8 @@
 """
 Module for managing genome transfer jobs.
 """
+from __future__ import with_statement
+
 import logging, shutil, gzip, tempfile, sys
 
 from galaxy import eggs
@@ -31,11 +33,11 @@ class LiftOverTransferPlugin( DataTransfer ):
         self.app = app
         self.sa_session = app.model.context.current
         
-    def create_job( self, trans, url, dbkey, from_genome, to_genome, destfile ):
+    def create_job( self, trans, url, dbkey, from_genome, to_genome, destfile, parentjob ):
         job = trans.app.transfer_manager.new( protocol='http', url=url )
         params = dict( user=trans.user.id, transfer_job_id=job.id, protocol='http', 
                        type='init_transfer', dbkey=dbkey, from_genome=from_genome, 
-                       to_genome=to_genome, destfile=destfile )
+                       to_genome=to_genome, destfile=destfile, parentjob=parentjob )
         deferred = trans.app.model.DeferredJob( state = self.app.model.DeferredJob.states.NEW, plugin = 'LiftOverTransferPlugin', params = params )
         self.sa_session.add( deferred )
         self.sa_session.flush()
@@ -59,7 +61,19 @@ class LiftOverTransferPlugin( DataTransfer ):
                 return self.job_states.WAIT
             elif job.transfer_job.state == 'new':
                 assert job.params[ 'protocol' ] in [ 'http', 'ftp', 'https' ], 'Unknown protocol %s' % job.params[ 'protocol' ]
-                self.app.transfer_manager.run( job.transfer_job )
+                ready = True
+                parent = self.sa_session.query( self.app.model.DeferredJob ).get( int( job.params[ 'parentjob' ] ) )
+                if not hasattr( parent, 'transfer_job' ):
+                    parent.transfer_job = self.sa_session.query( self.app.model.TransferJob ).get( int( parent.params[ 'transfer_job_id' ] ) )
+                if parent.transfer_job.state not in [ 'ok', 'error', 'done' ]:
+                    ready = False
+                for lo_job in parent.params[ 'liftover' ]:
+                    liftoverjob = self.sa_session.query( self.app.model.TransferJob ).get( int( lo_job ) )
+                    if liftoverjob:
+                        if liftoverjob.state not in [ 'ok', 'error', 'new', 'done' ]:
+                            ready = False
+                if ready:
+                    self.app.transfer_manager.run( job.transfer_job )
                 self.sa_session.add( job.transfer_job )
                 self.sa_session.flush()
                 return self.job_states.WAIT
@@ -116,6 +130,15 @@ class LiftOverTransferPlugin( DataTransfer ):
             job.params[ 'type' ] = 'finish_transfer'
             transfer.path = os.path.abspath(destfilepath)
             transfer.state = 'done'
+            parentjob = self.sa_session.query( self.app.model.DeferredJob ).get( int( job.params[ 'parentjob' ] ) )
+            finished = True
+            for i in parentjob.params[ 'liftover' ]:
+                sibling = self.sa_session.query( self.app.model.DeferredJob ).get( int( i ) )
+                if sibling.state not in [ 'done', 'ok', 'error' ]:
+                    finished = False
+            if finished:
+                parentjob.state = self.app.model.DeferredJob.states.OK
+                self.sa_session.add( parentjob )
             self.sa_session.add( job )
             self.sa_session.add( transfer )
             self.sa_session.flush()

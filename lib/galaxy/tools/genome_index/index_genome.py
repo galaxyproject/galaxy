@@ -5,6 +5,8 @@ Export a history to an archive file using attribute files.
 usage: %prog history_attrs dataset_attrs job_attrs out_file
     -G, --gzip: gzip archive file
 """
+from __future__ import with_statement
+
 import optparse, sys, os, tempfile, time, subprocess, shlex, json, tarfile, shutil
 
 class ManagedIndexer():

@@ -39,6 +39,7 @@
 <a href="${h.url_for( controller='data_admin', action='manage_data' )}">Return to the download form</a>
 <script type="text/javascript">
     jobs = ${jsonjobs}
+    finalstates = new Array('done', 'error', 'ok');
     
     function makeHTML(jobrow) {
         jc = 'jobrow ' + jobrow['style'];
@@ -50,18 +51,6 @@
                '<td style="padding: 0px 5px;">' + jobrow['status'] + '</td></tr>';
     }
     
-    function getNewHtml(jobid, jobtype, elm) {
-        $.get('${h.url_for( controller='data_admin', action='job_status' )}', { jobid: jobid, jobtype: jobtype }, function(data) {
-            jsondata = JSON.parse(data);
-            status = jsondata['status'];
-            htmldata = makeHTML(jsondata);
-            idval = '#' + jobtype + '-job-' + jobid;
-            if (htmldata != undefined) {
-                $(elm).replaceWith(htmldata);
-            }
-        });
-    }
-    
     function checkJobs() {
         var alldone = true;
         var mainjob;
@@ -70,9 +59,8 @@
             if ($(this).attr('data-jobtype') == 'deferred') {
                 mainjob = $(this).attr('data-jobid');
             }
-            if (status != 'done' && status != 'error' && status != 'ok') {
+            if ($.inArray(status, finalstates) == -1) {
                 alldone = false;
-                getNewHtml($(this).attr('data-jobid'), $(this).attr('data-jobtype'), $(this));
             }
         });
         if (!alldone) {
@@ -88,10 +76,12 @@
         $.get('${h.url_for( controller='data_admin', action='get_jobs' )}', { jobid: mainjob }, function(data) {
             jsondata = JSON.parse(data);
             for (i in jsondata) {
+                currentjob = jsondata[i]
                 if (jobs[i] == undefined) {
                     $('#jobStatus').append(makeHTML(jsondata[i]));
                     jobs.push(jsondata[i]);
                 }
+                $('#' + currentjob['type'] + '-job-' + currentjob['jobid']).replaceWith(makeHTML(currentjob));
             }
         });
     }

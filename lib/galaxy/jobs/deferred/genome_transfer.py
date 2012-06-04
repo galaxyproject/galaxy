@@ -1,6 +1,8 @@
 """
 Module for managing genome transfer jobs.
 """
+from __future__ import with_statement
+
 import logging, shutil, gzip, bz2, zipfile, tempfile, tarfile, sys
 
 from galaxy import eggs
@@ -212,13 +214,17 @@ class GenomeTransferPlugin( DataTransfer ):
             transfer.state = 'done'
             self.sa_session.add( job )
             self.sa_session.add( transfer )
-            self.sa_session.flush()
-            if transfer.state == 'done' and params[ 'indexes' ] is not None:
-                for indexer in params[ 'indexes' ]:
-                    incoming = dict(indexer=indexer, dbkey=params[ 'dbkey' ], intname=params[ 'intname' ], path=transfer.path, user=params['user']  )
-                    deferred = self.tool.execute( self, set_output_hid=False, history=None, incoming=incoming, transfer=transfer, deferred=job )
-                    job.params[ 'indexjobs' ].append( deferred[0].id )
+            if transfer.state == 'done':
+                if params[ 'indexes' ] is not None:
+                    for indexer in params[ 'indexes' ]:
+                        incoming = dict(indexer=indexer, dbkey=params[ 'dbkey' ], intname=params[ 'intname' ], path=transfer.path, user=params['user']  )
+                        deferred = self.tool.execute( self, set_output_hid=False, history=None, incoming=incoming, transfer=transfer, deferred=job )
+                        job.params[ 'indexjobs' ].append( deferred[0].id )
+                else:
+                    job.state = self.app.model.DeferredJob.states.OK
+                    self.sa_session.add( job )
             return self.app.model.DeferredJob.states.OK
+            self.sa_session.flush()
                     
     def _check_compress( self, filepath ):
         retval = ''

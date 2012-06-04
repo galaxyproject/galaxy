@@ -1,4 +1,7 @@
+from __future__ import with_statement
+
 import os, shutil, logging, tempfile, json, tarfile
+
 from galaxy import model, util
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations

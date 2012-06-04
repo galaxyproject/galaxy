@@ -30,6 +30,8 @@ class DataAdmin( BaseUIController ):
     @web.expose
     @web.require_admin
     def manage_data( self, trans, **kwd ):
+        if trans.app.config.get_bool( 'enable_beta_job_managers', False ) == False:
+            return trans.fill_template( '/admin/data_admin/betajob.mako' )
         dbkeys = trans.db_builds
         return trans.fill_template( '/admin/data_admin/data_form.mako', dbkeys=dbkeys )
         
@@ -87,6 +89,7 @@ class DataAdmin( BaseUIController ):
                 newlift = None
                 pass
             ftp.retrlines('NLST /goldenPath/%s/bigZips/' % dbkey, checker.append)
+            ftp.quit()
             for filename in [ dbkey, 'chromFa' ]:
                 for extension in [ '.tar.gz', '.tar.bz2', '.zip', '.fa.gz', '.fa.bz2' ]:
                     testfile = '/goldenPath/%s/bigZips/%s%s' % ( dbkey, filename, extension )
@@ -129,7 +132,7 @@ class DataAdmin( BaseUIController ):
                 from_genome = chain[1]
                 to_genome = chain[2]
                 destfile = liftover_url.split('/')[-1].replace('.gz', '')
-                chainjob.append( trans.app.job_manager.deferred_job_queue.plugins['LiftOverTransferPlugin'].create_job( trans, liftover_url, dbkey, from_genome, to_genome, destfile ) )
+                chainjob.append( trans.app.job_manager.deferred_job_queue.plugins['LiftOverTransferPlugin'].create_job( trans, liftover_url, dbkey, from_genome, to_genome, destfile, jobid ) )
             job = trans.app.job_manager.deferred_job_queue.plugins['GenomeTransferPlugin'].get_job_status( jobid )
             job.params['liftover'] = chainjob
             trans.app.model.context.current.add( job )
