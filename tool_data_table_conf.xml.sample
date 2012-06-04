@@ -105,6 +105,11 @@
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bowtie_indices_color.loc" />
     </table>
+    <!-- Locations of indexes in the Bowtie2 mapper format for TopHat2 to use -->
+    <table name="tophat2_indexes" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/bowtie2_indices.loc" />
+    </table>
     <!-- Locations of configurations in the CCAT peak/region caller format -->
     <table name="ccat_configurations" comment_char="#">
         <columns>value, name, path</columns>
