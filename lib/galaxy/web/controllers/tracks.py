@@ -15,7 +15,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.datatypes.interval import Gff, Bed
 from galaxy.model import NoConverterException, ConverterDependencyException
 from galaxy.visualization.tracks.data_providers import *
-from galaxy.visualization.tracks.genomes import decode_dbkey, Genomes
+from galaxy.visualization.genomes import decode_dbkey, Genomes
 from galaxy.visualization.tracks.visual_analytics import get_tool_def, get_dataset_job
 
 # Message strings returned to browser
