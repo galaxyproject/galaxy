@@ -762,6 +762,15 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
                 output_dataset = joda.dataset
         
         return self.add_track_async( trans, output_dataset.id )
+        
+    @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def paramamonster( self, trans, hda_ldda, dataset_id ):
+        # Get dataset.
+        dataset = self._get_dataset( trans, hda_ldda, dataset_id )
+                
+        return trans.fill_template_mako( "visualization/paramamonster.mako", dataset=dataset,
+                                          tool=self.app.toolbox.tools_by_id[ 'cufflinks' ].to_dict( trans, for_display=True ) )
     
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )

@@ -16,7 +16,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 
-    ${h.js( "libs/d3", "mvc/visualization" )}
+    ${h.js( "libs/d3", "viz/visualization" )}
 
     <script type="text/javascript">
         $(function() {
@@ -81,7 +81,7 @@
             // -- Render viz. --
                 
             circster.render();
-            $('#vis').append(circster.$el);                
+            $('#vis').append(circster.$el);
         });
     </script>
 </%def>

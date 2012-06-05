@@ -2407,10 +2407,19 @@ class Tool:
                 if isinstance( input, DataToolParameter ):
                     param_dict.update( { 'type' : 'data', 'html' : urllib.quote( input.get_html( trans ) ) } )
                 elif isinstance( input, SelectToolParameter ):
-                    param_dict.update( { 'type' : 'select', 'html' : urllib.quote( input.get_html( trans ) ) } )
+                    param_dict.update( { 'type' : 'select', 
+                                         'html' : urllib.quote( input.get_html( trans ) ),
+                                         'options': input.static_options 
+                                         } )
                 elif isinstance( input, Conditional ):
                     # TODO.
                     pass
+                elif isinstance( input, ( IntegerToolParameter, FloatToolParameter ) ):
+                    param_dict.update( { 'type' : 'number', 'init_value' : input.value,
+                                         'html' : urllib.quote( input.get_html( trans ) ),
+                                         'min': input.min,
+                                         'max': input.max
+                                          } )
                 else:
                     param_dict.update( { 'type' : '??', 'init_value' : input.value, \
                                          'html' : urllib.quote( input.get_html( trans ) ) } )
