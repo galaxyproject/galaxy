@@ -856,14 +856,26 @@ def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
     response.close()
     return ctx_rev
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
-    fctx = ctx[ filename ]
-    fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
-    tmp_filename = fh.name
-    fh.close()
-    fh = open( tmp_filename, 'wb' )
-    fh.write( fctx.data() )
-    fh.close()
-    return tmp_filename
+    filename = strip_path( filename )
+    for ctx_file in ctx.files():
+        ctx_file_name = strip_path( ctx_file )
+        if filename == ctx_file_name:
+            try:
+                # If the file was moved, its destination file contents will be returned here.
+                fctx = ctx[ ctx_file ]
+            except LookupError, e:
+                # Continue looking in case the file was moved.
+                fctx = None
+                continue
+            if fctx:
+                fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'wb' )
+                fh.write( fctx.data() )
+                fh.close()
+                return tmp_filename
+    return None
 def get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     sa_session = app.model.context.current
     if tool_shed.find( '//' ) > 0:

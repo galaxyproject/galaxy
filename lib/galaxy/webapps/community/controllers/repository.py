@@ -10,7 +10,7 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_named_tmpfile_from_ctx, make_tmp_directory, NOT_TOOL_CONFIGS, strip_path
+from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, make_tmp_directory, NOT_TOOL_CONFIGS, strip_path
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -1257,12 +1257,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo = hg.repository( get_configured_ui(), repo_dir )
         ctx = get_changectx_for_changeset( repo, changeset_revision )
         invalid_message = ''
-        work_dir = make_tmp_directory()
-        for filename in ctx:
-            ctx_file_name = strip_path( filename )
-            if ctx_file_name == tool_config:
-                tool_config_path = get_named_tmpfile_from_ctx( ctx, filename, work_dir )
-                break
         metadata_dict, invalid_files, deleted_sample_files = generate_metadata_for_changeset_revision( trans,
                                                                                                        repo,
                                                                                                        repository_id,
@@ -1275,16 +1269,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
             invalid_tool_config_name = strip_path( invalid_tool_config )
             if tool_config == invalid_tool_config_name:
                 invalid_message = invalid_msg
-                break 
+                break
         tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
-        #if error_message:
-        #    message += error_message
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
-        try:
-            shutil.rmtree( work_dir )
-        except:
-            pass
         try:
             if invalid_message:
                 message = invalid_message

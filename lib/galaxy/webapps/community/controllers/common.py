@@ -529,17 +529,22 @@ def get_categories( trans ):
 def get_file_context_from_ctx( ctx, filename ):
     # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
     # within ctx if the files were moved within the change set.  For example, in the following ctx.files() list, the former may have been moved to
-    # the latter:
-    # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample']
+    # the latter: ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].  Another scenario
+    # is that the file has been deleted.
+    deleted = False
     filename = strip_path( filename )
     for ctx_file in ctx.files():
         ctx_file_name = strip_path( ctx_file )
         if filename == ctx_file_name:
             try:
+                # If the file was moved, its destination will be returned here.
                 fctx = ctx[ ctx_file ]
                 return fctx
             except LookupError, e:
-                return 'DELETED'
+                # Set deleted for now, and continue looking in case the file was moved instead of deleted.
+                deleted = True
+    if deleted:
+        return 'DELETED'
     return None
 def get_latest_repository_metadata( trans, id ):
     """Get last metadata defined for a specified repository from the database"""
@@ -772,37 +777,37 @@ def load_tool( trans, config_file ):
 def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):
     """
     Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value of tool_config_filename.  The value of changeset_revision
-    is a valid (downloadable) changset revision.  If changeset_revision is the repository tip, then the tool will be loaded from it's file on disk.
-    Otherwise, the tool config will be located in the repository manifest between the received valid changeset revision and the previous valid
-    changeset revision (if one exists) or the first changeset revision in the repository (if one doesn't).
+    is a valid (downloadable) changset revision.  The tool config will be located in the repository manifest between the received valid changeset
+    revision and the first changeset revision in the repository, searching backwards.
     """
     def load_from_tmp_config( ctx, ctx_file, work_dir ):
         tool = None
         message = ''
         tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
-        element_tree = util.parse_xml( tmp_tool_config )
-        element_tree_root = element_tree.getroot()
-        # Look for code files required by the tool config.
-        tmp_code_files = []
-        for code_elem in element_tree_root.findall( 'code' ):
-            code_file_name = code_elem.get( 'file' )
-            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
-            if tmp_code_file_name:
-                tmp_code_files.append( tmp_code_file_name )
-        try:
-            tool = load_tool( trans, tmp_tool_config )
-        except Exception, e:
-            tool = None
-            message = "Error loading tool: %s.  " % str( e )
-        for tmp_code_file in tmp_code_files:
+        if tmp_tool_config:
+            element_tree = util.parse_xml( tmp_tool_config )
+            element_tree_root = element_tree.getroot()
+            # Look for code files required by the tool config.
+            tmp_code_files = []
+            for code_elem in element_tree_root.findall( 'code' ):
+                code_file_name = code_elem.get( 'file' )
+                tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
+                if tmp_code_file_name:
+                    tmp_code_files.append( tmp_code_file_name )
             try:
-                os.unlink( tmp_code_file )
+                tool = load_tool( trans, tmp_tool_config )
+            except Exception, e:
+                tool = None
+                message = "Error loading tool: %s.  " % str( e )
+            for tmp_code_file in tmp_code_files:
+                try:
+                    os.unlink( tmp_code_file )
+                except:
+                    pass
+            try:
+                os.unlink( tmp_tool_config )
             except:
                 pass
-        try:
-            os.unlink( tmp_tool_config )
-        except:
-            pass
         return tool, message
     tool_config_filename = strip_path( tool_config_filename )
     repository = get_repository( trans, repository_id )
@@ -842,41 +847,42 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
     valid = False
     error_message = ''
     tmp_config = get_named_tmpfile_from_ctx( ctx, filename, dir )
-    if not ( check_binary( tmp_config ) or check_image( tmp_config ) or check_gzip( tmp_config )[ 0 ]
-             or check_bz2( tmp_config )[ 0 ] or check_zip( tmp_config ) ):
-        try:
-            # Make sure we're looking at a tool config and not a display application config or something else.
-            element_tree = util.parse_xml( tmp_config )
-            element_tree_root = element_tree.getroot()
-            is_tool_config = element_tree_root.tag == 'tool'
-        except Exception, e:
-            log.debug( "Error parsing %s, exception: %s" % ( tmp_config, str( e ) ) )
-            is_tool_config = False
-        if is_tool_config:
-            # Load entries into the tool_data_tables if the tool requires them.
-            tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', dir )
-            if tool_data_table_config:
-                error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-            # Look for code files required by the tool config.  The directory to which dir refers should be removed by the caller.
-            for code_elem in element_tree_root.findall( 'code' ):
-                code_file_name = code_elem.get( 'file' )
-                if not os.path.exists( os.path.join( dir, code_file_name ) ):
-                    tmp_code_file_name = copy_file_from_disk( code_file_name, repo_dir, dir )
-                    if tmp_code_file_name is None:
-                        tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, dir )
+    if tmp_config:
+        if not ( check_binary( tmp_config ) or check_image( tmp_config ) or check_gzip( tmp_config )[ 0 ]
+                 or check_bz2( tmp_config )[ 0 ] or check_zip( tmp_config ) ):
             try:
-                tool = load_tool( trans, tmp_config )
-                valid = True
-            except KeyError, e:
-                valid = False
-                error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
-                error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
-                error_message += 'this error.  '
+                # Make sure we're looking at a tool config and not a display application config or something else.
+                element_tree = util.parse_xml( tmp_config )
+                element_tree_root = element_tree.getroot()
+                is_tool_config = element_tree_root.tag == 'tool'
             except Exception, e:
-                valid = False
-                error_message = str( e )
-            # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-            reset_tool_data_tables( trans.app )
+                log.debug( "Error parsing %s, exception: %s" % ( tmp_config, str( e ) ) )
+                is_tool_config = False
+            if is_tool_config:
+                # Load entries into the tool_data_tables if the tool requires them.
+                tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', dir )
+                if tool_data_table_config:
+                    error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+                # Look for code files required by the tool config.  The directory to which dir refers should be removed by the caller.
+                for code_elem in element_tree_root.findall( 'code' ):
+                    code_file_name = code_elem.get( 'file' )
+                    if not os.path.exists( os.path.join( dir, code_file_name ) ):
+                        tmp_code_file_name = copy_file_from_disk( code_file_name, repo_dir, dir )
+                        if tmp_code_file_name is None:
+                            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, dir )
+                try:
+                    tool = load_tool( trans, tmp_config )
+                    valid = True
+                except KeyError, e:
+                    valid = False
+                    error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
+                    error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
+                    error_message += 'this error.  '
+                except Exception, e:
+                    valid = False
+                    error_message = str( e )
+                # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+                reset_tool_data_tables( trans.app )
     return is_tool_config, valid, tool, error_message
 def new_tool_metadata_required( trans, id, metadata_dict ):
     """
