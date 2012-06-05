@@ -6,8 +6,9 @@ from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
 from galaxy.util.shed_util import copy_sample_file, generate_datatypes_metadata, generate_tool_dependency_metadata, generate_tool_metadata
-from galaxy.util.shed_util import generate_workflow_metadata, get_changectx_for_changeset, get_config, get_configured_ui, handle_sample_tool_data_table_conf_file
-from galaxy.util.shed_util import make_tmp_directory, NOT_TOOL_CONFIGS, reset_tool_data_tables, strip_path, to_html_escaped, to_html_str, update_repository
+from galaxy.util.shed_util import generate_workflow_metadata, get_changectx_for_changeset, get_config, get_configured_ui, get_named_tmpfile_from_ctx
+from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH, make_tmp_directory, NOT_TOOL_CONFIGS, reset_tool_data_tables
+from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path, to_html_escaped, to_html_str, update_repository
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -201,7 +202,7 @@ def check_tool_input_params( trans, repo, repo_dir, ctx, xml_file_in_ctx, tool, 
             if options:
                 if options.tool_data_table or options.missing_tool_data_table_name:
                     # Make sure the repository contains a tool_data_table_conf.xml.sample file.
-                    sample_tool_data_table_conf = get_config( 'tool_data_table_conf.xml.sample', repo, repo_dir, ctx, dir )
+                    sample_tool_data_table_conf = get_config( 'tool_data_table_conf.xml.sample', repo, ctx, dir )
                     if sample_tool_data_table_conf:
                         error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, sample_tool_data_table_conf )
                         if error:
@@ -254,9 +255,9 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision is an ancestor of
     # current_changeset_revision which is associated with current_metadata_dict.
     #
-    # TODO: a new repository_metadata record will be created only when this method returns the string 'not equal and not subset'.  However,
-    # we're currently also returning the strings 'no metadata', 'equal' and 'subset', depending upon how the 2 change sets compare.  We'll
-    # leave things this way for the current time in case we discover a use for these additional result strings.
+    # A new repository_metadata record will be created only when this method returns the string 'not equal and not subset'.  However, we're
+    # currently also returning the strings 'no metadata', 'equal' and 'subset', depending upon how the 2 change sets compare.  We'll leave
+    # things this way for the current time in case we discover a use for these additional result strings.
     ancestor_datatypes = ancestor_metadata_dict.get( 'datatypes', [] )
     ancestor_tools = ancestor_metadata_dict.get( 'tools', [] )
     ancestor_guids = [ tool_dict[ 'guid' ] for tool_dict in ancestor_tools ]
@@ -357,41 +358,18 @@ def copy_file_from_disk( filename, repo_dir, dir ):
         tmp_filename = None
     return tmp_filename
 def copy_file_from_manifest( repo, ctx, filename, dir ):
-    """Copy a file named filename from somewhere in the repository manifest to the directory to which dir refers."""
-    filename = strip_path( filename )
-    fctx = None
-    found = False
-    # First see if the file is in ctx.  We have to be careful in determining if we found the correct file because multiple files
-    # with the same name may be in different directories within ctx if the repository owner moved the files as part of the change set.
-    # For example, in the following ctx.files() list, the former may have been moved to the latter:
-    # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample']
-    for ctx_file in ctx.files():
-        ctx_file_name = strip_path( ctx_file )
-        if filename == ctx_file_name:
-            try:
-                fctx = ctx[ ctx_file ]
-                found = True
-                break
-            except:
-                continue
-    if not found:
-        # Find the file in the repository manifest.
-        for changeset in repo.changelog:
-            prev_ctx = repo.changectx( changeset )
-            for ctx_file in prev_ctx.files():
-                ctx_file_name = strip_path( ctx_file )
-                if filename == ctx_file_name:
-                    try:
-                        fctx = prev_ctx[ ctx_file ]
-                        break
-                    except:
-                        continue
-    if fctx:
-        file_path = os.path.join( dir, filename )
-        fh = open( file_path, 'wb' )
-        fh.write( fctx.data() )
-        fh.close()
-        return file_path
+    """
+    Copy the latest version of the file named filename from the repository manifest to the directory to which dir refers.
+    """
+    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
+        changeset_ctx = repo.changectx( changeset )
+        fctx = get_file_context_from_ctx( changeset_ctx, filename )
+        if fctx and fctx not in [ 'DELETED' ]:
+            file_path = os.path.join( dir, filename )
+            fh = open( file_path, 'wb' )
+            fh.write( fctx.data() )
+            fh.close()
+            return file_path
     return None
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -444,10 +422,10 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
     invalid_tool_configs = []
     original_tool_data_path = trans.app.config.tool_data_path
     work_dir = make_tmp_directory()
-    datatypes_config = get_config( 'datatypes_conf.xml', repo, repo_dir, ctx, work_dir  )
+    datatypes_config = get_config( 'datatypes_conf.xml', repo, ctx, work_dir  )
     if datatypes_config:
         metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )    
-    sample_files = get_sample_files( repo, repo_dir, dir=work_dir )
+    sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
     # Handle the tool_data_table_conf.xml.sample file if it is included in the repository.
     if 'tool_data_table_conf.xml.sample' in sample_files:
         tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', work_dir )
@@ -515,7 +493,7 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
                 invalid_files.append( ( ctx_file_name, str( e ) ) )
     if 'tools' in metadata_dict:
         # Find tool_dependencies.xml if it exists.  This step must be done after metadata for tools has been defined.
-        tool_dependencies_config = get_config( 'tool_dependencies.xml', repo, repo_dir, ctx, work_dir )
+        tool_dependencies_config = get_config( 'tool_dependencies.xml', repo, ctx, work_dir )
         if tool_dependencies_config:
             metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
     if invalid_tool_configs:
@@ -529,7 +507,7 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
         shutil.rmtree( work_dir )
     except:
         pass
-    return metadata_dict, invalid_files
+    return metadata_dict, invalid_files, deleted_sample_files
 def generate_tool_guid( trans, repository, tool ):
     """
     Generate a guid for the received tool.  The form of the guid is    
@@ -548,21 +526,59 @@ def get_categories( trans ):
     return trans.sa_session.query( trans.model.Category ) \
                            .filter( trans.model.Category.table.c.deleted==False ) \
                            .order_by( trans.model.Category.table.c.name ).all()
+def get_file_context_from_ctx( ctx, filename ):
+    # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
+    # within ctx if the files were moved within the change set.  For example, in the following ctx.files() list, the former may have been moved to
+    # the latter:
+    # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample']
+    filename = strip_path( filename )
+    for ctx_file in ctx.files():
+        ctx_file_name = strip_path( ctx_file )
+        if filename == ctx_file_name:
+            try:
+                fctx = ctx[ ctx_file ]
+                return fctx
+            except LookupError, e:
+                return 'DELETED'
+    return None
 def get_latest_repository_metadata( trans, id ):
     """Get last metadata defined for a specified repository from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
                            .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
                            .first()
-def get_named_tmpfile_from_ctx( ctx, filename, dir ):
-    fctx = ctx[ filename ]
-    fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
-    tmp_filename = fh.name
-    fh.close()
-    fh = open( tmp_filename, 'wb' )
-    fh.write( fctx.data() )
-    fh.close()
-    return tmp_filename
+def get_list_of_copied_sample_files( repo, ctx, dir ):
+    """
+    Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
+    each discovered file to dir and return the list of filenames.  If a .sample file was added in a changeset and then deleted in a later
+    changeset, it will be returned in the deleted_sample_files list.  The caller will set the value of app.config.tool_data_path to dir in
+    order to load the tools and generate metadata for them.
+    """
+    deleted_sample_files = []
+    sample_files = []
+    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
+        changeset_ctx = repo.changectx( changeset )
+        for ctx_file in changeset_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            # If we decide in the future that files deleted later in the changelog should not be used, we can use the following if statement.
+            # if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
+            if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
+                fctx = get_file_context_from_ctx( changeset_ctx, ctx_file )
+                if fctx in [ 'DELETED' ]:
+                    # Since the possibly future used if statement above is commented out, the same file that was initially added will be
+                    # discovered in an earlier changeset in the change log and fall through to the else block below.  In other words, if
+                    # a file named blast2go.loc.sample was added in change set 0 and then deleted in changeset 3, the deleted file in changeset
+                    # 3 will be handled here, but the later discovered file in changeset 0 will be handled in the else block below.  In this
+                    # way, the file contents will always be found for future tools even though the file was deleted.
+                    if ctx_file_name not in deleted_sample_files:
+                        deleted_sample_files.append( ctx_file_name )
+                else:
+                    sample_files.append( ctx_file_name )
+                    tmp_ctx_file_name = os.path.join( dir, ctx_file_name.replace( '.sample', '' ) )
+                    fh = open( tmp_ctx_file_name, 'wb' )
+                    fh.write( fctx.data() )
+                    fh.close()
+    return sample_files, deleted_sample_files
 def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
     parent_id = None
     # Compare from most recent to oldest.
@@ -582,6 +598,10 @@ def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
         # The tool did not change through all of the changeset revisions.
         return old_id
 def get_previous_valid_changset_revision( repository, repo, before_changeset_revision ):
+    """
+    Return the downloadable changeset_revision in the repository changelog just prior to the changeset to which before_changeset_revision
+    refers.  If there isn't one, return the hash value of an empty repository changlog, INITIAL_CHANGELOG_HASH.
+    """
     changeset_tups = []
     for repository_metadata in repository.downloadable_revisions:
         changeset_revision = repository_metadata.changeset_revision
@@ -600,7 +620,7 @@ def get_previous_valid_changset_revision( repository, repo, before_changeset_rev
                 return previous_changeset_revision
             else:
                 # Return the hash value of an empty repository changlog - note that this will not be a valid changset revision.
-                return '000000000000'
+                return INITIAL_CHANGELOG_HASH
         else:
             previous_changeset_revision = current_changeset_revision
 def get_repository( trans, id ):
@@ -640,29 +660,6 @@ def get_revision_label( trans, repository, changeset_revision ):
         return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
     else:
         return "-1:%s" % changeset_revision
-def get_sample_files( repo, repo_dir, dir ):
-    """Return a list of all files in the repository with the special .sample extension"""
-    sample_files = []
-    # Copy all discovered sample files to dir, and the caller will set the value of app.config.tool_data_path to dir
-    # in order to load the tools and generate metadata for them.  First look on disk.
-    for root, dirs, files in os.walk( repo_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name.endswith( '.sample' ) and name not in sample_files:
-                    new_name = name.replace( '.sample', '' )
-                    file_path = os.path.join( dir, new_name )
-                    shutil.copy( os.path.abspath( os.path.join( root, name ) ), file_path )
-                    sample_files.append( name )
-    # Next look in the repository manifest.
-    for changeset in repo.changelog:
-        ctx = repo.changectx( changeset )
-        for ctx_file in ctx.files():
-            ctx_file_name = strip_path( ctx_file )
-            if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
-                new_ctx_file_name = ctx_file_name.replace( '.sample', '' )
-                copy_file_from_manifest( repo, ctx, ctx_file, dir )
-                sample_files.append( ctx_file_name )
-    return sample_files
 def get_user( trans, id ):
     """Get a user from the database by id"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
@@ -796,7 +793,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
             tool = load_tool( trans, tmp_tool_config )
         except Exception, e:
             tool = None
-            message = "Error loading tool: %s.  Clicking <b>Reset metadata</b> may correct this error." % str( e )
+            message = "Error loading tool: %s.  " % str( e )
         for tmp_code_file in tmp_code_files:
             try:
                 os.unlink( tmp_code_file )
@@ -819,40 +816,19 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', work_dir )
     if tool_data_table_config:
         error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-    if changeset_revision == repository.tip:
-        # Load the tool fron it's config file on disk.
-        try:
-            copied_tool_config = copy_file_from_disk( tool_config_filename, repo_files_dir, work_dir )
-            tool = load_tool( trans, copied_tool_config )
-        except Exception, e:
-            tool = None
-            message = "Error loading tool from config '%s': %s." % ( tool_config_filename, str( e ) )
-    else:
-        found = False
-        tool = None
-        # Get the tool config from ctx if present.
-        for ctx_file in ctx.files():
+    found = False
+    # Get the latest revision of the tool config from the repository manifest up to the value of changeset_revision.
+    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+        manifest_changeset_revision = str( repo.changectx( changeset ) )
+        manifest_ctx = repo.changectx( changeset )
+        for ctx_file in manifest_ctx.files():
             ctx_file_name = strip_path( ctx_file )
             if ctx_file_name == tool_config_filename:
                 found = True
                 break
         if found:
-            if found:
-                tool, message = load_from_tmp_config( ctx, ctx_file, work_dir )
-        else:
-            # Get the tool config from the repository manifest between valid changeset revisions.
-            previous_valid_changset_revision = get_previous_valid_changset_revision( repository, repo, changeset_revision )
-            for changeset in reversed_filtered_changelog( repo, previous_valid_changset_revision, changeset_revision ):
-                manifest_changeset_revision = str( repo.changectx( changeset ) )
-                manifest_ctx = repo.changectx( changeset )
-                for ctx_file in manifest_ctx.files():
-                    ctx_file_name = strip_path( ctx_file )
-                    if ctx_file_name == tool_config_filename:
-                        found = True
-                        break
-                if found:
-                    tool, message = load_from_tmp_config( manifest_ctx, ctx_file, work_dir )
-                    break
+            tool, message = load_from_tmp_config( manifest_ctx, ctx_file, work_dir )
+            break
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
     try:
@@ -968,6 +944,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
     log.debug( "Resetting all metadata on repository: %s" % repository.name )
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
+    missing_sample_files = []
     if len( repo ) == 1:
         error_message, status = set_repository_metadata( trans, id, repository.tip, **kwd )
         if error_message:
@@ -983,13 +960,16 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
         for changeset in repo.changelog:
             current_changeset_revision = str( repo.changectx( changeset ) )
             ctx = get_changectx_for_changeset( repo, current_changeset_revision )
-            current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans,
-                                                                                             repo,
-                                                                                             id,
-                                                                                             ctx,
-                                                                                             current_changeset_revision,
-                                                                                             repo_dir,
-                                                                                             updating_tip=current_changeset_revision==repository.tip )
+            current_metadata_dict, invalid_files, deleted_sample_files = generate_metadata_for_changeset_revision( trans,
+                                                                                                                   repo,
+                                                                                                                   id,
+                                                                                                                   ctx,
+                                                                                                                   current_changeset_revision,
+                                                                                                                   repo_dir,
+                                                                                                                   updating_tip=current_changeset_revision==repository.tip )
+            for deleted_sample_file in deleted_sample_files:
+                if deleted_sample_file not in missing_sample_files:
+                    missing_sample_files.append( deleted_sample_file )
             if current_metadata_dict:
                 if ancestor_changeset_revision:
                     # Compare metadata from ancestor and current.  The value of comparsion will be one of:
@@ -1032,27 +1012,12 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                 ancestor_metadata_dict = None
         clean_repository_metadata( trans, id, changeset_revisions )
         add_repository_metadata_tool_versions( trans, id, changeset_revisions )
+    if missing_sample_files:
+        message += "Metadata was successfully reset, but the following required sample files have been deleted from the repository so the version "
+        message += "of each file just prior to its deletion is being used.  These files should be re-added to the repository as soon as possible:  "
+        message += "<b>%s</b><br/>" % ', '.join( missing_sample_files )
+        return message, 'ok'
     return '', 'ok'
-def reversed_filtered_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
-    """
-    Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision, but up to and
-    including the included_upper_bounds_changeset_revision.  The value of excluded_lower_bounds_changeset_revision will be '000000000000'
-    if no valid changesets exist before included_upper_bounds_changeset_revision.
-    """
-    if excluded_lower_bounds_changeset_revision == '000000000000':
-        appending_started = True
-    else:
-        appending_started = False
-    reversed_changelog = []
-    for changeset in repo.changelog:
-        changeset_hash = str( repo.changectx( changeset ) )
-        if appending_started:
-            reversed_changelog.insert( 0, changeset )
-        if changeset_hash == excluded_lower_bounds_changeset_revision and not appending_started:
-            appending_started = True
-        if changeset_hash == included_upper_bounds_changeset_revision:
-            break
-    return reversed_changelog
 def set_repository_metadata( trans, id, changeset_revision, content_alert_str='', **kwd ):
     """
     Set repository metadata on the repository tip, returning specific error messages (if any) to alert the repository owner that the changeset
@@ -1068,13 +1033,13 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
     invalid_files = []
     updating_tip = changeset_revision == repository.tip
     if ctx is not None:
-        metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans,
-                                                                                 repo,
-                                                                                 id,
-                                                                                 ctx,
-                                                                                 changeset_revision,
-                                                                                 repo_dir,
-                                                                                 updating_tip=updating_tip )
+        metadata_dict, invalid_files, deleted_sample_files = generate_metadata_for_changeset_revision( trans,
+                                                                                                       repo,
+                                                                                                       id,
+                                                                                                       ctx,
+                                                                                                       changeset_revision,
+                                                                                                       repo_dir,
+                                                                                                       updating_tip=updating_tip )
         if metadata_dict:
             if updating_tip:
                 if new_tool_metadata_required( trans, id, metadata_dict ) or new_workflow_metadata_required( trans, id, metadata_dict ):
@@ -1120,6 +1085,10 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
         # Here ctx is None.
         message = "This repository does not include revision '%s'." % str( changeset_revision )
         status = 'error'
+    if deleted_sample_files:
+        message += "Metadata was successfully reset, but the following required sample files have been deleted from the repository so the version "
+        message += "of each file just prior to its deletion is being used.  These files should be re-added to the repository as soon as possible:  "
+        message += "<b>%s</b><br/>" % ', '.join( deleted_sample_files )
     if invalid_files:
         if metadata_dict:
             message = "Metadata was defined for some items in revision '%s'.  " % str( changeset_revision )

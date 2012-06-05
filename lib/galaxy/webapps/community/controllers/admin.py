@@ -473,9 +473,12 @@ class AdminController( BaseUIController, Admin ):
                                               .filter( trans.model.Repository.table.c.deleted == False ):
                 try:
                     error_message, status = reset_all_metadata_on_repository( trans, trans.security.encode_id( repository.id ) )
-                    if error_message:
+                    if status not in [ 'ok' ] and error_message:
                         log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, error_message ) )
                         unsuccessful_count += 1
+                    elif status in [ 'ok' ] and error_message:
+                        log.debug( "Successfully reset metadata on repository %s, but encountered this problem: %s" % ( repository.name, error_message ) )
+                        successful_count += 1
                     else:
                         log.debug( "Successfully reset metadata on repository %s" % repository.name )
                         successful_count += 1

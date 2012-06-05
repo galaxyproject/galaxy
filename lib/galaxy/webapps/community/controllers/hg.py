@@ -27,8 +27,10 @@ class HgController( BaseUIController ):
                 repository = get_repository_by_name_and_owner( trans, name, owner )
                 if repository:
                     error_message, status = reset_all_metadata_on_repository( trans, trans.security.encode_id( repository.id ) )
-                    if error_message:
-                        log.debug( "Error resetting all metadata on repository '%s': %s" % ( str( repository.name ), str( error_message ) ) )
+                    if status not in [ 'ok' ] and error_message:
+                        log.debug( "Error resetting metadata on repository '%s': %s" % ( str( repository.name ), str( error_message ) ) )
+                    elif status in [ 'ok' ] and error_message:
+                        log.debug( "Successfully reset metadata on repository %s, but encountered problem: %s" % ( str( repository.name ), str( error_message ) ) )
         return wsgi_app
 
 def make_web_app():

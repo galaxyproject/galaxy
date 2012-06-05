@@ -21,6 +21,7 @@ from elementtree.ElementTree import Element, SubElement
 
 log = logging.getLogger( __name__ )
 
+INITIAL_CHANGELOG_HASH = '000000000000'
 # Characters that must be html escaped
 MAPPED_CHARS = { '>' :'&gt;', 
                  '<' :'&lt;',
@@ -771,28 +772,15 @@ def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
         if str( ctx ) == changeset_revision:
             return ctx
     return None
-def get_config( config_file, repo, repo_dir, ctx, dir ):
-    """Return config_filename if it exists in some changeset of the repository."""
-    # First look on disk.
-    for root, dirs, files in os.walk( repo_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name == config_file:
-                    dest_file_name = os.path.join( dir, name )
-                    shutil.copy( os.path.abspath( os.path.join( root, name ) ), dest_file_name )
-                    return os.path.abspath( dest_file_name )
-    # Next look in the current change set.
-    for filename in ctx:
-        ctx_file_name = strip_path( filename )
-        if ctx_file_name == config_file:
-            return get_named_tmpfile_from_ctx( ctx, filename, dir )
-    # Finally look in the repository manifest.
-    for changeset in repo.changelog:
-        prev_ctx = repo.changectx( changeset )
-        for ctx_file in prev_ctx.files():
+def get_config( config_file, repo, ctx, dir ):
+    """Return the latest version of config_filename from the repository manifest."""
+    config_file = strip_path( config_file )
+    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
+        changeset_ctx = repo.changectx( changeset )
+        for ctx_file in changeset_ctx.files():
             ctx_file_name = strip_path( ctx_file )
             if ctx_file_name == config_file:
-                return get_named_tmpfile_from_ctx( prev_ctx, filename, dir )
+                return get_named_tmpfile_from_ctx( changeset_ctx, ctx_file, dir )
     return None
 def get_config_from_disk( config_file, relative_install_dir ):
     for root, dirs, files in os.walk( relative_install_dir ):
@@ -808,7 +796,7 @@ def get_config_from_repository( app, config_file, repository, changeset_revision
     repo_files_dir = os.path.join( install_dir, repository.name )
     repo = hg.repository( get_configured_ui(), repo_files_dir )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
-    config = get_config( config_file, repo, repo_files_dir, ctx, dir )
+    config = get_config( config_file, repo, ctx, dir )
     return config
 def get_configured_ui():
     # Configure any desired ui settings.
@@ -867,6 +855,15 @@ def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
     ctx_rev = response.read()
     response.close()
     return ctx_rev
+def get_named_tmpfile_from_ctx( ctx, filename, dir ):
+    fctx = ctx[ filename ]
+    fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
+    tmp_filename = fh.name
+    fh.close()
+    fh = open( tmp_filename, 'wb' )
+    fh.write( fctx.data() )
+    fh.close()
+    return tmp_filename
 def get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     sa_session = app.model.context.current
     if tool_shed.find( '//' ) > 0:
@@ -1383,6 +1380,31 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
 def reset_tool_data_tables( app ):
     # Reset the tool_data_tables to an empty dictionary.
     app.tool_data_tables.data_tables = {}
+def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
+    """
+    Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision, but up to and
+    including the included_upper_bounds_changeset_revision.  The value of excluded_lower_bounds_changeset_revision will be the value of
+    INITIAL_CHANGELOG_HASH if no valid changesets exist before included_upper_bounds_changeset_revision.
+    """
+    # To set excluded_lower_bounds_changeset_revision, calling methods should do the following, where the value of changeset_revision
+    # is a downloadable changeset_revision.
+    # excluded_lower_bounds_changeset_revision = get_previous_valid_changset_revision( repository, repo, changeset_revision )
+    if excluded_lower_bounds_changeset_revision == INITIAL_CHANGELOG_HASH:
+        appending_started = True
+    else:
+        appending_started = False
+    reversed_changelog = []
+    for changeset in repo.changelog:
+        changeset_hash = str( repo.changectx( changeset ) )
+        if appending_started:
+            reversed_changelog.insert( 0, changeset )
+        if changeset_hash == excluded_lower_bounds_changeset_revision and not appending_started:
+            appending_started = True
+        if changeset_hash == included_upper_bounds_changeset_revision:
+            break
+    return reversed_changelog
+def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
+    return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
 def strip_path( fpath ):
     file_path, file_name = os.path.split( fpath )
     return file_name
