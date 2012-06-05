@@ -1010,12 +1010,12 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                     ancestor_changeset_revision = None
                     ancestor_metadata_dict = None
             elif ancestor_metadata_dict:
-                # Our current change set has no metadata, but our ancestor change set has metadata, so save it.
-                create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
-                # Keep track of the changeset_revisions that we've persisted.
-                changeset_revisions.append( ancestor_changeset_revision )
-                ancestor_changeset_revision = None
-                ancestor_metadata_dict = None
+                if not ctx.children():
+                    # We're at the end of the change log.
+                    create_or_update_repository_metadata( trans, id, repository, current_changeset_revision, ancestor_metadata_dict )
+                    changeset_revisions.append( current_changeset_revision )
+                    ancestor_changeset_revision = None
+                    ancestor_metadata_dict = None
         clean_repository_metadata( trans, id, changeset_revisions )
         add_repository_metadata_tool_versions( trans, id, changeset_revisions )
     if missing_sample_files:
@@ -1083,7 +1083,7 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
                 repository_metadata.metadata = metadata_dict
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
-        elif not invalid_files:
+        elif updating_tip and len( repo ) == 1 and not invalid_files:
             message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( changeset_revision )
             message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             status = "error"
@@ -1120,7 +1120,6 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
         status = 'error'
     return message, status
 def set_repository_metadata_due_to_new_tip( trans, id, repository, content_alert_str=None, **kwd ):
-    message = util.restore_text( kwd.get( 'message', '' ) )
     # Set metadata on the repository tip.
     error_message, status = set_repository_metadata( trans, id, repository.tip, content_alert_str=content_alert_str, **kwd )
     if not error_message:

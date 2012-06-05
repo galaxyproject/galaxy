@@ -158,6 +158,8 @@ class UploadController( BaseUIController ):
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
                         set_repository_metadata_due_to_new_tip( trans, repository_id, repository, content_alert_str=content_alert_str, **kwd )
+                    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+                    reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                id=repository_id,
