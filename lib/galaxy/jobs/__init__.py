@@ -21,6 +21,7 @@ from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.exceptions import ObjectInvalid
+from galaxy.jobs.mapper import JobRunnerMapper
 
 log = logging.getLogger( __name__ )
 
@@ -80,6 +81,7 @@ class JobWrapper( object ):
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
+        self.job_runner_mapper = JobRunnerMapper( self )
         self.params = None
         if job.params:
             self.params = from_json_string( job.params )
@@ -88,7 +90,8 @@ class JobWrapper( object ):
         self.__galaxy_system_pwent = None
 
     def get_job_runner( self ):
-        return self.tool.get_job_runner( self.params )
+        job_runner = self.job_runner_mapper.get_job_runner( self.params )
+        return job_runner
 
     def get_job( self ):
         return self.sa_session.query( model.Job ).get( self.job_id )
