@@ -599,6 +599,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository = get_repository_by_name_and_owner( trans, name, owner )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
+        # Default to the current changeset revision.
+        update_to_ctx = get_changectx_for_changeset( repo, changeset_revision )
+        latest_changeset_revision = changeset_revision
         from_update_manager = webapp == 'update_manager'
         if from_update_manager:
             update = 'true'
@@ -608,80 +611,45 @@ class RepositoryController( BaseUIController, ItemRatings ):
             url = '%sadmin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '/', qualified=True ) )
             url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % ( repository.name, repository.user.username, changeset_revision )
         if changeset_revision == repository.tip:
-            # If changeset_revision is the repository tip, we know there are no additional updates for the tools.
+            # If changeset_revision is the repository tip, there are no additional updates.
             if from_update_manager:
                 return no_update
             # Return the same value for changeset_revision and latest_changeset_revision.
-            url += repository.tip
+            url += latest_changeset_revision
         else:
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
                                                                                  trans.security.encode_id( repository.id ),
                                                                                  changeset_revision )
             if repository_metadata:
-                # If changeset_revision is in the repository_metadata table for this repository, then we know there are no additional updates
-                # for the tools.
+                # If changeset_revision is in the repository_metadata table for this repository, there are no additional updates.
                 if from_update_manager:
                     return no_update
                 else:
                     # Return the same value for changeset_revision and latest_changeset_revision.
-                    url += changeset_revision
+                    url += latest_changeset_revision
             else:
-                # TODO: Re-engineer this to define the change set for update to be the one just before the next change set in the repository_metadata
-                # table for this repository.
                 # The changeset_revision column in the repository_metadata table has been updated with a new changeset_revision value since the
-                # repository was cloned.  Load each tool in the repository's changeset_revision to generate a list of tool guids, since guids
-                # differentiate tools by id and version.
-                ctx = get_changectx_for_changeset( repo, changeset_revision )
-                if ctx is not None:
-                    work_dir = make_tmp_directory()
-                    tool_guids = []
-                    for filename in ctx:
-                        # Find all tool configs in this repository changeset_revision.
-                        if filename not in NOT_TOOL_CONFIGS and filename.endswith( '.xml' ):
-                            is_tool_config, valid, tool, error_message = load_tool_from_tmp_directory( trans,
-                                                                                                       repo,
-                                                                                                       repo_dir,
-                                                                                                       ctx,
-                                                                                                       filename,
-                                                                                                       work_dir )
-                            if valid and tool is not None:
-                                tool_guids.append( generate_tool_guid( trans, repository, tool ) )
-                    tool_guids.sort()
-                    if tool_guids:
-                        # Compare our list of tool guids against those in each repository_metadata record for the repository to find the
-                        # repository_metadata record with the changeset_revision value we want to pass back to the caller.
-                        found = False
-                        for repository_metadata in get_repository_metadata_by_repository_id( trans, trans.security.encode_id( repository.id ) ):
-                            metadata = repository_metadata.metadata
-                            metadata_tool_guids = []
-                            for tool_dict in metadata[ 'tools' ]:
-                                metadata_tool_guids.append( tool_dict[ 'guid' ] )
-                            metadata_tool_guids.sort()
-                            if tool_guids == metadata_tool_guids:
-                                # We've found the repository_metadata record whose changeset_revision value has been updated.
-                                if from_update_manager:
-                                    return update
-                                url += repository_metadata.changeset_revision
-                                # Get the ctx_rev for the discovered changeset_revision.
-                                latest_ctx = get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
-                                found = True
-                                break
-                        if not found:
-                            # There must be a problem in the data, so we'll just send back the received changeset_revision.
-                            log.debug( "Possible data corruption - updated repository_metadata cannot be found for repository id %d." % repository.id )
-                            if from_update_manager:
-                                return no_update
-                            url += changeset_revision
-                    else:
-                        # There are no tools in the changeset_revision, so no tool updates are possible.
-                        if from_update_manager:
-                            return no_update
-                        url += changeset_revision
-                    try:
-                        shutil.rmtree( work_dir )
-                    except:
-                        pass
-        url += '&latest_ctx_rev=%s' % str( latest_ctx.rev() )
+                # repository was installed.  We need to find the changeset_revision to which we need to update.
+                update_to_changeset_hash = None
+                for changeset in repo.changelog:
+                    changeset_hash = str( repo.changectx( changeset ) )
+                    ctx = get_changectx_for_changeset( repo, changeset_hash )
+                    if update_to_changeset_hash:
+                        if get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_hash ):
+                            # We found a RepositoryMetadata record.
+                            if changeset_hash == repository.tip:
+                                # The current ctx is the repository tip, so use it.
+                                update_to_ctx = get_changectx_for_changeset( repo, changeset_hash )
+                                latest_changeset_revision = changeset_hash
+                            else:
+                                update_to_ctx = get_changectx_for_changeset( repo, update_to_changeset_hash )
+                                latest_changeset_revision = update_to_changeset_hash
+                            break
+                    elif not update_to_changeset_hash and changeset_hash == changeset_revision:
+                        # We've found the changeset in the changelog for which we need to get the next update.
+                        update_to_changeset_hash = changeset_hash
+                url += str( latest_changeset_revision )
+        url += '&latest_ctx_rev=%s' % str( update_to_ctx.rev() )
         return trans.response.send_redirect( url )
     @web.expose
     def contact_owner( self, trans, id, **kwd ):
