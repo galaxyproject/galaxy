@@ -89,6 +89,7 @@
         <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
         <converter file="gff_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
     </datatype>
+    <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="True" />
     <datatype extension="h5" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" />
     <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
