@@ -231,9 +231,9 @@
           
               <!-- Coverage search. -->
               <conditional name="coverage_search">
-                <param name="use_search" type="select" label="Use Coverage Search">
-                    <option selected="true" value="Yes">Yes</option>
-                    <option value="No">No</option>
+                <param name="use_search" type="select" label="Use Coverage Search" help="Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.">
+                    <option selected="true" value="No">No</option>
+                    <option value="Yes">Yes</option>
                 </param>
                 <when value="Yes">
                     <param name="min_coverage_intron" type="integer" value="50" label="Minimum intron length that may be found during coverage search" />
