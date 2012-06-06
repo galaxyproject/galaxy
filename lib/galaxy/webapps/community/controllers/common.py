@@ -962,6 +962,9 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
         # The list of changeset_revisions refers to repository_metadata records that have been created or updated.  When the following loop
         # completes, we'll delete all repository_metadata records for this repository that do not have a changeset_revision value in this list.
         changeset_revisions = []
+        # When a new repository_metadata record is created, it always uses the values of metadata_changeset_revision and metadata_dict.
+        metadata_changeset_revision = None
+        metadata_dict = None
         ancestor_changeset_revision = None
         ancestor_metadata_dict = None
         for changeset in repo.changelog:
@@ -978,13 +981,16 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                 if deleted_sample_file not in missing_sample_files:
                     missing_sample_files.append( deleted_sample_file )
             if current_metadata_dict:
+                if not metadata_changeset_revision and not metadata_dict:
+                    # We're at the first change set in the change log.
+                    metadata_changeset_revision = current_changeset_revision
+                    metadata_dict = current_metadata_dict
                 if ancestor_changeset_revision:
                     # Compare metadata from ancestor and current.  The value of comparsion will be one of:
                     # 'no metadata' - no metadata for either ancestor or current, so continue from current
                     # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
                     # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
-                    # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current
-                    #                              metadata, so persist ancestor metadata.
+                    # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
                     comparison = compare_changeset_revisions( ancestor_changeset_revision,
                                                               ancestor_metadata_dict,
                                                               current_changeset_revision,
@@ -993,30 +999,38 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                         ancestor_changeset_revision = current_changeset_revision
                         ancestor_metadata_dict = current_metadata_dict
                     elif comparison == 'not equal and not subset':
-                        create_or_update_repository_metadata( trans, id, repository, ancestor_changeset_revision, ancestor_metadata_dict )
+                        metadata_changeset_revision = ancestor_changeset_revision
+                        metadata_dict = ancestor_metadata_dict
+                        create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                         # Keep track of the changeset_revisions that we've persisted.
-                        changeset_revisions.append( ancestor_changeset_revision )
+                        changeset_revisions.append( metadata_changeset_revision )
                         ancestor_changeset_revision = current_changeset_revision
                         ancestor_metadata_dict = current_metadata_dict
                 else:
-                    # We're either at the first change set in the change log or we have just created or updated
-                    # a repository_metadata record.  At this point we set the ancestor changeset to the current
-                    # changeset for comparison in the next iteration.
+                    # We're either at the first change set in the change log or we have just created or updated a repository_metadata record.  At
+                    # this point we set the ancestor changeset to the current changeset for comparison in the next iteration.
                     ancestor_changeset_revision = current_changeset_revision
                     ancestor_metadata_dict = current_metadata_dict
                 if not ctx.children():
+                    metadata_changeset_revision = current_changeset_revision
+                    metadata_dict = current_metadata_dict
                     # We're at the end of the change log.
-                    create_or_update_repository_metadata( trans, id, repository, current_changeset_revision, current_metadata_dict )
-                    changeset_revisions.append( current_changeset_revision )
+                    create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    changeset_revisions.append( metadata_changeset_revision )
                     ancestor_changeset_revision = None
                     ancestor_metadata_dict = None
             elif ancestor_metadata_dict:
+                # We reach here only if current_metadata_dict is empty and ancestor_metadata_dict is not.
+                ancestor_changeset_revision = current_changeset_revision
+                metadata_changeset_revision = current_changeset_revision
+                metadata_dict = ancestor_metadata_dict
                 if not ctx.children():
                     # We're at the end of the change log.
-                    create_or_update_repository_metadata( trans, id, repository, current_changeset_revision, ancestor_metadata_dict )
-                    changeset_revisions.append( current_changeset_revision )
+                    create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    changeset_revisions.append( metadata_changeset_revision )
                     ancestor_changeset_revision = None
                     ancestor_metadata_dict = None
+        # Delete all repository_metadata records for this repository that do not have a changeset_revision value in changeset_revisions.
         clean_repository_metadata( trans, id, changeset_revisions )
         add_repository_metadata_tool_versions( trans, id, changeset_revisions )
     if missing_sample_files:
