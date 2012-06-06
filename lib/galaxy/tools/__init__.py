@@ -2056,6 +2056,7 @@ class Tool:
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
+        param_dict['__admin_users__'] = self.app.config.admin_users
         # Return the dictionary of parameters
         return param_dict
     def build_param_file( self, param_dict, directory=None ):
