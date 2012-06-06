@@ -19,9 +19,12 @@ def __main__():
     parser.add_option( '-2', '--input2', dest='input2', help='The reverse reads file in Sanger FASTQ format' )
     parser.add_option( '', '--single-paired', dest='single_paired', help='' )
     parser.add_option( '', '--settings', dest='settings', help='' )
+    parser.add_option( '', '--end-to-end', dest='end_to_end', action="store_true" )
+    parser.add_option( '', '--local', dest='local', action="store_true" )
+    parser.add_option( '', '--preset-alignment', dest='preset_alignment')
 
     (options, args) = parser.parse_args()
-
+    
     # Creat bowtie index if necessary.
     tmp_index_dir = tempfile.mkdtemp()
     if options.own_file:
@@ -73,7 +76,10 @@ def __main__():
     if options.settings == 'preSet':
         pass
     else:
-        pass
+        if options.local:
+            opts += ' --local'
+        if options.preset_alignment:
+            opts += " --" + options.preset_alignment
         
     # Final command:
     cmd = cmd % ( opts, index_path, reads, options.output )

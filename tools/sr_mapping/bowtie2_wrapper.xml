@@ -34,6 +34,12 @@
 
         ## Set params.
         --settings=$params.settingsType
+        
+        #if str($params.align_type) == "end_to_end":
+            --end-to-end --preset-alignment=$params.preset.align_preset_select
+        #else:
+            --local --preset-alignment=$params.preset.align_preset_select-local
+        #end if
     </command>
     <inputs>
         <conditional name="singlePaired">
@@ -75,6 +81,26 @@
             <when value="preSet" />
             <!-- Full/advanced params. -->
             <when value="full">
+                <param name="align_type" type="select" label="Type of alignment">
+                    <option selected="true" value="end_to_end">End to end</option>
+                    <option value="local">Local</option>
+                </param>
+                <conditional name="preset">
+                    <param name="b2_preset" type="select" label="Use Preset options">
+                          <option selected="true" value="Yes">Yes</option>
+                          <option value="No">No</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="align_preset_select" type="select" label="Preset option">
+                            <option value="very-fast">Very fast</option>
+                            <option value="fast">Fast</option>
+                            <option selected="true" value="sensitive">Sensitive</option>
+                            <option value="very-sensitive">Very sensitive</option>
+                        </param>
+                    </when>
+                    <!-- TODO: -->
+                    <when value="No" />
+                </conditional>
             </when>  <!-- full -->
       </conditional>  <!-- params -->
     </inputs>

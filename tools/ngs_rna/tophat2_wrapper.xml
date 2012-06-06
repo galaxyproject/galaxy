@@ -281,8 +281,8 @@
                           <when value="Yes">
                               <param name="b2_preset_select" type="select" label="Preset option">
                                   <option value="very-fast">Very fast</option>
-                                  <option selected="true" value="fast">Fast</option>
-                                  <option value="sensitive">Sensitive</option>
+                                  <option value="fast">Fast</option>
+                                  <option selected="true" value="sensitive">Sensitive</option>
                                   <option value="very-sensitive">Very sensitive</option>
                               </param>
                           </when>
