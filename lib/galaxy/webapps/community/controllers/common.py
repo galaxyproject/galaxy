@@ -407,12 +407,13 @@ def encode( val ):
 def generate_clone_url( trans, repository_id ):
     """Generate the URL for cloning a repository."""
     repository = get_repository( trans, repository_id )
-    protocol, base = trans.request.base.split( '://' )
+    base_url = url_for( '/', qualified=True ).rstrip( '/' )
     if trans.user:
+        protocol, base = base_url.split( '://' )
         username = '%s@' % trans.user.username
+        return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
     else:
-        username = ''
-    return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
+        return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
 def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_revision, repo_dir, updating_tip=False ):
     if updating_tip:
         # If a push from the command line is occurring, update the repository files on disk before setting metadata.
