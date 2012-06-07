@@ -2794,12 +2794,11 @@ extend(DrawableConfig.prototype, {
 /**
  * Tiles drawn by tracks.
  */
-var Tile = function(track, index, resolution, canvas, data) {
+var Tile = function(track, region, resolution, canvas, data) {
     this.track = track;
-    this.index = index;
-    var tile_bounds = this.track._get_tile_bounds(index, resolution);
-    this.low = tile_bounds[0];
-    this.high = tile_bounds[1];
+    this.region = region;
+    this.low = region.get('start');
+    this.high = region.get('end');
     this.resolution = resolution;
     // Wrap element in div for background and explicitly set height. Use canvas
     // height attribute because canvas may not have height if it is not in document yet.
@@ -2813,15 +2812,15 @@ var Tile = function(track, index, resolution, canvas, data) {
  */
 Tile.prototype.predisplay_actions = function() {};
 
-var SummaryTreeTile = function(track, index, resolution, canvas, data, max_val) {
-    Tile.call(this, track, index, resolution, canvas, data);
+var SummaryTreeTile = function(track, region, resolution, canvas, data, max_val) {
+    Tile.call(this, track, region, resolution, canvas, data);
     this.max_val = max_val;
 };
 extend(SummaryTreeTile.prototype, Tile.prototype);
 
-var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale, mode, message, all_slotted, feature_mapper) {
+var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale, mode, message, all_slotted, feature_mapper) {
     // Attribute init.
-    Tile.call(this, track, index, resolution, canvas, data);
+    Tile.call(this, track, region, resolution, canvas, data);
     this.mode = mode;
     this.all_slotted = all_slotted;
     this.feature_mapper = feature_mapper;
@@ -3586,12 +3585,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
-            tile_bounds = this._get_tile_bounds(tile_index, resolution),
-            region = new GenomeRegion({
-                chrom: this.view.chrom,
-                start: tile_bounds[0],
-                end: tile_bounds[1]
-            });
+            region = this._get_tile_bounds(tile_index, resolution);
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
@@ -3646,7 +3640,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             canvas.height = height;
             var ctx = canvas.getContext('2d');
             ctx.translate(this.left_offset, 0);
-            var tile = track.draw_tile(tile_data, ctx, mode, resolution, tile_index, w_scale, seq_data);
+            var tile = track.draw_tile(tile_data, ctx, mode, resolution, region, w_scale, seq_data);
             
             // Don't cache, show if no tile.
             if (tile !== undefined) {
@@ -3679,11 +3673,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * @param ctx canvas context to draw on
      * @param mode mode to draw in
      * @param resolution view resolution
-     * @param tile_index index of tile to be drawn
+     * @param region region to draw on tile
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale, ref_seq) {
+    draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {
         console.log("Warning: TiledTrack.draw_tile() not implemented.");
     },
     /**
@@ -3720,21 +3714,27 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         
         track.after_show_tile(tile);
     },
+
     /**
      * Actions to be taken after showing tile.
      */
     after_show_tile: function(tile) {},
+
     /**
-     * Returns tile bounds--tile low and tile high--based on a tile index. Return value is an array 
-     * with values tile_low and tile_high.
+     * Returns a genome region that corresponds to a tile at a particular resolution
      */ 
     _get_tile_bounds: function(tile_index, resolution) {
         var tile_low = Math.floor( tile_index * TILE_SIZE * resolution ),
             tile_length = Math.ceil( TILE_SIZE * resolution ),
             // Tile high cannot be larger than view.max_high, which the chromosome length.
             tile_high = (tile_low + tile_length <= this.view.max_high ? tile_low + tile_length : this.view.max_high);
-        return [tile_low, tile_high];
+        return new GenomeRegion({
+            chrom: this.view.chrom,
+            start: tile_low,
+            end: tile_high
+        });
     },
+    
     /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
      */
@@ -3930,8 +3930,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
             tile_bounds = this._get_tile_bounds(tile_index, resolution),
-            tile_low = tile_bounds[0],
-            tile_high = tile_bounds[1];
+            tile_low = tile_bounds.get('start'),
+            tile_high = tile_bounds.get('end');
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
@@ -3980,8 +3980,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             var 
                 canvas = track.view.canvas_manager.new_canvas(),
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
-                tile_low = tile_bounds[0],
-                tile_high = tile_bounds[1],
+                tile_low = tile_bounds.get('start'),
+                tile_high = tile_bounds.get('end'),
                 all_data_index = 0,
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + this.left_offset,
                 height = 0,
@@ -4021,7 +4021,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 track = this.drawables[i];
                 tile_data = all_data[ all_data_index ];
                 seq_data = all_data[ all_data_index + 1 ];
-                tile = track.draw_tile(tile_data, ctx, track_modes[i], resolution, tile_index, w_scale, seq_data);
+                tile = track.draw_tile(tile_data, ctx, track_modes[i], resolution, tile_bounds, w_scale, seq_data);
             }
             
             // Don't cache, show if no tile.
@@ -4148,7 +4148,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(seq, ctx, mode, resolution, tile_index, w_scale) {
+    draw_tile: function(seq, ctx, mode, resolution, region, w_scale) {
         var track = this;        
         
         if (w_scale > this.view.canvas_manager.char_width_px) {
@@ -4165,7 +4165,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 ctx.fillText(seq[c], c_start, 10);
             }
             this.show_contents();
-            return new Tile(track, tile_index, resolution, canvas, seq);
+            return new Tile(track, region, resolution, canvas, seq);
         }
         this.hide_contents();
     }
@@ -4294,17 +4294,16 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw LineTrack tile.
      */
-    draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale) {
+    draw_tile: function(result, ctx, mode, resolution, region, w_scale) {
         // Paint onto canvas.
         var 
             canvas = ctx.canvas,
-            tile_bounds = this._get_tile_bounds(tile_index, resolution),
-            tile_low = tile_bounds[0],
-            tile_high = tile_bounds[1],
+            tile_low = region.get('start'),
+            tile_high = region.get('end'),
             painter = new painters.LinePainter(result.data, tile_low, tile_high, this.prefs, mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
-        return new Tile(this, tile_index, resolution, canvas, result.data);
+        return new Tile(this, region, resolution, canvas, result.data);
     },
     /**
      * LineTrack data cannot currently be subsetted.
@@ -4682,16 +4681,15 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * @param cxt canvas context to draw on
      * @param mode mode to draw in
      * @param resolution view resolution
-     * @param tile_index index of tile to be drawn
+     * @param region region to draw on tile
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale, ref_seq) {
+    draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {
         var track = this,
             canvas = ctx.canvas,
-            tile_bounds = this._get_tile_bounds(tile_index, resolution),
-            tile_low = tile_bounds[0],
-            tile_high = tile_bounds[1],
+            tile_low = region.get('start'),
+            tile_high = region.get('end'),
             min_height = 25,
             left_offset = this.left_offset;
         
@@ -4761,7 +4759,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             feature_mapper.translation = -left_offset;
         }
         
-        return new FeatureTrackTile(track, tile_index, resolution, canvas, result.data, w_scale, mode, result.message, all_slotted, feature_mapper);        
+        return new FeatureTrackTile(track, region, resolution, canvas, result.data, w_scale, mode, result.message, all_slotted, feature_mapper);        
     },
     /**
      * Returns true if data is compatible with a given mode.
