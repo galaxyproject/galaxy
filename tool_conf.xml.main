@@ -279,6 +279,7 @@
    <tool file="samtools/pileup_interval.xml" />
    <tool file="samtools/samtools_flagstat.xml" />
    <tool file="samtools/samtools_rmdup.xml" />
+   <tool file="samtools/samtools_slice_bam.xml" />
   </section>
   <section name="NGS: GATK Tools (beta)" id="gatk">
     <label text="Alignment Utilities" id="gatk_bam_utilities"/>
