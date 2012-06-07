@@ -5,7 +5,7 @@ import pkg_resources
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -738,6 +738,8 @@ class Tool:
         self.app = app
         #setup initial attribute values
         self.inputs = odict()
+        self.stdio_exit_codes = list()
+        self.stdio_regexes = list()
         self.inputs_by_page = list()
         self.display_by_page = list()
         self.action = '/tool_runner/index'
@@ -932,6 +934,8 @@ class Tool:
         self.parse_help( root )
         # Description of outputs produced by an invocation of the tool
         self.parse_outputs( root )
+        # Parse result handling for tool exit codes and stdout/stderr messages:
+        self.parse_stdio( root )
         # Any extra generated config files for the tool
         self.config_files = []
         conf_parent_elem = root.find("configfiles")
@@ -1089,6 +1093,192 @@ class Tool:
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
             self.outputs[ output.name ] = output
+
+    # TODO: Include the tool's name in any parsing warnings.
+    def parse_stdio( self, root ):
+        """
+        Parse <stdio> element(s) and fill in self.return_codes, 
+        self.stderr_rules, and self.stdout_rules. Return codes have a range 
+        and an error type (fault or warning).  Stderr and stdout rules have 
+        a regular expression and an error level (fault or warning).
+        """
+        try:
+            self.stdio_exit_codes = list()
+            self.stdio_regexes = list()
+
+            # We should have a single <stdio> element, but handle the case for 
+            # multiples. 
+            # For every stdio element, add all of the exit_code and regex 
+            # subelements that we find:
+            for stdio_elem in ( root.findall( 'stdio' ) ):
+                self.parse_stdio_exit_codes( stdio_elem )
+                self.parse_stdio_regexes( stdio_elem )
+        except Exception as e:
+            log.error( "Exception in parse_stdio! " + str(sys.exc_info()) )
+
+    def parse_stdio_exit_codes( self, stdio_elem ):
+        """
+        Parse the tool's <stdio> element's <exit_code> subelements.
+        This will add all of those elements, if any, to self.stdio_exit_codes. 
+        """
+        try:
+            # Look for all <exit_code> elements. Each exit_code element must 
+            # have a range/value.
+            # Exit-code ranges have precedence over a single exit code. 
+            # So if there are value and range attributes, we use the range
+            # attribute. If there is neither a range nor a value, then print
+            # a warning and skip to the next.
+            for exit_code_elem in ( stdio_elem.findall( "exit_code" ) ):
+                exit_code = ToolStdioExitCode()
+                exit_code.error_level = (
+                    self.parse_error_level( exit_code_elem.get( "level" )))
+                code_range = exit_code_elem.get( "range", "" )
+                if None == code_range:
+                    code_range = code_elem.get( "value", "" )
+                if None == code_range:
+                    log.warning( "Tool stdio exit codes must have "
+                               + "a range or value" )
+                    continue
+                # Parse the range. We look for:
+                #   :Y
+                #  X:
+                #  X:Y   - Split on the colon. We do not allow a colon 
+                #          without a beginning or end, though we could. 
+                # Also note that whitespace is eliminated.
+                # TODO: Turn this into a single match - it will be 
+                # more efficient
+                string.strip( code_range )
+                code_range = re.sub( "\s", "", code_range )
+                log.debug( "Code range after sub: %s" % code_range )
+                code_ranges = re.split( ":", code_range )
+                if ( len( code_ranges ) == 2 ):
+                    if ( None == code_ranges[0] or '' == code_ranges[0] ):
+                        exit_code.range_start = float( "-inf" ) 
+                    else:
+                        exit_code.range_start = int( code_ranges[0] )
+                    if ( None == code_ranges[1] or '' == code_ranges[1] ):
+                        exit_code.range_end = float( "inf" ) 
+                    else:
+                        exit_code.range_end = int( code_ranges[1] )
+                # If we got more than one colon, then ignore the exit code.
+                elif ( len( code_ranges ) > 2 ):
+                    log.warning( "Invalid tool exit_code range %s - ignored"
+                               % code_range )
+                    continue
+                # Else we have a singular value. If it's not an integer, then
+                # we'll just write a log message and skip this exit_code.
+                else:
+                    try:
+                        exit_code.range_start = int( code_range )
+                    except:
+                        log.error( code_range )
+                        log.warning( "Invalid range start for tool's exit_code %s: exit_code ignored" % code_range )
+                        continue
+                    exit_code.range_end = exit_code.range_start
+                # TODO: Check if we got ">", ">=", "<", or "<=": 
+                # Check that the range, regardless of how we got it, 
+                # isn't bogus. If we have two infinite values, then 
+                # the start must be -inf and the end must be +inf. 
+                # So at least warn about this situation:
+                if ( math.isinf( exit_code.range_start ) and 
+                     math.isinf( exit_code.range_end ) ):
+                    log.warning( "Tool exit_code range %s will match on "
+                               + "all exit codes" % code_range )
+                self.stdio_exit_codes.append( exit_code )
+        except Exception as e: 
+            log.error( "Exception in parse_stdio_exit_codes! " 
+                     + str(sys.exc_info()) )
+            trace = sys.exc_info()[2]
+            if ( None != trace ):
+                trace_msg = repr( traceback.format_tb( trace ) )
+                log.error( "Traceback: %s" % trace_msg ) 
+
+    def parse_stdio_regexes( self, stdio_elem ):
+        """ 
+        Look in the tool's <stdio> elem for all <regex> subelements
+        that define how to look for warnings and fatal errors in 
+        stdout and stderr. This will add all such regex elements
+        to the Tols's stdio_regexes list.
+        """
+        try:
+            # Look for every <regex> subelement. The regular expression
+            # will have "match" and "source" (or "src") attributes. 
+            for regex_elem in ( stdio_elem.findall( "regex" ) ):
+                # TODO: Fill in ToolStdioRegex
+                regex = ToolStdioRegex() 
+                regex.error_level = ( 
+                    self.parse_error_level( regex_elem.get( "level" ) ) )
+                regex.match = regex_elem.get( "match", "" )
+                if None == regex.match:
+                    # TODO: Convert the offending XML element to a string 
+                    log.warning( "Ignoring tool's stdio regex element %s - "
+                                 "the 'match' attribute must exist" )
+                    continue
+                # Parse the output sources. We look for the "src", "source",
+                # and "sources" attributes, in that order. If there is no
+                # such source, then the source defaults to stderr & stdout.
+                # Look for a comma and then look for "err", "error", "out",
+                # and "output":
+                output_srcs = regex_elem.get( "src" )
+                if None == output_srcs:
+                    output_srcs = regex_elem.get( "source" )
+                if None == output_srcs:
+                    output_srcs = regex_elem.get( "sources" )
+                if None == output_srcs:
+                    output_srcs = "output,error"
+                output_srcs = re.sub( "\s", "", output_srcs )
+                src_list = re.split( ",", output_srcs ) 
+                # Just put together anything to do with "out", including
+                # "stdout", "output", etc. Repeat for "stderr", "error",
+                # and anything to do with "err". If neither stdout nor
+                # stderr were specified, then raise a warning and scan both.
+                for src in src_list:
+                    if re.match( "out", src, re.IGNORECASE ):
+                        regex.stdout_match = True
+                    if re.match( "err", src, re.IGNORECASE ):
+                        regex.stderr_match = True
+                    if (not regex.stdout_match and not regex.stderr_match):
+                        log.warning( "Unable to determine if tool stream "
+                                   + "source scanning is output, error, "
+                                   + "or both. Defaulting to use both." )
+                        regex.stdout_match = True
+                        regex.stderr_match = True
+                self.stdio_regexes.append( regex )
+        except Exception as e:
+            log.error( "Exception in parse_stdio_exit_codes! " 
+                     + str(sys.exc_info()) )
+            trace = sys.exc_info()[2]
+            if ( None != trace ):
+                trace_msg = repr( traceback.format_tb( trace ) )
+                log.error( "Traceback: %s" % trace_msg ) 
+
+    def parse_error_level( self, err_level ):
+        """
+        Return fatal or warning depending on what's in the error level.
+        This will assume that the error level fatal is returned if it's 
+        unparsable. (This doesn't have to be part of the Tool class.)
+        """
+        # What should the default be? I'm claiming it should be fatal:
+        # if you went to the trouble to write the rule, then it's 
+        # probably a problem. I think there are easily three substantial
+        # camps: make it fatal, make it a warning, or, if it's missing,
+        # just throw an exception and ignore it.
+        return_level = "fatal"
+        try:
+            if ( None != err_level ):
+                if ( re.search( "warning", err_level, re.IGNORECASE ) ):
+                    return_level = "warning"
+                elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
+                    return_level = "fatal"
+        except Exception as e:
+            log.error( "Exception in parse_error_level " 
+                     + str(sys.exc_info() ) )
+            trace = sys.exc_info()[2]
+            if ( None != trace ):
+                trace_msg = repr( traceback.format_tb( trace ) )
+                log.error( "Traceback: %s" % trace_msg ) 
+        return return_level
+
     def parse_tests( self, tests_elem ):
         """
         Parse any "<test>" elements, create a `ToolTestBuilder` for each and
@@ -2576,6 +2766,31 @@ for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, 
 class BadValue( object ):
     def __init__( self, value ):
         self.value = value
+
+class ToolStdioRegex( object ):
+    """
+    This is a container for the <stdio> element's regex subelement.
+    The regex subelement has a "match" attribute, a "sources"
+    attribute that contains "output" and/or "error", and a "level"
+    attribute that contains "warning" or "fatal".
+    """
+    def __init__( self ):
+        self.match = ""
+        self.stdout_match = False
+        self.stderr_match = False
+        # TODO: Define a common class or constant for error level:
+        self.error_level = "fatal" 
+
+class ToolStdioExitCode( object ):
+    """
+    This is a container for the <stdio> element's <exit_code> subelement.
+    The exit_code element has a range of exit codes and the error level.
+    """
+    def __init__( self ):
+        self.range_start = float( "-inf" )
+        self.range_end = float( "inf" )
+        # TODO: Define a common class or constant for error level:
+        self.error_level = "fatal"
 
 class ToolParameterValueWrapper( object ):
     """
