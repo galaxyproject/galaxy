@@ -1,4 +1,4 @@
-<tool name="Fastqc: Fastqc QC" id="fastqc" version="0.4">
+<tool name="Fastqc: Fastqc QC" id="fastqc" version="0.5">
   <description>using FastQC from Babraham</description>
   <command interpreter="python">
     rgFastQC.py -i $input_file -d $html_file.files_path -o $html_file -n "$out_prefix" -f $input_file.ext -j $input_file.name -e ${GALAXY_DATA_INDEX_DIR}/shared/jars/FastQC/fastqc
@@ -11,7 +11,12 @@
   </requirements>
   <inputs>
     <param format="fastqsanger,fastq,bam,sam" name="input_file" type="data" label="Short read data from your current history" />
-    <param name="out_prefix" value="FastQC" type="text" label="Title for the output file - to remind you what the job was for" size="80" />
+    <param name="out_prefix" value="FastQC" type="text" label="Title for the output file - to remind you what the job was for" size="80"
+      help="Letters and numbers only please - other characters will be removed">
+    <sanitizer invalid_char="">
+        <valid initial="string.letters,string.digits"/>
+    </sanitizer>
+    </param>
     <param name="contaminants" type="data" format="tabular" optional="true" label="Contaminant list" 
            help="tab delimited file with 2 columns: name and sequence.  For example: Illumina Small RNA RT Primer	CAAGCAGAAGACGGCATACGA"/>
   </inputs>
