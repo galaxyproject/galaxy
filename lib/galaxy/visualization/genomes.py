@@ -190,6 +190,7 @@ class Genomes( object ):
         # Get/create genome object.
         #
         genome = None
+        twobit_file = None
 
         # Look first in user's custom builds.
         if dbkey_user and 'dbkeys' in dbkey_user.preferences:
@@ -199,11 +200,14 @@ class Genomes( object ):
                 if 'fasta' in dbkey_attributes:
                     build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
                     len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
+                    converted_dataset = build_fasta.get_converted_dataset( trans, 'twobit' )
+                    if converted_dataset:
+                        twobit_file = converted_dataset.file_name
                 # Backwards compatibility: look for len file directly.
                 elif 'len' in dbkey_attributes:
                     len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ dbkey ][ 'len' ] ).file_name
                 if len_file:
-                    genome = Genome( dbkey, len_file=len_file )
+                    genome = Genome( dbkey, len_file=len_file, twobit_file=twobit_file )
                     
         
         # Look in system builds.
@@ -256,9 +260,9 @@ class Genomes( object ):
         # Get twobit file with reference data.
         #
         twobit_file_name = None
-        if dbkey in self.available_genomes:
+        if dbkey in self.genomes:
             # Built-in twobit.
-            twobit_file_name = self.available_genomes[dbkey]
+            twobit_file_name = self.genomes[dbkey].twobit_file
         else:
             user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
             dbkey_attributes = user_keys[ dbkey ]
