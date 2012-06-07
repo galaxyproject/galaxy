@@ -46,7 +46,7 @@
                 tool_param_tree_view = new ToolParameterTreeView({ model: tool_param_tree });
                 
             tool_param_tree_view.render();
-            $('#vis').append(tool_param_tree_view.$el);
+            $('#param-tree').append(tool_param_tree_view.$el);
         });
     </script>
 </%def>
@@ -58,5 +58,8 @@
         </div>
         <div style="clear: both"></div>
     </div>
-    <div id="vis" class="unified-panel-body"></div>
+    <div class="unified-panel-body">
+        <div id="param-tree"></div>
+        <div id="tile-view"></div>
+    </div>
 </%def>

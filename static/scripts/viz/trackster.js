@@ -437,249 +437,6 @@ function round(num, places) {
 }
 
 /**
- * Generic cache that handles key/value pairs.
- */ 
-var Cache = function( num_elements ) {
-    this.num_elements = num_elements;
-    this.clear();
-};
-extend(Cache.prototype, {
-    get: function(key) {
-        var index = this.key_ary.indexOf(key);
-        if (index !== -1) {
-            if (this.obj_cache[key].stale) {
-                // Object is stale, so remove key and object.
-                this.key_ary.splice(index, 1);
-                delete this.obj_cache[key];
-            }
-            else {
-                this.move_key_to_end(key, index);
-            }
-        }
-        return this.obj_cache[key];
-    },
-    set: function(key, value) {
-        if (!this.obj_cache[key]) {
-            if (this.key_ary.length >= this.num_elements) {
-                // Remove first element
-                var deleted_key = this.key_ary.shift();
-                delete this.obj_cache[deleted_key];
-            }
-            this.key_ary.push(key);
-        }
-        this.obj_cache[key] = value;
-        return value;
-    },
-    // Move key to end of cache. Keys are removed from the front, so moving a key to the end 
-    // delays the key's removal.
-    move_key_to_end: function(key, index) {
-        this.key_ary.splice(index, 1);
-        this.key_ary.push(key);
-    },
-    clear: function() {
-        this.obj_cache = {};
-        this.key_ary = [];
-    },
-    // Returns the number of elements in the cache.
-    size: function() {
-        return this.key_ary.length;
-    }
-});
-
-/**
- * Data manager for a track.
- */
-var DataManager = function(num_elements, track) {
-    Cache.call(this, num_elements);
-    this.track = track;
-};
-extend(DataManager.prototype, Cache.prototype, {
-    /**
-     * Load data from server; returns AJAX object so that use of Deferred is possible.
-     */
-    load_data: function(low, high, mode, resolution, extra_params) {
-        // Setup data request params.
-        var 
-            chrom = this.track.view.chrom,
-            params = {"chrom": chrom, "low": low, "high": high, "mode": mode, 
-                      "resolution": resolution, "dataset_id" : this.track.dataset_id, 
-                      "hda_ldda": this.track.hda_ldda};
-        $.extend(params, extra_params);
-        
-        // Add track filters to params.
-        if (this.track.filters_manager) {
-            var filter_names = [];
-            var filters = this.track.filters_manager.filters;
-            for (var i = 0; i < filters.length; i++) {
-                filter_names.push(filters[i].name);
-            }
-            params.filter_cols = JSON.stringify(filter_names);
-        }
-                        
-        // Do request.
-        var manager = this;
-        return $.getJSON(this.track.data_url, params, function (result) {
-            manager.set_data(low, high, result);
-        });
-    },
-    /**
-     * Get track data.
-     */
-    get_data: function(low, high, mode, resolution, extra_params) {
-        // Debugging:
-        //console.log("get_data", low, high, mode);
-        /*
-        console.log("cache contents:")
-        for (var i = 0; i < this.key_ary.length; i++) {
-            console.log("\t", this.key_ary[i], this.obj_cache[this.key_ary[i]]);
-        }
-        */
-                
-        // Look for entry and return if it's a deferred or if data available is compatible with mode.
-        var entry = this.get(low, high);
-        if ( entry && 
-             ( is_deferred(entry) || this.track.data_and_mode_compatible(entry, mode) ) ) {
-            return entry; 
-        }
-
-        //
-        // Look in cache for data that can be used. Data can be reused if it
-        // has the requested data and is not summary tree and has details.
-        // TODO: this logic could be improved if the visualization knew whether
-        // the data was "index" or "data."
-        //        
-        var key, split_key, entry_low, entry_high, mode, entry;
-        for (var i = 0; i < this.key_ary.length; i++) {
-            key = this.key_ary[i];
-            split_key = this.split_key(key);
-            entry_low = split_key[0];
-            entry_high = split_key[1];
-        
-            if (low >= entry_low && high <= entry_high) {
-                // This entry has data in the requested range. Return if data
-                // is compatible and can be subsetted.
-                var entry = this.obj_cache[key];
-                if ( is_deferred(entry) || 
-                    ( this.track.data_and_mode_compatible(entry, mode) && this.track.can_subset(entry) ) ) {
-                    this.move_key_to_end(key, i);
-                    return entry;
-                }
-            }
-        }
-                
-        // Load data from server. The deferred is immediately saved until the
-        // data is ready, it then replaces itself with the actual data.
-        entry = this.load_data(low, high, mode, resolution, extra_params);
-        this.set_data(low, high, entry);
-        return entry;
-    },
-    /** "Deep" data request; used as a parameter for DataManager.get_more_data() */
-    DEEP_DATA_REQ: "deep",
-    /** "Broad" data request; used as a parameter for DataManager.get_more_data() */
-    BROAD_DATA_REQ: "breadth",
-    /**
-     * Gets more data for a region using either a depth-first or a breadth-first approach.
-     */
-    get_more_data: function(low, high, mode, resolution, extra_params, req_type) {
-        //
-        // Get current data from cache and mark as stale.
-        //
-        var cur_data = this.get(low, high);
-        if ( !(cur_data && this.track.data_and_mode_compatible(cur_data, mode)) ) {
-            console.log("ERROR: no current data for: ", this.track, low, high, mode, resolution, extra_params);
-            return;
-        }
-        cur_data.stale = true;
-        
-        //
-        // Set parameters based on request type.
-        //
-        var query_low = low;
-        if (req_type === this.DEEP_DATA_REQ) {
-            // Use same interval but set start_val to skip data that's already in cur_data.
-            $.extend(extra_params, {start_val: cur_data.data.length + 1});
-        }
-        else if (req_type === this.BROAD_DATA_REQ) {
-            // To get past an area of extreme feature depth, set query low to be after either
-            // (a) the maximum high or HACK/FIXME (b) the end of the last feature returned.
-            query_low = (cur_data.max_high ? cur_data.max_high : cur_data.data[cur_data.data.length - 1][2]) + 1;
-        }
-        
-        //
-        // Get additional data, append to current data, and set new data. Use a custom deferred object
-        // to signal when new data is available.
-        //
-        var 
-            data_manager = this,
-            new_data_request = this.load_data(query_low, high, mode, resolution, extra_params)
-            new_data_available = $.Deferred();
-        // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
-        // is all data, not just new data.
-        this.set_data(low, high, new_data_available);
-        $.when(new_data_request).then(function(result) {
-            // Update data and message.
-            if (result.data) {
-                result.data = cur_data.data.concat(result.data);
-                if (result.max_low) {
-                    result.max_low = cur_data.max_low;
-                }
-                if (result.message) {
-                    // HACK: replace number in message with current data length. Works but is ugly.
-                    result.message = result.message.replace(/[0-9]+/, result.data.length);
-                }
-            }
-            data_manager.set_data(low, high, result);
-            new_data_available.resolve(result);
-        });
-        return new_data_available;
-    },
-    /**
-     * Get data from the cache.
-     */
-    get: function(low, high) {
-        return Cache.prototype.get.call( this, this.gen_key(low, high) );
-    },
-    /**
-     * Sets data in the cache.
-     */
-    set_data: function(low, high, result) {
-        return this.set(this.gen_key(low, high), result);
-    },
-    /**
-     * Generate key for cache.
-     */
-    // TODO: use chrom in key so that (a) data is not thrown away when changing chroms and (b)
-    // manager does not need to be cleared when changing chroms.
-    // TODO: use resolution in key b/c summary tree data is dependent on resolution -- is this 
-    // necessary, i.e. will resolution change but not low/high/mode?
-    gen_key: function(low, high) {
-        var key = low + "_" + high;
-        return key;
-    },
-    /**
-     * Split key from cache into array with format [low, high]
-     */
-    split_key: function(key) {
-        return key.split("_");
-    }
-});
-
-var ReferenceTrackDataManager = function(num_elements, track, subset) {
-    DataManager.call(this, num_elements, track, subset);
-};
-extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototype, {
-    get: DataManager.prototype.get,
-    load_data: function(low, high, mode, resolution, extra_params) {
-        if (resolution > 1) {
-            // Now that data is pre-fetched before draw, we don't load reference tracks
-            // unless it's at the bottom level.
-            return { data: null };
-        }
-        return DataManager.prototype.load_data.call(this, low, high, mode, resolution, extra_params);
-    }
-});
-
-/**
  * Drawables hierarchy:
  *
  * Drawable
@@ -3082,7 +2839,11 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
                             .css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt);
                                                         
         // Handle message; only message currently is that only the first N elements are displayed.
-        var 
+        var tile_region = new GenomeRegion({
+                chrom: track.view.chrom,
+                start: this.low,
+                end: this.high
+            }),
             num_features = data.length,
             more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
                                 .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data including depth")
@@ -3095,7 +2856,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
         more_down_icon.click(function() {
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
-            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+            track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
             $(".tipsy").hide();
             track.request_draw(true);
         }).dblclick(function(e) {
@@ -3106,7 +2867,7 @@ var FeatureTrackTile = function(track, index, resolution, canvas, data, w_scale,
         more_across_icon.click(function() {
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
-            track.data_manager.get_more_data(tile.low, tile.high, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+            track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
             $(".tipsy").hide();
             track.request_draw(true);
         }).dblclick(function(e) {
@@ -3245,7 +3006,20 @@ var Track = function(view, container, obj_dict) {
     this.data_url_extra_params = {}
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = converted_datasets_state_url;
-    this.data_manager = ('data_manager' in obj_dict ? obj_dict.data_manager : new DataManager(DATA_CACHE_SIZE, this));
+    
+    // A little ugly creating data manager right now due to transition to Backbone-based objects.
+    var dataset = new Dataset({
+        id: obj_dict.dataset_id,
+        hda_ldda: obj_dict.hda_ldda
+    });
+    this.data_manager = ('data_manager' in obj_dict ? 
+                         obj_dict.data_manager : 
+                         new GenomeDataManager({
+                             dataset: dataset,
+                             data_url: default_data_url,
+                             data_mode_compatible: this.data_and_mode_compatible,
+                             can_subset: this.can_subset,
+                         }));
     
     // Height attributes: min height, max height, and visible height.
     this.min_height_px = 16;
@@ -3560,6 +3334,9 @@ var TiledTrack = function(view, container, obj_dict) {
     
     // Attribute init.
     this.filters_manager = new FiltersManager(this, ('filters' in obj_dict ? obj_dict.filters : null));
+    // HACK: set filters manager for data manager.
+    // FIXME: prolly need function to set filters and update data_manager reference.
+    this.data_manager.set('filters_manager', this.filters_manager);
     this.filters_available = false;
     this.tool = ('tool' in obj_dict && obj_dict.tool ? new Tool(this, obj_dict.tool, obj_dict.tool_state) : null);
     this.tile_cache = new Cache(TILE_CACHE_SIZE);
@@ -3810,15 +3587,18 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
             tile_bounds = this._get_tile_bounds(tile_index, resolution),
-            tile_low = tile_bounds[0],
-            tile_high = tile_bounds[1];
+            region = new GenomeRegion({
+                chrom: this.view.chrom,
+                start: tile_bounds[0],
+                end: tile_bounds[1]
+            });
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
                        
         // Check tile cache, if found show existing tile in correct position
-        var tile = (force ? undefined : track.tile_cache.get(key));
-        if (tile) { 
+        var tile = (force ? undefined : track.tile_cache.get_elt(key));
+        if (tile) {
             track.show_tile(tile, parent_element, w_scale);
             return tile;
         }
@@ -3827,7 +3607,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var can_draw_now = true
         
         // Get the track data, maybe a deferred
-        var tile_data = track.data_manager.get_data( tile_low, tile_high, track.mode, resolution, track.data_url_extra_params );
+        var tile_data = track.data_manager.get_data( region, track.mode, resolution, track.data_url_extra_params );
         if ( is_deferred( tile_data ) ) {
             can_draw_now = false;
         }
@@ -3835,7 +3615,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Get seq data if needed, maybe a deferred
         var seq_data;
         if ( view.reference_track && w_scale > view.canvas_manager.char_width_px ) {
-            seq_data = view.reference_track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, view.reference_track.data_url_extra_params)
+            seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params)
             if ( is_deferred( seq_data ) ) {
                 can_draw_now = false;
             }
@@ -3857,9 +3637,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Draw canvas.
             var 
                 canvas = track.view.canvas_manager.new_canvas(),
-                tile_bounds = track._get_tile_bounds(tile_index, resolution),
-                tile_low = tile_bounds[0],
-                tile_high = tile_bounds[1],
+                tile_low = region.get('start'),
+                tile_high = region.get('end'),
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + track.left_offset,
                 height = track.get_canvas_height(tile_data, mode, w_scale, width);
             
@@ -3871,7 +3650,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             
             // Don't cache, show if no tile.
             if (tile !== undefined) {
-                track.tile_cache.set(key, tile);
+                track.tile_cache.set_elt(key, tile);
                 track.show_tile(tile, parent_element, w_scale);
             }
             return tile;
@@ -4158,7 +3937,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         if (!kwargs) { kwargs = {}; }
                        
         // Check tile cache, if found show existing tile in correct position
-        var tile = (force ? undefined : track.tile_cache.get(key));
+        var tile = (force ? undefined : track.tile_cache.get_elt(key));
         if (tile) { 
             track.show_tile(tile, parent_element, w_scale);
             return tile;
@@ -4246,7 +4025,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             }
             
             // Don't cache, show if no tile.
-            this.tile_cache.set(key, tile);
+            this.tile_cache.set_elt(key, tile);
             this.show_tile(tile, parent_element, w_scale);
             return tile;
         }
@@ -4353,7 +4132,9 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
-    this.data_manager = new ReferenceTrackDataManager(DATA_CACHE_SIZE, this, false);
+    this.data_manager = new ReferenceTrackDataManager({
+        data_url: reference_url
+    });
     this.hide_contents();
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {

@@ -63,12 +63,47 @@ var Tool = BaseModel.extend({
  * A tool input.
  */
 var ToolInput = Backbone.RelationalModel.extend({
+    defaults: {
+        name: null,
+        type: null
+    },
     
     initialize: function() {
         this.attributes.html = unescape(this.attributes.html);
-    }
+    },
+    
+    /**
+     * Returns samples from a tool input.
+     */
+    get_samples: function(num_samples) {
+        var 
+            type = this.get('type'),
+            samples = []
+        if (type === 'number') {
+            samples = d3.scale.linear().domain([this.get('min'), this.get('max')]).ticks(num_samples);
+        }
+        else if (type === 'select') {
+            samples = _.map(this.get('options'), function(option) {
+                return option[0];
+            });
+        }
         
+        return new ParamSamples({
+            param: this,
+            samples: samples
+        });
+    }   
 });
+
+/**
+ * A tool and parameter samples.
+ */
+var ParamSamples = Backbone.Model.extend({
+    defaults: {
+        param: null,
+        samples: null
+    }
+})
 
 /**
  * Wrap collection of tools for fast access/manipulation.
