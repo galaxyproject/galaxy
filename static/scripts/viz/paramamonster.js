@@ -244,8 +244,17 @@ var ToolParameterTreeView = Backbone.View.extend({
           .attr("class", "node")
           .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
   
+        // Set up behavior when node is clicked.
         node.on("click", function(d, i) {
-            console.log(d, i);  
+            console.log(d, i);
+            
+            // Gather: (a) dataset of interest; (b) region(s) of interest and (c) sets of parameters based on node clicked.
+            
+            // Run job by submitting parameters + dataset as job inputs; get dataset ids as result.
+            
+            // Create tracks for all resulting dataset ids.
+            
+            // Display tiles for region(s) of interest.
         });
 
         node.append("circle")

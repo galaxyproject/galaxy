@@ -25,28 +25,6 @@ exports.extend = extend;
 };
 
 /**
- * Provides support for server-state based deferred. Server is repeatedly polled, and when
- * condition is met, deferred is resolved.
- */
-var server_state_deferred = function(url, url_params, interval, success_fn) {
-    var deferred = $.Deferred(),
-        go = function() {
-            $.getJSON(url, url_params, function(result) {
-                if (success_fn(result)) {
-                    // Result is good, so resolve.
-                    deferred.resolve(result);
-                }
-                else {
-                    // Result not good, try again.
-                    setTimeout(go, interval);
-                }
-            });
-        };
-    go();
-    return deferred;
-};
-
-/**
  * Find browser's requestAnimationFrame method or fallback on a setTimeout 
  */
 var requestAnimationFrame = (function(){
@@ -1950,7 +1928,10 @@ extend(Tool.prototype, {
         this.run(url_params, new_track,
                  // Success callback.
                  function(track_data) {
-                     new_track.dataset_id = track_data.dataset_id;
+                     new_track.set_dataset(new Dataset({
+                         id: track_data.dataset_id,
+                         hda_ldda: track_data.hda_ldda
+                     }));
                      new_track.tiles_div.text("Running job.");
                      new_track.init();
                  }
@@ -1960,36 +1941,36 @@ extend(Tool.prototype, {
      * Run tool using a set of URL params and a success callback.
      */
     run: function(url_params, new_track, success_callback) {
-        // Add tool params to URL params.
-        $.extend(url_params, this.get_param_values_dict());
-        
         // Run tool.
-        // TODO: rewrite to use server state deferred.
-        var json_run_tool = function() {
-            $.getJSON(rerun_tool_url, url_params, function(response) {
-                if (response === "no converter") {
-                    // No converter available for input datasets, so cannot run tool.
-                    new_track.container_div.addClass("error");
-                    new_track.content_div.text(DATA_NOCONVERTER);
-                }
-                else if (response.error) {
-                    // General error.
-                    new_track.container_div.addClass("error");
-                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + response.message);
-                }
-                else if (response === "pending") {
-                    // Converting/indexing input datasets; show message and try again.
-                    new_track.container_div.addClass("pending");
-                    new_track.content_div.text("Converting input data so that it can be used quickly with tool.");
-                    setTimeout(json_run_tool, 2000);
-                }
-                else {
-                    // Job submitted and running.
-                    success_callback(response);
-                }
-            });
-        };
-        json_run_tool();
+        var ss_deferred = new ServerStateDeferred({
+            url: rerun_tool_url,
+            url_params: $.extend(url_params, this.get_param_values_dict()),
+            interval: 2000,
+            success_fn: function(response) {
+                return response !== "pending";
+            }
+        });
+        
+        // Start with this status message.
+        //new_track.container_div.addClass("pending");
+        //new_track.content_div.text("Converting input data so that it can be used quickly with tool.");
+        
+        $.when(ss_deferred.go()).then(function(response) {
+            if (response === "no converter") {
+                // No converter available for input datasets, so cannot run tool.
+                new_track.container_div.addClass("error");
+                new_track.content_div.text(DATA_NOCONVERTER);
+            }
+            else if (response.error) {
+                // General error.
+                new_track.container_div.addClass("error");
+                new_track.content_div.text(DATA_CANNOT_RUN_TOOL + response.message);
+            }
+            else {
+                // Job submitted and running.
+                success_callback(response);
+            }            
+        });
     }
 });
 
@@ -3765,7 +3746,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     init_for_tool_data: function() {
         // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
         // is ready.
-        this.data_url = raw_data_url;
+        this.data_manager.set('data_url', raw_data_url);
         this.data_query_wait = 1000;
         this.dataset_check_url = dataset_state_url;
         
@@ -3786,15 +3767,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
 
             // Reset data URL when dataset indexing has completed/when not pending.
-            $.when(
+            var ss_deferred = new ServerStateDeferred({
+                url: self.dataset_state_url,
+                url_params: {dataset_id : self.dataset_id, hda_ldda: self.hda_ldda},
+                interval: self.data_query_wait,
                 // Set up deferred to check dataset state until it is not pending.
-                server_state_deferred(self.dataset_state_url,
-                                      {dataset_id : self.dataset_id, hda_ldda: self.hda_ldda},
-                                      self.data_query_wait,
-                                      function(result) { return result !== "pending" })
-            ).then(function() {
+                success_fn: function(result) { return result !== "pending" }
+            });
+            $.when(ss_deferred.go()).then(function() {
                 // Dataset is indexed, so use default data URL.
-                self.data_url = default_data_url;
+                self.data_manager.set('data_url', default_data_url);
             });
                         
             // Reset post-draw actions function.
@@ -4371,6 +4353,12 @@ var FeatureTrack = function(view, container, obj_dict) {
     this.set_painter_from_config();
 };
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    set_dataset: function(dataset) {
+        this.dataset_id = dataset.get('id');
+        this.hda_ldda = dataset.get('hda_ldda');
+        this.data_manager.set('dataset', dataset);
+    },
+    
     set_painter_from_config: function() {
         if ( this.config.values['connector_style'] === 'arcs' ) {
             this.painter = painters.ArcLinkedFeaturePainter;
