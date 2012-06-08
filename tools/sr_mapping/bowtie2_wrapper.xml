@@ -30,6 +30,8 @@
         ## Second input only if input is paired-end.
         #if $singlePaired.sPaired == "paired"
             --input2=$singlePaired.input2
+            -I $singlePaired.minInsert
+            -X $singlePaired.maxInsert
         #end if
 
         ## Set params.
@@ -56,6 +58,8 @@
                 <param format="fastqsanger" name="input1" type="data" label="FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
                 <param format="fastqsanger" name="input2" type="data" label="FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
                 <!-- TODO: paired-end specific parameters. -->
+                <param name="minInsert" type="integer" value="0" label="Minimum insert size for valid paired-end alignments" />
+                <param name="maxInsert" type="integer" value="250" label="Maximum insert size for valid paired-end alignments" />
             </when>
         </conditional>
         <conditional name="refGenomeSource">

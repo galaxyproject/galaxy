@@ -18,6 +18,8 @@ def __main__():
     parser.add_option( '-1', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format' )
     parser.add_option( '-2', '--input2', dest='input2', help='The reverse reads file in Sanger FASTQ format' )
     parser.add_option( '', '--single-paired', dest='single_paired', help='' )
+    parser.add_option( '-I', '--minins', dest='min_insert' )
+    parser.add_option( '-X', '--maxins', dest='max_insert' )
     parser.add_option( '', '--settings', dest='settings', help='' )
     parser.add_option( '', '--end-to-end', dest='end_to_end', action="store_true" )
     parser.add_option( '', '--local', dest='local', action="store_true" )
@@ -73,6 +75,11 @@ def __main__():
     
     # Set up options.
     opts = '-p %s' % ( options.num_threads )
+    if options.single_paired == 'paired':
+        if options.min_insert:
+            opts += ' -I %s' % options.min_insert
+        if options.max_insert:
+            opts += ' -X %s' % options.max_insert
     if options.settings == 'preSet':
         pass
     else:
