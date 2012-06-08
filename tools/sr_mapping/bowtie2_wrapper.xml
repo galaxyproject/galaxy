@@ -35,10 +35,12 @@
         ## Set params.
         --settings=$params.settingsType
         
-        #if str($params.align_type) == "end_to_end":
-            --end-to-end --preset-alignment=$params.preset.align_preset_select
-        #else:
-            --local --preset-alignment=$params.preset.align_preset_select-local
+        #if $params.settingsType == "full":
+            #if str($params.align_type) == "end_to_end":
+                --end-to-end --preset-alignment=$params.preset.align_preset_select
+            #else:
+                --local --preset-alignment=$params.preset.align_preset_select-local
+            #end if
         #end if
     </command>
     <inputs>
