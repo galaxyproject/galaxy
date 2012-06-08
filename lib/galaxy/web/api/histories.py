@@ -153,6 +153,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         POST /api/histories/deleted/{encoded_quota_id}/undelete
         Undeletes a quota
         """
+        history_id = id
         history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
         history.deleted = False
         trans.sa_session.add( history )
