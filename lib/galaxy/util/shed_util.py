@@ -485,7 +485,7 @@ def generate_fabfile_metadata( elem, requirements_dict, proprietary=False ):
             requirements_dict[ key ] = fabfiles_dict
     return requirements_dict
 def generate_metadata_using_disk_files( toolbox, relative_install_dir, repository_clone_url ):
-    """generate metadata using only the repository files on disk - files are not retrieved from the repository manifest."""
+    """Generate metadata using only the repository files on disk - files are not retrieved from the repository manifest."""
     metadata_dict = {}
     tool_dependencies_config = None
     datatypes_config = get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
@@ -1081,9 +1081,8 @@ def handle_tool_dependencies( app, tool_shed_repository, installed_changeset_rev
     """
     Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can refer to installation
     methods in Galaxy's tool_dependencies module or to proprietary fabric scripts contained in the repository.  Future enhancements
-    to handling tool dependencies may provide installation processes in addition to fabric based processes.
-    
-    The dependencies will be installed in:
+    to handling tool dependencies may provide installation processes in addition to fabric based processes.  The dependencies will be
+    installed in:
     ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repository_owner>/<repository_name>/<installed_changeset_revision>
     """
     status = 'ok'
@@ -1192,10 +1191,6 @@ def load_repository_contents( trans, repository_name, description, owner, change
                                                                      tool_path,
                                                                      repository_tools_tups,
                                                                      work_dir )
-            try:
-                shutil.rmtree( work_dir )
-            except:
-                pass
             # Handle missing index files for tool parameters that are dynamically generated select lists.
             sample_files = metadata_dict.get( 'sample_files', [] )
             repository_tools_tups, sample_files_copied = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
@@ -1287,7 +1282,7 @@ def pull_repository( repo, repository_clone_url, ctx_rev ):
     commands.pull( get_configured_ui(),
                    repo,
                    source=repository_clone_url,
-                   rev=ctx_rev )
+                   rev=[ ctx_rev ] )
 def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have

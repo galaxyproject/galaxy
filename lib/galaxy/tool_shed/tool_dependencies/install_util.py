@@ -96,7 +96,24 @@ def run_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir
         if param_name:
             if param_name == 'build_commands':
                 for build_command_elem in param_elem:
-                    build_commands.append( build_command_elem.text.replace( '$INSTALL_DIR', install_dir ) )
+                    build_command_dict = {}
+                    build_command_name = build_command_elem.get( 'name' )
+                    if build_command_name:
+                        if build_command_name in MOVE_BUILD_COMMAND_NAMES:
+                            build_command_key = build_command_name
+                            for move_elem in build_command_elem:
+                                move_elem_text = move_elem.text.replace( '$INSTALL_DIR', install_dir )
+                                if move_elem_text:
+                                    build_command_dict[ move_elem.tag ] = move_elem_text
+                        elif build_command_elem.text:
+                            build_command_key = '%sv^v^v%s' % ( build_command_name, build_command_elem.text )
+                        else:
+                            continue
+                    else:
+                        build_command_key = build_command_elem.text.replace( '$INSTALL_DIR', install_dir )
+                        if not build_command_key:
+                            continue
+                    build_commands.append( ( build_command_key, build_command_dict ) )
                 if build_commands:
                     params_dict[ 'build_commands' ] = build_commands
             else:
@@ -122,7 +139,6 @@ def run_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir
                 return message
         except:
             return '%s.  ' % str( e )
-        print package_name, 'installed to', install_dir
         return ''
 def run_proprietary_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir, package_name=None, **kwd ):
     """
@@ -161,7 +177,6 @@ def run_proprietary_fabric_method( app, elem, fabfile_path, tool_dependency_dir,
     if message:
         return message
     else:
-        print package_name, 'installed to', install_dir
         return ''
 def run_subprocess( app, cmd ):
     env = os.environ

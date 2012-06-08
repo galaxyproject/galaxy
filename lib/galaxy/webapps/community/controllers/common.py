@@ -1002,13 +1002,11 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                         metadata_changeset_revision = ancestor_changeset_revision
                         metadata_dict = ancestor_metadata_dict
                         create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
-                        # Keep track of the changeset_revisions that we've persisted.
                         changeset_revisions.append( metadata_changeset_revision )
                         ancestor_changeset_revision = current_changeset_revision
                         ancestor_metadata_dict = current_metadata_dict
                 else:
-                    # We're either at the first change set in the change log or we have just created or updated a repository_metadata record.  At
-                    # this point we set the ancestor changeset to the current changeset for comparison in the next iteration.
+                    # We're at the beginning of the change log.
                     ancestor_changeset_revision = current_changeset_revision
                     ancestor_metadata_dict = current_metadata_dict
                 if not ctx.children():

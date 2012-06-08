@@ -18,14 +18,16 @@ def istar( file_path ):
 def iszip( file_path ):
     return check_zip( file_path )
 def tar_extraction_directory( file_path, file_name ):
+    file_name = file_name.strip()
     extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.zip' ]
     for extension in extensions:
-        if file_name.endswith( extension ):
+        if file_name.find( extension ) > 0:
             dir_name = file_name[ :-len( extension ) ]
-            full_path = os.path.abspath( os.path.join( file_path, dir_name ) )
-            if os.path.exists( full_path ):
+            if os.path.exists( os.path.abspath( os.path.join( file_path, dir_name ) ) ):
                 return dir_name
-    raise ValueError( 'Could not find directory %s' % full_path )
+    if os.path.exists( os.path.abspath( os.path.join( file_path, file_name ) ) ):
+        return os.path.abspath( os.path.join( file_path, file_name ) )
+    raise ValueError( 'Could not find directory %s' % os.path.abspath( os.path.join( file_path, file_name[ :-len( extension ) ] ) ) )
 def url_download( install_dir, downloaded_file_name, download_url ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None

@@ -1,7 +1,7 @@
 # For Python 2.5
 from __future__ import with_statement
 
-import os
+import os, shutil
 from contextlib import contextmanager
 import common_util
 
@@ -11,7 +11,11 @@ import pkg_resources
 pkg_resources.require('ssh' )
 pkg_resources.require( 'Fabric' )
 
-from fabric.api import env, lcd, local
+from fabric.api import env, lcd, local, settings
+
+DIRECTORY_BUILD_COMMAND_NAMES = [ 'change_directory' ]
+MOVE_BUILD_COMMAND_NAMES = [ 'move_directory_files', 'move_file' ]
+ALL_BUILD_COMMAND_NAMES = DIRECTORY_BUILD_COMMAND_NAMES + MOVE_BUILD_COMMAND_NAMES
 
 def check_fabric_version():
     version = env.version
@@ -83,11 +87,39 @@ def install_and_build_package( params_dict ):
                 dir = package_name
             if build_commands:
                 with lcd( dir ):
-                    for build_command in build_commands:
-                        output = local( build_command, capture=True )
-                        log_results( build_command, output, os.path.join( install_dir, 'build_commands.log' ) )
-                        if output.return_code:
-                            return '%s.  ' % str( output.stderr )
+                    current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                    for build_command_tup in build_commands:
+                        build_command_key, build_command_dict = build_command_tup
+                        if build_command_key.find( 'v^v^v' ) >= 0:
+                            build_command_items = build_command_key.split( 'v^v^v' )
+                            build_command_name = build_command_items[ 0 ]
+                            build_command = build_command_items[ 1 ]
+                        elif build_command_key in ALL_BUILD_COMMAND_NAMES:
+                            build_command_name = build_command_key
+                        else:
+                            build_command_name = None
+                        if build_command_name:
+                            if build_command_name == 'change_directory':
+                                current_dir = os.path.join( current_dir, build_command )
+                                lcd( current_dir )
+                            elif build_command_name == 'move_directory_files':
+                                source_directory = os.path.abspath( os.path.join( current_dir, build_command_dict[ 'source_directory' ] ) )
+                                destination_directory = build_command_dict[ 'destination_directory' ]
+                                for file_name in os.listdir( source_directory ):
+                                    source_file = os.path.join( source_directory, file_name )
+                                    destination_file = os.path.join( destination_directory, file_name )
+                                    shutil.move( source_file, destination_file )
+                            elif build_command_name == 'move_file':
+                                source_file = os.path.abspath( os.path.join( current_dir, build_command_dict[ 'source' ] ) )
+                                destination = build_command_dict[ 'destination' ]
+                                shutil.move( source_file, destination )
+                        else:
+                            build_command = build_command_key
+                            with settings( warn_only=True ):
+                                output = local( build_command, capture=True )
+                                log_results( build_command, output, os.path.join( install_dir, 'build_commands.log' ) )
+                                if output.return_code:
+                                    return '%s.  ' % str( output.stderr )
     return ''
 def log_results( command, fabric_AttributeString, file_path ):
     """
@@ -98,12 +130,12 @@ def log_results( command, fabric_AttributeString, file_path ):
         logfile = open( file_path, 'ab' )
     else:
         logfile = open( file_path, 'wb' )
-    logfile.write( "#############################################" )
+    logfile.write( "\n#############################################" )
     logfile.write( '\n%s\nSTDOUT\n' % command )
-    logfile.write( "#############################################" )
+    logfile.write( "#############################################\n" )
     logfile.write( str( fabric_AttributeString.stdout ) )
-    logfile.write( "#############################################" )
+    logfile.write( "\n#############################################" )
     logfile.write( '\n%s\nSTDERR\n' % command )
-    logfile.write( "#############################################" )
+    logfile.write( "#############################################\n" )
     logfile.write( str( fabric_AttributeString.stderr ) )
     logfile.close()
