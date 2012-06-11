@@ -103,7 +103,7 @@
                 --fusion-read-mismatches $params.fusion_search.read_mismatches
                 --fusion-multireads $params.fusion_search.multireads
                 --fusion-multipairs $params.fusion_search.multipairs
-                --fusion-ignore-chromosomes $params.fusion_search.ignore_chromosomes
+                --fusion-ignore-chromosomes "$params.fusion_search.ignore_chromosomes"
             #end if
             
             #if $params.bowtie2_settings.b2_settings == "Yes":

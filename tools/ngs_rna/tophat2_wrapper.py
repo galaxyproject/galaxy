@@ -200,10 +200,12 @@ def __main__():
             
             # Fusion search options.
             if options.fusion_search:
-                opts += ' --fusion-search --fusion-anchor-length %i --fusion-min-dist %i --fusion-read-mismatches %i --fusion-multireads %i --fusion-multipairs %i --fusion-ignore-chromosomes %s' % \
+                opts += ' --fusion-search --fusion-anchor-length %i --fusion-min-dist %i --fusion-read-mismatches %i --fusion-multireads %i --fusion-multipairs %i' % \
                           ( int( options.fusion_anchor_length ), int( options.fusion_min_dist ),
                             int( options.fusion_read_mismatches ), int( options.fusion_multireads ),
-                            int( options.fusion_multipairs ), options.fusion_ignore_chromosomes )
+                            int( options.fusion_multipairs ) )
+                if options.fusion_ignore_chromosomes:
+                    opts += ' --fusion-ignore-chromosomes %s' % options.fusion_ignore_chromosomes
                             
             # Bowtie2 options.
             if options.b2_very_fast:
