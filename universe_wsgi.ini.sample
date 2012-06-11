@@ -527,6 +527,9 @@ use_interactive = True
 # be used for each "Set at Runtime" input, independent of others in the Workflow
 #enable_unique_workflow_defaults = False
 
+# The URL to the myExperiment instance being used (omit scheme but include port)
+#myexperiment_url = www.myexperiment.org:80
+
 # Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
 # configure an FTP server (we've used ProFTPd since it can use Galaxy's
 # database for authentication) and set the following two options.
@@ -680,9 +683,6 @@ use_interactive = True
 #pbs_application_server = 
 #pbs_stage_path = 
 #pbs_dataset_server = 
-
-# The URL to the myExperiment instance being used (omit scheme but include port)
-myexperiment_url = www.myexperiment.org:80
 
 # This option allows users to see the full path of datasets via the "View
 # Details" option in the history.  Administrators can always see this.
