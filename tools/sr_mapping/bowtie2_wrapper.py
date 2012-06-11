@@ -65,7 +65,7 @@ def __main__():
         index_path = options.index_path
 
     # Build bowtie command.
-    cmd = 'bowtie2 %s -x %s %s -S %s'
+    cmd = 'bowtie2 %s -x %s %s | samtools view -Sb - > %s'
     
     # Set up reads.
     if options.single_paired == 'paired':

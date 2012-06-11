@@ -112,7 +112,7 @@
     </inputs>
 
     <outputs>
-        <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
+        <data format="bam" name="output" label="${tool.name} on ${on_string}: mapped reads">
           <actions>
             <conditional name="refGenomeSource.genomeSource">
               <when value="indexed">
