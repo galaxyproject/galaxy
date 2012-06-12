@@ -63,7 +63,7 @@ class TracksDataProvider( object ):
         self.original_dataset = original_dataset
         self.dependencies = dependencies
         
-    def write_data_to_file( self, chrom, start, end, filename ):
+    def write_data_to_file( self, regions, filename ):
         """
         Write data in region defined by chrom, start, and end to a file.
         """
@@ -257,11 +257,18 @@ class TabixDataProvider( FilterableMixin, TracksDataProvider ):
         
         return tabix.fetch(reference=chrom, start=start, end=end)
                 
-    def write_data_to_file( self, chrom, start, end, filename ):
-        iterator = self.get_iterator( chrom, start, end )
+    def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
-        for line in iterator:
-            out.write( "%s\n" % line )
+        
+        for region in regions:
+            # Write data in region.
+            chrom = region.chrom
+            start = region.start
+            end = region.end
+            iterator = self.get_iterator( chrom, start, end )
+            for line in iterator:
+                out.write( "%s\n" % line )
+                
         out.close()
 
 #
@@ -332,7 +339,7 @@ class IntervalDataProvider( TracksDataProvider ):
 
         return { 'data': rval, 'message': message }
 
-    def write_data_to_file( self, chrom, start, end, filename ):
+    def write_data_to_file( self, regions, filename ):
         raise Exception( "Unimplemented Function" )
 
 class IntervalTabixDataProvider( TabixDataProvider, IntervalDataProvider ):
@@ -420,11 +427,18 @@ class BedDataProvider( TracksDataProvider ):
 
         return { 'data': rval, 'message': message }
 
-    def write_data_to_file( self, chrom, start, end, filename ):
-        iterator = self.get_iterator( chrom, start, end )
+    def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
-        for line in iterator:
-            out.write( "%s\n" % line )
+        
+        for region in regions:
+            # Write data in region.
+            chrom = region.chrom
+            start = region.start
+            end = region.end
+            iterator = self.get_iterator( chrom, start, end )
+            for line in iterator:
+                out.write( "%s\n" % line )
+                
         out.close()
         
 class BedTabixDataProvider( TabixDataProvider, BedDataProvider ):
@@ -545,11 +559,17 @@ class VcfDataProvider( TracksDataProvider ):
 
         return { 'data': rval, 'message': message }
 
-    def write_data_to_file( self, chrom, start, end, filename ):
-        iterator = self.get_iterator( chrom, start, end )
+    def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
-        for line in iterator:
-            out.write( "%s\n" % line )
+        
+        for region in regions:
+            # Write data in region.
+            chrom = region.chrom
+            start = region.start
+            end = region.end
+            iterator = self.get_iterator( chrom, start, end )
+            for line in iterator:
+                out.write( "%s\n" % line )
         out.close()
 
 class VcfTabixDataProvider( TabixDataProvider, VcfDataProvider ):
@@ -669,35 +689,42 @@ class BamDataProvider( TracksDataProvider, FilterableMixin ):
         return filters
     
     
-    def write_data_to_file( self, chrom, start, end, filename ):
+    def write_data_to_file( self, regions, filename ):
         """
-        Write reads in [chrom:start-end] to file.
+        Write reads in regions to file.
         """
         
         # Open current BAM file using index.
-        start, end = int(start), int(end)
         bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', \
                                      index_filename=self.converted_dataset.file_name )
-        try:
-            data = bamfile.fetch(start=start, end=end, reference=chrom)
-        except ValueError, e:
-            # Some BAM files do not prefix chromosome names with chr, try without
-            if chrom.startswith( 'chr' ):
-                try:
-                    data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
-                except ValueError:
-                    return None
-            else:
-                return None
-        
-        # Write new BAM file.
+
         # TODO: write headers as well?
         new_bamfile = csamtools.Samfile( template=bamfile, filename=filename, mode='wb' )
-        for i, read in enumerate( data ):
-            new_bamfile.write( read )
-        new_bamfile.close()
+        
+        for region in regions:
+            # Write data from region.
+            chrom = region.chrom
+            start = region.start
+            end = region.end
+        
+            try:
+                data = bamfile.fetch(start=start, end=end, reference=chrom)
+            except ValueError, e:
+                # Some BAM files do not prefix chromosome names with chr, try without
+                if chrom.startswith( 'chr' ):
+                    try:
+                        data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
+                    except ValueError:
+                        return None
+                else:
+                    return None
+
+            # Write reads in region.
+            for i, read in enumerate( data ):
+                new_bamfile.write( read )
         
         # Cleanup.
+        new_bamfile.close()
         bamfile.close()
         
     def get_iterator( self, chrom, start, end ):
@@ -952,17 +979,24 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
     """
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
     
-    def write_data_to_file( self, chrom, start, end, filename ):
+    def write_data_to_file( self, regions, filename ):
         source = open( self.original_dataset.file_name )
         index = Indexes( self.converted_dataset.file_name )
         out = open( filename, 'w' )
-        for start, end, offset in index.find(chrom, start, end):
-            source.seek( offset )
+        
+        for region in regions:
+            # Write data from region.
+            chrom = region.chrom
+            start = region.start
+            end = region.end
+            for start, end, offset in index.find(chrom, start, end):
+                source.seek( offset )
             
-            reader = GFFReaderWrapper( source, fix_strand=True )
-            feature = reader.next()
-            for interval in feature.intervals:
-                out.write( '\t'.join( interval.fields ) + '\n' )
+                reader = GFFReaderWrapper( source, fix_strand=True )
+                feature = reader.next()
+                for interval in feature.intervals:
+                    out.write( '\t'.join( interval.fields ) + '\n' )
+                    
         out.close()
         
     def get_iterator( self, chrom, start, end ):
@@ -1183,13 +1217,6 @@ class ENCODEPeakDataProvider( TracksDataProvider ):
             rval.append( payload )
 
         return { 'data': rval, 'message': message }
-
-    def write_data_to_file( self, chrom, start, end, filename ):
-        iterator = self.get_iterator( chrom, start, end )
-        out = open( filename, "w" )
-        for line in iterator:
-            out.write( "%s\n" % line )
-        out.close()
         
 class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
     """

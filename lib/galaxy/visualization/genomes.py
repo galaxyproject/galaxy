@@ -23,6 +23,26 @@ def decode_dbkey( dbkey ):
         return dbkey.split( ':' )
     else:
         return None, dbkey
+
+class GenomeRegion( object ):
+    """
+    A genomic region on an individual chromosome.
+    """
+    
+    def __init__( self, chrom=None, start=None, end=None ):
+        self.chrom = chrom
+        self.start = int( start )
+        self.end = int( end )
+        
+    def __str__( self ):
+        return self.chrom + ":" + str( self.start ) + "-" + str( self.end )
+        
+    @staticmethod
+    def from_dict( obj_dict ):
+        return GenomeRegion( chrom=obj_dict[ 'chrom' ],
+                             start=obj_dict[ 'start' ],
+                             end=obj_dict[ 'end' ] )
+        
         
 class Genome( object ):
     """

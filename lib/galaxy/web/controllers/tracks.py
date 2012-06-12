@@ -18,17 +18,6 @@ from galaxy.visualization.tracks.data_providers import *
 from galaxy.visualization.genomes import decode_dbkey, Genomes
 from galaxy.visualization.tracks.visual_analytics import get_tool_def, get_dataset_job
 
-# Message strings returned to browser
-messages = Bunch(
-    PENDING = "pending",
-    NO_DATA = "no data",
-    NO_CHROMOSOME = "no chromosome",
-    NO_CONVERTER = "no converter",
-    NO_TOOL = "no tool",
-    DATA = "data",
-    ERROR = "error",
-    OK = "ok"
-)
 
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
@@ -163,7 +152,7 @@ class TracksterSelectionGrid( grids.Grid ):
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.user_id == trans.user.id )                    
         
-class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMixinDatasetAssociationMixin, SharableMixin ):
+class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin, SharableMixin ):
     """
     Controller for track browser interface. Handles building a new browser from
     datasets in the current history, and display of the resulting browser.
@@ -488,281 +477,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
     @web.expose
     def list_tracks( self, trans, **kwargs ):
         return self.tracks_grid( trans, **kwargs )
-            
-    @web.expose
-    def run_tool( self, trans, tool_id, target_dataset_id, **kwargs ):
-        """
-        Run a tool. This method serves as a general purpose way to run tools asynchronously.
-        """
-        
-        #
-        # Set target history (the history that tool will use for outputs) using
-        # target dataset. If user owns dataset, put new data in original 
-        # dataset's history; if user does not own dataset (and hence is accessing
-        # dataset via sharing), put new data in user's current history.
-        #
-        target_dataset = self.get_dataset( trans, target_dataset_id, check_ownership=False, check_accessible=True )
-        if target_dataset.history.user == trans.user:
-            target_history = target_dataset.history
-        else:
-            target_history = trans.get_history( create=True )
-        
-        # HACK: tools require unencoded parameters but kwargs are typically 
-        # encoded, so try decoding all parameter values.
-        for key, value in kwargs.items():
-            try:
-                value = trans.security.decode_id( value )
-                kwargs[ key ] = value
-            except:
-                pass
-        
-        #        
-        # Execute tool.
-        #
-        tool = trans.app.toolbox.get_tool( tool_id )
-        if not tool:
-            return messages.NO_TOOL
-        
-        # HACK: add run button so that tool.handle_input will run tool.
-        kwargs['runtool_btn'] = 'Execute'
-        params = util.Params( kwargs, sanitize = False )
-        template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
-        
-        # TODO: check for errors and ensure that output dataset is available.
-        output_datasets = vars[ 'out_data' ].values()
-        return self.add_track_async( trans, output_datasets[0].id )
-                
-    @web.expose
-    def rerun_tool( self, trans, dataset_id, tool_id, chrom=None, low=None, high=None, **kwargs ):
-        """
-        Rerun a tool to produce a new output dataset that corresponds to a 
-        dataset that a user is currently viewing.
-        """
-        
-        #
-        # TODO: refactor to use same code as run_tool.
-        #        
-        
-        # Run tool on region if region is specificied.
-        run_on_region = False
-        if chrom and low and high:
-            run_on_region = True
-            low, high = int( low ), int( high )
-        
-        # Dataset check.
-        original_dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        msg = self._check_dataset_state( trans, original_dataset )
-        if msg:
-            return to_json_string( msg )
-            
-        #
-        # Set tool parameters--except non-hidden dataset parameters--using combination of
-        # job's previous parameters and incoming parameters. Incoming parameters
-        # have priority.
-        #
-        original_job = get_dataset_job( original_dataset )
-        tool = trans.app.toolbox.get_tool( original_job.tool_id )
-        if not tool:
-            return messages.NO_TOOL
-        tool_params = dict( [ ( p.name, p.value ) for p in original_job.parameters ] )
-        # TODO: need to handle updates to conditional parameters; conditional 
-        # params are stored in dicts (and dicts within dicts).
-        tool_params.update( dict( [ ( key, value ) for key, value in kwargs.items() if key in tool.inputs ] ) )
-        tool_params = tool.params_from_strings( tool_params, self.app )
-        
-        #
-        # If running tool on region, convert input datasets (create indices) so
-        # that can regions of data can be quickly extracted.
-        # 
-        messages_list = []
-        if run_on_region:
-            for jida in original_job.input_datasets:
-                input_dataset = jida.dataset
-                if get_data_provider( original_dataset=input_dataset ):
-                    # Can index dataset.
-                    track_type, data_sources = input_dataset.datatype.get_track_type()
-                    # Convert to datasource that provides 'data' because we need to
-                    # extract the original data.
-                    data_source = data_sources[ 'data' ]
-                    msg = self._convert_dataset( trans, input_dataset, data_source )
-                    if msg is not None:
-                        messages_list.append( msg )
-
-        # Return any messages generated during conversions.
-        return_message = _get_highest_priority_msg( messages_list )
-        if return_message:
-            return to_json_string( return_message )
-            
-        #
-        # Set target history (the history that tool will use for inputs/outputs).
-        # If user owns dataset, put new data in original dataset's history; if 
-        # user does not own dataset (and hence is accessing dataset via sharing), 
-        # put new data in user's current history.
-        #
-        if original_dataset.history.user == trans.user:
-            target_history = original_dataset.history
-        else:
-            target_history = trans.get_history( create=True )
-        hda_permissions = trans.app.security_agent.history_get_default_permissions( target_history )
-        
-        def set_param_value( param_dict, param_name, param_value ):
-            """
-            Set new parameter value in a tool's parameter dictionary.
-            """
-            
-            # Recursive function to set param value.
-            def set_value( param_dict, group_name, group_index, param_name, param_value ):
-                if group_name in param_dict:
-                    param_dict[ group_name ][ group_index ][ param_name ] = param_value
-                    return True
-                elif param_name in param_dict:
-                    param_dict[ param_name ] = param_value
-                    return True
-                else:
-                    # Recursive search.
-                    return_val = False
-                    for name, value in param_dict.items():
-                        if isinstance( value, dict ):
-                            return_val = set_value( value, group_name, group_index, param_name, param_value)
-                            if return_val:
-                                return return_val
-                    return False
-            
-            # Parse parameter name if necessary.
-            if param_name.find( "|" ) == -1:
-                # Non-grouping parameter.
-                group_name = group_index = None
-            else:
-                # Grouping parameter.
-                group, param_name = param_name.split( "|" )
-                index = group.rfind( "_" )
-                group_name = group[ :index ]
-                group_index = int( group[ index + 1: ] )
-            
-            return set_value( param_dict, group_name, group_index, param_name, param_value )
-        
-        # Set parameters based tool's trackster config.
-        params_set = {}
-        for action in tool.trackster_conf.actions:
-            success = False
-            for joda in original_job.output_datasets:
-                if joda.name == action.output_name:
-                    set_param_value( tool_params, action.name, joda.dataset )
-                    params_set[ action.name ] = True
-                    success = True
-                    break
                     
-            if not success:
-                return messages.ERROR
-                
-        #
-        # Set input datasets for tool. If running on region, extract and use subset
-        # when possible.
-        #
-        location = "%s:%i-%i" % ( chrom, low, high )
-        for jida in original_job.input_datasets:
-            # If param set previously by config actions, do nothing.
-            if jida.name in params_set:
-                continue
-                
-            input_dataset = jida.dataset
-            if input_dataset is None: #optional dataset and dataset wasn't selected
-                tool_params[ jida.name ] = None
-            elif run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
-                # Dataset is indexed and hence a subset can be extracted and used
-                # as input.
-                
-                # Look for subset.
-                subset_dataset_association = trans.sa_session.query( trans.app.model.HistoryDatasetAssociationSubset ) \
-                                                             .filter_by( hda=input_dataset, location=location ) \
-                                                             .first()
-                if subset_dataset_association:
-                    # Data subset exists.
-                    subset_dataset = subset_dataset_association.subset
-                else:
-                    # Need to create subset.
-                    track_type, data_sources = input_dataset.datatype.get_track_type()
-                    data_source = data_sources[ 'data' ]
-                    converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
-                    deps = input_dataset.get_converted_dataset_deps( trans, data_source )
-                            
-                    # Create new HDA for input dataset's subset.
-                    new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext, \
-                                                                             dbkey=input_dataset.dbkey, \
-                                                                             create_dataset=True, \
-                                                                             sa_session=trans.sa_session,
-                                                                             name="Subset [%s] of data %i" % \
-                                                                                 ( location, input_dataset.hid ),
-                                                                             visible=False )
-                    target_history.add_dataset( new_dataset )
-                    trans.sa_session.add( new_dataset )
-                    trans.app.security_agent.set_all_dataset_permissions( new_dataset.dataset, hda_permissions )
-            
-                    # Write subset of data to new dataset
-                    data_provider_class = get_data_provider( original_dataset=input_dataset )
-                    data_provider = data_provider_class( original_dataset=input_dataset, 
-                                                         converted_dataset=converted_dataset,
-                                                         dependencies=deps )
-                    trans.app.object_store.create( new_dataset.dataset )
-                    data_provider.write_data_to_file( chrom, low, high, new_dataset.file_name )
-            
-                    # TODO: (a) size not working; (b) need to set peek.
-                    new_dataset.set_size()
-                    new_dataset.info = "Data subset for trackster"
-                    new_dataset.set_dataset_state( trans.app.model.Dataset.states.OK )
-                
-                    # Set metadata.
-                    # TODO: set meta internally if dataset is small enough?
-                    if trans.app.config.set_metadata_externally:
-                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, 
-                                                                                                     trans, incoming = { 'input1':new_dataset }, 
-                                                                                                     overwrite=False, job_params={ "source" : "trackster" } )
-                    else:
-                        message = 'Attributes updated'
-                        new_dataset.set_meta()
-                        new_dataset.datatype.after_setting_metadata( new_dataset )
-                        
-                    # Add HDA subset association.
-                    subset_association = trans.app.model.HistoryDatasetAssociationSubset( hda=input_dataset, subset=new_dataset, location=location )
-                    trans.sa_session.add( subset_association )
-                    
-                    subset_dataset = new_dataset
-                    
-                trans.sa_session.flush()
-                
-                # Add dataset to tool's parameters.
-                if not set_param_value( tool_params, jida.name, subset_dataset ):
-                    return to_json_string( { "error" : True, "message" : "error setting parameter %s" % jida.name } )
-        
-        #        
-        # Execute tool and handle outputs.
-        #
-        try:
-            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, 
-                                                           history=target_history, 
-                                                           job_params={ "source" : "trackster" } )
-        except Exception, e:
-            # Lots of things can go wrong when trying to execute tool.
-            return to_json_string( { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) } )
-        if run_on_region:
-            for output in subset_job_outputs.values():
-                output.visible = False
-            trans.sa_session.flush()
-            
-        #    
-        # Return new track that corresponds to the original dataset.
-        #
-        output_name = None
-        for joda in original_job.output_datasets:
-            if joda.dataset == original_dataset:
-                output_name = joda.name
-                break
-        for joda in subset_job.output_datasets:
-            if joda.name == output_name:
-                output_dataset = joda.dataset
-        
-        return self.add_track_async( trans, output_dataset.id )
-        
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def paramamonster( self, trans, hda_ldda, dataset_id ):
@@ -799,18 +514,6 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
     # Helper methods.
     # -----------------
         
-    def _check_dataset_state( self, trans, dataset ):
-        """
-        Returns a message if dataset is not ready to be used in visualization.
-        """
-        if not dataset:
-            return messages.NO_DATA
-        if dataset.state == trans.app.model.Job.states.ERROR:
-            return messages.ERROR
-        if dataset.state != trans.app.model.Job.states.OK:
-            return messages.PENDING
-        return None
-        
     def _get_datasources( self, trans, dataset ):
         """
         Returns datasources for dataset; if datasources are not available
@@ -833,56 +536,10 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryMix
             data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
         
         return data_sources_dict
-                    
-    def _convert_dataset( self, trans, dataset, target_type ):
-        """
-        Converts a dataset to the target_type and returns a message indicating 
-        status of the conversion. None is returned to indicate that dataset
-        was converted successfully. 
-        """
-        
-        # Get converted dataset; this will start the conversion if necessary.
-        try:
-            converted_dataset = dataset.get_converted_dataset( trans, target_type )
-        except NoConverterException:
-            return messages.NO_CONVERTER
-        except ConverterDependencyException, dep_error:
-            return { 'kind': messages.ERROR, 'message': dep_error.value }
-            
-        # Check dataset state and return any messages.
-        msg = None
-        if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
-            job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
-                        .filter_by( dataset_id=converted_dataset.id ).first().job_id
-            job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-            msg = { 'kind': messages.ERROR, 'message': job.stderr }
-        elif not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
-            msg = messages.PENDING
-        
-        return msg
-        
+                            
     def _get_dataset( self, trans, hda_ldda, dataset_id ):
         """ Returns either HDA or LDDA for hda/ldda and id combination. """
         if hda_ldda == "hda":
             return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
             return trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-        
-        
-def _get_highest_priority_msg( message_list ):
-    """
-    Returns highest priority message from a list of messages.
-    """
-    return_message = None
-    
-    # For now, priority is: job error (dict), no converter, pending.
-    for message in message_list:
-        if message is not None:
-            if isinstance(message, dict):
-                return_message = message
-                break
-            elif message == messages.NO_CONVERTER:
-                return_message = message
-            elif return_message == None and message == messages.PENDING:
-                return_message = message
-    return return_message

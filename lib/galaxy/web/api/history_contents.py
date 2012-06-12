@@ -12,7 +12,7 @@ import routes
 
 log = logging.getLogger( __name__ )
 
-class HistoryContentsController( BaseAPIController, UsesHistoryMixinDatasetAssociationMixin, UsesHistoryMixin, UsesLibraryMixin, UsesLibraryMixinItems ):
+class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesLibraryMixin, UsesLibraryMixinItems ):
 
     @web.expose_api
     def index( self, trans, history_id, **kwd ):

@@ -2617,7 +2617,7 @@ class Tool:
                 elif isinstance( input, SelectToolParameter ):
                     param_dict.update( { 'type' : 'select', 
                                          'html' : urllib.quote( input.get_html( trans ) ),
-                                         'options': input.static_options 
+                                         'options': input.static_options
                                          } )
                 elif isinstance( input, Conditional ):
                     # TODO.
@@ -2626,7 +2626,8 @@ class Tool:
                     param_dict.update( { 'type' : 'number', 'init_value' : input.value,
                                          'html' : urllib.quote( input.get_html( trans ) ),
                                          'min': input.min,
-                                         'max': input.max
+                                         'max': input.max,
+                                         'value': input.value
                                           } )
                 else:
                     param_dict.update( { 'type' : '??', 'init_value' : input.value, \

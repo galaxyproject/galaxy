@@ -69,7 +69,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
 
 
 class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations, 
-                                UsesHistoryMixinDatasetAssociationMixin, UsesVisualizationMixin, 
+                                UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin, 
                                 UsesItemRatings ):
     _user_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()

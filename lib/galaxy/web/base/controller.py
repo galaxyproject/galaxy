@@ -181,6 +181,37 @@ class BaseAPIController( BaseController ):
 # -- Mixins for working with Galaxy objects. --
 #
 
+# Message strings returned to browser
+messages = Bunch(
+    PENDING = "pending",
+    NO_DATA = "no data",
+    NO_CHROMOSOME = "no chromosome",
+    NO_CONVERTER = "no converter",
+    NO_TOOL = "no tool",
+    DATA = "data",
+    ERROR = "error",
+    OK = "ok"
+)
+
+def get_highest_priority_msg( message_list ):
+    """
+    Returns highest priority message from a list of messages.
+    """
+    return_message = None
+    
+    # For now, priority is: job error (dict), no converter, pending.
+    for message in message_list:
+        if message is not None:
+            if isinstance(message, dict):
+                return_message = message
+                break
+            elif message == messages.NO_CONVERTER:
+                return_message = message
+            elif return_message == None and message == messages.PENDING:
+                return_message = message
+    return return_message
+
+
 class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
     def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
@@ -201,8 +232,9 @@ class SharableItemSecurityMixin:
                     raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
         return item
 
-class UsesHistoryMixinDatasetAssociationMixin:
+class UsesHistoryDatasetAssociationMixin:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
+    
     def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
         """ Get an HDA object by id. """
         # DEPRECATION: We still support unencoded ids for backward compatibility
@@ -232,6 +264,7 @@ class UsesHistoryMixinDatasetAssociationMixin:
             else:
                 error( "You are not allowed to access this dataset" )
         return data
+        
     def get_history_dataset_association( self, trans, history, dataset_id, check_ownership=True, check_accessible=False ):
         """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
         self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
@@ -244,6 +277,7 @@ class UsesHistoryMixinDatasetAssociationMixin:
             else:
                 error( "You are not allowed to access this dataset" )
         return hda
+        
     def get_data( self, dataset, preview=True ):
         """ Gets a dataset's data. """
         # Get data from file, truncating if necessary.
@@ -258,6 +292,46 @@ class UsesHistoryMixinDatasetAssociationMixin:
                 dataset_data = open( dataset.file_name ).read(max_peek_size)
                 truncated = False
         return truncated, dataset_data
+        
+    def check_dataset_state( self, trans, dataset ):
+        """
+        Returns a message if dataset is not ready to be used in visualization.
+        """
+        if not dataset:
+            return messages.NO_DATA
+        if dataset.state == trans.app.model.Job.states.ERROR:
+            return messages.ERROR
+        if dataset.state != trans.app.model.Job.states.OK:
+            return messages.PENDING
+        return None
+        
+    def convert_dataset( self, trans, dataset, target_type ):
+        """
+        Converts a dataset to the target_type and returns a message indicating 
+        status of the conversion. None is returned to indicate that dataset
+        was converted successfully. 
+        """
+
+        # Get converted dataset; this will start the conversion if necessary.
+        try:
+            converted_dataset = dataset.get_converted_dataset( trans, target_type )
+        except NoConverterException:
+            return messages.NO_CONVERTER
+        except ConverterDependencyException, dep_error:
+            return { 'kind': messages.ERROR, 'message': dep_error.value }
+
+        # Check dataset state and return any messages.
+        msg = None
+        if converted_dataset and converted_dataset.state == trans.app.model.Dataset.states.ERROR:
+            job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
+                        .filter_by( dataset_id=converted_dataset.id ).first().job_id
+            job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+            msg = { 'kind': messages.ERROR, 'message': job.stderr }
+        elif not converted_dataset or converted_dataset.state != trans.app.model.Dataset.states.OK:
+            msg = messages.PENDING
+
+        return msg
+    
 
 class UsesLibraryMixin:
     def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
