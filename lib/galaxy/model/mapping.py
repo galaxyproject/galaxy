@@ -397,7 +397,7 @@ ToolDependency.table = Table( "tool_dependency", metadata,
     Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ),
     Column( "installed_changeset_revision", TrimmedString( 255 ) ),
     Column( "name", TrimmedString( 255 ) ),
-    Column( "version", TrimmedString( 40 ) ),
+    Column( "version", Text ),
     Column( "type", TrimmedString( 40 ) ),
     Column( "uninstalled", Boolean, default=False ) )
 
