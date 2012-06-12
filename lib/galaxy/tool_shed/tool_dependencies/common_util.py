@@ -1,5 +1,9 @@
-import os, tarfile, urllib2
+import os, shutil, tarfile, urllib2
 from galaxy.datatypes.checkers import *
+
+DIRECTORY_BUILD_COMMAND_NAMES = [ 'change_directory' ]
+MOVE_BUILD_COMMAND_NAMES = [ 'move_directory_files', 'move_file' ]
+ALL_BUILD_COMMAND_NAMES = DIRECTORY_BUILD_COMMAND_NAMES + MOVE_BUILD_COMMAND_NAMES
 
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
@@ -17,6 +21,21 @@ def istar( file_path ):
     return tarfile.is_tarfile( file_path )
 def iszip( file_path ):
     return check_zip( file_path )
+def move_directory_files( current_dir, source_dir, destination_dir ):
+    source_directory = os.path.abspath( os.path.join( current_dir, source_dir ) )
+    destination_directory = os.path.join( destination_dir )
+    if not os.path.isdir( destination_directory ):
+        os.makedirs( destination_directory )
+    for file_name in os.listdir( source_directory ):
+        source_file = os.path.join( source_directory, file_name )
+        destination_file = os.path.join( destination_directory, file_name )
+        shutil.move( source_file, destination_file )
+def move_file( current_dir, source, destination_dir ):
+    source_file = os.path.abspath( os.path.join( current_dir, source ) )
+    destination_directory = os.path.join( destination_dir )
+    if not os.path.isdir( destination_directory ):
+        os.makedirs( destination_directory )
+    shutil.move( source_file, destination_directory )
 def tar_extraction_directory( file_path, file_name ):
     file_name = file_name.strip()
     extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.zip' ]

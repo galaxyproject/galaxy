@@ -30,7 +30,7 @@ class DependencyManager( object ):
             if not os.path.isdir( base_path ):
                 log.warn( "Path '%s' is not directory, ignoring", base_path )
             self.base_paths.append( os.path.abspath( base_path ) )
-    def find_dep( self, name, version=None ):
+    def find_dep( self, name, version=None, type='package', installed_tool_dependencies=None ):
         """
         Attempt to find a dependency named `name` at version `version`. If
         version is None, return the "default" version as determined using a 
@@ -40,10 +40,24 @@ class DependencyManager( object ):
         if version is None:
             return self._find_dep_default( name )
         else:
-            return self._find_dep_versioned( name, version )
-    def _find_dep_versioned( self, name, version ):
+            return self._find_dep_versioned( name, version, installed_tool_dependencies=installed_tool_dependencies )
+    def _find_dep_versioned( self, name, version, type='package', installed_tool_dependencies=None ):
+        installed_dependency = None
+        if installed_tool_dependencies:
+            for installed_dependency in installed_tool_dependencies:
+                if not installed_dependency.uninstalled:
+                    if installed_dependency.name == name and installed_dependency.version == version and installed_dependency.type == type:
+                        break
         for base_path in self.base_paths:
-            path = os.path.join( base_path, name, version )
+            if installed_dependency:
+                tool_shed_repository = installed_dependency.tool_shed_repository
+                path = os.path.join( base_path,
+                                     name, version,
+                                     tool_shed_repository.owner,
+                                     tool_shed_repository.name,
+                                     installed_dependency.installed_changeset_revision )
+            else:
+                path = os.path.join( base_path, name, version )
             script = os.path.join( path, 'env.sh' )
             if os.path.exists( script ):
                 return script, path, version
@@ -51,7 +65,7 @@ class DependencyManager( object ):
                 return None, path, version
         else:
             return None, None, None
-    def _find_dep_default( self, name ):
+    def _find_dep_default( self, name, type='package' ):
         version = None
         for base_path in self.base_paths:
             path = os.path.join( base_path, name, 'default' )

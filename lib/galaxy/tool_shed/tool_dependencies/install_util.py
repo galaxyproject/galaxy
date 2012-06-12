@@ -1,4 +1,5 @@
 import sys, os, subprocess, tempfile
+from common_util import *
 from fabric_util import *
 from galaxy.tool_shed.encoding_util import *
 from galaxy.model.orm import *
@@ -11,16 +12,32 @@ from elementtree import ElementTree, ElementInclude
 from elementtree.ElementTree import Element, SubElement
 
 def create_or_update_tool_dependency( app, tool_shed_repository, changeset_revision, name, version, type ):
+    """
+    This method is called from Galaxy (never the tool shed) when a new tool_shed_repository is being installed or when an ininstalled repository is
+    being reinstalled.
+    """
+    # First see if a tool_dependency record exists for the received changeset_revision.
     sa_session = app.model.context.current
     tool_dependency = get_tool_dependency_by_shed_changeset_revision( app, tool_shed_repository, name, version, type, changeset_revision )
     if tool_dependency:
         tool_dependency.uninstalled = False
     else:
-        tool_dependency = app.model.ToolDependency( tool_shed_repository_id=tool_shed_repository.id,
-                                                    installed_changeset_revision=changeset_revision,
-                                                    name=name,
-                                                    version=version,
-                                                    type=type )
+        # Check the tool_shed_repository's set of tool_depnedency records for any that are marked uninstalled.  If one is found, set uninstalled to
+        # False and update the value of installed_changeset_revision.
+        found = False
+        for tool_dependency in tool_shed_repository.tool_dependencies:
+            if tool_dependency.name == name and tool_dependency.version == version and tool_dependency.type == type and tool_dependency.uninstalled:
+                found = True
+                tool_dependency.uninstalled = False
+                tool_dependency.installed_changeset_revision = changeset_revision
+                break
+        if not found:
+            # Create a new tool_dependency record for the tool_shed_repository.
+            tool_dependency = app.model.ToolDependency( tool_shed_repository_id=tool_shed_repository.id,
+                                                        installed_changeset_revision=changeset_revision,
+                                                        name=name,
+                                                        version=version,
+                                                        type=type )
     sa_session.add( tool_dependency )
     sa_session.flush()
     return tool_dependency

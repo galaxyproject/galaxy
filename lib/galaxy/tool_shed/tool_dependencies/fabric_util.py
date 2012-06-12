@@ -1,7 +1,7 @@
 # For Python 2.5
 from __future__ import with_statement
 
-import os, shutil
+import os, shutil, tempfile
 from contextlib import contextmanager
 import common_util
 
@@ -12,10 +12,6 @@ pkg_resources.require('ssh' )
 pkg_resources.require( 'Fabric' )
 
 from fabric.api import env, lcd, local, settings
-
-DIRECTORY_BUILD_COMMAND_NAMES = [ 'change_directory' ]
-MOVE_BUILD_COMMAND_NAMES = [ 'move_directory_files', 'move_file' ]
-ALL_BUILD_COMMAND_NAMES = DIRECTORY_BUILD_COMMAND_NAMES + MOVE_BUILD_COMMAND_NAMES
 
 def check_fabric_version():
     version = env.version
@@ -32,18 +28,12 @@ def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', 
     return env
 @contextmanager
 def make_tmp_dir():
-    tmp_dir = local( 'echo $TMPDIR' ).strip()
-    if not tmp_dir:
-        home_dir = local( 'echo $HOME' )
-        tmp_dir = os.path.join( home_dir, 'tmp' )
-    work_dir = os.path.join( tmp_dir, 'deploy_tmp' )
-    if not os.path.exists( work_dir ):
-        local( 'mkdir -p %s' % work_dir )
+    work_dir = tempfile.mkdtemp()
     yield work_dir
     if os.path.exists( work_dir ):
         local( 'rm -rf %s' % work_dir )
 def handle_post_build_processing( tool_dependency_dir, install_dir, package_name=None ):
-    cmd = "echo 'PATH=%s/bin:$PATH' > %s/env.sh;chmod +x %s/env.sh" % ( install_dir, install_dir, install_dir )
+    cmd = "echo 'PATH=%s/bin:$PATH; export PATH' > %s/env.sh;chmod +x %s/env.sh" % ( install_dir, install_dir, install_dir )
     message = ''
     output = local( cmd, capture=True )
     log_results( cmd, output, os.path.join( install_dir, 'env_sh.log' ) )
@@ -94,7 +84,7 @@ def install_and_build_package( params_dict ):
                             build_command_items = build_command_key.split( 'v^v^v' )
                             build_command_name = build_command_items[ 0 ]
                             build_command = build_command_items[ 1 ]
-                        elif build_command_key in ALL_BUILD_COMMAND_NAMES:
+                        elif build_command_key in common_util.ALL_BUILD_COMMAND_NAMES:
                             build_command_name = build_command_key
                         else:
                             build_command_name = None
@@ -103,16 +93,13 @@ def install_and_build_package( params_dict ):
                                 current_dir = os.path.join( current_dir, build_command )
                                 lcd( current_dir )
                             elif build_command_name == 'move_directory_files':
-                                source_directory = os.path.abspath( os.path.join( current_dir, build_command_dict[ 'source_directory' ] ) )
-                                destination_directory = build_command_dict[ 'destination_directory' ]
-                                for file_name in os.listdir( source_directory ):
-                                    source_file = os.path.join( source_directory, file_name )
-                                    destination_file = os.path.join( destination_directory, file_name )
-                                    shutil.move( source_file, destination_file )
+                                common_util.move_directory_files( current_dir=current_dir,
+                                                                  source_dir=os.path.join( build_command_dict[ 'source_directory' ] ),
+                                                                  destination_dir=os.path.join( build_command_dict[ 'destination_directory' ] ) )
                             elif build_command_name == 'move_file':
-                                source_file = os.path.abspath( os.path.join( current_dir, build_command_dict[ 'source' ] ) )
-                                destination = build_command_dict[ 'destination' ]
-                                shutil.move( source_file, destination )
+                                common_util.move_file( current_dir=current_dir,
+                                                       source=os.path.join( build_command_dict[ 'source' ] ),
+                                                       destination_dir=os.path.join( build_command_dict[ 'destination' ] ) )
                         else:
                             build_command = build_command_key
                             with settings( warn_only=True ):

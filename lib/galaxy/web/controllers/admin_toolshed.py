@@ -469,7 +469,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                                                    repository_name=name,
                                                                                                    description=description,
                                                                                                    owner=owner,
-                                                                                                   changeset_revision=changeset_revision,
+                                                                                                   installed_changeset_revision=changeset_revision,
+                                                                                                   current_changeset_revision=changeset_revision,
                                                                                                    ctx_rev=ctx_rev,
                                                                                                    tool_path=tool_path,
                                                                                                    repository_clone_url=repository_clone_url,
@@ -606,7 +607,8 @@ class AdminToolshed( AdminGalaxy ):
     def reinstall_repository( self, trans, **kwd ):
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
-        repository = get_repository( trans, kwd[ 'id' ] )
+        repository_id = kwd[ 'id' ]
+        repository = get_repository( trans, repository_id )
         no_changes = kwd.get( 'no_changes', '' )
         no_changes_checked = CheckboxField.is_checked( no_changes )
         install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
@@ -621,6 +623,12 @@ class AdminToolshed( AdminGalaxy ):
         else:
             ctx_rev = repository.ctx_rev
         clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+        # Since we're reinstalling the repository we need to find the latest changeset revision to which is can be updated.
+        current_changeset_revision, current_ctx_rev = get_update_to_changeset_revision_and_ctx_rev( trans, repository )
+        if current_ctx_rev != ctx_rev:
+            repo = hg.repository( get_configured_ui(), path=os.path.abspath( relative_install_dir ) )
+            pull_repository( repo, repository_clone_url, current_changeset_revision )
+            update_repository( repo, ctx_rev=current_ctx_rev )
         tool_section = None
         if repository.includes_tools:
             # Get the location in the tool panel in which each tool was originally loaded.
@@ -681,7 +689,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                                        repository_name=repository.name,
                                                                                        description=repository.description,
                                                                                        owner=repository.owner,
-                                                                                       changeset_revision=repository.installed_changeset_revision,
+                                                                                       installed_changeset_revision=repository.installed_changeset_revision,
+                                                                                       current_changeset_revision=current_changeset_revision,
                                                                                        ctx_rev=ctx_rev,
                                                                                        tool_path=tool_path,
                                                                                        repository_clone_url=repository_clone_url,
@@ -691,6 +700,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                        shed_tool_conf=shed_tool_conf,
                                                                                        install_tool_dependencies=install_tool_dependencies )
         if error_message:
+            # We'll only have an error_message if there was a problem installing tool dependencies.
             message += error_message
             status = 'error'
         repository.uninstalled = False
@@ -787,7 +797,7 @@ class AdminToolshed( AdminGalaxy ):
         changeset_revision = params.get( 'changeset_revision', None )
         latest_changeset_revision = params.get( 'latest_changeset_revision', None )
         latest_ctx_rev = params.get( 'latest_ctx_rev', None )
-        repository = get_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed_url, name, owner, changeset_revision )
+        repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed_url, name, owner, changeset_revision )
         if changeset_revision and latest_changeset_revision and latest_ctx_rev:
             if changeset_revision == latest_changeset_revision:
                 message = "The installed repository named '%s' is current, there are no updates available.  " % name

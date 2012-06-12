@@ -7,6 +7,7 @@ from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tool_shed.tool_dependencies.install_util import install_package
+from galaxy.tool_shed.encoding_util import *
 from galaxy.model.orm import *
 
 from galaxy import eggs
@@ -310,20 +311,24 @@ def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, in
                  tool_dicts=tool_dicts,
                  converter_path=converter_path,
                  display_path=display_path )
-def create_or_update_tool_shed_repository( app, name, description, changeset_revision, ctx_rev, repository_clone_url, metadata_dict,
-                                           owner='', dist_to_shed=False ):
+def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url, metadata_dict,
+                                           current_changeset_revision=None, owner='', dist_to_shed=False ):
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
     # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
-    sa_session = app.model.context.current
-    tmp_url = clean_repository_clone_url( repository_clone_url )
-    tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
+    if current_changeset_revision is None:
+        # The current_changeset_revision is not passed if a repository is being installed for the first time.  If a previously installed repository
+        # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior to
+        # it being uninstalled.
+        current_changeset_revision = installed_changeset_revision
+    sa_session = app.model.context.current  
+    tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     if not owner:
-        owner = get_repository_owner( tmp_url )
+        owner = get_repository_owner_from_clone_url( repository_clone_url )
     includes_datatypes = 'datatypes' in metadata_dict
-    tool_shed_repository = get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision )
+    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision )
     if tool_shed_repository:
         tool_shed_repository.description = description
-        tool_shed_repository.changeset_revision = changeset_revision
+        tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
         tool_shed_repository.metadata = metadata_dict
         tool_shed_repository.includes_datatypes = includes_datatypes
@@ -335,7 +340,7 @@ def create_or_update_tool_shed_repository( app, name, description, changeset_rev
                                                              description=description,
                                                              owner=owner,
                                                              installed_changeset_revision=changeset_revision,
-                                                             changeset_revision=changeset_revision,
+                                                             changeset_revision=current_changeset_revision,
                                                              ctx_rev=ctx_rev,
                                                              metadata=metadata_dict,
                                                              includes_datatypes=includes_datatypes,
@@ -876,23 +881,16 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
                 fh.close()
                 return tmp_filename
     return None
-def get_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
-    sa_session = app.model.context.current
-    if tool_shed.find( '//' ) > 0:
-        tool_shed = tool_shed.split( '//' )[1]
-    tool_shed = tool_shed.rstrip( '/' )
-    return sa_session.query( app.model.ToolShedRepository ) \
-                     .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                    app.model.ToolShedRepository.table.c.name == name,
-                                    app.model.ToolShedRepository.table.c.owner == owner,
-                                    app.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
-                     .first()
 def get_repository_owner( cleaned_repository_url ):
     items = cleaned_repository_url.split( 'repos' )
     repo_path = items[ 1 ]
     if repo_path.startswith( '/' ):
         repo_path = repo_path.replace( '/', '', 1 )
     return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
+def get_repository_owner_from_clone_url( repository_clone_url ):
+    tmp_url = clean_repository_clone_url( repository_clone_url )
+    tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
+    return get_repository_owner( tmp_url )
 def get_repository_tools_tups( app, metadata_dict ):
     repository_tools_tups = []
     if 'tools' in metadata_dict:
@@ -988,6 +986,33 @@ def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_di
                         relative_install_dir = os.path.join( tool_path, partial_install_dir )
                         return tool_path, relative_install_dir
     return None, None
+def get_tool_shed_from_clone_url( repository_clone_url ):
+    tmp_url = clean_repository_clone_url( repository_clone_url )
+    return tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
+def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
+    # This method is used only in Galaxy, not the tool shed.
+    sa_session = app.model.context.current
+    if tool_shed.find( '//' ) > 0:
+        tool_shed = tool_shed.split( '//' )[1]
+    tool_shed = tool_shed.rstrip( '/' )
+    return sa_session.query( app.model.ToolShedRepository ) \
+                     .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                    app.model.ToolShedRepository.table.c.name == name,
+                                    app.model.ToolShedRepository.table.c.owner == owner,
+                                    app.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
+                     .first()
+def get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision ):
+    # This method is used only in Galaxy, not the tool shed.
+    sa_session = app.model.context.current
+    if tool_shed.find( '//' ) > 0:
+        tool_shed = tool_shed.split( '//' )[1]
+    tool_shed = tool_shed.rstrip( '/' )
+    return sa_session.query( app.model.ToolShedRepository ) \
+                     .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                    app.model.ToolShedRepository.table.c.name == name,
+                                    app.model.ToolShedRepository.table.c.owner == owner,
+                                    app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+                     .first()
 def get_tool_version( app, tool_id ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.ToolVersion ) \
@@ -1000,6 +1025,24 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
                      .filter( and_( app.model.ToolVersionAssociation.table.c.parent_id == parent_tool_version.id,
                                     app.model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
                      .first()
+def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
+    """Return the changeset revision hash to which the repository can be updated."""
+    tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
+    url = '%s/repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s&no_reset=true' % \
+        ( tool_shed_url, repository.name, repository.owner, repository.installed_changeset_revision )
+    try:
+        response = urllib2.urlopen( url )
+        encoded_update_dict = response.read()
+        if encoded_update_dict:
+            update_dict = tool_shed_decode( encoded_update_dict )
+            changeset_revision = update_dict[ 'changeset_revision' ]
+            ctx_rev = update_dict[ 'ctx_rev' ]
+        response.close()
+    except Exception, e:
+        log.debug( "Error getting change set revision for update from the tool shed for repository '%s': %s" % ( repository.name, str( e ) ) )
+        changeset_revision = None
+        ctx_rev = None
+    return changeset_revision, ctx_rev
 def get_url_from_repository_tool_shed( app, repository ):
     """
     The stored value of repository.tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
@@ -1015,7 +1058,8 @@ def get_url_from_repository_tool_shed( app, repository ):
 def handle_missing_data_table_entry( app, repository, changeset_revision, tool_path, repository_tools_tups, dir ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
-    tool_data_table_conf.xml file.  This method is called only from Galaxy (not the tool shed) when a repository is being installed.
+    tool_data_table_conf.xml file.  This method is called only from Galaxy (not the tool shed) when a repository is being installed
+    or reinstalled.
     """
     missing_data_table_entry = False
     for index, repository_tools_tup in enumerate( repository_tools_tups ):
@@ -1079,10 +1123,10 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
     return error, message
 def handle_tool_dependencies( app, tool_shed_repository, installed_changeset_revision, tool_dependencies_config ):
     """
-    Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can refer to installation
-    methods in Galaxy's tool_dependencies module or to proprietary fabric scripts contained in the repository.  Future enhancements
-    to handling tool dependencies may provide installation processes in addition to fabric based processes.  The dependencies will be
-    installed in:
+    Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation
+    methods in Galaxy's tool_dependencies module.  In the future, proprietary fabric scripts contained in the repository will be supported.
+    Future enhancements to handling tool dependencies may provide installation processes in addition to fabric based processes.  The dependencies
+    will be installed in:
     ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repository_owner>/<repository_name>/<installed_changeset_revision>
     """
     status = 'ok'
@@ -1160,8 +1204,9 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
 def load_installed_display_applications( installed_repository_dict, deactivate=False ):
     # Load or deactivate proprietary datatype display applications
     app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict, deactivate=deactivate )
-def load_repository_contents( trans, repository_name, description, owner, changeset_revision, ctx_rev, tool_path, repository_clone_url,
-                              relative_install_dir, tool_shed=None, tool_section=None, shed_tool_conf=None, install_tool_dependencies=False ):
+def load_repository_contents( trans, repository_name, description, owner, installed_changeset_revision, current_changeset_revision, ctx_rev,
+                              tool_path, repository_clone_url, relative_install_dir, tool_shed=None, tool_section=None, shed_tool_conf=None,
+                              install_tool_dependencies=False ):
     """
     Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy (never the tool shed)
     when an admin is installing a new repository or reinstalling an uninstalled repository.
@@ -1174,10 +1219,12 @@ def load_repository_contents( trans, repository_name, description, owner, change
     tool_shed_repository = create_or_update_tool_shed_repository( trans.app,
                                                                   repository_name,
                                                                   description,
-                                                                  changeset_revision,
+                                                                  installed_changeset_revision,
                                                                   ctx_rev,
                                                                   repository_clone_url,
                                                                   metadata_dict,
+                                                                  current_changeset_revision=current_changeset_revision,
+                                                                  owner='',
                                                                   dist_to_shed=False )
     if 'tools' in metadata_dict:
         tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
@@ -1187,7 +1234,7 @@ def load_repository_contents( trans, repository_name, description, owner, change
             work_dir = make_tmp_directory()
             repository_tools_tups = handle_missing_data_table_entry( trans.app,
                                                                      tool_shed_repository,
-                                                                     changeset_revision,
+                                                                     current_changeset_revision,
                                                                      tool_path,
                                                                      repository_tools_tups,
                                                                      work_dir )
@@ -1201,12 +1248,14 @@ def load_repository_contents( trans, repository_name, description, owner, change
                 tool_dependencies_config = get_config_from_repository( trans.app,
                                                                        'tool_dependencies.xml',
                                                                        tool_shed_repository,
-                                                                       changeset_revision,
+                                                                       current_changeset_revision,
                                                                        work_dir )
-                # Install dependencies for repository tools.
+                # Install dependencies for repository tools.  The tool_dependency.installed_changeset_revision value will be the value of
+                # tool_shed_repository.changeset_revision (this method's current_changeset_revision).  This approach will allow for different
+                # versions of the same tool_dependency to be installed for associated versions of tools included in the installed repository. 
                 status, message = handle_tool_dependencies( app=trans.app,
                                                             tool_shed_repository=tool_shed_repository,
-                                                            installed_changeset_revision=changeset_revision,
+                                                            installed_changeset_revision=current_changeset_revision,
                                                             tool_dependencies_config=tool_dependencies_config )
                 if status != 'ok' and message:
                     print 'The following error occurred from load_repository_contents while installing tool dependencies:'
@@ -1214,7 +1263,7 @@ def load_repository_contents( trans, repository_name, description, owner, change
             add_to_tool_panel( app=trans.app,
                                repository_name=repository_name,
                                repository_clone_url=repository_clone_url,
-                               changeset_revision=changeset_revision,
+                               changeset_revision=current_changeset_revision,
                                repository_tools_tups=repository_tools_tups,
                                owner=owner,
                                shed_tool_conf=shed_tool_conf,
@@ -1229,7 +1278,7 @@ def load_repository_contents( trans, repository_name, description, owner, change
         datatypes_config = get_config_from_repository( trans.app,
                                                        'datatypes_conf.xml',
                                                        tool_shed_repository,
-                                                       changeset_revision,
+                                                       current_changeset_revision,
                                                        work_dir )
         # Load data types required by tools.
         converter_path, display_path = alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, relative_install_dir, override=False )
@@ -1238,7 +1287,7 @@ def load_repository_contents( trans, repository_name, description, owner, change
             repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
                                                                                 name=repository_name,
                                                                                 owner=owner,
-                                                                                installed_changeset_revision=changeset_revision,
+                                                                                installed_changeset_revision=installed_changeset_revision,
                                                                                 tool_dicts=metadata_dict.get( 'tools', [] ),
                                                                                 converter_path=converter_path,
                                                                                 display_path=display_path )

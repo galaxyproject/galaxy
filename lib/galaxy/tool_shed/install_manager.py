@@ -120,7 +120,7 @@ class InstallManager( object ):
                             if not is_displayed:
                                 is_displayed = True
         return is_displayed, tool_sections
-    def handle_repository_contents( self, repository_clone_url, relative_install_dir, repository_elem, repository_name, description, changeset_revision,
+    def handle_repository_contents( self, repository_clone_url, relative_install_dir, repository_elem, repository_name, description, installed_changeset_revision,
                                     ctx_rev, install_dependencies ):
         # Generate the metadata for the installed tool shed repository, among other things.  It is critical that the installed repository is
         # updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
@@ -141,11 +141,11 @@ class InstallManager( object ):
         # Add a new record to the tool_shed_repository table if one doesn't already exist.  If one exists but is marked
         # deleted, undelete it.  It is critical that this happens before the call to add_to_tool_panel() below because
         # tools will not be properly loaded if the repository is marked deleted.
-        print  "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % repository_name
+        print "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % repository_name
         tool_shed_repository = create_or_update_tool_shed_repository( self.app,
                                                                       repository_name,
                                                                       description,
-                                                                      changeset_revision,
+                                                                      installed_changeset_revision,
                                                                       ctx_rev,
                                                                       repository_clone_url,
                                                                       metadata_dict,
@@ -158,7 +158,7 @@ class InstallManager( object ):
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
                 repository_tools_tups = handle_missing_data_table_entry( self.app,
                                                                          tool_shed_repository,
-                                                                         changeset_revision,
+                                                                         installed_changeset_revision,
                                                                          self.tool_path,
                                                                          repository_tools_tups,
                                                                          work_dir )
@@ -171,12 +171,12 @@ class InstallManager( object ):
                     tool_dependencies_config = get_config_from_repository( self.app,
                                                                            'tool_dependencies.xml',
                                                                            tool_shed_repository,
-                                                                           changeset_revision,
+                                                                           installed_changeset_revision,
                                                                            work_dir )
                     # Install tool dependencies.
                     status, message = handle_tool_dependencies( app=self.app,
                                                                 tool_shed_repository=tool_shed_repository,
-                                                                installed_changeset_revision=changeset_revision,
+                                                                installed_changeset_revision=installed_changeset_revision,
                                                                 tool_dependencies_config=tool_dependencies_config )
                     if status != 'ok' and message:
                         print 'The following error occurred from the InstallManager while installing tool dependencies:'
@@ -184,7 +184,7 @@ class InstallManager( object ):
                 add_to_tool_panel( self.app,
                                    repository_name,
                                    repository_clone_url,
-                                   changeset_revision,
+                                   installed_changeset_revision,
                                    repository_tools_tups,
                                    self.repository_owner,
                                    self.migrated_tools_config,
@@ -199,7 +199,7 @@ class InstallManager( object ):
             datatypes_config = get_config_from_repository( self.app,
                                                            'datatypes_conf.xml',
                                                            tool_shed_repository,
-                                                           changeset_revision,
+                                                           installed_changeset_revision,
                                                            work_dir )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
             # after this installation completes.
@@ -209,7 +209,7 @@ class InstallManager( object ):
                 repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed,
                                                                                     name=repository_name,
                                                                                     owner=self.repository_owner,
-                                                                                    installed_changeset_revision=changeset_revision,
+                                                                                    installed_changeset_revision=installed_changeset_revision,
                                                                                     tool_dicts=metadata_dict.get( 'tools', [] ),
                                                                                     converter_path=converter_path,
                                                                                     display_path=display_path )
@@ -228,29 +228,29 @@ class InstallManager( object ):
         # Install a single repository, loading contained tools into the tool panel.
         name = repository_elem.get( 'name' )
         description = repository_elem.get( 'description' )
-        changeset_revision = repository_elem.get( 'changeset_revision' )
+        installed_changeset_revision = repository_elem.get( 'changeset_revision' )
         # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
-        clone_dir = os.path.join( self.tool_path, self.tool_shed, 'repos', self.repository_owner, name, changeset_revision )
+        clone_dir = os.path.join( self.tool_path, self.tool_shed, 'repos', self.repository_owner, name, installed_changeset_revision )
         if self.__isinstalled( clone_dir ):
             print "Skipping automatic install of repository '", name, "' because it has already been installed in location ", clone_dir
         else:
             tool_shed_url = self.__get_url_from_tool_shed( self.tool_shed )
             repository_clone_url = os.path.join( tool_shed_url, 'repos', self.repository_owner, name )
             relative_install_dir = os.path.join( clone_dir, name )
-            ctx_rev = get_ctx_rev( tool_shed_url, name, self.repository_owner, changeset_revision )
+            ctx_rev = get_ctx_rev( tool_shed_url, name, self.repository_owner, installed_changeset_revision )
             clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
             tool_shed_repository, metadata_dict = self.handle_repository_contents( repository_clone_url,
                                                                                    relative_install_dir,
                                                                                    repository_elem,
                                                                                    name,
                                                                                    description,
-                                                                                   changeset_revision,
+                                                                                   installed_changeset_revision,
                                                                                    ctx_rev,
                                                                                    install_dependencies )
             if 'tools' in metadata_dict:
                 # Get the tool_versions from the tool shed for each tool in the installed change set.
                 url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy&no_reset=true' % \
-                    ( tool_shed_url, tool_shed_repository.name, self.repository_owner, changeset_revision )
+                    ( tool_shed_url, tool_shed_repository.name, self.repository_owner, installed_changeset_revision )
                 response = urllib2.urlopen( url )
                 text = response.read()
                 response.close()

@@ -648,6 +648,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     elif not update_to_changeset_hash and changeset_hash == changeset_revision:
                         # We've found the changeset in the changelog for which we need to get the next update.
                         update_to_changeset_hash = changeset_hash
+                if from_update_manager:
+                    if latest_changeset_revision == changeset_revision:
+                        return no_update
+                    return update
                 url += str( latest_changeset_revision )
         url += '&latest_ctx_rev=%s' % str( update_to_ctx.rev() )
         return trans.response.send_redirect( url )
@@ -1110,6 +1114,57 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if tool_version_dicts:
             return to_json_string( tool_version_dicts )
         return ''
+    @web.expose
+    def get_changeset_revision_and_ctx_rev( self, trans, **kwd ):
+        """Handle a request from a local Galaxy instance to retrieve the changeset revision hash to which an installed repository can be updated."""
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        galaxy_url = kwd.get( 'galaxy_url', '' )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        # Default to the received changeset revision and ctx_rev.
+        update_to_ctx = get_changectx_for_changeset( repo, changeset_revision )
+        latest_changeset_revision = changeset_revision
+        update_dict = dict( changeset_revision=update_to_ctx, ctx_rev=str( update_to_ctx.rev() ) )
+        if changeset_revision == repository.tip:
+            # If changeset_revision is the repository tip, there are no additional updates.
+            return tool_shed_encode( update_dict )
+        else:
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
+                                                                                 trans.security.encode_id( repository.id ),
+                                                                                 changeset_revision )
+            if repository_metadata:
+                # If changeset_revision is in the repository_metadata table for this repository, there are no additional updates.
+                return tool_shed_encode( update_dict )
+            else:
+                # The changeset_revision column in the repository_metadata table has been updated with a new changeset_revision value since the
+                # repository was installed.  We need to find the changeset_revision to which we need to update.
+                update_to_changeset_hash = None
+                for changeset in repo.changelog:
+                    changeset_hash = str( repo.changectx( changeset ) )
+                    ctx = get_changectx_for_changeset( repo, changeset_hash )
+                    if update_to_changeset_hash:
+                        if get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_hash ):
+                            # We found a RepositoryMetadata record.
+                            if changeset_hash == repository.tip:
+                                # The current ctx is the repository tip, so use it.
+                                update_to_ctx = get_changectx_for_changeset( repo, changeset_hash )
+                                latest_changeset_revision = changeset_hash
+                            else:
+                                update_to_ctx = get_changectx_for_changeset( repo, update_to_changeset_hash )
+                                latest_changeset_revision = update_to_changeset_hash
+                            break
+                    elif not update_to_changeset_hash and changeset_hash == changeset_revision:
+                        # We've found the changeset in the changelog for which we need to get the next update.
+                        update_to_changeset_hash = changeset_hash
+                update_dict[ 'changeset_revision' ] = str( latest_changeset_revision )
+        update_dict[ 'ctx_rev' ] = str( update_to_ctx.rev() )
+        return tool_shed_encode( update_dict )
     @web.expose
     def help( self, trans, **kwd ):
         params = util.Params( kwd )

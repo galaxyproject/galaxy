@@ -794,6 +794,20 @@ class Tool:
         if tool_version:
             return tool_version.get_version_ids( self.app )
         return []
+    @property
+    def installed_tool_dependencies( self ):
+        # If this tool is included in an installed tool shed repository and tool dependencies were installed along with the
+        # tool shed repository, then this method will return the repository's ToolDependency records.
+        if self.app.config.use_tool_dependencies:
+            if self.tool_shed:
+                tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( self.app,
+                                                                                                       self.tool_shed,
+                                                                                                       self.repository_name,
+                                                                                                       self.repository_owner,
+                                                                                                       self.installed_changeset_revision )
+                if tool_shed_repository:
+                    return tool_shed_repository.tool_dependencies
+        return None     
     def __get_job_run_config( self, run_configs, key, job_params=None ):
         # Look through runners/handlers to find one with matching parameters.
         available_configs = []
@@ -1113,7 +1127,7 @@ class Tool:
             for stdio_elem in ( root.findall( 'stdio' ) ):
                 self.parse_stdio_exit_codes( stdio_elem )
                 self.parse_stdio_regexes( stdio_elem )
-        except Exception as e:
+        except Exception, e:
             log.error( "Exception in parse_stdio! " + str(sys.exc_info()) )
 
     def parse_stdio_exit_codes( self, stdio_elem ):
@@ -1185,7 +1199,7 @@ class Tool:
                     log.warning( "Tool exit_code range %s will match on "
                                + "all exit codes" % code_range )
                 self.stdio_exit_codes.append( exit_code )
-        except Exception as e: 
+        except Exception, e: 
             log.error( "Exception in parse_stdio_exit_codes! " 
                      + str(sys.exc_info()) )
             trace = sys.exc_info()[2]
@@ -1244,7 +1258,7 @@ class Tool:
                         regex.stdout_match = True
                         regex.stderr_match = True
                 self.stdio_regexes.append( regex )
-        except Exception as e:
+        except Exception, e:
             log.error( "Exception in parse_stdio_exit_codes! " 
                      + str(sys.exc_info()) )
             trace = sys.exc_info()[2]
@@ -1270,7 +1284,7 @@ class Tool:
                     return_level = "warning"
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = "fatal"
-        except Exception as e:
+        except Exception, e:
             log.error( "Exception in parse_error_level " 
                      + str(sys.exc_info() ) )
             trace = sys.exc_info()[2]
@@ -2323,9 +2337,12 @@ class Tool:
             # TODO: currently only supporting requirements of type package,
             #       need to implement some mechanism for mapping other types
             #       back to packages
-            log.debug( "Dependency %s", requirement.name )
+            log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
             if requirement.type == 'package':
-                script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
+                script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( name=requirement.name,
+                                                                                                version=requirement.version,
+                                                                                                type=requirement.type,
+                                                                                                installed_tool_dependencies=self.installed_tool_dependencies )
                 if script_file is None and base_path is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
                 elif script_file is None:
