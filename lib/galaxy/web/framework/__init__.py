@@ -435,6 +435,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 url_for( controller='user', action='manage_user_info' ),
                 url_for( controller='user', action='set_default_permissions' ),
                 url_for( controller='user', action='reset_password' ),
+                url_for( controller='user', action='openid_auth' ),
+                url_for( controller='user', action='openid_process' ),
+                url_for( controller='user', action='openid_associate' ),
                 url_for( controller='library', action='browse' ),
                 url_for( controller='history', action='list' ),
                 url_for( controller='dataset', action='list' )
