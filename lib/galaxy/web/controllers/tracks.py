@@ -273,7 +273,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         
         # Dataset check.
         dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        msg = self._check_dataset_state( trans, dataset )
+        msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
             
@@ -301,7 +301,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
 
         # Dataset check.
         dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        msg = self._check_dataset_state( trans, dataset )
+        msg = self.check_dataset_state( trans, dataset )
         if not msg:
             msg = messages.DATA
 
@@ -320,7 +320,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
             dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-        msg = self._check_dataset_state( trans, dataset )
+        msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
             
@@ -368,7 +368,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
             dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-        msg = self._check_dataset_state( trans, dataset )
+        msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
             
@@ -530,7 +530,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
                 msg = None
             else:
                 # Convert.
-                msg = self._convert_dataset( trans, dataset, data_source )
+                msg = self.convert_dataset( trans, dataset, data_source )
             
             # Store msg.
             data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
