@@ -135,7 +135,6 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin ):
         # Run tool on region if region is specificied.
         run_on_regions = False
         regions = from_json_string( payload.get( 'regions', None ) )
-        print regions, payload
         if regions:
             if isinstance( regions, dict ):
                 # Regions is a single region.
