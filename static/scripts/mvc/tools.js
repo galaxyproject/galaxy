@@ -51,11 +51,78 @@ var Tool = BaseModel.extend({
         }
     ],
     
-    urlRoot: galaxy_paths.attributes.root_path + 'api/tools',
+    urlRoot: galaxy_paths.get('tool_url'),
         
     apply_search_results: function(results) {
         ( _.indexOf(results, this.attributes.id) !== -1 ? this.show() : this.hide() );
         return this.is_visible();
+    },
+    
+    /**
+     * Set a tool input's value.
+     */
+    set_input_value: function(name, value) {
+        this.get('inputs').find(function(input) {
+            return input.get('name') === name;
+        }).set('value', value);
+    },
+    
+    /**
+     * Run tool; returns a Deferred that resolves to the tool's output(s).
+     */
+    run: function() {
+        return this._run()
+    },
+    
+    /**
+     * Rerun tool using regions and a target dataset.
+     */
+    rerun: function(target_dataset, regions) {
+        return this._run({
+            action: 'rerun',
+            target_dataset_id: target_dataset.id,
+            regions: JSON.stringify(regions) 
+        });
+    },
+    
+    /**
+     * Run tool; returns a Deferred that resolves to the tool's output(s).
+     * NOTE: this method is a helper method and should not be called directly.
+     */
+    _run: function(additional_params) {
+        // Create payload.
+        var payload = _.extend({
+                tool_id: this.id
+            }, additional_params),
+            input_dict = {};
+        this.get('inputs').each(function(input) {
+            input_dict[input.get('name')] = input.get('value');
+        });
+        payload.inputs = input_dict;
+
+        // Because job may require indexing datasets, use server-side
+        // deferred to ensure that job is run. Also use deferred that
+        // resolves to outputs from tool.
+        var run_deferred = $.Deferred(),
+            ss_deferred = new ServerStateDeferred({
+            ajax_settings: {
+                url: this.urlRoot,
+                data: JSON.stringify(payload),
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST"
+            },
+            interval: 2000,
+            success_fn: function(response) {
+                return response !== "pending";
+            }
+        });
+        
+        // Run job and resolve run_deferred to tool outputs.
+        $.when(ss_deferred.go()).then(function(result) {
+            run_deferred.resolve(new DatasetCollection().reset(result));
+        });
+        return run_deferred;
     }
 });
 
@@ -65,7 +132,9 @@ var Tool = BaseModel.extend({
 var ToolInput = Backbone.RelationalModel.extend({
     defaults: {
         name: null,
-        type: null
+        label: null,
+        type: null,
+        value: null,
     },
     
     initialize: function() {

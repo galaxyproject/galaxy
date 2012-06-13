@@ -52,7 +52,8 @@
         // Set up needed paths.
         var galaxy_paths = new GalaxyPaths({
             root_path: '${h.url_for( "/" )}',
-            image_path: '${h.url_for( "/static/images" )}'
+            image_path: '${h.url_for( "/static/images" )}',
+            tool_url: '${h.url_for( controller="/api/tools" )}'
         });
     </script>
 </%def>

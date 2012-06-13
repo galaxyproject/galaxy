@@ -11,11 +11,10 @@
 /**
  * Implementation of a server-state based deferred. Server is repeatedly polled, and when
  * condition is met, deferred is resolved.
-  */
+ */
 var ServerStateDeferred = Backbone.Model.extend({
     defaults: {
-        url: null,
-        url_params: {},
+        ajax_settings: {},
         interval: 1000,
         success_fn: function(result) { return true; }
     },
@@ -26,10 +25,11 @@ var ServerStateDeferred = Backbone.Model.extend({
     go: function() {
         var deferred = $.Deferred(),
             self = this,
+            ajax_settings = self.get('ajax_settings'),
             success_fn = self.get('success_fn'),
             interval = self.get('interval'),
              _go = function() {
-                 $.getJSON(self.get('url'), self.get('url_params'), function(result) {
+                 $.ajax(ajax_settings).success(function(result) {
                      if (success_fn(result)) {
                          // Result is good, so resolve.
                          deferred.resolve(result);
@@ -372,6 +372,14 @@ var GenomeRegion = Backbone.Model.extend({
         return this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');
     },
     
+    toJSON: function() {
+        return {
+            chrom: this.get('chrom'),
+            start: this.get('start'),
+            end: this.get('end')
+        }
+    },
+    
     /**
      * Compute the type of overlap between this region and another region. The overlap is computed relative to the given/second region; 
      * hence, OVERLAP_START indicates that the first region overlaps the start (but not the end) of the second region.
@@ -492,19 +500,6 @@ var TracksterVisualization = Visualization.extend({
  * A Circster visualization.
  */
 var CircsterVisualization = Visualization.extend({
-});
-
-/**
- * A dataset. In Galaxy, datasets are associated with a history, so
- * this object is also known as a HistoryDatasetAssociation.
- */
-var Dataset = Backbone.Model.extend({
-    defaults: {
-        id: "",
-        type: "",
-        name: "",
-        hda_ldda: ""
-    } 
 });
 
 /**
