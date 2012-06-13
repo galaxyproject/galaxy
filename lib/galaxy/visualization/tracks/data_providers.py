@@ -965,7 +965,7 @@ class BigBedDataProvider( BBIDataProvider ):
         f = open( self.original_dataset.file_name )
         return f, BigBedFile(file=f)
 
-class BigWigDataProvider (BBIDataProvider ):
+class BigWigDataProvider ( BBIDataProvider ):
     def _get_dataset( self ):
         if self.converted_dataset is not None:
             f = open( self.converted_dataset.file_name )

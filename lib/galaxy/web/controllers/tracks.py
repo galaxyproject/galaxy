@@ -177,17 +177,22 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             
     @web.json
     def add_track_async(self, trans, hda_id=None, ldda_id=None):
+        # Get dataset.
         if hda_id:
             hda_ldda = "hda"
-            dataset = self.get_dataset( trans, hda_id, check_ownership=False, check_accessible=True )
+            dataset_id = hda_id
         elif ldda_id:
             hda_ldda = "ldda"
-            dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+            dataset_id = ldda_id
+        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+        
+        # Get data provider.
         track_type, _ = dataset.datatype.get_track_type()
         track_data_provider_class = get_data_provider( original_dataset=dataset )
         track_data_provider = track_data_provider_class( original_dataset=dataset )
         
-        track = {
+        # Get track definition.
+        return {
             "track_type": track_type,
             "name": dataset.name,
             "hda_ldda": hda_ldda,
@@ -197,16 +202,17 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             "tool": get_tool_def( trans, dataset ),
             "tool_state": {}
         }
-        return track
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):
         if hda_id:
             hda_ldda = "hda"
-            dataset = self.get_dataset( trans, hda_id, check_ownership=False, check_accessible=True )
+            dataset_id = hda_id
         elif ldda_id:
             hda_ldda = "ldda"
-            dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+            dataset_id = ldda_id
+        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+        
         rows = []
         if isinstance( dataset.datatype, Bed ):
             data = RawBedDataProvider( original_dataset=dataset ).get_iterator()
@@ -482,7 +488,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def paramamonster( self, trans, hda_ldda, dataset_id ):
         # Get dataset.
-        dataset = self._get_dataset( trans, hda_ldda, dataset_id )
+        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
                 
         return trans.fill_template_mako( "visualization/paramamonster.mako", dataset=dataset,
                                           tool=self.app.toolbox.tools_by_id[ 'cufflinks' ].to_dict( trans, for_display=True ) )
@@ -491,7 +497,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def circster( self, trans, hda_ldda, dataset_id ):
         # Get dataset.
-        dataset = self._get_dataset( trans, hda_ldda, dataset_id )
+        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
 
         # Get genome info.
         dbkey = dataset.dbkey
@@ -536,10 +542,3 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
         
         return data_sources_dict
-                            
-    def _get_dataset( self, trans, hda_ldda, dataset_id ):
-        """ Returns either HDA or LDDA for hda/ldda and id combination. """
-        if hda_ldda == "hda":
-            return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        else:
-            return trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )

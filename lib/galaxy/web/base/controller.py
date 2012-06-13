@@ -468,10 +468,7 @@ class UsesVisualizationMixin( SharableItemSecurityMixin ):
             def pack_track( track_dict ):
                 dataset_id = track_dict['dataset_id']
                 hda_ldda = track_dict.get('hda_ldda', 'hda')
-                if hda_ldda == "hda":
-                    dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-                else:
-                    dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( dataset_id )
+                dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
 
                 try:
                     prefs = track_dict['prefs']
@@ -544,6 +541,13 @@ class UsesVisualizationMixin( SharableItemSecurityMixin ):
                 config['viewport'] = latest_revision.config['viewport']
 
         return config
+        
+    def get_hda_or_ldda( self, trans, hda_ldda, dataset_id ):
+        """ Returns either HDA or LDDA for hda/ldda and id combination. """
+        if hda_ldda == "hda":
+            return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+        else:
+            return trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         
     # -- Helper functions --
         
