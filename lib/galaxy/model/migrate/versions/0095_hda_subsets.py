@@ -17,8 +17,8 @@ db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False,
 
 HistoryDatasetAssociationSubset_table = Table( "history_dataset_association_subset", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
-    Column( "history_dataset_association_subset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ) ),
+    Column( "history_dataset_association_subset_id", Integer, ForeignKey( "history_dataset_association.id" ) ),
     Column( "location", Unicode(255), index=True)
 )
     
@@ -32,6 +32,16 @@ def upgrade():
     except Exception, e:
         print str(e)
         log.debug( "Creating history_dataset_association_subset table failed: %s" % str( e ) )
+    
+    # Manually create indexes because they are too long for MySQL databases.
+    i1 = Index( "ix_hda_id", HistoryDatasetAssociationSubset_table.c.history_dataset_association_id )
+    i2 = Index( "ix_hda_subset_id", HistoryDatasetAssociationSubset_table.c.history_dataset_association_subset_id )
+    try:
+        i1.create()
+        i2.create()
+    except Exception, e:
+        print str(e)
+        log.debug( "Adding indices to table 'history_dataset_association_subset' table failed: %s" % str( e ) )
                         
 def downgrade():
     metadata.reflect()
