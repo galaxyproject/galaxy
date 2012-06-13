@@ -174,40 +174,6 @@ class AdminToolshed( AdminGalaxy ):
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
-    def check_installed_tool_dependencies( self, trans, repository_id, relative_install_dir ):
-        """See if any tool dependencies need to be installed."""
-        tool_dependencies_missing = False
-        repository = get_repository( trans, repository_id )
-        if repository.includes_tool_dependencies:
-            # Get the tool_dependencies.xml file from the repository.
-            work_dir = make_tmp_directory()
-            tool_dependencies_config = get_config_from_repository( trans.app,
-                                                                   'tool_dependencies.xml',
-                                                                   repository,
-                                                                   repository.changeset_revision,
-                                                                   work_dir,
-                                                                   install_dir=relative_install_dir )
-            # Parse the tool_dependencies.xml config.
-            tree = ElementTree.parse( tool_dependencies_config )
-            root = tree.getroot()
-            ElementInclude.include( root )
-            fabric_version_checked = False
-            for elem in root:
-                if elem.tag == 'package':
-                    package_name = elem.get( 'name', None )
-                    package_version = elem.get( 'version', None )
-                    if package_name and package_version:
-                        install_dir = get_install_dir( trans.app, repository, repository.installed_changeset_revision, package_name, package_version )
-                        if not_installed( install_dir ):
-                            tool_dependencies_missing = True
-                            break
-            try:
-                shutil.rmtree( work_dir )
-            except:
-                pass
-        return tool_dependencies_missing
-    @web.expose
-    @web.require_admin
     def deactivate_or_uninstall_repository( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -289,6 +255,12 @@ class AdminToolshed( AdminGalaxy ):
         galaxy_url = url_for( '/', qualified=True )
         url = '%srepository/find_workflows?galaxy_url=%s&webapp=galaxy&no_reset=true' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
+    @web.json
+    def get_file_contents( self, trans, file_path ):
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        return get_repository_file_contents( file_path )
     @web.expose
     @web.require_admin
     def install_tool_dependencies( self, trans, **kwd ):
@@ -594,14 +566,30 @@ class AdminToolshed( AdminGalaxy ):
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
             message = "Repository metadata has been reset."
-        tool_dependencies_missing = self.check_installed_tool_dependencies( trans, repository_id, relative_install_dir )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
                                     description=description,
                                     repo_files_dir=repo_files_dir,
-                                    tool_dependencies_missing=tool_dependencies_missing,
                                     message=message,
                                     status=status )
+    @web.expose
+    @web.require_admin
+    def manage_tool_dependencies( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository_id = kwd[ 'id' ]
+        repository = get_repository( trans, repository_id )
+        return trans.fill_template( '/admin/tool_shed_repository/manage_tool_dependencies.mako',
+                                    repository=repository,
+                                    message=message,
+                                    status=status )
+    @web.json
+    def open_folder( self, trans, folder_path ):
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        return open_repository_files_folder( trans, folder_path )
     @web.expose
     @web.require_admin
     def reinstall_repository( self, trans, **kwd ):
@@ -709,6 +697,8 @@ class AdminToolshed( AdminGalaxy ):
         trans.sa_session.flush()
         if install_tool_dependencies:
             dependency_str = ' along with tool dependencies'
+            if error_message:
+                dependency_str += ', but with some errors installing the dependencies'
         else:
             dependency_str = ' without tool dependencies'
         message += 'The <b>%s</b> repository has been reinstalled%s.  ' % ( repository.name, dependency_str )
@@ -822,8 +812,7 @@ class AdminToolshed( AdminGalaxy ):
                     message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % ( name, latest_changeset_revision )
                     # See if any tool dependencies can be installed.
                     shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-                    tool_dependencies_missing = self.check_installed_tool_dependencies( trans, trans.security.encode_id( repository.id ), relative_install_dir )
-                    if tool_dependencies_missing:
+                    if repository.missing_tool_dependencies:
                         message += "Select <b>Install tool dependencies</b> from the repository's pop-up menu to install tool dependencies."
                 else:
                     message = "The directory containing the installed repository named '%s' cannot be found.  " % name

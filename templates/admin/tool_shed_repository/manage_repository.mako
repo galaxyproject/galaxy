@@ -6,13 +6,13 @@
 <ul class="manage-table-actions">
     <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
     <div popupmenu="repository-${repository.id}-popup">
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository</a>
+        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository files</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get updates</a>
         %if repository.includes_tools:
             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='set_tool_versions', id=trans.security.encode_id( repository.id ) )}">Set tool versions</a>
         %endif
-        %if tool_dependencies_missing:
-            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='install_missing_tool_dependencies', id=trans.security.encode_id( repository.id ) )}">Install tool dependencies</a>
+        %if repository.tool_dependencies:
+            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( repository.id ) )}">Manage tool dependencies</a>
         %endif
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or Uninstall</a>
     </div>
@@ -64,5 +64,5 @@
     </div>
 </div>
 <p/>
-${render_metadata( repository, can_reset_metadata=True )}
+${render_repository_contents( repository, can_reset_metadata=True )}
 <p/>

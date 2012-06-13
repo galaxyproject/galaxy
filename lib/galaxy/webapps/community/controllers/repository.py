@@ -2,7 +2,6 @@ import os, logging, tempfile, shutil
 from time import strftime
 from datetime import date, datetime
 from galaxy import util
-from galaxy.datatypes.checkers import *
 from galaxy.web.base.controller import *
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.community import model
@@ -10,7 +9,8 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, make_tmp_directory, NOT_TOOL_CONFIGS, strip_path
+from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, make_tmp_directory, NOT_TOOL_CONFIGS
+from galaxy.util.shed_util import open_repository_files_folder, strip_path
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -20,7 +20,6 @@ from mercurial import hg, ui, patch, commands
 
 log = logging.getLogger( __name__ )
 
-MAX_CONTENT_SIZE = 32768
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
 README_FILES = [ 'readme', 'read_me', 'install' ]
     
@@ -496,12 +495,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
-        current_working_dir = os.getcwd()
         # Update repository files for browsing.
         update_repository( repo )
         is_malicious = changeset_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
-                                    repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
                                     is_malicious=is_malicious,
@@ -1016,37 +1013,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        if is_gzip( file_path ):
-            to_html = to_html_str( '\ngzip compressed file\n' )
-        elif is_bz2( file_path ):
-            to_html = to_html_str( '\nbz2 compressed file\n' )
-        elif check_zip( file_path ):
-            to_html = to_html_str( '\nzip compressed file\n' )
-        elif check_binary( file_path ):
-            to_html = to_html_str( '\nBinary file\n' )
-        else:
-            to_html = ''
-            for i, line in enumerate( open( file_path ) ):
-                to_html = '%s%s' % ( to_html, to_html_str( line ) )
-                if len( to_html ) > MAX_CONTENT_SIZE:
-                    large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-                    to_html = '%s%s' % ( to_html, to_html_str( large_str ) )
-                    break
-        return to_html
-    def __get_files( self, trans, folder_path ):
-        contents = []
-        for item in os.listdir( folder_path ):
-            # Skip .hg directories
-            if str( item ).startswith( '.hg' ):
-                continue
-            if os.path.isdir( os.path.join( folder_path, item ) ):
-                # Append a '/' character so that our jquery dynatree will
-                # function properly.
-                item = '%s/' % item
-            contents.append( item )
-        if contents:
-            contents.sort()
-        return contents
+        return get_repository_file_contents( file_path )
     @web.expose
     def get_readme( self, trans, **kwd ):
         """If the received changeset_revision includes a file named readme (case ignored), return it's contents."""
@@ -1558,34 +1525,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
         state.inputs = {}
         return state
     @web.json
-    def open_folder( self, trans, repository_id, key ):
+    def open_folder( self, trans, folder_path ):
         # The tool shed includes a repository source file browser, which currently depends upon
         # copies of the hg repository file store in the repo_path for browsing.
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        repository = trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( repository_id ) )
-        folder_path = key
-        try:
-            files_list = self.__get_files( trans, folder_path )
-        except OSError, e:
-            if str( e ).find( 'No such file or directory' ) >= 0:
-                # We have a repository with no contents.
-                return []
-        folder_contents = []
-        for filename in files_list:
-            is_folder = False
-            if filename and filename[-1] == os.sep:
-                is_folder = True
-            if filename:
-                full_path = os.path.join( folder_path, filename )
-                node = { "title": filename,
-                         "isFolder": is_folder,
-                         "isLazy": is_folder,
-                         "tooltip": full_path,
-                         "key": full_path }
-                folder_contents.append( node )
-        return folder_contents
+        return open_repository_files_folder( trans, folder_path )
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
         params = util.Params( kwd )
@@ -1769,7 +1715,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if params.get( 'select_files_to_delete_button', False ):
             if selected_files_to_delete:
                 selected_files_to_delete = selected_files_to_delete.split( ',' )
-                current_working_dir = os.getcwd()
                 # Get the current repository tip.
                 tip = repository.tip
                 for selected_file in selected_files_to_delete:

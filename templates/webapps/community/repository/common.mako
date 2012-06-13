@@ -22,13 +22,13 @@
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='repository', action='open_folder' )}",
                            dataType: "json", 
-                           data: { repository_id: "${trans.security.encode_id( repository.id )}", key: "${repository.repo_path}" },
+                           data: { folder_path: "${repository.repo_path}" },
                 },
                 onLazyRead: function(dtnode){
                     dtnode.appendAjax({
                         url: "${h.url_for( controller='repository', action='open_folder' )}", 
                         dataType: "json",
-                        data: { repository_id: "${trans.security.encode_id( repository.id )}", key: dtnode.data.key },
+                        data: { folder_path: dtnode.data.key },
                     });
                 },
                 onSelect: function(select, dtnode) {

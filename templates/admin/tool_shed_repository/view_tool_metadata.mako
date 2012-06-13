@@ -5,9 +5,12 @@
 <ul class="manage-table-actions">
     <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
     <div popupmenu="repository-${repository.id}-popup">
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository</a>
+        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository files</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get updates</a>
+        %if repository.tool_dependencies:
+            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( repository.id ) )}">Manage tool dependencies</a>
+        %endif
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or Uninstall</a>
     </div>
 </ul>
@@ -95,15 +98,27 @@
                     requirements = None
             %>
             %if requirements:
-                <%
-                    requirements_str = ''
-                    for requirement_dict in metadata[ 'requirements' ]:
-                        requirements_str += '%s (%s), ' % ( requirement_dict[ 'name' ], requirement_dict[ 'type' ] )
-                    requirements_str = requirements_str.rstrip( ', ' )
-                %>
                 <div class="form-row">
                     <label>Requirements:</label>
-                    ${requirements_str}
+                    <table class="grid">
+                        <tr>
+                            <td><b>name</b></td>
+                            <td><b>version</b></td>
+                            <td><b>type</b></td>
+                        </tr>
+                        %for requirement_dict in requirements:
+                            <%
+                                requirement_name = requirement_dict[ 'name' ] or 'not provided'
+                                requirement_version = requirement_dict[ 'version' ] or 'not provided'
+                                requirement_type = requirement_dict[ 'type' ] or 'not provided'
+                            %>
+                            <tr>
+                                <td>${requirement_name}</td>
+                                <td>${requirement_version}</td>
+                                <td>${requirement_type}</td>
+                            </tr>
+                        %endfor
+                    </table>
                     <div style="clear: both"></div>
                 </div>
             %endif

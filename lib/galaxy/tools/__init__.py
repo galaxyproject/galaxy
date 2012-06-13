@@ -795,19 +795,15 @@ class Tool:
             return tool_version.get_version_ids( self.app )
         return []
     @property
-    def installed_tool_dependencies( self ):
-        # If this tool is included in an installed tool shed repository and tool dependencies were installed along with the
-        # tool shed repository, then this method will return the repository's ToolDependency records.
-        if self.app.config.use_tool_dependencies:
-            if self.tool_shed:
-                tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( self.app,
-                                                                                                       self.tool_shed,
-                                                                                                       self.repository_name,
-                                                                                                       self.repository_owner,
-                                                                                                       self.installed_changeset_revision )
-                if tool_shed_repository:
-                    return tool_shed_repository.tool_dependencies
-        return None     
+    def tool_shed_repository( self ):
+        # If this tool is included in an installed tool shed repository, return it.
+        if self.tool_shed:
+            return get_tool_shed_repository_by_shed_name_owner_changeset_revision( self.app,
+                                                                                   self.tool_shed,
+                                                                                   self.repository_name,
+                                                                                   self.repository_owner,
+                                                                                   self.installed_changeset_revision )
+        return None
     def __get_job_run_config( self, run_configs, key, job_params=None ):
         # Look through runners/handlers to find one with matching parameters.
         available_configs = []
@@ -2333,6 +2329,10 @@ class Tool:
         environment to include this tools requirements.
         """
         commands = []
+        if self.tool_shed_repository:
+            installed_tool_dependencies = self.tool_shed_repository.tool_dependencies
+        else:
+            installed_tool_dependencies = None
         for requirement in self.requirements:
             # TODO: currently only supporting requirements of type package,
             #       need to implement some mechanism for mapping other types
@@ -2342,7 +2342,7 @@ class Tool:
                 script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( name=requirement.name,
                                                                                                 version=requirement.version,
                                                                                                 type=requirement.type,
-                                                                                                installed_tool_dependencies=self.installed_tool_dependencies )
+                                                                                                installed_tool_dependencies=installed_tool_dependencies )
                 if script_file is None and base_path is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
                 elif script_file is None:

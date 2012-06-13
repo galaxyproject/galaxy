@@ -29,6 +29,7 @@ MAPPED_CHARS = { '>' :'&gt;',
                  '"' : '&quot;',
                  '&' : '&amp;',
                  '\'' : '&apos;' }
+MAX_CONTENT_SIZE = 32768
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'tool_dependencies.xml' ]
 
@@ -881,6 +882,37 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
                 fh.close()
                 return tmp_filename
     return None
+def get_repository_file_contents( file_path ):
+    if is_gzip( file_path ):
+        to_html = to_html_str( '\ngzip compressed file\n' )
+    elif is_bz2( file_path ):
+        to_html = to_html_str( '\nbz2 compressed file\n' )
+    elif check_zip( file_path ):
+        to_html = to_html_str( '\nzip compressed file\n' )
+    elif check_binary( file_path ):
+        to_html = to_html_str( '\nBinary file\n' )
+    else:
+        to_html = ''
+        for i, line in enumerate( open( file_path ) ):
+            to_html = '%s%s' % ( to_html, to_html_str( line ) )
+            if len( to_html ) > MAX_CONTENT_SIZE:
+                large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
+                to_html = '%s%s' % ( to_html, to_html_str( large_str ) )
+                break
+    return to_html
+def get_repository_files( trans, folder_path ):
+    contents = []
+    for item in os.listdir( folder_path ):
+        # Skip .hg directories
+        if str( item ).startswith( '.hg' ):
+            continue
+        if os.path.isdir( os.path.join( folder_path, item ) ):
+            # Append a '/' character so that our jquery dynatree will function properly.
+            item = '%s/' % item
+        contents.append( item )
+    if contents:
+        contents.sort()
+    return contents
 def get_repository_owner( cleaned_repository_url ):
     items = cleaned_repository_url.split( 'repos' )
     repo_path = items[ 1 ]
@@ -1313,6 +1345,27 @@ def make_tmp_directory():
     if not os.path.exists( work_dir ):
         os.makedirs( work_dir )
     return work_dir
+def open_repository_files_folder( trans, folder_path ):
+    try:
+        files_list = get_repository_files( trans, folder_path )
+    except OSError, e:
+        if str( e ).find( 'No such file or directory' ) >= 0:
+            # We have a repository with no contents.
+            return []
+    folder_contents = []
+    for filename in files_list:
+        is_folder = False
+        if filename and filename[-1] == os.sep:
+            is_folder = True
+        if filename:
+            full_path = os.path.join( folder_path, filename )
+            node = { "title": filename,
+                     "isFolder": is_folder,
+                     "isLazy": is_folder,
+                     "tooltip": full_path,
+                     "key": full_path }
+            folder_contents.append( node )
+    return folder_contents
 def panel_entry_per_tool( tool_section_dict ):
     # Return True if tool_section_dict looks like this.
     # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}

@@ -2665,7 +2665,12 @@ class ToolShedRepository( object ):
         self.deleted = deleted
         self.uninstalled = uninstalled
         self.dist_to_shed = dist_to_shed
-    def repo_path( self, app ):        
+    def repo_files_directory( self, app ):
+        repo_path = self.repo_path( app )
+        if repo_path:
+            return os.path.join( app.config.root, repo_path, self.name )
+        return None
+    def repo_path( self, app ):
         tool_shed_url = self.tool_shed
         if tool_shed_url.find( ':' ) > 0:
             # Eliminate the port, if any, since it will result in an invalid directory name.
@@ -2673,7 +2678,7 @@ class ToolShedRepository( object ):
         tool_shed = tool_shed_url.rstrip( '/' )
         for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
             tool_path = shed_tool_conf_dict[ 'tool_path' ]
-            relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
+            relative_path = os.path.join( app.config.root, tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
             if os.path.exists( relative_path ):
                 return relative_path
         return None
@@ -2686,6 +2691,46 @@ class ToolShedRepository( object ):
     @property
     def includes_workflows( self ):
         return self.metadata and 'workflows' in self.metadata
+    @property
+    def installed_tool_dependencies( self ):
+        """Return the repository's tool dependencies that are currently installed."""
+        installed_dependencies = []
+        for tool_dependency in self.tool_dependencies:
+            if not tool_dependency.uninstalled:
+                installed_dependencies.append( tool_dependency )
+        return installed_dependencies
+    @property
+    def missing_tool_dependencies( self ):
+        """Return the repository's tool dependencies that are not currently installed."""
+        def add_missing_dependency( missing_dependencies_dict, name, version, type, installed_changeset_revision=None ):
+            missing_dependencies_dict[ name ] = dict( version=version,
+                                                      type=type,
+                                                      installed_changeset_revision=installed_changeset_revision )
+            return missing_dependencies_dict
+        missing_dependencies = {}
+        # Get the dependency information from the metadata for comparison against the installed tool dependencies.
+        tool_dependencies = self.metadata.get( 'tool_dependencies', None )
+        if tool_dependencies:
+            for dependency_key, requirements_dict in tool_dependencies.items():
+                name = requirements_dict[ 'name' ]
+                version = requirements_dict[ 'version' ]
+                type = requirements_dict[ 'type' ]
+                if self.tool_dependencies:
+                    found = False
+                    for installed_dependency in self.tool_dependencies:
+                        if installed_dependency.name==name and installed_dependency.version==version and installed_dependency.type==type:
+                            found = True
+                            if installed_dependency.uninstalled:
+                                missing_dependencies = add_missing_dependency( missing_dependencies,
+                                                                               installed_dependency.name,
+                                                                               installed_dependency.version,
+                                                                               installed_dependency.type,
+                                                                               installed_dependency.installed_changeset_revision )
+                                break
+                    if not found:
+                        missing_dependencies = add_missing_dependency( missing_dependencies, name, version, type )
+            return missing_dependencies
+        return None
 
 class ToolDependency( object ):
     def __init__( self, tool_shed_repository_id=None, installed_changeset_revision=None, name=None, version=None, type=None, uninstalled=False ):
