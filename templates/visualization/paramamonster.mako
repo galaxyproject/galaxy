@@ -35,18 +35,42 @@
     ${parent.javascripts()}
 
     ${h.templates( "tool_link", "panel_section", "tool_search" )}
-    ${h.js( "libs/d3", "viz/visualization", "viz/paramamonster", "mvc/tools" )}
+    ${h.js( "libs/d3", "mvc/data", "mvc/tools", "viz/visualization", "viz/paramamonster" )}
 
     <script type="text/javascript">
+        var tool;
         $(function() {            
             // -- Viz set up. --
             
-            var tool = new Tool(JSON.parse('${ h.to_json_string( tool ) }')),
-                tool_param_tree = new ToolParameterTree({ tool: tool }),
-                tool_param_tree_view = new ToolParameterTreeView({ model: tool_param_tree });
+            tool = new Tool(JSON.parse('${ h.to_json_string( tool ) }'));
+            // HACK: need to replace \ with \\ due to simplejson bug. 
+            var dataset = new Dataset(JSON.parse('${ h.to_json_string( dataset.get_api_value() ).replace('\\', '\\\\' ) }')),
+                paramamonster_viz = new ParamaMonsterVisualization({
+                    tool: tool,
+                    dataset: dataset
+                });
+                viz_view = new ParamaMonsterVisualizationView({ model: paramamonster_viz });
                 
-            tool_param_tree_view.render();
-            $('#param-tree').append(tool_param_tree_view.$el);
+            viz_view.render();
+            $('.unified-panel-body').append(viz_view.$el);
+            
+            // Tool testing.
+            var regions = [
+                    new GenomeRegion({
+                        chrom: 'chr19',
+                        start: '10000',
+                        end: '26000'
+                    }),
+                    new GenomeRegion({
+                        chrom: 'chr19',
+                        start: '30000',
+                        end: '36000'
+                    })
+                ];
+                
+            $.when(tool.rerun(dataset, regions)).then(function(outputs) {
+                console.log(outputs); 
+            });
         });
     </script>
 </%def>
@@ -59,7 +83,5 @@
         <div style="clear: both"></div>
     </div>
     <div class="unified-panel-body">
-        <div id="param-tree"></div>
-        <div id="tile-view"></div>
     </div>
 </%def>

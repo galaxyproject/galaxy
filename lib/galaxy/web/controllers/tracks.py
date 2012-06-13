@@ -327,7 +327,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         # Get datasources and check for messages.
         data_sources = self._get_datasources( trans, dataset )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
-        msg = _get_highest_priority_msg( messages_list )
+        msg = get_highest_priority_msg( messages_list )
         if msg:
             return msg
             
@@ -375,7 +375,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         # Get datasources and check for messages.
         data_sources = self._get_datasources( trans, dataset )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
-        return_message = _get_highest_priority_msg( messages_list )
+        return_message = get_highest_priority_msg( messages_list )
         if return_message:
             return return_message
             

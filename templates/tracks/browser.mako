@@ -42,22 +42,21 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "viz/visualization", "viz/trackster", "viz/trackster_ui", "jquery.ui.sortable.slider", "farbtastic" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "mvc/data", "viz/visualization", "viz/trackster", "viz/trackster_ui", "jquery.ui.sortable.slider", "farbtastic" )}
 
 <script type="text/javascript">
     //
     // Place URLs here so that url_for can be used to generate them.
     //
     galaxy_paths.set({
-        visualization_url: "${h.url_for( action='save' )}"
+        visualization_url: "${h.url_for( action='save' )}",
+        run_tool_url: "${h.url_for( controller='/api/tools' )}"
     });
     var 
         add_track_async_url = "${h.url_for( action='add_track_async' )}",
         add_datasets_url = "${h.url_for( action='list_current_history_datasets' )}",
         default_data_url = "${h.url_for( action='data' )}",
-        raw_data_url = "${h.url_for( action='raw_data' )}",
-        run_tool_url = "${h.url_for( action='run_tool' )}",
-        rerun_tool_url = "${h.url_for( action='rerun_tool' )}",
+        raw_data_url = "${h.url_for( action='raw_data' )}",        
         reference_url = "${h.url_for( action='reference' )}",
         chrom_url = "${h.url_for( action='chroms' )}",
         dataset_state_url = "${h.url_for( action='dataset_state' )}",
