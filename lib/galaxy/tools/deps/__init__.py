@@ -46,7 +46,7 @@ class DependencyManager( object ):
         if installed_tool_dependencies:
             for installed_dependency in installed_tool_dependencies:
                 if not installed_dependency.uninstalled:
-                    if installed_dependency.name == name and installed_dependency.version == version and installed_dependency.type == type:
+                    if installed_dependency.name==name and installed_dependency.version==version and installed_dependency.type==type:
                         break
         for base_path in self.base_paths:
             if installed_dependency:

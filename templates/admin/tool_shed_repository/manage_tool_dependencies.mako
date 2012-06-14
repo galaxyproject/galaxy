@@ -24,7 +24,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">${repository.name} repository's installed tool dependencies</div>
+    <div class="toolFormTitle">${repository.name} repository's tool dependencies</div>
     <div class="toolFormBody">
         <div class="form-row">
             <table class="grid">
@@ -45,7 +45,18 @@
                         <tr><td bgcolor="#D8D8D8"><b>Name</b></td><td bgcolor="#D8D8D8">${name}</td></tr>
                         <tr><th>Version</th><td>${version}</td></tr>
                         <tr><th>Type</th><td>${type}</td></tr>
-                        <tr><th>Install directory</th><td>${install_dir}</td></tr>
+                        <tr>
+                            <th>Install directory</th>
+                            <td>
+                                %if uninstalled:
+                                    This dependency is not currently installed
+                                %else:
+                                    <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">
+                                        ${install_dir}
+                                    </a>
+                                %endif
+                            </td>
+                        </tr>
                         <tr><th>Installed changeset revision</th><td>${installed_changeset_revision}</td></tr>
                         <tr><th>Uninstalled</th><td>${uninstalled}</td></tr>
                 %endfor

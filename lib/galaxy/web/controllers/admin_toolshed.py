@@ -2,7 +2,7 @@ import urllib2
 from galaxy.web.controllers.admin import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
-from galaxy.tool_shed.tool_dependencies.install_util import get_install_dir, not_installed
+from galaxy.tool_shed.tool_dependencies.install_util import get_tool_dependency_install_dir, not_installed
 from galaxy.tool_shed.encoding_util import *
 from galaxy import eggs, tools
 
@@ -148,6 +148,19 @@ class AdminToolshed( AdminGalaxy ):
         return self.repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
+    def browse_tool_dependency( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        tool_dependency = get_tool_dependency( trans, kwd[ 'id' ] )
+        repository = get_repository( trans, kwd[ 'repository_id' ] )
+        return trans.fill_template( '/admin/tool_shed_repository/browse_tool_dependency.mako',
+                                    repository=repository,
+                                    tool_dependency=tool_dependency,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = url_for( '/', qualified=True )
@@ -256,6 +269,7 @@ class AdminToolshed( AdminGalaxy ):
         url = '%srepository/find_workflows?galaxy_url=%s&webapp=galaxy&no_reset=true' % ( tool_shed_url, galaxy_url )
         return trans.response.send_redirect( url )
     @web.json
+    @web.require_admin
     def get_file_contents( self, trans, file_path ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
@@ -341,7 +355,7 @@ class AdminToolshed( AdminGalaxy ):
             for dependency_key, requirements_dict in tool_dependencies.items():
                 name = requirements_dict[ 'name' ]
                 version = requirements_dict[ 'version' ]
-                install_dir = get_install_dir( trans.app, repository, repository.changeset_revision, name, version )
+                install_dir = get_tool_dependency_install_dir( trans.app, repository, repository.changeset_revision, name, version )
                 if not_installed( install_dir ):
                     filtered_tool_dependencies[ dependency_key ] = requirements_dict
             tool_dependencies = filtered_tool_dependencies
@@ -585,6 +599,7 @@ class AdminToolshed( AdminGalaxy ):
                                     message=message,
                                     status=status )
     @web.json
+    @web.require_admin
     def open_folder( self, trans, folder_path ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'

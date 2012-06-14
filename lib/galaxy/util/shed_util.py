@@ -956,6 +956,9 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
             file_name = strip_path( shed_tool_conf_dict[ 'config_filename' ] )
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
+def get_tool_dependency( trans, id ):
+    """Get a tool_dependency from the database via id"""
+    return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
     # Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the
     # repository is installed.  This method assumes all repository tools are defined in a single shed-related tool panel config.

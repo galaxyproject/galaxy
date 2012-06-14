@@ -2740,7 +2740,13 @@ class ToolDependency( object ):
         self.version = version
         self.type = type
         self.uninstalled = uninstalled
-
+    def installation_directory( self, app ):
+        return os.path.join( app.config.tool_dependency_dir,
+                             self.name,
+                             self.version,
+                             self.tool_shed_repository.owner,
+                             self.tool_shed_repository.name,
+                             self.installed_changeset_revision )
 class ToolVersion( object ):
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
         self.id = id

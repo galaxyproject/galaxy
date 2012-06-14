@@ -41,7 +41,7 @@ def create_or_update_tool_dependency( app, tool_shed_repository, changeset_revis
     sa_session.add( tool_dependency )
     sa_session.flush()
     return tool_dependency
-def get_install_dir( app, repository, installed_changeset_revision, package_name, package_version ):
+def get_tool_dependency_install_dir( app, repository, installed_changeset_revision, package_name, package_version ):
     return os.path.abspath( os.path.join( app.config.tool_dependency_dir,
                                           package_name,
                                           package_version,

@@ -10,13 +10,13 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "ui.core", "jquery.dynatree" )}
-    ${common_javascripts(repository.name, repository.repo_files_directory(trans.app))}
+    ${common_javascripts(tool_dependency.name, tool_dependency.installation_directory( trans.app ))}
 </%def>
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-    <div popupmenu="repository-${repository.id}-popup">
+    <li><a class="action-button" id="tool_dependency-${tool_dependency.id}-popup" class="menubutton">Repository Actions</a></li>
+    <div popupmenu="tool_dependency-${tool_dependency.id}-popup">
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get updates</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or Uninstall</a>
@@ -31,13 +31,29 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Browse ${repository.name} revision ${repository.changeset_revision} files</div>
+    <div class="toolFormTitle">Browse tool dependency ${tool_dependency.name} installation directory</div>
     <div class="toolFormBody">
+        <div class="form-row" >
+            <label>Tool shed repository:</label>
+            ${repository.name}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row" >
+            <label>Tool shed repository changeset revision:</label>
+            ${repository.changeset_revision}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row" >
+            <label>Tool dependency installation directory:</label>
+            ${tool_dependency.installation_directory( trans.app )}
+            <div style="clear: both"></div>
+        </div>
         <div class="form-row" >
             <label>Contents:</label>
             <div id="tree" >
                 Loading...
             </div>
+            <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <div id="file_contents" class="toolParamHelp" style="clear: both;background-color:#FAFAFA;"></div>
