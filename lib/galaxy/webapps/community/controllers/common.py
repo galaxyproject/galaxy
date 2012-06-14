@@ -427,12 +427,12 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
     if datatypes_config:
         metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )    
     sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
+    if sample_files:
+        trans.app.config.tool_data_path = work_dir
     # Handle the tool_data_table_conf.xml.sample file if it is included in the repository.
     if 'tool_data_table_conf.xml.sample' in sample_files:
         tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', work_dir )
         error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-    if sample_files:
-        trans.app.config.tool_data_path = work_dir
     for filename in ctx:
         # Find all tool configs.
         ctx_file_name = strip_path( filename )

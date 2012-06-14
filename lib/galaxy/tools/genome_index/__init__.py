@@ -67,7 +67,7 @@ class GenomeIndexToolWrapper( object ):
         if gitd:
             destination = None
             tdtman = ToolDataTableManager()
-            xmltree = tdtman.load_from_config_file(app.config.tool_data_table_config_path)
+            xmltree = tdtman.load_from_config_file( app.config.tool_data_table_config_path, app.config.tool_data_path )
             for node in xmltree:
                 table = node.get('name')
                 location = node.findall('file')[0].get('path')

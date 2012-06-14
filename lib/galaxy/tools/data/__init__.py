@@ -24,7 +24,7 @@ class ToolDataTableManager( object ):
         return self.data_tables.__getitem__( key )
     def __contains__( self, key ):
         return self.data_tables.__contains__( key )
-    def load_from_config_file( self, config_filename ):
+    def load_from_config_file( self, config_filename, tool_data_path ):
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
         table_elems = []
@@ -36,12 +36,12 @@ class ToolDataTableManager( object ):
             if table_elem_name and table_elem_name not in self.data_table_elem_names:
                 self.data_table_elem_names.append( table_elem_name )
                 self.data_table_elems.append( table_elem )
-            table = tool_data_table_types[ type ]( table_elem )
+            table = tool_data_table_types[ type ]( table_elem, tool_data_path )
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Loaded tool data table '%s'", table.name )
         return table_elems
-    def add_new_entries_from_config_file( self, config_filename, tool_data_table_config_path, persist=False ):
+    def add_new_entries_from_config_file( self, config_filename, tool_data_path, tool_data_table_config_path, persist=False ):
         """
         This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
         installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example:
@@ -64,7 +64,7 @@ class ToolDataTableManager( object ):
         # Make a copy of the current list of data_table_elem_names so we can persist later if changes to the config file are necessary.
         original_data_table_elem_names = [ name for name in self.data_table_elem_names ]
         if root.tag == 'tables':
-            table_elems = self.load_from_config_file( config_filename )
+            table_elems = self.load_from_config_file( config_filename, tool_data_path )
         else:
             table_elems = []
             type = root.get( 'type', 'tabular' )
@@ -74,7 +74,7 @@ class ToolDataTableManager( object ):
             if table_elem_name and table_elem_name not in self.data_table_elem_names:
                 self.data_table_elem_names.append( table_elem_name )
                 self.data_table_elems.append( root )
-            table = tool_data_table_types[ type ]( root )
+            table = tool_data_table_types[ type ]( root, tool_data_path )
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Added new tool data table '%s'", table.name )
@@ -97,8 +97,9 @@ class ToolDataTableManager( object ):
         os.chmod( full_path, 0644 )
     
 class ToolDataTable( object ):
-    def __init__( self, config_element ):
+    def __init__( self, config_element, tool_data_path ):
         self.name = config_element.get( 'name' )
+        self.tool_data_path = tool_data_path
         self.missing_index_file = None
     
 class TabularToolDataTable( ToolDataTable ):
@@ -115,8 +116,8 @@ class TabularToolDataTable( ToolDataTable ):
     
     type_key = 'tabular'
     
-    def __init__( self, config_element ):
-        super( TabularToolDataTable, self ).__init__( config_element )
+    def __init__( self, config_element, tool_data_path ):
+        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path )
         self.configure_and_load( config_element )
     def configure_and_load( self, config_element ):
         """
@@ -128,11 +129,24 @@ class TabularToolDataTable( ToolDataTable ):
         self.parse_column_spec( config_element )
         # Read every file
         all_rows = []
+        found = False
         for file_element in config_element.findall( 'file' ):
             filename = file_element.get( 'path' )
             if os.path.exists( filename ):
+                found = True
                 all_rows.extend( self.parse_file_fields( open( filename ) ) )
             else:
+                # Since the path attribute can include a hard-coded path to a specific directory
+                # (e.g., <file path="tool-data/cg_crr_files.loc" />) which may not be the same value
+                # as self.tool_data_path, we'll parse the path to get the filename and see if it is
+                # in self.tool_data_path.
+                file_path, file_name = os.path.split( filename )
+                if file_path and file_path != self.tool_data_path:
+                    corrected_filename = os.path.join( self.tool_data_path, file_name )
+                    if os.path.exists( corrected_filename ):
+                        found = True
+                        all_rows.extend( self.parse_file_fields( open( corrected_filename ) ) )
+            if not found:
                 self.missing_index_file = filename
                 log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
         self.data = all_rows
