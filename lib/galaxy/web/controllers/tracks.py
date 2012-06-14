@@ -186,22 +186,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             dataset_id = ldda_id
         dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
         
-        # Get data provider.
-        track_type, _ = dataset.datatype.get_track_type()
-        track_data_provider_class = get_data_provider( original_dataset=dataset )
-        track_data_provider = track_data_provider_class( original_dataset=dataset )
-        
-        # Get track definition.
-        return {
-            "track_type": track_type,
-            "name": dataset.name,
-            "hda_ldda": hda_ldda,
-            "dataset_id": trans.security.encode_id( dataset.id ),
-            "prefs": {},
-            "filters": { 'filters' : track_data_provider.get_filters() },
-            "tool": get_tool_def( trans, dataset ),
-            "tool_state": {}
-        }
+        return self.get_new_track_config( trans, dataset )
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):

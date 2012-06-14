@@ -1,12 +1,11 @@
-from galaxy import config, tools, web, util
-from galaxy.web.base.controller import BaseController, BaseAPIController, UsesHistoryDatasetAssociationMixin, messages, get_highest_priority_msg
-from galaxy.util.bunch import Bunch
+from galaxy import web, util
+from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin, messages, get_highest_priority_msg
 from galaxy.visualization.tracks.visual_analytics import get_dataset_job
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.visualization.tracks.data_providers import *
 
-class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin ):
+class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin ):
     """
     RESTful controller for interactions with tools.
     """
@@ -160,9 +159,12 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin ):
         if not tool:
             return messages.NO_TOOL
         tool_params = dict( [ ( p.name, p.value ) for p in original_job.parameters ] )
+        
+        # TODO: rather than set new inputs using dict of json'ed value, unpack parameters and set using set_param_value below.
         # TODO: need to handle updates to conditional parameters; conditional 
         # params are stored in dicts (and dicts within dicts).
-        tool_params.update( dict( [ ( key, value ) for key, value in kwargs.items() if key in tool.inputs ] ) )
+        new_inputs = payload[ 'inputs' ]
+        tool_params.update( dict( [ ( key, to_json_string( value ) ) for key, value in new_inputs.items() if key in tool.inputs and new_inputs[ key ] is not None ] ) )
         tool_params = tool.params_from_strings( tool_params, self.app )
 
         #
@@ -355,5 +357,7 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin ):
         for joda in subset_job.output_datasets:
             if joda.name == output_name:
                 output_dataset = joda.dataset
-
-        return output_dataset.get_api_value()
+        
+        dataset_dict = output_dataset.get_api_value()
+        dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset );
+        return dataset_dict

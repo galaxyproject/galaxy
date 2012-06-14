@@ -542,6 +542,32 @@ class UsesVisualizationMixin( SharableItemSecurityMixin ):
 
         return config
         
+    def get_new_track_config( self, trans, dataset ):
+        """
+        Returns track configuration dict for a dataset.
+        """
+        # Get data provider.
+        track_type, _ = dataset.datatype.get_track_type()
+        track_data_provider_class = get_data_provider( original_dataset=dataset )
+        track_data_provider = track_data_provider_class( original_dataset=dataset )
+        
+        if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):
+            hda_ldda = "hda"
+        elif isinstance( dataset, trans.app.model.LibraryDatasetDatasetAssociation ):
+            hda_ldda = "ldda"
+        
+        # Get track definition.
+        return {
+            "track_type": track_type,
+            "name": dataset.name,
+            "hda_ldda": hda_ldda,
+            "dataset_id": trans.security.encode_id( dataset.id ),
+            "prefs": {},
+            "filters": { 'filters' : track_data_provider.get_filters() },
+            "tool": get_tool_def( trans, dataset ),
+            "tool_state": {}
+        }
+        
     def get_hda_or_ldda( self, trans, hda_ldda, dataset_id ):
         """ Returns either HDA or LDDA for hda/ldda and id combination. """
         if hda_ldda == "hda":
