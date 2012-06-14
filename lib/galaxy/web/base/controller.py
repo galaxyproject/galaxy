@@ -348,7 +348,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
     def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
         return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
 
-class UsesVisualizationMixin( SharableItemSecurityMixin ):
+class UsesVisualizationMixin( SharableItemSecurityMixin, UsesLibraryMixinItems ):
     """ Mixin for controllers that use Visualization objects. """
     
     viz_types = [ "trackster", "circster" ]
@@ -468,6 +468,10 @@ class UsesVisualizationMixin( SharableItemSecurityMixin ):
             def pack_track( track_dict ):
                 dataset_id = track_dict['dataset_id']
                 hda_ldda = track_dict.get('hda_ldda', 'hda')
+                if hda_ldda == 'ldda':
+                    # HACK: need to encode library dataset ID because get_hda_or_ldda 
+                    # only works for encoded datasets.
+                    dataset_id = trans.security.encode_id( dataset_id )
                 dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
 
                 try:
@@ -573,7 +577,7 @@ class UsesVisualizationMixin( SharableItemSecurityMixin ):
         if hda_ldda == "hda":
             return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
-            return trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+            return self.get_library_dataset_dataset_association( trans, dataset_id )
         
     # -- Helper functions --
         
