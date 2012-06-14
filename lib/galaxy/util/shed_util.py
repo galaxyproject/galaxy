@@ -1151,7 +1151,10 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
     error = False
     message = ''
     try:
-        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( filename, app.config.tool_data_table_config_path, persist=persist )
+        new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( config_filename=filename,
+                                                                                 tool_data_path=app.config.tool_data_path,
+                                                                                 tool_data_table_config_path=app.config.tool_data_table_config_path,
+                                                                                 persist=persist )
     except Exception, e:
         message = str( e )
         error = True
