@@ -14,7 +14,6 @@ from galaxy.jobs.actions.post import ActionBox
 
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
-from galaxy.tools.data import ToolDataTableManager
 
 from galaxy.datatypes.checkers import *
 

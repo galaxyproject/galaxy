@@ -13,13 +13,14 @@ log = logging.getLogger( __name__ )
 
 class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
-    def __init__( self, config_filename=None ):
+    def __init__( self, tool_data_path, config_filename=None ):
+        self.tool_data_path = tool_data_path
         self.data_tables = {}
         # Store config elements for on-the-fly persistence.
         self.data_table_elems = []
         self.data_table_elem_names = []
         if config_filename:
-            self.load_from_config_file( config_filename )
+            self.load_from_config_file( config_filename, self.tool_data_path )
     def __getitem__( self, key ):
         return self.data_tables.__getitem__( key )
     def __contains__( self, key ):

@@ -33,7 +33,7 @@ class GenomeTransferPlugin( DataTransfer ):
         self.app = app
         self.tool = app.toolbox.tools_by_id['__GENOME_INDEX__']
         self.sa_session = app.model.context.current
-        tdtman = ToolDataTableManager()
+        tdtman = ToolDataTableManager( app.config.tool_data_path )
         xmltree = tdtman.load_from_config_file( app.config.tool_data_table_config_path, app.config.tool_data_path )
         for node in xmltree:
             table = node.get('name')

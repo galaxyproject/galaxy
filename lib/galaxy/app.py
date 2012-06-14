@@ -74,7 +74,7 @@ class UniverseApplication( object ):
         # Genomes
         self.genomes = Genomes( self )
         # Tool data tables
-        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_table_config_path )
+        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_path, self.config.tool_data_table_config_path )
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
         if self.config.migrated_tools_config not in tool_configs:
