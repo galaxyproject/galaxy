@@ -340,7 +340,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
                                                              name=name,
                                                              description=description,
                                                              owner=owner,
-                                                             installed_changeset_revision=changeset_revision,
+                                                             installed_changeset_revision=installed_changeset_revision,
                                                              changeset_revision=current_changeset_revision,
                                                              ctx_rev=ctx_rev,
                                                              metadata=metadata_dict,
@@ -1492,6 +1492,22 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     if uninstall:
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         trans.app.toolbox.write_integrated_tool_panel_config_file()
+def remove_tool_dependency( trans, tool_dependency ):
+    dependency_install_dir = tool_dependency.installation_directory( trans.app )
+    try:
+        shutil.rmtree( dependency_install_dir )
+        removed = True
+        error_message = ''
+        log.debug( "Removed tool dependency installation directory: %s" % str( dependency_install_dir ) )
+    except Exception, e:
+        removed = False
+        error_message = "Error removing tool dependency installation directory %s: %s" % ( str( dependency_install_dir ), str( e ) )
+        log.debug( error_message )
+    if removed:
+        tool_dependency.uninstalled = True
+        trans.sa_session.add( tool_dependency )
+        trans.sa_session.flush()
+    return removed, error_message
 def reset_tool_data_tables( app ):
     # Reset the tool_data_tables to an empty dictionary.
     app.tool_data_tables.data_tables = {}
