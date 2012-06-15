@@ -68,6 +68,16 @@ var Tool = BaseModel.extend({
     },
     
     /**
+     * Set many input values at once.
+     */
+    set_input_values: function(inputs_dict) {
+        var self = this;
+        _.each(_.keys(inputs_dict), function(input_name) {
+            self.set_input_value(input_name, inputs_dict[input_name]); 
+        });
+    },
+    
+    /**
      * Run tool; returns a Deferred that resolves to the tool's output(s).
      */
     run: function() {

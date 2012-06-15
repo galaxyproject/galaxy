@@ -1,5 +1,7 @@
 /**
- * Model, view, and controller objects for Galaxy tools and tool panel.
+ * Model, view, and controller objects for Galaxy visualization framework.
+ * 
+ * Required libraries: Backbone, jQuery
  *
  * Models have no references to views, instead using events to indicate state 
  * changes; this is advantageous because multiple views can use the same object 
@@ -45,14 +47,66 @@ var ServerStateDeferred = Backbone.Model.extend({
     }
 });
 
+// TODO: move to Backbone
+
+/**
+ * Canvas manager is used to create canvases, for browsers, this deals with
+ * backward comparibility using excanvas, as well as providing a pattern cache
+ */
+var CanvasManager = function(default_font) {
+    this.default_font = default_font !== undefined ? default_font : "9px Monaco, Lucida Console, monospace";
+    
+    this.dummy_canvas = this.new_canvas();
+    this.dummy_context = this.dummy_canvas.getContext('2d');
+    this.dummy_context.font = this.default_font;
+    
+    this.char_width_px = this.dummy_context.measureText("A").width;
+    
+    this.patterns = {};
+
+    // FIXME: move somewhere to make this more general
+    this.load_pattern( 'right_strand', "/visualization/strand_right.png" );
+    this.load_pattern( 'left_strand', "/visualization/strand_left.png" );
+    this.load_pattern( 'right_strand_inv', "/visualization/strand_right_inv.png" );
+    this.load_pattern( 'left_strand_inv', "/visualization/strand_left_inv.png" );
+}
+
+_.extend( CanvasManager.prototype, {
+    load_pattern: function( key, path ) {
+        var patterns = this.patterns,
+            dummy_context = this.dummy_context,
+            image = new Image();
+        image.src = galaxy_paths.attributes.image_path + path;
+        image.onload = function() {
+            patterns[key] = dummy_context.createPattern( image, "repeat" );
+        }
+    },
+    get_pattern: function( key ) {
+        return this.patterns[key];
+    },
+    new_canvas: function() {
+        var canvas = $("<canvas/>")[0];
+        // If using excanvas in IE, we need to explicately attach the canvas
+        // methods to the DOM element
+        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); }
+        // Keep a reference back to the manager
+        canvas.manager = this;
+        return canvas;
+    }
+});
+
 /**
  * Generic cache that handles key/value pairs.
  */ 
 var Cache = Backbone.Model.extend({
     defaults: {
         num_elements: 20,
-        obj_cache: {},
-        key_ary: []
+        obj_cache: null,
+        key_ary: null
+    },
+
+    initialize: function(options) {
+        this.clear();
     },
     
     get_elt: function(key) {
@@ -114,9 +168,36 @@ var GenomeDataManager = Cache.extend({
         dataset: null,
         filters_manager: null,
         data_url: null,
+        dataset_state_url: null,
         data_mode_compatible: function(entry, mode) { return true; },
         can_subset: function(entry) { return false; }
     }),
+
+    /**
+     * Returns deferred that resolves to true when dataset is ready (or false if dataset
+     * cannot be used).
+     */
+    data_is_ready: function() {
+        var dataset = this.get('dataset'),
+            ready_deferred = $.Deferred(),
+            ss_deferred = new ServerStateDeferred({
+                ajax_settings: {
+                    url: this.get('dataset_state_url'),
+                    data: {
+                        dataset_id: dataset.id,
+                        hda_ldda: dataset.get('hda_ldda')
+                    },
+                    dataType: "json"
+                },
+                interval: 5000,
+                success_fn: function(response) { return response !== "pending"; }
+            });
+
+        $.when(ss_deferred.go()).then(function(response) {
+            ready_deferred.resolve(response === "ok" || response === "data" );
+        });
+        return ready_deferred;
+    },
     
     /**
      * Load data from server; returns AJAX object so that use of Deferred is possible.
@@ -366,6 +447,10 @@ var GenomeRegion = Backbone.Model.extend({
             end: this.get('end') 
         });
     },
+
+    length: function() {
+        return this.get('end') - this.get('start');
+    },
     
     /** Returns region in canonical form chrom:start-end */
     toString: function() {
@@ -436,6 +521,10 @@ var GenomeRegion = Backbone.Model.extend({
         return _.intersection( [this.compute_overlap(a_region)], 
                                [this.get('DIF_CHROMS'), this.get('BEFORE'), this.get('AFTER')] ).length === 0;  
     }
+});
+
+var GenomeRegionCollection = Backbone.Collection.extend({
+    model: GenomeRegion
 });
 
 /**
