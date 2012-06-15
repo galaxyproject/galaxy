@@ -36,7 +36,7 @@ var add_bookmark = function(position, annotation) {
  * Create new object from a template. A template can be either an object dictionary or an 
  * object itself.
  */
-var object_from_template = function(template, container) {
+var object_from_template = function(template, view, container) {
     if ('copy' in template) {
         // Template is an object.
         return template.copy(container);
@@ -93,7 +93,7 @@ var create_visualization = function(view_config, viewport_config, drawables_conf
                 drawable_type,
                 drawable;
             for (var i = 0; i < drawables_config.length; i++) {
-                view.add_drawable( object_from_template( drawables_config[i], view ) );
+                view.add_drawable( object_from_template( drawables_config[i], view, view ) );
             }
         }
         

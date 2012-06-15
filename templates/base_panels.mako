@@ -53,7 +53,11 @@
         var galaxy_paths = new GalaxyPaths({
             root_path: '${h.url_for( "/" )}',
             image_path: '${h.url_for( "/static/images" )}',
-            tool_url: '${h.url_for( controller="/api/tools" )}'
+            tool_url: '${h.url_for( controller="/api/tools" )}',
+            data_url: '${h.url_for( controller="tracks", action="data" )}',
+            raw_data_url: '${h.url_for( controller="tracks", action="raw_data" )}',
+            converted_datasets_state_url: '${h.url_for( controller="tracks", action="converted_datasets_state" )}',
+            dataset_state_url: '${h.url_for( controller="tracks", action="dataset_state" )}'
         });
     </script>
 </%def>

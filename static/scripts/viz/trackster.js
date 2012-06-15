@@ -176,56 +176,6 @@ var trackster_module = function(require, exports) {
 var extend = require('class').extend,
     slotting = require('slotting'),
     painters = require('painters');
-    
-    
-// ---- Canvas management and extensions ----
-
-/**
- * Canvas manager is used to create canvases, for browsers, this deals with
- * backward comparibility using excanvas, as well as providing a pattern cache
- */
-var CanvasManager = function( document, default_font ) {
-    this.document = document;
-    this.default_font = default_font !== undefined ? default_font : "9px Monaco, Lucida Console, monospace";
-    
-    this.dummy_canvas = this.new_canvas();
-    this.dummy_context = this.dummy_canvas.getContext('2d');
-    this.dummy_context.font = this.default_font;
-    
-    this.char_width_px = this.dummy_context.measureText("A").width;
-    
-    this.patterns = {};
-
-    // FIXME: move somewhere to make this more general
-    this.load_pattern( 'right_strand', "/visualization/strand_right.png" );
-    this.load_pattern( 'left_strand', "/visualization/strand_left.png" );
-    this.load_pattern( 'right_strand_inv', "/visualization/strand_right_inv.png" );
-    this.load_pattern( 'left_strand_inv', "/visualization/strand_left_inv.png" );
-}
-
-extend( CanvasManager.prototype, {
-    load_pattern: function( key, path ) {
-        var patterns = this.patterns,
-            dummy_context = this.dummy_context,
-            image = new Image();
-        image.src = galaxy_paths.attributes.image_path + path;
-        image.onload = function() {
-            patterns[key] = dummy_context.createPattern( image, "repeat" );
-        }
-    },
-    get_pattern: function( key ) {
-        return this.patterns[key];
-    },
-    new_canvas: function() {
-        var canvas = this.document.createElement("canvas");
-        // If using excanvas in IE, we need to explicately attach the canvas
-        // methods to the DOM element
-        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); }
-        // Keep a reference back to the manager
-        canvas.manager = this;
-        return canvas;
-    }
-});
 
 // ---- Web UI specific utilities ----
 
@@ -2985,18 +2935,20 @@ var Track = function(view, container, obj_dict) {
     this.data_url = ('data_url' in obj_dict ? obj_dict.data_url : default_data_url);
     this.data_url_extra_params = {}
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
-    this.dataset_check_url = converted_datasets_state_url;
+    this.dataset_check_url = ('converted_datasets_state_url' in obj_dict ? obj_dict.converted_datasets_state_url : converted_datasets_state_url);
     
     // A little ugly creating data manager right now due to transition to Backbone-based objects.
-    var dataset = new Dataset({
-        id: obj_dict.dataset_id,
-        hda_ldda: obj_dict.hda_ldda
-    });
+    var track = this,
+        dataset = new Dataset({
+            id: obj_dict.dataset_id,
+            hda_ldda: obj_dict.hda_ldda
+        });
     this.data_manager = ('data_manager' in obj_dict ? 
                          obj_dict.data_manager : 
                          new GenomeDataManager({
                              dataset: dataset,
-                             data_url: default_data_url,
+                             data_url: track.data_url,
+                             dataset_state_url: track.dataset_check_url,
                              data_mode_compatible: this.data_and_mode_compatible,
                              can_subset: this.can_subset,
                          }));
