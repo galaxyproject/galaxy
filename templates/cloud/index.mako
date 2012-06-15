@@ -56,7 +56,7 @@
         <div class="page-container" style="padding: 10px;">
             <h2>Launch a Galaxy Cloud Instance</h2>
               <div class="toolForm">
-                    <form action="cloud/launch_instance" method="post">
+                    <form action="${h.url_for( controller='cloudlaunch', action='launch_instance' )}" method="post">
                     <div class="form-row">
                         <label for="id_cluster_name">Cluster Name</label>
                         <input type="text" size="80" name="cluster_name" id="id_cluster_name"/><br/>
