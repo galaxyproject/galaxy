@@ -41,12 +41,14 @@ class CloudController(BaseUIController):
         if ec2_error:
             return trans.fill_template("cloud/run.mako", error = ec2_error)
         else:
+            user_provided_data={'cluster_name':cluster_name,
+                                'access_key':key_id,
+                                'secret_key':secret,
+                                'instance_type':instance_type}
+            if password:
+                user_provided_data['password'] = password
             rs = run_instance(ec2_conn=ec2_conn,
-                      user_provided_data={'cluster_name':cluster_name,
-                                        'password':password,
-                                        'access_key':key_id,
-                                        'secret_key':secret,
-                                        'instance_type':instance_type},
+                      user_provided_data=user_provided_data,
                       key_name=kp_name,
                       security_groups=[sg_name])
             if rs:
@@ -187,7 +189,7 @@ def run_instance(ec2_conn, user_provided_data, image_id='ami-da58aab3',
                                     ramdisk_id=ramdisk_id,
                                     placement=placement)
     except EC2ResponseError, e:
-        log.error("Problem starting an instance: %s" % e)
+        log.error("Problem starting an instance: %s\n%s" % (e, e.body))
     if rs:
         try:
             log.info("Started an instance with ID %s" % rs.instances[0].id)
