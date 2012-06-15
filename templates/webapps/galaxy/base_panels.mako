@@ -113,9 +113,9 @@
     %if app.config.get_bool( 'enable_cloud_launch', False ):
         <%
             menu_options = [
-                             [_('New Cloud Cluster'), h.url_for( controller='/cloud', action='index' ) ],
+                             [_('New Cloud Cluster'), h.url_for( controller='/cloudlaunch', action='index' ) ],
                            ]
-            tab( "cloud", _("Cloud"), h.url_for( controller='/cloud', action='index'), menu_options=menu_options )
+            tab( "cloud", _("Cloud"), h.url_for( controller='/cloudlaunch', action='index'), menu_options=menu_options )
         %>
     %endif
 
