@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class Tabular( data.Text ):
     """Tab delimited data"""
-    CHUNK_SIZE = 20000
+    CHUNK_SIZE = 50000
 
     """Add metadata elements"""
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
@@ -246,26 +246,40 @@ class Tabular( data.Text ):
             raise Exception, "Can't create peek rows %s" % str( exc )
         return "".join( out )
 
+    def get_chunk(self, trans, dataset, chunk):
+        ck_index = int(chunk)
+        f = open(dataset.file_name)
+        f.seek(ck_index * self.CHUNK_SIZE)
+        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
+        if f.tell() != 0:
+            cursor = f.read(1)
+            while cursor and cursor != '\n':
+                cursor = f.read(1)
+        ck_data = f.read(self.CHUNK_SIZE)
+        cursor = f.read(1)
+        while cursor and ck_data[-1] != '\n':
+            ck_data += cursor
+            cursor = f.read(1)
+        return to_json_string({'ck_data': ck_data, 'ck_index': ck_index+1})
+
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
         #TODO Prevent failure when displaying extremely long > 50kb lines.
         if to_ext:
             return self._serve_raw(trans, dataset, to_ext)
         if chunk:
-            ck_index = int(chunk)
-            f = open(dataset.file_name)
-            f.seek(ck_index * self.CHUNK_SIZE)
-            # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
-            if f.tell() != 0:
-                cursor = f.read(1)
-                while cursor and cursor != '\n':
-                    cursor = f.read(1)
-            ck_data = f.read(self.CHUNK_SIZE)
-            cursor = f.read(1)
-            while cursor and ck_data[-1] != '\n':
-                ck_data += cursor
-                cursor = f.read(1)
-            return to_json_string({'ck_data': ck_data, 'ck_index': ck_index+1})
-        return trans.fill_template( "/dataset/tabular_chunked.mako",dataset = dataset)
+            return self.get_chunk(trans, dataset, chunk)
+        else:
+            column_names = 'null'
+            if dataset.metadata.column_names:
+                column_names = dataset.metadata.column_names
+            elif hasattr(dataset.datatype, 'column_names'):
+                column_names = dataset.datatype.column_names
+            return trans.fill_template( "/dataset/tabular_chunked.mako",
+                        dataset = dataset,
+                        chunk = self.get_chunk(trans, dataset, 0),
+                        column_number = dataset.metadata.columns,
+                        column_names = column_names,
+                        column_types = dataset.metadata.column_types)
 
     def set_peek( self, dataset, line_count=None, is_multi_byte=False):
         super(Tabular, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
