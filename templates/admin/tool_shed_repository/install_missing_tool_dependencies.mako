@@ -3,6 +3,23 @@
 
 <% import os %>
 
+<br/><br/>
+<ul class="manage-table-actions">
+    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
+    <div popupmenu="repository-${repository.id}-popup">
+        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository files</a>
+        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
+        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get updates</a>
+        %if repository.includes_tools:
+            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='set_tool_versions', id=trans.security.encode_id( repository.id ) )}">Set tool versions</a>
+        %endif
+        %if repository.tool_dependencies:
+            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( repository.id ) )}">Manage tool dependencies</a>
+        %endif
+        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or uninstall repository</a>
+    </div>
+</ul>
+
 %if message:
     ${render_msg( message, status )}
 %endif
@@ -33,10 +50,10 @@
         <form name="install_missing_tool_dependencies" id="install_missing_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='install_missing_tool_dependencies', id=trans.security.encode_id( repository.id ), tool_panel_section=tool_panel_section, new_tool_panel_section=new_tool_panel_section, reinstalling=reinstalling )}" method="post" >
             <div style="clear: both"></div>
             <div class="form-row">
-                <label>Install tool dependencies?</label>
+                <label>Install missing tool dependencies?</label>
                 ${install_tool_dependencies_check_box.get_html()}
                 <div class="toolParamHelp" style="clear: both;">
-                    Un-check to skip installation of these tool dependencies.
+                    Un-check to skip installation of these missing tool dependencies.
                 </div>
                 ## Fake the no_changes_check_box value.
                 %if no_changes_checked:
@@ -48,7 +65,7 @@
             <div style="clear: both"></div>
             <div class="form-row">
                 <table class="grid">
-                    <tr><td colspan="4" bgcolor="#D8D8D8"><b>Tool dependencies</b></td></tr>
+                    <tr><td colspan="4" bgcolor="#D8D8D8"><b>Missing tool dependencies</b></td></tr>
                     <tr>
                         <th>Name</th>
                         <th>Version</th>
@@ -68,6 +85,7 @@
                                                         repository.changeset_revision )
                             readme_text = requirements_dict.get( 'readme', None )
                         %>
+                        %if not os.path.exists( install_dir ):
                             <tr>
                                 <td>${name}</td>
                                 <td>${version}</td>
@@ -78,6 +96,7 @@
                                 <tr><td colspan="4" bgcolor="#FFFFCC">${name} ${version} requirements and installation information</td></tr>
                                 <tr><td colspan="4"><pre>${readme_text}</pre></td></tr>
                             %endif
+                        %endif
                     %endfor
                 </table>
                 <div style="clear: both"></div>

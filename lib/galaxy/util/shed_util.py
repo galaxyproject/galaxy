@@ -326,7 +326,11 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     if not owner:
         owner = get_repository_owner_from_clone_url( repository_clone_url )
     includes_datatypes = 'datatypes' in metadata_dict
-    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision )
+    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app,
+                                                                                                     tool_shed,
+                                                                                                     name,
+                                                                                                     owner,
+                                                                                                     installed_changeset_revision )
     if tool_shed_repository:
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
@@ -425,10 +429,10 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
             for tool_dict in metadata_dict[ 'tools' ]:
                 requirements = tool_dict.get( 'requirements', [] )
                 for requirement_dict in requirements:
-                    requirement_name = requirement_dict.get( 'name', None )
-                    requirement_version = requirement_dict.get( 'version', None )
-                    requirement_type = requirement_dict.get( 'type', None )
-                    if requirement_name == tool_dependency_name and requirement_version == tool_dependency_version and requirement_type == tool_dependency_type:
+                    req_name = requirement_dict.get( 'name', None )
+                    req_version = requirement_dict.get( 'version', None )
+                    req_type = requirement_dict.get( 'type', None )
+                    if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
                         can_generate_dependency_metadata = True
                         break
                 if not can_generate_dependency_metadata:
@@ -1159,13 +1163,13 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
         message = str( e )
         error = True
     return error, message
-def handle_tool_dependencies( app, tool_shed_repository, installed_changeset_revision, tool_dependencies_config ):
+def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, name=None, version=None, type='package' ):
     """
     Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation
     methods in Galaxy's tool_dependencies module.  In the future, proprietary fabric scripts contained in the repository will be supported.
     Future enhancements to handling tool dependencies may provide installation processes in addition to fabric based processes.  The dependencies
     will be installed in:
-    ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repository_owner>/<repository_name>/<installed_changeset_revision>
+    ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repo_owner>/<repo_name>/<repo_installed_changeset_revision>
     """
     status = 'ok'
     message = ''
@@ -1175,8 +1179,8 @@ def handle_tool_dependencies( app, tool_shed_repository, installed_changeset_rev
     ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
-        if elem.tag == 'package':
-            error_message = install_package( app, elem, tool_shed_repository, installed_changeset_revision )
+        if elem.tag == type:
+            error_message = install_package( app, elem, tool_shed_repository, name=name, version=version )
             if error_message:
                 message += '  %s' % error_message
     if message:
@@ -1288,12 +1292,9 @@ def load_repository_contents( trans, repository_name, description, owner, instal
                                                                        tool_shed_repository,
                                                                        current_changeset_revision,
                                                                        work_dir )
-                # Install dependencies for repository tools.  The tool_dependency.installed_changeset_revision value will be the value of
-                # tool_shed_repository.changeset_revision (this method's current_changeset_revision).  This approach will allow for different
-                # versions of the same tool_dependency to be installed for associated versions of tools included in the installed repository. 
+                # Install dependencies for repository tools.
                 status, message = handle_tool_dependencies( app=trans.app,
                                                             tool_shed_repository=tool_shed_repository,
-                                                            installed_changeset_revision=current_changeset_revision,
                                                             tool_dependencies_config=tool_dependencies_config )
                 if status != 'ok' and message:
                     print 'The following error occurred from load_repository_contents while installing tool dependencies:'

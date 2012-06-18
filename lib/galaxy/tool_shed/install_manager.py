@@ -120,8 +120,8 @@ class InstallManager( object ):
                             if not is_displayed:
                                 is_displayed = True
         return is_displayed, tool_sections
-    def handle_repository_contents( self, repository_clone_url, relative_install_dir, repository_elem, repository_name, description, installed_changeset_revision,
-                                    ctx_rev, install_dependencies ):
+    def handle_repository_contents( self, repository_clone_url, relative_install_dir, repository_elem, repository_name, description,
+                                    installed_changeset_revision, ctx_rev, install_dependencies ):
         # Generate the metadata for the installed tool shed repository, among other things.  It is critical that the installed repository is
         # updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
         # The values for the keys in each of the following dictionaries will be a list to allow for the same tool to be displayed in multiple places
@@ -176,7 +176,6 @@ class InstallManager( object ):
                     # Install tool dependencies.
                     status, message = handle_tool_dependencies( app=self.app,
                                                                 tool_shed_repository=tool_shed_repository,
-                                                                installed_changeset_revision=installed_changeset_revision,
                                                                 tool_dependencies_config=tool_dependencies_config )
                     if status != 'ok' and message:
                         print 'The following error occurred from the InstallManager while installing tool dependencies:'

@@ -1,9 +1,9 @@
 import os, shutil, tarfile, urllib2
 from galaxy.datatypes.checkers import *
 
-DIRECTORY_BUILD_COMMAND_NAMES = [ 'change_directory' ]
-MOVE_BUILD_COMMAND_NAMES = [ 'move_directory_files', 'move_file' ]
-ALL_BUILD_COMMAND_NAMES = DIRECTORY_BUILD_COMMAND_NAMES + MOVE_BUILD_COMMAND_NAMES
+MISCELLANEOUS_ACTIONS = [ 'change_directory' ]
+MOVE_ACTIONS = [ 'move_directory_files', 'move_file' ]
+ALL_ACTIONS = MISCELLANEOUS_ACTIONS + MOVE_ACTIONS
 
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):

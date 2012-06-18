@@ -32,32 +32,20 @@ def make_tmp_dir():
     yield work_dir
     if os.path.exists( work_dir ):
         local( 'rm -rf %s' % work_dir )
-def handle_post_build_processing( tool_dependency_dir, install_dir, package_name=None ):
-    cmd = "echo 'PATH=%s/bin:$PATH; export PATH' > %s/env.sh;chmod +x %s/env.sh" % ( install_dir, install_dir, install_dir )
+def handle_post_build_processing( tool_dependency_dir, install_dir, env_dependency_path, package_name=None ):
+    cmd = "echo 'PATH=%s:$PATH; export PATH' > %s/env.sh;chmod +x %s/env.sh" % ( env_dependency_path, install_dir, install_dir )
     message = ''
     output = local( cmd, capture=True )
     log_results( cmd, output, os.path.join( install_dir, 'env_sh.log' ) )
     if output.return_code:
         message = '%s  %s' % ( message, str( output.stderr ) )
-    """
-    Since automatic dependency installation requires a version attribute in the tool's <requirement> tag, we don't have to
-    create a default symlink, but we'll keep this code around for a bit just in case we need it later.
-    if package_name:
-        package_dir = os.path.join( tool_dependency_dir, package_name )
-        package_default = os.path.join( package_dir, 'default' )
-        if not os.path.islink( package_default ):
-            cmd = 'ln -s %s %s' % ( install_dir, package_default )
-            output = local( cmd, capture=True )
-            if output.return_code:
-                message = '%s\n%s' % ( message, str( output.stderr ) )
-    """
     return message
 def install_and_build_package( params_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
     install_dir = params_dict[ 'install_dir' ]
     download_url = params_dict.get( 'download_url', None )
     clone_cmd = params_dict.get( 'clone_cmd', None )
-    build_commands = params_dict.get( 'build_commands', None )
+    actions = params_dict.get( 'actions', None )
     package_name = params_dict.get( 'package_name', None )
     with make_tmp_dir() as work_dir:
         with lcd( work_dir ):
@@ -75,36 +63,36 @@ def install_and_build_package( params_dict ):
                 if output.return_code:
                     return '%s.  ' % str( output.stderr )
                 dir = package_name
-            if build_commands:
+            if actions:
                 with lcd( dir ):
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
-                    for build_command_tup in build_commands:
-                        build_command_key, build_command_dict = build_command_tup
-                        if build_command_key.find( 'v^v^v' ) >= 0:
-                            build_command_items = build_command_key.split( 'v^v^v' )
-                            build_command_name = build_command_items[ 0 ]
-                            build_command = build_command_items[ 1 ]
-                        elif build_command_key in common_util.ALL_BUILD_COMMAND_NAMES:
-                            build_command_name = build_command_key
+                    for action_tup in actions:
+                        action_key, action_dict = action_tup
+                        if action_key.find( 'v^v^v' ) >= 0:
+                            action_items = action_key.split( 'v^v^v' )
+                            action_name = action_items[ 0 ]
+                            action = action_items[ 1 ]
+                        elif action_key in common_util.ALL_ACTIONS:
+                            action_name = action_key
                         else:
-                            build_command_name = None
-                        if build_command_name:
-                            if build_command_name == 'change_directory':
-                                current_dir = os.path.join( current_dir, build_command )
+                            action_name = None
+                        if action_name:
+                            if action_name == 'change_directory':
+                                current_dir = os.path.join( current_dir, action )
                                 lcd( current_dir )
-                            elif build_command_name == 'move_directory_files':
+                            elif action_name == 'move_directory_files':
                                 common_util.move_directory_files( current_dir=current_dir,
-                                                                  source_dir=os.path.join( build_command_dict[ 'source_directory' ] ),
-                                                                  destination_dir=os.path.join( build_command_dict[ 'destination_directory' ] ) )
-                            elif build_command_name == 'move_file':
+                                                                  source_dir=os.path.join( action_dict[ 'source_directory' ] ),
+                                                                  destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
+                            elif action_name == 'move_file':
                                 common_util.move_file( current_dir=current_dir,
-                                                       source=os.path.join( build_command_dict[ 'source' ] ),
-                                                       destination_dir=os.path.join( build_command_dict[ 'destination' ] ) )
+                                                       source=os.path.join( action_dict[ 'source' ] ),
+                                                       destination_dir=os.path.join( action_dict[ 'destination' ] ) )
                         else:
-                            build_command = build_command_key
+                            action = action_key
                             with settings( warn_only=True ):
-                                output = local( build_command, capture=True )
-                                log_results( build_command, output, os.path.join( install_dir, 'build_commands.log' ) )
+                                output = local( action, capture=True )
+                                log_results( action, output, os.path.join( install_dir, 'actions.log' ) )
                                 if output.return_code:
                                     return '%s.  ' % str( output.stderr )
     return ''
@@ -119,10 +107,10 @@ def log_results( command, fabric_AttributeString, file_path ):
         logfile = open( file_path, 'wb' )
     logfile.write( "\n#############################################" )
     logfile.write( '\n%s\nSTDOUT\n' % command )
-    logfile.write( "#############################################\n" )
     logfile.write( str( fabric_AttributeString.stdout ) )
+    logfile.write( "#############################################\n" )
     logfile.write( "\n#############################################" )
     logfile.write( '\n%s\nSTDERR\n' % command )
-    logfile.write( "#############################################\n" )
     logfile.write( str( fabric_AttributeString.stderr ) )
+    logfile.write( "#############################################\n" )
     logfile.close()

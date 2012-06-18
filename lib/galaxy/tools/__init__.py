@@ -798,11 +798,11 @@ class Tool:
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return get_tool_shed_repository_by_shed_name_owner_changeset_revision( self.app,
-                                                                                   self.tool_shed,
-                                                                                   self.repository_name,
-                                                                                   self.repository_owner,
-                                                                                   self.installed_changeset_revision )
+            return get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
+                                                                                             self.tool_shed,
+                                                                                             self.repository_name,
+                                                                                             self.repository_owner,
+                                                                                             self.installed_changeset_revision )
         return None
     def __get_job_run_config( self, run_configs, key, job_params=None ):
         # Look through runners/handlers to find one with matching parameters.

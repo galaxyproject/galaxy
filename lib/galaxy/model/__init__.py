@@ -2701,13 +2701,8 @@ class ToolShedRepository( object ):
         return installed_dependencies
     @property
     def missing_tool_dependencies( self ):
-        """Return the repository's tool dependencies that are not currently installed."""
-        def add_missing_dependency( missing_dependencies_dict, name, version, type, installed_changeset_revision=None ):
-            missing_dependencies_dict[ name ] = dict( version=version,
-                                                      type=type,
-                                                      installed_changeset_revision=installed_changeset_revision )
-            return missing_dependencies_dict
-        missing_dependencies = {}
+        """Return the repository's tool dependencies that are not currently installed, and may not ever have been installed."""
+        missing_dependencies = []
         # Get the dependency information from the metadata for comparison against the installed tool dependencies.
         tool_dependencies = self.metadata.get( 'tool_dependencies', None )
         if tool_dependencies:
@@ -2717,25 +2712,27 @@ class ToolShedRepository( object ):
                 type = requirements_dict[ 'type' ]
                 if self.tool_dependencies:
                     found = False
-                    for installed_dependency in self.tool_dependencies:
-                        if installed_dependency.name==name and installed_dependency.version==version and installed_dependency.type==type:
+                    for tool_dependency in self.tool_dependencies:
+                        if tool_dependency.name==name and tool_dependency.version==version and tool_dependency.type==type:
                             found = True
-                            if installed_dependency.uninstalled:
-                                missing_dependencies = add_missing_dependency( missing_dependencies,
-                                                                               installed_dependency.name,
-                                                                               installed_dependency.version,
-                                                                               installed_dependency.type,
-                                                                               installed_dependency.installed_changeset_revision )
+                            if tool_dependency.uninstalled:
+                                missing_dependencies.append( ( tool_dependency.name, tool_dependency.version, tool_dependency.type ) )
                                 break
                     if not found:
-                        missing_dependencies = add_missing_dependency( missing_dependencies, name, version, type )
-            return missing_dependencies
-        return None
+                        missing_dependencies.append( ( name, version, type ) )
+        return missing_dependencies
+    @property
+    def uninstalled_tool_dependencies( self ):
+        """Return the repository's tool dependencies that have been uninstalled."""
+        uninstalled_tool_dependencies = []
+        for tool_dependency in self.tool_dependencies:
+            if tool_dependency.uninstalled:
+                uninstalled_tool_dependencies.append( tool_dependency )
+        return uninstalled_tool_dependencies
 
 class ToolDependency( object ):
-    def __init__( self, tool_shed_repository_id=None, installed_changeset_revision=None, name=None, version=None, type=None, uninstalled=False ):
+    def __init__( self, tool_shed_repository_id=None, name=None, version=None, type=None, uninstalled=False ):
         self.tool_shed_repository_id = tool_shed_repository_id
-        self.installed_changeset_revision = installed_changeset_revision
         self.name = name
         self.version = version
         self.type = type
@@ -2746,7 +2743,8 @@ class ToolDependency( object ):
                              self.version,
                              self.tool_shed_repository.owner,
                              self.tool_shed_repository.name,
-                             self.installed_changeset_revision )
+                             self.tool_shed_repository.installed_changeset_revision )
+
 class ToolVersion( object ):
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
         self.id = id

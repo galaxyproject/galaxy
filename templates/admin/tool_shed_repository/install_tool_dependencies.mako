@@ -61,6 +61,7 @@
                                                             changeset_revision )
                                 readme_text = requirements_dict.get( 'readme', None )
                             %>
+                            %if not os.path.exists( install_dir ):
                                 <tr>
                                     <td>${name}</td>
                                     <td>${version}</td>
@@ -71,6 +72,7 @@
                                     <tr><td colspan="4" bgcolor="#FFFFCC">${name} ${version} requirements and installation information</td></tr>
                                     <tr><td colspan="4"><pre>${readme_text}</pre></td></tr>
                                 %endif
+                            %endif
                         %endfor
                     %endfor
                 </table>

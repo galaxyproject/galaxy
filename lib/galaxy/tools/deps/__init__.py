@@ -44,18 +44,20 @@ class DependencyManager( object ):
     def _find_dep_versioned( self, name, version, type='package', installed_tool_dependencies=None ):
         installed_dependency = None
         if installed_tool_dependencies:
-            for installed_dependency in installed_tool_dependencies:
-                if not installed_dependency.uninstalled:
-                    if installed_dependency.name==name and installed_dependency.version==version and installed_dependency.type==type:
+            for installed_tool_dependency in installed_tool_dependencies:
+                if not installed_tool_dependency.uninstalled:
+                    if installed_tool_dependency.name==name and installed_tool_dependency.version==version and installed_tool_dependency.type==type:
+                        installed_dependency = installed_tool_dependency
                         break
         for base_path in self.base_paths:
             if installed_dependency:
                 tool_shed_repository = installed_dependency.tool_shed_repository
                 path = os.path.join( base_path,
-                                     name, version,
+                                     name,
+                                     version,
                                      tool_shed_repository.owner,
                                      tool_shed_repository.name,
-                                     installed_dependency.installed_changeset_revision )
+                                     tool_shed_repository.installed_changeset_revision )
             else:
                 path = os.path.join( base_path, name, version )
             script = os.path.join( path, 'env.sh' )

@@ -395,7 +395,6 @@ ToolDependency.table = Table( "tool_dependency", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ),
-    Column( "installed_changeset_revision", TrimmedString( 255 ) ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "version", Text ),
     Column( "type", TrimmedString( 40 ) ),
@@ -1681,6 +1680,7 @@ assign_mapper( context, ToolShedRepository, ToolShedRepository.table,
                                              backref='tool_shed_repository' ),
                      tool_dependencies=relation( ToolDependency,
                                                  primaryjoin=( ToolShedRepository.table.c.id == ToolDependency.table.c.tool_shed_repository_id ),
+                                                 order_by=ToolDependency.table.c.name,
                                                  backref='tool_shed_repository' ) ) )
 
 assign_mapper( context, ToolDependency, ToolDependency.table )
