@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-
+"""
+Example usage:
+./library_upload_from_import_dir.py <key> http://127.0.0.1:8080/api/libraries/dda47097d9189f15/contents Fdda47097d9189f15 auto /Users/EnisAfgan/projects/pprojects/galaxy/lib_upload_dir ?
+"""
 import os, sys
 sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import submit

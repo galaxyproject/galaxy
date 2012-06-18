@@ -130,6 +130,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         history.deleted = True
         if purge and trans.app.config.allow_user_dataset_purge:
+            # First purge all the datasets
             for hda in history.datasets:
                 if hda.purged:
                     continue
@@ -143,6 +144,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                     except:
                         pass
                     trans.sa_session.flush()
+            # Now mark the history as purged
+            history.purged = True
+            self.sa_session.add( history )
 
         trans.sa_session.flush()
         return 'OK'
@@ -150,8 +154,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
     @web.expose_api
     def undelete( self, trans, id, **kwd ):
         """
-        POST /api/histories/deleted/{encoded_quota_id}/undelete
-        Undeletes a quota
+        POST /api/histories/deleted/{encoded_history_id}/undelete
+        Undeletes a history
         """
         history_id = id
         history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )

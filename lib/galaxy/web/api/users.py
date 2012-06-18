@@ -65,7 +65,7 @@ class UserAPIController( BaseAPIController ):
     @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
-        /api/users
+        POST /api/users
         Creates a new Galaxy user.
         """
         if not trans.app.config.allow_user_creation:
