@@ -37,6 +37,23 @@ from galaxy.visualization.tracks.visual_analytics import TracksterConfig
 
 log = logging.getLogger( __name__ )
 
+# These determine stdio-based error levels from matching on regular expressions
+# and exit codes. They are meant to be used comparatively, such as showing
+# that warning < fatal. This is really meant to just be an enum. 
+class StdioErrorLevel( object ):
+    NO_ERROR = 0
+    WARNING = 1
+    FATAL = 2
+    MAX = 2
+    descs = {NO_ERROR : 'No error', WARNING : 'Warning', FATAL : 'Fatal error'}
+    @staticmethod
+    def desc( error_level ):
+        err_msg = "Unknown error"
+        if ( error_level > 0 and
+             error_level <= StdioErrorLevel.MAX ):
+            err_msg = StdioErrorLevel.descs[ error_level ]
+        return err_msg
+
 class ToolNotFoundException( Exception ):
     pass
 
@@ -1140,6 +1157,12 @@ class Tool:
             # a warning and skip to the next.
             for exit_code_elem in ( stdio_elem.findall( "exit_code" ) ):
                 exit_code = ToolStdioExitCode()
+                # Each exit code has an optional description that can be
+                # part of the "desc" or "description" attributes:
+                exit_code.desc = exit_code_elem.get( "desc" )
+                if None == exit_code.desc:
+                    exit_code.desc = exit_code_elem.get( "description" )
+                # Parse the error level: 
                 exit_code.error_level = (
                     self.parse_error_level( exit_code_elem.get( "level" )))
                 code_range = exit_code_elem.get( "range", "" )
@@ -1155,11 +1178,9 @@ class Tool:
                 #  X:Y   - Split on the colon. We do not allow a colon 
                 #          without a beginning or end, though we could. 
                 # Also note that whitespace is eliminated.
-                # TODO: Turn this into a single match - it will be 
-                # more efficient
-                string.strip( code_range )
+                # TODO: Turn this into a single match - it should be 
+                # more efficient.
                 code_range = re.sub( "\s", "", code_range )
-                log.debug( "Code range after sub: %s" % code_range )
                 code_ranges = re.split( ":", code_range )
                 if ( len( code_ranges ) == 2 ):
                     if ( None == code_ranges[0] or '' == code_ranges[0] ):
@@ -1216,6 +1237,12 @@ class Tool:
             for regex_elem in ( stdio_elem.findall( "regex" ) ):
                 # TODO: Fill in ToolStdioRegex
                 regex = ToolStdioRegex() 
+                # Each regex has an optional description that can be
+                # part of the "desc" or "description" attributes:
+                regex.desc = regex_elem.get( "desc" )
+                if None == regex.desc:
+                    regex.desc = regex_elem.get( "description" )
+                # Parse the error level 
                 regex.error_level = ( 
                     self.parse_error_level( regex_elem.get( "level" ) ) )
                 regex.match = regex_elem.get( "match", "" )
@@ -1243,9 +1270,9 @@ class Tool:
                 # and anything to do with "err". If neither stdout nor
                 # stderr were specified, then raise a warning and scan both.
                 for src in src_list:
-                    if re.match( "out", src, re.IGNORECASE ):
+                    if re.search( "out", src, re.IGNORECASE ):
                         regex.stdout_match = True
-                    if re.match( "err", src, re.IGNORECASE ):
+                    if re.search( "err", src, re.IGNORECASE ):
                         regex.stderr_match = True
                     if (not regex.stdout_match and not regex.stderr_match):
                         log.warning( "Unable to determine if tool stream "
@@ -1262,24 +1289,25 @@ class Tool:
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg ) 
 
+    # TODO: This method doesn't have to be part of the Tool class.
     def parse_error_level( self, err_level ):
         """
         Return fatal or warning depending on what's in the error level.
         This will assume that the error level fatal is returned if it's 
-        unparsable. (This doesn't have to be part of the Tool class.)
+        unparsable. 
         """
         # What should the default be? I'm claiming it should be fatal:
         # if you went to the trouble to write the rule, then it's 
         # probably a problem. I think there are easily three substantial
         # camps: make it fatal, make it a warning, or, if it's missing,
-        # just throw an exception and ignore it.
-        return_level = "fatal"
+        # just throw an exception and ignore the exit_code element.
+        return_level = StdioErrorLevel.FATAL 
         try:
             if ( None != err_level ):
                 if ( re.search( "warning", err_level, re.IGNORECASE ) ):
-                    return_level = "warning"
+                    return_level = StdioErrorLevel.WARNING 
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
-                    return_level = "fatal"
+                    return_level = StdioErrorLevel.FATAL
         except Exception, e:
             log.error( "Exception in parse_error_level " 
                      + str(sys.exc_info() ) )
@@ -2333,16 +2361,18 @@ class Tool:
             installed_tool_dependencies = self.tool_shed_repository.tool_dependencies
         else:
             installed_tool_dependencies = None
-        for requirement in self.requirements:
-            # TODO: currently only supporting requirements of type package,
-            #       need to implement some mechanism for mapping other types
-            #       back to packages
+         for requirement in self.requirements:
+             # TODO: currently only supporting requirements of type package,
+             #       need to implement some mechanism for mapping other types
+             #       back to packages
             log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            if requirement.type == 'package':
+             if requirement.type == 'package':
                 script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( name=requirement.name,
                                                                                                 version=requirement.version,
                                                                                                 type=requirement.type,
                                                                                                 installed_tool_dependencies=installed_tool_dependencies )
+            if requirement.type == 'package':
+                script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
                 if script_file is None and base_path is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
                 elif script_file is None:
@@ -2617,7 +2647,7 @@ class Tool:
                 elif isinstance( input, SelectToolParameter ):
                     param_dict.update( { 'type' : 'select', 
                                          'html' : urllib.quote( input.get_html( trans ) ),
-                                         'options': input.static_options
+                                         'options': input.static_options 
                                          } )
                 elif isinstance( input, Conditional ):
                     # TODO.
@@ -2626,7 +2656,7 @@ class Tool:
                     param_dict.update( { 'type' : 'number', 'init_value' : input.value,
                                          'html' : urllib.quote( input.get_html( trans ) ),
                                          'min': input.min,
-                                         'max': input.max,
+                                         'max': input.max
                                          'value': input.value
                                           } )
                 else:
@@ -2798,6 +2828,7 @@ class ToolStdioRegex( object ):
         self.stderr_match = False
         # TODO: Define a common class or constant for error level:
         self.error_level = "fatal" 
+        self.desc = ""
 
 class ToolStdioExitCode( object ):
     """
@@ -2809,6 +2840,7 @@ class ToolStdioExitCode( object ):
         self.range_end = float( "inf" )
         # TODO: Define a common class or constant for error level:
         self.error_level = "fatal"
+        self.desc = ""
 
 class ToolParameterValueWrapper( object ):
     """

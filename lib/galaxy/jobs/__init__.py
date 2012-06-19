@@ -305,10 +305,81 @@ class JobWrapper( object ):
         if job.state == job.states.DELETED or job.state == job.states.ERROR:
             #ERROR at this point means the job was deleted by an administrator.
             return self.fail( job.info )
-        if stderr:
-            job.state = job.states.ERROR
+
+        err_msg = ""
+        # Check exit codes and match regular expressions against stdout and 
+        # stderr if this tool was configured to do so.
+        if ( len( self.tool.stdio_regexes ) > 0 or
+             len( self.tool.exit_codes ) > 0 ):
+            # We will check the exit code ranges in the order in which
+            # they were specified. Each exit_code is a ToolStdioExitCode
+            # that includes an applicable range. If the exit code was in
+            # that range, then apply the error level and add in a message.
+            # If we've reached a fatal error rule, then stop.
+            max_error_level = galaxy.tools.StdioErrorLevel.NO_ERROR
+            for exit_code in self.tool.stdio_exit_codes:
+                # TODO: Fetch the exit code from the .rc file:
+                tool_exit_code = 0
+                if ( tool_exit_code >= exit_code.range_start and 
+                     tool_exit_code <= exit_code.range_end ):
+                    if None != exit_code.desc:
+                        err_msg += exit_code.desc
+                    # TODO: Find somewhere to stick the err_msg - possibly to
+                    # the source (stderr/stdout), possibly in a new db column.
+                    max_error_level = max( max_error_level, 
+                                           exit_code.error_level )
+                    if max_error_level >= galaxy.tools.StdioErrorLevel.FATAL:
+                        break
+            # If there is a regular expression for scanning stdout/stderr,
+            # then we assume that the tool writer overwrote the default 
+            # behavior of just setting an error if there is *anything* on
+            # stderr. 
+            if max_error_level < galaxy.tools.StdioErrorLevel.FATAL:
+                # We'll examine every regex. Each regex specifies whether
+                # it is to be run on stdout, stderr, or both. (It is 
+                # possible for neither stdout nor stderr to be scanned,
+                # but those won't be scanned.) We record the highest
+                # error level, which are currently "warning" and "fatal".
+                # If fatal, then we set the job's state to ERROR.
+                # If warning, then we still set the job's state to OK
+                # but include a message. We'll do this if we haven't seen 
+                # a fatal error yet
+                for regex in self.tool.stdio_regexes:
+                    # If ( this regex should be matched against stdout )
+                    #   - Run the regex's match pattern against stdout
+                    #   - If it matched, then determine the error level.
+                    #       o If it was fatal, then we're done - break.
+                    # Repeat the stdout stuff for stderr.
+                    # TODO: Collapse this into a single function.
+                    if ( regex.stdout_match ):
+                        regex_match = re.search( regex.match, stdout )
+                        if ( regex_match ):
+                            err_msg += self.regex_err_msg( regex_match, regex )
+                            max_error_level = max( max_error_level, regex.error_level )
+                            if max_error_level >= galaxy.tools.StdioErrorLevel.FATAL:
+                                break
+                    if ( regex.stderr_match ): 
+                        regex_match = re.search( regex.match, stderr )
+                        if ( regex_match ):
+                            err_msg += self.regex_err_msg( regex_match, regex )
+                            max_error_level = max( max_error_level,
+                                                   regex.error_level )
+                            if max_error_level >= galaxy.tools.StdioErrorLevel.FATAL:
+                                break
+            # If we encountered a fatal error, then we'll need to set the
+            # job state accordingly. Otherwise the job is ok:
+            if max_error_level >= galaxy.tools.StdioErrorLevel.FATAL:
+                job.state = job.states.ERROR
+            else:
+                job.state = job.states.OK
+        # When there are no regular expressions and no exit codes to check,
+        # default to the previous behavior: when there's anything on stderr
+        # the job has an error, and the job is ok otherwise. 
         else:
-            job.state = job.states.OK
+            if stderr:
+                job.state = job.states.ERROR
+            else:
+                job.state = job.states.OK
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
             if os.path.exists(version_filename):
@@ -330,6 +401,7 @@ class JobWrapper( object ):
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
         job_context = ExpressionContext( dict( stdout = stdout, stderr = stderr ) )
         job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
+
         def in_directory( file, directory ):
             # Make both absolute.
             directory = os.path.abspath( directory )
@@ -370,7 +442,11 @@ class JobWrapper( object ):
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
                     self.app.object_store.update_from_file(dataset.dataset, create=True)
-                if context['stderr']:
+                # TODO: The context['stderr'] holds stderr's contents. An error
+                # only really occurs if the job also has an error. So check the
+                # job's state:
+                #if context['stderr']:
+                if job.states.ERROR == job.state:
                     dataset.blurb = "error"
                 elif dataset.has_data():
                     # If the tool was expected to set the extension, attempt to retrieve it
@@ -385,7 +461,14 @@ class JobWrapper( object ):
                      ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) \
                        and self.app.config.retry_metadata_internally ):
                         dataset.set_meta( overwrite = False )
-                    elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and not context['stderr']:
+                    # TODO: The context['stderr'] used to indicate that there
+                    # was an error. Now we must rely on the job's state instead;
+                    # that indicates whether the tool relied on stderr to indicate
+                    # the state or whether the tool used exit codes and regular
+                    # expressions to do so. So we use 
+                    # job.state == job.states.ERROR to replace this same test.
+                    #elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and not context['stderr']:
+                    elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != job.state: 
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
                         #load metadata from file
@@ -415,7 +498,12 @@ class JobWrapper( object ):
                     if dataset.ext == 'auto':
                         dataset.extension = 'txt'
                 self.sa_session.add( dataset )
-            if context['stderr']:
+            # TODO: job.states.ERROR == job.state now replaces checking
+            # stderr for a problem:
+            #if context['stderr']:
+            if job.states.ERROR == job.state:
+                log.debug( "setting dataset state to ERROR" )
+                # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
             else:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
@@ -479,6 +567,29 @@ class JobWrapper( object ):
         log.debug( 'job %d ended' % self.job_id )
         if self.app.config.cleanup_job == 'always' or ( not stderr and self.app.config.cleanup_job == 'onsuccess' ):
             self.cleanup()
+
+    def regex_err_msg( self, match, regex ):
+        """
+        Return a message about the match on tool output using the given
+        ToolStdioRegex regex object. The regex_match is a MatchObject
+        that will contain the string matched on.
+        """
+        # Get the description for the error level: 
+        err_msg = galaxy.tools.StdioErrorLevel.desc( regex.error_level ) + ": "
+        # If there's a description for the regular expression, then use it.
+        # Otherwise, we'll take the first 256 characters of the match.
+        if None != regex.desc:
+            err_msg += regex.desc
+        else:
+            mstart = match.start()
+            mend = match.end()
+            err_msg += "Matched on "
+            # TODO: Move the constant 256 somewhere else besides here.
+            if mend - mstart > 256:
+                err_msg += match.string[ mstart : mstart+256 ] + "..."
+            else:
+                err_msg += match.string[ mstart: mend ] 
+        return err_msg
 
     def cleanup( self ):
         # remove temporary files
