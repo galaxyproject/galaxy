@@ -77,6 +77,7 @@ class DRMAAJobState( object ):
         self.job_file = None
         self.ofile = None
         self.efile = None
+        self.rcfile = None
         self.runner_url = None
 
 class DRMAAJobRunner( BaseJobRunner ):
@@ -168,6 +169,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         # define job attributes
         ofile = "%s.drmout" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         efile = "%s.drmerr" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
+        rcfile = "%s.drmrc" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         job_name = "g%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user )
         job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
 
@@ -176,6 +178,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         jt.jobName = job_name
         jt.outputPath = ":%s" % ofile
         jt.errorPath = ":%s" % efile
+        jt.returnCodePath = ":%s" % rcfile
         native_spec = self.get_native_spec( runner_url )
         if native_spec is not None:
             jt.nativeSpecification = native_spec
@@ -228,6 +231,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         drm_job_state.job_id = job_id
         drm_job_state.ofile = ofile
         drm_job_state.efile = efile
+        drm_job_state.rcfile = rcfile
         drm_job_state.job_file = jt.remoteCommand
         drm_job_state.old_state = 'new'
         drm_job_state.running = False
@@ -312,6 +316,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         """
         ofile = drm_job_state.ofile
         efile = drm_job_state.efile
+        rcfile = drm_job_state.rcfile
         job_file = drm_job_state.job_file
         # collect the output
         # wait for the files to appear
@@ -377,6 +382,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         drm_job_state = DRMAAJobState()
         drm_job_state.ofile = "%s.drmout" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.efile = "%s.drmerr" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
+        drm_job_state.rcfile = "%s.drmrc" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job.id)
         drm_job_state.job_id = str( job.job_runner_external_id )
         drm_job_state.runner_url = job_wrapper.get_job_runner()

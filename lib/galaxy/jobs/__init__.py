@@ -310,7 +310,7 @@ class JobWrapper( object ):
         # Check exit codes and match regular expressions against stdout and 
         # stderr if this tool was configured to do so.
         if ( len( self.tool.stdio_regexes ) > 0 or
-             len( self.tool.exit_codes ) > 0 ):
+             len( self.tool.stdio_exit_codes ) > 0 ):
             # We will check the exit code ranges in the order in which
             # they were specified. Each exit_code is a ToolStdioExitCode
             # that includes an applicable range. If the exit code was in
