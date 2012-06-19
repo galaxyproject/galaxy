@@ -2361,12 +2361,12 @@ class Tool:
             installed_tool_dependencies = self.tool_shed_repository.tool_dependencies
         else:
             installed_tool_dependencies = None
-         for requirement in self.requirements:
-             # TODO: currently only supporting requirements of type package,
-             #       need to implement some mechanism for mapping other types
-             #       back to packages
+        for requirement in self.requirements:
+            # TODO: currently only supporting requirements of type package,
+            #       need to implement some mechanism for mapping other types
+            #       back to packages
             log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-             if requirement.type == 'package':
+            if requirement.type == 'package':
                 script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( name=requirement.name,
                                                                                                 version=requirement.version,
                                                                                                 type=requirement.type,
@@ -2656,7 +2656,7 @@ class Tool:
                     param_dict.update( { 'type' : 'number', 'init_value' : input.value,
                                          'html' : urllib.quote( input.get_html( trans ) ),
                                          'min': input.min,
-                                         'max': input.max
+                                         'max': input.max,
                                          'value': input.value
                                           } )
                 else:
