@@ -33,6 +33,8 @@ log = logging.getLogger( __name__ )
 
 __all__ = [ 'PBSJobRunner' ]
 
+# The last two lines execute the command and then retrieve the command's
+# exit code ($?) and write it to a file.
 pbs_template = """#!/bin/sh
 GALAXY_LIB="%s"
 if [ "$GALAXY_LIB" != "None" ]; then
@@ -45,8 +47,11 @@ fi
 %s
 cd %s
 %s
+echo $? > %s
 """
 
+# The last two lines execute the command and then retrieve the command's
+# exit code ($?) and write it to a file.
 pbs_symlink_template = """#!/bin/sh
 GALAXY_LIB="%s"
 if [ "$GALAXY_LIB" != "None" ]; then
@@ -65,6 +70,7 @@ done
 %s
 cd %s
 %s
+echo $? > %s
 """
 
 # From pbs' job.h
@@ -93,6 +99,7 @@ class PBSJobState( object ):
         self.job_file = None
         self.ofile = None
         self.efile = None
+        self.ecfile = None
         self.runner_url = None
         self.check_count = 0
         self.stop_job = False
@@ -233,6 +240,7 @@ class PBSJobRunner( BaseJobRunner ):
         # define job attributes
         ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
+        ecfile = "%s/%s.ec" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
 
         output_fnames = job_wrapper.get_output_fnames()
         
@@ -273,12 +281,15 @@ class PBSJobRunner( BaseJobRunner ):
                                               self.app.config.pbs_stage_path,
                                               job_wrapper.get_env_setup_clause(),
                                               exec_dir,
-                                              command_line )
+                                              command_line,
+                                              ecfile )
+
         else:
             script = pbs_template % ( job_wrapper.galaxy_lib_dir,
                                       job_wrapper.get_env_setup_clause(),
                                       exec_dir,
-                                      command_line )
+                                      command_line,
+                                      ecfile )
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)
@@ -289,7 +300,7 @@ class PBSJobRunner( BaseJobRunner ):
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
             pbs.pbs_disconnect(c)
             if self.app.config.cleanup_job in ( "always", "onsuccess" ):
-                self.cleanup( ( ofile, efile, job_file ) )
+                self.cleanup( ( ofile, efile, ecfile, job_file ) )
                 job_wrapper.cleanup()
             return
 
@@ -321,6 +332,7 @@ class PBSJobRunner( BaseJobRunner ):
         pbs_job_state.job_id = job_id
         pbs_job_state.ofile = ofile
         pbs_job_state.efile = efile
+        pbs_job_state.ecfile = ecfile
         pbs_job_state.job_file = job_file
         pbs_job_state.old_state = 'N'
         pbs_job_state.running = False
@@ -510,27 +522,35 @@ class PBSJobRunner( BaseJobRunner ):
         """
         ofile = pbs_job_state.ofile
         efile = pbs_job_state.efile
+        ecfile = pbs_job_state.ecfile
         job_file = pbs_job_state.job_file
         # collect the output
         try:
             ofh = file(ofile, "r")
             efh = file(efile, "r")
+            ecfh = file(ecfile, "r")
             stdout = ofh.read( 32768 )
             stderr = efh.read( 32768 )
+            # This should be an 8-bit exit code, but read ahead anyway: 
+            exit_code = ecfh.read(32)
         except:
             stdout = ''
             stderr = 'Job output not returned by PBS: the output datasets were deleted while the job was running, the job was manually dequeued or there was a cluster error.'
+            # By default, the exit code is 0, which usually indicates success
+            # (although clearly some error happened).
+            exit_code = 0
             log.debug(stderr)
+        log.debug( "Job exit code: " + exit_code )
 
         try:
-            pbs_job_state.job_wrapper.finish( stdout, stderr )
+            pbs_job_state.job_wrapper.finish( stdout, stderr, exit_code )
         except:
             log.exception("Job wrapper finish method failed")
             pbs_job_state.job_wrapper.fail("Unable to finish job", exception=True)
 
         # clean up the pbs files
         if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
-            self.cleanup( ( ofile, efile, job_file ) )
+            self.cleanup( ( ofile, efile, ecfile, job_file ) )
 
     def fail_job( self, pbs_job_state ):
         """
@@ -594,6 +614,7 @@ class PBSJobRunner( BaseJobRunner ):
         pbs_job_state = PBSJobState()
         pbs_job_state.ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job.id)
+        pbs_job_state.ecfile = "%s/%s.ec" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.job_id = str( job.job_runner_external_id )
         pbs_job_state.runner_url = job_wrapper.get_job_runner()
