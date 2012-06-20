@@ -54,6 +54,7 @@ class LocalJobRunner( BaseJobRunner ):
     def run_job( self, job_wrapper ):
         job_wrapper.set_runner( 'local:///', None )
         stderr = stdout = command_line = ''
+        exit_code = 0 
         # Prepare the job to run
         try:
             job_wrapper.prepare()
@@ -99,7 +100,11 @@ class LocalJobRunner( BaseJobRunner ):
                             if sleep_time < 8:
                                 # So we don't stat every second
                                 sleep_time *= 2
-                proc.wait() # reap
+                # Reap the process and get the exit code. The exit code should
+                # only be None if the process isn't finished, but check anyway.
+                exit_code = proc.wait() # reap
+                if None == exit_code:
+                    exit_code = 0
                 stdout_file.seek( 0 )
                 stderr_file.seek( 0 )
                 stdout = stdout_file.read( 32768 )
@@ -128,9 +133,9 @@ class LocalJobRunner( BaseJobRunner ):
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
         
-        # Finish the job                
+        # Finish the job!
         try:
-            job_wrapper.finish( stdout, stderr )
+            job_wrapper.finish( stdout, stderr, exit_code )
         except:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)

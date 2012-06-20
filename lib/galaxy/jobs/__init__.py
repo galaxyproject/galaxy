@@ -285,12 +285,14 @@ class JobWrapper( object ):
         self.sa_session.add( job )
         self.sa_session.flush()
 
-    def finish( self, stdout, stderr ):
+    def finish( self, stdout, stderr, tool_exit_code=0 ):
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        # TODO: Eliminate debugging code after testing all runners
+        log.debug( "JobWrapper.finish: exit code:" + str(tool_exit_code) )
         # default post job setup
         self.sa_session.expunge_all()
         job = self.get_job()
@@ -317,17 +319,15 @@ class JobWrapper( object ):
             # that range, then apply the error level and add in a message.
             # If we've reached a fatal error rule, then stop.
             max_error_level = galaxy.tools.StdioErrorLevel.NO_ERROR
-            for exit_code in self.tool.stdio_exit_codes:
-                # TODO: Fetch the exit code from the .rc file:
-                tool_exit_code = 0
-                if ( tool_exit_code >= exit_code.range_start and 
-                     tool_exit_code <= exit_code.range_end ):
-                    if None != exit_code.desc:
-                        err_msg += exit_code.desc
+            for stdio_exit_code in self.tool.stdio_exit_codes:
+                if ( tool_exit_code >= stdio_exit_code.range_start and 
+                     tool_exit_code <= stdio_exit_code.range_end ):
+                    if None != stdio_exit_code.desc:
+                        err_msg += stdio_exit_code.desc
                     # TODO: Find somewhere to stick the err_msg - possibly to
                     # the source (stderr/stdout), possibly in a new db column.
                     max_error_level = max( max_error_level, 
-                                           exit_code.error_level )
+                                           stdio_exit_code.error_level )
                     if max_error_level >= galaxy.tools.StdioErrorLevel.FATAL:
                         break
             # If there is a regular expression for scanning stdout/stderr,

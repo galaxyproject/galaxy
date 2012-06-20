@@ -284,6 +284,7 @@ class Data( object ):
         return open( dataset.file_name )
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+        raise Exception
         """ Old display method, for transition """
         #Relocate all composite datatype display to a common location.
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )

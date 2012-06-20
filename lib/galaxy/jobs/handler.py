@@ -368,6 +368,7 @@ class DefaultJobDispatcher( object ):
             start_job_runners.append("tasks")
         for name in start_job_runners:
             self._load_plugin( name )
+        log.debug( "Job runners: " + ':'.join( start_job_runners ) )
 
     def _load_plugin( self, name ):
         module_name = 'galaxy.jobs.runners.' + name
@@ -397,6 +398,7 @@ class DefaultJobDispatcher( object ):
     def put( self, job_wrapper ):
         try:
             runner_name = self.__get_runner_name( job_wrapper )
+            log.debug( "Runner_name: " + runner_name )
             if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and isinstance(job_wrapper, TaskWrapper):
                 #DBTODO Refactor
                 log.debug( "dispatching task %s, of job %d, to %s runner" %( job_wrapper.task_id, job_wrapper.job_id, runner_name ) )
