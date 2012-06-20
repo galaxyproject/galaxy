@@ -15,6 +15,7 @@
   <content encoding="base64" type="binary">
       ${textwrap.fill( base64.b64encode( workflow_content ), 64 )}
   </content>
-  <preview encoding="base64" type="binary">
-  </preview>
+  <svg encoding="base64">
+      ${textwrap.fill( base64.b64encode( workflow_svg ), 64 )}
+  </svg>
 </workflow>

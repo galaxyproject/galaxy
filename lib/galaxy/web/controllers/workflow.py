@@ -505,107 +505,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         stored = self.get_stored_workflow( trans, id, check_ownership=True )
         session = trans.sa_session
 
-        workflow = stored.latest_workflow
-        data = []
-
-        canvas = svgfig.canvas(style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left")
-        text = svgfig.SVG("g")
-        connectors = svgfig.SVG("g")
-        boxes = svgfig.SVG("g")
-        svgfig.Text.defaults["font-size"] = "10px"
-
-        in_pos = {}
-        out_pos = {}
-        margin = 5
-        line_px = 16 # how much spacing between input/outputs
-        widths = {} # store px width for boxes of each step
-        max_width, max_x, max_y = 0, 0, 0
-
-        for step in workflow.steps:
-            # Load from database representation
-            module = module_factory.from_workflow_step( trans, step )
-
-            # Pack attributes into plain dictionary
-            step_dict = {
-                'id': step.order_index,
-                'data_inputs': module.get_data_inputs(),
-                'data_outputs': module.get_data_outputs(),
-                'position': step.position
-            }
-
-            input_conn_dict = {}
-            for conn in step.input_connections:
-                input_conn_dict[ conn.input_name ] = \
-                    dict( id=conn.output_step.order_index, output_name=conn.output_name )
-            step_dict['input_connections'] = input_conn_dict
-
-            data.append(step_dict)
-
-            x, y = step.position['left'], step.position['top']
-            count = 0
-
-            max_len = len(module.get_name()) * 1.5
-            text.append( svgfig.Text(x, y + 20, module.get_name(), **{"font-size": "14px"} ).SVG() )
-
-            y += 45
-            for di in module.get_data_inputs():
-                cur_y = y+count*line_px
-                if step.order_index not in in_pos:
-                    in_pos[step.order_index] = {}
-                in_pos[step.order_index][di['name']] = (x, cur_y)
-                text.append( svgfig.Text(x, cur_y, di['label']).SVG() )
-                count += 1
-                max_len = max(max_len, len(di['label']))
-
-
-            if len(module.get_data_inputs()) > 0:
-                y += 15
-
-            for do in module.get_data_outputs():
-                cur_y = y+count*line_px
-                if step.order_index not in out_pos:
-                    out_pos[step.order_index] = {}
-                out_pos[step.order_index][do['name']] = (x, cur_y)
-                text.append( svgfig.Text(x, cur_y, do['name']).SVG() )
-                count += 1
-                max_len = max(max_len, len(do['name']))
-
-            widths[step.order_index] = max_len*5.5
-            max_x = max(max_x, step.position['left'])
-            max_y = max(max_y, step.position['top'])
-            max_width = max(max_width, widths[step.order_index])
-
-        for step_dict in data:
-            width = widths[step_dict['id']]
-            x, y = step_dict['position']['left'], step_dict['position']['top']
-            boxes.append( svgfig.Rect(x-margin, y, x+width-margin, y+30, fill="#EBD9B2").SVG() )
-            box_height = (len(step_dict['data_inputs']) + len(step_dict['data_outputs'])) * line_px + margin
-
-            # Draw separator line
-            if len(step_dict['data_inputs']) > 0:
-                box_height += 15
-                sep_y = y + len(step_dict['data_inputs']) * line_px + 40
-                text.append( svgfig.Line(x-margin, sep_y, x+width-margin, sep_y).SVG() ) #
-
-            # input/output box
-            boxes.append( svgfig.Rect(x-margin, y+30, x+width-margin, y+30+box_height, fill="#ffffff").SVG() )
-
-            for conn, output_dict in step_dict['input_connections'].iteritems():
-                in_coords = in_pos[step_dict['id']][conn]
-                out_conn_pos = out_pos[output_dict['id']][output_dict['output_name']]
-                adjusted = (out_conn_pos[0] + widths[output_dict['id']], out_conn_pos[1])
-                text.append( svgfig.SVG("circle", cx=out_conn_pos[0]+widths[output_dict['id']]-margin, cy=out_conn_pos[1]-margin, r=5, fill="#ffffff" ) )
-                connectors.append( svgfig.Line(adjusted[0], adjusted[1]-margin, in_coords[0]-10, in_coords[1], arrow_end="true" ).SVG() )
-
-        canvas.append(connectors)
-        canvas.append(boxes)
-        canvas.append(text)
-        width, height = (max_x + max_width + 50), max_y + 300
-        canvas['width'] = "%s px" % width
-        canvas['height'] = "%s px" % height
-        canvas['viewBox'] = "0 0 %s %s" % (width, height)
         trans.response.set_content_type("image/svg+xml")
-        return canvas.standalone_xml()
+        return self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
 
 
     @web.expose
@@ -1056,7 +957,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         request_raw = trans.fill_template( "workflow/myexp_export.mako", \
                                             workflow_name=workflow_dict['name'], \
                                             workflow_description=workflow_dict['annotation'], \
-                                            workflow_content=workflow_content
+                                            workflow_content=workflow_content, \
+                                            workflow_svg=self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
                                             )
         # strip() b/c myExperiment XML parser doesn't allow white space before XML; utf-8 handles unicode characters.
         request = unicode( request_raw.strip(), 'utf-8' )
@@ -1929,6 +1831,110 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             trans.sa_session.flush()
 
         return stored, missing_tool_tups
+        
+    def _workflow_to_svg_canvas( self, trans, stored ): 
+    
+        workflow = stored.latest_workflow
+        data = []
+
+        canvas = svgfig.canvas(style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left")
+        text = svgfig.SVG("g")
+        connectors = svgfig.SVG("g")
+        boxes = svgfig.SVG("g")
+        svgfig.Text.defaults["font-size"] = "10px"
+
+        in_pos = {}
+        out_pos = {}
+        margin = 5
+        line_px = 16 # how much spacing between input/outputs
+        widths = {} # store px width for boxes of each step
+        max_width, max_x, max_y = 0, 0, 0
+
+        for step in workflow.steps:
+            # Load from database representation
+            module = module_factory.from_workflow_step( trans, step )
+
+            # Pack attributes into plain dictionary
+            step_dict = {
+                'id': step.order_index,
+                'data_inputs': module.get_data_inputs(),
+                'data_outputs': module.get_data_outputs(),
+                'position': step.position
+            }
+
+            input_conn_dict = {}
+            for conn in step.input_connections:
+                input_conn_dict[ conn.input_name ] = \
+                    dict( id=conn.output_step.order_index, output_name=conn.output_name )
+            step_dict['input_connections'] = input_conn_dict
+
+            data.append(step_dict)
+
+            x, y = step.position['left'], step.position['top']
+            count = 0
+
+            max_len = len(module.get_name()) * 1.5
+            text.append( svgfig.Text(x, y + 20, module.get_name(), **{"font-size": "14px"} ).SVG() )
+
+            y += 45
+            for di in module.get_data_inputs():
+                cur_y = y+count*line_px
+                if step.order_index not in in_pos:
+                    in_pos[step.order_index] = {}
+                in_pos[step.order_index][di['name']] = (x, cur_y)
+                text.append( svgfig.Text(x, cur_y, di['label']).SVG() )
+                count += 1
+                max_len = max(max_len, len(di['label']))
+
+
+            if len(module.get_data_inputs()) > 0:
+                y += 15
+
+            for do in module.get_data_outputs():
+                cur_y = y+count*line_px
+                if step.order_index not in out_pos:
+                    out_pos[step.order_index] = {}
+                out_pos[step.order_index][do['name']] = (x, cur_y)
+                text.append( svgfig.Text(x, cur_y, do['name']).SVG() )
+                count += 1
+                max_len = max(max_len, len(do['name']))
+
+            widths[step.order_index] = max_len*5.5
+            max_x = max(max_x, step.position['left'])
+            max_y = max(max_y, step.position['top'])
+            max_width = max(max_width, widths[step.order_index])
+
+        for step_dict in data:
+            width = widths[step_dict['id']]
+            x, y = step_dict['position']['left'], step_dict['position']['top']
+            boxes.append( svgfig.Rect(x-margin, y, x+width-margin, y+30, fill="#EBD9B2").SVG() )
+            box_height = (len(step_dict['data_inputs']) + len(step_dict['data_outputs'])) * line_px + margin
+
+            # Draw separator line
+            if len(step_dict['data_inputs']) > 0:
+                box_height += 15
+                sep_y = y + len(step_dict['data_inputs']) * line_px + 40
+                text.append( svgfig.Line(x-margin, sep_y, x+width-margin, sep_y).SVG() ) #
+
+            # input/output box
+            boxes.append( svgfig.Rect(x-margin, y+30, x+width-margin, y+30+box_height, fill="#ffffff").SVG() )
+
+            for conn, output_dict in step_dict['input_connections'].iteritems():
+                in_coords = in_pos[step_dict['id']][conn]
+                out_conn_pos = out_pos[output_dict['id']][output_dict['output_name']]
+                adjusted = (out_conn_pos[0] + widths[output_dict['id']], out_conn_pos[1])
+                text.append( svgfig.SVG("circle", cx=out_conn_pos[0]+widths[output_dict['id']]-margin, cy=out_conn_pos[1]-margin, r=5, fill="#ffffff" ) )
+                connectors.append( svgfig.Line(adjusted[0], adjusted[1]-margin, in_coords[0]-10, in_coords[1], arrow_end="true" ).SVG() )
+
+        canvas.append(connectors)
+        canvas.append(boxes)
+        canvas.append(text)
+        width, height = (max_x + max_width + 50), max_y + 300
+        canvas['width'] = "%s px" % width
+        canvas['height'] = "%s px" % height
+        canvas['viewBox'] = "0 0 %s %s" % (width, height)
+
+        return canvas
 
 ## ---- Utility methods -------------------------------------------------------
 
