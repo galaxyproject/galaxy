@@ -81,7 +81,7 @@
                 %endif
                 <div class="form-row-input">
                     %if input.type == 'textarea':
-                        <textarea name="${input.name}" cols="40">${input.value}</textarea>
+                        <textarea name="${input.name}">${input.value}</textarea>
                     %elif input.type == 'select':
                         <select name="${input.name}">
                             %for (name, value) in input.options:
@@ -89,7 +89,7 @@
                             %endfor
                         </select>
                     %else:
-                        <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
+                        <input type="${input.type}" name="${input.name}" value="${input.value}">
                     %endif      
                 </div>
                 %if input.error:
