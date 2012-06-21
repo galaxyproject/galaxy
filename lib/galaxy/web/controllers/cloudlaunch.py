@@ -177,7 +177,6 @@ def run_instance(ec2_conn, user_provided_data, image_id='ami-da58aab3',
     instance_type = user_provided_data['instance_type']
     # Remove 'instance_type' key from the dict before creating user data
     del user_provided_data['instance_type']
-    placement = _find_placement(ec2_conn, instance_type)
     ud = "\n".join(['%s: %s' % (key, value) for key, value in user_provided_data.iteritems() if key != 'kp_material'])
     try:
         rs = ec2_conn.run_instances(image_id=image_id,
@@ -186,8 +185,7 @@ def run_instance(ec2_conn, user_provided_data, image_id='ami-da58aab3',
                                     security_groups=security_groups,
                                     user_data=ud,
                                     kernel_id=kernel_id,
-                                    ramdisk_id=ramdisk_id,
-                                    placement=placement)
+                                    ramdisk_id=ramdisk_id)
     except EC2ResponseError, e:
         log.error("Problem starting an instance: %s\n%s" % (e, e.body))
     if rs:
