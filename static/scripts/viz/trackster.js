@@ -4247,6 +4247,84 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     },
 });
 
+var DiagonalHeatmapTrack = function (view, container, obj_dict) {
+    var track = this;
+    this.display_modes = ["Heatmap"];
+    this.mode = "Heatmap";
+    TiledTrack.call(this, view, container, obj_dict);
+       
+    // This all seems to be duplicated 
+    this.hda_ldda = obj_dict.hda_ldda;
+    this.dataset_id = obj_dict.dataset_id;
+    this.original_dataset_id = this.dataset_id;
+    this.left_offset = 0;
+
+    // Define track configuration
+    this.config = new DrawableConfig( {
+        track: this,
+        params: [
+            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
+            { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "4169E1" },
+            { key: 'negative_color', label: 'Negative Color', type: 'color', default_value: "FF8C00" },
+            { key: 'min_value', label: 'Min Value', type: 'float', default_value: 0 },
+            { key: 'max_value', label: 'Max Value', type: 'float', default_value: 1 },
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+            { key: 'height', type: 'int', default_value: 500, hidden: true }
+        ], 
+        saved_values: obj_dict.prefs,
+        onchange: function() {
+            track.set_name(track.prefs.name);
+            track.vertical_range = track.prefs.max_value - track.prefs.min_value;
+            track.set_min_value(track.prefs.min_value);
+            track.set_max_value(track.prefs.max_value);
+        }
+    });
+
+    this.prefs = this.config.values;
+    this.visible_height_px = this.config.values.height;
+    this.vertical_range = this.config.values.max_value - this.config.values.min_value;
+};
+extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    /**
+     * Action to take during resize.
+     */
+    on_resize: function() {
+        this.request_draw(true);
+    },
+    /**
+     * Set track minimum value.
+     */
+    set_min_value: function(new_val) {
+        this.prefs.min_value = new_val;
+        this.tile_cache.clear();
+        this.request_draw();
+    },
+    /**
+     * Set track maximum value.
+     */
+    set_max_value: function(new_val) {
+        this.prefs.max_value = new_val;
+        this.tile_cache.clear();
+        this.request_draw();
+    },
+    
+    /**
+     * Draw LineTrack tile.
+     */
+    draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale) {
+        // Paint onto canvas.
+        var 
+            canvas = ctx.canvas,
+            tile_bounds = this._get_tile_bounds(tile_index, resolution),
+            tile_low = tile_bounds[0],
+            tile_high = tile_bounds[1],
+            painter = new painters.DiagonalHeatmapPainter(result.data, tile_low, tile_high, this.prefs, mode);
+        painter.draw(ctx, canvas.width, canvas.height, w_scale);
+        
+        return new Tile(this, tile_index, resolution, canvas, result.data);
+    }
+});
+
 var FeatureTrack = function(view, container, obj_dict) {
     //
     // Preinitialization: do things that need to be done before calling Track and TiledTrack
@@ -4795,6 +4873,7 @@ exports.View = View;
 exports.DrawableGroup = DrawableGroup;
 exports.LineTrack = LineTrack;
 exports.FeatureTrack = FeatureTrack;
+exports.DiagonalHeatmapTrack = DiagonalHeatmapTrack;
 exports.ReadTrack = ReadTrack;
 exports.VcfTrack = VcfTrack;
 exports.CompositeTrack = CompositeTrack;
@@ -5963,12 +6042,224 @@ extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeatur
     }
 });
 
+// Color stuff from less.js
+
+var Color = function (rgb, a) {
+    /**
+     * The end goal here, is to parse the arguments
+     * into an integer triplet, such as `128, 255, 0`
+     *
+     * This facilitates operations and conversions.
+     */
+    if (Array.isArray(rgb)) {
+        this.rgb = rgb;
+    } else if (rgb.length == 6) {
+        this.rgb = rgb.match(/.{2}/g).map(function (c) {
+            return parseInt(c, 16);
+        });
+    } else {
+        this.rgb = rgb.split('').map(function (c) {
+            return parseInt(c + c, 16);
+        });
+    }
+    this.alpha = typeof(a) === 'number' ? a : 1;
+};
+Color.prototype = {
+    eval: function () { return this },
+
+    //
+    // If we have some transparency, the only way to represent it
+    // is via `rgba`. Otherwise, we use the hex representation,
+    // which has better compatibility with older browsers.
+    // Values are capped between `0` and `255`, rounded and zero-padded.
+    //
+    toCSS: function () {
+        if (this.alpha < 1.0) {
+            return "rgba(" + this.rgb.map(function (c) {
+                return Math.round(c);
+            }).concat(this.alpha).join(', ') + ")";
+        } else {
+            return '#' + this.rgb.map(function (i) {
+                i = Math.round(i);
+                i = (i > 255 ? 255 : (i < 0 ? 0 : i)).toString(16);
+                return i.length === 1 ? '0' + i : i;
+            }).join('');
+        }
+    },
+
+    toHSL: function () {
+        var r = this.rgb[0] / 255,
+            g = this.rgb[1] / 255,
+            b = this.rgb[2] / 255,
+            a = this.alpha;
+
+        var max = Math.max(r, g, b), min = Math.min(r, g, b);
+        var h, s, l = (max + min) / 2, d = max - min;
+
+        if (max === min) {
+            h = s = 0;
+        } else {
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2;               break;
+                case b: h = (r - g) / d + 4;               break;
+            }
+            h /= 6;
+        }
+        return { h: h * 360, s: s, l: l, a: a };
+    },
+
+    toARGB: function () {
+        var argb = [Math.round(this.alpha * 255)].concat(this.rgb);
+        return '#' + argb.map(function (i) {
+            i = Math.round(i);
+            i = (i > 255 ? 255 : (i < 0 ? 0 : i)).toString(16);
+            return i.length === 1 ? '0' + i : i;
+        }).join('');
+    },
+
+    mix: function (color2, weight) {
+        color1 = this;
+
+        var p = weight; // .value / 100.0;
+        var w = p * 2 - 1;
+        var a = color1.toHSL().a - color2.toHSL().a;
+
+        var w1 = (((w * a == -1) ? w : (w + a) / (1 + w * a)) + 1) / 2.0;
+        var w2 = 1 - w1;
+
+        var rgb = [color1.rgb[0] * w1 + color2.rgb[0] * w2,
+                   color1.rgb[1] * w1 + color2.rgb[1] * w2,
+                   color1.rgb[2] * w1 + color2.rgb[2] * w2];
+
+        var alpha = color1.alpha * p + color2.alpha * (1 - p);
+
+        return new Color(rgb, alpha);
+    }
+};
+
+
+// End colors from less.js
+
+var LinearRamp = function( start_color, end_color, start_value, end_value ) {
+    /**
+     * Simple linear gradient
+     */
+    this.start_color = new Color( start_color );
+    this.end_color = new Color( end_color );
+    this.start_value = start_value;
+    this.end_value = end_value;
+    this.value_range = end_value - start_value;
+}
+LinearRamp.prototype.map_value = function( value ) {
+    value = Math.max( value, this.start_value );
+    value = Math.min( value, this.end_value );
+    value = ( value - this.start_value ) / this.value_range;
+    // HACK: just red for now
+    // return "hsl(0,100%," + (value * 100) + "%)"
+    return this.start_color.mix( this.end_color, 1 - value ).toCSS();
+}
+
+var SplitRamp = function( start_color, middle_color, end_color, start_value, end_value ) {
+    /**
+     * Two gradients split away from 0
+     */
+    this.positive_ramp = new LinearRamp( middle_color, end_color, 0, end_value );
+    this.negative_ramp = new LinearRamp( middle_color, start_color, 0, -start_value );
+    this.start_value = start_value;
+    this.end_value = end_value;
+}
+SplitRamp.prototype.map_value = function( value ) {
+    value = Math.max( value, this.start_value );
+    value = Math.min( value, this.end_value );
+    if ( value >= 0 ) {
+        return this.positive_ramp.map_value( value )
+    } else {
+        return this.negative_ramp.map_value( -value )
+    }
+}
+
+var DiagonalHeatmapPainter = function(data, view_start, view_end, prefs, mode) {
+    Painter.call( this, data, view_start, view_end, prefs, mode );
+    if ( this.prefs.min_value === undefined ) {
+        var min_value = Infinity;
+        for (var i = 0, len = this.data.length; i < len; i++) {
+            min_value = Math.min( min_value, this.data[i][5] );
+        }
+        this.prefs.min_value = min_value;
+    }
+    if ( this.prefs.max_value === undefined ) {
+        var max_value = -Infinity;
+        for (var i = 0, len = this.data.length; i < len; i++) {
+            max_value = Math.max( max_value, this.data[i][5] );
+        }
+        this.prefs.max_value = max_value;
+    }
+};
+
+DiagonalHeatmapPainter.prototype.default_prefs = { 
+    min_value: undefined, 
+    max_value: undefined, 
+    mode: "Heatmap", 
+    pos_color: "4169E1",
+    neg_color: "FF8C00" 
+};
+
+DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
+    var 
+        min_value = this.prefs.min_value,
+        max_value = this.prefs.max_value,
+        value_range = max_value - min_value,
+        height_px = height,
+        view_start = this.view_start,
+        view_range = this.view_end - this.view_start,
+        mode = this.mode,
+        data = this.data,
+        invsqrt2 = 1 / Math.sqrt(2);
+
+    var ramp = ( new SplitRamp( this.prefs.neg_color, "FFFFFF", this.prefs.pos_color, min_value, max_value ) );
+
+    var d, s1, e1, s2, e2, value;
+
+    var scale = function( p ) { return ( p - view_start ) * w_scale };
+
+    ctx.save();
+
+    // Draw into triangle, then rotate and scale
+    ctx.rotate(-45 * Math.PI / 180);
+    ctx.scale( invsqrt2, invsqrt2 );
+    
+    // Paint track.
+    for (var i = 0, len = data.length; i < len; i++) {
+
+        d = data[i];
+
+        // Ensure the cell is visible
+        // if ( )
+
+        s1 = scale( d[1] );
+        e1 = scale( d[2] );
+        s2 = scale( d[4] );
+        e2 = scale( d[5] );
+        value = d[6];
+
+        ctx.fillStyle = ( ramp.map_value( value ) )
+
+        ctx.fillRect( s1, s2, ( e1 - s1 ), ( e2 - s2 ) );
+    }
+    
+    ctx.restore();
+};
+
 exports.Scaler = Scaler;
 exports.SummaryTreePainter = SummaryTreePainter;
 exports.LinePainter = LinePainter;
 exports.LinkedFeaturePainter = LinkedFeaturePainter;
 exports.ReadPainter = ReadPainter;
 exports.ArcLinkedFeaturePainter = ArcLinkedFeaturePainter;
+exports.DiagonalHeatmapPainter = DiagonalHeatmapPainter;
 
 // End painters_module encapsulation
 };

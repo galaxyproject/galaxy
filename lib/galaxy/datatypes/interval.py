@@ -1298,7 +1298,32 @@ class ENCODEPeak( Interval ):
         return False
         
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}    
+        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
+        
+class ChromatinInteractions( Interval ):
+    '''
+    Chromatin interactions obtained from 3C/5C/Hi-C experiments.
+    '''
+    
+    file_ext = "chrint"
+    
+    column_names = [ 'Chrom', 'Start1', 'End1', 'Start2', 'End2', 'Value' ]
+    
+    """Add metadata elements"""
+    MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
+    MetadataElement( name="start1Col", default=2, desc="Start1 column", param=metadata.ColumnParameter )
+    MetadataElement( name="end1Col", default=3, desc="End1 column", param=metadata.ColumnParameter )
+    MetadataElement( name="start2Col", default=2, desc="Start2 column", param=metadata.ColumnParameter )
+    MetadataElement( name="end2Col", default=3, desc="End2 column", param=metadata.ColumnParameter )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
+    
+    def sniff( self, filename ):
+        return False
+        
+    def get_track_type( self ):
+        return "DiagonalHeatmapTrack", {"data": "tabix", "index": "summary_tree"}
+    
+    
 
 if __name__ == '__main__':
     import doctest, sys

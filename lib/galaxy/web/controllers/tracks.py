@@ -345,7 +345,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
         
     @web.json
-    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, start_val=0, max_vals=5000, **kwargs ):
+    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, start_val=0, max_vals=None, **kwargs ):
         """
         Provides a block of data from a dataset.
         """
@@ -401,6 +401,10 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             deps = dataset.get_converted_dataset_deps( trans, tracks_dataset_type )
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
+        # Allow max_vals top be data provider set if not passed
+        if max_vals is None:
+            max_vals = data_provider.get_default_max_vals()
+
         # Get and return data from data_provider.
         result = data_provider.get_data( chrom, low, high, int( start_val ), int( max_vals ), **kwargs )
         result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
