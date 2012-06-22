@@ -1229,7 +1229,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         encoded_repo_info_dict = encode( repo_info_dict )
         if includes_tool_dependencies:
             # Redirect back to local Galaxy to present the option to install tool dependencies.
-            url = '%sadmin_toolshed/install_tool_dependencies?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s' % \
+            url = '%sadmin_toolshed/confirm_tool_dependency_install?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s' % \
                 ( galaxy_url, url_for( '/', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
         else:
             # Redirect back to local Galaxy to perform install.

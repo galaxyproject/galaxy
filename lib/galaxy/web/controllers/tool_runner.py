@@ -128,18 +128,17 @@ class ToolRunner( BaseUIController ):
             else:
                 tool_id_select_field = None
                 tool = tools[ 0 ]
-            if tool.id == job.tool_id and tool.version == job.tool_version:
+            if ( tool.id == job.tool_id or tool.old_id == job.tool_id ) and tool.version == job.tool_version:
                 tool_id_version_message = ''
             elif tool.id == job.tool_id:
                 if job.tool_version == None:
                     # For some reason jobs don't always keep track of the tool version.
                     tool_id_version_message = ''
                 else:
+                    tool_id_version_message = 'This job was initially run with tool version "%s", which is not currently available.  ' % job.tool_version
                     if len( tools ) > 1:
-                        tool_id_version_message = 'This job was initially run with tool version "%s", which is not currently available.  ' % job.tool_version
                         tool_id_version_message += 'You can rerun the job with the selected tool or choose another derivation of the tool.'
                     else:
-                        tool_id_version_message = 'This job was initially run with tool version "%s", which is not currently available.  ' % job.tool_version
                         tool_id_version_message += 'You can rerun the job with this tool version, which is a derivation of the original tool.'
             else:
                 if len( tools ) > 1:

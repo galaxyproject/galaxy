@@ -8,8 +8,9 @@
 <div class="toolForm">
     <div class="toolFormTitle">Choose the tool panel section to contain the installed tools (optional)</div>
     <div class="toolFormBody">
-        %if repository.includes_tool_dependencies:
-            <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='install_missing_tool_dependencies', id=trans.security.encode_id( repository.id ), reinstalling=True )}" method="post" >
+        %if repository.tool_dependencies:
+            <% tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in repository.tool_dependencies ] %>
+            <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='install', tool_dependency_ids=tool_dependency_ids )}" method="post" >
         %else:
             <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
         %endif

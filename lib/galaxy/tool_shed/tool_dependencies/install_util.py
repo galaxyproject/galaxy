@@ -11,19 +11,16 @@ pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
 from elementtree.ElementTree import Element, SubElement
 
-def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type ):
+def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status ):
     # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled repository is being reinstalled.
-    # First see if an appropriate tool_dependency record exists for the received tool_shed_repository.
     sa_session = app.model.context.current
+    # First see if an appropriate tool_dependency record exists for the received tool_shed_repository.
     tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, name, version, type )
     if tool_dependency:
-        tool_dependency.uninstalled = False
+        tool_dependency.status = status
     else:
         # Create a new tool_dependency record for the tool_shed_repository.
-        tool_dependency = app.model.ToolDependency( tool_shed_repository_id=tool_shed_repository.id,
-                                                    name=name,
-                                                    version=version,
-                                                    type=type )
+        tool_dependency = app.model.ToolDependency( tool_shed_repository.id, name, version, type, status )
     sa_session.add( tool_dependency )
     sa_session.flush()
     return tool_dependency
@@ -42,14 +39,15 @@ def get_tool_dependency_install_dir( app, repository, package_name, package_vers
                                           repository.owner,
                                           repository.name,
                                           repository.installed_changeset_revision ) )
-def install_package( app, elem, tool_shed_repository, name=None, version=None ):
-    # If name and version are not None, then a specific tool dependency is being installed.
-    message = ''
+def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
+    # The value of tool_dependencies is a partial or full list of ToolDependency records associated with the tool_shed_repository.
+    sa_session = app.model.context.current
+    tool_dependency = None
     # The value of package_name should match the value of the "package" type in the tool config's <requirements> tag set, but it's not required.
     package_name = elem.get( 'name', None )
     package_version = elem.get( 'version', None )
     if package_name and package_version:
-        if ( not name and not version ) or ( name and version and name==package_name and version==package_version ):
+        if tool_dependencies:
             install_dir = get_tool_dependency_install_dir( app, tool_shed_repository, package_name, package_version )
             if not os.path.exists( install_dir ):
                 for package_elem in elem:
@@ -66,26 +64,22 @@ def install_package( app, elem, tool_shed_repository, name=None, version=None ):
                         # Handle tool dependency installation using a fabric method included in the Galaxy framework.
                         fabfile_path = None
                     for method_elem in package_elem:
-                        error_message = run_fabric_method( app,
-                                                           method_elem,
-                                                           fabfile_path,
-                                                           app.config.tool_dependency_dir,
-                                                           install_dir,
-                                                           package_name=package_name )
-                        if error_message:
-                            message += '%s' % error_message
-                        else:
-                            tool_dependency = create_or_update_tool_dependency( app,
-                                                                                tool_shed_repository,
-                                                                                name=package_name,
-                                                                                version=package_version,
-                                                                                type='package' )
+                        tool_dependency = create_or_update_tool_dependency( app,
+                                                                            tool_shed_repository,
+                                                                            name=package_name,
+                                                                            version=package_version,
+                                                                            type='package',
+                                                                            status=app.model.ToolDependency.installation_status.INSTALLING )
+                        run_fabric_method( app, tool_dependency, method_elem, fabfile_path, install_dir, package_name=package_name )
+                        sa_session.refresh( tool_dependency )
+                        if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
                             print package_name, 'version', package_version, 'installed in', install_dir
             else:
                 print '\nSkipping installation of tool dependency', package_name, 'version', package_version, 'since it is installed in', install_dir, '\n'
-    return message
-def run_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir, package_name=None, **kwd ):
+    return tool_dependency
+def run_fabric_method( app, tool_dependency, elem, fabfile_path, install_dir, package_name=None, **kwd ):
     """Parse a tool_dependency.xml file's fabfile <method> tag set to build the method parameters and execute the method."""
+    sa_session = app.model.context.current
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
     # Default value for env_dependency_path.
@@ -109,7 +103,7 @@ def run_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir
                         action_key = action_elem.text.replace( '$INSTALL_DIR', install_dir )
                         if not action_key:
                             continue
-                    elif action_type in MOVE_ACTIONS:
+                    elif action_type in [ 'move_directory_files', 'move_file' ]:
                         # Examples:
                         # <action type="move_file">
                         #     <source>misc/some_file</source>
@@ -124,9 +118,6 @@ def run_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir
                             move_elem_text = move_elem.text.replace( '$INSTALL_DIR', install_dir )
                             if move_elem_text:
                                 action_dict[ move_elem.tag ] = move_elem_text
-                    elif action_elem.text:
-                        # Example: <action type="change_directory">bin</action>
-                        action_key = '%sv^v^v%s' % ( action_type, action_elem.text )
                     else:
                         continue
                     actions.append( ( action_key, action_dict ) )
@@ -141,24 +132,36 @@ def run_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir
         params_dict[ 'package_name' ] = package_name
     if fabfile_path:
         # TODO: Handle this using the fabric api.
-        # run_proprietary_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir, package_name=package_name )
+        # run_proprietary_fabric_method( app, elem, fabfile_path, install_dir, package_name=package_name )
         return 'Tool dependency installation using proprietary fabric scripts is not yet supported.  '
     else:
         # There is currently only 1 fabric method, install_and_build_package().
         try:
-            message = install_and_build_package( params_dict )
-            if message:
-                return message
+            install_and_build_package( app, tool_dependency, params_dict )
         except Exception, e:
-            return '%s.  ' % str( e )
-        try:
-            message = handle_post_build_processing( tool_dependency_dir, install_dir, env_dependency_path, package_name=package_name )
-            if message:
-                return message
-        except:
-            return '%s.  ' % str( e )
-        return ''
-def run_proprietary_fabric_method( app, elem, fabfile_path, tool_dependency_dir, install_dir, package_name=None, **kwd ):
+            tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+            tool_dependency.error_message = str( e )
+            sa_session.add( tool_dependency )
+            sa_session.flush()
+        sa_session.refresh( tool_dependency )
+        if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
+            try:
+                handle_post_build_processing( app,
+                                              tool_dependency,
+                                              install_dir,
+                                              env_dependency_path,
+                                              package_name=package_name )
+            except Exception, e:
+                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                tool_dependency.error_message = str( e )
+                sa_session.add( tool_dependency )
+                sa_session.flush()
+        sa_session.refresh( tool_dependency )
+        if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
+            tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
+            sa_session.add( tool_dependency )
+            sa_session.flush()
+def run_proprietary_fabric_method( app, elem, fabfile_path, install_dir, package_name=None, **kwd ):
     """
     TODO: Handle this using the fabric api.
     Parse a tool_dependency.xml file's fabfile <method> tag set to build the method parameters and execute the method.
@@ -193,7 +196,7 @@ def run_proprietary_fabric_method( app, elem, fabfile_path, tool_dependency_dir,
         return "Exception executing fabric script %s: %s.  " % ( str( fabfile_path ), str( e ) )
     if returncode:
         return message    
-    message = handle_post_build_processing( tool_dependency_dir, install_dir, env_dependency_path, package_name=package_name )
+    message = handle_post_build_processing( app, tool_dependency, install_dir, env_dependency_path, package_name=package_name )
     if message:
         return message
     else:

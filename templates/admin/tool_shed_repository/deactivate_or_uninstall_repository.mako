@@ -86,7 +86,7 @@
                         * The repository's installed tool dependencies will be removed from disk.
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
-                        * Each associated tool dependency record's uninstalled column in the tool_dependency database table will be set to True.
+                        * Each associated tool dependency record's status column in the tool_dependency database table will be set to 'Uninstalled'.
                     </div>
                 %endif
                 %if repository.includes_datatypes:

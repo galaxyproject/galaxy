@@ -283,7 +283,7 @@
 %>
 
 %if tool_id_version_message:
-    ${render_msg( tool_id_version_message, 'error' )}
+    ${render_msg( tool_id_version_message, 'warning' )}
 %endif
 
 <div class="toolForm" id="${tool.id}">

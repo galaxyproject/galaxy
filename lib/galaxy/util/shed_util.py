@@ -6,7 +6,7 @@ from galaxy import util
 from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
-from galaxy.tool_shed.tool_dependencies.install_util import install_package
+from galaxy.tool_shed.tool_dependencies.install_util import create_or_update_tool_dependency, install_package
 from galaxy.tool_shed.encoding_util import *
 from galaxy.model.orm import *
 
@@ -318,8 +318,8 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
     if current_changeset_revision is None:
         # The current_changeset_revision is not passed if a repository is being installed for the first time.  If a previously installed repository
-        # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior to
-        # it being uninstalled.
+        # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior
+        # to it being uninstalled.
         current_changeset_revision = installed_changeset_revision
     sa_session = app.model.context.current  
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
@@ -353,6 +353,37 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.add( tool_shed_repository )
     sa_session.flush()
     return tool_shed_repository
+def create_tool_dependency_objects( app, tool_shed_repository, current_changeset_revision ):
+    # Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when installing a new tool_shed_repository.
+    tool_dependency_objects = []
+    work_dir = make_tmp_directory()
+    # Get the tool_dependencies.xml file from the repository.
+    tool_dependencies_config = get_config_from_repository( app,
+                                                           'tool_dependencies.xml',
+                                                           tool_shed_repository,
+                                                           current_changeset_revision,
+                                                           work_dir )
+    tree = ElementTree.parse( tool_dependencies_config )
+    root = tree.getroot()
+    ElementInclude.include( root )
+    fabric_version_checked = False
+    for elem in root:
+        if elem.tag == 'package':
+            package_name = elem.get( 'name', None )
+            package_version = elem.get( 'version', None )
+            if package_name and package_version:
+                tool_dependency = create_or_update_tool_dependency( app,
+                                                                    tool_shed_repository,
+                                                                    name=package_name,
+                                                                    version=package_version,
+                                                                    type='package',
+                                                                    status=app.model.ToolDependency.installation_status.NEVER_INSTALLED )
+                tool_dependency_objects.append( tool_dependency )
+    try:
+        shutil.rmtree( work_dir )
+    except:
+        pass
+    return tool_dependency_objects
 def generate_clone_url( trans, repository ):
     """Generate the URL for cloning a repository."""
     tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
@@ -1163,7 +1194,7 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
         message = str( e )
         error = True
     return error, message
-def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, name=None, version=None, type='package' ):
+def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies=None ):
     """
     Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation
     methods in Galaxy's tool_dependencies module.  In the future, proprietary fabric scripts contained in the repository will be supported.
@@ -1171,7 +1202,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     will be installed in:
     ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repo_owner>/<repo_name>/<repo_installed_changeset_revision>
     """
-    status = 'ok'
+    status = 'done'
     message = ''
     # Parse the tool_dependencies.xml config.
     tree = ElementTree.parse( tool_dependencies_config )
@@ -1179,12 +1210,24 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
-        if elem.tag == type:
-            error_message = install_package( app, elem, tool_shed_repository, name=name, version=version )
-            if error_message:
-                message += '  %s' % error_message
-    if message:
-        status = 'error'
+        if elem.tag == 'package':
+            package_name = elem.get( 'name', None )
+            package_version = elem.get( 'version', None )
+            if package_name and package_version:
+                can_install = True
+                if tool_dependencies:
+                    # Only install the package if it is not already installed.
+                    can_install = False
+                    for tool_dependency in tool_dependencies:
+                        if tool_dependency.name==package_name and tool_dependency.version==package_version:
+                            can_install = tool_dependency.status in [ app.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                      app.model.ToolDependency.installation_status.UNINSTALLED ]
+                            break
+                if can_install:
+                    tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
+                    if tool_dependency and tool_dependency.status == app.model.ToolDependency.installation_status.ERROR:
+                        message = tool_dependency.error_message
+                        status = 'error'
     return status, message
 def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     """
@@ -1247,13 +1290,11 @@ def load_installed_display_applications( installed_repository_dict, deactivate=F
     # Load or deactivate proprietary datatype display applications
     app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict, deactivate=deactivate )
 def load_repository_contents( trans, repository_name, description, owner, installed_changeset_revision, current_changeset_revision, ctx_rev,
-                              tool_path, repository_clone_url, relative_install_dir, tool_shed=None, tool_section=None, shed_tool_conf=None,
-                              install_tool_dependencies=False ):
+                              tool_path, repository_clone_url, relative_install_dir, tool_shed=None, tool_section=None, shed_tool_conf=None ):
     """
     Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy (never the tool shed)
     when an admin is installing a new repository or reinstalling an uninstalled repository.
     """
-    message = ''
     metadata_dict = generate_metadata_using_disk_files( trans.app.toolbox, relative_install_dir, repository_clone_url )
     # Add a new record to the tool_shed_repository table if one doesn't already exist.  If one exists but is marked deleted, undelete it.  This
     # must happen before the call to add_to_tool_panel() below because tools will not be properly loaded if the repository is marked deleted.
@@ -1285,20 +1326,6 @@ def load_repository_contents( trans, repository_name, description, owner, instal
             repository_tools_tups, sample_files_copied = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
             # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
             copy_sample_files( trans.app, sample_files, sample_files_copied=sample_files_copied )
-            if install_tool_dependencies and 'tool_dependencies' in metadata_dict:
-                # Get the tool_dependencies.xml file from the repository.
-                tool_dependencies_config = get_config_from_repository( trans.app,
-                                                                       'tool_dependencies.xml',
-                                                                       tool_shed_repository,
-                                                                       current_changeset_revision,
-                                                                       work_dir )
-                # Install dependencies for repository tools.
-                status, message = handle_tool_dependencies( app=trans.app,
-                                                            tool_shed_repository=tool_shed_repository,
-                                                            tool_dependencies_config=tool_dependencies_config )
-                if status != 'ok' and message:
-                    print 'The following error occurred from load_repository_contents while installing tool dependencies:'
-                    print message
             add_to_tool_panel( app=trans.app,
                                repository_name=repository_name,
                                repository_clone_url=repository_clone_url,
@@ -1340,7 +1367,9 @@ def load_repository_contents( trans, repository_name, description, owner, instal
             shutil.rmtree( work_dir )
         except:
             pass
-    return tool_shed_repository, metadata_dict, message
+    if 'tool_dependencies' in metadata_dict:
+        tool_dependencies = create_tool_dependency_objects( trans.app, tool_shed_repository, current_changeset_revision )
+    return tool_shed_repository, metadata_dict
 def make_tmp_directory():
     tmp_dir = os.getenv( 'TMPDIR', '' )
     if tmp_dir:
@@ -1505,7 +1534,7 @@ def remove_tool_dependency( trans, tool_dependency ):
         error_message = "Error removing tool dependency installation directory %s: %s" % ( str( dependency_install_dir ), str( e ) )
         log.debug( error_message )
     if removed:
-        tool_dependency.uninstalled = True
+        tool_dependency.status = trans.model.ToolDependency.installation_status.UNINSTALLED
         trans.sa_session.add( tool_dependency )
         trans.sa_session.flush()
     return removed, error_message

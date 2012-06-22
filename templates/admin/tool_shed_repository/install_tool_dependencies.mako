@@ -25,16 +25,7 @@
 
 <div class="toolForm">
     <div class="toolFormBody">
-        <form name="install_tool_dependenceies" id="install_tool_dependenceies" action="${h.url_for( controller='admin_toolshed', action='install_repository', tool_shed_url=tool_shed_url, repo_info_dict=repo_info_dict, includes_tools=includes_tools )}" method="post" >
-            <div style="clear: both"></div>
-            <div class="form-row">
-                <label>Install tool dependencies?</label>
-                ${install_tool_dependencies_check_box.get_html()}
-                <div class="toolParamHelp" style="clear: both;">
-                    Un-check to skip automatic installation of these tool dependencies.
-                </div>
-            </div>
-            <div style="clear: both"></div>
+        <form name="install_tool_dependenceies" id="install_tool_dependenceies" action="${h.url_for( controller='admin_toolshed', action='install_tool_dependencies' )}" method="post" >
             <div class="form-row">
                 <table class="grid">
                     <tr><td colspan="4" bgcolor="#D8D8D8"><b>Tool dependencies</b></td></tr>
@@ -44,42 +35,46 @@
                         <th>Type</th>
                         <th>Install directory</th>
                     </tr>
-                    %for repository_name, repo_info_tuple in dict_with_tool_dependencies.items():
+                    <% tool_shed_repository = None %>
+                    %for tool_dependency in tool_dependencies:
+                        <input type="hidden" name="tool_dependency_ids" value="${trans.security.encode_id( tool_dependency.id )}"/>
                         <%
-                            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+                            readme_text = None
+                            if tool_shed_repository is None:
+                                tool_shed_repository = tool_dependency.tool_shed_repository
+                                metadata = tool_shed_repository.metadata
+                                tool_dependencies_dict = metadata[ 'tool_dependencies' ]
+                            for key, requirements_dict in tool_dependencies_dict.items():
+                                key_items = key.split( '/' )
+                                key_name = key_items[ 0 ]
+                                key_version = key_items[ 1 ]
+                                if key_name == tool_dependency.name and key_version == tool_dependency.version:
+                                    readme_text = requirements_dict.get( 'readme', None )
+                            install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                                        tool_dependency.name,
+                                                        tool_dependency.version,
+                                                        tool_shed_repository.owner,
+                                                        tool_shed_repository.name,
+                                                        tool_shed_repository.installed_changeset_revision )
                         %>
-                        %for dependency_key, requirements_dict in tool_dependencies.items():
-                            <%
-                                name = requirements_dict[ 'name' ]
-                                version = requirements_dict[ 'version' ]
-                                type = requirements_dict[ 'type' ]
-                                install_dir = os.path.join( trans.app.config.tool_dependency_dir,
-                                                            name,
-                                                            version,
-                                                            repository_owner,
-                                                            repository_name,
-                                                            changeset_revision )
-                                readme_text = requirements_dict.get( 'readme', None )
-                            %>
-                            %if not os.path.exists( install_dir ):
-                                <tr>
-                                    <td>${name}</td>
-                                    <td>${version}</td>
-                                    <td>${type}</td>
-                                    <td>${install_dir}</td>
-                                </tr>
-                                %if readme_text:
-                                    <tr><td colspan="4" bgcolor="#FFFFCC">${name} ${version} requirements and installation information</td></tr>
-                                    <tr><td colspan="4"><pre>${readme_text}</pre></td></tr>
-                                %endif
+                        %if not os.path.exists( install_dir ):
+                            <tr>
+                                <td>${tool_dependency.name}</td>
+                                <td>${tool_dependency.version}</td>
+                                <td>${tool_dependency.type}</td>
+                                <td>${install_dir}</td>
+                            </tr>
+                            %if readme_text:
+                                <tr><td colspan="4" bgcolor="#FFFFCC">${tool_dependency.name} ${tool_dependency.version} requirements and installation information</td></tr>
+                                <tr><td colspan="4"><pre>${readme_text}</pre></td></tr>
                             %endif
-                        %endfor
+                        %endif
                     %endfor
                 </table>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <input type="submit" name="install_tool_dependenceies_button" value="Continue"/>
+                <input type="submit" name="install_tool_dependencies_button" value="Install"/>
             </div>
         </form>
     </div>

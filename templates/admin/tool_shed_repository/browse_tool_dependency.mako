@@ -10,8 +10,10 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "ui.core", "jquery.dynatree" )}
-    ${common_javascripts(tool_dependency.name, tool_dependency.installation_directory( trans.app ))}
+    ${browse_files(tool_dependency.name, tool_dependency.installation_directory( trans.app ))}
 </%def>
+
+<% tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in repository.tool_dependencies ] %>
 
 <br/><br/>
 <ul class="manage-table-actions">
@@ -21,8 +23,7 @@
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get updates</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or uninstall repository</a>
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( repository.id ) )}">Manage tool dependencies</a>
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='uninstall_tool_dependency', id=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">Uninstall this tool dependency</a>
+        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', tool_dependency_ids=tool_dependency_ids )}">Manage tool dependencies</a>
     </div>
 </ul>
 

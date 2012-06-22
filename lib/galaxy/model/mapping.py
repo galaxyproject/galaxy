@@ -398,7 +398,8 @@ ToolDependency.table = Table( "tool_dependency", metadata,
     Column( "name", TrimmedString( 255 ) ),
     Column( "version", Text ),
     Column( "type", TrimmedString( 40 ) ),
-    Column( "uninstalled", Boolean, default=False ) )
+    Column( "status", TrimmedString( 255 ), nullable=False ),
+    Column( "error_message", TEXT ) )
 
 ToolVersion.table = Table( "tool_version", metadata,
     Column( "id", Integer, primary_key=True ),

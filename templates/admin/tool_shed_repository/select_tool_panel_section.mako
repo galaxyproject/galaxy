@@ -78,6 +78,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Repository README file (may contain important installation or license information)</div>
         <div class="toolFormBody">
+            <input type="hidden" name="readme_text" value="${readme_text}"/>
             <div class="form-row">
                 <pre>${readme_text}</pre>
             </div>

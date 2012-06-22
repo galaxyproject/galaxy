@@ -2647,6 +2647,12 @@ class APIKeys( object ):
     pass
 
 class ToolShedRepository( object ):
+    installation_status = Bunch( CLONED='cloned',
+                                 SETTING_TOOL_VERSIONS='setting tool versions',
+                                 INSTALLING_TOOL_DEPENDENCIES='installing tool dependencies',
+                                 INSTALLED='installed',
+                                 ERROR='error',
+                                 UNINSTALLED='uninstalled' )
     def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
                   changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False,
                   uninstalled=False, dist_to_shed=False ):
@@ -2696,47 +2702,59 @@ class ToolShedRepository( object ):
         """Return the repository's tool dependencies that are currently installed."""
         installed_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if not tool_dependency.uninstalled:
+            if tool_dependency.status == ToolDependency.installation_status.INSTALLED:
                 installed_dependencies.append( tool_dependency )
         return installed_dependencies
     @property
     def missing_tool_dependencies( self ):
         """Return the repository's tool dependencies that are not currently installed, and may not ever have been installed."""
         missing_dependencies = []
-        # Get the dependency information from the metadata for comparison against the installed tool dependencies.
-        tool_dependencies = self.metadata.get( 'tool_dependencies', None )
-        if tool_dependencies:
-            for dependency_key, requirements_dict in tool_dependencies.items():
-                name = requirements_dict[ 'name' ]
-                version = requirements_dict[ 'version' ]
-                type = requirements_dict[ 'type' ]
-                if self.tool_dependencies:
-                    found = False
-                    for tool_dependency in self.tool_dependencies:
-                        if tool_dependency.name==name and tool_dependency.version==version and tool_dependency.type==type:
-                            found = True
-                            if tool_dependency.uninstalled:
-                                missing_dependencies.append( ( tool_dependency.name, tool_dependency.version, tool_dependency.type ) )
-                                break
-                    if not found:
-                        missing_dependencies.append( ( name, version, type ) )
+        for tool_dependency in self.tool_dependencies:
+            if tool_dependency.status in [ ToolDependency.installation_status.NEVER_INSTALLED,
+                                           ToolDependency.installation_status.ERROR,
+                                           ToolDependency.installation_status.UNINSTALLED ]:
+                missing_dependencies.append( tool_dependency )
         return missing_dependencies
+    @property
+    def tool_dependencies_being_installed( self ):
+        dependencies_being_installed = []
+        for tool_dependency in self.tool_dependencies:
+            if tool_dependency.status == ToolDependency.installation_status.INSTALLING:
+                dependencies_being_installed.append( tool_dependency )
+        return dependencies_being_installed
+    @property
+    def tool_dependencies_with_installation_errors( self ):
+        dependencies_with_installation_errors = []
+        for tool_dependency in self.tool_dependencies:
+            if tool_dependency.status == ToolDependency.installation_status.ERROR:
+                dependencies_with_installation_errors.append( tool_dependency )
+        return dependencies_with_installation_errors
     @property
     def uninstalled_tool_dependencies( self ):
         """Return the repository's tool dependencies that have been uninstalled."""
         uninstalled_tool_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.uninstalled:
+            if tool_dependency.status == ToolDependency.installation_status.UNINSTALLED:
                 uninstalled_tool_dependencies.append( tool_dependency )
         return uninstalled_tool_dependencies
 
 class ToolDependency( object ):
-    def __init__( self, tool_shed_repository_id=None, name=None, version=None, type=None, uninstalled=False ):
+    installation_status = Bunch( NEVER_INSTALLED='Never installed',
+                                 INSTALLING='Installing',
+                                 INSTALLED='Installed',
+                                 ERROR='Error',
+                                 UNINSTALLED='Uninstalled' )
+    states = Bunch( INSTALLING = 'running',
+                    OK = 'ok',
+                    ERROR = 'error',
+                    UNINSTALLED = 'deleted_new' )
+    def __init__( self, tool_shed_repository_id=None, name=None, version=None, type=None, status=None, error_message=None ):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.name = name
         self.version = version
         self.type = type
-        self.uninstalled = uninstalled
+        self.status = status
+        self.error_message = error_message
     def installation_directory( self, app ):
         return os.path.join( app.config.tool_dependency_dir,
                              self.name,

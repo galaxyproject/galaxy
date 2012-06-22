@@ -13,9 +13,6 @@
         %if repository.includes_tools:
             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='set_tool_versions', id=trans.security.encode_id( repository.id ) )}">Set tool versions</a>
         %endif
-        %if repository.missing_tool_dependencies:
-            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='install_missing_tool_dependencies', id=trans.security.encode_id( repository.id ) )}">Install missing tool dependencies</a>
-        %endif
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or uninstall repository</a>
     </div>
 </ul>
@@ -34,25 +31,25 @@
                         name = tool_dependency.name
                         version = tool_dependency.version
                         type = tool_dependency.type
-                        uninstalled = tool_dependency.uninstalled
+                        installed = tool_dependency.status == 'trans.model.ToolDependency.installation_status.INSTALLED
                         install_dir = tool_dependency.installation_directory( trans.app )
                     %>
                     <tr>
                         <td bgcolor="#D8D8D8">
                             <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="dependency-${tool_dependency.id}-popup">
-                                %if uninstalled:
-                                    <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='install_tool_dependency', name=name, version=version, type=type, repository_id=trans.security.encode_id( repository.id ) )}">
+                                %if not installed:
+                                    <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='browse', tool_dependency_id=trans.security.encode_id( tool_dependency.id ) )}">
                                         <b>Name</b>
                                     </a>
                                     <div popupmenu="dependency-${tool_dependency.id}-popup">
-                                        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='install_tool_dependency', name=name, version=version, type=type, repository_id=trans.security.encode_id( repository.id ) )}">Install this dependency</a>
+                                        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='install', tool_dependency_id=trans.security.encode_id( tool_dependency.id ) )}">Install this tool dependency</a>
                                     </div>
                                 %else:
-                                    <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">
+                                    <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='browse', tool_dependency_id=trans.security.encode_id( tool_dependency.id ) )}">
                                         <b>Name</b>
                                     </a>
                                     <div popupmenu="dependency-${tool_dependency.id}-popup">
-                                        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='uninstall_tool_dependency', id=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">Uninstall this dependency</a>
+                                        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='uninstall', tool_dependency_id=trans.security.encode_id( tool_dependency.id ) )}">Uninstall this tool dependency</a>
                                     </div>
                                 %endif
                             </div>
@@ -64,7 +61,7 @@
                     <tr>
                         <th>Install directory</th>
                         <td>
-                            %if uninstalled:
+                            %if not installed:
                                 This dependency is not currently installed
                             %else:
                                 <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">
@@ -73,7 +70,7 @@
                             %endif
                         </td>
                     </tr>
-                    <tr><th>Uninstalled</th><td>${uninstalled}</td></tr>
+                    <tr><th>Installed</th><td>${not installed}</td></tr>
                 %endfor
             </table>
             <div style="clear: both"></div>

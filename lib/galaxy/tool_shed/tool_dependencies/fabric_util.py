@@ -13,6 +13,8 @@ pkg_resources.require( 'Fabric' )
 
 from fabric.api import env, lcd, local, settings
 
+INSTALLATION_LOG = 'INSTALLATION.log'
+
 def check_fabric_version():
     version = env.version
     if int( version.split( "." )[ 0 ] ) < 1:
@@ -32,16 +34,19 @@ def make_tmp_dir():
     yield work_dir
     if os.path.exists( work_dir ):
         local( 'rm -rf %s' % work_dir )
-def handle_post_build_processing( tool_dependency_dir, install_dir, env_dependency_path, package_name=None ):
+def handle_post_build_processing( app, tool_dependency, install_dir, env_dependency_path, package_name=None ):
+    sa_session = app.model.context.current
     cmd = "echo 'PATH=%s:$PATH; export PATH' > %s/env.sh;chmod +x %s/env.sh" % ( env_dependency_path, install_dir, install_dir )
-    message = ''
     output = local( cmd, capture=True )
-    log_results( cmd, output, os.path.join( install_dir, 'env_sh.log' ) )
+    log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
     if output.return_code:
-        message = '%s  %s' % ( message, str( output.stderr ) )
-    return message
-def install_and_build_package( params_dict ):
+        tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+        tool_dependency.error_message = str( output.stderr )
+        sa_session.add( tool_dependency )
+        sa_session.flush()
+def install_and_build_package( app, tool_dependency, params_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
+    sa_session = app.model.context.current
     install_dir = params_dict[ 'install_dir' ]
     download_url = params_dict.get( 'download_url', None )
     clone_cmd = params_dict.get( 'clone_cmd', None )
@@ -59,43 +64,38 @@ def install_and_build_package( params_dict ):
                     dir = work_dir
             elif clone_cmd:
                 output = local( clone_cmd, capture=True )
-                log_results( clone_cmd, output, os.path.join( install_dir, 'clone_repository.log' ) )
+                log_results( clone_cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
                 if output.return_code:
-                    return '%s.  ' % str( output.stderr )
+                    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                    tool_dependency.error_message = str( output.stderr )
+                    sa_session.add( tool_dependency )
+                    sa_session.flush()
+                    return
                 dir = package_name
             if actions:
                 with lcd( dir ):
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                     for action_tup in actions:
                         action_key, action_dict = action_tup
-                        if action_key.find( 'v^v^v' ) >= 0:
-                            action_items = action_key.split( 'v^v^v' )
-                            action_name = action_items[ 0 ]
-                            action = action_items[ 1 ]
-                        elif action_key in common_util.ALL_ACTIONS:
-                            action_name = action_key
-                        else:
-                            action_name = None
-                        if action_name:
-                            if action_name == 'change_directory':
-                                current_dir = os.path.join( current_dir, action )
-                                lcd( current_dir )
-                            elif action_name == 'move_directory_files':
-                                common_util.move_directory_files( current_dir=current_dir,
-                                                                  source_dir=os.path.join( action_dict[ 'source_directory' ] ),
-                                                                  destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
-                            elif action_name == 'move_file':
-                                common_util.move_file( current_dir=current_dir,
-                                                       source=os.path.join( action_dict[ 'source' ] ),
-                                                       destination_dir=os.path.join( action_dict[ 'destination' ] ) )
+                        if action_key == 'move_directory_files':
+                            common_util.move_directory_files( current_dir=current_dir,
+                                                              source_dir=os.path.join( action_dict[ 'source_directory' ] ),
+                                                              destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
+                        elif action_key == 'move_file':
+                            common_util.move_file( current_dir=current_dir,
+                                                   source=os.path.join( action_dict[ 'source' ] ),
+                                                   destination_dir=os.path.join( action_dict[ 'destination' ] ) )
                         else:
                             action = action_key
                             with settings( warn_only=True ):
                                 output = local( action, capture=True )
-                                log_results( action, output, os.path.join( install_dir, 'actions.log' ) )
+                                log_results( action, output, os.path.join( install_dir, INSTALLATION_LOG ) )
                                 if output.return_code:
-                                    return '%s.  ' % str( output.stderr )
-    return ''
+                                    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                                    tool_dependency.error_message = str( output.stderr )
+                                    sa_session.add( tool_dependency )
+                                    sa_session.flush()
+                                    return
 def log_results( command, fabric_AttributeString, file_path ):
     """
     Write attributes of fabric.operations._AttributeString (which is the output of executing command using fabric's local() method)
@@ -105,12 +105,12 @@ def log_results( command, fabric_AttributeString, file_path ):
         logfile = open( file_path, 'ab' )
     else:
         logfile = open( file_path, 'wb' )
-    logfile.write( "\n#############################################" )
-    logfile.write( '\n%s\nSTDOUT\n' % command )
+    logfile.write( "\n#############################################\n" )
+    logfile.write( '%s\nSTDOUT\n' % command )
     logfile.write( str( fabric_AttributeString.stdout ) )
-    logfile.write( "#############################################\n" )
-    logfile.write( "\n#############################################" )
-    logfile.write( '\n%s\nSTDERR\n' % command )
+    logfile.write( "\n#############################################\n" )
+    logfile.write( "\n#############################################\n" )
+    logfile.write( '%s\nSTDERR\n' % command )
     logfile.write( str( fabric_AttributeString.stderr ) )
-    logfile.write( "#############################################\n" )
+    logfile.write( "\n#############################################\n" )
     logfile.close()

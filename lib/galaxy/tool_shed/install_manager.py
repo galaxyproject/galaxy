@@ -7,7 +7,6 @@ from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
 from galaxy.util.odict import odict
-from galaxy.tool_shed.migrate.common import *
 
 REPOSITORY_OWNER = 'devteam'
 
@@ -177,7 +176,7 @@ class InstallManager( object ):
                     status, message = handle_tool_dependencies( app=self.app,
                                                                 tool_shed_repository=tool_shed_repository,
                                                                 tool_dependencies_config=tool_dependencies_config )
-                    if status != 'ok' and message:
+                    if status != 'done' and message:
                         print 'The following error occurred from the InstallManager while installing tool dependencies:'
                         print message
                 add_to_tool_panel( self.app,
