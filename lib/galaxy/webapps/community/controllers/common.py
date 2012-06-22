@@ -429,6 +429,7 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
     sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
     if sample_files:
         trans.app.config.tool_data_path = work_dir
+    all_sample_files_copied = []
     # Handle the tool_data_table_conf.xml.sample file if it is included in the repository.
     if 'tool_data_table_conf.xml.sample' in sample_files:
         tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', work_dir )
@@ -437,7 +438,13 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
         # Find all tool configs.
         ctx_file_name = strip_path( filename )
         if ctx_file_name not in NOT_TOOL_CONFIGS and filename.endswith( '.xml' ):
-            is_tool_config, valid, tool, error_message = load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, work_dir )
+            is_tool_config, valid, tool, error_message, sample_files, deleted_sample_files = load_tool_from_tmp_directory( trans,
+                                                                                                                           repo,
+                                                                                                                           repo_dir,
+                                                                                                                           ctx,
+                                                                                                                           filename,
+                                                                                                                           work_dir )
+            all_sample_files_copied.extend( sample_files )
             if is_tool_config and valid and tool is not None:
                 sample_files_copied, can_set_metadata, invalid_files = check_tool_input_params( trans,
                                                                                                 repo,
@@ -449,33 +456,13 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
                                                                                                 invalid_files,
                                                                                                 original_tool_data_path,
                                                                                                 work_dir )
+                all_sample_files_copied.extend( sample_files_copied )
                 if can_set_metadata:
                     # Update the list of metadata dictionaries for tools in metadata_dict.
                     repository_clone_url = generate_clone_url( trans, id )
                     metadata_dict = generate_tool_metadata( filename, tool, repository_clone_url, metadata_dict )
                 else:
                     invalid_tool_configs.append( ctx_file_name )
-                # Remove all copied sample files from both the original tool data path (~/shed-tool-data) and the temporary
-                # value of trans.app.config.tool_data_path, which is work_dir.
-                for copied_sample_file in sample_files_copied:
-                    copied_file = copied_sample_file.replace( '.sample', '' )
-                    try:
-                        os.unlink( os.path.join( trans.app.config.tool_data_path, copied_sample_file ) )
-                    except:
-                        pass
-                    try:
-                        os.unlink( os.path.join( trans.app.config.tool_data_path, copied_file ) )
-                    except:
-                        pass
-                    if trans.app.config.tool_data_path == work_dir:
-                        try:
-                            os.unlink( os.path.join( original_tool_data_path, copied_sample_file ) )
-                        except:
-                            pass
-                        try:
-                            os.unlink( os.path.join( original_tool_data_path, copied_file ) )
-                        except:
-                            pass
             elif is_tool_config:
                 if not error_message:
                     error_message = 'Unknown problems loading tool.'
@@ -508,6 +495,27 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
         shutil.rmtree( work_dir )
     except:
         pass
+    # Remove all copied sample files from both the original tool data path (~/shed-tool-data) and the temporary
+    # value of trans.app.config.tool_data_path, which is work_dir.
+    for copied_sample_file in all_sample_files_copied:
+        copied_file = copied_sample_file.replace( '.sample', '' )
+        try:
+            os.unlink( os.path.join( trans.app.config.tool_data_path, copied_sample_file ) )
+        except:
+            pass
+        try:
+            os.unlink( os.path.join( trans.app.config.tool_data_path, copied_file ) )
+        except:
+            pass
+        if trans.app.config.tool_data_path == work_dir:
+            try:
+                os.unlink( os.path.join( original_tool_data_path, copied_sample_file ) )
+            except:
+                pass
+            try:
+                os.unlink( os.path.join( original_tool_data_path, copied_file ) )
+            except:
+                pass
     return metadata_dict, invalid_files, deleted_sample_files
 def generate_tool_guid( trans, repository, tool ):
     """
@@ -810,6 +818,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
             except:
                 pass
         return tool, message
+    original_tool_data_path = trans.app.config.tool_data_path
     tool_config_filename = strip_path( tool_config_filename )
     repository = get_repository( trans, repository_id )
     repo_files_dir = repository.repo_path
@@ -818,6 +827,9 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     tool = None
     message = ''
     work_dir = make_tmp_directory()
+    sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
+    if sample_files:
+        trans.app.config.tool_data_path = work_dir
     # Load entries into the tool_data_tables if the tool requires them.
     tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', work_dir )
     if tool_data_table_config:
@@ -841,12 +853,16 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
         shutil.rmtree( work_dir )
     except:
         pass
+    if sample_files:
+        trans.app.config.tool_data_path = original_tool_data_path
     return tool, message
 def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
     is_tool_config = False
     tool = None
     valid = False
     error_message = ''
+    sample_files = []
+    deleted_sample_files = []
     tmp_config = get_named_tmpfile_from_ctx( ctx, filename, dir )
     if tmp_config:
         if not ( check_binary( tmp_config ) or check_image( tmp_config ) or check_gzip( tmp_config )[ 0 ]
@@ -860,6 +876,9 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
                 log.debug( "Error parsing %s, exception: %s" % ( tmp_config, str( e ) ) )
                 is_tool_config = False
             if is_tool_config:
+                sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=dir )
+                if sample_files:
+                    trans.app.config.tool_data_path = dir
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', dir )
                 if tool_data_table_config:
@@ -884,7 +903,7 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
                     error_message = str( e )
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                 reset_tool_data_tables( trans.app )
-    return is_tool_config, valid, tool, error_message
+    return is_tool_config, valid, tool, error_message, sample_files, deleted_sample_files
 def new_tool_metadata_required( trans, id, metadata_dict ):
     """
     Compare the last saved metadata for each tool in the repository with the new metadata
