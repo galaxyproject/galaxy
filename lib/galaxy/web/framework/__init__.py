@@ -419,7 +419,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # The value of session_cookie can be one of 
         # 'galaxysession' or 'galaxycommunitysession'
         # Currently this method does nothing unless session_cookie is 'galaxysession'
-        if session_cookie == 'galaxysession':
+        if session_cookie == 'galaxysession' and self.galaxy_session.user is None:
             # TODO: re-engineer to eliminate the use of allowed_paths
             # as maintenance overhead is far too high.
             allowed_paths = (
@@ -443,16 +443,23 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 url_for( controller='dataset', action='list' )
             )
             display_as = url_for( controller='root', action='display_as' )
-            if self.galaxy_session.user is None:
-                if self.app.config.ucsc_display_sites and self.request.path == display_as:
-                    try:
-                        host = socket.gethostbyaddr( self.environ[ 'REMOTE_ADDR' ] )[0]
-                    except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
-                        host = None
-                    if host in UCSC_SERVERS:
+            if self.app.config.ucsc_display_sites and self.request.path == display_as:
+                try:
+                    host = socket.gethostbyaddr( self.environ[ 'REMOTE_ADDR' ] )[0]
+                except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
+                    host = None
+                if host in UCSC_SERVERS:
+                    return
+            external_display_path = url_for( controller='dataset', action='display_application' ) 
+            if self.request.path.startswith( external_display_path ):
+                request_path_split = external_display_path.split( '/' )
+                try:
+                    if self.app.datatypes_registry.display_applications.get( request_path_split[-5] ) and request_path_split[-4] in self.app.datatypes_registry.display_applications.get( request_path_split[-5] ).links and request_path_split[-3] != 'None':
                         return
-                if self.request.path not in allowed_paths:
-                    self.response.send_redirect( url_for( controller='root', action='index' ) )
+                except IndexError:
+                    pass
+            if self.request.path not in allowed_paths:
+                self.response.send_redirect( url_for( controller='root', action='index' ) )
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """
         Create a new GalaxySession for this request, possibly with a connection
