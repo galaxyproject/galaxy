@@ -438,13 +438,7 @@ def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_re
         # Find all tool configs.
         ctx_file_name = strip_path( filename )
         if ctx_file_name not in NOT_TOOL_CONFIGS and filename.endswith( '.xml' ):
-            is_tool_config, valid, tool, error_message, sample_files, deleted_sample_files = load_tool_from_tmp_directory( trans,
-                                                                                                                           repo,
-                                                                                                                           repo_dir,
-                                                                                                                           ctx,
-                                                                                                                           filename,
-                                                                                                                           work_dir )
-            all_sample_files_copied.extend( sample_files )
+            is_tool_config, valid, tool, error_message = load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, work_dir )
             if is_tool_config and valid and tool is not None:
                 sample_files_copied, can_set_metadata, invalid_files = check_tool_input_params( trans,
                                                                                                 repo,
@@ -861,8 +855,6 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
     tool = None
     valid = False
     error_message = ''
-    sample_files = []
-    deleted_sample_files = []
     tmp_config = get_named_tmpfile_from_ctx( ctx, filename, dir )
     if tmp_config:
         if not ( check_binary( tmp_config ) or check_image( tmp_config ) or check_gzip( tmp_config )[ 0 ]
@@ -876,9 +868,6 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
                 log.debug( "Error parsing %s, exception: %s" % ( tmp_config, str( e ) ) )
                 is_tool_config = False
             if is_tool_config:
-                sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=dir )
-                if sample_files:
-                    trans.app.config.tool_data_path = dir
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', dir )
                 if tool_data_table_config:
@@ -903,7 +892,7 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
                     error_message = str( e )
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                 reset_tool_data_tables( trans.app )
-    return is_tool_config, valid, tool, error_message, sample_files, deleted_sample_files
+    return is_tool_config, valid, tool, error_message
 def new_tool_metadata_required( trans, id, metadata_dict ):
     """
     Compare the last saved metadata for each tool in the repository with the new metadata
