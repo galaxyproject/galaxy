@@ -195,6 +195,8 @@ class DisplayDataValueWrapper( DisplayParameterValueWrapper ):
                 mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None ) 
             if mime:
                 return mime
+        if hasattr( self.value, 'get_mime' ):
+            return self.value.get_mime()
         return self.other_values[ DEFAULT_DATASET_NAME ].get_mime()
     @property
     def action_name( self ):
