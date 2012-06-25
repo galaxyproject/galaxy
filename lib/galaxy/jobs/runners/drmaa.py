@@ -39,6 +39,11 @@ drmaa_state = {
     drmaa.JobState.FAILED: 'job finished, but failed',
 }
 
+# The last four lines (following the last fi) will:
+#  - setup the env
+#  - move to the job wrapper's working directory
+#  - execute the command
+#  - take the command's exit code ($?) and write it to a file.
 drm_template = """#!/bin/sh
 GALAXY_LIB="%s"
 if [ "$GALAXY_LIB" != "None" ]; then
@@ -52,6 +57,7 @@ fi
 %s
 cd %s
 %s
+echo $? > %s
 """
 def __lineno__():
     """Returns the current line number in our program."""
@@ -77,7 +83,7 @@ class DRMAAJobState( object ):
         self.job_file = None
         self.ofile = None
         self.efile = None
-        self.rcfile = None
+        self.ecfile = None
         self.runner_url = None
 
 class DRMAAJobRunner( BaseJobRunner ):
@@ -169,7 +175,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         # define job attributes
         ofile = "%s.drmout" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         efile = "%s.drmerr" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
-        rcfile = "%s.drmrc" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
+        ecfile = "%s.drmec" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         job_name = "g%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user )
         job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
 
@@ -178,7 +184,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         jt.jobName = job_name
         jt.outputPath = ":%s" % ofile
         jt.errorPath = ":%s" % efile
-        jt.returnCodePath = ":%s" % rcfile
+        # Avoid a jt.exitCodePath for now - it's only used when finishing.
         native_spec = self.get_native_spec( runner_url )
         if native_spec is not None:
             jt.nativeSpecification = native_spec
@@ -187,7 +193,8 @@ class DRMAAJobRunner( BaseJobRunner ):
         script = drm_template % ( job_wrapper.galaxy_lib_dir,
                                   job_wrapper.get_env_setup_clause(),
                                   os.path.abspath( job_wrapper.working_directory ),
-                                  command_line )
+                                  command_line,
+                                  ecfile )
 
         try:
             fh = file( jt.remoteCommand, "w" )
@@ -231,7 +238,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         drm_job_state.job_id = job_id
         drm_job_state.ofile = ofile
         drm_job_state.efile = efile
-        drm_job_state.rcfile = rcfile
+        drm_job_state.ecfile = ecfile
         drm_job_state.job_file = jt.remoteCommand
         drm_job_state.old_state = 'new'
         drm_job_state.running = False
@@ -316,17 +323,22 @@ class DRMAAJobRunner( BaseJobRunner ):
         """
         ofile = drm_job_state.ofile
         efile = drm_job_state.efile
-        rcfile = drm_job_state.rcfile
+        ecfile = drm_job_state.ecfile
         job_file = drm_job_state.job_file
         # collect the output
         # wait for the files to appear
         which_try = 0
+        # By default, the exit code is 0, which typically indicates success.
+        exit_code = 0
         while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
                 ofh = file(ofile, "r")
                 efh = file(efile, "r")
+                ecfh = file(ecfile, "r")
                 stdout = ofh.read( 32768 )
                 stderr = efh.read( 32768 )
+                # The exit code should only be 8 bits, but read more anyway 
+                exit_code_str = ecfh.read(32)
                 which_try = (self.app.config.retry_job_output_collection + 1)
             except:
                 if which_try == self.app.config.retry_job_output_collection:
@@ -337,8 +349,15 @@ class DRMAAJobRunner( BaseJobRunner ):
                     time.sleep(1)
                 which_try += 1
 
+        # Decode the exit code. If it's bogus, then just use 0.
         try:
-            drm_job_state.job_wrapper.finish( stdout, stderr )
+            exit_code = int(exit_code_str)
+        except:
+            log.warning( "Exit code " + exit_code_str + " invalid. Using 0." )
+            exit_code = 0
+
+        try:
+            drm_job_state.job_wrapper.finish( stdout, stderr, exit_code )
         except:
             log.exception("Job wrapper finish method failed")
 
@@ -382,7 +401,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         drm_job_state = DRMAAJobState()
         drm_job_state.ofile = "%s.drmout" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.efile = "%s.drmerr" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
-        drm_job_state.rcfile = "%s.drmrc" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
+        drm_job_state.ecfile = "%s.drmec" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job.id)
         drm_job_state.job_id = str( job.job_runner_external_id )
         drm_job_state.runner_url = job_wrapper.get_job_runner()

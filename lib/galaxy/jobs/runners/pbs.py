@@ -532,16 +532,22 @@ class PBSJobRunner( BaseJobRunner ):
             stdout = ofh.read( 32768 )
             stderr = efh.read( 32768 )
             # This should be an 8-bit exit code, but read ahead anyway: 
-            exit_code = ecfh.read(32)
+            exit_code_str = ecfh.read(32)
         except:
             stdout = ''
             stderr = 'Job output not returned by PBS: the output datasets were deleted while the job was running, the job was manually dequeued or there was a cluster error.'
             # By default, the exit code is 0, which usually indicates success
             # (although clearly some error happened).
-            exit_code = 0
-            log.debug(stderr)
-        log.debug( "Job exit code: " + exit_code )
+            exit_code_str = "" 
 
+        # Translate the exit code string to an integer; use 0 on failure.
+        try:
+            exit_code = int( exit_code_str )
+        except:
+            log.warning( "Exit code " + exit_code_str + " was invalid. Using 0." )
+            exit_code = 0
+
+        # Call on the job wrapper to complete the call:
         try:
             pbs_job_state.job_wrapper.finish( stdout, stderr, exit_code )
         except:

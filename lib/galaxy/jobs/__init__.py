@@ -291,8 +291,6 @@ class JobWrapper( object ):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-        # TODO: Eliminate debugging code after testing all runners
-        log.debug( "JobWrapper.finish: exit code:" + str(tool_exit_code) )
         # default post job setup
         self.sa_session.expunge_all()
         job = self.get_job()
