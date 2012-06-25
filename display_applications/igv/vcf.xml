@@ -81,9 +81,9 @@
 		</param>
         <param type="template" name="redirect_url" strip="True" >
             #if $site_id.startswith( 'local_' )
-                ${site_link}?file=${bgzip_file.qp}&amp;genome=${site_organism}&amp;merge=true
+                ${site_link}?file=${bgzip_file.qp}&amp;genome=${site_organism}&amp;merge=true&amp;name=${qp( $bgzip_file.name )}
             #elif $site_id.startswith( 'web_link_' ):
-                ${site_link}?sessionURL=${bgzip_file.qp}&amp;genome=${site_organism}&amp;merge=true
+                ${site_link}?sessionURL=${bgzip_file.qp}&amp;genome=${site_organism}&amp;merge=true&amp;name=${qp( $bgzip_file.name )}
             #else:
                 ${jnlp.url}
             #end if
