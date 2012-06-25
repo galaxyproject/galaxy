@@ -479,52 +479,16 @@ def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     package_name = elem.get( 'name', None )
     package_version = elem.get( 'version', None )
     if package_name and package_version:
-        requirements_dict [ 'name' ] = package_name
-        requirements_dict [ 'type' ] = 'package'
-        requirements_dict [ 'version' ] = package_version
         dependency_key = '%s/%s' % ( package_name, package_version )
-        fabfiles_dict = {}
+        requirements_dict [ 'name' ] = package_name
+        requirements_dict [ 'version' ] = package_version
+        requirements_dict [ 'type' ] = 'package'
         for sub_elem in elem:
-            if sub_elem.tag == 'proprietary_fabfile':
-                requirements_dict = generate_fabfile_metadata( sub_elem, requirements_dict, proprietary=True )
-            elif sub_elem.tag == 'fabfile':
-                requirements_dict = generate_fabfile_metadata( sub_elem, requirements_dict, proprietary=False )
-            elif sub_elem.tag == 'readme':
+            if sub_elem.tag == 'readme':
                 requirements_dict[ 'readme' ] = sub_elem.text
     if requirements_dict:
         tool_dependencies_dict[ dependency_key ] = requirements_dict
     return tool_dependencies_dict
-def generate_fabfile_metadata( elem, requirements_dict, proprietary=False ):
-    """
-    <proprietary_fabfile name="fabfile.py">
-        <method name="install_and_build">
-            <param name="download_url">ftp://emboss.open-bio.org/pub/EMBOSS/old/5.0.0/EMBOSS-5.0.0.tar.gz</param>
-            <param name="download_url">ftp://emboss.open-bio.org/pub/EMBOSS/old/5.0.0/PHYLIP-3.6b.tar.gz</param>
-        </method>
-    </proprietary_fabfile>
-    """
-    fabfiles_dict = {}
-    fabfile_name = elem.get( 'name', None )
-    if fabfile_name:
-        for method_elem in elem.findall( 'method' ):
-            method_name = method_elem.get( 'name', None )
-            if method_name:
-                params_str = ''
-                for param_elem in method_elem.findall( 'param' ):
-                    param_name = param_elem.get( 'name', None )
-                    param_value = param_elem.text
-                    if param_name and param_value:
-                        params_str += '%s=%s,' % ( param_name, param_value )
-                fabfiles_dict[ 'fabfile' ] = fabfile_name
-                fabfiles_dict[ 'method' ] = method_name
-                fabfiles_dict[ 'params' ] = params_str.rstrip( ',' )
-        if fabfiles_dict:
-            if proprietary:
-                key = 'proprietary_fabfiles'
-            else:
-                key = 'fabfiles'
-            requirements_dict[ key ] = fabfiles_dict
-    return requirements_dict
 def generate_metadata_using_disk_files( toolbox, relative_install_dir, repository_clone_url ):
     """Generate metadata using only the repository files on disk - files are not retrieved from the repository manifest."""
     metadata_dict = {}
@@ -1194,7 +1158,7 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
         message = str( e )
         error = True
     return error, message
-def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies=None ):
+def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies ):
     """
     Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation
     methods in Galaxy's tool_dependencies module.  In the future, proprietary fabric scripts contained in the repository will be supported.
@@ -1202,8 +1166,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     will be installed in:
     ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repo_owner>/<repo_name>/<repo_installed_changeset_revision>
     """
-    status = 'done'
-    message = ''
+    installed_tool_dependencies = []
     # Parse the tool_dependencies.xml config.
     tree = ElementTree.parse( tool_dependencies_config )
     root = tree.getroot()
@@ -1214,7 +1177,8 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
             package_name = elem.get( 'name', None )
             package_version = elem.get( 'version', None )
             if package_name and package_version:
-                can_install = True
+                # The value of tool_dependencies will be None only when this method is called by the InstallManager.  In that case, tool
+                # dependency installation is not ajaxian, so the ToolDependency objects do not yet exist.
                 if tool_dependencies:
                     # Only install the package if it is not already installed.
                     can_install = False
@@ -1223,12 +1187,14 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                             can_install = tool_dependency.status in [ app.model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                                       app.model.ToolDependency.installation_status.UNINSTALLED ]
                             break
+                else:
+                    can_install = False
                 if can_install:
                     tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
-                    if tool_dependency and tool_dependency.status == app.model.ToolDependency.installation_status.ERROR:
-                        message = tool_dependency.error_message
-                        status = 'error'
-    return status, message
+                    if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
+                                                                       app.model.ToolDependency.installation_status.ERROR ]:
+                        installed_tool_dependencies.append( tool_dependency )
+    return installed_tool_dependencies
 def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     """
     Using the list of tool_version_dicts retrieved from the tool shed (one per changeset revison up to the currently installed changeset revision),

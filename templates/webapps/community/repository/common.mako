@@ -111,13 +111,14 @@
                                 %for dependency_key, requirements_dict in tool_dependencies.items():
                                     <%
                                         name = requirements_dict[ 'name' ]
-                                        type = requirements_dict[ 'type' ]
                                         version = requirements_dict[ 'version' ]
+                                        type = requirements_dict[ 'type' ]
+
                                     %>
                                     <tr>
                                         <td>${name}</td>
-                                        <td>${type}</td>
                                         <td>${version}</td>
+                                        <td>${type}</td>
                                     </tr>
                                 %endfor
                             </table>

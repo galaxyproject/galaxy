@@ -113,6 +113,11 @@ class ToolDependencyGrid( grids.Grid ):
     use_paging = False
     columns = [
         NameColumn( "Name",
+                    link=( lambda item: iff( item.status in \
+                                             [ model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                               model.ToolDependency.installation_status.INSTALLING,
+                                               model.ToolDependency.installation_status.UNINSTALLED ], \
+                                             None, dict( action="manage_tool_dependencies", operation='browse', id=item.id ) ) ),
                     filterable="advanced" ),
         VersionColumn( "Version",
                        filterable="advanced" ),
@@ -130,8 +135,17 @@ class ToolDependencyGrid( grids.Grid ):
                              allow_multiple=True,
                              allow_popup=False,
                              condition=( lambda item: item.status in [ model.ToolDependency.installation_status.INSTALLED,
-                                                                      model.ToolDependency.installation_status.ERROR ] ) )
+                                                                       model.ToolDependency.installation_status.ERROR ] ) )
     ]
+    def build_initial_query( self, trans, **kwd ):
+        tool_dependency_ids = kwd.get( 'tool_dependency_ids', None )
+        if tool_dependency_ids:
+            clause_list = []
+            for tool_dependency_id in tool_dependency_ids:
+                clause_list.append( self.model_class.table.c.id == trans.security.decode_id( tool_dependency_id ) )
+            return trans.sa_session.query( self.model_class ) \
+                                   .filter( or_( *clause_list ) )
+        return trans.sa_session.query( self.model_class )
     def apply_query_filter( self, trans, query, **kwd ):
         tool_dependency_id = kwd.get( 'tool_dependency_id', None )
         if not tool_dependency_id:
@@ -363,6 +377,7 @@ class AdminToolshed( AdminGalaxy ):
     def initiate_tool_dependency_installation( self, trans, tool_dependencies ):
         """Install specified dependencies for repository tools."""
         # Get the tool_shed_repository from one of the tool_dependencies.
+        message = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
         work_dir = make_tmp_directory()
         # Get the tool_dependencies.xml file from the repository.
@@ -371,17 +386,23 @@ class AdminToolshed( AdminGalaxy ):
                                                                tool_shed_repository,
                                                                tool_shed_repository.changeset_revision,
                                                                work_dir )
-        status, message = handle_tool_dependencies( app=trans.app,
-                                                    tool_shed_repository=tool_shed_repository,
-                                                    tool_dependencies_config=tool_dependencies_config,
-                                                    tool_dependencies=tool_dependencies )
+        installed_tool_dependencies = handle_tool_dependencies( app=trans.app,
+                                                                tool_shed_repository=tool_shed_repository,
+                                                                tool_dependencies_config=tool_dependencies_config,
+                                                                tool_dependencies=tool_dependencies )
+        for installed_tool_dependency in installed_tool_dependencies:
+            if installed_tool_dependency.status == trans.app.model.ToolDependency.installation_status.ERROR:
+                message += '  %s' % installed_tool_dependency.error_message
         try:
             shutil.rmtree( work_dir )
         except:
             pass
         tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in tool_dependencies ]
-        if not message:
-            message = "Installed tool dependencies: %s" % ','.join( td.name for td in tool_dependencies )
+        if message:
+            status = 'error'
+        else:
+            message = "Installed tool dependencies: %s" % ','.join( td.name for td in installed_tool_dependencies )
+            status = 'done'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='manage_tool_dependencies',
                                                           tool_dependency_ids=tool_dependency_ids,

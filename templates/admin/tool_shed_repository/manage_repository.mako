@@ -88,6 +88,7 @@
                         <td><b>name</b></td>
                         <td><b>version</b></td>
                         <td><b>type</b></td>
+                        <td><b>status</b></td>
                     </tr>
                     %for tool_dependency in missing_tool_dependencies:
                         <tr>
@@ -98,6 +99,7 @@
                             </td>
                             <td>${tool_dependency.version}</td>
                             <td>${tool_dependency.type}</td>
+                            <td>${tool_dependency.status}</td>
                         </tr>
                     %endfor
                 </table>

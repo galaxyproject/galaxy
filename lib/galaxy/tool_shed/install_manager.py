@@ -149,6 +149,11 @@ class InstallManager( object ):
                                                                       repository_clone_url,
                                                                       metadata_dict,
                                                                       dist_to_shed=True )
+        if 'tool_dependencies' in metadata_dict:
+            # All tool_dependency objects must be created before the tools are processed no matter whether tool dependencies are going to be installed.
+            tool_dependencies = create_tool_dependency_objects( self.app, tool_shed_repository, installed_changeset_revision )
+        else:
+            tool_dependencies = None
         if 'tools' in metadata_dict:
             work_dir = make_tmp_directory()
             repository_tools_tups = get_repository_tools_tups( self.app, metadata_dict )
@@ -165,7 +170,7 @@ class InstallManager( object ):
                 repository_tools_tups, sample_files_copied = handle_missing_index_file( self.app, self.tool_path, sample_files, repository_tools_tups )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
                 copy_sample_files( self.app, sample_files, sample_files_copied=sample_files_copied )
-                if install_dependencies and 'tool_dependencies' in metadata_dict:
+                if install_dependencies and tool_dependencies and 'tool_dependencies' in metadata_dict:
                     # Get the tool_dependencies.xml file from the repository.
                     tool_dependencies_config = get_config_from_repository( self.app,
                                                                            'tool_dependencies.xml',
@@ -173,12 +178,14 @@ class InstallManager( object ):
                                                                            installed_changeset_revision,
                                                                            work_dir )
                     # Install tool dependencies.
-                    status, message = handle_tool_dependencies( app=self.app,
-                                                                tool_shed_repository=tool_shed_repository,
-                                                                tool_dependencies_config=tool_dependencies_config )
-                    if status != 'done' and message:
-                        print 'The following error occurred from the InstallManager while installing tool dependencies:'
-                        print message
+                    installed_tool_dependencies = handle_tool_dependencies( app=self.app,
+                                                                            tool_shed_repository=tool_shed_repository,
+                                                                            tool_dependencies_config=tool_dependencies_config,
+                                                                            tool_dependencies=tool_dependencies )
+                    for installed_tool_dependency in installed_tool_dependencies:
+                        if installed_tool_dependency.status == self.app.model.ToolDependency.installation_status.ERROR:
+                            print '\nThe following error occurred from the InstallManager while installing tool dependency ', installed_tool_dependency.name, ':'
+                            print installed_tool_dependency.error_message, '\n\n'
                 add_to_tool_panel( self.app,
                                    repository_name,
                                    repository_clone_url,
