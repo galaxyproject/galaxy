@@ -33,10 +33,15 @@
        </div>
    </div>
 </%def>
-<p>The genome build and any selected indexers have been added to the job queue. Below you will see the status of each job.</p>
+<p>${name} been added to the job queue
+    %if indexers:
+        to be indexed with ${indexers}
+    %endif
+    </p>
 <table id="jobStatus">
 </table>
-<a href="${h.url_for( controller='data_admin', action='manage_data' )}">Return to the download form</a>
+<p><a href="${h.url_for( controller='data_admin', action='manage_data' )}">Overview</a>.</p>
+<p><a href="${h.url_for( controller='data_admin', action='add_genome' )}">Download form</a>.</p>
 <script type="text/javascript">
     jobs = ${jsonjobs}
     finalstates = new Array('done', 'error', 'ok');

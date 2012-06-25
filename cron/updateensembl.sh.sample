@@ -1,0 +1,42 @@
+#!/bin/sh 
+#
+# Script to update Ensembl shared data tables.  The idea is to update, but if
+# the update fails, not replace current data/tables with error
+# messages.
+
+# Edit this line to refer to galaxy's path:
+GALAXY=/path/to/galaxy
+PYTHONPATH=${GALAXY}/lib
+export PYTHONPATH
+
+# setup directories
+echo "Creating required directories."
+DIRS="
+${GALAXY}/tool-data/shared/ensembl
+${GALAXY}/tool-data/shared/ensembl/new
+"
+for dir in $DIRS; do
+    if [ ! -d $dir ]; then
+        echo "Creating $dir"
+        mkdir $dir
+    else
+        echo "$dir already exists, continuing."
+    fi
+done
+
+date
+echo "Updating Ensembl shared data tables."
+
+# Try to build "builds.txt"
+echo "Updating builds.txt"
+python ${GALAXY}/cron/get_ensembl.py > ${GALAXY}/tool-data/shared/ensembl/new/builds.txt
+if [ $? -eq 0 ]
+then
+    diff ${GALAXY}/tool-data/shared/ensembl/new/builds.txt ${GALAXY}/tool-data/shared/ensembl/builds.txt > /dev/null 2>&1
+    if [ $? -ne 0 ]
+    then
+        cp -f ${GALAXY}/tool-data/shared/ensembl/new/builds.txt ${GALAXY}/tool-data/shared/ensembl/builds.txt
+    fi
+else
+    echo "Failed to update builds.txt" >&2
+fi

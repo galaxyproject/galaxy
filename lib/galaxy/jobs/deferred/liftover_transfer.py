@@ -40,7 +40,7 @@ class LiftOverTransferPlugin( DataTransfer ):
         deferred = trans.app.model.DeferredJob( state = self.app.model.DeferredJob.states.NEW, plugin = 'LiftOverTransferPlugin', params = params )
         self.sa_session.add( deferred )
         self.sa_session.flush()
-        return deferred.id
+        return job.id
         
     def check_job( self, job ):
         if job.params['type'] == 'init_transfer': 
@@ -98,7 +98,9 @@ class LiftOverTransferPlugin( DataTransfer ):
         transfer = job.transfer_job
         if params[ 'type' ] == 'extract_transfer':
             CHUNK_SIZE = 2**20
-            destpath = os.path.join( self.app.config.get( 'genome_data_path', 'tool-data/genome' ), job.params[ 'dbkey' ], 'liftOver' )
+            destpath = os.path.join( self.app.config.get( 'genome_data_path', 'tool-data/genome' ), source, 'liftOver' )
+            if not os.path.exists( destpath ):
+                os.makedirs( destpath )
             destfile = job.params[ 'destfile' ]
             destfilepath = os.path.join( destpath, destfile )
             tmpprefix = '%s_%s_download_unzip_' % ( job.params['dbkey'], job.params[ 'transfer_job_id' ] )

@@ -10,7 +10,8 @@ from __future__ import with_statement
 import optparse, sys, os, tempfile, time, subprocess, shlex, json, tarfile, shutil
 
 class ManagedIndexer():
-    def __init__( self, output_file, infile, workingdir, rsync_url ):
+    def __init__( self, output_file, infile, workingdir, rsync_url, tooldata ):
+        self.tooldatapath = os.path.abspath( tooldata )
         self.workingdir = os.path.abspath( workingdir )
         self.outfile = open( os.path.abspath( output_file ), 'w' )
         self.basedir = os.path.split( self.workingdir )[0]
@@ -44,11 +45,12 @@ class ManagedIndexer():
                 with WithChDir( self.workingdir ):
                     self._log( 'Running indexer %s.' % indexer )
                     result = getattr( self, self.indexers[ indexer ] )()
-                if result is None:
-                    self._log( 'Error running indexer %s.' % indexer )
+                if result in [ None, False ]:
+                    self._log( 'Error running indexer %s, %s' % ( indexer, result ) )
                     self._flush_files()
                     return True
                 else:
+                    self._log( self.locations )
                     self._log( 'Indexer %s completed successfully.' % indexer )
                     self._flush_files()
                 
@@ -93,6 +95,7 @@ class ManagedIndexer():
                 os.remove( self.fafile )
                 return self._bwa_cs()
             else:
+                self._log( 'BWA (base) exited with code %s' % result )
                 return False
     
     def _bwa_cs( self ):
@@ -109,6 +112,7 @@ class ManagedIndexer():
                         self.locations[ 'cs' ].append( self.fafile )
                         os.remove( self.fafile )
                     else:
+                        self._log( 'BWA (color) exited with code %s' % result )
                         return False
                 else:
                     self.locations[ 'cs' ].append( self.fafile )
@@ -136,6 +140,7 @@ class ManagedIndexer():
                 os.remove( self.fafile )
                 return self._bowtie_cs()
             else:
+                self._log( 'Bowtie (base) exited with code %s' % result )
                 return False
             
     def _bowtie_cs( self ):
@@ -149,6 +154,7 @@ class ManagedIndexer():
                 if result == 0:
                     self.locations[ 'cs' ].append( self.genome )
                 else:
+                    self._log( 'Bowtie (color) exited with code %s' % result )
                     return False
             os.remove( os.path.join( indexdir, self.fafile ) )
         else:
@@ -174,6 +180,7 @@ class ManagedIndexer():
             os.remove( self.fafile )
             return True
         else:
+            self._log( 'Bowtie2 exited with code %s' % result )
             return False
     
     def _twobit( self ):
@@ -193,6 +200,7 @@ class ManagedIndexer():
                 os.remove( self.fafile )
                 return True
             else:
+                self._log( 'faToTwoBit exited with code %s' % result )
                 return False
     
     def _perm( self ):
@@ -208,12 +216,15 @@ class ManagedIndexer():
                 command = shlex.split("PerM %s %s --readFormat fastq --seed %s -m -s %s" % (self.fafile, read_length, seed, index))
                 result = subprocess.call( command )
                 if result != 0:
+                    self._log( 'PerM (base) exited with code %s' % result )
                     return False
             self.locations[ 'nt' ].append( [ key, desc, index ] )
         os.remove( self.fafile )
         return self._perm_cs()
 
     def _perm_cs( self ):
+        genome = self.genome
+        read_length = 50
         if not os.path.exists( 'cs' ):
             os.makedirs( 'cs' )
         with WithChDir( 'cs' ):
@@ -223,12 +234,13 @@ class ManagedIndexer():
                 desc = '%s: seed=%s, read length=%s' % (genome, seed, read_length)
                 index = "%s_color_%s_%s.index" % (genome, seed, read_length)
                 if not os.path.exists( index ):
-                    command = shlex.split("PerM %s %s --readFormat csfastq --seed %s -m -s %s" % (local_ref, read_length, seed, index))
+                    command = shlex.split("PerM %s %s --readFormat csfastq --seed %s -m -s %s" % (self.fafile, read_length, seed, index))
                     result = subprocess.call( command, stderr=self.logfile, stdout=self.logfile )
                 if result != 0:
+                    self._log( 'PerM (color) exited with code %s' % result )
                     return False
                 self.locations[ 'cs' ].append( [ key, desc, index ] )
-            os.remove( local_ref )
+            os.remove( self.fafile )
         temptar = tarfile.open( 'cs.tar', 'w' )
         temptar.add( 'cs' )
         temptar.close()
@@ -241,17 +253,19 @@ class ManagedIndexer():
             self.locations[ 'nt' ].append( self.fafile )
             return True
         local_ref = self.fafile
-        srma = 'tool-data/shared/jars/srma.jar'
+        srma = os.path.abspath( os.path.join( self.tooldatapath, 'shared/jars/picard/CreateSequenceDictionary.jar' ) )
         genome = os.path.splitext( self.fafile )[0]
         self._check_link()
         if not os.path.exists( '%s.fai' % self.fafile ) and not os.path.exists( '%s.fai' % self.genome ):
             command = shlex.split( 'samtools faidx %s' % self.fafile )
             subprocess.call( command, stderr=self.logfile  )
-        command = shlex.split( "java -cp %s net.sf.picard.sam.CreateSequenceDictionary R=%s O=%s/%s.dict URI=%s" \
-                     % ( srma, local_ref, os.curdir, genome, local_ref ) )
+        command = shlex.split( "java -jar %s R=%s O=%s.dict URI=%s" \
+                     % ( srma, local_ref, genome, local_ref ) )
         if not os.path.exists( '%s.dict' % self.genome ):
             result = subprocess.call( command, stderr=self.logfile, stdout=self.logfile )
+            self._log( ' '.join( command ) )
             if result != 0:
+                self._log( 'Picard exited with code %s' % result )
                 return False
         self.locations[ 'nt' ].append( self.fafile )
         os.remove( self.fafile )
@@ -260,17 +274,20 @@ class ManagedIndexer():
     def _sam( self ):
         local_ref = self.fafile
         local_file = os.path.splitext( self.fafile )[ 0 ]
+        print 'Trying rsync'
         result = self._do_rsync( '/sam_index/' )
         if result == 0 and ( os.path.exists( '%s.fai' % self.fafile ) or os.path.exists( '%s.fai' % self.genome ) ):
-            self.locations[ 'nt' ].append( local_ref )
+            self.locations[ 'nt' ].append( '%s.fai' % local_ref )
             return True
         self._check_link()
+        print 'Trying indexer'
         command = shlex.split("samtools faidx %s" % local_ref)
-        result = subprocess.call( command, stderr=self.logfile  )
+        result = subprocess.call( command, stderr=self.logfile, stdout=self.logfile )
         if result != 0:
+            self._log( 'SAM exited with code %s' % result )
             return False
         else:
-            self.locations[ 'nt' ].append( local_ref )
+            self.locations[ 'nt' ].append( '%s.fai' % local_ref )
             os.remove( local_ref )
             return True
 
@@ -288,9 +305,9 @@ if __name__ == "__main__":
     # Parse command line.
     parser = optparse.OptionParser()
     (options, args) = parser.parse_args()    
-    indexer, infile, outfile, working_dir, rsync_url = args
+    indexer, infile, outfile, working_dir, rsync_url, tooldata = args
     
     # Create archive.
-    idxobj = ManagedIndexer( outfile, infile, working_dir, rsync_url )
+    idxobj = ManagedIndexer( outfile, infile, working_dir, rsync_url, tooldata )
     idxobj.run_indexer( indexer )
     

@@ -13,13 +13,12 @@ log = logging.getLogger(__name__)
 
 def load_genome_index_tools( toolbox ):
     """ Adds tools for indexing genomes via the main job runner. """
-    # Use same process as that used in load_external_metadata_tool; see that 
-    # method for why create tool description files on the fly.
+    # Create XML for loading the tool.
     tool_xml_text = """
         <tool id="__GENOME_INDEX__" name="Index Genome" version="0.1" tool_type="genome_index">
           <type class="GenomeIndexTool" module="galaxy.tools"/>
           <action module="galaxy.tools.actions.index_genome" class="GenomeIndexToolAction"/>
-          <command>$__GENOME_INDEX_COMMAND__ $output_file $output_file.files_path $__app__.config.rsync_url</command>
+          <command>$__GENOME_INDEX_COMMAND__ $output_file $output_file.files_path $__app__.config.rsync_url "$__app__.config.tool_data_path"</command>
           <inputs>
             <param name="__GENOME_INDEX_COMMAND__" type="hidden"/>
           </inputs>
@@ -29,7 +28,7 @@ def load_genome_index_tools( toolbox ):
         </tool>
         """
         
-    # Load export tool.
+    # Load index tool.
     tmp_name = tempfile.NamedTemporaryFile()
     tmp_name.write( tool_xml_text )
     tmp_name.flush()
@@ -166,6 +165,10 @@ class GenomeIndexToolWrapper( object ):
                         self._check_link( fasta, target )
             for line in location:
                 self._add_line( line[ 'file' ], line[ 'line' ] )
+            deferred.state = app.model.DeferredJob.states.OK
+            sa_session.add( deferred )
+            sa_session.flush()
+
         
     def _check_link( self, targetfile, symlink ):
         target = os.path.relpath( targetfile, os.path.dirname( symlink ) )

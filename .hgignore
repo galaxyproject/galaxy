@@ -50,7 +50,9 @@ tool-data/gd.species.txt
 tool-data/shared/igv/igv_build_sites.txt
 tool-data/shared/rviewer/rviewer_build_sites.txt
 tool-data/shared/ucsc/builds.txt
+tool-data/shared/ensembl/builds.txt
 tool-data/*.loc
+tool-data/genome/*
 
 # Test output
 run_functional_tests.html
@@ -73,3 +75,4 @@ static/june_2007_style/blue/base_sprites.less
 .DS_Store
 *.rej
 *~
+

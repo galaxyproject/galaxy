@@ -799,6 +799,14 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         dbnames.extend( util.dbnames )
         return dbnames
 
+    @property
+    def ucsc_builds( self ):
+        return util.dlnames['ucsc']
+    
+    @property
+    def ensembl_builds( self ):
+        return util.dlnames['ensembl']
+    
     def db_dataset_for( self, dbkey ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
@@ -957,6 +965,14 @@ class GalaxyWebAPITransaction( GalaxyWebTransaction ):
                 dbnames.append((key, "%s (%s) [Custom]" % (chrom_dict['name'], key) ))
         dbnames.extend( util.dbnames )
         return dbnames
+    
+    @property
+    def ucsc_builds( self ):
+        return util.dlnames['ucsc']
+
+    @property
+    def ensembl_builds( self ):
+        return util.dlnames['ensembl']
 
 class GalaxyWebUITransaction( GalaxyWebTransaction ):
     def __init__( self, environ, app, webapp, session_cookie ):

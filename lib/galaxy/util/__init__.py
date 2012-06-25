@@ -407,6 +407,22 @@ def read_dbnames(filename):
         db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
     return db_names
 
+def read_ensembl( filename, ucsc ):
+    """ Read Ensembl build names from file """
+    ucsc_builds = []
+    for build in ucsc:
+        ucsc_builds.append( build[0] )
+    ensembl_builds = list()
+    try:
+        for line in open( filename ):
+            if line[0:1] in [ '#', '\t' ]: continue
+            fields = line.replace("\r","").replace("\n","").split("\t")
+            if fields[0] in ucsc_builds: continue
+            ensembl_builds.append( dict( dbkey=fields[0], release=fields[1], name=fields[2].replace( '_', ' ' ) ) )
+    except Exception, e:
+        print "ERROR: Unable to read builds file:", e
+    return ensembl_builds
+
 def read_build_sites( filename, check_builds=True ):
     """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
     build_sites = []
@@ -634,11 +650,15 @@ def send_mail( frm, to, subject, body, config ):
     s.quit()
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
+
 # The dbnames list is used in edit attributes and the upload tool
 dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) )
+ucsc_names = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "publicbuilds.txt" ) )
+ensembl_names = read_ensembl( os.path.join( galaxy_root_path, "tool-data", "shared", "ensembl", "builds.txt" ), ucsc_names )
 ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
 gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
 genetrack_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "genetrack", "genetrack_sites.txt" ), check_builds=False )
+dlnames = dict(ucsc=ucsc_names, ensembl=ensembl_names)
 
 def galaxy_directory():
     return os.path.abspath(galaxy_root_path)

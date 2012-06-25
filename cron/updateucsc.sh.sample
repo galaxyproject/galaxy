@@ -28,6 +28,20 @@ done
 date
 echo "Updating UCSC shared data tables."
 
+# Try to build "publicbuilds.txt"
+echo "Updating publicbuilds.txt"
+python ${GALAXY}/cron/parse_publicbuilds.py > ${GALAXY}/tool-data/shared/ucsc/new/publicbuilds.txt
+if [ $? -eq 0 ]
+then
+    diff ${GALAXY}/tool-data/shared/ucsc/new/publicbuilds.txt ${GALAXY}/tool-data/shared/ucsc/publicbuilds.txt > /dev/null 2>&1
+    if [ $? -ne 0 ]
+    then
+        cp -f ${GALAXY}/tool-data/shared/ucsc/new/publicbuilds.txt ${GALAXY}/tool-data/shared/ucsc/publicbuilds.txt
+    fi
+else
+    echo "Failed to update publicbuilds.txt" >&2
+fi
+
 # Try to build "builds.txt"
 echo "Updating builds.txt"
 python ${GALAXY}/cron/parse_builds.py > ${GALAXY}/tool-data/shared/ucsc/new/builds.txt

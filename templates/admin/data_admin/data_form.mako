@@ -62,7 +62,7 @@
         <div class="form-row">
             <label for="indexers">Indexers</label>
             <select name="indexers" multiple style="width: 200px; height: 125px;">
-                <option value="2bit">TwoBit</option>
+                <option value="2bit" selected>TwoBit</option>
                 <option value="bowtie">Bowtie</option>
                 <option value="bowtie2">Bowtie 2</option>
                 <option value="bwa">BWA</option>
@@ -75,7 +75,7 @@
             </div>
         </div>
         <h2>Parameters</h2>
-        <div id="params_generic" class="params-block" style="display: block;">
+        <div id="params_Broad" class="params-block" style="display: block;">
             <div class="form-row">
                 <label for="longname">Internal Name</label>
                 <input name="longname" type="text" label="Internal Name" />
@@ -88,55 +88,47 @@
             </div>
             <div id="dlparams">
                 <div class="form-row">
-                    <label for="dbkey">External Name</label>
-                    <input name="dbkey" type="text" label="Genome Unique Name" />
+                    <label for="broad_dbkey">External Name</label>
+                    <input name="broad_dbkey" type="text" label="Genome Unique Name" />
                     <div style="clear: both;">&nbsp;</div>
                 </div>
             </div>
         </div>
-        <div id="params_ensembl" class="params-block">
+        <div id="params_NCBI" class="params-block" style="display: block;">
             <div class="form-row">
-                <label for="ensembl_section">Section</label>
-                <input name="ensembl_section" type="text" label="Section" />
+                <label for="longname">Internal Name</label>
+                <input name="longname" type="text" label="Internal Name" />
                 <div style="clear: both;">&nbsp;</div>
-                <div class="toolParamHelp" style="clear: both;">
-                    Ensembl section, either standard or one of plants, protists, metazoa, fungi, bacteria.
-                </div>
             </div>
             <div class="form-row">
-                <label for="release_number">Release Number</label>
-                <input name="release_number" type="text" label="Release" />
+                <label for="uniqid">Internal Unique Identifier</label>
+                <input name="uniqid" type="text" label="Internal Identifier" />
                 <div style="clear: both;">&nbsp;</div>
-                <div class="toolParamHelp" style="clear: both;">
-                    Release number, e.g. ftp://ftp.ensembl.org/pub/release-<strong style="color: red;">56</strong>/fasta/callithrix_jacchus/dna/Callithrix_jacchus.calJac3.56.dna.toplevel.fa.gz
-                </div>
             </div>
-            <div class="form-row">
-                <label for="organism">Organism</label>
-                <input name="organism" type="text" label="Organism" />
-                <div style="clear: both;">&nbsp;</div>
-                <div class="toolParamHelp" style="clear: both;">
-                    Organism long name, e.g. ftp://ftp.ensembl.org/pub/release-56/fasta/callithrix_jacchus/dna/<strong style="color: red;">Callithrix_jacchus</strong>.calJac3.56.dna.toplevel.fa.gz
-                </div>
-            </div>
-            <div class="form-row">
-                <label for="name">Name</label>
-                <input name="name" type="text" label="name" />
-                <div style="clear: both;">&nbsp;</div>
-                <div class="toolParamHelp" style="clear: both;">
-                    Organism short name, e.g. ftp://ftp.ensembl.org/pub/release-56/fasta/callithrix_jacchus/dna/Callithrix_jacchus.<strong style="color: red;">calJac3</strong>.56.dna.toplevel.fa.gz
-                </div>
-            </div>
-            <div class="form-row">
-                <label for="release2">Release ID</label>
-                <input name="release2" type="text" label="Release ID" />
-                <div style="clear: both;">&nbsp;</div>
-                <div class="toolParamHelp" style="clear: both;">
-                    Release ID, e.g. ftp://ftp.ensembl.org/pub/release-56/fasta/callithrix_jacchus/dna/Callithrix_jacchus.calJac3.<strong style="color: red;">56</strong>.dna.toplevel.fa.gz
+            <div id="dlparams">
+                <div class="form-row">
+                    <label for="ncbi_dbkey">External Name</label>
+                    <input name="ncbi_dbkey" type="text" label="Genome Unique Name" />
+                    <div style="clear: both;">&nbsp;</div>
                 </div>
             </div>
         </div>
-        <div id="params_ucsc" class="params-block">
+        <div id="params_Ensembl" class="params-block">
+            <div class="form-row">
+                <label>Genome:</label>
+                <div class="form-row-input">
+                    <select name="ensembl_dbkey" last_selected_value="?">
+                        %for dbkey in ensembls:
+                            <option value="${dbkey['dbkey']}">${dbkey['dbkey']} - ${dbkey['name']}</option>
+                        %endfor
+                    </select>
+                </div>
+                <div class="toolParamHelp" style="clear: both;">
+                    If you can't find the build you want in this list, &lt;insert link to instructions here&gt;
+                </div>
+            </div>
+        </div>
+        <div id="params_UCSC" class="params-block">
             <div class="form-row">
                 <label>Genome:</label>
                 <div class="form-row-input">
@@ -166,23 +158,11 @@
                 checkDataSource();
             });
             function checkDataSource() {
-                var ds = $('#datasource').val()
+                var ds = $('#datasource').val();
                 $('.params-block').each(function() {
                     $(this).hide();
                 });
-                switch (ds) {
-                    case 'UCSC':
-                        $('#params_ucsc').show();
-                        break;
-                    case 'Ensembl':
-                        $('#params_ensembl').show();
-                        break;
-                    case 'NCBI':
-                    case 'Broad':
-                    default:
-                        $('#params_generic').show();
-                        break;
-                }
+                $('#params_' + ds).show();
             };
         </script>
     </form>

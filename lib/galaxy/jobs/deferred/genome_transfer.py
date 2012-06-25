@@ -78,10 +78,11 @@ class GenomeTransferPlugin( DataTransfer ):
             
     def get_job_status( self, jobid ):
         job = self.sa_session.query( self.app.model.DeferredJob ).get( int( jobid ) )
-        if not hasattr( job, 'transfer_job' ):
-            job.transfer_job = self.sa_session.query( self.app.model.TransferJob ).get( int( job.params[ 'transfer_job_id' ] ) )
-        else:
-            self.sa_session.refresh( job.transfer_job )
+        if 'transfer_job_id' in job.params:
+            if not hasattr( job, 'transfer_job' ):
+                job.transfer_job = self.sa_session.query( self.app.model.TransferJob ).get( int( job.params[ 'transfer_job_id' ] ) )
+            else:
+                self.sa_session.refresh( job.transfer_job )
         return job
             
     def run_job( self, job ):
@@ -139,7 +140,6 @@ class GenomeTransferPlugin( DataTransfer ):
                     if not chunk:
                         break
                     os.write( fd, chunk )
-                    os.write( fd, '\n' )
                 os.close( fd )
                 compressed.close()
             elif data_type == 'bzip':
@@ -154,7 +154,6 @@ class GenomeTransferPlugin( DataTransfer ):
                     if not chunk:
                         break
                     os.write( fd, chunk )
-                    os.write( fd, '\n' )
                 os.close( fd )
                 compressed.close()
             elif data_type == 'zip':
@@ -177,7 +176,6 @@ class GenomeTransferPlugin( DataTransfer ):
                             if not chunk:
                                 break
                             os.write( fd, chunk )
-                            os.write( fd, '\n' )
                         zipped_file.close()
                     else:
                         try:
@@ -223,8 +221,8 @@ class GenomeTransferPlugin( DataTransfer ):
                 else:
                     job.state = self.app.model.DeferredJob.states.OK
                     self.sa_session.add( job )
-            return self.app.model.DeferredJob.states.OK
             self.sa_session.flush()
+            return self.app.model.DeferredJob.states.OK
                     
     def _check_compress( self, filepath ):
         retval = ''
