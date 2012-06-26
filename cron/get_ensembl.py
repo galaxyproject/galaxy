@@ -17,6 +17,7 @@ for res in dbs:
     for genome in genomes:
         builds[genome[0]] = dict( release=genome[3], species='%s (%s/%s)' % ( genome[1], genome[2], genome[0] ) )
 for build in builds.items():
-    lines.append( '\t'.join( [ build[0], '%d' % build[1]['release'], build[1]['species'] ] ) )
+    if build[0]:
+        lines.append( '\t'.join( [ build[0], '%d' % build[1]['release'], build[1]['species'] ] ) )
     
 print '\n'.join( lines )
