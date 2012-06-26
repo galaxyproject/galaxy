@@ -59,7 +59,7 @@
                     <form action="${h.url_for( controller='cloudlaunch', action='launch_instance' )}" method="post">
                     <div class="form-row">
                         <label for="id_cluster_name">Cluster Name</label>
-                        <input type="text" size="80" name="cluster_name" id="id_cluster_name"/><br/>
+                        <input type="text" size="40" name="cluster_name" id="id_cluster_name"/><br/>
                     </div>
                     <div class="form-row">
                         <label for="id_password">Password</label>
@@ -73,6 +73,14 @@
                         <label for="id_secret">Secret Key</label>
                         <input type="password" size="120" name="secret" id="id_secret"/><br/>
                     </div>
+                    %if share_string:
+                        <input type='hidden' name='share_string' value='${share_string}'/>
+                    %else:
+                    <div class="form-row">
+                        <label for="id_share_string">Instance Share String (optional)</label>
+                        <input type="text" size="120" name="share_string" id="id_share_string"/><br/>
+                    </div>
+                    %endif
                     <div class="form-row">
                         <label for="id_instance_type">Instance Type</label>
                         <select name="instance_type" id="id_instance_type">
