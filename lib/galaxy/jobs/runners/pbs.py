@@ -560,7 +560,7 @@ class PBSJobRunner( BaseJobRunner ):
 
     def fail_job( self, pbs_job_state ):
         """
-        Seperated out so we can use the worker threads for it.
+        Separated out so we can use the worker threads for it.
         """
         if pbs_job_state.stop_job:
             self.stop_job( self.sa_session.query( self.app.model.Job ).get( pbs_job_state.job_wrapper.job_id ) )
