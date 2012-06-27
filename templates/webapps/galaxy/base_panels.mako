@@ -184,7 +184,7 @@
     
     ## Logo, layered over tabs to be clickable
     <div class="title">
-        <a href="${app.config.get( 'logo_url', '/' )}">
+        <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
         <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
         Galaxy
         %if app.config.brand:
