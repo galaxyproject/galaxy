@@ -294,7 +294,8 @@ var ParamaMonsterTrackView = Backbone.View.extend({
                 icon_class: 'gear track-settings',
                 on_click: function () {
                     settings_div.toggle();
-                }
+                },
+                tipsy_config: { gravity: 's' }
             }
         ]);
         settings_td.prepend(icon_menu.$el);
@@ -390,7 +391,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
         var self = this,
             menu = create_icon_buttons_menu([
             {
-                title: 'Add',
+                title: 'Add parameter to tree',
                 icon_class: 'plus-button',
                 on_click: function () {
                     input.set('in_ptree', true);
@@ -400,7 +401,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
                 
             },
             {
-                title: 'Remove',
+                title: 'Remove parameter from tree',
                 icon_class: 'toggle',
                 on_click: function() {
                     // Remove parameter from tree params where name matches clicked paramter.
@@ -409,7 +410,10 @@ var ToolInputValOrSweepView = Backbone.View.extend({
                     single_input_row.show();
                 }
             }
-            ]);
+            ], 
+            {
+                tipsy_config: {gravity: 's'}
+            });
             this.$el.prepend(menu.$el);
 
         // Update input's min, max, number of samples as values change.

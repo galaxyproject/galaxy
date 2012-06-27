@@ -177,13 +177,13 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
                 window.location = "${h.url_for( controller='visualization', action='list' )}";
             } }
-        ]);
+        ], 
+        { 
+            tipsy_config: {gravity: 'n'}
+        });
         
         menu.$el.attr("style", "float: right");
         $("#center .unified-panel-header-inner").append(menu.$el);
-        
-        // Manual tipsy config because default gravity is S and cannot be changed.
-        $(".menu-button").tipsy( {gravity: 'n'} );
         
         // Hide bookmarks by default right now.
         parent.force_right_panel("hide"); 
