@@ -742,23 +742,24 @@ div.toolTitleNoSection{padding-bottom:5px;font-weight:bold;}
 .icon-button.tag--plus{background:url(fugue.png) no-repeat 0px -52px;}
 .icon-button.toggle-expand{background:url(fugue.png) no-repeat 0px -78px;}
 .icon-button.toggle{background:url(fugue.png) no-repeat 0px -104px;}
-.icon-button.arrow-circle{background:url(fugue.png) no-repeat 0px -130px;}
-.icon-button.chevron{background:url(fugue.png) no-repeat 0px -156px;}
-.icon-button.bug{background:url(fugue.png) no-repeat 0px -182px;}
-.icon-button.disk{background:url(fugue.png) no-repeat 0px -208px;}
-.icon-button.information{background:url(fugue.png) no-repeat 0px -234px;}
-.icon-button.annotate{background:url(fugue.png) no-repeat 0px -260px;}
-.icon-button.go-to-full-screen{background:url(fugue.png) no-repeat 0px -286px;}
-.icon-button.import{background:url(fugue.png) no-repeat 0px -312px;}
-.icon-button.plus-button{background:url(fugue.png) no-repeat 0px -338px;}
-.icon-button.plus-button:hover{background:url(fugue.png) no-repeat 0px -364px;}
-.icon-button.gear{background:url(fugue.png) no-repeat 0px -390px;}
-.icon-button.chart_curve{background:url(fugue.png) no-repeat 0px -416px;}
-.icon-button.disk--arrow{background:url(fugue.png) no-repeat 0px -442px;}
-.icon-button.disk--arrow:hover{background:url(fugue.png) no-repeat 0px -468px;}
-.icon-button.cross-circle{background:url(fugue.png) no-repeat 0px -494px;}
-.icon-button.cross-circle:hover{background:url(fugue.png) no-repeat 0px -520px;}
-.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -546px;}
+.icon-button.toggle:hover{background:url(fugue.png) no-repeat 0px -130px;}
+.icon-button.arrow-circle{background:url(fugue.png) no-repeat 0px -156px;}
+.icon-button.chevron{background:url(fugue.png) no-repeat 0px -182px;}
+.icon-button.bug{background:url(fugue.png) no-repeat 0px -208px;}
+.icon-button.disk{background:url(fugue.png) no-repeat 0px -234px;}
+.icon-button.information{background:url(fugue.png) no-repeat 0px -260px;}
+.icon-button.annotate{background:url(fugue.png) no-repeat 0px -286px;}
+.icon-button.go-to-full-screen{background:url(fugue.png) no-repeat 0px -312px;}
+.icon-button.import{background:url(fugue.png) no-repeat 0px -338px;}
+.icon-button.plus-button{background:url(fugue.png) no-repeat 0px -364px;}
+.icon-button.plus-button:hover{background:url(fugue.png) no-repeat 0px -390px;}
+.icon-button.gear{background:url(fugue.png) no-repeat 0px -416px;}
+.icon-button.chart_curve{background:url(fugue.png) no-repeat 0px -442px;}
+.icon-button.disk--arrow{background:url(fugue.png) no-repeat 0px -468px;}
+.icon-button.disk--arrow:hover{background:url(fugue.png) no-repeat 0px -494px;}
+.icon-button.cross-circle{background:url(fugue.png) no-repeat 0px -520px;}
+.icon-button.cross-circle:hover{background:url(fugue.png) no-repeat 0px -546px;}
+.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -572px;}
 div.historyItem-error .state-icon{background:url(history-states.png) no-repeat 0px 0px;}
 div.historyItem-empty .state-icon{background:url(history-states.png) no-repeat 0px -25px;}
 div.historyItem-queued .state-icon{background:url(history-states.png) no-repeat 0px -50px;}

@@ -133,8 +133,9 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Us
 
         # Run tool on region if region is specificied.
         run_on_regions = False
-        regions = from_json_string( payload.get( 'regions', None ) )
+        regions = payload.get( 'regions', None )
         if regions:
+            regions = from_json_string( regions )
             if isinstance( regions, dict ):
                 # Regions is a single region.
                 regions = [ GenomeRegion.from_dict( regions ) ]
@@ -256,7 +257,8 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Us
         # Set input datasets for tool. If running on regions, extract and use subset
         # when possible.
         #
-        regions_str = ",".join( [ str( r ) for r in regions ] )
+        if run_on_regions:
+            regions_str = ",".join( [ str( r ) for r in regions ] )
         for jida in original_job.input_datasets:
             # If param set previously by config actions, do nothing.
             if jida.name in params_set:

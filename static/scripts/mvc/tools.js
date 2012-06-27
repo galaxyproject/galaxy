@@ -52,6 +52,26 @@ var Tool = BaseModel.extend({
     ],
     
     urlRoot: galaxy_paths.get('tool_url'),
+
+    /**
+     * Returns object copy, optionally including only inputs that can be sampled.
+     */
+    copy: function(only_samplable_inputs) {
+        var copy = new Tool(this.toJSON());
+
+        // Return only samplable inputs if flag is set.
+        if (only_samplable_inputs) {
+            var valid_inputs = new Backbone.Collection();
+            copy.get('inputs').each(function(input) {
+                if (input.get_samples()) {
+                    valid_inputs.push(input);
+                }
+            });
+            copy.set('inputs', valid_inputs);
+        }
+
+        return copy;
+    },
         
     apply_search_results: function(results) {
         ( _.indexOf(results, this.attributes.id) !== -1 ? this.show() : this.hide() );
@@ -81,7 +101,7 @@ var Tool = BaseModel.extend({
      * Run tool; returns a Deferred that resolves to the tool's output(s).
      */
     run: function() {
-        return this._run()
+        return this._run();
     },
     
     /**
@@ -94,6 +114,17 @@ var Tool = BaseModel.extend({
             regions: JSON.stringify(regions) 
         });
     },
+
+    /**
+     * Returns input dict for tool's inputs.
+     */
+    get_inputs_dict: function() {
+        var input_dict = {};
+        this.get('inputs').each(function(input) {
+            input_dict[input.get('name')] = input.get('value');
+        });
+        return input_dict;
+    },
     
     /**
      * Run tool; returns a Deferred that resolves to the tool's output(s).
@@ -102,13 +133,9 @@ var Tool = BaseModel.extend({
     _run: function(additional_params) {
         // Create payload.
         var payload = _.extend({
-                tool_id: this.id
-            }, additional_params),
-            input_dict = {};
-        this.get('inputs').each(function(input) {
-            input_dict[input.get('name')] = input.get('value');
-        });
-        payload.inputs = input_dict;
+                tool_id: this.id,
+                inputs: this.get_inputs_dict()
+            }, additional_params);
 
         // Because job may require indexing datasets, use server-side
         // deferred to ensure that job is run. Also use deferred that
@@ -145,21 +172,27 @@ var ToolInput = Backbone.RelationalModel.extend({
         label: null,
         type: null,
         value: null,
+        num_samples: 5
     },
     
     initialize: function() {
         this.attributes.html = unescape(this.attributes.html);
     },
+
+    copy: function() {
+        return new ToolInput(this.toJSON());
+    },
     
     /**
      * Returns samples from a tool input.
      */
-    get_samples: function(num_samples) {
-        var 
-            type = this.get('type'),
-            samples = []
+    get_samples: function() {
+        var type = this.get('type'),
+            samples = null;
         if (type === 'number') {
-            samples = d3.scale.linear().domain([this.get('min'), this.get('max')]).ticks(num_samples);
+            samples = d3.scale.linear()
+                        .domain([this.get('min'), this.get('max')])
+                        .ticks(this.get('num_samples'));
         }
         else if (type === 'select') {
             samples = _.map(this.get('options'), function(option) {
@@ -167,22 +200,9 @@ var ToolInput = Backbone.RelationalModel.extend({
             });
         }
         
-        return new ParamSamples({
-            param: this,
-            samples: samples
-        });
+        return samples;
     }   
 });
-
-/**
- * A tool and parameter samples.
- */
-var ParamSamples = Backbone.Model.extend({
-    defaults: {
-        param: null,
-        samples: null
-    }
-})
 
 /**
  * Wrap collection of tools for fast access/manipulation.

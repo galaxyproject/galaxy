@@ -179,7 +179,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             } }
         ]);
         
-        menu.render();
         menu.$el.attr("style", "float: right");
         $("#center .unified-panel-header-inner").append(menu.$el);
         

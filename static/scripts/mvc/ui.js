@@ -51,6 +51,10 @@ var IconButtonCollection = Backbone.Collection.extend({
  */
 var IconButtonMenuView = Backbone.View.extend({
     tagName: 'div',
+
+    initialize: function() {
+        this.render();
+    },
     
     render: function() {
         var self = this;
