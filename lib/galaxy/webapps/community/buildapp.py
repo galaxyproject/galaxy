@@ -17,6 +17,7 @@ import galaxy.webapps.community.model
 import galaxy.webapps.community.model.mapping
 import galaxy.web.framework
 from galaxy.webapps.community.framework.middleware import hg
+from galaxy import util
 
 log = logging.getLogger( __name__ )
 
@@ -102,6 +103,15 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
+    # If we're using remote_user authentication, add middleware that
+    # protects Galaxy from improperly configured authentication in the
+    # upstream server
+    if asbool(conf.get( 'use_remote_user', False )):
+        from galaxy.webapps.community.framework.middleware.remoteuser import RemoteUser
+        app = RemoteUser( app, maildomain = conf.get( 'remote_user_maildomain', None ),
+                               display_servers = util.listify( conf.get( 'display_servers', '' ) ),
+                               admin_users = conf.get( 'admin_users', '' ).split( ',' ) )
+        log.debug( "Enabling 'remote user' middleware" )
     # The recursive middleware allows for including requests in other 
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
