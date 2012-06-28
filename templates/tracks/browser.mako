@@ -124,7 +124,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
                 add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
                     _.each(tracks, function(track) {
-                        view.add_drawable( object_from_template(track, view) );  
+                        view.add_drawable( object_from_template(track, view,  view) );  
                     });
                 });
             } },
@@ -248,7 +248,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     url: "${h.url_for( action='add_track_async' )}",
                     data: { hda_id: "${add_dataset}" },
                     dataType: "json",
-                    success: function(track_data) { view.add_drawable( object_from_template(track_data, view) ) }
+                    success: function(track_data) { view.add_drawable( object_from_template(track_data, view, view) ) }
                 });
                 
             %endif
