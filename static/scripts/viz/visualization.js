@@ -69,7 +69,7 @@ var CanvasManager = function(default_font) {
     this.load_pattern( 'left_strand', "/visualization/strand_left.png" );
     this.load_pattern( 'right_strand_inv', "/visualization/strand_right_inv.png" );
     this.load_pattern( 'left_strand_inv', "/visualization/strand_left_inv.png" );
-}
+};
 
 _.extend( CanvasManager.prototype, {
     load_pattern: function( key, path ) {
@@ -79,7 +79,7 @@ _.extend( CanvasManager.prototype, {
         image.src = galaxy_paths.attributes.image_path + path;
         image.onload = function() {
             patterns[key] = dummy_context.createPattern( image, "repeat" );
-        }
+        };
     },
     get_pattern: function( key ) {
         return this.patterns[key];
@@ -215,8 +215,8 @@ var GenomeDataManager = Cache.extend({
                         
         // ReferenceDataManager does not have dataset.
         if (dataset) {
-            params['dataset_id'] = dataset.id;
-            params['hda_ldda'] = dataset.get('hda_ldda');
+            params.dataset_id = dataset.id;
+            params.hda_ldda = dataset.get('hda_ldda');
         }
         
         $.extend(params, extra_params);
@@ -265,17 +265,16 @@ var GenomeDataManager = Cache.extend({
         // TODO: this logic could be improved if the visualization knew whether
         // the data was "index" or "data."
         //
-        var 
-            key_ary = this.get('key_ary'),
+        var key_ary = this.get('key_ary'),
             obj_cache = this.get('obj_cache'),
-            key, region, entry_region, mode, entry;
+            key, entry_region;
         for (var i = 0; i < key_ary.length; i++) {
             entry_region = new GenomeRegion(key_ary[i]);
         
             if (entry_region.contains(region)) {
                 // This entry has data in the requested range. Return if data
                 // is compatible and can be subsetted.
-                var entry = obj_cache[key];
+                entry = obj_cache[key];
                 if ( is_deferred(entry) || 
                     ( this.get('data_mode_compatible')(entry, mode) && this.get('can_subset')(entry) ) ) {
                     this.move_key_to_end(key, i);
@@ -297,8 +296,6 @@ var GenomeDataManager = Cache.extend({
     set_data: function(region, entry) {
         this.set_elt(region, entry);  
     },
-    
-    /**
     
     /** "Deep" data request; used as a parameter for DataManager.get_more_data() */
     DEEP_DATA_REQ: "deep",
@@ -341,7 +338,7 @@ var GenomeDataManager = Cache.extend({
         //
         var 
             data_manager = this,
-            new_data_request = this.load_data(query_region, mode, resolution, extra_params)
+            new_data_request = this.load_data(query_region, mode, resolution, extra_params),
             new_data_available = $.Deferred();
         // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
         // is all data, not just new data.
@@ -408,7 +405,7 @@ var Genome = Backbone.Model.extend({
 /**
  * A genomic region.
  */
-var GenomeRegion = Backbone.Model.extend({
+var GenomeRegion = Backbone.RelationalModel.extend({
     defaults: {
         chrom: null,
         start: 0,
@@ -431,9 +428,9 @@ var GenomeRegion = Backbone.Model.extend({
             !this.get('end') && 'as_str' in options) {
             var pieces = options.as_str.split(':'),
                 chrom = pieces[0],
-                pieces = pieces.split('-'),
-                start = pieces[0],
-                end = pieces[1];
+                start_end = pieces.split('-'),
+                start = start_end[0],
+                end = start_end[1];
             this.set('chrom', chrom);
             this.set('start', start);
             this.set('end', end);
@@ -462,7 +459,7 @@ var GenomeRegion = Backbone.Model.extend({
             chrom: this.get('chrom'),
             start: this.get('start'),
             end: this.get('end')
-        }
+        };
     },
     
     /**
@@ -556,7 +553,7 @@ var Visualization = Backbone.RelationalModel.extend({
         datasets: []
     },
     
-    url: function() { return galaxy_paths.get("visualization_url"); },
+    url: galaxy_paths.get("visualization_url"),
     
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'
@@ -565,7 +562,7 @@ var Visualization = Backbone.RelationalModel.extend({
      */
     save: function() {
         return $.ajax({
-            url: this.url(),
+            url: this.url,
             type: "POST",
             dataType: "json",
             data: { 
@@ -818,7 +815,7 @@ var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
                                 requests[requests.length] = $.ajax({
                                     url: add_track_async_url,
                                     data: data,
-                                    dataType: "json",
+                                    dataType: "json"
                                 });
                         });
                         // To preserve order, wait until there are definitions for all tracks and then add 

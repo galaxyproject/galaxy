@@ -5,14 +5,26 @@ from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
 
 class VisualizationListGrid( grids.Grid ):
+    def get_link( item ):
+        """
+        Returns dictionary used to create item link.
+        """
+        controller = "tracks"
+        if item.type == "trackster":
+            action = "browser"
+        elif item.type == "paramamonster":
+            action = "paramamonster"
+        elif item.type == "circster":
+            action = "circster"
+        return dict( controller=controller, action=action, id=item.id )
+
     # Grid definition
     title = "Saved Visualizations"
     model_class = model.Visualization
     default_sort_key = "-update_time"
     default_filter = dict( title="All", deleted="False", tags="All", sharing="All" )
     columns = [
-        grids.TextColumn( "Title", key="title", attach_popup=True,
-                         link=( lambda item: dict( controller="tracks", action="browser", id=item.id ) ) ),
+        grids.TextColumn( "Title", key="title", attach_popup=True, link=get_link ),
         grids.TextColumn( "Type", key="type" ),
         grids.TextColumn( "Dbkey", key="dbkey" ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
@@ -383,12 +395,20 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 template="visualization/create.mako" )
                 
     @web.json
-    def save( self, trans, config, type, id=None, title=None, dbkey=None, annotation=None ):
+    def save( self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None ):
         """
         Save a visualization; if visualization does not have an ID, a new 
         visualization is created. Returns JSON of visualization.
         """
-        return self.save_visualization( trans, from_json_string( config ), type, id, title, dbkey, annotation )
+
+        # Get visualization attributes from kwargs or from config.
+        vis_config = from_json_string( vis_json )
+        vis_type = type or vis_config[ 'type' ]
+        vis_id = id or vis_config.get( 'id', None )
+        vis_title = title or vis_config.get( 'title', None )
+        vis_dbkey = dbkey or vis_config.get( 'dbkey', None )
+        vis_annotation = annotation or vis_config.get( 'annotation', None )
+        return self.save_visualization( trans, vis_config, vis_type, vis_id, vis_title, vis_dbkey, vis_annotation )
         
     @web.expose
     @web.require_login( "edit visualizations" )

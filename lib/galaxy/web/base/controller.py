@@ -353,8 +353,6 @@ class UsesVisualizationMixin( SharableItemSecurityMixin, UsesLibraryMixinItems )
     
     viz_types = [ "trackster", "circster" ]
 
-    len_files = None
-            
     def create_visualization( self, trans, title, slug, type, dbkey, annotation=None, config={} ):
         """ Create visualiation and first revision. """
         visualization = self._create_visualization( trans, title, type, dbkey, slug, annotation )
@@ -434,9 +432,9 @@ class UsesVisualizationMixin( SharableItemSecurityMixin, UsesLibraryMixinItems )
                 end = config['viewport']['end']
                 overview = config['viewport']['overview']
                 vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
-        elif type == 'circster':
-            # TODO.
-            pass
+        else:
+            # Default action is to save the config as is with no validation.
+            vis_rev.config = config
 
         vis.latest_revision = vis_rev
         session.add( vis_rev )
@@ -543,6 +541,10 @@ class UsesVisualizationMixin( SharableItemSecurityMixin, UsesLibraryMixinItems )
 
             if 'viewport' in latest_revision.config:
                 config['viewport'] = latest_revision.config['viewport']
+        else:
+            # Default action is to return config unaltered.
+            latest_revision = visualization.latest_revision
+            config = latest_revision.config
 
         return config
         

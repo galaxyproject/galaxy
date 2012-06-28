@@ -46,7 +46,8 @@ var Tool = BaseModel.extend({
             key: 'inputs',
             relatedModel: 'ToolInput',
             reverseRelation: {
-                key: 'tool'
+                key: 'tool',
+                includeInJSON: false
             }
         }
     ],

@@ -6,7 +6,7 @@
 /**
  * Tree for a tool's parameters.
  */
-var ToolParameterTree = Backbone.Model.extend({
+var ToolParameterTree = Backbone.RelationalModel.extend({
     defaults: {
         tool: null,
         tree_data: null
@@ -17,9 +17,6 @@ var ToolParameterTree = Backbone.Model.extend({
         var self = this;
         this.get('tool').get('inputs').each(function(input) {
             if (!input.get_samples()) { return; }
-
-            // All inputs are in tree to start.
-            self.add_param(input);
 
             // Listen for changes to input's attributes.
             input.on('change:min change:max change:num_samples', function(input) {
@@ -38,7 +35,16 @@ var ToolParameterTree = Backbone.Model.extend({
             }, self);
         });
 
-        self.set_tree_data();
+        // If there is a config, use it.
+        if (options.config) {
+            _.each(options.config, function(input_config) {
+                var input = self.get('tool').get('inputs').find(function(input) {
+                    return input.get('name') === input_config.name;
+                });
+                self.add_param(input);
+                input.set(input_config);
+            });
+        }
     },
 
     add_param: function(param) {
@@ -203,14 +209,49 @@ var ToolParameterTree = Backbone.Model.extend({
             cur_node = find_child(cur_node.children);
         }
         return cur_node;
+    },
+
+    /**
+     * Returns a list of parameters used in tree.
+     */
+    toJSON: function() {
+        // FIXME: returning and jsonifying complete param causes trouble on the server side, 
+        // so just use essential attributes for now.
+        return this.get_tree_params().map(function(param) {
+            return {
+                name: param.get('name'),
+                min: param.get('min'),
+                max: param.get('max'),
+                num_samples: param.get('num_samples')
+            };
+        });
     }
 });
 
-var ParamaMonsterTrack = Backbone.Model.extend({
+var ParamaMonsterTrack = Backbone.RelationalModel.extend({
     defaults: {
         track: null,
         settings: null,
         regions: null
+    },
+
+    relations: [
+        {
+            type: Backbone.HasMany,
+            key: 'regions',
+            relatedModel: 'GenomeRegion'
+        }
+    ],
+
+    initialize: function(options) {
+        // FIXME: find a better way to deal with needed URLs:
+        var track_config = _.extend({
+                                data_url: galaxy_paths.get('raw_data_url'),
+                                converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
+                            }, options.track);
+        // HACK: remove prefs b/c they cause a redraw, which is not supported now.
+        delete track_config.mode;
+        this.set('track', object_from_template(track_config, {}, null));
     },
 
     same_settings: function(a_track) {
@@ -223,6 +264,14 @@ var ParamaMonsterTrack = Backbone.Model.extend({
             }
         }
         return true;
+    },
+
+    toJSON: function() {
+        return {
+            track: this.get('track').to_dict(),
+            settings: this.get('settings'),
+            regions: this.get('regions')
+        };
     }
 });
 
@@ -235,18 +284,45 @@ var TrackCollection = Backbone.Collection.extend({
  */
 var ParamaMonsterVisualization = Visualization.extend({
     defaults: _.extend({}, Visualization.prototype.defaults, {
+        dataset: null,
         tool: null,
         parameter_tree: null,
         regions: null,
         tracks: null
     }),
+
+    relations: [
+        {
+            type: Backbone.HasOne,
+            key: 'dataset',
+            relatedModel: 'Dataset'
+        },
+        {
+            type: Backbone.HasOne,
+            key: 'tool',
+            relatedModel: 'Tool'
+        },
+        {
+            type: Backbone.HasMany,
+            key: 'regions',
+            relatedModel: 'GenomeRegion'
+        },
+        {
+            type: Backbone.HasMany,
+            key: 'tracks',
+            relatedModel: 'ParamaMonsterTrack'
+        }
+        // NOTE: cannot use relationship for parameter tree because creating tree is complex.
+    ],
     
     initialize: function(options) {
         var tool_with_samplable_inputs = this.get('tool').copy(true);
         this.set('tool_with_samplable_inputs', tool_with_samplable_inputs);
         
-        this.set('parameter_tree', new ToolParameterTree({ tool: tool_with_samplable_inputs }));
-        this.set('tracks', new TrackCollection());
+        this.set('parameter_tree', new ToolParameterTree({ 
+            tool: tool_with_samplable_inputs,
+            config: options.tree_config
+        }));
     },
 
     add_placeholder: function(settings) {
@@ -255,6 +331,20 @@ var ParamaMonsterVisualization = Visualization.extend({
 
     add_track: function(track) {
         this.get('tracks').add(track);
+    },
+
+    toJSON: function() {
+        // TODO: could this be easier by using relational models?
+        return {
+            id: this.get('id'),
+            title: 'Parameter exploration for dataset \''  + this.get('dataset').get('name') + '\'',
+            type: 'paramamonster',
+            dataset_id: this.get('dataset').id,
+            tool_id: this.get('tool').id,
+            regions: this.get('regions').toJSON(),
+            tree_config: this.get('parameter_tree').toJSON(),
+            tracks: this.get('tracks').toJSON()
+        };
     }
 });
 
@@ -301,7 +391,7 @@ var ParamaMonsterTrackView = Backbone.View.extend({
         settings_td.prepend(icon_menu.$el);
 
         // Render tile placeholders.
-        _.each(this.model.get('regions'), function() {
+        this.model.get('regions').each(function() {
             self.$el.append($('<td/>').addClass('tile').html(
                 $('<img/>').attr('src', galaxy_paths.get('image_path') + '/loading_large_white_bg.gif')
             ));
@@ -322,7 +412,7 @@ var ParamaMonsterTrackView = Backbone.View.extend({
         // When data is ready, draw tiles.
         $.when(track.data_manager.data_is_ready()).then(function(data_ok) {
             // Draw tile for each region.
-            _.each(regions, function(region, index) {
+            regions.each(function(region, index) {
                 var resolution = region.length() / 300,
                     w_scale = 1/resolution,
                     mode = 'Pack';
@@ -550,6 +640,12 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
 
         // Handle node clicks for tree data.
         this.model.get('parameter_tree').on('change:tree_data', this.handle_node_clicks, this);
+
+        // Each track must have a view so it has a canvas manager.
+        var self = this;
+        this.model.get('tracks').each(function(track) {
+            track.get('track').view = self;
+        });
     },
     
     render: function() {
@@ -565,12 +661,16 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
             regions = self.model.get('regions'),
             tr = $('<tr/>').appendTo(this.track_collection_container);
 
-        _.each(regions, function(region) {
+        regions.each(function(region) {
             tr.append( $('<th>').text(region.toString()) );
         });
         tr.children().first().attr('colspan', 2);
 
         $('#right').append(this.track_collection_container);
+
+        self.model.get('tracks').each(function(track) {
+            self.add_track(track);
+        });
 
         // Render tool parameter tree in center panel.
         this.tool_param_tree_view.render();
@@ -586,6 +686,34 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         $.when(tool.rerun(dataset)).then(function(outputs) {
             // TODO: show modal with information about how to get to datasets.
         });
+    },
+
+    /**
+     * Add track to model and view.
+     */
+    add_track: function(pm_track) {
+        var self = this;
+        self.model.add_track(pm_track);
+        var track_view = new ParamaMonsterTrackView({
+            model: pm_track,
+            canvas_manager: self.canvas_manager
+        });
+        track_view.on('run_on_dataset', self.run_tool_on_dataset, self);
+        self.track_collection_container.append(track_view.$el);
+        track_view.$el.hover(function() {
+            var settings_leaf = param_tree.get_leaf(settings);
+            var connected_node_ids = _.pluck(param_tree.get_connected_nodes(settings_leaf), 'id');
+
+            // TODO: can do faster with enter?
+            d3.select(self.tool_param_tree_view.$el[0]).selectAll("g.node")
+            .filter(function(d) {
+                return _.find(connected_node_ids, function(id) { return id === d.id; }) !== undefined;
+            }).style('fill', '#f00');
+        },
+        function() {
+            d3.select(self.tool_param_tree_view.$el[0]).selectAll("g.node").style('fill', '#000');
+        });
+        return pm_track;
     },
 
     handle_node_clicks: function() {

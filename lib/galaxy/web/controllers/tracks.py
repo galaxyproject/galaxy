@@ -16,7 +16,7 @@ from galaxy.datatypes.interval import Gff, Bed
 from galaxy.model import NoConverterException, ConverterDependencyException
 from galaxy.visualization.tracks.data_providers import *
 from galaxy.visualization.genomes import decode_dbkey, Genomes
-from galaxy.visualization.tracks.visual_analytics import get_tool_def, get_dataset_job
+from galaxy.visualization.tracks.visual_analytics import get_dataset_job
 
 
 class NameColumn( grids.TextColumn ):
@@ -471,12 +471,42 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
                     
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
-    def paramamonster( self, trans, hda_ldda, dataset_id ):
-        # Get dataset.
-        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+    def paramamonster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):
+        if id:
+            # Loading a shared visualization.
+            viz = self.get_visualization( trans, id )
+            viz_config = self.get_visualization_config( trans, viz )
+            dataset = self.get_dataset( trans, viz_config[ 'dataset_id' ] )
+        else:
+            # Loading new visualization.
+            dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+            job = get_dataset_job( dataset )
+            viz_config = {
+                'dataset_id': dataset_id,
+                'tool_id': job.tool_id,
+                'regions': regions
+            }
+
+        viz_config[ 'regions' ] = [
+            {
+                'chrom': 'chr19',
+                'start': '10000',
+                'end': '26000'
+            },
+            {
+                'chrom': 'chr19',
+                'start': '150000',
+                'end': '175000'
+            }
+
+        ]
                 
-        return trans.fill_template_mako( "visualization/paramamonster.mako", dataset=dataset,
-                                          tool=self.app.toolbox.tools_by_id[ 'cufflinks' ].to_dict( trans, for_display=True ) )
+        # Add tool, dataset attributes to config based on id.
+        tool = trans.app.toolbox.get_tool( viz_config[ 'tool_id' ] )
+        viz_config[ 'tool' ] = tool.to_dict( trans, for_display=True )
+        viz_config[ 'dataset' ] = dataset.get_api_value()
+
+        return trans.fill_template_mako( "visualization/paramamonster.mako", config=viz_config )
     
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
