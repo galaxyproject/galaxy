@@ -78,6 +78,16 @@
             background-image: none;
             border-radius: 12px;
         }
+        #left {
+            width: 300px;
+        }
+        #center {
+            left: 300px;
+            right: 600px;
+        }
+        #right {
+            width: 600px;
+        }
     </style>
 </%def>
 

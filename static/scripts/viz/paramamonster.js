@@ -112,6 +112,7 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
 
         this.set('tree_data', {
             name: 'Root',
+            id: node_id++,
             children: (params_samples.length !== 0 ? create_tree_data(params_samples, 0) : null)
         });
     },
@@ -149,8 +150,11 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
         
         // Walk subtree starting at clicked node to get full list of settings.
         var get_settings = function(node, settings) {
-                // Add setting for this node.
-                settings[node.param.get('name')] = node.value;
+                // Add setting for this node. Root node does not have a param,
+                // however.
+                if (node.param) {
+                    settings[node.param.get('name')] = node.value;
+                }
             
                 if (!node.children) {
                     // At leaf node: add param setting and return.    
@@ -244,14 +248,16 @@ var ParamaMonsterTrack = Backbone.RelationalModel.extend({
     ],
 
     initialize: function(options) {
-        // FIXME: find a better way to deal with needed URLs:
-        var track_config = _.extend({
-                                data_url: galaxy_paths.get('raw_data_url'),
-                                converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
-                            }, options.track);
-        // HACK: remove prefs b/c they cause a redraw, which is not supported now.
-        delete track_config.mode;
-        this.set('track', object_from_template(track_config, {}, null));
+        if (options.track) {
+            // FIXME: find a better way to deal with needed URLs:
+            var track_config = _.extend({
+                                    data_url: galaxy_paths.get('raw_data_url'),
+                                    converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
+                                }, options.track);
+            // HACK: remove prefs b/c they cause a redraw, which is not supported now.
+            delete track_config.mode;
+            this.set('track', object_from_template(track_config, {}, null));
+        }
     },
 
     same_settings: function(a_track) {
@@ -358,6 +364,8 @@ var ParamaMonsterVisualization = Visualization.extend({
 var ParamaMonsterTrackView = Backbone.View.extend({
     tagName: 'tr',
 
+    TILE_LEN: 250,
+
     initialize: function(options) {
         this.canvas_manager = options.canvas_manager;
         this.render();
@@ -382,10 +390,19 @@ var ParamaMonsterTrackView = Backbone.View.extend({
             {
                 title: 'Settings',
                 icon_class: 'gear track-settings',
-                on_click: function () {
+                on_click: function() {
                     settings_div.toggle();
                 },
                 tipsy_config: { gravity: 's' }
+            },
+            {
+                title: 'Remove',
+                icon_class: 'cross-circle',
+                on_click: function() {
+                    self.$el.remove();
+                    $('.tipsy').remove();
+                    // TODO: remove track from viz collection.
+                }
             }
         ]);
         settings_td.prepend(icon_menu.$el);
@@ -413,12 +430,12 @@ var ParamaMonsterTrackView = Backbone.View.extend({
         $.when(track.data_manager.data_is_ready()).then(function(data_ok) {
             // Draw tile for each region.
             regions.each(function(region, index) {
-                var resolution = region.length() / 300,
+                var resolution = region.length() / self.TILE_LEN,
                     w_scale = 1/resolution,
                     mode = 'Pack';
                 $.when(track.data_manager.get_data(region, mode, resolution, {})).then(function(tile_data) {
                     var canvas = self.canvas_manager.new_canvas();
-                    canvas.width = 300;
+                    canvas.width = self.TILE_LEN;
                     canvas.height = track.get_canvas_height(tile_data, mode, w_scale, canvas.width);
                     track.draw_tile(tile_data, canvas.getContext('2d'), mode, resolution, region, w_scale);
                     $(tile_containers[index]).empty().append(canvas);
@@ -473,9 +490,17 @@ var ToolInputValOrSweepView = Backbone.View.extend({
             }));
         }
 
-        // Fow now, assume parameter is included in tree to start.
         sweep_inputs_row.insertAfter(single_input_row);
-        single_input_row.hide();
+
+        if (input.get('in_ptree')) {
+            single_input_row.hide();
+        }
+        else {
+            sweep_inputs_row.hide();
+        }
+
+        // Fow now, assume parameter is included in tree to start.
+        
 
         // Add buttons for adding/removing parameter.
         var self = this,
@@ -554,9 +579,13 @@ var ToolParameterTreeView = Backbone.View.extend({
     },
     
     render: function() {
-        var tree_params = this.model.get_tree_params();
         // Start fresh.
         this.$el.children().remove();
+
+        var tree_params = this.model.get_tree_params();
+        if (!tree_params.length) {
+            return;
+        }
 
         // Set width, height based on params and samples.
         this.width = 100 * (2 + tree_params.length);
@@ -692,7 +721,8 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
      * Add track to model and view.
      */
     add_track: function(pm_track) {
-        var self = this;
+        var self = this,
+            param_tree = this.model.get('parameter_tree');
         self.model.add_track(pm_track);
         var track_view = new ParamaMonsterTrackView({
             model: pm_track,
@@ -701,7 +731,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         track_view.on('run_on_dataset', self.run_tool_on_dataset, self);
         self.track_collection_container.append(track_view.$el);
         track_view.$el.hover(function() {
-            var settings_leaf = param_tree.get_leaf(settings);
+            var settings_leaf = param_tree.get_leaf(pm_track.get('settings'));
             var connected_node_ids = _.pluck(param_tree.get_connected_nodes(settings_leaf), 'id');
 
             // TODO: can do faster with enter?
@@ -736,26 +766,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
                     settings: settings,
                     regions: regions
                 });
-                self.model.add_track(pm_track);
-                var track_view = new ParamaMonsterTrackView({
-                    model: pm_track,
-                    canvas_manager: self.canvas_manager
-                });
-                track_view.on('run_on_dataset', self.run_tool_on_dataset, self);
-                self.track_collection_container.append(track_view.$el);
-                track_view.$el.hover(function() {
-                    var settings_leaf = param_tree.get_leaf(settings);
-                    var connected_node_ids = _.pluck(param_tree.get_connected_nodes(settings_leaf), 'id');
-
-                    // TODO: can do faster with enter?
-                    d3.select(self.tool_param_tree_view.$el[0]).selectAll("g.node")
-                    .filter(function(d) {
-                        return _.find(connected_node_ids, function(id) { return id === d.id; }) !== undefined;
-                    }).style('fill', '#f00');
-                },
-                function() {
-                    d3.select(self.tool_param_tree_view.$el[0]).selectAll("g.node").style('fill', '#000');
-                });
+                self.add_track(pm_track);
                 return pm_track;
             });
                 
@@ -763,7 +774,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
             _.each(tracks, function(pm_track, index) {
                 setTimeout(function() {
                     // Set inputs and run tool.
-                    //console.log('running with settings', pm_track.get('settings'));
+                    // console.log('running with settings', pm_track.get('settings'));
                     tool.set_input_values(pm_track.get('settings'));
                     $.when(tool.rerun(dataset, regions)).then(function(output) {
                         // Create and add track for output dataset.
