@@ -148,9 +148,6 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Us
 
                 # Merge overlapping regions so that regions do not overlap 
                 # and hence data is not included multiple times.
-                print "REGIONS", regions
-                for region in regions:
-                    print "\t", region.chrom, region.start, region.end
                 prev = regions[0]
                 cur = regions[1]
                 index = 1
@@ -170,10 +167,7 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Us
                         break
                     else:
                         cur = regions[ index ]
-
-                print "REGIONS", regions
-                for region in regions:
-                    print "\t", region.chrom, region.start, region.end
+            
             run_on_regions = True
             
         # Dataset check.
