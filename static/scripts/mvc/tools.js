@@ -112,7 +112,7 @@ var Tool = BaseModel.extend({
         return this._run({
             action: 'rerun',
             target_dataset_id: target_dataset.id,
-            regions: JSON.stringify(regions) 
+            regions: regions
         });
     },
 

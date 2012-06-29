@@ -4,10 +4,10 @@
  */
 var Dataset = Backbone.RelationalModel.extend({
     defaults: {
-        id: "",
-        type: "",
-        name: "",
-        hda_ldda: ""
+        id: '',
+        type: '',
+        name: '',
+        hda_ldda: 'hda'
     } 
 });
 

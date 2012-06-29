@@ -420,20 +420,19 @@ var GenomeRegion = Backbone.RelationalModel.extend({
     },
     
     /**
-     * as_str attribute using the format chrom:start-end can be 
-     * used to set object's attributes.
+     * If options is a string, parsing using the format
+     * chrom:start-end is attempted to set object attributes.
      */
     initialize: function(options) {
-        if (!this.get('chrom') && !this.get('start') && 
-            !this.get('end') && 'as_str' in options) {
-            var pieces = options.as_str.split(':'),
+        if (typeof(options) === 'string') {
+            var pieces = options.split(':'),
                 chrom = pieces[0],
-                start_end = pieces.split('-'),
-                start = start_end[0],
-                end = start_end[1];
-            this.set('chrom', chrom);
-            this.set('start', start);
-            this.set('end', end);
+                start_end = pieces[1].split('-');
+            this.set({
+                chrom: chrom,
+                start: parseInt(start_end[0]),
+                end: parseInt(start_end[1])
+            });
         }  
     },
     

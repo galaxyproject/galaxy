@@ -49,8 +49,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     // Place URLs here so that url_for can be used to generate them.
     //
     galaxy_paths.set({
-        visualization_url: "${h.url_for( action='save' )}",
-        run_tool_url: "${h.url_for( controller='/api/tools' )}"
+        visualization_url: "${h.url_for( action='save' )}"
     });
     var 
         add_track_async_url = "${h.url_for( action='add_track_async' )}",

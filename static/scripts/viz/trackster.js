@@ -87,6 +87,9 @@ var is_overlap = function(first_region, second_region) {
  * Helper to determine if object is jQuery deferred.
  */
 var is_deferred = function ( d ) {
+    if (d === 'pending') {
+        console.log('pending');
+    }
     return ( 'isResolved' in d );
 };
 
@@ -1770,7 +1773,7 @@ extend(Tool.prototype, {
         var param_dict = {};
         this.parent_div.find(":input").each(function() {
             var name = $(this).attr("name"), value = $(this).val();
-            param_dict[name] = JSON.stringify(value);
+            param_dict[name] = value;
         });
         return param_dict;
     },
@@ -1796,7 +1799,7 @@ extend(Tool.prototype, {
         tool.run(
                  // URL params.
                  { 
-                     dataset_id: this.track.original_dataset_id,
+                     target_dataset_id: this.track.original_dataset_id,
                      tool_id: tool.name
                  },
                  null,
@@ -1820,11 +1823,14 @@ extend(Tool.prototype, {
         var 
             url_params = 
             { 
-                dataset_id: this.track.original_dataset_id,
-                chrom: this.track.view.chrom,
-                low: this.track.view.low,
-                high: this.track.view.high,
-                tool_id: this.name
+                target_dataset_id: this.track.original_dataset_id,
+                action: 'rerun',
+                tool_id: this.name,
+                regions: [{
+                    chrom: this.track.view.chrom,
+                    start: this.track.view.low,
+                    end: this.track.view.high
+                }]
             },
             current_track = this.track,
             // Set name of track to include tool name, parameters, and region used.
@@ -1871,10 +1877,7 @@ extend(Tool.prototype, {
         this.run(url_params, new_track,
                  // Success callback.
                  function(track_data) {
-                     new_track.set_dataset(new Dataset({
-                         id: track_data.dataset_id,
-                         hda_ldda: track_data.hda_ldda
-                     }));
+                     new_track.set_dataset(new Dataset(track_data));
                      new_track.tiles_div.text("Running job.");
                      new_track.init();
                  }
@@ -1885,9 +1888,15 @@ extend(Tool.prototype, {
      */
     run: function(url_params, new_track, success_callback) {
         // Run tool.
+        url_params.inputs = this.get_param_values_dict();
         var ss_deferred = new ServerStateDeferred({
-            url: rerun_tool_url,
-            url_params: $.extend(url_params, this.get_param_values_dict()),
+            ajax_settings: {
+                url: galaxy_paths.get('tool_url'),
+                data: JSON.stringify(url_params),
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST"
+            },
             interval: 2000,
             success_fn: function(response) {
                 return response !== "pending";
@@ -4636,7 +4645,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             // Paint summary tree into canvas
             var painter = new painters.SummaryTreePainter(result, tile_low, tile_high, this.prefs);
             painter.draw(ctx, canvas.width, canvas.height, w_scale);
-            return new SummaryTreeTile(track, tile_index, resolution, canvas, result.data, result.max);
+            return new SummaryTreeTile(track, region, resolution, canvas, result.data, result.max);
         }
 
         // Handle row-by-row tracks

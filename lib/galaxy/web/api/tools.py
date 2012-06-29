@@ -135,7 +135,6 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Us
         run_on_regions = False
         regions = payload.get( 'regions', None )
         if regions:
-            regions = from_json_string( regions )
             if isinstance( regions, dict ):
                 # Regions is a single region.
                 regions = [ GenomeRegion.from_dict( regions ) ]
