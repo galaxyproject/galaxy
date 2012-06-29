@@ -2647,15 +2647,23 @@ class APIKeys( object ):
     pass
 
 class ToolShedRepository( object ):
-    installation_status = Bunch( CLONED='cloned',
-                                 SETTING_TOOL_VERSIONS='setting tool versions',
-                                 INSTALLING_TOOL_DEPENDENCIES='installing tool dependencies',
-                                 INSTALLED='installed',
-                                 ERROR='error',
-                                 UNINSTALLED='uninstalled' )
+    installation_status = Bunch( NEW='New',
+                                 CLONING='Cloning',
+                                 SETTING_TOOL_VERSIONS='Setting tool versions',
+                                 INSTALLING_TOOL_DEPENDENCIES='Installing tool dependencies',
+                                 LOADING_PROPRIETARY_DATATYPES='Loading proprietary datatypes',
+                                 INSTALLED='Installed',
+                                 DEACTIVATED='Deactivated',
+                                 ERROR='Error',
+                                 UNINSTALLED='Uninstalled' )
+    states = Bunch( INSTALLING = 'running',
+                    OK = 'ok',
+                    WARNING = 'queued',
+                    ERROR = 'error',
+                    UNINSTALLED = 'deleted_new' )
     def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
                   changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False,
-                  uninstalled=False, dist_to_shed=False ):
+                  uninstalled=False, dist_to_shed=False, status=None, error_message=None ):
         self.id = id
         self.create_time = create_time
         self.tool_shed = tool_shed
@@ -2671,6 +2679,8 @@ class ToolShedRepository( object ):
         self.deleted = deleted
         self.uninstalled = uninstalled
         self.dist_to_shed = dist_to_shed
+        self.status = status
+        self.error_message = error_message
     def repo_files_directory( self, app ):
         repo_path = self.repo_path( app )
         if repo_path:
@@ -2723,6 +2733,16 @@ class ToolShedRepository( object ):
                 dependencies_being_installed.append( tool_dependency )
         return dependencies_being_installed
     @property
+    def tool_dependencies_missing_or_being_installed( self ):
+        dependencies_missing_or_being_installed = []
+        for tool_dependency in self.tool_dependencies:
+            if tool_dependency.status in [ ToolDependency.installation_status.ERROR,
+                                           ToolDependency.installation_status.INSTALLING,
+                                           ToolDependency.installation_status.NEVER_INSTALLED,
+                                           ToolDependency.installation_status.UNINSTALLED ]:
+                dependencies_missing_or_being_installed.append( tool_dependency )
+        return dependencies_missing_or_being_installed
+    @property
     def tool_dependencies_with_installation_errors( self ):
         dependencies_with_installation_errors = []
         for tool_dependency in self.tool_dependencies:
@@ -2746,6 +2766,7 @@ class ToolDependency( object ):
                                  UNINSTALLED='Uninstalled' )
     states = Bunch( INSTALLING = 'running',
                     OK = 'ok',
+                    WARNING = 'queued',
                     ERROR = 'error',
                     UNINSTALLED = 'deleted_new' )
     def __init__( self, tool_shed_repository_id=None, name=None, version=None, type=None, status=None, error_message=None ):

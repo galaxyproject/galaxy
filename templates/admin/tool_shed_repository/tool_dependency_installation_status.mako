@@ -1,11 +1,17 @@
 <%def name="render_tool_dependency_status( tool_dependency )">
     <%
-        if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLING:
+        if tool_dependency.status in [ trans.model.ToolDependency.installation_status.INSTALLING ]:
             bgcolor = trans.model.ToolDependency.states.INSTALLING
-            rval = '<div class="count-box state-color-%s" id="ToolDependencyStatus-%s">' % ( bgcolor, trans.security.encode_id( tool_dependency.id ) )
-            rval += '%s</div>' % tool_dependency.status
-        else:
-            rval = tool_dependency.status
+        elif tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                         trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+            bgcolor = trans.model.ToolDependency.states.UNINSTALLED
+        elif tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR ]:
+            bgcolor = trans.model.ToolDependency.states.ERROR
+        elif tool_dependency.status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+            bgcolor = trans.model.ToolDependency.states.OK
+        rval = '<div class="count-box state-color-%s" id="ToolDependencyStatus-%s">' % ( bgcolor, trans.security.encode_id( tool_dependency.id ) )
+        rval += '%s</div>' % tool_dependency.status
+        return rval
     %>    
     ${rval}
 </%def>

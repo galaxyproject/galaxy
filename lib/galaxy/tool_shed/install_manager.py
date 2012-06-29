@@ -119,12 +119,8 @@ class InstallManager( object ):
                             if not is_displayed:
                                 is_displayed = True
         return is_displayed, tool_sections
-    def handle_repository_contents( self, repository_clone_url, relative_install_dir, repository_elem, repository_name, description,
-                                    installed_changeset_revision, ctx_rev, install_dependencies ):
-        # Generate the metadata for the installed tool shed repository, among other things.  It is critical that the installed repository is
-        # updated to the desired changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
-        # The values for the keys in each of the following dictionaries will be a list to allow for the same tool to be displayed in multiple places
-        # in the tool panel.
+    def handle_repository_contents( self, tool_shed_repository, repository_clone_url, relative_install_dir, repository_elem, install_dependencies ):
+        """Generate the metadata for the installed tool shed repository, among other things."""
         tool_panel_dict_for_display = odict()
         for tool_elem in repository_elem:
             # The tool_elem looks something like this: <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
@@ -137,21 +133,12 @@ class InstallManager( object ):
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
         metadata_dict = generate_metadata_using_disk_files( self.toolbox, relative_install_dir, repository_clone_url )
-        # Add a new record to the tool_shed_repository table if one doesn't already exist.  If one exists but is marked
-        # deleted, undelete it.  It is critical that this happens before the call to add_to_tool_panel() below because
-        # tools will not be properly loaded if the repository is marked deleted.
-        print "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % repository_name
-        tool_shed_repository = create_or_update_tool_shed_repository( self.app,
-                                                                      repository_name,
-                                                                      description,
-                                                                      installed_changeset_revision,
-                                                                      ctx_rev,
-                                                                      repository_clone_url,
-                                                                      metadata_dict,
-                                                                      dist_to_shed=True )
+        tool_shed_repository.metadata = metadata_dict
+        self.app.sa_session.add( tool_shed_repository )
+        self.app.sa_session.flush()
         if 'tool_dependencies' in metadata_dict:
-            # All tool_dependency objects must be created before the tools are processed no matter whether tool dependencies are going to be installed.
-            tool_dependencies = create_tool_dependency_objects( self.app, tool_shed_repository, installed_changeset_revision )
+            # All tool_dependency objects must be created before the tools are processed even if no tool dependencies will be installed.
+            tool_dependencies = create_tool_dependency_objects( self.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision )
         else:
             tool_dependencies = None
         if 'tools' in metadata_dict:
@@ -162,7 +149,7 @@ class InstallManager( object ):
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
                 repository_tools_tups = handle_missing_data_table_entry( self.app,
                                                                          tool_shed_repository,
-                                                                         installed_changeset_revision,
+                                                                         tool_shed_repository.installed_changeset_revision,
                                                                          self.tool_path,
                                                                          repository_tools_tups,
                                                                          work_dir )
@@ -171,13 +158,16 @@ class InstallManager( object ):
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
                 copy_sample_files( self.app, sample_files, sample_files_copied=sample_files_copied )
                 if install_dependencies and tool_dependencies and 'tool_dependencies' in metadata_dict:
+                    # Install tool dependencies.
+                    update_tool_shed_repository_status( self.app,
+                                                        tool_shed_repository,
+                                                        self.app.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
                     # Get the tool_dependencies.xml file from the repository.
                     tool_dependencies_config = get_config_from_repository( self.app,
                                                                            'tool_dependencies.xml',
                                                                            tool_shed_repository,
-                                                                           installed_changeset_revision,
+                                                                           tool_shed_repository.installed_changeset_revision,
                                                                            work_dir )
-                    # Install tool dependencies.
                     installed_tool_dependencies = handle_tool_dependencies( app=self.app,
                                                                             tool_shed_repository=tool_shed_repository,
                                                                             tool_dependencies_config=tool_dependencies_config,
@@ -187,9 +177,9 @@ class InstallManager( object ):
                             print '\nThe following error occurred from the InstallManager while installing tool dependency ', installed_tool_dependency.name, ':'
                             print installed_tool_dependency.error_message, '\n\n'
                 add_to_tool_panel( self.app,
-                                   repository_name,
+                                   tool_shed_repository.name,
                                    repository_clone_url,
-                                   installed_changeset_revision,
+                                   tool_shed_repository.installed_changeset_revision,
                                    repository_tools_tups,
                                    self.repository_owner,
                                    self.migrated_tools_config,
@@ -200,11 +190,14 @@ class InstallManager( object ):
             except:
                 pass
         if 'datatypes' in metadata_dict:
+            update_tool_shed_repository_status( self.app,
+                                                tool_shed_repository,
+                                                self.app.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES )
             work_dir = make_tmp_directory()
             datatypes_config = get_config_from_repository( self.app,
                                                            'datatypes_conf.xml',
                                                            tool_shed_repository,
-                                                           installed_changeset_revision,
+                                                           tool_shed_repository.installed_changeset_revision,
                                                            work_dir )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
             # after this installation completes.
@@ -212,9 +205,9 @@ class InstallManager( object ):
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
                 repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed,
-                                                                                    name=repository_name,
+                                                                                    name=tool_shed_repository.name,
                                                                                     owner=self.repository_owner,
-                                                                                    installed_changeset_revision=installed_changeset_revision,
+                                                                                    installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
                                                                                     tool_dicts=metadata_dict.get( 'tools', [] ),
                                                                                     converter_path=converter_path,
                                                                                     display_path=display_path )
@@ -228,7 +221,6 @@ class InstallManager( object ):
                 shutil.rmtree( work_dir )
             except:
                 pass
-        return tool_shed_repository, metadata_dict
     def install_repository( self, repository_elem, install_dependencies ):
         # Install a single repository, loading contained tools into the tool panel.
         name = repository_elem.get( 'name' )
@@ -243,16 +235,31 @@ class InstallManager( object ):
             repository_clone_url = os.path.join( tool_shed_url, 'repos', self.repository_owner, name )
             relative_install_dir = os.path.join( clone_dir, name )
             ctx_rev = get_ctx_rev( tool_shed_url, name, self.repository_owner, installed_changeset_revision )
+            print "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name
+            tool_shed_repository = create_or_update_tool_shed_repository( app=self.app,
+                                                                          name=name,
+                                                                          description=description,
+                                                                          installed_changeset_revision=installed_changeset_revision,
+                                                                          ctx_rev=ctx_rev,
+                                                                          repository_clone_url=repository_clone_url,
+                                                                          metadata_dict={},
+                                                                          status=self.app.model.ToolShedRepository.installation_status.NEW,
+                                                                          current_changeset_revision=None,
+                                                                          owner=self.repository_owner,
+                                                                          dist_to_shed=True )
+            update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
             clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
-            tool_shed_repository, metadata_dict = self.handle_repository_contents( repository_clone_url,
-                                                                                   relative_install_dir,
-                                                                                   repository_elem,
-                                                                                   name,
-                                                                                   description,
-                                                                                   installed_changeset_revision,
-                                                                                   ctx_rev,
-                                                                                   install_dependencies )
+            self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
+                                             repository_clone_url=repository_clone_url,
+                                             relative_install_dir=relative_install_dir,
+                                             repository_elem=repository_elem,
+                                             install_dependencies=install_dependencies )
+            self.app.sa_session.refresh( tool_shed_repository )
+            metadata_dict = tool_shed_repository.metadata
             if 'tools' in metadata_dict:
+                update_tool_shed_repository_status( self.app,
+                                                    tool_shed_repository,
+                                                    self.app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                 # Get the tool_versions from the tool shed for each tool in the installed change set.
                 url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy&no_reset=true' % \
                     ( tool_shed_url, tool_shed_repository.name, self.repository_owner, installed_changeset_revision )
@@ -291,6 +298,7 @@ class InstallManager( object ):
                                                                                               parent_id=tool_version_using_old_id.id )
                             self.app.sa_session.add( tool_version_association )
                             self.app.sa_session.flush()
+            update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.INSTALLED )
     @property
     def non_shed_tool_panel_configs( self ):
         # Get the non-shed related tool panel config file names from the Galaxy config - the default is tool_conf.xml.

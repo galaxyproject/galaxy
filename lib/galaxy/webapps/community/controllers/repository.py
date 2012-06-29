@@ -10,7 +10,7 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, make_tmp_directory, NOT_TOOL_CONFIGS
-from galaxy.util.shed_util import open_repository_files_folder, strip_path
+from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, strip_path
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -1096,8 +1096,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo = hg.repository( get_configured_ui(), repo_dir )
         # Default to the received changeset revision and ctx_rev.
         update_to_ctx = get_changectx_for_changeset( repo, changeset_revision )
+        ctx_rev = str( update_to_ctx.rev() )
         latest_changeset_revision = changeset_revision
-        update_dict = dict( changeset_revision=update_to_ctx, ctx_rev=str( update_to_ctx.rev() ) )
+        update_dict = dict( changeset_revision=changeset_revision, ctx_rev=ctx_rev )
         if changeset_revision == repository.tip:
             # If changeset_revision is the repository tip, there are no additional updates.
             return tool_shed_encode( update_dict )
@@ -1227,14 +1228,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                   changeset_revision,
                                                   str( ctx.rev() ) )
         encoded_repo_info_dict = encode( repo_info_dict )
-        if includes_tool_dependencies:
-            # Redirect back to local Galaxy to present the option to install tool dependencies.
-            url = '%sadmin_toolshed/confirm_tool_dependency_install?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s' % \
-                ( galaxy_url, url_for( '/', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
-        else:
-            # Redirect back to local Galaxy to perform install.
-            url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s' % \
-                ( galaxy_url, url_for( '/', qualified=True ), encoded_repo_info_dict, str( includes_tools ) )
+        # Redirect back to local Galaxy to perform install.
+        url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s&includes_tool_dependencies=%s' % \
+            ( galaxy_url, url_for( '/', qualified=True ), encoded_repo_info_dict, str( includes_tools ), str( includes_tool_dependencies ) )
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
@@ -1562,6 +1558,34 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     webapp=webapp,
                                     message=message,
                                     status=status )
+    @web.expose
+    def previous_changeset_revisions( self, trans, **kwd ):
+        """
+        Handle a request from a local Galaxy instance.  This method will handle the case where the repository was previously installed using an
+        older changeset_revsion, but later the repository was updated in the tool shed and the Galaxy admin is trying to install the latest
+        changeset revision of the same repository instead of updating the one that was previously installed.
+        """
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        # If the request originated with the UpdateManager, it will not include a galaxy_url.
+        galaxy_url = kwd.get( 'galaxy_url', '' )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        # Get the lower bound changeset revision 
+        lower_bound_changeset_revision = get_previous_valid_changset_revision( repository, repo, changeset_revision )
+        # Build the list of changeset revision hashes.
+        changeset_hashes = []
+        for changeset in reversed_lower_upper_bounded_changelog( repo, lower_bound_changeset_revision, changeset_revision ):
+            changeset_hashes.append( str( repo.changectx( changeset ) ) )
+        if changeset_hashes:
+            changeset_hashes_str = ','.join( changeset_hashes )
+            return changeset_hashes_str
+        return ''
     @web.expose
     @web.require_login( "rate repositories" )
     def rate_repository( self, trans, **kwd ):

@@ -54,7 +54,7 @@
                             url: "${h.url_for( controller='admin_toolshed', action='get_file_contents' )}",
                             dataType: "json",
                             data: { file_path: selected_value },
-                            success : function ( data ) {
+                            success : function( data ) {
                                 cell.html( '<label>'+data+'</label>' )
                             }
                         });
@@ -69,27 +69,31 @@
 
 <%def name="dependency_status_updater()">
     <script type="text/javascript">
-
-        // Tool dependency status updater - used to update the installation status on the Tool Dependencies grid. 
+        // Tool dependency status updater - used to update the installation status on the Tool Dependencies Grid. 
         // Looks for changes in tool dependency installation status using an async request. Keeps calling itself 
         // (via setTimeout) until dependency installation status is neither 'Installing' nor 'Building'.
-        var tool_dependency_status_updater = function ( dependency_status_list ) {
+        var tool_dependency_status_updater = function( dependency_status_list ) {
             // See if there are any items left to track
             var empty = true;
-            for ( i in dependency_status_list ) {
-                empty = false;
-                break;
+            for ( var item in dependency_status_list ) {
+                //alert( "item" + item.toSource() );
+                //alert( "dependency_status_list[item] " + dependency_status_list[item].toSource() );
+                //alert( "dependency_status_list[item]['status']" + dependency_status_list[item]['status'] );
+                if ( dependency_status_list[item]['status'] != 'Installed' ) {
+                    empty = false;
+                    break;
+                }
             }
             if ( ! empty ) {
                 setTimeout( function() { tool_dependency_status_updater_callback( dependency_status_list ) }, 3000 );
             }
         };
-        var tool_dependency_status_updater_callback = function ( dependency_status_list ) {
-            var ids = []
-            var status_list = []
-            $.each( dependency_status_list, function ( id, dependency_status ) {
-                ids.push( id );
-                status_list.push( dependency_status );
+        var tool_dependency_status_updater_callback = function( dependency_status_list ) {
+            var ids = [];
+            var status_list = [];
+            $.each( dependency_status_list, function( index, dependency_status ) {
+                ids.push( dependency_status[ 'id' ] );
+                status_list.push( dependency_status[ 'status' ] );
             });
             // Make ajax call
             $.ajax( {
@@ -97,17 +101,75 @@
                 url: "${h.url_for( controller='admin_toolshed', action='tool_dependency_status_updates' )}",
                 dataType: "json",
                 data: { ids: ids.join( "," ), status_list: status_list.join( "," ) },
-                success : function ( data ) {
-                    $.each( data, function( id, val ) {
+                success : function( data ) {
+                    $.each( data, function( index, val ) {
                         // Replace HTML
-                        var cell1 = $("#ToolDependencyStatus-" + id);
-                        cell1.html( val.html_status );
-                        dependency_status_list[ id ] = val.status;
+                        var cell1 = $( "#ToolDependencyStatus-" + val[ 'id' ] );
+                        cell1.html( val[ 'html_status' ] );
+                        dependency_status_list[ index ] = val;
                     });
                     tool_dependency_status_updater( dependency_status_list ); 
                 },
                 error: function() {
-                    tool_dependency_status_updater( dependency_status_list ); 
+                    alert( "tool_dependency_status_updater_callback failed..." );
+                }
+            });
+        };
+    </script>
+</%def>
+
+<%def name="repository_installation_status_updater()">
+    <script type="text/javascript">
+        // Tool shed repository status updater - used to update the installation status on the Repository Installation Grid. 
+        // Looks for changes in repository installation status using an async request. Keeps calling itself (via setTimeout) until
+        // repository installation status is not one of: 'New', 'Cloning', 'Setting tool versions', 'Installing tool dependencies',
+        // 'Loading proprietary datatypes'.
+        var tool_shed_repository_status_updater = function( repository_status_list ) {
+            // See if there are any items left to track
+            //alert( "repository_status_list start " + repository_status_list.toSource() );
+            var empty = true;
+            for ( var item in repository_status_list ) {
+                //alert( "item" + item.toSource() );
+                //alert( "repository_status_list[item] " + repository_status_list[item].toSource() );
+                //alert( "repository_status_list[item]['status']" + repository_status_list[item]['status'] );
+                if (repository_status_list[item]['status'] != 'Installed'){
+                empty = false;
+                break;
+                }
+            }
+            if ( ! empty ) {
+                setTimeout( function() { tool_shed_repository_status_updater_callback( repository_status_list ) }, 3000 );
+            }
+        };
+        var tool_shed_repository_status_updater_callback = function( repository_status_list ) {
+            //alert( repository_status_list );
+            //alert( repository_status_list.toSource() );
+            var ids = [];
+            var status_list = [];
+            $.each( repository_status_list, function( index, repository_status ) {
+                //alert('repository_status '+ repository_status.toSource() );
+                //alert('id '+ repository_status['id'] );
+                //alert( 'status'+ repository_status['status'] );
+                ids.push( repository_status[ 'id' ] );
+                status_list.push( repository_status[ 'status' ] );
+            });
+            // Make ajax call
+            $.ajax( {
+                type: "POST",
+                url: "${h.url_for( controller='admin_toolshed', action='repository_installation_status_updates' )}",
+                dataType: "json",
+                data: { ids: ids.join( "," ), status_list: status_list.join( "," ) },
+                success : function( data ) {
+                    $.each( data, function( index, val ) {
+                        // Replace HTML
+                        var cell1 = $( "#RepositoryStatus-" + val[ 'id' ] );
+                        cell1.html( val[ 'html_status' ] );
+                        repository_status_list[ index ] = val;
+                    });
+                    tool_shed_repository_status_updater( repository_status_list ); 
+                },
+                error: function() {
+                    alert( "tool_shed_repository_status_updater_callback failed..." );
                 }
             });
         };
@@ -126,71 +188,27 @@
     %if can_update:
         <script type="text/javascript">
             // Tool dependency installation status updater
-            tool_dependency_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( td.id ), td.status ) for td in query ] ) }});
+            tool_dependency_status_updater( [${ ",".join( [ '{"id" : "%s", "status" : "%s"}' % ( trans.security.encode_id( td.id ), td.status ) for td in query ] ) } ] );
         </script>
     %endif
-</%def>
-
-<%def name="repository_installation_status_updater()">
-    <script type="text/javascript">
-
-        // Tool shed repository status updater - used to update the installation status on the repository_installation.mako template. 
-        // Looks for changes in repository installation status using an async request. Keeps calling itself (via setTimeout) until
-        // repository installation status is neither 'cloning', 'cloned' nor 'installing tool dependencies'.
-        var tool_shed_repository_status_updater = function ( repository_status_list ) {
-            // See if there are any items left to track
-            var empty = true;
-            for ( i in repository_status_list ) {
-                empty = false;
-                break;
-            }
-            if ( ! empty ) {
-                setTimeout( function() { tool_shed_repository_status_updater_callback( repository_status_list ) }, 3000 );
-            }
-        };
-        var tool_shed_repository_status_updater_callback = function ( repository_status_list ) {
-            var ids = []
-            var status_list = []
-            $.each( repository_status_list, function ( id, repository_status ) {
-                ids.push( id );
-                status_list.push( repository_status );
-            });
-            // Make ajax call
-            $.ajax( {
-                type: "POST",
-                url: "${h.url_for( controller='admin_toolshed', action='repository_installation_status_updates' )}",
-                dataType: "json",
-                data: { id: ids[0], status_list: status_list.join( "," ) },
-                success : function ( data ) {
-                    $.each( data, function( id, val ) {
-                        // Replace HTML
-                        var cell1 = $("#RepositoryStatus-" + id);
-                        cell1.html( val.html_status );
-                        repository_status_list[ id ] = val.status;
-                    });
-                    tool_shed_repository_status_updater( repository_status_list ); 
-                },
-                error: function() {
-                    tool_shed_repository_status_updater( repository_status_list ); 
-                }
-            });
-        };
-    </script>
 </%def>
 
 <%def name="repository_installation_updater()">
     <%
-        can_update = True
-        if tool_shed_repository:
-            can_update = tool_shed_repository.status not in [ trans.model.ToolShedRepository.installation_status.INSTALLED,
-                                                              trans.model.ToolShedRepository.installation_status.ERROR,
-                                                              trans.model.ToolShedRepository.installation_status.UNINSTALLED ]
+        can_update = False
+        if query.count():
+            for tool_shed_repository in query:
+                if tool_shed_repository.status not in [ trans.model.ToolShedRepository.installation_status.INSTALLED,
+                                                        trans.model.ToolShedRepository.installation_status.ERROR,
+                                                        trans.model.ToolShedRepository.installation_status.DEACTIVATED,
+                                                        trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+                    can_update = True
+                    break
     %>
     %if can_update:
         <script type="text/javascript">
             // Tool shed repository installation status updater
-            repository_installation_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( repository.id ), repository.status ) for repository in query ] ) }});
+            tool_shed_repository_status_updater( [${ ",".join( [ '{"id" : "%s", "status" : "%s"}' % ( trans.security.encode_id( tsr.id ), tsr.status ) for tsr in query ] ) } ] );
         </script>
     %endif
 </%def>
-

@@ -73,6 +73,7 @@
                         %if cloned_repositories:
                             <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_repositories' )}" target="galaxy_main">Manage installed tool shed repositories</a></div>
                         %endif
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='monitor_repository_installation' )}" target="galaxy_main">Monitor installing tool shed repositories</a></div>
                     </div>
                 </div>
                 %if trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds:

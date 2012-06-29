@@ -388,7 +388,9 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "update_available", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "uninstalled", Boolean, default=False ),
-    Column( "dist_to_shed", Boolean, default=False ) )
+    Column( "dist_to_shed", Boolean, default=False ),
+    Column( "status", TrimmedString( 255 ) ),
+    Column( "error_message", TEXT ) )
 
 ToolDependency.table = Table( "tool_dependency", metadata,
     Column( "id", Integer, primary_key=True ),
