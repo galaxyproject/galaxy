@@ -695,7 +695,8 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         });
         tr.children().first().attr('colspan', 2);
 
-        $('#right').append(this.track_collection_container);
+        var tracks_div = $('<div>').addClass('tiles');
+        $('#right').append( tracks_div.append(this.track_collection_container) );
 
         self.model.get('tracks').each(function(track) {
             self.add_track(track);

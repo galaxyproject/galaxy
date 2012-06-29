@@ -88,6 +88,14 @@
         #right {
             width: 600px;
         }
+        .tiles {
+            overflow: auto;
+            position: absolute;
+            top: 25px;
+            bottom: 25px;
+            left: 0;
+            right: 0;
+        }
     </style>
 </%def>
 
