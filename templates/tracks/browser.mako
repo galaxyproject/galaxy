@@ -49,7 +49,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     // Place URLs here so that url_for can be used to generate them.
     //
     galaxy_paths.set({
-        visualization_url: "${h.url_for( action='save' )}"
+        visualization_url: "${h.url_for( action='save' )}",
+        paramamonster_url: "${h.url_for( action='paramamonster' )}",
     });
     var 
         add_track_async_url = "${h.url_for( action='add_track_async' )}",
@@ -141,10 +142,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 // Save bookmarks.
                 var bookmarks = [];
                 $(".bookmark").each(function() { 
-                    bookmarks[bookmarks.length] = {
+                    bookmarks.push({
                         position: $(this).children(".position").text(),
                         annotation: $(this).children(".annotation").text()
-                    };
+                    });
                 });
 
                 // FIXME: give unique IDs to Drawables and save overview as ID.

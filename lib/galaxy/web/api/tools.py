@@ -141,6 +141,39 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Us
             elif isinstance( regions, list ):
                 # There is a list of regions.
                 regions = [ GenomeRegion.from_dict( r ) for r in regions ]
+
+                # Sort by chrom name, start so that data is not fetched out of order.
+                regions.sort( key=lambda r: r.chrom )
+                regions.sort( key=lambda r: r.start )
+
+                # Merge overlapping regions so that regions do not overlap 
+                # and hence data is not included multiple times.
+                print "REGIONS", regions
+                for region in regions:
+                    print "\t", region.chrom, region.start, region.end
+                prev = regions[0]
+                cur = regions[1]
+                index = 1
+                while True:
+                    if cur.start <= prev.end:
+                        # Found overlapping regions, so join them.
+                        prev.end = cur.end
+                        del regions[ index ]
+                    else:
+                        # No overlap, move to next region.
+                        prev = cur
+                        index += 1
+
+                    # Get next region or exit.    
+                    if index == len( regions ):
+                        # Done.
+                        break
+                    else:
+                        cur = regions[ index ]
+
+                print "REGIONS", regions
+                for region in regions:
+                    print "\t", region.chrom, region.start, region.end
             run_on_regions = True
             
         # Dataset check.

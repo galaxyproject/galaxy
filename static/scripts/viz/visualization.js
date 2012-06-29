@@ -269,7 +269,7 @@ var GenomeDataManager = Cache.extend({
             obj_cache = this.get('obj_cache'),
             key, entry_region;
         for (var i = 0; i < key_ary.length; i++) {
-            entry_region = new GenomeRegion(key_ary[i]);
+            entry_region = new GenomeRegion({from_str: key_ary[i]});
         
             if (entry_region.contains(region)) {
                 // This entry has data in the requested range. Return if data
@@ -420,20 +420,19 @@ var GenomeRegion = Backbone.RelationalModel.extend({
     },
     
     /**
-     * If options is a string, parsing using the format
-     * chrom:start-end is attempted to set object attributes.
+     * If from_str specified, use it to initialize attributes.
      */
     initialize: function(options) {
-        if (typeof(options) === 'string') {
-            var pieces = options.split(':'),
+        if (options.from_str) {
+            var pieces = options.from_str.split(':'),
                 chrom = pieces[0],
                 start_end = pieces[1].split('-');
             this.set({
                 chrom: chrom,
-                start: parseInt(start_end[0]),
-                end: parseInt(start_end[1])
+                start: parseInt(start_end[0], 10),
+                end: parseInt(start_end[1], 10)
             });
-        }  
+        }
     },
     
     copy: function() {
@@ -552,7 +551,12 @@ var Visualization = Backbone.RelationalModel.extend({
         datasets: []
     },
     
-    url: galaxy_paths.get("visualization_url"),
+    // Use function because visualization_url changes depending on viz.
+    // FIXME: all visualizations should save to the same URL (and hence
+    // this function won't be needed).
+    url: function() { 
+        return galaxy_paths.get("visualization_url");
+    },
     
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'
@@ -561,7 +565,7 @@ var Visualization = Backbone.RelationalModel.extend({
      */
     save: function() {
         return $.ajax({
-            url: this.url,
+            url: this.url(),
             type: "POST",
             dataType: "json",
             data: { 

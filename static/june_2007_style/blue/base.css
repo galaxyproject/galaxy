@@ -759,7 +759,9 @@ div.toolTitleNoSection{padding-bottom:5px;font-weight:bold;}
 .icon-button.disk--arrow:hover{background:url(fugue.png) no-repeat 0px -494px;}
 .icon-button.cross-circle{background:url(fugue.png) no-repeat 0px -520px;}
 .icon-button.cross-circle:hover{background:url(fugue.png) no-repeat 0px -546px;}
-.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -572px;}
+.icon-button.arrow-split{background:url(fugue.png) no-repeat 0px -572px;}
+.icon-button.arrow-split:hover{background:url(fugue.png) no-repeat 0px -598px;}
+.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -624px;}
 div.historyItem-error .state-icon{background:url(history-states.png) no-repeat 0px 0px;}
 div.historyItem-empty .state-icon{background:url(history-states.png) no-repeat 0px -25px;}
 div.historyItem-queued .state-icon{background:url(history-states.png) no-repeat 0px -50px;}

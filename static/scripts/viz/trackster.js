@@ -838,11 +838,11 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             //
 
             /// All tracks the same?
-            var drawable,
+            var i, j, drawable,
                 same_type = true,
                 a_type = this.drawables[0].get_type(),
                 num_feature_tracks = 0;
-            for (var i = 0; i < num_drawables; i++) {
+            for (i = 0; i < num_drawables; i++) {
                 drawable = this.drawables[i];
                 if (drawable.get_type() !== a_type) {
                     can_composite = false;
@@ -868,21 +868,20 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 //
                 // Find shared filters.
                 //
-                var 
-                    shared_filters = {},
+                var shared_filters = {},
                     filter;
             
                 // Init shared filters with filters from first drawable.
                 drawable = this.drawables[0];
-                for (var j = 0; j < drawable.filters_manager.filters.length; j++) {
+                for (j = 0; j < drawable.filters_manager.filters.length; j++) {
                     filter = drawable.filters_manager.filters[j];
                     shared_filters[filter.name] = [filter];
                 }
             
                 // Create lists of shared filters.
-                for (var i = 1; i < this.drawables.length; i++) {
+                for (i = 1; i < this.drawables.length; i++) {
                     drawable = this.drawables[i];
-                    for (var j = 0; j < drawable.filters_manager.filters.length; j++) {
+                    for (j = 0; j < drawable.filters_manager.filters.length; j++) {
                         filter = drawable.filters_manager.filters[j];
                         if (filter.name in shared_filters) {
                             shared_filters[filter.name].push(filter);
@@ -1278,8 +1277,8 @@ extend( View.prototype, DrawableCollection.prototype, {
      * Load chrom data for the view. Returns a jQuery Deferred.
      */
     load_chroms: function(url_parms) {
-        url_parms['num'] = MAX_CHROMS_SELECTABLE;
-        url_parms['dbkey'] = this.dbkey;
+        url_parms.num = MAX_CHROMS_SELECTABLE;
+        url_parms.dbkey = this.dbkey;
 
         var 
             view = this,
@@ -1729,7 +1728,6 @@ var Tool = function(track, tool_dict, tool_state_dict) {
     var run_tool_row = $("<div>").addClass("param-row").appendTo(this.parent_div);
     var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_tool_row);
     var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").css("margin-left", "3em").appendTo(run_tool_row);
-    var tool = this;
     run_on_region_button.click( function() {
         // Run tool to create new track.
         tool.run_on_region();
@@ -2413,14 +2411,14 @@ extend(FiltersManager.prototype, {
             filter = this.filters[i];
             filter_dicts.push(filter.to_dict());
         }
-        obj_dict['filters'] = filter_dicts;
+        obj_dict.filters = filter_dicts;
         
         // Include transparency, height filters.
-        obj_dict['alpha_filter'] = (this.alpha_filter ? this.alpha_filter.name : null);
-        obj_dict['height_filter'] = (this.height_filter ? this.height_filter.name : null);
+        obj_dict.alpha_filter = (this.alpha_filter ? this.alpha_filter.name : null);
+        obj_dict.height_filter = (this.height_filter ? this.height_filter.name : null);
         
         // Include visibility.
-        obj_dict['visible'] = this.parent_div.is(":visible");
+        obj_dict.visible = this.parent_div.is(":visible");
         
         return obj_dict;
     },
@@ -3028,6 +3026,76 @@ extend(Track.prototype, Drawable.prototype, {
                 $(".tipsy").remove();
             }
         },
+        // Go to parameter exploration visualization.
+        {
+            name: "param_space_viz_icon",
+            title: "Tool parameter space visualization",
+            css_class: "arrow-split",
+            on_click_fn: function(track) {
+                var template =
+                    '<strong>Tool</strong>: <%= track.tool.name %><br/>' + 
+                    '<strong>Dataset</strong>: <%= track.name %><br/>' +
+                    '<strong>Region(s)</strong>: <select name="regions">' +
+                    '<option value="cur">current viewing area</option>' +
+                    '<option value="bookmarks">bookmarks</option>' +
+                    '<option value="both">current viewing area and bookmarks</option>' +
+                    '</select>',
+                    html = _.template(template, { track: track });
+                var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+                    ok_fn = function() {
+                        var regions_to_use = $('select[name="regions"] option:selected').val(),
+                            regions,
+                            view_region = new GenomeRegion({
+                                chrom: view.chrom,
+                                start: view.low,
+                                end: view.high
+                            }),
+                            bookmarked_regions = _.map($(".bookmark"), function(elt) { 
+                                return new GenomeRegion({from_str: $(elt).children(".position").text()});
+                            });
+
+                        console.log(regions_to_use);
+
+                        // Get regions for visualization.
+                        if (regions_to_use === 'cur') {
+                            // Use only current region.
+                            regions = [ view_region ];
+                        }
+                        else if (regions_to_use === 'bookmarks') {
+                            // Use only bookmarks.
+                            regions = new Backbone.Collection(bookmarked_regions);
+                        }
+                        else {
+                            // Use both current region and bookmarks.
+                            regions = new Backbone.Collection([ view_region ].concat(bookmarked_regions));
+                        }
+
+                        hide_modal();
+
+                        // Go to visualization.
+                        window.location.href = 
+                            galaxy_paths.get('paramamonster_url') + "?" + 
+                            $.param({
+                                dataset_id: track.dataset_id,
+                                hda_ldda: track.hda_ldda,
+                                regions: JSON.stringify(regions.toJSON())
+                            });
+                    },
+                    check_enter_esc = function(e) {
+                        if ((e.keyCode || e.which) === 27) { // Escape key
+                            cancel_fn();
+                        } else if ((e.keyCode || e.which) === 13) { // Enter key
+                            ok_fn();
+                        }
+                    };
+
+                show_modal("Visualize tool parameter space and output from different parameter settings?", html, {
+                    "No": cancel_fn,
+                    "Yes": ok_fn
+                });
+                
+            }
+        },
         // Remove track.
         Drawable.prototype.action_icons_def[2]
     ],
@@ -3379,13 +3447,15 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
         
         //
-        // Show/hide tool icon.
+        // Show/hide tool icons.
         //
         if (track.tool) {
             track.action_icons.tools_icon.show();
+            track.action_icons.param_space_viz_icon.show();
         }
         else {
             track.action_icons.tools_icon.hide();
+            track.action_icons.param_space_viz_icon.hide();
         }
                         
         //
@@ -3856,6 +3926,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // For now, hide filters and tool.
         this.action_icons.filters_icon.hide();
         this.action_icons.tools_icon.hide();  
+        this.action_icons.param_space_viz_icon.hide();
     },
     can_draw: Drawable.prototype.can_draw,
     draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
@@ -4341,6 +4412,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         this.tiles_div.css("height", track_height + "px");    
     },
+
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
@@ -4353,15 +4425,15 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
         if (track.mode === "Histogram") {
             // Get global max.
-            var global_max = -1;
-            for (var i = 0; i < tiles.length; i++) {
+            var i, global_max = -1;
+            for (i = 0; i < tiles.length; i++) {
                 var cur_max = tiles[i].max_val;
                 if (cur_max > global_max) {
                     global_max = cur_max;
                 }
             }
             
-            for (var i = 0; i < tiles.length; i++) {
+            for (i = 0; i < tiles.length; i++) {
                 var tile = tiles[i];
                 if (tile.max_val !== global_max) {
                     tile.html_elt.remove();
@@ -4477,7 +4549,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var dummy_context = this.view.canvas_manager.dummy_context,
             slotter = this.slotters[level];
         if (!slotter || (slotter.mode !== mode)) {
-            slotter = new (slotting.FeatureSlotter)( level, mode, MAX_FEATURE_DEPTH, function ( x ) { return dummy_context.measureText( x ) } );
+            slotter = new (slotting.FeatureSlotter)( level, mode, MAX_FEATURE_DEPTH, function ( x ) { return dummy_context.measureText( x ); } );
             this.slotters[level] = slotter;
         }
 
@@ -4726,7 +4798,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
 
         return true;
-    },
+    }
 });
 
 var VcfTrack = function(view, container, obj_dict) {
@@ -4740,7 +4812,7 @@ var VcfTrack = function(view, container, obj_dict) {
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
-            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
         ], 
         saved_values: obj_dict.prefs,
         onchange: function() {
@@ -4773,7 +4845,7 @@ var ReadTrack = function (view, container, obj_dict) {
             { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
             { key: 'histogram_max', label: 'Histogram maximum', type: 'float', default_value: null, help: 'Clear value to set automatically' },
-            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
         ], 
         saved_values: obj_dict.prefs,
         onchange: function() {

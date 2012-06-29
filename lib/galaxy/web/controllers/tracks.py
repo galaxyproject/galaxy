@@ -484,22 +484,8 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
-                'regions': regions
+                'regions': from_json_string( regions )
             }
-
-        viz_config[ 'regions' ] = [
-            {
-                'chrom': 'chr19',
-                'start': '10000',
-                'end': '26000'
-            },
-            {
-                'chrom': 'chr19',
-                'start': '150000',
-                'end': '175000'
-            }
-
-        ]
                 
         # Add tool, dataset attributes to config based on id.
         tool = trans.app.toolbox.get_tool( viz_config[ 'tool_id' ] )
