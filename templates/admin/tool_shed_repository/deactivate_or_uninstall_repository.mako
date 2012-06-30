@@ -23,7 +23,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">${repository.name}</div>
     <div class="toolFormBody">
-        <form name="uninstall_repository" id="uninstall_repository" action="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+        <form name="deactivate_or_uninstall_repository" id="deactivate_or_uninstall_repository" action="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <div class="form-row">
                 <label>Description:</label>
                 ${repository.description}
