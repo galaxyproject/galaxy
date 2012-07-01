@@ -142,31 +142,32 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Us
                 # There is a list of regions.
                 regions = [ GenomeRegion.from_dict( r ) for r in regions ]
 
-                # Sort by chrom name, start so that data is not fetched out of order.
-                regions.sort( key=lambda r: r.chrom )
-                regions.sort( key=lambda r: r.start )
+                if len( regions ) > 1:
+                    # Sort by chrom name, start so that data is not fetched out of order.
+                    regions.sort( key=lambda r: r.chrom )
+                    regions.sort( key=lambda r: r.start )
 
-                # Merge overlapping regions so that regions do not overlap 
-                # and hence data is not included multiple times.
-                prev = regions[0]
-                cur = regions[1]
-                index = 1
-                while True:
-                    if cur.start <= prev.end:
-                        # Found overlapping regions, so join them.
-                        prev.end = cur.end
-                        del regions[ index ]
-                    else:
-                        # No overlap, move to next region.
-                        prev = cur
-                        index += 1
+                    # Merge overlapping regions so that regions do not overlap 
+                    # and hence data is not included multiple times.
+                    prev = regions[0]
+                    cur = regions[1]
+                    index = 1
+                    while True:
+                        if cur.start <= prev.end:
+                            # Found overlapping regions, so join them.
+                            prev.end = cur.end
+                            del regions[ index ]
+                        else:
+                            # No overlap, move to next region.
+                            prev = cur
+                            index += 1
 
-                    # Get next region or exit.    
-                    if index == len( regions ):
-                        # Done.
-                        break
-                    else:
-                        cur = regions[ index ]
+                        # Get next region or exit.    
+                        if index == len( regions ):
+                            # Done.
+                            break
+                        else:
+                            cur = regions[ index ]
             
             run_on_regions = True
             

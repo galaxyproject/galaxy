@@ -91,7 +91,7 @@
         .tiles {
             overflow: auto;
             position: absolute;
-            top: 25px;
+            top: 30px;
             bottom: 25px;
             left: 0;
             right: 0;

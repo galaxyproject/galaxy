@@ -595,7 +595,7 @@ var ToolParameterTreeView = Backbone.View.extend({
 
         // Layout tree.
         var cluster = d3.layout.cluster()
-            .size([this.height - 10, this.width - 160]);
+            .size([this.height, this.width - 160]);
 
         var diagonal = d3.svg.diagonal()
             .projection(function(d) { return [d.y, d.x]; });
@@ -617,7 +617,7 @@ var ToolParameterTreeView = Backbone.View.extend({
         var vis = d3.select(this.$el[0])
           .append("svg")
             .attr("width", this.width)
-            .attr("height", this.height)
+            .attr("height", this.height + 20)
           .append("g")
             .attr("transform", "translate(40, 10)");
 
@@ -754,39 +754,57 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
             regions = this.model.get('regions'),
             node = d3.select(this.tool_param_tree_view.$el[0]).selectAll("g.node");
         node.on("click", function(d, i) {
-            // TODO: Show popup menu.
-            
             // Get all settings corresponding to node.
             var tool = self.model.get('tool'),
                 dataset = self.model.get('dataset'),
-                all_settings = param_tree.get_node_settings(d);
+                all_settings = param_tree.get_node_settings(d),
+                run_jobs_deferred = $.Deferred();
 
-            // Create and add tracks for each settings group.
-            var tracks = _.map(all_settings, function(settings) {
-                var pm_track = new ParamaMonsterTrack({
-                    settings: settings,
-                    regions: regions
-                });
-                self.add_track(pm_track);
-                return pm_track;
-            });
-                
-            // For each track, run tool using track's settings and update track.
-            _.each(tracks, function(pm_track, index) {
-                setTimeout(function() {
-                    // Set inputs and run tool.
-                    // console.log('running with settings', pm_track.get('settings'));
-                    tool.set_input_values(pm_track.get('settings'));
-                    $.when(tool.rerun(dataset, regions)).then(function(output) {
-                        // Create and add track for output dataset.
-                        var track_config = _.extend({
-                                data_url: galaxy_paths.get('raw_data_url'),
-                                converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
-                            }, output.first().get('track_config')),
-                            track_obj = object_from_template(track_config, self, null);
-                        pm_track.set('track', track_obj);
+            // Do not allow 10+ jobs to be run.
+            if (all_settings.length >= 10) {
+                show_modal("Whoa there cowboy!", 
+                            "You clicked on a node to try " + self.model.get('tool').get('name') +
+                            " with " + all_settings.length +
+                            " different combinations of settings. You can only run 10 jobs at a time.",
+                            { 
+                                "Ok": function() { hide_modal(); run_jobs_deferred.resolve(false); }
+                            });
+            }
+            else {
+                run_jobs_deferred.resolve(true);
+            }
+
+            // Take action when deferred resolves.
+            $.when(run_jobs_deferred).then(function(run_jobs) {
+                if (!run_jobs) { return; }
+
+                // Create and add tracks for each settings group.
+                var tracks = _.map(all_settings, function(settings) {
+                    var pm_track = new ParamaMonsterTrack({
+                        settings: settings,
+                        regions: regions
                     });
-                }, index * 10000);
+                    self.add_track(pm_track);
+                    return pm_track;
+                });
+                    
+                // For each track, run tool using track's settings and update track.
+                _.each(tracks, function(pm_track, index) {
+                    setTimeout(function() {
+                        // Set inputs and run tool.
+                        // console.log('running with settings', pm_track.get('settings'));
+                        tool.set_input_values(pm_track.get('settings'));
+                        $.when(tool.rerun(dataset, regions)).then(function(output) {
+                            // Create and add track for output dataset.
+                            var track_config = _.extend({
+                                    data_url: galaxy_paths.get('raw_data_url'),
+                                    converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
+                                }, output.first().get('track_config')),
+                                track_obj = object_from_template(track_config, self, null);
+                            pm_track.set('track', track_obj);
+                        });
+                    }, index * 10000);
+                });    
             });
         });
     }

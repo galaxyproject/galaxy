@@ -3063,11 +3063,11 @@ extend(Track.prototype, Drawable.prototype, {
                         }
                         else if (regions_to_use === 'bookmarks') {
                             // Use only bookmarks.
-                            regions = new Backbone.Collection(bookmarked_regions);
+                            regions = bookmarked_regions;
                         }
                         else {
                             // Use both current region and bookmarks.
-                            regions = new Backbone.Collection([ view_region ].concat(bookmarked_regions));
+                            regions = [ view_region ].concat(bookmarked_regions);
                         }
 
                         hide_modal();
@@ -3078,7 +3078,7 @@ extend(Track.prototype, Drawable.prototype, {
                             $.param({
                                 dataset_id: track.dataset_id,
                                 hda_ldda: track.hda_ldda,
-                                regions: JSON.stringify(regions.toJSON())
+                                regions: JSON.stringify(new Backbone.Collection(regions).toJSON())
                             });
                     },
                     check_enter_esc = function(e) {
