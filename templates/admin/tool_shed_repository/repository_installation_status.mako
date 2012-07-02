@@ -19,7 +19,7 @@
                 bgcolor = trans.model.ToolShedRepository.states.OK
         else:
             bgcolor = trans.model.ToolShedRepository.states.ERROR
-        rval = '<div class="count-box state-color-%s" id="ToolShedRepositoryStatus-%s">' % ( bgcolor, trans.security.encode_id( repository.id ) )
+        rval = '<div class="count-box state-color-%s" id="RepositoryStatus-%s">' % ( bgcolor, trans.security.encode_id( repository.id ) )
         rval += '%s</div>' % repository.status
         return rval
     %>    

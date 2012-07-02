@@ -200,8 +200,8 @@
                 //alert( "repository_status_list[item] " + repository_status_list[item].toSource() );
                 //alert( "repository_status_list[item]['status']" + repository_status_list[item]['status'] );
                 if (repository_status_list[item]['status'] != 'Installed'){
-                empty = false;
-                break;
+                    empty = false;
+                    break;
                 }
             }
             if ( ! empty ) {

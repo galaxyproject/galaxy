@@ -70,8 +70,10 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='reload_tool' )}" target="galaxy_main">Reload a tool's configuration</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='memdump' )}" target="galaxy_main">Profile memory usage</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='jobs' )}" target="galaxy_main">Manage jobs</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='monitor_repository_installation' )}" target="galaxy_main">Monitor installing tool shed repositories</a></div>
-                        %if cloned_repositories:
+                        %if installing_repository_ids:
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='monitor_repository_installation', tool_shed_repository_ids=installing_repository_ids )}" target="galaxy_main">Monitor installing tool shed repositories</a></div>
+                        %endif
+                        %if installed_repositories:
                             <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_repositories' )}" target="galaxy_main">Manage installed tool shed repositories</a></div>
                         %endif
                     </div>

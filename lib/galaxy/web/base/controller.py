@@ -1556,10 +1556,25 @@ class Admin( object ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
-            cloned_repositories = trans.sa_session.query( trans.model.ToolShedRepository ).first()
+            installed_repositories = trans.sa_session.query( trans.model.ToolShedRepository ).first()
+            installing_repository_ids = []
+            new_status = trans.model.ToolShedRepository.installation_status.NEW
+            cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
+            setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+            installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+            loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+            for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                                        .filter( or_( trans.model.ToolShedRepository.status == new_status,
+                                                                      trans.model.ToolShedRepository.status == cloning_status,
+                                                                      trans.model.ToolShedRepository.status == setting_tool_versions_status,
+                                                                      trans.model.ToolShedRepository.status == installing_dependencies_status,
+                                                                      trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
+                installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
+            installing_repository_ids = ','.join( installing_repository_ids )
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         webapp=webapp,
-                                        cloned_repositories=cloned_repositories,
+                                        installed_repositories=installed_repositories,
+                                        installing_repository_ids=installing_repository_ids,
                                         message=message,
                                         status=status )
         else:
