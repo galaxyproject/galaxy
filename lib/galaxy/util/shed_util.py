@@ -330,6 +330,15 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     if not owner:
         owner = get_repository_owner_from_clone_url( repository_clone_url )
     includes_datatypes = 'datatypes' in metadata_dict
+    if status in [ app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+        deleted = True
+        uninstalled = False
+    elif status in [ app.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+        deleted = True
+        uninstalled = True
+    else:
+        deleted = False
+        uninstalled = False
     tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app,
                                                                                                      tool_shed,
                                                                                                      name,
@@ -341,22 +350,9 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         tool_shed_repository.ctx_rev = ctx_rev
         tool_shed_repository.metadata = metadata_dict
         tool_shed_repository.includes_datatypes = includes_datatypes
+        tool_shed_repository.deleted = deleted
+        tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
-        if status in [ app.model.ToolShedRepository.installation_status.NEW,
-                       app.model.ToolShedRepository.installation_status.CLONING,
-                       app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
-                       app.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
-                       app.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES,
-                       app.model.ToolShedRepository.installation_status.INSTALLED,
-                       app.model.ToolShedRepository.installation_status.ERROR ]:
-            tool_shed_repository.deleted = False
-            tool_shed_repository.uninstalled = False
-        elif status in [ app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
-            tool_shed_repository.deleted = True
-            tool_shed_repository.uninstalled = False
-        elif status in [ app.model.ToolShedRepository.installation_status.UNINSTALLED ]:
-            tool_shed_repository.deleted = True
-            tool_shed_repository.uninstalled = True
     else:
         tool_shed_repository = app.model.ToolShedRepository( tool_shed=tool_shed,
                                                              name=name,
