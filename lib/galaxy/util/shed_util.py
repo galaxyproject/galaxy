@@ -290,11 +290,15 @@ def copy_sample_file( app, filename, dest_path=None ):
         dest_path = os.path.abspath( app.config.tool_data_path )
     sample_file_name = strip_path( filename )
     copied_file = sample_file_name.replace( '.sample', '' )
-    # It's ok to overwrite the .sample version of the file.
-    shutil.copy( os.path.abspath( filename ), os.path.join( dest_path, sample_file_name ) )
+    full_source_path = os.path.abspath( filename )
+    full_destination_path = os.path.join( dest_path, sample_file_name )
+    # Don't copy a file to itself - not sure how this happens, but sometimes it does...
+    if full_source_path != full_destination_path:
+        # It's ok to overwrite the .sample version of the file.
+        shutil.copy( full_source_path, full_destination_path )
     # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it contains stuff proprietary to the local instance.
     if not os.path.exists( os.path.join( dest_path, copied_file ) ):
-        shutil.copy( os.path.abspath( filename ), os.path.join( dest_path, copied_file ) )
+        shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 def copy_sample_files( app, sample_files, sample_files_copied=None, dest_path=None ):
     """
     Copy all files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
@@ -346,8 +350,13 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
                        app.model.ToolShedRepository.installation_status.INSTALLED,
                        app.model.ToolShedRepository.installation_status.ERROR ]:
             tool_shed_repository.deleted = False
-        if status not in [ app.model.ToolShedRepository.installation_status.UNINSTALLED ]:
             tool_shed_repository.uninstalled = False
+        elif status in [ app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+            tool_shed_repository.deleted = True
+            tool_shed_repository.uninstalled = False
+        elif status in [ app.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+            tool_shed_repository.deleted = True
+            tool_shed_repository.uninstalled = True
     else:
         tool_shed_repository = app.model.ToolShedRepository( tool_shed=tool_shed,
                                                              name=name,
@@ -359,6 +368,8 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
                                                              metadata=metadata_dict,
                                                              includes_datatypes=includes_datatypes,
                                                              dist_to_shed=dist_to_shed,
+                                                             deleted=deleted,
+                                                             uninstalled=uninstalled,
                                                              status=status )
     sa_session.add( tool_shed_repository )
     sa_session.flush()

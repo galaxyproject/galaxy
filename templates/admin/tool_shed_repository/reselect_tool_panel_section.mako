@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/admin/tool_shed_repository/common.mako" import="render_tool_dependency_section" />
 
 %if message:
     ${render_msg( message, status )}
@@ -8,7 +9,12 @@
 <div class="toolForm">
     <div class="toolFormTitle">Choose the tool panel section to contain the installed tools (optional)</div>
     <div class="toolFormBody">
-        <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+        <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ), repo_info_dict=repo_info_dict )}" method="post" >
+            <div style="clear: both"></div>
+            %if includes_tool_dependencies:
+                ${render_tool_dependency_section( install_tool_dependencies_check_box, dict_with_tool_dependencies )}
+            %endif
+            <div style="clear: both"></div>
             <div class="form-row">
                 ${no_changes_check_box.get_html()}
                 <label style="display: inline;">No changes</label>

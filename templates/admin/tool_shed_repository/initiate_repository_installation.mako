@@ -11,15 +11,15 @@
 <%def name="repository_installation_javascripts()">
     <script type="text/javascript">
         $(document).ready(function( ){
-            initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}" );
+            initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}", "${reinstalling}" );
         });
-        var initiate_repository_installation = function ( iri_ids, encoded_kwd ) {
+        var initiate_repository_installation = function ( iri_ids, encoded_kwd, reinstalling ) {
             // Make ajax call
             $.ajax( {
                 type: "POST",
                 url: "${h.url_for( controller='admin_toolshed', action='manage_repositories' )}",
                 dataType: "html",
-                data: { operation: "install", tool_shed_repository_ids: iri_ids, encoded_kwd: encoded_kwd },
+                data: { operation: "install", tool_shed_repository_ids: iri_ids, encoded_kwd: encoded_kwd, reinstalling: reinstalling },
                 success : function ( data ) {
                     //alert( "Initializing repository installation succeeded" );
                 },
