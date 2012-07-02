@@ -87,9 +87,6 @@ var is_overlap = function(first_region, second_region) {
  * Helper to determine if object is jQuery deferred.
  */
 var is_deferred = function ( d ) {
-    if (d === 'pending') {
-        console.log('pending');
-    }
     return ( 'isResolved' in d );
 };
 

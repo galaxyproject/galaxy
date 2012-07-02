@@ -269,7 +269,8 @@ var GenomeDataManager = Cache.extend({
             obj_cache = this.get('obj_cache'),
             key, entry_region;
         for (var i = 0; i < key_ary.length; i++) {
-            entry_region = new GenomeRegion({from_str: key_ary[i]});
+            key = key_ary[i];
+            entry_region = new GenomeRegion({from_str: key});
         
             if (entry_region.contains(region)) {
                 // This entry has data in the requested range. Return if data
