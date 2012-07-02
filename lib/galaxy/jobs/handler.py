@@ -55,7 +55,6 @@ class JobHandlerQueue( object ):
         # Contains new jobs. Note this is not used if track_jobs_in_database is True
         self.queue = Queue()
         # Contains jobs that are waiting (only use from monitor thread)
-        ## This and jobs_to_check[] are closest to a "Job Queue"
         self.waiting_jobs = []
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
@@ -392,13 +391,12 @@ class DefaultJobDispatcher( object ):
         if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
             runner_name = "tasks"
         else:
-            runner_name = ( job_wrapper.get_job_runner().split(":", 1) )[0]
+            runner_name = ( job_wrapper.get_job_runner_url().split(":", 1) )[0]
         return runner_name
 
     def put( self, job_wrapper ):
         try:
             runner_name = self.__get_runner_name( job_wrapper )
-            log.debug( "Runner_name: " + runner_name )
             if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and isinstance(job_wrapper, TaskWrapper):
                 #DBTODO Refactor
                 log.debug( "dispatching task %s, of job %d, to %s runner" %( job_wrapper.task_id, job_wrapper.job_id, runner_name ) )

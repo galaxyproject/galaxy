@@ -846,7 +846,7 @@ class Tool:
                     if match:
                         available_configs.append( config )
         return random.choice( available_configs )[ key ]
-    def get_job_runner( self, job_params=None ):
+    def get_job_runner_url( self, job_params=None ):
         return self.__get_job_run_config( self.job_runners, key='url', job_params=job_params )
     def get_job_handler( self, job_params=None ):
         return self.__get_job_run_config( self.job_handlers, key='name', job_params=job_params )

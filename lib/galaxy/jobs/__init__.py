@@ -89,9 +89,11 @@ class JobWrapper( object ):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
-    def get_job_runner( self ):
-        job_runner = self.job_runner_mapper.get_job_runner( self.params )
-        return job_runner
+    def get_job_runner_url( self ):
+        return self.job_runner_mapper.get_job_runner_url( self.params )
+
+    # legacy naming
+    get_job_runner = get_job_runner_url
 
     def get_job( self ):
         return self.sa_session.query( model.Job ).get( self.job_id )

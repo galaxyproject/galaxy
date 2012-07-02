@@ -11,7 +11,7 @@ DYNAMIC_RUNNER_PREFIX = "dynamic:///"
 class JobRunnerMapper( object ):
     """
     This class is responsible to managing the mapping of jobs
-    (in the form of job_wrappers) to job runner strings.
+    (in the form of job_wrappers) to job runner url strings.
     """
 
     def __init__( self, job_wrapper ):
@@ -103,7 +103,7 @@ class JobRunnerMapper( object ):
                 return rule_module
         return None
                 
-    def __expand_dynamic_job_runner( self, options_str ):
+    def __expand_dynamic_job_runner_url( self, options_str ):
         option_parts = options_str.split( '/' )
         expand_type = option_parts[ 0 ]
         if expand_type == "python":
@@ -113,18 +113,18 @@ class JobRunnerMapper( object ):
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % calculation_type )
 
-    def __cache_job_runner( self, params ):
-        raw_job_runner = self.job_wrapper.tool.get_job_runner( params )
-        if raw_job_runner.startswith( DYNAMIC_RUNNER_PREFIX ):
-            job_runner = self.__expand_dynamic_job_runner( raw_job_runner[ len( DYNAMIC_RUNNER_PREFIX ) : ] )
+    def __cache_job_runner_url( self, params ):
+        raw_job_runner_url = self.job_wrapper.tool.get_job_runner_url( params )
+        if raw_job_runner_url.startswith( DYNAMIC_RUNNER_PREFIX ):
+            job_runner_url = self.__expand_dynamic_job_runner_url( raw_job_runner_url[ len( DYNAMIC_RUNNER_PREFIX ) : ] )
         else:
-            job_runner = raw_job_runner
-        self.cached_job_runner = job_runner
+            job_runner_url = raw_job_runner_url
+        self.cached_job_runner_url = job_runner_url
 
-    def get_job_runner( self, params ):
+    def get_job_runner_url( self, params ):
         """
-        Cache the job_runner string to avoid recalculation.
+        Cache the job_runner_url string to avoid recalculation.
         """
-        if not hasattr( self, 'cached_job_runner' ):
-            self.__cache_job_runner( params )
-        return self.cached_job_runner
+        if not hasattr( self, 'cached_job_runner_url' ):
+            self.__cache_job_runner_url( params )
+        return self.cached_job_runner_url
