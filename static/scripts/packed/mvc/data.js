@@ -1,0 +1,1 @@
+var Dataset=Backbone.RelationalModel.extend({defaults:{id:"",type:"",name:"",hda_ldda:"hda"}});var DatasetCollection=Backbone.Collection.extend({model:Dataset});

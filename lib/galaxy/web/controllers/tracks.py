@@ -470,8 +470,10 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         return self.tracks_grid( trans, **kwargs )
                     
     @web.expose
-    @web.require_login( "use Galaxy visualizations", use_panels=True )
     def paramamonster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):
+        # Need to create history if necessary in order to create tool form.
+        trans.get_history( create=True )
+
         if id:
             # Loading a shared visualization.
             viz = self.get_visualization( trans, id )
@@ -495,7 +497,6 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         return trans.fill_template_mako( "visualization/paramamonster.mako", config=viz_config )
     
     @web.expose
-    @web.require_login( "use Galaxy visualizations", use_panels=True )
     def circster( self, trans, hda_ldda, dataset_id ):
         # Get dataset.
         dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )

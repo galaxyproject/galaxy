@@ -3054,8 +3054,6 @@ extend(Track.prototype, Drawable.prototype, {
                                 return new GenomeRegion({from_str: $(elt).children(".position").text()});
                             });
 
-                        console.log(regions_to_use);
-
                         // Get regions for visualization.
                         if (regions_to_use === 'cur') {
                             // Use only current region.
