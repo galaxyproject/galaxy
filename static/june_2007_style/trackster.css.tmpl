@@ -5,16 +5,21 @@
 }
 .trackster-nav-container {
     width: 100%;
+    /* Used to push nav into title bar: */
+    height: 0;
+    text-align: center;
 }
 .trackster-nav {
     padding: 0 0;
     color:#333;
     font-weight:bold;
     background:#cccccc;
-    background-image:url(panel_header_bg.png);
-    background-position: middle center;
-    background-repeat:repeat-x;
-    border-bottom: solid #333 1px;
+    /* Push nav up into title bar */
+    position: relative;
+    display: inline-block;
+    top: -2em;
+    background: transparent;
+    border: none;
 }
 .content {
     font: 10px verdana;
