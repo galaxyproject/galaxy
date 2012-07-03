@@ -262,7 +262,7 @@ class ToolDependencyGrid( grids.Grid ):
                                                                        model.ToolDependency.installation_status.ERROR ] ) )
     ]
     def build_initial_query( self, trans, **kwd ):
-        tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
+        tool_dependency_ids = get_tool_dependency_ids( as_string=False, **kwd )
         if tool_dependency_ids:
             clause_list = []
             for tool_dependency_id in tool_dependency_ids:
@@ -1067,12 +1067,7 @@ class AdminToolshed( AdminGalaxy ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        tool_dependency_id = params.get( 'tool_dependency_id', None )
-        tool_dependency_ids = util.listify( params.get( 'tool_dependency_ids', None ) )
-        if not tool_dependency_ids:
-            tool_dependency_ids = util.listify( params.get( 'id', None ) )
-        if tool_dependency_id and tool_dependency_id not in tool_dependency_ids:
-            tool_dependency_ids.append( tool_dependency_id )
+        tool_dependency_ids = get_tool_dependency_ids( as_string=False, **kwd )
         # We need a tool_shed_repository, so get it from one of the tool_dependencies.
         tool_dependency = get_tool_dependency( trans, tool_dependency_ids[ 0 ] )
         tool_shed_repository = tool_dependency.tool_shed_repository

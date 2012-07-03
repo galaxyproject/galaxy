@@ -975,6 +975,16 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
     return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
+def get_tool_dependency_ids( as_string=False, **kwd ):
+    tool_dependency_id = kwd.get( 'tool_dependency_id', None )
+    tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
+    if not tool_dependency_ids:
+        tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
+    if tool_dependency_id and tool_dependency_id not in tool_dependency_ids:
+        tool_dependency_ids.append( tool_dependency_id )
+    if as_string:
+        return ','.join( tool_dependency_ids )
+    return tool_dependency_ids
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
     # Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the
     # repository is installed.  This method assumes all repository tools are defined in a single shed-related tool panel config.
