@@ -10,7 +10,7 @@
         elif tool_dependency.status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
             bgcolor = trans.model.ToolDependency.states.OK
         rval = '<div class="count-box state-color-%s" id="ToolDependencyStatus-%s">%s</div>' % \
-            ( bgcolor, trans.security.encode_id( tool_dependency.id, tool_dependency.status ) )
+            ( bgcolor, trans.security.encode_id( tool_dependency.id ), tool_dependency.status )
         return rval
     %>    
     ${rval}
