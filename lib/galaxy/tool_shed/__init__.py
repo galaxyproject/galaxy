@@ -52,5 +52,5 @@ class InstalledRepositoryManager( object ):
             if installed_repository_dict[ 'converter_path' ]:
                 galaxy.util.shed_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
             if installed_repository_dict[ 'display_path' ]:
-                galaxy.util.shed_util.load_installed_display_applications( installed_repository_dict, deactivate=deactivate )
+                galaxy.util.shed_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
            

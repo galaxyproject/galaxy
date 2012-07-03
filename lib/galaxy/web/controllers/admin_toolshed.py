@@ -30,6 +30,7 @@ class InstalledRepositoryGrid( grids.Grid ):
             return tool_shed_repository.changeset_revision
     class StatusColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool_shed_repository ):
+            status_label = tool_shed_repository.status
             if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING,
                                                trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
                                                trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
@@ -45,12 +46,12 @@ class InstalledRepositoryGrid( grids.Grid ):
             elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
                 if tool_shed_repository.missing_tool_dependencies:
                     bgcolor = trans.model.ToolShedRepository.states.WARNING
+                    status_label = '%s, missing dependencies' % status_label
                 else:
                     bgcolor = trans.model.ToolShedRepository.states.OK
             else:
                 bgcolor = trans.model.ToolShedRepository.states.ERROR
-            rval = '<div class="count-box state-color-%s">' % bgcolor
-            rval += '%s</div>' % tool_shed_repository.status
+            rval = '<div class="count-box state-color-%s">%s</div>' % ( bgcolor, status_label )
             return rval
     class ToolShedColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool_shed_repository ):
@@ -121,6 +122,7 @@ class RepositoryInstallationGrid( grids.Grid ):
             return tool_shed_repository.changeset_revision
     class StatusColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool_shed_repository ):
+            status_label = tool_shed_repository.status
             if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING,
                                                 trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
                                                 trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
@@ -136,12 +138,13 @@ class RepositoryInstallationGrid( grids.Grid ):
             elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
                 if tool_shed_repository.missing_tool_dependencies:
                     bgcolor = trans.model.ToolShedRepository.states.WARNING
+                    status_label = '%s, missing dependencies' % status_label
                 else:
                     bgcolor = trans.model.ToolShedRepository.states.OK
             else:
                 bgcolor = trans.model.ToolShedRepository.states.ERROR
             rval = '<div class="count-box state-color-%s" id="RepositoryStatus-%s">%s</div>' % \
-                ( bgcolor, trans.security.encode_id( tool_shed_repository.id ), tool_shed_repository.status )
+                ( bgcolor, trans.security.encode_id( tool_shed_repository.id ), status_label )
             return rval
 
     webapp = "galaxy"
@@ -223,8 +226,8 @@ class ToolDependencyGrid( grids.Grid ):
                 bgcolor = trans.model.ToolDependency.states.ERROR
             elif tool_dependency.status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
                 bgcolor = trans.model.ToolDependency.states.OK
-            rval = '<div class="count-box state-color-%s" id="ToolDependencyStatus-%s">' % ( bgcolor, trans.security.encode_id( tool_dependency.id ) )
-            rval += '%s</div>' % tool_dependency.status
+            rval = '<div class="count-box state-color-%s" id="ToolDependencyStatus-%s">%s</div>' % \
+                ( bgcolor, trans.security.encode_id( tool_dependency.id ), tool_dependency.status )
             return rval
 
     webapp = "galaxy"
@@ -408,7 +411,7 @@ class AdminToolshed( AdminGalaxy ):
                 if installed_repository_dict[ 'converter_path' ]:
                     load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=True )
                 if installed_repository_dict[ 'display_path' ]:
-                    load_installed_display_applications( installed_repository_dict, deactivate=True )
+                    load_installed_display_applications( trans.app, installed_repository_dict, deactivate=True )
             if remove_from_disk_checked:
                 try:
                     # Remove the repository from disk.

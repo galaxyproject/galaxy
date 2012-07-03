@@ -1279,7 +1279,7 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
     except:
         pass
     return repository_dict
-def load_installed_display_applications( installed_repository_dict, deactivate=False ):
+def load_installed_display_applications( app, installed_repository_dict, deactivate=False ):
     # Load or deactivate proprietary datatype display applications
     app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict, deactivate=deactivate )
 def make_tmp_directory():
