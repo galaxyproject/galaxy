@@ -238,6 +238,11 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
                                        attach_popup=False,
                                        key="User.username" )
     ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description, owner", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
     operations = []
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ) \
