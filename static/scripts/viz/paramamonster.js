@@ -2,6 +2,17 @@
  * Visualization and components for ParamaMonster, a visualization for exploring a tool's parameter space via 
  * genomic visualization.
  */
+
+/**
+ * A collection of tool input settings. Object is useful for keeping a list of settings 
+ * for future use without changing the input's value and for preserving inputs order.
+ */
+var ToolInputsSettings = Backbone.Model.extend({
+    defaults: {
+        inputs: null,
+        values: null
+    }
+});
  
 /**
  * Tree for a tool's parameters.
@@ -131,7 +142,7 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
     },
     
     /**
-     * Returns array of settings based on a node and its subtree.
+     * Returns array of ToolInputsSettings objects based on a node and its subtree.
      */
     get_node_settings: function(target_node) {
         // -- Get fixed settings from tool and parent nodes.
@@ -149,7 +160,8 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
         }
         
         // Walk subtree starting at clicked node to get full list of settings.
-        var get_settings = function(node, settings) {
+        var self = this,
+            get_settings = function(node, settings) {
                 // Add setting for this node. Root node does not have a param,
                 // however.
                 if (node.param) {
@@ -157,8 +169,11 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
                 }
             
                 if (!node.children) {
-                    // At leaf node: add param setting and return.    
-                    return settings;
+                    // At leaf node, so return settings.
+                    return new ToolInputsSettings({
+                        inputs: self.get('tool').get('inputs'),
+                        values: settings
+                    });
                 }
                 else {
                     // At interior node: return list of subtree settings.
@@ -376,11 +391,12 @@ var ParamaMonsterTrackView = Backbone.View.extend({
         // Render settings icon and popup.
         // TODO: use template.
         var settings = this.model.get('settings'),
+            values = settings.get('values'),
             settings_td = $('<td/>').addClass('settings').appendTo(this.$el),
             settings_div = $('<div/>').addClass('track-info').hide().appendTo(settings_td);
         settings_div.append( $('<div/>').css('font-weight', 'bold').text('Track Settings') );
-        _.each(_.keys(settings), function(name) {
-            settings_div.append( name + ': ' + settings[name] + '<br/>');
+        settings.get('inputs').each(function(input) {
+            settings_div.append( input.get('label') + ': ' + values[input.get('name')] + '<br/>');
         });
         var self = this,
             run_on_dataset_button = $('<button/>').appendTo(settings_div).text('Run on complete dataset').click(function() {
@@ -472,7 +488,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
             sweep_inputs_row = null;
 
         // Update tool inputs as single input changes.
-        single_input_row.find('input').change(function() {
+        single_input_row.find(':input').change(function() {
             input.set('value', $(this).val());
         });
 
@@ -489,18 +505,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
                 options: options_text
             }));
         }
-
         sweep_inputs_row.insertAfter(single_input_row);
-
-        if (input.get('in_ptree')) {
-            single_input_row.hide();
-        }
-        else {
-            sweep_inputs_row.hide();
-        }
-
-        // Fow now, assume parameter is included in tree to start.
-        
 
         // Add buttons for adding/removing parameter.
         var self = this,
@@ -512,6 +517,8 @@ var ToolInputValOrSweepView = Backbone.View.extend({
                     input.set('in_ptree', true);
                     single_input_row.hide();
                     sweep_inputs_row.show();
+                    $(this).hide();
+                    self.$el.find('.icon-button.toggle').show();
                 }
                 
             },
@@ -523,6 +530,8 @@ var ToolInputValOrSweepView = Backbone.View.extend({
                     input.set('in_ptree', false);
                     sweep_inputs_row.hide();
                     single_input_row.show();
+                    $(this).hide();
+                    self.$el.find('.icon-button.plus-button').show();
                 }
             }
             ], 
@@ -530,6 +539,16 @@ var ToolInputValOrSweepView = Backbone.View.extend({
                 tipsy_config: {gravity: 's'}
             });
             this.$el.prepend(menu.$el);
+
+        // Show/hide input rows and icons depending on whether parameter is in the tree.
+        if (input.get('in_ptree')) {
+            single_input_row.hide();
+            self.$el.find('.icon-button.plus-button').hide();
+        }
+        else {
+            self.$el.find('.icon-button.toggle').hide();
+            sweep_inputs_row.hide();
+        }
 
         // Update input's min, max, number of samples as values change.
         _.each(['min', 'max', 'num_samples'], function(attr) {
@@ -711,10 +730,17 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
 
     run_tool_on_dataset: function(settings) {
         var tool = this.model.get('tool'),
+            tool_name = tool.get('name'),
             dataset = this.model.get('dataset');
         tool.set_input_values(settings);
         $.when(tool.rerun(dataset)).then(function(outputs) {
-            // TODO: show modal with information about how to get to datasets.
+            console.log(outputs);
+            show_modal('Running ' + tool_name + ' on complete dataset',
+                       tool_name + 'is running on dataset \'' +
+                       dataset.get('name') + '\' and is available in the dataset\'s history.',
+                       {
+                        'Ok': function() { hide_modal(); }
+                       });
         });
     },
 
@@ -732,7 +758,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         track_view.on('run_on_dataset', self.run_tool_on_dataset, self);
         self.track_collection_container.append(track_view.$el);
         track_view.$el.hover(function() {
-            var settings_leaf = param_tree.get_leaf(pm_track.get('settings'));
+            var settings_leaf = param_tree.get_leaf(pm_track.get('settings').get('values'));
             var connected_node_ids = _.pluck(param_tree.get_connected_nodes(settings_leaf), 'id');
 
             // TODO: can do faster with enter?
@@ -793,7 +819,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
                     setTimeout(function() {
                         // Set inputs and run tool.
                         // console.log('running with settings', pm_track.get('settings'));
-                        tool.set_input_values(pm_track.get('settings'));
+                        tool.set_input_values(pm_track.get('settings').get('values'));
                         $.when(tool.rerun(dataset, regions)).then(function(output) {
                             // Create and add track for output dataset.
                             var track_config = _.extend({

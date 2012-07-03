@@ -2643,9 +2643,19 @@ class Tool:
                 if isinstance( input, DataToolParameter ):
                     param_dict.update( { 'type' : 'data', 'html' : urllib.quote( input.get_html( trans ) ) } )
                 elif isinstance( input, SelectToolParameter ):
+                    # Get options, value.
+                    options = input.get_options( trans, [] )
+                    value = options[0][1]
+                    for option in options:
+                        if option[2]:
+                            # Found selected option.
+                            value = option[1]
+
+                    # Pack input.
                     param_dict.update( { 'type' : 'select', 
                                          'html' : urllib.quote( input.get_html( trans ) ),
-                                         'options': input.static_options 
+                                         'options': options,
+                                         'value': value
                                          } )
                 elif isinstance( input, Conditional ):
                     # TODO.

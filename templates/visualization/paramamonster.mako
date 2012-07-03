@@ -103,7 +103,8 @@
     ${parent.javascripts()}
 
     ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
-    ${h.js( "libs/d3", "mvc/data", "mvc/tools", "viz/visualization", "viz/paramamonster", "viz/trackster", "viz/trackster_ui", "jquery.ui.sortable.slider" )}
+    ${h.js( "libs/d3", "mvc/data", "mvc/tools", "viz/visualization", "viz/paramamonster", 
+            "viz/trackster", "viz/trackster_ui", "jquery.ui.sortable.slider" )}
 
     <script type="text/javascript">
         var viz;
@@ -118,6 +119,7 @@
             $('.unified-panel-body').append(viz_view.$el);
 
             // -- Menu set up. --
+            /*
             var menu = create_icon_buttons_menu([
             { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
                 // Show saving dialog box
@@ -145,6 +147,7 @@
             
             menu.$el.attr("style", "float: right");
             $("#right .unified-panel-header-inner").append(menu.$el);
+            */
         });
     </script>
 </%def>
