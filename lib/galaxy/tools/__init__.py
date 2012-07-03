@@ -2358,7 +2358,7 @@ class Tool:
         """
         commands = []
         if self.tool_shed_repository:
-            installed_tool_dependencies = self.tool_shed_repository.tool_dependencies
+            installed_tool_dependencies = self.tool_shed_repository.installed_tool_dependencies
         else:
             installed_tool_dependencies = None
         for requirement in self.requirements:
@@ -2371,8 +2371,6 @@ class Tool:
                                                                                                 version=requirement.version,
                                                                                                 type=requirement.type,
                                                                                                 installed_tool_dependencies=installed_tool_dependencies )
-            if requirement.type == 'package':
-                script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
                 if script_file is None and base_path is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
                 elif script_file is None:

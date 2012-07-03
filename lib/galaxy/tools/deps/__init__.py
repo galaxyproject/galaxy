@@ -45,10 +45,9 @@ class DependencyManager( object ):
         installed_dependency = None
         if installed_tool_dependencies:
             for installed_tool_dependency in installed_tool_dependencies:
-                if not installed_tool_dependency.uninstalled:
-                    if installed_tool_dependency.name==name and installed_tool_dependency.version==version and installed_tool_dependency.type==type:
-                        installed_dependency = installed_tool_dependency
-                        break
+                if installed_tool_dependency.name==name and installed_tool_dependency.version==version and installed_tool_dependency.type==type:
+                    installed_dependency = installed_tool_dependency
+                    break
         for base_path in self.base_paths:
             if installed_dependency:
                 tool_shed_repository = installed_dependency.tool_shed_repository
