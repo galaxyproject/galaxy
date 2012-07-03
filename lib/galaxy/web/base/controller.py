@@ -1557,20 +1557,7 @@ class Admin( object ):
         status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
             installed_repositories = trans.sa_session.query( trans.model.ToolShedRepository ).first()
-            installing_repository_ids = []
-            new_status = trans.model.ToolShedRepository.installation_status.NEW
-            cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
-            setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-            installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-            loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-            for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                                        .filter( or_( trans.model.ToolShedRepository.status == new_status,
-                                                                      trans.model.ToolShedRepository.status == cloning_status,
-                                                                      trans.model.ToolShedRepository.status == setting_tool_versions_status,
-                                                                      trans.model.ToolShedRepository.status == installing_dependencies_status,
-                                                                      trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
-                installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
-            installing_repository_ids = ','.join( installing_repository_ids )
+            installing_repository_ids = get_ids_of_tool_shed_repositories_being_installed( trans, as_string=True )
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         webapp=webapp,
                                         installed_repositories=installed_repositories,
@@ -2674,6 +2661,24 @@ class Admin( object ):
                                     job_lock = trans.app.job_manager.job_queue.job_lock )
 
 ## ---- Utility methods -------------------------------------------------------
+
+def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
+    installing_repository_ids = []
+    new_status = trans.model.ToolShedRepository.installation_status.NEW
+    cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
+    setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+    installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+    loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+    for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                                .filter( or_( trans.model.ToolShedRepository.status == new_status,
+                                                              trans.model.ToolShedRepository.status == cloning_status,
+                                                              trans.model.ToolShedRepository.status == setting_tool_versions_status,
+                                                              trans.model.ToolShedRepository.status == installing_dependencies_status,
+                                                              trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
+        installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
+    if as_string:
+        return ','.join( installing_repository_ids )
+    return installing_repository_ids
 
 def get_user( trans, user_id ):
     """Get a User from the database by id."""

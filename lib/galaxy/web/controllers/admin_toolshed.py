@@ -140,8 +140,8 @@ class RepositoryInstallationGrid( grids.Grid ):
                     bgcolor = trans.model.ToolShedRepository.states.OK
             else:
                 bgcolor = trans.model.ToolShedRepository.states.ERROR
-            rval = '<div class="count-box state-color-%s" id="RepositoryStatus-%s">' % ( bgcolor, trans.security.encode_id( tool_shed_repository.id ) )
-            rval += '%s</div>' % tool_shed_repository.status
+            rval = '<div class="count-box state-color-%s" id="RepositoryStatus-%s">%s</div>' % \
+                ( bgcolor, trans.security.encode_id( tool_shed_repository.id ), tool_shed_repository.status )
             return rval
 
     webapp = "galaxy"
@@ -170,7 +170,8 @@ class RepositoryInstallationGrid( grids.Grid ):
         RevisionColumn( "Revision",
                     filterable="advanced" ),
         StatusColumn( "Installation Status",
-                      filterable="advanced" ),
+                      filterable="advanced",
+                      label_id_prefix="RepositoryStatus-" )
     ]
     operations = []
     def build_initial_query( self, trans, **kwd ):
@@ -1149,18 +1150,7 @@ class AdminToolshed( AdminGalaxy ):
         if tsrid and tsrid not in tsridslist:
             tsridslist.append( tsrid )
         if not tsridslist:
-            new_status = trans.model.ToolShedRepository.installation_status.NEW
-            cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
-            setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-            installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-            loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-            for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                                        .filter( or_( trans.model.ToolShedRepository.status == new_status,
-                                                                      trans.model.ToolShedRepository.status == cloning_status,
-                                                                      trans.model.ToolShedRepository.status == setting_tool_versions_status,
-                                                                      trans.model.ToolShedRepository.status == installing_dependencies_status,
-                                                                      trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
-                tsridslist.append( trans.security.encode_id( tool_shed_repository.id ) )
+            tsridslist = get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False )
         kwd[ 'tool_shed_repository_ids' ] = tsridslist
         return self.repository_installation_grid( trans, **kwd )
     @web.json
