@@ -2720,9 +2720,7 @@ class ToolShedRepository( object ):
         """Return the repository's tool dependencies that are not currently installed, and may not ever have been installed."""
         missing_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status in [ ToolDependency.installation_status.NEVER_INSTALLED,
-                                           ToolDependency.installation_status.ERROR,
-                                           ToolDependency.installation_status.UNINSTALLED ]:
+            if tool_dependency.status not in [ ToolDependency.installation_status.INSTALLED ]:
                 missing_dependencies.append( tool_dependency )
         return missing_dependencies
     @property
