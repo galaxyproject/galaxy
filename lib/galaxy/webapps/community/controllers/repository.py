@@ -245,6 +245,19 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
                                                 filterable="standard" ) )
     operations = []
     def build_initial_query( self, trans, **kwd ):
+        # The clause_list approach is to filter out those repositories that include metadata, but only because they contain 'invalid_tools' in
+        # the metadata (i.e., they don't have valid tools, datatypes or workflows).  Is there a better approach?
+        clause_list = []
+        for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                                   .filter( trans.model.RepositoryMetadata.table.c.malicious == False ):
+            metadata = repository_metadata.metadata
+            if 'datatypes' in metadata or'tools' in metadata or 'workflows' in metadata:
+                clause_list.append( trans.model.RepositoryMetadata.table.c.id == repository_metadata.id )
+        if clause_list:
+            return trans.sa_session.query( self.model_class ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .join( model.User.table ) \
+                                   .filter( or_( *clause_list ) )
         return trans.sa_session.query( self.model_class ) \
                                .join( model.RepositoryMetadata.table ) \
                                .join( model.User.table )
