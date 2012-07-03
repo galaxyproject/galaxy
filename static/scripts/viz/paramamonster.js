@@ -400,6 +400,7 @@ var ParamaMonsterTrackView = Backbone.View.extend({
         });
         var self = this,
             run_on_dataset_button = $('<button/>').appendTo(settings_div).text('Run on complete dataset').click(function() {
+                settings_div.toggle();
                 self.trigger('run_on_dataset', settings);
             });
         var icon_menu = create_icon_buttons_menu([
@@ -732,16 +733,17 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         var tool = this.model.get('tool'),
             tool_name = tool.get('name'),
             dataset = this.model.get('dataset');
-        tool.set_input_values(settings);
+        tool.set_input_values(settings.get('values'));
         $.when(tool.rerun(dataset)).then(function(outputs) {
-            console.log(outputs);
-            show_modal('Running ' + tool_name + ' on complete dataset',
-                       tool_name + 'is running on dataset \'' +
-                       dataset.get('name') + '\' and is available in the dataset\'s history.',
+            // TODO.
+        });
+
+        show_modal('Running ' + tool_name + ' on complete dataset',
+                       tool_name + ' is running on dataset \'' +
+                       dataset.get('name') + '\'. Outputs are in the dataset\'s history.',
                        {
                         'Ok': function() { hide_modal(); }
                        });
-        });
     },
 
     /**
