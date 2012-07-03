@@ -105,8 +105,8 @@
                             <table class="grid">
                                 <tr>
                                     <td><b>name</b></td>
-                                    <td><b>type</b></td>
                                     <td><b>version</b></td>
+                                    <td><b>type</b></td>
                                 </tr>
                                 %for dependency_key, requirements_dict in tool_dependencies.items():
                                     <%
