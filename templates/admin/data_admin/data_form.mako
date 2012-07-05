@@ -75,7 +75,7 @@
             </div>
         </div>
         <h2>Parameters</h2>
-        <div id="params_Broad" class="params-block" style="display: block;">
+        <div id="params_Broad" class="params-block">
             <div class="form-row">
                 <label for="longname">Internal Name</label>
                 <input name="longname" type="text" label="Internal Name" />
@@ -94,22 +94,14 @@
                 </div>
             </div>
         </div>
-        <div id="params_NCBI" class="params-block" style="display: block;">
+        <div id="params_NCBI" class="params-block">
             <div class="form-row">
-                <label for="longname">Internal Name</label>
-                <input name="longname" type="text" label="Internal Name" />
-                <div style="clear: both;">&nbsp;</div>
-            </div>
-            <div class="form-row">
-                <label for="uniqid">Internal Unique Identifier</label>
-                <input name="uniqid" type="text" label="Internal Identifier" />
-                <div style="clear: both;">&nbsp;</div>
-            </div>
-            <div id="dlparams">
-                <div class="form-row">
-                    <label for="ncbi_dbkey">External Name</label>
-                    <input name="ncbi_dbkey" type="text" label="Genome Unique Name" />
-                    <div style="clear: both;">&nbsp;</div>
+                <label>Genome:</label>
+                <div class="form-row-input">
+                    <input type="text" class="text-and-autocomplete-select ac_input" size="40" name="ncbi_name" id="ncbi_name" value="" />
+                </div>
+                <div class="toolParamHelp" style="clear: both;">
+                    If you can't find the build you want in this list, &lt;insert link to instructions here&gt;
                 </div>
             </div>
         </div>
@@ -153,6 +145,7 @@
         <script type="text/javascript">
             $(document).ready(function() {
                 checkDataSource();
+                // Replace dbkey select with search+select.
             });
             $('#datasource').change(function() {
                 checkDataSource();
@@ -164,6 +157,8 @@
                 });
                 $('#params_' + ds).show();
             };
+            
+            var ac = $('#ncbi_name').autocomplete( $('#ncbi_name'), { minChars: 3, max: 100, url: '${h.url_for( controller='data_admin', action='genome_search' )}' } );
         </script>
     </form>
 </div>

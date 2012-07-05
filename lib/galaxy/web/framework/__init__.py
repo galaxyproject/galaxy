@@ -810,6 +810,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def ensembl_builds( self ):
         return util.dlnames['ensembl']
     
+    @property
+    def ncbi_builds( self ):
+        return util.dlnames['ncbi']
+    
     def db_dataset_for( self, dbkey ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
@@ -976,6 +980,10 @@ class GalaxyWebAPITransaction( GalaxyWebTransaction ):
     @property
     def ensembl_builds( self ):
         return util.dlnames['ensembl']
+
+    @property
+    def ncbi_builds( self ):
+        return util.dlnames['ncbi']
 
 class GalaxyWebUITransaction( GalaxyWebTransaction ):
     def __init__( self, environ, app, webapp, session_cookie ):

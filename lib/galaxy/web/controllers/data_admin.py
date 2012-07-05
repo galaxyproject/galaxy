@@ -34,7 +34,8 @@ class DataAdmin( BaseUIController ):
         if trans.app.config.get_bool( 'enable_beta_job_managers', False ) == False:
             return trans.fill_template( '/admin/data_admin/betajob.mako' )
         for line in trans.app.tool_data_tables.data_tables[ 'all_fasta' ].data:
-            indexers = dict( bowtie_indexes='Generate', bowtie2_indexes='Generate', bwa_indexes='Generate', perm_base_indexes='Generate', srma_indexes='Generate', sam_fa_indexes='Generate' )
+            defstate = dict( state='Generate', style=self.jobstyles[ 'new' ] )
+            indexers = dict( bowtie_indexes=defstate, bowtie2_indexes=defstate, bwa_indexes=defstate, perm_base_indexes=defstate, srma_indexes=defstate, sam_fa_indexes=defstate )
             dbkey = line[0]
             name = line[2]
             indexers[ 'name' ] = name
@@ -43,11 +44,11 @@ class DataAdmin( BaseUIController ):
         for table in [ 'bowtie_indexes', 'bowtie2_indexes', 'bwa_indexes', 'srma_indexes' ]:
             for line in trans.app.tool_data_tables.data_tables[ table ].data:
                 dbkey = line[0]
-                genomes[ dbkey ][ table ] = 'Generated'
+                genomes[ dbkey ][ table ] = dict( state='Generated', style=self.jobstyles[ 'done' ] )
         for line in trans.app.tool_data_tables.data_tables[ 'sam_fa_indexes' ].data:
-            genomes[ line[1] ][ 'sam_fa_indexes' ] = 'Generated'
+            genomes[ line[1] ][ 'sam_fa_indexes' ] = dict( state='Generated', style=self.jobstyles[ 'done' ] )
         for line in trans.app.tool_data_tables.data_tables[ 'perm_base_indexes' ].data:
-            genomes[ line[1].split(':')[0] ][ 'perm_base_indexes' ] = 'Generated'
+            genomes[ line[1].split(':')[0] ][ 'perm_base_indexes' ] = dict( state='Generated', style=self.jobstyles[ 'done' ] )
         jobgrid = []
         sa_session = trans.app.model.context.current
         jobs = sa_session.query( model.GenomeIndexToolData ).order_by( model.GenomeIndexToolData.created_time.desc() ).filter_by( user_id=trans.get_user().id ).group_by( model.GenomeIndexToolData.deferred ).limit( 20 ).all()
@@ -73,8 +74,27 @@ class DataAdmin( BaseUIController ):
             return trans.fill_template( '/admin/data_admin/betajob.mako' )
         dbkeys = trans.ucsc_builds
         ensemblkeys = trans.ensembl_builds
-        return trans.fill_template( '/admin/data_admin/data_form.mako', dbkeys=dbkeys, ensembls=ensemblkeys )
+        ncbikeys = trans.ncbi_builds
+        return trans.fill_template( '/admin/data_admin/data_form.mako', dbkeys=dbkeys, ensembls=ensemblkeys, ncbi=ncbikeys )
         
+    @web.expose
+    @web.require_admin
+    def genome_search( self, trans, **kwd ):
+        results = list()
+        ncbikeys = trans.ncbi_builds
+        params = util.Params( kwd )
+        search = params.get( 'q', None )
+        limit = params.get( 'limit', None )
+        if search is not None:
+            query = search.lower()
+            for row in ncbikeys:
+                if query in row[ 'name' ].lower() or query in row[ 'dbkey' ].lower():
+                    result = '|'.join( [ ': '.join( [ row[ 'dbkey' ], row[ 'name' ] ] ), row[ 'dbkey' ] ] )
+                    results.append( result )
+                    if len( results ) >= limit:
+                        break
+        return trans.fill_template( '/admin/data_admin/ajax_status.mako', json='\n'.join( results ) )
+
     @web.expose
     @web.require_admin
     def index_build( self, trans, **kwd ):
@@ -109,7 +129,9 @@ class DataAdmin( BaseUIController ):
         protocol = 'http'
         
         if source == 'NCBI':
-            dbkey = params.get('ncbi_dbkey', '')[0]
+            build = params.get('ncbi_name', '')
+            dbkey = build.split( ': ' )[0]
+            longname = build.split( ': ' )[-1]
             url = 'http://togows.dbcls.jp/entry/ncbi-nucleotide/%s.fasta' % dbkey
         elif source == 'Broad':
             dbkey = params.get('broad_dbkey', '')[0]
@@ -171,8 +193,6 @@ class DataAdmin( BaseUIController ):
                     longname = build[ 'name' ].replace('_', ' ')
                     break
             url = 'ftp://ftp.ensembl.org/pub/release-%s/fasta/%s/dna/%s.%s.%s.dna.toplevel.fa.gz' % ( release, pathname.lower(), pathname, dbkey, release )
-            log.debug( build )
-            log.debug( url )
         else:
             raise ValueError, 'Somehow an invalid data source was specified.'
         params = dict( protocol='http', name=dbkey, datatype='fasta', url=url, user=trans.user.id )

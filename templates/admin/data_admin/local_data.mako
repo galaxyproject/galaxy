@@ -42,15 +42,14 @@
 <style type="text/css">
     .params-block { display: none; }
     td, th { padding-left: 10px; padding-right: 10px; }
-    td.Generate { text-decoration: underline; background-color: #EEEEEE; }
-    td.Generating { text-decoration: none; background-color: #FFFFCC; }
-    td.Generated { background-color: #CCFFCC; }
+    td.state-color-new { text-decoration: underline; }
+    td.panel-done-message { background-image: none; padding: 0px 10px 0px 10px; }
 </style>
 <div class="toolForm">
     %if message:
         <div class="${status}">${message}</div>
     %endif
-    <div class="toolFormTitle">Currently tracked builds <a class="action-button" href="/data_admin/add_genome">Add new</a></div>
+    <div class="toolFormTitle">Currently tracked builds <a class="action-button" href="${h.url_for( controller='data_admin', action='add_genome' )}">Add new</a></div>
     <div class="toolFormBody">
         <h2>Locally cached data:</h2>
         <h3>NOTE: Indexers queued here will not be reflected in the table until Galaxy is restarted.</h3>
@@ -60,12 +59,12 @@
                 <tr>
                     <td>${dbkey}</td>
                     <td>${genomes[dbkey]['name']}</td>
-                    <td id="${dbkey}-bowtie" class="indexcell ${genomes[dbkey]['bowtie_indexes']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bowtie" data-dbkey="${dbkey}">${genomes[dbkey]['bowtie_indexes']}</td>
-                    <td id="${dbkey}-bowtie2" class="indexcell ${genomes[dbkey]['bowtie2_indexes']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bowtie2" data-dbkey="${dbkey}">${genomes[dbkey]['bowtie2_indexes']}</td>
-                    <td id="${dbkey}-bwa" class="indexcell ${genomes[dbkey]['bwa_indexes']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bwa" data-dbkey="${dbkey}">${genomes[dbkey]['bwa_indexes']}</td>
-                    <td id="${dbkey}-sam" class="indexcell ${genomes[dbkey]['sam_fa_indexes']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="sam" data-dbkey="${dbkey}">${genomes[dbkey]['sam_fa_indexes']}</td>
-                    <td id="${dbkey}-picard" class="indexcell ${genomes[dbkey]['srma_indexes']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="picard" data-dbkey="${dbkey}">${genomes[dbkey]['srma_indexes']}</td>
-                    <td id="${dbkey}-perm" class="indexcell ${genomes[dbkey]['perm_base_indexes']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="perm" data-dbkey="${dbkey}">${genomes[dbkey]['perm_base_indexes']}</td>
+                    <td id="${dbkey}-bowtie" class="indexcell ${genomes[dbkey]['bowtie_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bowtie" data-dbkey="${dbkey}">${genomes[dbkey]['bowtie_indexes']['state']}</td>
+                    <td id="${dbkey}-bowtie2" class="indexcell ${genomes[dbkey]['bowtie2_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bowtie2" data-dbkey="${dbkey}">${genomes[dbkey]['bowtie2_indexes']['state']}</td>
+                    <td id="${dbkey}-bwa" class="indexcell ${genomes[dbkey]['bwa_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bwa" data-dbkey="${dbkey}">${genomes[dbkey]['bwa_indexes']['state']}</td>
+                    <td id="${dbkey}-sam" class="indexcell ${genomes[dbkey]['sam_fa_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="sam" data-dbkey="${dbkey}">${genomes[dbkey]['sam_fa_indexes']['state']}</td>
+                    <td id="${dbkey}-picard" class="indexcell ${genomes[dbkey]['srma_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="picard" data-dbkey="${dbkey}">${genomes[dbkey]['srma_indexes']['state']}</td>
+                    <td id="${dbkey}-perm" class="indexcell ${genomes[dbkey]['perm_base_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="perm" data-dbkey="${dbkey}">${genomes[dbkey]['perm_base_indexes']['state']}</td>
                 </tr>
             %endfor
         </table>
@@ -106,7 +105,7 @@
             }
             else {
                 elem.html('Generating');
-                elem.attr('class', 'indexcell Generating');
+                elem.attr('class', 'indexcell state-color-running');
             }
             newhtml = '<div data-dbkey="' + dbkey + '" data-name="' + longname + '" data-indexes="' + indexes + '" id="job-' + data + '" class="historyItem-new historyItemWrapper historyItem">' +
                 '<p>Job ID <a href="${h.url_for( controller='data_admin', action='monitor_status')}?job=' + data + '">' + data + '</a>: ' +
@@ -136,7 +135,7 @@
             if (jsondata["status"] == 'done' || jsondata["status"] == 'ok') {
                 elem = $('#' + jsondata["dbkey"] + '-' + jsondata["indexes"]);
                 elem.html('Generated');
-                elem.attr('class', 'indexcell Generated');
+                elem.attr('class', 'indexcell panel-done-message');
             }
         });
     }
