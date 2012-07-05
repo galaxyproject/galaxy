@@ -178,7 +178,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                          },
                                          JSON.parse('${ h.to_json_string( config.get( 'viewport', dict() ) ) }'),
                                          JSON.parse('${ h.to_json_string( config['tracks'] ).replace("'", "\\'") }'),
-                                         JSON.parse('${ h.to_json_string( config['bookmarks'] ) }')
+                                         JSON.parse('${ h.to_json_string( config['bookmarks'] ) }'),
+                                         true
                                          );
             init_editor();
             set_up_router({view: view});
@@ -239,7 +240,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 // Add new bookmark.
                 var position = view.chrom + ":" + view.low + "-" + view.high,
                     annotation = "Bookmark description";
-                return add_bookmark(position, annotation);
+                return add_bookmark(position, annotation, true);
             });
 
             // make_popupmenu( $("#bookmarks-more-button"), {

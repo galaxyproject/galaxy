@@ -526,17 +526,25 @@ var GenomeRegionCollection = Backbone.Collection.extend({
 /**
  * A genome browser bookmark.
  */
-var BrowserBookmark = Backbone.Model.extend({
+var BrowserBookmark = Backbone.RelationalModel.extend({
     defaults: {
         region: null,
-        note: ""
-    }
+        note: ''
+    },
+
+    relations: [
+        {
+            type: Backbone.HasOne,
+            key: 'region',
+            relatedModel: 'GenomeRegion'
+        }
+    ]
 });
 
 /**
  * Bookmarks collection.
  */
-var BrowserBookmarks = Backbone.Collection.extend({
+var BrowserBookmarkCollection = Backbone.Collection.extend({
     model: BrowserBookmark
 });
 

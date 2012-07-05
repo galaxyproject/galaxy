@@ -3,6 +3,16 @@
 <%def name="javascripts()">
     <% config = item_data %>
     ${parent.javascripts()}
+
+    <script type='text/javascript'>
+        $(function() {
+            // HACK: add bookmarks container and header.
+            $('#right > .unified-panel-body > div').append( 
+                $('<div/>').attr('id', 'bookmarks-container')
+                .append( $('<h4/>').text('Bookmarks') )
+            );
+        });
+    </script>
     
     <!--[if lt IE 9]>
       <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
@@ -12,30 +22,16 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     
-    ## For page:
+    ## Style changes needed for display.
     <style type="text/css">
         .page-body {
             padding: 0px;
         }
-    </style>
-
-    <style type="text/css">
-        #browser-container {
-            overflow: none;
+        #bookmarks-container {
+            padding-left: 10px;
         }
-        .nav-container {
-            width: 100%;
-            ## Overriding styles from trackster.css to push nav up into title bar
-            height: 0;
-            text-align: center;
-        }
-        .nav {
-            ## Overriding styles from trackster.css to push nav up into title bar
-            position: relative;
-            display: inline-block;
-            top: -2em;
-            background: transparent;
-            border: none;
+        .bookmark {
+            margin: 0em;
         }
     </style>
 </%def>

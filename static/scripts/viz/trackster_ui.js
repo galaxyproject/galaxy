@@ -5,29 +5,35 @@
 /**
  * Add bookmark.
  */
-var add_bookmark = function(position, annotation) {
-    var 
-        bookmarks_container = $("#bookmarks-container"),
-        new_bookmark = $("<div/>").addClass("bookmark").appendTo(bookmarks_container),
-        delete_icon_container = $("<div/>").addClass("delete-icon-container").appendTo(new_bookmark).click(function (){
-            // Remove bookmark.
-            new_bookmark.slideUp("fast");
-            new_bookmark.remove();
-            view.has_changes = true;
-            return false;
-        }),
-        delete_icon = $("<a href=''/>").addClass("icon-button delete").appendTo(delete_icon_container),
-        position_div = $("<div/>").addClass("position").appendTo(new_bookmark),
+var add_bookmark = function(position, annotation, editable) {
+    // Create HTML.
+    var bookmarks_container = $("#bookmarks-container"),
+        new_bookmark = $("<div/>").addClass("bookmark").appendTo(bookmarks_container);
+
+    var position_div = $("<div/>").addClass("position").appendTo(new_bookmark),
         position_link = $("<a href=''/>").text(position).appendTo(position_div).click(function() {
             view.go_to(position);
             return false;
         }),
-        annotation_div = $("<div/>").text(annotation).make_text_editable({
+        annotation_div = $("<div/>").text(annotation).appendTo(new_bookmark);
+
+    // If editable, enable bookmark deletion and annotation editing.
+    if (editable) {
+        var delete_icon_container = $("<div/>").addClass("delete-icon-container").prependTo(new_bookmark).click(function (){
+                // Remove bookmark.
+                new_bookmark.slideUp("fast");
+                new_bookmark.remove();
+                view.has_changes = true;
+                return false;
+            }),
+            delete_icon = $("<a href=''/>").addClass("icon-button delete").appendTo(delete_icon_container);
+        annotation_div.make_text_editable({
             num_rows: 3,
             use_textarea: true,
-            help_text: "Set bookmark note"
-        }).addClass("annotation").appendTo(new_bookmark);
-        
+            help_text: "Edit bookmark note"
+        }).addClass("annotation");
+    }
+
     view.has_changes = true;
     return new_bookmark;
 };
@@ -67,7 +73,7 @@ var addable_objects = {
 /**
  * Create a complete Trackster visualization. Returns view.
  */
-var create_visualization = function(view_config, viewport_config, drawables_config, bookmarks_config) {
+var create_visualization = function(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
     
     // Create view.
     view = new View(view_config);
@@ -114,7 +120,7 @@ var create_visualization = function(view_config, viewport_config, drawables_conf
             var bookmark;
             for (var i = 0; i < bookmarks_config.length; i++) {
                 bookmark = bookmarks_config[i];
-                add_bookmark(bookmark['position'], bookmark['annotation']);
+                add_bookmark(bookmark['position'], bookmark['annotation'], editable);
             }
         }
 
