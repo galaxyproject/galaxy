@@ -112,6 +112,13 @@
             width: 25%;
             padding: 0.2em 0.8em;
         }
+        ## HACKs to get Trackster navigation controls to display.
+        .embedded-item .trackster-nav-container {
+            height: inherit;
+        }
+        .embedded-item .trackster-nav {
+            position: inherit;
+        }
     </style>
 </%def>
 
