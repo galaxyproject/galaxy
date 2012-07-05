@@ -626,11 +626,11 @@ var ToolParameterTreeView = Backbone.View.extend({
         // Setup and add labels for tree levels.
         var param_depths = _.uniq(_.pluck(nodes, "y"));
         _.each(tree_params, function(param, index) {
-            var x = param_depths[index+1];
+            var x = param_depths[index+1],
+                center_left = $('#center').position().left;
             self.$el.append( $('<div>').addClass('label')
                                        .text(param.get('label'))
-                                       // HACK: add 250 b/c in center panel.
-                                       .css('left', x + 250) );
+                                       .css('left', x + center_left) );
         });
 
         // Set up vis element.
@@ -681,6 +681,13 @@ var ToolParameterTreeView = Backbone.View.extend({
  */
 var ParamaMonsterVisualizationView = Backbone.View.extend({
     className: 'paramamonster',
+
+    helpText: 
+        '<div><h4>Getting Started</h4>' +
+        '<ol><li>Create a parameter tree by using the icons next to the tool\'s parameter names to add or remove parameters.' +
+        '<li>Adjust the tree by using parameter inputs to select min, max, and number of samples' +
+        '<li>Run the tool with different settings by clicking on tree nodes' +
+        '</ol></div>',
     
     initialize: function(options) {
         this.canvas_manager = new CanvasManager(this.$el.parents('body'));
@@ -722,7 +729,26 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
             self.add_track(track);
         });
 
-        // Render tool parameter tree in center panel.
+        // -- Render help and tool parameter tree in center panel. --
+
+        // Help includes text and a close button.
+        var help_div = $(this.helpText).addClass('help'),
+            close_button = create_icon_buttons_menu([
+            {
+                title: 'Close',
+                icon_class: 'cross-circle',
+                on_click: function() {
+                    $('.tipsy').remove();
+                    help_div.remove();
+                },
+                tipsy_config: { gravity: 's' }
+            }
+            ]);
+
+        help_div.prepend(close_button.$el.css('float', 'right'));
+        $('#center').append(help_div);
+
+        // Parameter tree:
         this.tool_param_tree_view.render();
         $('#center').append(this.tool_param_tree_view.$el);
 

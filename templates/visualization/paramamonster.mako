@@ -12,9 +12,6 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style>
-        div#center {
-            overflow: auto;
-        }
         .link {
             fill: none;
             stroke: #ccc;
@@ -84,6 +81,7 @@
         #center {
             left: 300px;
             right: 600px;
+            overflow: auto;
         }
         #right {
             width: 600px;
@@ -95,6 +93,12 @@
             bottom: 25px;
             left: 0;
             right: 0;
+        }
+        .help {
+            border-radius: 15px;
+            border: solid 1px #CCC;
+            padding: 0px 2px;
+            margin: 10px;
         }
     </style>
 </%def>
