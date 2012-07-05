@@ -21,39 +21,44 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
     root = tree.getroot()
     tool_shed = root.get( 'name' )
     tool_shed_url = get_tool_shed_url_from_tools_xml_file_path( app, tool_shed )
-    for elem in root:
-        if elem.tag == 'repository':
-            tool_dependencies = []
-            tool_dependencies_dict = {}
-            repository_name = elem.get( 'name' )
-            changeset_revision = elem.get( 'changeset_revision' )
-            url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&webapp=install_manager&no_reset=true' % \
-            ( tool_shed_url, repository_name, REPOSITORY_OWNER, changeset_revision )
-            response = urllib2.urlopen( url )
-            text = response.read()
-            response.close()
-            if text:
-                tool_dependencies_dict = tool_shed_decode( text )
-                for dependency_key, requirements_dict in tool_dependencies_dict.items():
-                    tool_dependency_name = requirements_dict[ 'name' ]
-                    tool_dependency_version = requirements_dict[ 'version' ]
-                    tool_dependency_type = requirements_dict[ 'type' ]
-                    tool_dependency_readme = requirements_dict.get( 'readme', '' )
-                    tool_dependencies.append( ( tool_dependency_name, tool_dependency_version, tool_dependency_type, tool_dependency_readme ) )
-            for tool_elem in elem.findall( 'tool' ):
-                migrated_tool_configs_dict[ tool_elem.get( 'file' ) ] = tool_dependencies
-    # Parse the proprietary tool_panel_configs (the default is tool_conf.xml) and generate the list of missing tool config file names.
-    missing_tool_configs_dict = odict()
-    for tool_panel_config in tool_panel_configs:
-        tree = util.parse_xml( tool_panel_config )
-        root = tree.getroot()
+    if tool_shed_url:
         for elem in root:
-            if elem.tag == 'tool':
-                missing_tool_configs_dict = check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict )
-            elif elem.tag == 'section':
-                for section_elem in elem:
-                    if section_elem.tag == 'tool':
-                        missing_tool_configs_dict = check_tool_tag_set( section_elem, migrated_tool_configs_dict, missing_tool_configs_dict )
+            if elem.tag == 'repository':
+                tool_dependencies = []
+                tool_dependencies_dict = {}
+                repository_name = elem.get( 'name' )
+                changeset_revision = elem.get( 'changeset_revision' )
+                url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&webapp=install_manager&no_reset=true' % \
+                ( tool_shed_url, repository_name, REPOSITORY_OWNER, changeset_revision )
+                response = urllib2.urlopen( url )
+                text = response.read()
+                response.close()
+                if text:
+                    tool_dependencies_dict = tool_shed_decode( text )
+                    for dependency_key, requirements_dict in tool_dependencies_dict.items():
+                        tool_dependency_name = requirements_dict[ 'name' ]
+                        tool_dependency_version = requirements_dict[ 'version' ]
+                        tool_dependency_type = requirements_dict[ 'type' ]
+                        tool_dependency_readme = requirements_dict.get( 'readme', '' )
+                        tool_dependencies.append( ( tool_dependency_name, tool_dependency_version, tool_dependency_type, tool_dependency_readme ) )
+                for tool_elem in elem.findall( 'tool' ):
+                    migrated_tool_configs_dict[ tool_elem.get( 'file' ) ] = tool_dependencies
+        # Parse the proprietary tool_panel_configs (the default is tool_conf.xml) and generate the list of missing tool config file names.
+        missing_tool_configs_dict = odict()
+        for tool_panel_config in tool_panel_configs:
+            tree = util.parse_xml( tool_panel_config )
+            root = tree.getroot()
+            for elem in root:
+                if elem.tag == 'tool':
+                    missing_tool_configs_dict = check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict )
+                elif elem.tag == 'section':
+                    for section_elem in elem:
+                        if section_elem.tag == 'tool':
+                            missing_tool_configs_dict = check_tool_tag_set( section_elem, migrated_tool_configs_dict, missing_tool_configs_dict )
+    else:
+        exception_msg = '\n\nThe entry for the main Galaxy tool shed at %s is missing from the %s file.  ' % ( tool_shed, app.config.tool_sheds_config )
+        exception_msg += 'The entry for this tool shed must always be available in this file, so re-add it before attempting to start your Galaxy server.\n'
+        raise Exception( exception_msg )  
     return missing_tool_configs_dict
 def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict ):
     file_path = elem.get( 'file', None )
@@ -76,8 +81,9 @@ def get_non_shed_tool_panel_configs( app ):
             config_filenames.append( config_filename )
     return config_filenames
 def get_tool_shed_url_from_tools_xml_file_path( app, tool_shed ):
+    search_str = '://%s' % tool_shed
     for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
-        if shed_url.find( tool_shed ) >= 0:
+        if shed_url.find( search_str ) >= 0:
             if shed_url.endswith( '/' ):
                 shed_url = shed_url.rstrip( '/' )
             return shed_url
