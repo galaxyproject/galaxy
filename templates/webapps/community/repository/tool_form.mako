@@ -123,7 +123,7 @@
             %if webapp == 'galaxy':
                 <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
                 <div popupmenu="repository-${repository.id}-popup">
-                    <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp=webapp, changeset_revision=changeset_revision )}">Install to local Galaxy</a></li>
+                    <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), webapp=webapp, changeset_revisions=changeset_revision )}">Install to local Galaxy</a></li>
                     <li><a class="action-button" href="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ), webapp=webapp, changeset_revision=changeset_revision )}">Browse repository</a></li>
                 </div>
                 <li><a class="action-button" id="tool_shed-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>

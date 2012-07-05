@@ -819,13 +819,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
         trans.sa_session.flush()
         download_url = '/repos/%s/%s/archive/%s' % ( repository.user.username, repository.name, file_type_str )
         return trans.response.send_redirect( download_url )
-    def __encode_repo_info_dict( self, trans, webapp, repository_metadata_ids ):
+    def __encode_repo_info_dict( self, trans, repository_metadata_ids ):
         repo_info_dict = {}
         includes_tools = False
-        for repository_metadata_id in repository_metadata_ids:
+        includes_tool_dependencies = False
+        for repository_metadata_id in util.listify( repository_metadata_ids ):
             repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
             if not includes_tools and 'tools' in repository_metadata.metadata:
                 includes_tools = True
+            if not includes_tool_dependencies and 'tool_dependencies' in repository_metadata.metadata:
+                includes_tool_dependencies = True
             repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
             # Get the changelog rev for this changeset_revision.
             repo_dir = repository.repo_path
@@ -834,8 +837,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
             ctx = get_changectx_for_changeset( repo, changeset_revision )
             repository_id = trans.security.encode_id( repository.id )
             repository_clone_url = generate_clone_url( trans, repository_id )
-            repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision, str( ctx.rev() ) )
-        return encode( repo_info_dict ), includes_tools
+            if includes_tool_dependencies:
+                repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision, str( ctx.rev() ) )
+            else:
+                repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision, str( ctx.rev() ) )
+        return tool_shed_encode( repo_info_dict ), includes_tools, includes_tool_dependencies
     @web.expose
     def find_tools( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -865,11 +871,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                       action=a,
                                                                       **kwd ) )
                 if operation == "install":
-                    galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-                    encoded_repo_info_dict, includes_tools = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
-                    url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s&includes_tools=%s' % \
-                        ( galaxy_url, url_for( '/', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
-                    return trans.response.send_redirect( url )
+                    # We've received a list of RepositoryMetadata ids, so we need to build a list of associated Repository ids.
+                    encoded_repository_ids = []
+                    changeset_revisions = []
+                    for repository_metadata_id in util.listify( item_id ):
+                        repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+                        encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
+                        changeset_revisions.append( repository_metadata.changeset_revision )
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='install_repositories_by_revision',
+                                                                      repository_ids=encoded_repository_ids,
+                                                                      changeset_revisions=changeset_revisions ) )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
                 # and the user clicked the operation button without checking any of the check boxes.
@@ -945,11 +957,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                       action=a,
                                                                       **kwd ) )
                 if operation == "install":
-                    galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-                    encoded_repo_info_dict, includes_tools = self.__encode_repo_info_dict( trans, webapp, util.listify( item_id ) )
-                    url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&webapp=%s&repo_info_dict=%s&includes_tools=%s' % \
-                        ( galaxy_url, url_for( '/', qualified=True ), webapp, encoded_repo_info_dict, str( includes_tools ) )
-                    return trans.response.send_redirect( url )
+                    # We've received a list of RepositoryMetadata ids, so we need to build a list of associated Repository ids.
+                    encoded_repository_ids = []
+                    changeset_revisions = []
+                    for repository_metadata_id in util.listify( item_id ):
+                        repository_metadata = get_repository_metadata_by_id( trans, item_id )
+                        encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
+                        changeset_revisions.append( repository_metadata.changeset_revision )
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='install_repositories_by_revision',
+                                                                      repository_ids=encoded_repository_ids,
+                                                                      changeset_revisions=changeset_revisions ) )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
                 # and the user clicked the operation button without checking any of the check boxes.
@@ -1199,41 +1217,46 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
-    def install_repository_revision( self, trans, repository_id, **kwd ):
+    def install_repositories_by_revision( self, trans, repository_ids, changeset_revisions, **kwd ):
+        """Install a list of repositories into a local Galaxy instance by a specified changeset revision for each."""
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         webapp = get_webapp( trans, **kwd )
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-        repository_clone_url = generate_clone_url( trans, repository_id )        
-        repository = get_repository( trans, repository_id )
-        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-        metadata = repository_metadata.metadata
-        # Tell the caller if the repository includes Galaxy tools so the page enabling selection of the tool panel section can be displayed.
-        includes_tools = 'tools' in metadata
-        includes_tool_dependencies = 'tool_dependencies' in metadata
-        # Get the changelog rev for this changeset_revision.
-        repo_dir = repository.repo_path
-        repo = hg.repository( get_configured_ui(), repo_dir )
-        ctx = get_changectx_for_changeset( repo, changeset_revision )
-        repo_info_dict = {}
-        if includes_tool_dependencies:
+        repo_info_dicts = []
+        includes_tools = False
+        includes_tool_dependencies = False
+        for repository_id, changeset_revision in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
+            repository_clone_url = generate_clone_url( trans, repository_id )        
+            repository = get_repository( trans, repository_id )
+            #changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+            metadata = repository_metadata.metadata
+            # Tell the caller if the repository includes Galaxy tools so the page enabling selection of the tool panel section can be displayed.
+            if not includes_tools and 'tools' in metadata:
+                includes_tools = True
+            if not includes_tool_dependencies and 'tool_dependencies' in metadata:
+                includes_tool_dependencies = True
+            # Get the changelog rev for this changeset_revision.
+            repo_dir = repository.repo_path
+            repo = hg.repository( get_configured_ui(), repo_dir )
+            ctx = get_changectx_for_changeset( repo, changeset_revision )
+            repo_info_dict = {}
             repo_info_dict[ repository.name ] = ( repository.description,
                                                   repository_clone_url,
                                                   changeset_revision,
                                                   str( ctx.rev() ),
                                                   repository.user.username,
-                                                  metadata[ 'tool_dependencies' ] )
-        else:
-            repo_info_dict[ repository.name ] = ( repository.description,
-                                                  repository_clone_url,
-                                                  changeset_revision,
-                                                  str( ctx.rev() ) )
-        encoded_repo_info_dict = encode( repo_info_dict )
+                                                  metadata.get( 'tool_dependencies', None ) )
+            repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
+        encoded_repo_info_dicts = ','.join( repo_info_dicts )
         # Redirect back to local Galaxy to perform install.
-        url = '%sadmin_toolshed/install_repository?tool_shed_url=%s&repo_info_dict=%s&includes_tools=%s&includes_tool_dependencies=%s' % \
-            ( galaxy_url, url_for( '/', qualified=True ), encoded_repo_info_dict, str( includes_tools ), str( includes_tool_dependencies ) )
+        url = '%sadmin_toolshed/install_repository' % galaxy_url
+        url += '?tool_shed_url=%s' % url_for( '/', qualified=True )
+        url += '&repo_info_dicts=%s' % encoded_repo_info_dicts
+        url += '&includes_tools=%s' % includes_tools
+        url += '&includes_tool_dependencies=%s' % includes_tool_dependencies
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):

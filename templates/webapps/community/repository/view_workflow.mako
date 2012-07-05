@@ -5,7 +5,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from galaxy.webapps.community.controllers.common import encode
+    from galaxy.tool_shed.encoding_util import tool_shed_encode
 
     in_tool_shed = webapp == 'community'
     is_admin = trans.user_is_admin()
@@ -34,7 +34,7 @@
 <%inherit file="${inherit(context)}"/>
 
 <%def name="render_workflow( repository_metadata_id, workflow_name, webapp )">
-    <% center_url = h.url_for( controller='workflow', action='generate_workflow_image', repository_metadata_id=repository_metadata_id, workflow_name=encode( workflow_name ), webapp=webapp ) %>
+    <% center_url = h.url_for( controller='workflow', action='generate_workflow_image', repository_metadata_id=repository_metadata_id, workflow_name=tool_shed_encode( workflow_name ), webapp=webapp ) %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>
 
@@ -76,8 +76,8 @@
     %else:
         <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
         <div popupmenu="repository-${repository.id}-popup">
-            <li><a class="action-button" href="${h.url_for( controller='workflow', action='import_workflow', repository_metadata_id=repository_metadata_id, workflow_name=encode( workflow_name ), webapp=webapp )}">Import workflow to local Galaxy</a></li>
-            <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repository_revision', repository_id=trans.security.encode_id( repository.id ), webapp=webapp, changeset_revision=changeset_revision )}">Install repository to local Galaxy</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='workflow', action='import_workflow', repository_metadata_id=repository_metadata_id, workflow_name=tool_shed_encode( workflow_name ), webapp=webapp )}">Import workflow to local Galaxy</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), webapp=webapp, changeset_revisions=changeset_revision )}">Install repository to local Galaxy</a></li>
         </div>
         <li><a class="action-button" id="toolshed-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>
         <div popupmenu="toolshed-${repository.id}-popup">

@@ -12,7 +12,7 @@
         <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ), repo_info_dict=repo_info_dict )}" method="post" >
             <div style="clear: both"></div>
             %if includes_tool_dependencies:
-                ${render_tool_dependency_section( install_tool_dependencies_check_box, dict_with_tool_dependencies )}
+                ${render_tool_dependency_section( install_tool_dependencies_check_box, [ repo_info_dict ] )}
             %endif
             <div style="clear: both"></div>
             <div class="form-row">

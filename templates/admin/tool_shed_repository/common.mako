@@ -67,7 +67,7 @@
     </script>
 </%def>
 
-<%def name="render_tool_dependency_section( install_tool_dependencies_check_box, dict_with_tool_dependencies )">
+<%def name="render_tool_dependency_section( install_tool_dependencies_check_box, repo_info_dicts )">
     <% import os %>
     <div class="form-row">
         <div class="toolParamHelp" style="clear: both;">
@@ -100,32 +100,36 @@
                 <th>Type</th>
                 <th>Install directory</th>
             </tr>
-            %for repository_name, repo_info_tuple in dict_with_tool_dependencies.items():
-                <% description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple %>
-                %for dependency_key, requirements_dict in tool_dependencies.items():
-                    <%
-                        name = requirements_dict[ 'name' ]
-                        version = requirements_dict[ 'version' ]
-                        type = requirements_dict[ 'type' ]
-                        install_dir = os.path.join( trans.app.config.tool_dependency_dir,
-                                                    name,
-                                                    version,
-                                                    repository_owner,
-                                                    repository_name,
-                                                    changeset_revision )
-                        tool_dependency_readme_text = requirements_dict.get( 'readme', None )
-                    %>
-                    %if not os.path.exists( install_dir ):
-                        <tr>
-                            <td>${name}</td>
-                            <td>${version}</td>
-                            <td>${type}</td>
-                            <td>${install_dir}</td>
-                        </tr>
-                        %if tool_dependency_readme_text:
-                            <tr><td colspan="4" bgcolor="#FFFFCC">${name} ${version} requirements and installation information</td></tr>
-                            <tr><td colspan="4"><pre>${tool_dependency_readme_text}</pre></td></tr>
-                        %endif
+            %for repo_info_dict in repo_info_dicts:
+                %for repository_name, repo_info_tuple in repo_info_dict.items():
+                    <% description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple %>
+                    %if tool_dependencies:
+                        %for dependency_key, requirements_dict in tool_dependencies.items():
+                            <%
+                                name = requirements_dict[ 'name' ]
+                                version = requirements_dict[ 'version' ]
+                                type = requirements_dict[ 'type' ]
+                                install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                                            name,
+                                                            version,
+                                                            repository_owner,
+                                                            repository_name,
+                                                            changeset_revision )
+                                tool_dependency_readme_text = requirements_dict.get( 'readme', None )
+                            %>
+                            %if not os.path.exists( install_dir ):
+                                <tr>
+                                    <td>${name}</td>
+                                    <td>${version}</td>
+                                    <td>${type}</td>
+                                    <td>${install_dir}</td>
+                                </tr>
+                                %if tool_dependency_readme_text:
+                                    <tr><td colspan="4" bgcolor="#FFFFCC">${name} ${version} requirements and installation information</td></tr>
+                                    <tr><td colspan="4"><pre>${tool_dependency_readme_text}</pre></td></tr>
+                                %endif
+                            %endif
+                        %endfor
                     %endif
                 %endfor
             %endfor

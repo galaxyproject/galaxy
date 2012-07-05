@@ -381,27 +381,6 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
     repository_metadata.downloadable = changeset_is_downloadable( metadata_dict )
     trans.sa_session.add( repository_metadata )
     trans.sa_session.flush()
-def decode( value ):
-    # Extract and verify hash
-    a, b = value.split( ":" )
-    value = binascii.unhexlify( b )
-    test = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
-    assert a == test
-    # Restore from string
-    try:
-        values = json_fix( simplejson.loads( value ) )
-    except Exception, e:
-        # We do not have a json string
-        values = value
-    return values
-def encode( val ):
-    if isinstance( val, dict ):
-        value = simplejson.dumps( val )
-    else:
-        value = val
-    a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )
-    b = binascii.hexlify( value )
-    return "%s:%s" % ( a, b )
 def generate_clone_url( trans, repository_id ):
     """Generate the URL for cloning a repository."""
     repository = get_repository( trans, repository_id )
