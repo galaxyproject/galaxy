@@ -51,7 +51,6 @@ class UserListGrid( grids.Grid ):
             return 'never'
 
     # Grid definition
-    webapp = "galaxy"
     title = "Users"
     model_class = model.User
     template='/admin/user/grid.mako'
@@ -136,7 +135,6 @@ class RoleListGrid( grids.Grid ):
             return 0
 
     # Grid definition
-    webapp = "galaxy"
     title = "Roles"
     model_class = model.Role
     template='/admin/dataset_security/role/grid.mako'
@@ -220,7 +218,6 @@ class GroupListGrid( grids.Grid ):
             return 0
 
     # Grid definition
-    webapp = "galaxy"
     title = "Groups"
     model_class = model.Group
     template='/admin/dataset_security/group/grid.mako'
@@ -302,7 +299,6 @@ class QuotaListGrid( grids.Grid ):
             return 0
 
     # Grid definition
-    webapp = "galaxy"
     title = "Quotas"
     model_class = model.Quota
     template='/admin/quota/grid.mako'

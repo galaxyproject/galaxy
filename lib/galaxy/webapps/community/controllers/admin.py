@@ -60,7 +60,6 @@ class UserListGrid( grids.Grid ):
             return query.filter( and_( model.Tool.table.c.user_id == model.User.table.c.id,
                                        model.User.table.c.email == column_filter ) )
     # Grid definition
-    webapp = "community"
     title = "Users"
     model_class = model.User
     template='/admin/user/grid.mako'
@@ -148,7 +147,6 @@ class RoleListGrid( grids.Grid ):
             return 0
 
     # Grid definition
-    webapp = "community"
     title = "Roles"
     model_class = model.Role
     template='/admin/dataset_security/role/grid.mako'
@@ -235,7 +233,6 @@ class GroupListGrid( grids.Grid ):
             return 0
 
     # Grid definition
-    webapp = "community"
     title = "Groups"
     model_class = model.Group
     template='/admin/dataset_security/group/grid.mako'

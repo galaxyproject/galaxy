@@ -1033,7 +1033,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         url = kwd.get( 'url', '' )
         workflow_text = kwd.get( 'workflow_text', '' )
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         import_button = kwd.get( 'import_button', False )

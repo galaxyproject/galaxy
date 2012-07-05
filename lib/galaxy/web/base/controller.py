@@ -1552,7 +1552,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def index( self, trans, **kwd ):
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
@@ -1572,7 +1572,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def center( self, trans, **kwd ):
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         if webapp == 'galaxy':
@@ -1629,7 +1629,7 @@ class Admin( object ):
     @web.require_admin
     def create_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         name = util.restore_text( params.get( 'name', '' ) )
@@ -1706,7 +1706,7 @@ class Admin( object ):
     @web.require_admin
     def rename_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         id = params.get( 'id', None )
@@ -1751,7 +1751,7 @@ class Admin( object ):
     @web.require_admin
     def manage_users_and_groups_for_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         id = params.get( 'id', None )
@@ -1846,7 +1846,7 @@ class Admin( object ):
     @web.require_admin
     def mark_role_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No role ids received for deleting"
@@ -1872,7 +1872,7 @@ class Admin( object ):
     @web.require_admin
     def undelete_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No role ids received for undeleting"
@@ -1915,7 +1915,7 @@ class Admin( object ):
         # - GroupRoleAssociations where role_id == Role.id
         # - DatasetPermissionss where role_id == Role.id
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No role ids received for purging"
@@ -1988,7 +1988,7 @@ class Admin( object ):
     @web.require_admin
     def rename_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         id = params.get( 'id', None )
@@ -2031,7 +2031,7 @@ class Admin( object ):
     @web.require_admin
     def manage_users_and_roles_for_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         group = get_group( trans, params.id )
@@ -2078,7 +2078,7 @@ class Admin( object ):
     @web.require_admin
     def create_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         name = util.restore_text( params.get( 'name', '' ) )
@@ -2156,7 +2156,7 @@ class Admin( object ):
     @web.require_admin
     def mark_group_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = params.get( 'id', None )
         if not id:
             message = "No group ids received for marking deleted"
@@ -2182,7 +2182,7 @@ class Admin( object ):
     @web.require_admin
     def undelete_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No group ids received for undeleting"
@@ -2220,7 +2220,7 @@ class Admin( object ):
         # This method should only be called for a Group that has previously been deleted.
         # Purging a deleted Group simply deletes all UserGroupAssociations and GroupRoleAssociations.
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No group ids received for purging"
@@ -2259,7 +2259,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def create_new_user( self, trans, **kwd ):
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='create',
                                                           cntrller='admin',
@@ -2267,7 +2267,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         user_id = kwd.get( 'id', None )
         if not user_id:
             message = "No users received for resetting passwords."
@@ -2316,7 +2316,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def mark_user_deleted( self, trans, **kwd ):
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No user ids received for deleting"
@@ -2341,7 +2341,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def undelete_user( self, trans, **kwd ):
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No user ids received for undeleting"
@@ -2388,7 +2388,7 @@ class Admin( object ):
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
         # Purging Histories and Datasets must be handled via the cleanup_datasets.py script
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No user ids received for purging"
@@ -2493,7 +2493,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def manage_roles_and_groups_for_user( self, trans, **kwd ):
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         user_id = kwd.get( 'id', None )
         message = ''
         status = ''
@@ -2714,3 +2714,11 @@ def get_quota( trans, id ):
     id = trans.security.decode_id( id )
     quota = trans.sa_session.query( trans.model.Quota ).get( id )
     return quota
+def get_webapp( trans, **kwd ):
+    """Get the value of the webapp, can be one of 'community', 'galaxy', 'reports', 'demo_sequencer'."""
+    if 'webapp' in kwd:
+        return kwd[ 'webapp' ]
+    if 'webapp' in trans.environ:
+        return trans.environ[ 'webapp' ]
+    # The default is galaxy.
+    return 'galaxy'

@@ -40,7 +40,6 @@ class CategoryListGrid( grids.Grid ):
             return 0
 
     # Grid definition
-    webapp = "community"
     title = "Categories"
     model_class = model.Category
     template='/webapps/community/category/grid.mako'
@@ -377,7 +376,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         cntrller = params.get( 'cntrller', 'repository' )
         is_admin = trans.user_is_admin()
         invalid_tools_dict = odict()
@@ -495,7 +494,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
@@ -511,7 +510,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     status=status )
     @web.expose
     def browse_valid_repositories( self, trans, **kwd ):
-        webapp = kwd.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
@@ -596,7 +595,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         repository = get_repository_by_name_and_owner( trans, name, owner )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
@@ -769,7 +768,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
@@ -842,7 +841,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
@@ -922,7 +921,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
@@ -1050,7 +1049,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         repository = get_repository_by_name_and_owner( trans, name, owner )
         for downloadable_revision in repository.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
@@ -1204,7 +1203,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
         repository_clone_url = generate_clone_url( trans, repository_id )        
         repository = get_repository( trans, repository_id )
@@ -1241,7 +1240,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
@@ -1537,7 +1536,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -1999,7 +1998,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
@@ -2068,7 +2067,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None

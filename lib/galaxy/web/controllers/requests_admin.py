@@ -47,7 +47,6 @@ class DataTransferGrid( grids.Grid ):
             except:
                 return 'None'
     # Grid definition
-    webapp = "galaxy"
     title = "Sample Datasets"
     template = "admin/requests/sample_datasets_grid.mako"
     model_class = model.SampleDataset

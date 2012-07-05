@@ -21,7 +21,6 @@ class ExternalServiceGrid( grids.Grid ):
                 return 'Error in loading external_service type: %s' % external_service.external_service_type_id
 
     # Grid definition
-    webapp = "galaxy"
     title = "External Services"
     template = "admin/external_service/grid.mako"
     model_class = model.ExternalService

@@ -147,7 +147,6 @@ class RepositoryInstallationGrid( grids.Grid ):
                 ( bgcolor, trans.security.encode_id( tool_shed_repository.id ), status_label )
             return rval
 
-    webapp = "galaxy"
     title = "Monitor installing tool shed repositories"
     template = "admin/tool_shed_repository/repository_installation_grid.mako"
     model_class = model.ToolShedRepository
@@ -230,7 +229,6 @@ class ToolDependencyGrid( grids.Grid ):
                 ( bgcolor, trans.security.encode_id( tool_dependency.id ), tool_dependency.status )
             return rval
 
-    webapp = "galaxy"
     title = "Tool Dependencies"
     template = "admin/tool_shed_repository/tool_dependencies_grid.mako"
     model_class = model.ToolDependency
@@ -1516,7 +1514,7 @@ class AdminToolshed( AdminGalaxy ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'community' )
+        webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None

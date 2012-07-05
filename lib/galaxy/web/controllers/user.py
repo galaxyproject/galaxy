@@ -514,7 +514,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )
         email = util.restore_text( params.get( 'email', '' ) )
         # Do not sanitize passwords, so take from kwd
@@ -597,7 +597,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         email = util.restore_text( kwd.get( 'email', '' ) )
         password = kwd.get( 'password', '' )
         username = util.restore_text( kwd.get( 'username', '' ) )
-        webapp = kwd.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         status = kwd.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         user = trans.app.model.User( email=email )
@@ -694,7 +694,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             user = trans.user
         if not user:
             raise AssertionError, "The user id (%s) is not valid" % str( user_id )
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         email = util.restore_text( params.get( 'email', user.email ) )
         # Do not sanitize passwords, so take from kwd
         # instead of params ( which were sanitized )
@@ -759,7 +759,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
     def edit_username( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         user_id = params.get( 'user_id', None )
@@ -789,7 +789,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
     def edit_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        webapp = params.get( 'webapp', 'galaxy' )
+        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         user_id = params.get( 'user_id', None )

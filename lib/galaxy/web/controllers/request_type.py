@@ -28,7 +28,6 @@ class RequestTypeGrid( grids.Grid ):
                 return len( request_type.external_services )
             return 'No external service assigned'
     # Grid definition
-    webapp = "galaxy"
     title = "Request Types"
     template = "admin/request_type/grid.mako"
     model_class = model.RequestType
