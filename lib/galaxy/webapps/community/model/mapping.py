@@ -121,7 +121,8 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "changeset_revision", TrimmedString( 255 ), index=True ),
     Column( "metadata", JSONType, nullable=True ),
     Column( "tool_versions", JSONType, nullable=True ),
-    Column( "malicious", Boolean, default=False ) )
+    Column( "malicious", Boolean, default=False ),
+    Column( "downloadable", Boolean, default=True ) )
 
 RepositoryRatingAssociation.table = Table( "repository_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -196,7 +197,11 @@ assign_mapper( context, Repository, Repository.table,
         categories=relation( RepositoryCategoryAssociation ),
         ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
         user=relation( User.mapper ),
-        downloadable_revisions=relation( RepositoryMetadata, order_by=desc( RepositoryMetadata.table.c.update_time ) ) ) )
+        downloadable_revisions=relation( RepositoryMetadata,
+                                         primaryjoin=( ( Repository.table.c.id == RepositoryMetadata.table.c.repository_id ) & ( RepositoryMetadata.table.c.downloadable == True ) ),
+                                         order_by=desc( RepositoryMetadata.table.c.update_time ) ),
+        metadata_revisions=relation( RepositoryMetadata,
+                                     order_by=desc( RepositoryMetadata.table.c.update_time ) ) ) )
 
 assign_mapper( context, RepositoryMetadata, RepositoryMetadata.table,
     properties=dict( repository=relation( Repository ) ) )

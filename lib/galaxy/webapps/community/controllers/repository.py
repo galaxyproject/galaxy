@@ -75,10 +75,7 @@ class RepositoryListGrid( grids.Grid ):
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
-            """
-            Display a SelectField whose options are the changeset_revision
-            strings of all downloadable_revisions of this repository.
-            """
+            """Display a SelectField whose options are the changeset_revision strings of all downloadable_revisions of this repository."""
             select_field = build_changeset_revision_select_field( trans, repository )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
@@ -245,22 +242,10 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
                                                 filterable="standard" ) )
     operations = []
     def build_initial_query( self, trans, **kwd ):
-        # The clause_list approach is to filter out those repositories that include metadata, but only because they contain 'invalid_tools' in
-        # the metadata (i.e., they don't have valid tools, datatypes or workflows).  Is there a better approach?
-        clause_list = []
-        for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                                                   .filter( trans.model.RepositoryMetadata.table.c.malicious == False ):
-            metadata = repository_metadata.metadata
-            if 'datatypes' in metadata or'tools' in metadata or 'workflows' in metadata:
-                clause_list.append( trans.model.RepositoryMetadata.table.c.id == repository_metadata.id )
-        if clause_list:
-            return trans.sa_session.query( self.model_class ) \
-                                   .join( model.RepositoryMetadata.table ) \
-                                   .join( model.User.table ) \
-                                   .filter( or_( *clause_list ) )
         return trans.sa_session.query( self.model_class ) \
                                .join( model.RepositoryMetadata.table ) \
-                               .join( model.User.table )
+                               .join( model.User.table ) \
+                               .filter( model.RepositoryMetadata.table.c.downloadable == True )
 
 class MatchedRepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
@@ -400,7 +385,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
             for repository in trans.sa_session.query( trans.model.Repository ) \
                                               .filter( trans.model.Repository.table.c.deleted == False ) \
                                               .order_by( trans.model.Repository.table.c.name ):
-                for downloadable_revision in repository.downloadable_revisions:
+                # A repository's metadata_revisions are those that ignore the value of the repository_metadata.downloadable column.
+                for downloadable_revision in repository.metadata_revisions:
                     metadata = downloadable_revision.metadata
                     invalid_tools = metadata.get( 'invalid_tools', [] )
                     for invalid_tool_config in invalid_tools:
@@ -410,7 +396,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                               .filter( and_( trans.model.Repository.table.c.deleted == False,
                                                              trans.model.Repository.table.c.user_id == trans.user.id ) ) \
                                               .order_by( trans.model.Repository.table.c.name ):
-                for downloadable_revision in repository.downloadable_revisions:
+                for downloadable_revision in repository.metadata_revisions:
                     metadata = downloadable_revision.metadata
                     invalid_tools = metadata.get( 'invalid_tools', [] )
                     for invalid_tool_config in invalid_tools:
@@ -1595,7 +1581,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
         # Get the lower bound changeset revision 
-        lower_bound_changeset_revision = get_previous_valid_changset_revision( repository, repo, changeset_revision )
+        lower_bound_changeset_revision = get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
         # Build the list of changeset revision hashes.
         changeset_hashes = []
         for changeset in reversed_lower_upper_bounded_changelog( repo, lower_bound_changeset_revision, changeset_revision ):

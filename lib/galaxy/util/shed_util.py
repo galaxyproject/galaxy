@@ -76,8 +76,9 @@ class ShedCounter( object ):
                 processed_invalid_tool_configs = []
                 processed_relative_workflow_paths = []
                 processed_datatypes = []
-                for downloadable_revision in repository.downloadable_revisions:
-                    metadata = downloadable_revision.metadata
+                # A repository's metadata_revisions are those that ignore the value of the repository_metadata.downloadable column.
+                for metadata_revision in repository.metadata_revisions:
+                    metadata = metadata_revision.metadata
                     if 'tools' in metadata:
                         tool_dicts = metadata[ 'tools' ]
                         for tool_dict in tool_dicts:
@@ -1461,7 +1462,7 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
     """
     # To set excluded_lower_bounds_changeset_revision, calling methods should do the following, where the value of changeset_revision
     # is a downloadable changeset_revision.
-    # excluded_lower_bounds_changeset_revision = get_previous_valid_changset_revision( repository, repo, changeset_revision )
+    # excluded_lower_bounds_changeset_revision = get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
     if excluded_lower_bounds_changeset_revision == INITIAL_CHANGELOG_HASH:
         appending_started = True
     else:

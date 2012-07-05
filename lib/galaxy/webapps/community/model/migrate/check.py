@@ -77,8 +77,10 @@ def create_or_verify_database( url, engine_options={} ):
     # Verify that the code and the DB are in sync
     db_schema = schema.ControlledSchema( engine, migrate_repository )
     if migrate_repository.versions.latest != db_schema.version:
-        raise Exception( "Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh upgrade'."
-                            % ( db_schema.version, migrate_repository.versions.latest ) )
+        exception_msg = "Your database has version '%d' but this code expects version '%d'.  " % ( db_schema.version, migrate_repository.versions.latest )
+        exception_msg += "Back up your database and then migrate the schema by running the following from your Galaxy installation directory:"
+        exception_msg += "\n\nsh manage_db.sh upgrade community\n"
+        raise Exception( exception_msg )
     else:
         log.info( "At database version %d" % db_schema.version )
         

@@ -1,0 +1,48 @@
+"""
+Migration script to add the downloadable column to the repository_metadata table.
+"""
+
+from sqlalchemy import *
+from sqlalchemy.orm import *
+from migrate import *
+from migrate.changeset import *
+
+import sys, logging
+log = logging.getLogger( __name__ )
+log.setLevel(logging.DEBUG)
+handler = logging.StreamHandler( sys.stdout )
+format = "%(name)s %(levelname)s %(asctime)s %(message)s"
+formatter = logging.Formatter( format )
+handler.setFormatter( formatter )
+log.addHandler( handler )
+
+metadata = MetaData( migrate_engine )
+db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+
+def upgrade():
+    print __doc__
+    metadata.reflect()
+    # Create and initialize imported column in job table.
+    RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
+    c = Column( "downloadable", Boolean, default=True )
+    try:
+        # Create
+        c.create( RepositoryMetadata_table )
+        assert c is RepositoryMetadata_table.c.downloadable
+        # Initialize.
+        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
+            default_true = "1"
+        elif migrate_engine.name == 'postgres':
+            default_true = "true"
+        db_session.execute( "UPDATE repository_metadata SET downloadable=%s" % default_true )
+    except Exception, e:
+        print "Adding downloadable column to the repository_metadata table failed: %s" % str( e )
+    
+def downgrade():
+    metadata.reflect()
+    # Drop downloadable column from repository_metadata table.
+    RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
+    try:
+        RepositoryMetadata_table.c.downloadable.drop()
+    except Exception, e:
+        print "Dropping column downloadable from the repository_metadata table failed: %s" % str( e )

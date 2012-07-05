@@ -134,10 +134,7 @@ def add_repository_metadata_tool_versions( trans, id, changeset_revisions ):
                     trans.sa_session.add( repository_metadata )
                     trans.sa_session.flush()
 def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True ):
-    """
-    Build a SelectField whose options are the changeset_revision
-    strings of all downloadable_revisions of the received repository.
-    """
+    """Build a SelectField whose options are the changeset_rev strings of all downloadable revisions of the received repository."""
     repo = hg.repository( get_configured_ui(), repository.repo_path )
     options = []
     changeset_tups = []
@@ -169,6 +166,10 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         selected = selected_value and option_tup[1] == selected_value
         select_field.add_option( option_tup[0], option_tup[1], selected=selected )
     return select_field
+def changeset_is_downloadable( metadata_dict ):
+    # A RepositoryMetadata record will be created if metadata_dict includes only invalid stuff like 'invalid_tools', but in this case
+    # it won't be downloadable.
+    return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -374,15 +375,12 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
-        # Update RepositoryMetadata.metadata.
         repository_metadata.metadata = metadata_dict
-        trans.sa_session.add( repository_metadata )
-        trans.sa_session.flush()
     else:
-        # Create a new repository_metadata table row.
         repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
-        trans.sa_session.add( repository_metadata )
-        trans.sa_session.flush()
+    repository_metadata.downloadable = changeset_is_downloadable( metadata_dict )
+    trans.sa_session.add( repository_metadata )
+    trans.sa_session.flush()
 def decode( value ):
     # Extract and verify hash
     a, b = value.split( ":" )
@@ -605,7 +603,7 @@ def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
     if parent_id is None:
         # The tool did not change through all of the changeset revisions.
         return old_id
-def get_previous_valid_changset_revision( repository, repo, before_changeset_revision ):
+def get_previous_downloadable_changset_revision( repository, repo, before_changeset_revision ):
     """
     Return the downloadable changeset_revision in the repository changelog just prior to the changeset to which before_changeset_revision
     refers.  If there isn't one, return the hash value of an empty repository changlog, INITIAL_CHANGELOG_HASH.
@@ -1087,12 +1085,9 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
                         # Update the last saved repository_metadata table row.
                         repository_metadata.changeset_revision = changeset_revision
                         repository_metadata.metadata = metadata_dict
+                        repository_metadata.downloadable = changeset_is_downloadable( metadata_dict )
                         trans.sa_session.add( repository_metadata )
-                        try:
-                            trans.sa_session.flush()
-                        except TypeError, e:
-                            message = "Unable to save metadata for this repository probably due to a tool config file that doesn't conform to the Cheetah template syntax."
-                            status = 'error'
+                        trans.sa_session.flush()
                     else:
                         # There are no tools in the repository, and we're setting metadata on the repository tip.
                         repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
@@ -1102,6 +1097,7 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
                 # We're re-generating metadata for an old repository revision.
                 repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
                 repository_metadata.metadata = metadata_dict
+                repository_metadata.downloadable = changeset_is_downloadable( metadata_dict )
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
         elif updating_tip and len( repo ) == 1 and not invalid_files:

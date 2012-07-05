@@ -130,9 +130,6 @@ class UploadController( BaseUIController ):
                         error, error_message = handle_sample_tool_data_table_conf_file( trans.app, full_path )
                         if error:
                             message = '%s<br/>%s' % ( message, error_message )
-                    #if full_path.endswith( '.loc.sample' ):
-                    #    # Handle the special case where a xxx.loc.sample file is being uploaded by copying it to ~/tool-data/xxx.loc.
-                    #    copy_sample_file( trans.app, full_path )
                     # See if the content of the change set was valid.
                     admin_only = len( repository.downloadable_revisions ) != 1
                     handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
@@ -272,7 +269,6 @@ class UploadController( BaseUIController ):
                     if error:
                         return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
             commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
-            # See if the content of the change set was valid.
             admin_only = len( repository.downloadable_revisions ) != 1
             handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
             return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
