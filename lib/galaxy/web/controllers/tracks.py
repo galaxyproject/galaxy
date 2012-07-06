@@ -225,7 +225,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             'viewport': vis_config[ 'viewport' ]
         }
         type = vis_config[ 'type' ]
-        id = vis_config[ 'id' ]
+        id = vis_config.get( 'id', None )
         title = vis_config[ 'title' ]
         dbkey = vis_config[ 'dbkey' ]
         annotation = vis_config.get( 'annotation', None )

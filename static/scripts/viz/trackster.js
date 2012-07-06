@@ -1051,7 +1051,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
             add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
                 _.each(tracks, function(track) {
-                    view.add_drawable( object_from_template(track, view) );  
+                    view.add_drawable( object_from_template(track, view, view) );  
                 });
             });
         });
