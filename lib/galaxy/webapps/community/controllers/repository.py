@@ -1254,8 +1254,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # Redirect back to local Galaxy to perform install.
         url = '%sadmin_toolshed/prepare_for_install' % galaxy_url
         url += '?tool_shed_url=%s' % url_for( '/', qualified=True )
-        url += '&repository_ids=%s' % ','.join( repository_ids )
-        url += '&changeset_revisions=%s' % ','.join( changeset_revisions )
+        url += '&repository_ids=%s' % ','.join( util.listify( repository_ids ) )
+        url += '&changeset_revisions=%s' % ','.join( util.listify( changeset_revisions ) )
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
