@@ -1035,6 +1035,37 @@ class RepositoryController( BaseUIController, ItemRatings ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         return get_repository_file_contents( file_path )
+    @web.json
+    def get_repository_information( self, trans, repository_ids, changeset_revisions, **kwd ):
+        """
+        Generate a list of dictionaries, each of which contains the information about a repository that will be necessary for installing
+        it into a local Galaxy instance.
+        """
+        includes_tools = False
+        includes_tool_dependencies = False
+        repo_info_dicts = []
+        for repository_id, changeset_revision in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
+            repository_clone_url = generate_clone_url( trans, repository_id )        
+            repository = get_repository( trans, repository_id )
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+            metadata = repository_metadata.metadata
+            if not includes_tools and 'tools' in metadata:
+                includes_tools = True
+            if not includes_tool_dependencies and 'tool_dependencies' in metadata:
+                includes_tool_dependencies = True
+            repo_dir = repository.repo_path
+            repo = hg.repository( get_configured_ui(), repo_dir )
+            ctx = get_changectx_for_changeset( repo, changeset_revision )
+            repo_info_dict = {}
+            repo_info_dict[ repository.name ] = ( repository.description,
+                                                  repository_clone_url,
+                                                  changeset_revision,
+                                                  str( ctx.rev() ),
+                                                  repository.user.username,
+                                                  metadata.get( 'tool_dependencies', None ) )
+            encoded_repo_info_dict = tool_shed_encode( repo_info_dict )
+            repo_info_dicts.append( encoded_repo_info_dict )
+        return dict( includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies, repo_info_dicts=repo_info_dicts )
     @web.expose
     def get_readme( self, trans, **kwd ):
         """If the received changeset_revision includes a file named readme (case ignored), return it's contents."""
@@ -1218,45 +1249,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     status=status )
     @web.expose
     def install_repositories_by_revision( self, trans, repository_ids, changeset_revisions, **kwd ):
-        """Install a list of repositories into a local Galaxy instance by a specified changeset revision for each."""
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
+        """Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation process."""
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-        repo_info_dicts = []
-        includes_tools = False
-        includes_tool_dependencies = False
-        for repository_id, changeset_revision in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
-            repository_clone_url = generate_clone_url( trans, repository_id )        
-            repository = get_repository( trans, repository_id )
-            #changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
-            repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-            metadata = repository_metadata.metadata
-            # Tell the caller if the repository includes Galaxy tools so the page enabling selection of the tool panel section can be displayed.
-            if not includes_tools and 'tools' in metadata:
-                includes_tools = True
-            if not includes_tool_dependencies and 'tool_dependencies' in metadata:
-                includes_tool_dependencies = True
-            # Get the changelog rev for this changeset_revision.
-            repo_dir = repository.repo_path
-            repo = hg.repository( get_configured_ui(), repo_dir )
-            ctx = get_changectx_for_changeset( repo, changeset_revision )
-            repo_info_dict = {}
-            repo_info_dict[ repository.name ] = ( repository.description,
-                                                  repository_clone_url,
-                                                  changeset_revision,
-                                                  str( ctx.rev() ),
-                                                  repository.user.username,
-                                                  metadata.get( 'tool_dependencies', None ) )
-            repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
-        encoded_repo_info_dicts = ','.join( repo_info_dicts )
         # Redirect back to local Galaxy to perform install.
-        url = '%sadmin_toolshed/install_repository' % galaxy_url
+        url = '%sadmin_toolshed/prepare_for_install' % galaxy_url
         url += '?tool_shed_url=%s' % url_for( '/', qualified=True )
-        url += '&repo_info_dicts=%s' % encoded_repo_info_dicts
-        url += '&includes_tools=%s' % includes_tools
-        url += '&includes_tool_dependencies=%s' % includes_tool_dependencies
+        url += '&repository_ids=%s' % ','.join( repository_ids )
+        url += '&changeset_revisions=%s' % ','.join( changeset_revisions )
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
