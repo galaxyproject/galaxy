@@ -84,7 +84,7 @@
 </%def>
 
 <%def name="render_repository_items( repository_metadata_id, metadata, can_set_metadata=False, webapp='community' )">
-    <% from galaxy.tool_shed.encoding_util import tool_shed_decode %>
+    <% from galaxy.tool_shed.encoding_util import tool_shed_encode %>
     %if metadata or can_set_metadata:
         <p/>
         <div class="toolForm">
@@ -236,7 +236,7 @@
                                     %>
                                     <tr>
                                         <td>
-                                            <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=tool_shed_decode( workflow_name ), webapp=webapp )}">${workflow_name}</a>
+                                            <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=tool_shed_encode( workflow_name ), webapp=webapp )}">${workflow_name}</a>
                                         </td>
                                         <td>
                                             %if steps:
