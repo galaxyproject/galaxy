@@ -134,11 +134,12 @@ class WorkflowsAPIController(BaseAPIController):
                     hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(
                             trans.security.decode_id(ds_map[k]['id']))
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-                    if add_to_history and  hda.history != history:
-                        history.add_dataset(hda)
                 else:
                     trans.response.status = 400
                     return "Unknown dataset source '%s' specified." % ds_map[k]['src']
+                if add_to_history and  hda.history != history:
+                    hda = hda.copy()
+                    history.add_dataset(hda)
                 ds_map[k]['hda'] = hda
             except AssertionError:
                 trans.response.status = 400
