@@ -127,30 +127,36 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 });
 
                 // FIXME: give unique IDs to Drawables and save overview as ID.
-                var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null);
-                var visualization = new TracksterVisualization({
-                    'id': view.vis_id,
-                    'title': view.name,
-                    'dbkey': view.dbkey,
-                    'type': 'trackster',
-                    'datasets': view.to_dict(),
-                    'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
-                    'bookmarks': bookmarks
-                });
-                
-                visualization.save()
-                    .success(function(vis_info) {
-                        hide_modal();
-                        view.vis_id = vis_info.vis_id;
-                        view.has_changes = false;
+                var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null),
+                    viz_config = {
+                        'id': view.vis_id,
+                        'title': view.name,
+                        'dbkey': view.dbkey,
+                        'type': 'trackster',
+                        'datasets': view.to_dict(),
+                        'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
+                        'bookmarks': bookmarks
+                    };
 
-                        // Needed to set URL when first saving a visualization.
-                        window.history.pushState({}, "", vis_info.url + window.location.hash);
-                    })
-                    .error(function() { 
-                        show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
-                                    { "Close" : hide_modal } );
-                    });
+                $.ajax({
+                    url: galaxy_paths.get("visualization_url"),
+                    type: "POST",
+                    dataType: "json",
+                    data: { 
+                        vis_json: JSON.stringify(viz_config)
+                    }
+                }).success(function(vis_info) {
+                    hide_modal();
+                    view.vis_id = vis_info.vis_id;
+                    view.has_changes = false;
+
+                    // Needed to set URL when first saving a visualization.
+                    window.history.pushState({}, "", vis_info.url + window.location.hash);
+                })
+                .error(function() { 
+                    show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
+                                { "Close" : hide_modal } );
+                });
             } },
             { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
                 window.location = "${h.url_for( controller='visualization', action='list' )}";

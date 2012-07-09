@@ -233,7 +233,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         
     @web.expose
     @web.require_login()
-    def browser(self, trans, id, chrom="", **kwargs):
+    def browser(self, trans, id, **kwargs):
         """
         Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
         """
@@ -471,6 +471,11 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
                     
     @web.expose
     def paramamonster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):
+        """
+        Creates a paramamonster visualization using the incoming parameters. If id is available,
+        get the visualization with the given id; otherwise, create a new visualization using
+        a given dataset and regions.
+        """
         # Need to create history if necessary in order to create tool form.
         trans.get_history( create=True )
 
@@ -497,27 +502,30 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         return trans.fill_template_mako( "visualization/paramamonster.mako", config=viz_config )
     
     @web.expose
-    def circster( self, trans, hda_ldda, dataset_id ):
-        # Get dataset.
-        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+    def circster( self, trans, id, **kwargs ):
+        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+        viz_config = self.get_visualization_config( trans, vis )
 
         # Get genome info.
-        dbkey = dataset.dbkey
+        dbkey = viz_config[ 'dbkey' ]
         chroms_info = self.app.genomes.chroms( trans, dbkey=dbkey )
         genome = { 'dbkey': dbkey, 'chroms_info': chroms_info }
 
-        # Get summary tree data for dataset.
-        data_sources = self._get_datasources( trans, dataset )
-        tracks_dataset_type = data_sources['index']['name']
-        converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-        indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
-        dataset_summary = []
-        for chrom_info in chroms_info[ 'chrom_info' ]:
-            summary = indexer.get_summary( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], level=4 )
-            dataset_summary.append( summary )
+        # Add genome-wide summary tree data to each track in viz.
+        tracks = viz_config[ 'tracks' ]
+        for track in tracks:
+            # Get dataset and indexed datatype.
+            dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
+            data_sources = self._get_datasources( trans, dataset )
+            indexed_type = data_sources['index']['name']
 
-        return trans.fill_template_mako( "visualization/circster.mako", dataset=dataset, dataset_summary=dataset_summary, genome=genome )
-    
+            # Get converted dataset and append track's genome data.
+            converted_dataset = dataset.get_converted_dataset( trans, indexed_type )
+            data_provider = get_data_provider( indexed_type )( converted_dataset, dataset )
+            track[ 'genome_wide_data' ] = { 'data': data_provider.get_genome_data( chroms_info ) }
+        
+        return trans.fill_template( 'visualization/circster.mako', viz_config=viz_config, genome=genome )
+
     # -----------------
     # Helper methods.
     # -----------------

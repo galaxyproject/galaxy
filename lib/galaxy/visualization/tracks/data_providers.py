@@ -614,9 +614,23 @@ class SummaryTreeDataProvider( TracksDataProvider ):
     def valid_chroms( self ):
         st = summary_tree_from_file( self.converted_dataset.file_name )
         return st.chrom_blocks.keys()
-        
+
+    def get_genome_data( self, chroms_info ):
+        """
+        Returns summary tree data for complete genome.
+        """
+        dataset_summary = []
+        for chrom_info in chroms_info[ 'chrom_info' ]:
+            summary = self.get_summary( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], level=4 )
+            dataset_summary.append( summary )
+
+        return dataset_summary
     
+    # TODO: rename to get_data to match other providers.
     def get_summary( self, chrom, start, end, level=None, resolution=None ):
+        """
+        Returns summary tree data for a given genomic region.
+        """
         filename = self.converted_dataset.file_name
         st = self.CACHE[filename]
         if st is None:

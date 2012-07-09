@@ -169,6 +169,7 @@ var GenomeDataManager = Cache.extend({
         filters_manager: null,
         data_url: null,
         dataset_state_url: null,
+        genome_wide_summary_data: null,
         data_mode_compatible: function(entry, mode) { return true; },
         can_subset: function(entry) { return false; }
     }),
@@ -549,17 +550,64 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
 });
 
 /**
+ * Genome-wide summary data.
+ */
+var GenomeWideSummaryData = Backbone.RelationalModel.extend({
+    defaults: {
+        data: null,
+        max: 0  
+    },
+    
+    initialize: function(options) {
+        // Set max across dataset.
+        var max_data = _.max(this.get('data'), function(d) {
+            if (!d || typeof d === 'string') { return 0; }
+            return d[1];
+        });
+        this.attributes.max = (max_data && typeof max_data !== 'string' ? max_data[1] : 0)
+    }
+});
+
+/**
+ * A track of data in a genome visualization.
+ */
+// TODO: rename to Track and merge with Trackster's Track object.
+var BackboneTrack = Dataset.extend({
+
+    initialize: function(options) {
+        // Dataset id is unique ID for now.
+        this.set('id', options.dataset_id);
+    },
+
+    relations: [
+        {
+            type: Backbone.HasOne,
+            key: 'genome_wide_data',
+            relatedModel: 'GenomeWideSummaryData'
+        }
+    ]
+});
+
+/**
  * A visualization.
  */
 var Visualization = Backbone.RelationalModel.extend({
     defaults: {
-        id: "",
-        title: "",
-        type: "",
-        dbkey: "",
-        datasets: []
+        id: '',
+        title: '',
+        type: '',
+        dbkey: '',
+        tracks: null
     },
-    
+
+    relations: [
+        {
+            type: Backbone.HasMany,
+            key: 'tracks',
+            relatedModel: 'BackboneTrack'
+        }
+    ],
+
     // Use function because visualization_url changes depending on viz.
     // FIXME: all visualizations should save to the same URL (and hence
     // this function won't be needed).
@@ -585,42 +633,13 @@ var Visualization = Backbone.RelationalModel.extend({
 });
 
 /**
- * A Trackster visualization.
+ * A Genome space visualization.
  */
-var TracksterVisualization = Visualization.extend({
-    defaults: {
-        bookmarks: [],
-        viewport: {}
-    }
-});
-
-/**
- * A Circster visualization.
- */
-var CircsterVisualization = Visualization.extend({
-});
-
-/**
- * A histogram dataset.
- */
-var HistogramDataset = Backbone.Model.extend({
-    /*
-    defaults: {
-        data: [],
-        dataset: null,
-        max: 0  
-    },
-    */
-    
-    initialize: function(data) {
-        // Set max across dataset.
-        this.attributes.data = data;
-        this.attributes.max = _.max(data, function(d) { 
-            if (!d || typeof d === "string") { return 0; }
-            return d[1];
-        })[1];
-    }
-    
+var GenomeVisualization = Visualization.extend({
+    defaults: _.extend({}, Visualization.prototype.defaults, {
+        bookmarks: null,
+        viewport: null
+    })
 });
 
 /**
@@ -701,13 +720,15 @@ var CircsterView = Backbone.View.extend({
         this.height = options.height;
         this.total_gap = options.total_gap;
         this.genome = options.genome;
-        this.dataset = options.dataset;
         this.radius_start = options.radius_start;
         this.dataset_arc_height = options.dataset_arc_height;
     },
     
     render: function() {
         // -- Layout viz. --
+
+        // FOR TESTING:
+        var dataset = this.model.get('tracks').at(0).get('genome_wide_data');
         
         var radius_start = this.radius_start,
             dataset_arc_height = this.dataset_arc_height,
@@ -720,8 +741,8 @@ var CircsterView = Backbone.View.extend({
             chrom_arcs = arcs_layout.chroms_layout(),
             
             // Merge chroms layout with data.
-            layout_and_data = _.zip(chrom_arcs, this.dataset.attributes.data),
-            dataset_max = this.dataset.attributes.max,
+            layout_and_data = _.zip(chrom_arcs, dataset.get('data')),
+            dataset_max = dataset.get('max'),
             
             // Do dataset layout for each chromosome's data using pie layout.
             chroms_data_layout = _.map(layout_and_data, function(chrom_info) {

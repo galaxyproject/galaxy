@@ -16,7 +16,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 
-    ${h.js( "libs/d3", "viz/visualization" )}
+    ${h.js( "libs/d3", "mvc/data", "viz/visualization" )}
 
     <script type="text/javascript">
         $(function() {
@@ -65,23 +65,23 @@
             
             // -- Viz set up. --
             
-            var genome = new Genome(JSON.parse('${ h.to_json_string( genome ) }')),
-                dataset = new HistogramDataset(JSON.parse('${ h.to_json_string( dataset_summary ) }')),
-                circster = new CircsterView({
+            var genome = new Genome(JSON.parse('${ h.to_json_string( genome ) }'))
+                visualization = new GenomeVisualization(JSON.parse('${ h.to_json_string( viz_config ) }')),
+                viz_view = new CircsterView({
                     width: 600,
                     height: 600,
                     // Gap is difficult to set because it very dependent on chromosome size and organization.
                     total_gap: 2 * Math.PI * 0.5,
                     genome: genome,
-                    dataset: dataset,
+                    model: visualization,
                     radius_start: 100,
                     dataset_arc_height: 50
                 });
             
             // -- Render viz. --
                 
-            circster.render();
-            $('#vis').append(circster.$el);
+            viz_view.render();
+            $('#vis').append(viz_view.$el);
         });
     </script>
 </%def>
