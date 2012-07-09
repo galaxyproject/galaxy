@@ -1563,10 +1563,11 @@ assign_mapper( context, Job, Job.table,
                      post_job_actions=relation( PostJobActionAssociation, lazy=False ),
                      input_library_datasets=relation( JobToInputLibraryDatasetAssociation ),
                      output_library_datasets=relation( JobToOutputLibraryDatasetAssociation ),
-                     external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
+                     external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ), 
+                     tasks = relation(Task) ) )
 
 assign_mapper( context, Task, Task.table,
-    properties=dict( job = relation( Job )))
+    properties=dict( job = relation( Job ) ) )
                      
 assign_mapper( context, DeferredJob, DeferredJob.table, 
     properties = {} )
