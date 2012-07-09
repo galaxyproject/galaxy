@@ -685,4 +685,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         if emails is None:
             emails = [ u.email for u in trans.sa_session.query( trans.app.model.User ).enable_eagerloads( False ).all() ]
         return trans.fill_template( 'admin/impersonate.mako', emails=emails, message=message, status=status )
-      
+    @web.expose
+    @web.require_admin
+    def view_datatypes_registry( self, trans, **kwd ):
+        message = util.restore_text( kwd.get( 'message', '' ) )
+        status = util.restore_text( kwd.get( 'status', 'done' ) )
+        return trans.fill_template( 'admin/view_datatypes_registry.mako', message=message, status=status )

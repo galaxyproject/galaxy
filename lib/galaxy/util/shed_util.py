@@ -1491,7 +1491,7 @@ def to_html_escaped( text ):
         elif c in MAPPED_CHARS:
             translated.append( MAPPED_CHARS[ c ] )
         else:
-            translated.append( 'X' )
+            translated.append( '' )
     return ''.join( translated )
 def to_html_str( text ):
     """Translates the characters in text to sn html string"""
@@ -1508,7 +1508,7 @@ def to_html_str( text ):
         elif c == '\n':
             translated.append( '<br/>' )
         elif c not in [ '\r' ]:
-            translated.append( 'X' )
+            translated.append( '' )
     return ''.join( translated )
 def update_repository( repo, ctx_rev=None ):
     """

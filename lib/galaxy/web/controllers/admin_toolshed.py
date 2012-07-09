@@ -308,6 +308,14 @@ class AdminToolshed( AdminGalaxy ):
                                shed_tool_conf,
                                tool_panel_dict,
                                new_install=False )
+        if repository.includes_datatypes:
+            repository_install_dir = os.path.abspath ( relative_install_dir )
+            # Deactivate proprietary datatypes.
+            installed_repository_dict = load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=False )
+            if installed_repository_dict and 'converter_path' in installed_repository_dict:
+                load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
+            if installed_repository_dict and 'display_path' in installed_repository_dict:
+                load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
         message = 'The <b>%s</b> repository has been activated.' % repository.name
         status = 'done'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -406,9 +414,9 @@ class AdminToolshed( AdminGalaxy ):
             if tool_shed_repository.includes_datatypes:
                 # Deactivate proprietary datatypes.
                 installed_repository_dict = load_installed_datatypes( trans.app, tool_shed_repository, repository_install_dir, deactivate=True )
-                if installed_repository_dict[ 'converter_path' ]:
+                if installed_repository_dict and 'converter_path' in installed_repository_dict:
                     load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=True )
-                if installed_repository_dict[ 'display_path' ]:
+                if installed_repository_dict and 'display_path' in installed_repository_dict:
                     load_installed_display_applications( trans.app, installed_repository_dict, deactivate=True )
             if remove_from_disk_checked:
                 try:
@@ -1243,10 +1251,21 @@ class AdminToolshed( AdminGalaxy ):
                                                                       tool_shed_repository.installed_changeset_revision,
                                                                       tool_shed_repository.owner,
                                                                       tool_shed_repository.dist_to_shed )
+        ctx_rev = get_ctx_rev( tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision )
+        repo_info_dict = kwd.get( 'repo_info_dict', None )
+        if not repo_info_dict:
+            # This should only happen if the tool_shed_repository does not include any valid tools.
+            repo_info_dict = {}
+            repo_info_dict[ tool_shed_repository.name ] = ( tool_shed_repository.description,
+                                                            repository_clone_url,
+                                                            tool_shed_repository.installed_changeset_revision,
+                                                            ctx_rev,
+                                                            tool_shed_repository.owner,
+                                                            metadata.get( 'tool_dependencies', None ) )
         new_kwd = dict( includes_tool_dependencies=tool_shed_repository.includes_tool_dependencies,
                         includes_tools=tool_shed_repository.includes_tools,
                         install_tool_dependencies=install_tool_dependencies,
-                        repo_info_dicts=kwd[ 'repo_info_dict' ],
+                        repo_info_dicts=util.listify( repo_info_dict ),
                         message=message,
                         new_tool_panel_section=new_tool_panel_section,
                         shed_tool_conf=shed_tool_conf,
