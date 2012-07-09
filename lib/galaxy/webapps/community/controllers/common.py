@@ -501,6 +501,9 @@ def generate_tool_guid( trans, repository, tool ):
 def get_category( trans, id ):
     """Get a category from the database"""
     return trans.sa_session.query( trans.model.Category ).get( trans.security.decode_id( id ) )
+def get_category_by_name( trans, name ):
+    """Get a category from the database via name"""
+    return trans.sa_session.query( trans.model.Category ).filter_by( name=name ).one()
 def get_categories( trans ):
     """Get all categories from the database"""
     return trans.sa_session.query( trans.model.Category ) \

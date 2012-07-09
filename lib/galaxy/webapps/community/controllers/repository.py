@@ -52,8 +52,46 @@ class CategoryListGrid( grids.Grid ):
         DescriptionColumn( "Description",
                            key="Category.description",
                            attach_popup=False ),
-        # Columns that are valid for filtering but are not visible.
         RepositoriesColumn( "Repositories",
+                            model_class=model.Repository,
+                            attach_popup=False )
+    ]
+    # Override these
+    default_filter = {}
+    global_actions = []
+    operations = []
+    standard_filters = []
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+
+class ValidCategoryListGrid( CategoryListGrid ):
+    class RepositoriesColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, category ):
+            if category.repositories:
+                viewable_repositories = 0
+                for rca in category.repositories:
+                    repository = rca.repository
+                    if repository.downloadable_revisions:
+                        viewable_repositories += 1
+                return viewable_repositories
+            return 0
+
+    # Grid definition
+    title = "Categories of valid repositories"
+    model_class = model.Category
+    template='/webapps/community/category/valid_grid.mako'
+    default_sort_key = "name"
+    columns = [
+        CategoryListGrid.NameColumn( "Name",
+                                     key="Category.name",
+                                     link=( lambda item: dict( operation="valid_repositories_by_category", id=item.id, webapp="galaxy" ) ),
+                                     attach_popup=False ),
+        CategoryListGrid.DescriptionColumn( "Description",
+                                            key="Category.description",
+                                            attach_popup=False ),
+        # Columns that are valid for filtering but are not visible.
+        RepositoriesColumn( "Valid repositories",
                             model_class=model.Repository,
                             attach_popup=False )
     ]
@@ -208,14 +246,28 @@ class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
         ]
 
 class ValidRepositoryListGrid( RepositoryListGrid ):
+    class CategoryColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository ):
+            rval = '<ul>'
+            if repository.categories:
+                for rca in repository.categories:
+                    rval += '<li><a href="browse_repositories?operation=valid_repositories_by_category&id=%s&webapp=galaxy">%s</a></li>' \
+                        % ( trans.security.encode_id( rca.category.id ), rca.category.name )
+            else:
+                rval += '<li>not set</li>'
+            rval += '</ul>'
+            return rval
+    class RepositoryCategoryColumn( grids.GridColumn ):
+        def filter( self, trans, user, query, column_filter ):
+            """Modify query to filter by category."""
+            if column_filter == "All":
+                return query
+            return query.filter( model.Category.name == column_filter )
     class RevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
-            """
-            Display a SelectField whose options are the changeset_revision
-            strings of all download-able revisions of this repository.
-            """
+            """Display a SelectField whose options are the changeset_revision strings of all download-able revisions of this repository."""
             select_field = build_changeset_revision_select_field( trans, repository )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
@@ -231,19 +283,35 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
         RevisionColumn( "Revision" ),
         RepositoryListGrid.UserColumn( "Owner",
                                        model_class=model.User,
-                                       attach_popup=False,
-                                       key="User.username" )
+                                       attach_popup=False ),
+        # Columns that are valid for filtering but are not visible.
+        RepositoryCategoryColumn( "Category",
+                                  model_class=model.Category,
+                                  key="Category.name",
+                                  visible=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description, owner", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = []
     def build_initial_query( self, trans, **kwd ):
+        if 'id' in kwd:
+            # The user is browsing categories of valid repositories, so filter the request by the received id, which is a category id.
+            return trans.sa_session.query( self.model_class ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .join( model.User.table ) \
+                                   .join( model.RepositoryCategoryAssociation.table ) \
+                                   .join( model.Category.table ) \
+                                   .filter( and_( model.Category.table.c.id == trans.security.decode_id( kwd[ 'id' ] ),
+                                                  model.RepositoryMetadata.table.c.downloadable == True ) )
+        # The user performed a free text search on the ValidCategoryListGrid.
         return trans.sa_session.query( self.model_class ) \
                                .join( model.RepositoryMetadata.table ) \
                                .join( model.User.table ) \
+                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                               .outerjoin( model.Category.table ) \
                                .filter( model.RepositoryMetadata.table.c.downloadable == True )
 
 class MatchedRepositoryListGrid( grids.Grid ):
@@ -323,6 +391,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
     repository_list_grid = RepositoryListGrid()
     email_alerts_repository_list_grid = EmailAlertsRepositoryListGrid()
     category_list_grid = CategoryListGrid()
+    valid_category_list_grid = ValidCategoryListGrid()
 
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
         # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
@@ -346,14 +415,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
         shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     @web.expose
     def browse_categories( self, trans, **kwd ):
+        # The request came from the tool shed.
         if 'f-free-text-search' in kwd:
-            # Trick to enable searching repository name, description from the CategoryListGrid.
-            # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
-            # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
-            # Since we are searching repositories and not categories, redirect to browse_repositories().
+            # Trick to enable searching repository name, description from the CategoryListGrid.  What we've done is rendered the search box for the
+            # RepositoryListGrid on the grid.mako template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.  Since we
+            # are searching repositories and not categories, redirect to browse_repositories().
             if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:
-                # The value of 'id' has been set to the search string, which is a repository name.
-                # We'll try to get the desired encoded repository id to pass on.
+                # The value of 'id' has been set to the search string, which is a repository name.  We'll try to get the desired encoded repository id to pass on.
                 try:
                     repository = get_repository_by_name( trans, kwd[ 'id' ] )
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )
@@ -408,11 +476,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     status=status )
     @web.expose
     def browse_repositories( self, trans, **kwd ):
-        # We add params to the keyword dict in this method in order to rename the param
-        # with an "f-" prefix, simulating filtering by clicking a search link.  We have
-        # to take this approach because the "-" character is illegal in HTTP requests.
+        # We add params to the keyword dict in this method in order to rename the param with an "f-" prefix, simulating filtering by clicking a search
+        # link.  We have to take this approach because the "-" character is illegal in HTTP requests.
         if 'webapp' not in kwd:
-            kwd[ 'webapp' ] = 'community'
+            kwd[ 'webapp' ] = get_webapp( trans, **kwd )
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
@@ -441,8 +508,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     kwd[ 'f-email' ] = user.email
                     del kwd[ 'user_id' ]
                 else:
-                    # The received id is the repository id, so we need to get the id of the user
-                    # that uploaded the repository.
+                    # The received id is the repository id, so we need to get the id of the user that uploaded the repository.
                     repository_id = kwd.get( 'id', None )
                     repository = get_repository( trans, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
@@ -509,27 +575,73 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
-    def browse_valid_repositories( self, trans, **kwd ):
-        webapp = get_webapp( trans, **kwd )
+    def browse_valid_categories( self, trans, **kwd ):
+        # The request came from Galaxy, so restrict category links to display only valid repository changeset revisions.
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
-        repository_id = kwd.get( 'id', None )
+        if 'f-free-text-search' in kwd:
+            if kwd[ 'f-free-text-search' ] == 'All':
+                # The user performed a search, then clicked the "x" to eliminate the search criteria.
+                new_kwd = dict( webapp='galaxy', no_reset='true' )
+                return self.valid_category_list_grid( trans, **new_kwd )
+            # Since we are searching valid repositories and not categories, redirect to browse_valid_repositories().
+            if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:
+                # The value of 'id' has been set to the search string, which is a repository name.
+                # We'll try to get the desired encoded repository id to pass on.
+                try:
+                    repository = get_repository_by_name( trans, kwd[ 'id' ] )
+                    kwd[ 'id' ] = trans.security.encode_id( repository.id )
+                except:
+                    pass
+            return self.browse_valid_repositories( trans, **kwd )
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation in [ "valid_repositories_by_category", "valid_repositories_by_user" ]:
+                # Eliminate the current filters if any exist.
+                for k, v in kwd.items():
+                    if k.startswith( 'f-' ):
+                        del kwd[ k ]
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_valid_repositories',
+                                                                  **kwd ) )
+        return self.valid_category_list_grid( trans, **kwd )
+    @web.expose
+    def browse_valid_repositories( self, trans, **kwd ):
+        webapp = get_webapp( trans, **kwd )
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if 'f-free-text-search' in kwd:
+            if 'f-Category.name' in kwd:
+                # The user browsed to a category and then entered a search string, so get the category associated with it's value.
+                category_name = kwd[ 'f-Category.name' ]
+                category = get_category_by_name( trans, category_name )
+                # Set the id value in kwd since it is required by the ValidRepositoryListGrid.build_initial_query method.
+                kwd[ 'id' ] = trans.security.encode_id( category.id )
+        if galaxy_url:
+            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
+                repository_id = kwd.get( 'id', None )
                 repository = get_repository( trans, repository_id )
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
                                                                   webapp=webapp,
                                                                   repository_id=repository_id,
                                                                   changeset_revision=repository.tip ) )
-        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
-        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
-        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
-        # all of the received values to see which value is not the repository tip.  If we find it, we
-        # know the refresh_on_change occurred, and we have the necessary repository id and change set
-        # revision to pass on.
+            elif operation == "valid_repositories_by_category":
+                # Eliminate the current filters if any exist.
+                for k, v in kwd.items():
+                    if k.startswith( 'f-' ):
+                        del kwd[ k ]
+                category_id = kwd.get( 'id', None )
+                category = get_category( trans, category_id )
+                kwd[ 'f-Category.name' ] = category.name
+        # The changeset_revision_select_field in the ValidRepositoryListGrid performs a refresh_on_change which sends in request parameters like
+        # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change, so we loop
+        # through all of the received values to see which value is not the repository tip.  If we find it, we know the refresh_on_change occurred
+        # and we have the necessary repository id and change set revision to pass on.
+        repository_id = None
         for k, v in kwd.items():
             changset_revision_str = 'changeset_revision_'
             if k.startswith( changset_revision_str ):
@@ -901,7 +1013,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if webapp == 'galaxy':
                     # Our initial request originated from a Galaxy instance.
                     global_actions = [ grids.GridAction( "Browse valid repositories",
-                                                         dict( controller='repository', action='browse_valid_repositories', webapp=webapp ) ),
+                                                         dict( controller='repository', action='browse_valid_categories', webapp=webapp ) ),
                                        grids.GridAction( "Search for valid tools",
                                                          dict( controller='repository', action='find_tools', webapp=webapp ) ),
                                        grids.GridAction( "Search for workflows",

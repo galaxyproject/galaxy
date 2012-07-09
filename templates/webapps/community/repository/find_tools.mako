@@ -13,7 +13,7 @@
 %if webapp == 'galaxy':
     <br/><br/>
     <ul class="manage-table-actions">
-        <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_repositories', webapp=webapp )}">Browse valid repositories</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories', webapp=webapp )}">Browse valid repositories</a></li>
         <li><a class="action-button" href="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}">Search for workflows</a></li>
     </ul>
 %endif

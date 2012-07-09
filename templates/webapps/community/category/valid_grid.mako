@@ -4,7 +4,6 @@
 <%inherit file="/grid_base.mako" />
 
 ## Render grid header.
-## TODO: This is very similar to this directory's valid_grid.mako, so see if we can re-use this code in a better way.
 <%def name="render_grid_header( grid, repo_grid, render_title=True)">
     <div class="grid-header">
         %if render_title:
@@ -49,8 +48,8 @@
 
 <%def name="grid_body( grid )">
     <%
-        from galaxy.webapps.community.controllers.repository import RepositoryListGrid
-        repo_grid = RepositoryListGrid()
+        from galaxy.webapps.community.controllers.repository import ValidRepositoryListGrid
+        repo_grid = ValidRepositoryListGrid()
     %>
     ${self.make_grid( grid, repo_grid )}
 </%def>
