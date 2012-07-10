@@ -118,40 +118,7 @@
                 ${ h.to_json_string( config ).replace('\\', '\\\\' )}
             );
             var viz_view = new ParamaMonsterVisualizationView({ model: viz });
-                
             viz_view.render();
-            $('.unified-panel-body').append(viz_view.$el);
-
-            // -- Menu set up. --
-            /*
-            var menu = create_icon_buttons_menu([
-            { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
-                // Show saving dialog box
-                show_modal("Saving...", "progress");
-
-                viz.save().success(function(vis_info) {
-                    hide_modal();
-                    viz.set({
-                        'id': vis_info.vis_id,
-                        'has_changes': false
-                    });
-                })
-                .error(function() { 
-                    show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
-                                { "Close" : hide_modal } );
-                });
-            } },
-            { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
-                window.location = "${h.url_for( controller='visualization', action='list' )}";
-            } }
-            ], 
-            {
-                tipsy_config: {gravity: 'n'}
-            });
-            
-            menu.$el.attr("style", "float: right");
-            $("#right .unified-panel-header-inner").append(menu.$el);
-            */
         });
     </script>
 </%def>

@@ -250,6 +250,7 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
 var ParamaMonsterTrack = Backbone.RelationalModel.extend({
     defaults: {
         track: null,
+        mode: 'Pack',
         settings: null,
         regions: null
     },
@@ -269,8 +270,6 @@ var ParamaMonsterTrack = Backbone.RelationalModel.extend({
                                     data_url: galaxy_paths.get('raw_data_url'),
                                     converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
                                 }, options.track);
-            // HACK: remove prefs b/c they cause a redraw, which is not supported now.
-            delete track_config.mode;
             this.set('track', object_from_template(track_config, {}, null));
         }
     },
@@ -309,7 +308,8 @@ var ParamaMonsterVisualization = Visualization.extend({
         tool: null,
         parameter_tree: null,
         regions: null,
-        tracks: null
+        tracks: null,
+        default_mode: 'Pack'
     }),
 
     relations: [
@@ -346,10 +346,6 @@ var ParamaMonsterVisualization = Visualization.extend({
         }));
     },
 
-    add_placeholder: function(settings) {
-        this.get('tracks').add(new PlaceholderTrack(settings));
-    },
-
     add_track: function(track) {
         this.get('tracks').add(track);
     },
@@ -384,7 +380,7 @@ var ParamaMonsterTrackView = Backbone.View.extend({
     initialize: function(options) {
         this.canvas_manager = options.canvas_manager;
         this.render();
-        this.model.on('change:track', this.draw_tiles, this);
+        this.model.on('change:track change:mode', this.draw_tiles, this);
     },
 
     render: function() {
@@ -436,12 +432,17 @@ var ParamaMonsterTrackView = Backbone.View.extend({
         }
     },
 
+    /**
+     * Draw tiles for regions.
+     */
     draw_tiles: function() {
-        // Display tiles for regions of interest.
         var self = this,
             track = this.model.get('track'),
             regions = this.model.get('regions'),
             tile_containers = this.$el.find('td.tile');
+
+        // Do nothing if track is not defined.
+        if (!track) { return; }
 
         // When data is ready, draw tiles.
         $.when(track.data_manager.data_is_ready()).then(function(data_ok) {
@@ -449,7 +450,7 @@ var ParamaMonsterTrackView = Backbone.View.extend({
             regions.each(function(region, index) {
                 var resolution = region.length() / self.TILE_LEN,
                     w_scale = 1/resolution,
-                    mode = 'Pack';
+                    mode = self.model.get('mode');
                 $.when(track.data_manager.get_data(region, mode, resolution, {})).then(function(tile_data) {
                     var canvas = self.canvas_manager.new_canvas();
                     canvas.width = self.TILE_LEN;
@@ -752,7 +753,65 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         this.tool_param_tree_view.render();
         $('#center').append(this.tool_param_tree_view.$el);
 
+        // Set up handler for tree node clicks.
         this.handle_node_clicks();
+
+        // Set up visualization menu.
+        var menu = create_icon_buttons_menu(
+            [
+                // Save.
+                /*
+                { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
+                    // Show saving dialog box
+                    show_modal("Saving...", "progress");
+
+                    viz.save().success(function(vis_info) {
+                        hide_modal();
+                        viz.set({
+                            'id': vis_info.vis_id,
+                            'has_changes': false
+                        });
+                    })
+                    .error(function() { 
+                        show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
+                                    { "Close" : hide_modal } );
+                    });
+                } },
+                */
+                // Change track modes.
+                {
+                    icon_class: 'chevron-expand',
+                    title: 'Set display mode'
+                },
+                // Close viz.
+                { 
+                    icon_class: 'cross-circle', 
+                    title: 'Close', 
+                    on_click: function() { 
+                        window.location = "${h.url_for( controller='visualization', action='list' )}";
+                    } 
+                }
+            ], 
+            {
+                tipsy_config: {gravity: 'n'}
+            });
+
+            // Create mode selection popup. Mode selection changes default mode and mode for all tracks.
+            var modes = ['Squish', 'Pack'],
+                mode_mapping = {};
+            _.each(modes, function(mode) {
+                mode_mapping[mode] = function() {
+                    self.model.set('default_mode', mode);
+                    self.model.get('tracks').each(function(track) {
+                        track.set('mode', mode);
+                    });
+                };
+            });
+
+            make_popupmenu(menu.$el.find('.chevron-expand'), mode_mapping);
+        
+        menu.$el.attr("style", "float: right");
+        $("#right .unified-panel-header-inner").append(menu.$el);
     },
 
     run_tool_on_dataset: function(settings) {
@@ -778,7 +837,10 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
     add_track: function(pm_track) {
         var self = this,
             param_tree = this.model.get('parameter_tree');
+
+        // Add track to model.
         self.model.add_track(pm_track);
+
         var track_view = new ParamaMonsterTrackView({
             model: pm_track,
             canvas_manager: self.canvas_manager
@@ -801,6 +863,10 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         return pm_track;
     },
 
+    /**
+     * Sets up handling when tree nodes are clicked. When a node is clicked, the tool is run for each of 
+     * the settings defined by the node's subtree and tracks are added for each run.
+     */
     handle_node_clicks: function() {
         // When node clicked in tree, run tool and add tracks to model.
         var self = this,
@@ -836,7 +902,8 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
                 var tracks = _.map(all_settings, function(settings) {
                     var pm_track = new ParamaMonsterTrack({
                         settings: settings,
-                        regions: regions
+                        regions: regions,
+                        mode: self.model.get('default_mode')
                     });
                     self.add_track(pm_track);
                     return pm_track;
