@@ -19,17 +19,25 @@
     %elif input.type == "conditional":
       <% current_case = param_values[input.name]['__current_case__'] %>
         <tr>
-          <td>${input.label}</td>
-          <td>${current_case}</td>
+          ${ inputs_recursive_indent( text=input.test_param.label,depth=depth )}
+          <!-- Get the value of the current Conditonal parameter -->
+          <td>${input.cases[current_case].value}</td>
         </tr>
         ${ inputs_recursive(input.cases[current_case].inputs, param_values[input.name], depth=depth+1) }
     %elif getattr(input, "label", None):
       <tr>
-        <td>${input.label}</td>
+        ${inputs_recursive_indent( text=input.label,depth=depth )}
         <td>${input.value_to_display_text(param_values[input.name], trans.app)}</td>
       </tr>
     %endif
   %endfor
+</%def>
+
+ ## function to add a indentation depending on the depth in a <tr>
+<%def name="inputs_recursive_indent( text, depth )">
+    <td style="padding-left: ${ ( depth - 1 ) * 10 }px">
+        ${text}
+    </td> 
 </%def>
 
 <table class="tabletip">
