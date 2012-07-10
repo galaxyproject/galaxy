@@ -394,7 +394,7 @@ class JobWrapper( object ):
                     if not self.app.config.set_metadata_externally or \
                      ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) \
                        and self.app.config.retry_metadata_internally ):
-                        dataset.set_meta( overwrite = False )
+                        dataset.datatype.set_meta( dataset, overwrite = False ) #call datatype.set_meta directly for the initial set_meta call during dataset creation
                     # TODO: The context['stderr'] used to indicate that there
                     # was an error. Now we must rely on the job's state instead;
                     # that indicates whether the tool relied on stderr to indicate
