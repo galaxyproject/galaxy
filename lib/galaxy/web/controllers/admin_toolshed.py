@@ -605,7 +605,8 @@ class AdminToolshed( AdminGalaxy ):
             tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
         else:
             tool_section = None
-        for tool_shed_repository, repo_info_dict in zip( tool_shed_repositories, repo_info_dicts ):
+        for tup in zip( tool_shed_repositories, repo_info_dicts ):
+            tool_shed_repository, repo_info_dict = tup
             # Clone each repository to the configured location.
             update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
@@ -670,37 +671,6 @@ class AdminToolshed( AdminGalaxy ):
                     shutil.rmtree( work_dir )
                 except:
                     pass
-            if 'datatypes' in metadata:
-                update_tool_shed_repository_status( trans.app,
-                                                    tool_shed_repository,
-                                                    trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES )
-                work_dir = make_tmp_directory()
-                datatypes_config = get_config_from_repository( trans.app,
-                                                               'datatypes_conf.xml',
-                                                               tool_shed_repository,
-                                                               tool_shed_repository.installed_changeset_revision,
-                                                               work_dir )
-                # Load proprietary data types required by tools.
-                converter_path, display_path = alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, relative_install_dir, override=False )
-                if converter_path or display_path:
-                    # Create a dictionary of tool shed repository related information.
-                    repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed,
-                                                                                        name=tool_shed_repository.name,
-                                                                                        owner=tool_shed_repository.owner,
-                                                                                        installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                                        tool_dicts=metadata.get( 'tools', [] ),
-                                                                                        converter_path=converter_path,
-                                                                                        display_path=display_path )
-                if converter_path:
-                    # Load proprietary datatype converters
-                    trans.app.datatypes_registry.load_datatype_converters( trans.app.toolbox, installed_repository_dict=repository_dict )
-                if display_path:
-                    # Load proprietary datatype display applications
-                    trans.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
-                try:
-                    shutil.rmtree( work_dir )
-                except:
-                    pass
             update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.INSTALLED )
         tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -749,9 +719,11 @@ class AdminToolshed( AdminGalaxy ):
                 except:
                     pass
         if 'datatypes' in metadata_dict:
-            update_tool_shed_repository_status( trans.app,
-                                                tool_shed_repository,
-                                                trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES )
+            tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+            if not tool_shed_repository.includes_datatypes:
+                tool_shed_repository.includes_datatypes = True
+            trans.sa_session.add( tool_shed_repository )
+            trans.sa_session.flush()
             work_dir = make_tmp_directory()
             datatypes_config = get_config_from_repository( trans.app,
                                                            'datatypes_conf.xml',
@@ -1255,13 +1227,12 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dict = kwd.get( 'repo_info_dict', None )
         if not repo_info_dict:
             # This should only happen if the tool_shed_repository does not include any valid tools.
-            repo_info_dict = {}
-            repo_info_dict[ tool_shed_repository.name ] = ( tool_shed_repository.description,
-                                                            repository_clone_url,
-                                                            tool_shed_repository.installed_changeset_revision,
-                                                            ctx_rev,
-                                                            tool_shed_repository.owner,
-                                                            metadata.get( 'tool_dependencies', None ) )
+            repo_info_dict = create_repo_info_dict( tool_shed_repository,
+                                                    tool_shed_repository.owner,
+                                                    repository_clone_url,
+                                                    tool_shed_repository.installed_changeset_revision,
+                                                    ctx_rev,
+                                                    metadata )
         new_kwd = dict( includes_tool_dependencies=tool_shed_repository.includes_tool_dependencies,
                         includes_tools=tool_shed_repository.includes_tools,
                         install_tool_dependencies=install_tool_dependencies,
@@ -1291,7 +1262,8 @@ class AdminToolshed( AdminGalaxy ):
         if ids is not None and status_list is not None:
             ids = util.listify( ids )
             status_list = util.listify( status_list )
-            for id, status in zip( ids, status_list ):
+            for tup in zip( ids, status_list ):
+                id, status = tup
                 repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
                 if repository.status != status:
                     rval.append( dict( id=id,
@@ -1335,13 +1307,12 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
         ctx_rev = get_ctx_rev( tool_shed_url, repository.name, repository.owner, repository.installed_changeset_revision )
         repository_clone_url = generate_clone_url( trans, repository )
-        repo_info_dict = {}
-        repo_info_dict[ repository.name ] = ( repository.description,
-                                              repository_clone_url,
-                                              repository.installed_changeset_revision,
-                                              ctx_rev,
-                                              repository.owner,
-                                              metadata.get( 'tool_dependencies', None ) )
+        repo_info_dict = create_repo_info_dict( repository,
+                                                repository.owner,
+                                                repository_clone_url,
+                                                repository.installed_changeset_revision,
+                                                ctx_rev,
+                                                metadata )
         # Get the location in the tool panel in which the tool was originally loaded.
         if 'tool_panel_section' in metadata:
             tool_panel_dict = metadata[ 'tool_panel_section' ]
@@ -1419,7 +1390,8 @@ class AdminToolshed( AdminGalaxy ):
         if ids is not None and status_list is not None:
             ids = util.listify( ids )
             status_list = util.listify( status_list )
-            for id, status in zip( ids, status_list ):
+            for tup in zip( ids, status_list ):
+                id, status = tup
                 tool_dependency = trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
                 if tool_dependency.status != status:
                     rval.append( dict( id=id,

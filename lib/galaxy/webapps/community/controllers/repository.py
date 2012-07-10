@@ -9,7 +9,7 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, make_tmp_directory, NOT_TOOL_CONFIGS
+from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, make_tmp_directory, NOT_TOOL_CONFIGS
 from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, strip_path
 from galaxy.tool_shed.encoding_util import *
 from common import *
@@ -931,29 +931,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         trans.sa_session.flush()
         download_url = '/repos/%s/%s/archive/%s' % ( repository.user.username, repository.name, file_type_str )
         return trans.response.send_redirect( download_url )
-    def __encode_repo_info_dict( self, trans, repository_metadata_ids ):
-        repo_info_dict = {}
-        includes_tools = False
-        includes_tool_dependencies = False
-        for repository_metadata_id in util.listify( repository_metadata_ids ):
-            repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
-            if not includes_tools and 'tools' in repository_metadata.metadata:
-                includes_tools = True
-            if not includes_tool_dependencies and 'tool_dependencies' in repository_metadata.metadata:
-                includes_tool_dependencies = True
-            repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
-            # Get the changelog rev for this changeset_revision.
-            repo_dir = repository.repo_path
-            repo = hg.repository( get_configured_ui(), repo_dir )
-            changeset_revision = repository_metadata.changeset_revision
-            ctx = get_changectx_for_changeset( repo, changeset_revision )
-            repository_id = trans.security.encode_id( repository.id )
-            repository_clone_url = generate_clone_url( trans, repository_id )
-            if includes_tool_dependencies:
-                repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision, str( ctx.rev() ) )
-            else:
-                repo_info_dict[ repository.name ] = ( repository.description, repository_clone_url, changeset_revision, str( ctx.rev() ) )
-        return tool_shed_encode( repo_info_dict ), includes_tools, includes_tool_dependencies
     @web.expose
     def find_tools( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -1156,7 +1133,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         includes_tools = False
         includes_tool_dependencies = False
         repo_info_dicts = []
-        for repository_id, changeset_revision in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
+        for tup in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
+            repository_id, changeset_revision = tup
             repository_clone_url = generate_clone_url( trans, repository_id )        
             repository = get_repository( trans, repository_id )
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -1168,15 +1146,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
             repo_dir = repository.repo_path
             repo = hg.repository( get_configured_ui(), repo_dir )
             ctx = get_changectx_for_changeset( repo, changeset_revision )
-            repo_info_dict = {}
-            repo_info_dict[ repository.name ] = ( repository.description,
-                                                  repository_clone_url,
-                                                  changeset_revision,
-                                                  str( ctx.rev() ),
-                                                  repository.user.username,
-                                                  metadata.get( 'tool_dependencies', None ) )
-            encoded_repo_info_dict = tool_shed_encode( repo_info_dict )
-            repo_info_dicts.append( encoded_repo_info_dict )
+            repo_info_dict = create_repo_info_dict( repository, repository.user.username, repository_clone_url, changeset_revision, str( ctx.rev() ), metadata )
+            repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
         return dict( includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies, repo_info_dicts=repo_info_dicts )
     @web.expose
     def get_readme( self, trans, **kwd ):

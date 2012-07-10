@@ -1,7 +1,7 @@
 """
 Contains functionality needed in every web interface
 """
-import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess
+import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess, operator
 from datetime import date, datetime, timedelta
 from time import strftime
 from galaxy import config, tools, web, util
@@ -177,6 +177,14 @@ class BaseAPIController( BaseController ):
     def not_implemented( self, trans, **kwd ):
         raise HTTPNotImplemented()
 
+class Datatype( object ):
+    """Used for storing in-memory list of datatypes currently in the datatypes registry."""
+    def __init__( self, extension, dtype, type_extension, mimetype, display_in_upload ):
+        self.extension = extension
+        self.dtype = dtype
+        self.type_extension = type_extension
+        self.mimetype = mimetype
+        self.display_in_upload = display_in_upload
 #        
 # -- Mixins for working with Galaxy objects. --
 #
@@ -2722,3 +2730,18 @@ def get_webapp( trans, **kwd ):
         return trans.environ[ 'webapp' ]
     # The default is galaxy.
     return 'galaxy'
+def sort_by_attr( seq, attr ):
+    """
+    Sort the sequence of objects by object's attribute
+    Arguments:
+    seq  - the list or any sequence (including immutable one) of objects to sort.
+    attr - the name of attribute to sort by
+    """
+    # Use the "Schwartzian transform"
+    # Create the auxiliary list of tuples where every i-th tuple has form
+    # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
+    # only to provide stable sorting, but mainly to eliminate comparison of objects
+    # (which can be expensive or prohibited) in case of equal attribute values.
+    intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+    intermed.sort()
+    return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )

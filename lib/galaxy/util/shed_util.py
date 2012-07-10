@@ -309,6 +309,15 @@ def copy_sample_files( app, sample_files, sample_files_copied=None, dest_path=No
     for filename in sample_files:
         if filename not in sample_files_copied:
             copy_sample_file( app, filename, dest_path=dest_path )
+def create_repo_info_dict( repository, owner, repository_clone_url, changeset_revision, ctx_rev, metadata ):
+    repo_info_dict = {}
+    repo_info_dict[ repository.name ] = ( repository.description,
+                                          repository_clone_url,
+                                          changeset_revision,
+                                          ctx_rev,
+                                          owner,
+                                          metadata.get( 'tool_dependencies', None ) )
+    return repo_info_dict
 def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, installed_changeset_revision, tool_dicts, converter_path=None, display_path=None ):
     return dict( tool_shed=tool_shed,
                  repository_name=name,

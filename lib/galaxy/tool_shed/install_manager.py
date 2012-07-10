@@ -190,9 +190,11 @@ class InstallManager( object ):
             except:
                 pass
         if 'datatypes' in metadata_dict:
-            update_tool_shed_repository_status( self.app,
-                                                tool_shed_repository,
-                                                self.app.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES )
+            tool_shed_repository.status = self.app.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+            if not tool_shed_repository.includes_datatypes:
+                tool_shed_repository.includes_datatypes = True
+            self.app.sa_session.add( tool_shed_repository )
+            self.app.sa_session.flush()
             work_dir = make_tmp_directory()
             datatypes_config = get_config_from_repository( self.app,
                                                            'datatypes_conf.xml',
