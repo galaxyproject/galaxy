@@ -1930,8 +1930,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         canvas.append(boxes)
         canvas.append(text)
         width, height = (max_x + max_width + 50), max_y + 300
-        canvas['width'] = "%s px" % width
-        canvas['height'] = "%s px" % height
+        canvas['width'] = "%spx" % width
+        canvas['height'] = "%spx" % height
         canvas['viewBox'] = "0 0 %s %s" % (width, height)
 
         return canvas
