@@ -314,9 +314,6 @@
     <tool file="gatk/variant_eval.xml" />
     <tool file="gatk/variant_combine.xml" />
   </section>
-  <section name="NGS: Variant Detection" id="variant_detection">
-    <tool file="variant_detection/freebayes.xml" />
-  </section>
   <section name="NGS: Indel Analysis" id="indel_analysis">
     <tool file="indels/sam_indel_filter.xml" />
     <tool file="indels/indel_sam2interval.xml" />
