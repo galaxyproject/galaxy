@@ -5,7 +5,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery.tipsy" )}
 </%def>
 
 ## Masthead
