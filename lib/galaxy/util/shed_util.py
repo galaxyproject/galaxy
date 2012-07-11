@@ -1210,6 +1210,8 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
+        # Only install the package if it is not already installed.
+        can_install = False
         if elem.tag == 'package':
             package_name = elem.get( 'name', None )
             package_version = elem.get( 'version', None )
@@ -1217,8 +1219,6 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                 # The value of tool_dependencies will be None only when this method is called by the InstallManager.  In that case, tool
                 # dependency installation is not ajaxian, so the ToolDependency objects do not yet exist.
                 if tool_dependencies:
-                    # Only install the package if it is not already installed.
-                    can_install = False
                     for tool_dependency in tool_dependencies:
                         if tool_dependency.name==package_name and tool_dependency.version==package_version:
                             can_install = tool_dependency.status in [ app.model.ToolDependency.installation_status.NEVER_INSTALLED,
@@ -1457,6 +1457,7 @@ def remove_tool_dependency( trans, tool_dependency ):
         log.debug( error_message )
     if removed:
         tool_dependency.status = trans.model.ToolDependency.installation_status.UNINSTALLED
+        tool_dependency.error_message = None
         trans.sa_session.add( tool_dependency )
         trans.sa_session.flush()
     return removed, error_message

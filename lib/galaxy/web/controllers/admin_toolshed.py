@@ -437,6 +437,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_shed_repository.deleted = True
             if remove_from_disk_checked:
                 tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.UNINSTALLED
+                tool_shed_repository.error_message = None
             else:
                 tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.DEACTIVATED
             trans.sa_session.add( tool_shed_repository )
