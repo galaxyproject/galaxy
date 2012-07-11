@@ -608,6 +608,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_section = None
         for tup in zip( tool_shed_repositories, repo_info_dicts ):
             tool_shed_repository, repo_info_dict = tup
+            repo_info_dict = tool_shed_decode( repo_info_dict )
             # Clone each repository to the configured location.
             update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
@@ -1048,7 +1049,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                       owner=owner,
                                                                                       dist_to_shed=False )
                         created_or_updated_tool_shed_repositories.append( tool_shed_repository )
-                        filtered_repo_info_dicts.append( repo_info_dict )
+                        filtered_repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
             if created_or_updated_tool_shed_repositories:
                 if includes_tools and ( new_tool_panel_section or tool_panel_section ):
                     if new_tool_panel_section:
@@ -1226,6 +1227,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                       tool_shed_repository.dist_to_shed )
         ctx_rev = get_ctx_rev( tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision )
         repo_info_dict = kwd.get( 'repo_info_dict', None )
+        # The repo_info_dict should be encoded.
         if not repo_info_dict:
             # This should only happen if the tool_shed_repository does not include any valid tools.
             repo_info_dict = create_repo_info_dict( tool_shed_repository,
@@ -1234,6 +1236,7 @@ class AdminToolshed( AdminGalaxy ):
                                                     tool_shed_repository.installed_changeset_revision,
                                                     ctx_rev,
                                                     metadata )
+            repo_info_dict = tool_shed_encode( repo_info_dict )
         new_kwd = dict( includes_tool_dependencies=tool_shed_repository.includes_tool_dependencies,
                         includes_tools=tool_shed_repository.includes_tools,
                         install_tool_dependencies=install_tool_dependencies,
@@ -1341,6 +1344,7 @@ class AdminToolshed( AdminGalaxy ):
             message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % repository.name
             message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section."
         status = 'done'
+        includes_tool_dependencies = 'tool_dependencies' in metadata
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=True )
         return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',
                                     repository=repository,
@@ -1348,7 +1352,8 @@ class AdminToolshed( AdminGalaxy ):
                                     original_section_name=original_section_name,
                                     install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
-                                    repo_info_dict=tool_shed_encode( repo_info_dict ),
+                                    encoded_repo_info_dict=tool_shed_encode( repo_info_dict ),
+                                    repo_info_dict=repo_info_dict,
                                     includes_tool_dependencies=includes_tool_dependencies,
                                     message=message,
                                     status=status )
