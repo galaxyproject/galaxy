@@ -380,7 +380,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.add( tool_shed_repository )
     sa_session.flush()
     return tool_shed_repository
-def create_tool_dependency_objects( app, tool_shed_repository, current_changeset_revision ):
+def create_tool_dependency_objects( app, tool_shed_repository, current_changeset_revision, set_status=True ):
     # Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when installing a new tool_shed_repository.
     tool_dependency_objects = []
     work_dir = make_tmp_directory()
@@ -404,7 +404,8 @@ def create_tool_dependency_objects( app, tool_shed_repository, current_changeset
                                                                     name=package_name,
                                                                     version=package_version,
                                                                     type='package',
-                                                                    status=app.model.ToolDependency.installation_status.NEVER_INSTALLED )
+                                                                    status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                    set_status=set_status )
                 tool_dependency_objects.append( tool_dependency )
     try:
         shutil.rmtree( work_dir )

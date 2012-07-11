@@ -688,7 +688,7 @@ class AdminToolshed( AdminGalaxy ):
         trans.sa_session.add( tool_shed_repository )
         trans.sa_session.flush()
         if 'tool_dependencies' in metadata_dict and not reinstalling:
-            tool_dependencies = create_tool_dependency_objects( trans.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision )
+            tool_dependencies = create_tool_dependency_objects( trans.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision, set_status=True )
         if 'tools' in metadata_dict:
             tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
             repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
@@ -1480,7 +1480,7 @@ class AdminToolshed( AdminGalaxy ):
                     trans.sa_session.flush()
                     # Create tool_dependency records if necessary.
                     if 'tool_dependencies' in metadata_dict:
-                        tool_dependencies = create_tool_dependency_objects( trans.app, repository, repository.changeset_revision )
+                        tool_dependencies = create_tool_dependency_objects( trans.app, repository, repository.changeset_revision, set_status=False )
                     message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % ( name, latest_changeset_revision )
                     # See if any tool dependencies can be installed.
                     shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )
