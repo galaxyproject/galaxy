@@ -1409,6 +1409,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 nh_name = '%s on %s' % (nh_name, mx_ds_name)
                             new_history = trans.app.model.History( user=trans.user, name=nh_name )
                             trans.sa_session.add( new_history )
+                            target_history = new_history
+                        else:
+                            target_history = trans.get_history()
                         # Run each step, connecting outputs to inputs
                         workflow_invocation = model.WorkflowInvocation()
                         workflow_invocation.workflow = workflow
@@ -1429,7 +1432,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 except KeyError, k:
                                     error( "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow." % (tool.name, k.message))
                                 # Execute it
-                                job, out_data = tool.execute( trans, step.state.inputs, history=new_history)
+                                job, out_data = tool.execute( trans, step.state.inputs, history=target_history)
                                 outputs[ step.id ] = out_data
                                 # Create new PJA associations with the created job, to be run on completion.
                                 # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
