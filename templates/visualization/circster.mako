@@ -57,7 +57,6 @@
                 } }
             ]);
 
-            menu.render();
             menu.$el.attr("style", "float: right");
             $("#center .unified-panel-header-inner").append(menu.$el);
             // Manual tipsy config because default gravity is S and cannot be changed.

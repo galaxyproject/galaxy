@@ -638,9 +638,9 @@ var ToolParameterTreeView = Backbone.View.extend({
         var vis = d3.select(this.$el[0])
           .append("svg")
             .attr("width", this.width)
-            .attr("height", this.height + 20)
+            .attr("height", this.height + 30)
           .append("g")
-            .attr("transform", "translate(40, 10)");
+            .attr("transform", "translate(40, 20)");
 
         // Draw links.
         var link = vis.selectAll("path.link")
