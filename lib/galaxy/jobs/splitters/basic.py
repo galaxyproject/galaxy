@@ -15,9 +15,9 @@ def do_split (job_wrapper):
     # add in the missing information for splitting the one input and merging the one output
     set_basic_defaults(job_wrapper)
     return multi.do_split(job_wrapper)
-    
+
 def do_merge( job_wrapper,  task_wrappers):
     # add in the missing information for splitting the one input and merging the one output
     set_basic_defaults(job_wrapper)
     return multi.do_merge(job_wrapper,  task_wrappers)
-    
+

@@ -3,13 +3,13 @@ from galaxy import model, util
 
 
 log = logging.getLogger( __name__ )
-    
+
 def do_split (job_wrapper):
     parent_job = job_wrapper.get_job()
     working_directory = os.path.abspath(job_wrapper.working_directory)
 
     parallel_settings = job_wrapper.tool.parallelism.attributes
-    # Syntax: split_inputs="input1,input2" shared_inputs="genome" 
+    # Syntax: split_inputs="input1,input2" shared_inputs="genome"
     # Designates inputs to be split or shared
     split_inputs=parallel_settings.get("split_inputs")
     if split_inputs is None:
@@ -25,7 +25,7 @@ def do_split (job_wrapper):
     illegal_inputs = [x for x in shared_inputs if x in split_inputs]
     if len(illegal_inputs) > 0:
         raise Exception("Inputs have conflicting parallelism attributes: %s" % str( illegal_inputs ))
-    
+
     subdir_index = [0] # use a list to get around Python 2.x lame closure support
     task_dirs = []
     def get_new_working_directory_name():
@@ -35,7 +35,7 @@ def do_split (job_wrapper):
             os.makedirs(dir)
         task_dirs.append(dir)
         return dir
-    
+
     # For things like paired end alignment, we need two inputs to be split. Since all inputs to all
     # derived subtasks need to be correlated, allow only one input type to be split
     type_to_input_map = {}
@@ -53,7 +53,7 @@ def do_split (job_wrapper):
         log_error = "The multi splitter does not support splitting inputs of more than one type"
         log.error(log_error)
         raise Exception(log_error)
-    
+
     # split the first one to build up the task directories
     input_datasets = []
     for input in parent_job.input_datasets:
@@ -64,7 +64,7 @@ def do_split (job_wrapper):
                 log.error(log_error)
                 raise Exception(log_error)
             input_datasets.append(input.dataset)
-    
+
     input_type = type_to_input_map.keys()[0]
     # DBTODO execute an external task to do the splitting, this should happen at refactor.
     # If the number of tasks is sufficiently high, we can use it to calculate job completion % and give a running status.
@@ -88,10 +88,9 @@ def do_split (job_wrapper):
         task = model.Task(parent_job, dir, prepare_files % dir)
         tasks.append(task)
     return tasks
-                               
+
 
 def do_merge( job_wrapper,  task_wrappers):
-    parent_job = job_wrapper.get_job()
     parallel_settings = job_wrapper.tool.parallelism.attributes
     # Syntax: merge_outputs="export" pickone_outputs="genomesize"
     # Designates outputs to be merged, or selected from as a representative
@@ -105,14 +104,14 @@ def do_merge( job_wrapper,  task_wrappers):
         pickone_outputs = []
     else:
         pickone_outputs = [x.strip() for x in pickone_outputs.split(",")]
-    
+
     illegal_outputs = [x for x in merge_outputs if x in pickone_outputs]
     if len(illegal_outputs) > 0:
         return ('Tool file error', 'Outputs have conflicting parallelism attributes: %s' % str( illegal_outputs ))
-    
+
     stdout = ''
     stderr = ''
-    
+
     try:
         working_directory = job_wrapper.working_directory
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
@@ -120,6 +119,7 @@ def do_merge( job_wrapper,  task_wrappers):
         outputs = job_wrapper.get_output_hdas_and_fnames()
         pickone_done = []
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
+        task_dirs.sort(key = lambda x: int(x.split('task_')[-1]))
         for output in outputs:
             output_file_name = str(outputs[output][1])
             base_output_name = os.path.basename(output_file_name)
@@ -144,7 +144,6 @@ def do_merge( job_wrapper,  task_wrappers):
         stdout = 'Error merging files';
         log.exception( stdout )
         stderr = str(e)
-        
 
     for tw in task_wrappers:
         # Prevent repetitive output, e.g. "Sequence File Aligned"x20
