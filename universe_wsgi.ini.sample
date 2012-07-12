@@ -259,6 +259,10 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "How to Cite..." link in the "Help" menu.
 #citation_url = http://wiki.g2.bx.psu.edu/Citing%20Galaxy
 
+# The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
+# as on the user registration and login forms.
+#terms_url = None
+
 # Serve static content, which must be enabled if you're not serving it via a
 # proxy server.  These options should be self explanatory and so are not
 # documented individually.  You can use these paths (or ones in the proxy

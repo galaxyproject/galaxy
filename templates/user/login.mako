@@ -53,6 +53,13 @@
             ${render_openid_form( redirect, False, openid_providers )}
         %endif
 
+        %if trans.app.config.get( 'terms_url', None ) is not None:
+            <br/>
+            <p>
+                <a href="${trans.app.config.get('terms_url', None)}">Terms and Conditions for use of this service</a>
+            </p>
+        %endif
+
     %endif
 
     </div>

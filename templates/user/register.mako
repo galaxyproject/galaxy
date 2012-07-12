@@ -19,6 +19,13 @@
 ## But if the current user is not an admin user, then don't display the registration form.
 %if trans.user_is_admin() or not trans.user:
     ${render_registration_form()}
+
+    %if trans.app.config.get( 'terms_url', None ) is not None:
+        <br/>
+        <p>
+            <a href="${trans.app.config.get('terms_url', None)}">Terms and Conditions for use of this service</a>
+        </p>
+    %endif
 %endif
 
 <%def name="render_registration_form( form_action=None )">
