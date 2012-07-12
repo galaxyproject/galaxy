@@ -624,7 +624,7 @@ div.debug{margin:10px;padding:5px;background:#FFFF99;border:solid #FFFF33 1px;co
 .text-filter-val{border:solid 1px #AAAAAA;padding:1px 2px 1px 3px;margin-right:5px;-moz-border-radius:.5em;-webkit-border-radius:.5em;font-style:italic;}
 .page-link a,.inactive-link{padding:0px 7px 0px 7px;color:#555;}
 .inactive-link,.current-filter{font-weight:bold;color:#000;}
-.submit-image{background:url(../images/fugue/magnifier-left.png) no-repeat center transparent;background-color:#eee;width:24px;height:24px;cursor:pointer;margin:0;padding:0;display:block;border:1px solid #aaa;border-left:none;}
+.submit-image{background:url(../images/fugue/magnifier-left.png) no-repeat center transparent;background-color:#eee;width:24px;height:24px;cursor:pointer;margin:0;padding:0;border:1px solid #aaa;border-left:none;}
 #advanced-search td{padding:3px;}
 #advanced-search table{border-collapse:separate;}
 .delete-search-icon{background:url(../images/delete_tag_icon_gray.png) center no-repeat;display:inline-block;width:10px;cursor:pointer;height:18px;vertical-align:middle;margin-left:2px;}
