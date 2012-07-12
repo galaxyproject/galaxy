@@ -564,7 +564,7 @@ var GenomeWideSummaryData = Backbone.RelationalModel.extend({
             if (!d || typeof d === 'string') { return 0; }
             return d[1];
         });
-        this.attributes.max = (max_data && typeof max_data !== 'string' ? max_data[1] : 0)
+        this.attributes.max = (max_data && typeof max_data !== 'string' ? max_data[1] : 0);
     }
 });
 
@@ -722,69 +722,74 @@ var CircsterView = Backbone.View.extend({
         this.genome = options.genome;
         this.radius_start = options.radius_start;
         this.dataset_arc_height = options.dataset_arc_height;
+        this.track_gap = 5;
     },
     
     render: function() {
-        // -- Layout viz. --
+        var self = this,
+            dataset_arc_height = this.dataset_arc_height;
 
-        // FOR TESTING:
-        var dataset = this.model.get('tracks').at(0).get('genome_wide_data');
-        
-        var radius_start = this.radius_start,
-            dataset_arc_height = this.dataset_arc_height,
+        // Set up SVG element.
+        var svg = d3.select(self.$el[0])
+              .append("svg")
+                .attr("width", self.width)
+                .attr("height", self.height)
+              .append("g")
+                .attr("transform", "translate(" + self.width / 2 + "," + self.height / 2 + ")");
+
+        // -- Render each dataset in the visualization. --
+        this.model.get('tracks').each(function(track, index) {
+            var dataset = track.get('genome_wide_data');
+
+            var radius_start = self.radius_start + index * (dataset_arc_height + self.track_gap),
+                // Layout chromosome arcs.
+                arcs_layout = new CircsterHistogramDatasetLayout({
+                    genome: self.genome,
+                    total_gap: self.total_gap
+                }),
+                chrom_arcs = arcs_layout.chroms_layout(),
+                
+                // Merge chroms layout with data.
+                layout_and_data = _.zip(chrom_arcs, dataset.get('data')),
+                dataset_max = dataset.get('max'),
+                
+                // Do dataset layout for each chromosome's data using pie layout.
+                chroms_data_layout = _.map(layout_and_data, function(chrom_info) {
+                    var chrom_arc = chrom_info[0],
+                        chrom_data = chrom_info[1];
+                    return arcs_layout.chrom_data_layout(chrom_arc, chrom_data, radius_start, radius_start + dataset_arc_height, dataset_max);
+                });
             
-            // Layout chromosome arcs.
-            arcs_layout = new CircsterHistogramDatasetLayout({
-                genome: this.genome,
-                total_gap: this.total_gap
-            }),
-            chrom_arcs = arcs_layout.chroms_layout(),
-            
-            // Merge chroms layout with data.
-            layout_and_data = _.zip(chrom_arcs, dataset.get('data')),
-            dataset_max = dataset.get('max'),
-            
-            // Do dataset layout for each chromosome's data using pie layout.
-            chroms_data_layout = _.map(layout_and_data, function(chrom_info) {
-                var chrom_arc = chrom_info[0],
-                    chrom_data = chrom_info[1];
-                return arcs_layout.chrom_data_layout(chrom_arc, chrom_data, radius_start, radius_start + dataset_arc_height, dataset_max);
-            });
-        
-        // -- Render viz. --
-        
-        var svg = d3.select(this.$el[0])
-          .append("svg")
-            .attr("width", this.width)
-            .attr("height", this.height)
-          .append("g")
-            .attr("transform", "translate(" + this.width / 2 + "," + this.height / 2 + ")");
+            // -- Render. --
 
-        // Draw background arcs for each chromosome.
-        var base_arc = svg.append("g").attr("id", "inner-arc"),
-            arc_gen = d3.svg.arc()
-                .innerRadius(radius_start)
-                .outerRadius(radius_start + dataset_arc_height),
-            // Draw arcs.
-            chroms_elts = base_arc.selectAll("#inner-arc>path")
-                .data(chrom_arcs).enter().append("path")
-                .attr("d", arc_gen)
-                .style("stroke", "#ccc")
-                .style("fill",  "#ccc")
-                .append("title").text(function(d) { return d.data.chrom; });
-
-        // For each chromosome, draw dataset.
-        _.each(chroms_data_layout, function(chrom_layout) {
-            if (!chrom_layout) { return; }
-
-            var group = svg.append("g"),
-                arc_gen = d3.svg.arc().innerRadius(radius_start),
-                dataset_elts = group.selectAll("path")
-                    .data(chrom_layout).enter().append("path")
+            // Draw background arcs for each chromosome.
+            var base_arc = svg.append("g").attr("id", "inner-arc"),
+                arc_gen = d3.svg.arc()
+                    .innerRadius(radius_start)
+                    .outerRadius(radius_start + dataset_arc_height),
+                // Draw arcs.
+                chroms_elts = base_arc.selectAll("#inner-arc>path")
+                    .data(chrom_arcs).enter().append("path")
                     .attr("d", arc_gen)
-                    .style("stroke", "red")
-                    .style("fill",  "red");
-        });
+                    .style("stroke", "#ccc")
+                    .style("fill",  "#ccc")
+                    .append("title").text(function(d) { return d.data.chrom; });
+
+            // For each chromosome, draw dataset.
+            var prefs = track.get('prefs'),
+                block_color = prefs.block_color;
+            _.each(chroms_data_layout, function(chrom_layout) {
+                if (!chrom_layout) { return; }
+
+                var group = svg.append("g"),
+                    arc_gen = d3.svg.arc().innerRadius(radius_start),
+                    dataset_elts = group.selectAll("path")
+                        .data(chrom_layout).enter().append("path")
+                        .attr("d", arc_gen)
+                        .style("stroke", block_color)
+                        .style("fill",  block_color);
+            });
+        });        
     } 
 });
 
