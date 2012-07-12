@@ -703,6 +703,10 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         this.model.get('tracks').each(function(track) {
             track.get('track').view = self;
         });
+
+        // Set block, reverse strand block colors; these colors will be used for all tracks.
+        this.block_color = get_random_color();
+        this.reverse_strand_color = get_random_color( [ this.block_color, "#ffffff" ] );
     },
     
     render: function() {
@@ -922,6 +926,11 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
                                     converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
                                 }, output.first().get('track_config')),
                                 track_obj = object_from_template(track_config, self, null);
+
+                            // Set track block colors.
+                            track_obj.prefs.block_color = self.block_color;
+                            track_obj.prefs.reverse_strand_color = self.reverse_strand_color;
+
                             pm_track.set('track', track_obj);
                         });
                     }, index * 10000);
