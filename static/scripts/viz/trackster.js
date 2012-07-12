@@ -607,7 +607,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         this.drawables = [];
         var drawable;
         for (var i = 0; i < drawables_array.length; i++) {
-            drawable = object_from_template(drawables_array[i], this);
+            drawable = object_from_template(drawables_array[i], this.view, this);
             this.add_drawable(drawable);
         }
     },
@@ -3849,7 +3849,7 @@ var CompositeTrack = function(view, container, obj_dict) {
         var drawable;
         for (var i = 0; i < obj_dict.drawables.length; i++) {
             drawable = obj_dict.drawables[i];
-            this.drawables[i] = object_from_template(drawable);
+            this.drawables[i] = object_from_template(drawable, view, null);
             
             // Track's left offset is the max of all tracks.
             if (drawable.left_offset > this.left_offset) {
