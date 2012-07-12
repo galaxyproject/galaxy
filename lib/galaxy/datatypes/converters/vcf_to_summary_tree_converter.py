@@ -18,7 +18,7 @@ def main():
     in_file, out_file = args
         
     # Do conversion.
-    st = SummaryTree(block_size=25, levels=6, draw_cutoff=150, detail_cutoff=30)
+    st = SummaryTree()
     for line in list( galaxy_utils.sequence.vcf.Reader( open( in_file ) ) ):
         # VCF format provides a chrom and 1-based position for each variant. 
         # SummaryTree expects 0-based coordinates.

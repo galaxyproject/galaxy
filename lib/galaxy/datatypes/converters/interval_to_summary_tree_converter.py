@@ -49,7 +49,7 @@ def main():
                                             end_col=end_col,
                                             strand_col=strand_col,
                                             fix_strand=True )
-    st = SummaryTree(block_size=25, levels=6, draw_cutoff=150, detail_cutoff=30)
+    st = SummaryTree()
     for feature in list( reader_wrapper ):
         if isinstance( feature, GenomicInterval ):
             # Tree expects BED coordinates.

@@ -621,13 +621,13 @@ class SummaryTreeDataProvider( TracksDataProvider ):
         """
         dataset_summary = []
         for chrom_info in chroms_info[ 'chrom_info' ]:
-            summary = self.get_summary( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], level=4 )
+            summary = self.get_summary( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], level=3, detail_cutoff=0, draw_cutoff=0 )
             dataset_summary.append( summary )
 
         return dataset_summary
     
     # TODO: rename to get_data to match other providers.
-    def get_summary( self, chrom, start, end, level=None, resolution=None ):
+    def get_summary( self, chrom, start, end, level=None, resolution=None, detail_cutoff=None, draw_cutoff=None ):
         """
         Returns summary tree data for a given genomic region.
         """
@@ -663,7 +663,7 @@ class SummaryTreeDataProvider( TracksDataProvider ):
 
         # Use level to get results.
         stats = st.chrom_stats[ chrom ]
-        results = st.query( chrom, int(start), int(end), level )
+        results = st.query( chrom, int(start), int(end), level, detail_cutoff=detail_cutoff, draw_cutoff=draw_cutoff )
         if results == "detail" or results == "draw":
             return results
         else:
