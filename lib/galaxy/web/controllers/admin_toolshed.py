@@ -945,7 +945,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def prepare_for_install( self, trans, **kwd ):
-        if not trans.app.toolbox.shed_tool_confs:
+        if not have_shed_tool_conf_for_install( trans ):
             message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one shed tool configuration file name with a '
             message += '<b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> attribute value which is a directory relative to the Galaxy installation '
             message += 'directory in order to automatically install tools from a Galaxy tool shed (e.g., the file name <b>shed_tool_conf.xml</b> whose '
@@ -1566,3 +1566,13 @@ def get_repository( trans, id ):
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
     return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
+def have_shed_tool_conf_for_install( trans ):
+    if not trans.app.toolbox.shed_tool_confs:
+        return False
+    migrated_tools_conf_path, migrated_tools_conf_name = os.path.split( trans.app.config.migrated_tools_config )
+    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+        shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
+        shed_tool_conf_path, shed_tool_conf_name = os.path.split( shed_tool_conf )
+        if shed_tool_conf_name != migrated_tools_conf_name:
+            return True
+    return False
