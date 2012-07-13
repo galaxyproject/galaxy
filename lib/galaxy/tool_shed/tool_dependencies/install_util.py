@@ -83,6 +83,10 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                     #    print 'Installing tool dependencies via fabric script ', proprietary_fabfile_path
             else:
                 print '\nSkipping installation of tool dependency', package_name, 'version', package_version, 'since it is installed in', install_dir, '\n'
+                tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, package_name, package_version, 'package' )
+                tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
+                sa_session.add( tool_dependency )
+                sa_session.flush()
     return tool_dependency
 def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package_name=None, proprietary_fabfile_path=None, **kwd ):
     """Parse a tool_dependency.xml file's <actions> tag set to gather information for the installation via fabric."""
