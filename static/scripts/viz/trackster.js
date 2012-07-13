@@ -1413,10 +1413,10 @@ extend( View.prototype, DrawableCollection.prototype, {
         }
         view.change_chrom(chrom, new_low, new_high);
     },
-    move_fraction : function( fraction ) {
+    move_fraction: function(fraction) {
         var view = this;
         var span = view.high - view.low;
-        this.move_delta( fraction * span );
+        this.move_delta(fraction * span);
     },
     move_delta: function(delta_chrom) {
         // Update low, high.
@@ -3598,7 +3598,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var can_draw_now = true;
         
         // Get the track data, maybe a deferred
-        var tile_data = track.data_manager.get_data( region, track.mode, resolution, track.data_url_extra_params );
+        var tile_data = track.data_manager.get_data(region, track.mode, resolution, track.data_url_extra_params);
         if ( is_deferred( tile_data ) ) {
             can_draw_now = false;
         }
@@ -3657,6 +3657,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Returned Deferred is resolved when tile can be drawn.
         return can_draw;
     },
+
     /**
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
@@ -3664,6 +3665,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     get_canvas_height: function(result, mode, w_scale, canvas_width) {
         return this.visible_height_px;
     },
+
     /**
      * Draw a track tile.
      * @param result result from server
@@ -3677,6 +3679,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {
         console.log("Warning: TiledTrack.draw_tile() not implemented.");
     },
+
     /**
      * Show track tile and perform associated actions. Showing tile may actually move
      * an existing tile rather than reshowing it.
@@ -3711,11 +3714,24 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         
         track.after_show_tile(tile);
     },
-
+    
     /**
      * Actions to be taken after showing tile.
      */
-    after_show_tile: function(tile) {},
+    after_show_tile: function(tile) {
+        // Update max height based on current tile.
+        this.max_height_px = Math.max(this.max_height_px, tile.html_elt.height());
+        
+        // Update height for all tiles based on max height.
+        tile.html_elt.parent().children().css("height", this.max_height_px + "px");
+        
+        // Update track height based on max height and visible height.
+        var track_height = this.max_height_px;
+        if (this.visible_height_px !== 0) {
+            track_height = Math.min(this.max_height_px, this.visible_height_px);
+        }
+        this.tiles_div.css("height", track_height + "px");
+    },
 
     /**
      * Returns a genome region that corresponds to a tile at a particular resolution
@@ -3928,9 +3944,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
-            tile_bounds = this._get_tile_bounds(tile_index, resolution),
-            tile_low = tile_bounds.get('start'),
-            tile_high = tile_bounds.get('end');
+            region = this._get_tile_bounds(tile_index, resolution);
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
@@ -3952,7 +3966,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         for (var i = 0; i < this.drawables.length; i++) {
             track = this.drawables[i];
             // Get the track data, maybe a deferred.
-            tile_data = track.data_manager.get_data( tile_low, tile_high, track.mode, resolution, track.data_url_extra_params );
+            tile_data = track.data_manager.get_data(region, track.mode, resolution, track.data_url_extra_params);
             if ( is_deferred( tile_data ) ) {
                 can_draw_now = false;
             }
@@ -3961,7 +3975,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             // Get seq data if needed, maybe a deferred.
             seq_data = null;
             if ( view.reference_track && w_scale > view.canvas_manager.char_width_px ) {
-                seq_data = view.reference_track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, view.reference_track.data_url_extra_params);
+                seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params);
                 if ( is_deferred( seq_data ) ) {
                     can_draw_now = false;
                 }
@@ -3979,8 +3993,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             var 
                 canvas = track.view.canvas_manager.new_canvas(),
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
-                tile_low = tile_bounds.get('start'),
-                tile_high = tile_bounds.get('end'),
+                tile_low = region.get('start'),
+                tile_high = region.get('end'),
                 all_data_index = 0,
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + this.left_offset,
                 height = 0,
@@ -4020,7 +4034,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 track = this.drawables[i];
                 tile_data = all_data[ all_data_index ];
                 seq_data = all_data[ all_data_index + 1 ];
-                tile = track.draw_tile(tile_data, ctx, track_modes[i], resolution, tile_bounds, w_scale, seq_data);
+                tile = track.draw_tile(tile_data, ctx, track_modes[i], resolution, region, w_scale, seq_data);
             }
             
             // Don't cache, show if no tile.
@@ -4045,8 +4059,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
      */
     show_group: function() {
         // Create group with individual tracks.
-        var 
-            group = new DrawableGroup(this.view, this.container, {
+        var group = new DrawableGroup(this.view, this.container, {
                 name: this.name
             }),
             track;
@@ -4389,23 +4402,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     before_draw: function() {
         // Clear because this is set when drawing.
         this.max_height_px = 0;
-    },
-    /**
-     * Actions to be taken after showing tile.
-     */
-    after_show_tile: function(tile) {
-        // Update max height based on current tile.
-        this.max_height_px = Math.max(this.max_height_px, tile.html_elt.height());
-        
-        // Update height for all tiles based on max height.
-        tile.html_elt.parent().children().css("height", this.max_height_px + "px");
-        
-        // Update track height based on max height and visible height.
-        var track_height = this.max_height_px;
-        if (this.visible_height_px !== 0) {
-            track_height = Math.min(this.max_height_px, this.visible_height_px);
-        }
-        this.tiles_div.css("height", track_height + "px");    
     },
 
     /**
