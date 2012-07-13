@@ -104,13 +104,15 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         if ids is not None and states is not None:
             ids = map( int, ids.split( "," ) )
             states = states.split( "," )
-            for id, state in zip( ids, states ):
-                sample = trans.sa_session.query( self.app.model.Sample ).get( id )
-                if sample.state.name != state:
-                    rval[ id ] = { "state": sample.state.name,
-                                   "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
-                                                                               sample=sample),
-                                                                               'utf-8' ) }
+            for tup in zip( ids, states ):
+                id, state = tup
+                if id and state:
+                    sample = trans.sa_session.query( self.app.model.Sample ).get( id )
+                    if sample.state.name != state:
+                        rval[ id ] = { "state": sample.state.name,
+                                       "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
+                                                                                   sample=sample),
+                                                                                   'utf-8' ) }
         return rval
     @web.json
     def sample_datasets_updates( self, trans, ids=None, datasets=None ):
@@ -121,14 +123,16 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         rval = {}
         if ids is not None and datasets is not None:
             ids = map( int, ids.split( "," ) )
-            number_of_datasets_list = map(int, datasets.split( "," ) )
-            for id, number_of_datasets in zip( ids, number_of_datasets_list ):
-                sample = trans.sa_session.query( self.app.model.Sample ).get( id )
-                if len(sample.datasets) != number_of_datasets:
-                    rval[ id ] = { "datasets": len( sample.datasets ),
-                                   "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
-                                                                                  sample=sample),
-                                                                                  'utf-8' ) }
+            number_of_datasets_list = map( int, datasets.split( "," ) )
+            for tup in zip( ids, number_of_datasets_list ):
+                id, number_of_datasets = tup
+                if id and number_of_datasets:
+                    sample = trans.sa_session.query( self.app.model.Sample ).get( id )
+                    if len( sample.datasets ) != number_of_datasets:
+                        rval[ id ] = { "datasets": len( sample.datasets ),
+                                       "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
+                                                                                      sample=sample),
+                                                                                      'utf-8' ) }
         return rval
     @web.json
     def dataset_transfer_status_updates( self, trans, ids=None, transfer_status_list=None ):
@@ -140,13 +144,15 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         if ids is not None and transfer_status_list is not None:
             ids = ids.split( "," )
             transfer_status_list = transfer_status_list.split( "," )
-            for id, transfer_status in zip( ids, transfer_status_list ):
-                sample_dataset = trans.sa_session.query( self.app.model.SampleDataset ).get( trans.security.decode_id( id ) )
-                if sample_dataset.status != transfer_status:
-                    rval[ id ] = { "status": sample_dataset.status,
-                                   "html_status": unicode( trans.fill_template( "requests/common/sample_dataset_transfer_status.mako",
-                                                                                sample_dataset=sample_dataset),
-                                                                                'utf-8' ) }
+            for tup in zip( ids, transfer_status_list ):
+                id, transfer_status = tup
+                if id and transfer_status:
+                    sample_dataset = trans.sa_session.query( self.app.model.SampleDataset ).get( trans.security.decode_id( id ) )
+                    if sample_dataset.status != transfer_status:
+                        rval[ id ] = { "status": sample_dataset.status,
+                                       "html_status": unicode( trans.fill_template( "requests/common/sample_dataset_transfer_status.mako",
+                                                                                    sample_dataset=sample_dataset),
+                                                                                    'utf-8' ) }
         return rval
     @web.expose
     @web.require_login( "create sequencing requests" )
