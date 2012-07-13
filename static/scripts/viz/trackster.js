@@ -2083,7 +2083,6 @@ var NumberFilter = function(obj_dict) {
     // Set up slider for filter.
     var slider_div = $("<div/>").addClass("slider").appendTo(filter.parent_div);
     filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
-    var prev_values = [0,0];
     filter.control_element.slider({
         range: true,
         min: this.min,
@@ -2193,17 +2192,23 @@ extend(NumberFilter.prototype, {
      * Handle slide events.
      */
     slide: function(event, ui) {
-         var values = ui.values;
+        var values = ui.values;
+
+        // Set new values in UI.
+        this.values_span.text(values[0] + "-" + values[1]);
+
+        // Set new values in filter.
+        this.low = values[0];
+        this.high = values[1];
          
-         // Set new values in UI.
-         this.values_span.text(values[0] + "-" + values[1]);
+        // Set timeout to update if filter low, high are stable.
+        var self = this;
+        setTimeout(function() {
+            if (values[0] === self.low && values[1] === self.high) {
+                self.manager.track.request_draw(true, true);
+            }
+        }, 25);
          
-         // Set new values in filter.
-         this.low = values[0];
-         this.high = values[1];
-         
-         // Redraw track.
-         this.manager.track.request_draw(true, true);
      },
     /** 
      * Returns true if filter can be applied to element.
