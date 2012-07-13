@@ -1128,7 +1128,11 @@ class AdminToolshed( AdminGalaxy ):
                     break
         else:
             readme_text = '' 
-        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=True )
+        if trans.app.config.tool_dependency_dir is None:
+            checked = False
+        else:
+            checked = True
+        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=checked )
         return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                     encoded_repo_info_dicts=encoded_repo_info_dicts,
                                     includes_tools=includes_tools,
