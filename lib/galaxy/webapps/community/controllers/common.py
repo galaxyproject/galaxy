@@ -279,10 +279,6 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     # Handle case where all metadata is the same.
     if ancestor_guids == current_guids and workflow_comparison == 'equal' and datatype_comparison == 'equal':
         return 'equal'
-    """ 
-    # TODO: revisit after GCC - we temporarily prioritize contents as: 1) tools 2) datatypes 3) workflows
-    # by only inspecting tools if they exist.  If tools don't exist, next inspect only datatypes and, finally, workflows.
-    # Here is the original code, with the code following the commented code replacing it.
     if workflow_comparison == 'subset' and datatype_comparison == 'subset':
         is_subset = True
         for guid in ancestor_guids:
@@ -291,24 +287,6 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
                 break
         if is_subset:
             return 'subset'
-    """
-    if ancestor_guids and current_guids:
-        is_subset = True
-        for guid in ancestor_guids:
-            if guid not in current_guids:
-                is_subset = False
-                break
-        if is_subset:
-            return 'subset'
-        else:
-            return 'not equal and not subset'
-    elif ancestor_guids and not current_guids:
-        # There were tools in the ancestor changeset revision, but no tools in the current changeset revision, so no new metadata should be generated.
-        return 'subset'
-    elif datatype_comparison == 'subset':
-        return 'subset'
-    elif workflow_comparison == 'subset':
-        return 'subset'
     return 'not equal and not subset'
 def compare_datatypes( ancestor_datatypes, current_datatypes ):
     # Determine if ancestor_datatypes is the same as current_datatypes
