@@ -76,6 +76,8 @@ input{font:10px verdana;}
 .toolbox:hover{background:transparent url(../images/fugue/toolbox.png) no-repeat;}
 .filters-icon{background:transparent url(../images/fugue/ui-slider-050-bw.png) no-repeat;}
 .filters-icon:hover{background:transparent url(../images/fugue/ui-slider-050.png) no-repeat;}
+.globe{background:transparent url(../images/fugue/globe-bw.png) no-repeat;}
+.globe:hover{background:transparent url(../images/fugue/globe.png) no-repeat;}
 .remove-icon,.overview-close{background:transparent url(../images/fugue/cross-small-bw.png) no-repeat;}
 .icon-button.remove-icon:hover,.overview-close:hover{background:transparent url(../images/fugue/cross-circle.png) no-repeat;}
 .icon-button.toggle{background:transparent url(../images/fugue/toggle-bw.png) no-repeat;margin-right:0px;}
