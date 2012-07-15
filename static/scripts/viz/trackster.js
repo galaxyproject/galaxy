@@ -4156,12 +4156,28 @@ var ReferenceTrack = function (view) {
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     build_header_div: function() {},
+
     init: function() {
         this.data_manager.clear();
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;
     },
+
     can_draw: Drawable.prototype.can_draw,
+
+    /**
+     * Only retrieves data and draws tile if reference data can be displayed.
+     */
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
+        if (w_scale > this.view.canvas_manager.char_width_px) {
+            return TiledTrack.prototype.draw_helper.call(this, force, width, tile_index, resolution, parent_element, w_scale, kwargs);
+        }
+        else {
+            this.hide_contents();
+            return null;
+        }
+    },
+
     /**
      * Draw ReferenceTrack tile.
      */
