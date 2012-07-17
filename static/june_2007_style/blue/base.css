@@ -576,7 +576,7 @@ div.form-row-error-message{width:300px;float:left;color:red;font-weight:bold;pad
 .form-row.form-actions{background:whiteSmoke;border-top:solid #ddd 1px;padding-top:10px;padding-bottom:10px;margin-top:5px;}
 select{padding:2px;font-size:12px;line-height:16px;}
 select,input,textarea{font:inherit;}
-select,textarea,input[type="text"],input[type="file"],input[type="password"]{max-width:90%;}
+.form-row select,.form-row textarea,.form-row input[type="text"],.form-row input[type="file"],.form-row input[type="password"]{max-width:90%;}
 textarea,input[type="text"],input[type="password"]{font-size:12px;line-height:16px;border:1px solid #999999;padding:3px;}
 .search-query{display:inline-block;padding:4px;font-size:12px;line-height:16px;color:#555555;border:1px solid #999999;padding-left:14px !important;padding-right:14px !important;margin-bottom:0;-webkit-border-radius:14px;-moz-border-radius:14px;border-radius:14px;max-width:auto;}
 .search-query:focus{border-color:rgba(24, 132, 218, 0.8);-webkit-box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);-moz-box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);outline:0;outline:thin dotted \9;}
