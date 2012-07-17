@@ -1,0 +1,53 @@
+<tool id="express" name="eXpress" version="1.1.1">
+	<description>Quantify the abundances of a set of target sequences from sampled subsequences</description>
+	<requirements>
+		<requirement type="binary">eXpress</requirement>
+	</requirements>
+	<command>express --no-update-check $multiFasta $bamFile</command>
+	<inputs>
+		<param format="fasta" name="multiFasta" type="data" label="A set of target references (annotation) in multi-FASTA format" help="The multi-FASTA file can also be a fasta file" />
+		<param format="bam" name="bamFile" type="data" label="Alignments in the BAM format" help="The set of aligned reads" />
+	</inputs>
+	<outputs>  
+       <data format="txt" name="params" from_work_dir="params.xprs"/>
+       <data format="txt" name="results" from_work_dir="results.xprs"/>
+   </outputs>
+
+   <tests>
+        <!-- Test for the most simple case : Running eXpress with a .bam file and a .fasta file -->
+        <test>
+            <!-- TopHat commands:
+            eXpress hits.bam Trinity.fasta
+            -->
+            <param name="bamFile" ftype="bam" value="eXpress_hits.bam"/>
+            <param name="multiFasta" ftype="fasta" value="eXpress_Trinity.fasta"/>
+            
+            <output name="params" file="eXpress_params.xprs" />
+            <output name="results" file="eXpress_results.xprs"/>
+        </test>
+    </tests>
+    <help>
+**eXpress Overview**
+
+eXpress is a streaming tool for quantifying the abundances of a set of target sequences from sampled subsequences. Example applications include transcript-level RNA-Seq quantification, allele-specific/haplotype expression analysis (from RNA-Seq), transcription factor binding quantification in ChIP-Seq, and analysis of metagenomic data.
+
+.. _Ensembl: http://bio.math.berkeley.edu/eXpress/
+
+-----
+
+**Input format**
+
+eXpress requires two input files:
+
+- A multi-FASTA file containing the transcript sequences.
+- Read alignments to the multi-FASTA file in BAM format.
+
+------
+
+**Outputs**
+
+- The output for eXpress is saved in a file called results.xprs in an easy-to-parse tab-delimited format.
+
+- Also, params.xprs contains the values of the other parameters (besides abundances and counts) estimated by eXpress. 
+    </help>
+</tool>
