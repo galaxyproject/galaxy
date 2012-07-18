@@ -19,7 +19,7 @@ from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Vcf
-from galaxy.datatypes.interval import Interval, Bed, Gff, Gtf, ENCODEPeak
+from galaxy.datatypes.interval import Interval, Bed, Gff, Gtf, ENCODEPeak, ChromatinInteractions
 
 from pysam import csamtools, ctabix
 
@@ -146,6 +146,9 @@ class TracksDataProvider( object ):
                     { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index], \
                     'index' : attrs[ 'index' ] } )
         return filters
+
+    def get_default_max_vals( self ):
+        return 5000;
         
 #
 # -- Base mixins and providers --
@@ -1268,6 +1271,67 @@ class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
                         'tool_id': 'Filter1',
                         'tool_exp_name': 'c9' } )
         return filters
+
+#
+# -- ChromatinInteraction data providers --
+#
+class ChromatinInteractionsDataProvider( TracksDataProvider ):
+    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+        """
+        Provides
+        """
+        
+        rval = []
+        message = None
+        for count, line in enumerate( iterator ):
+            if count < start_val:
+                continue
+            if max_vals and count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "interactions" )
+                break
+
+            feature = line.split()
+            length = len( feature )
+            
+            s1 = int( feature[1] ), 
+            e1 = int( feature[2] ),
+            c = feature[3],
+            s2 = int( feature[4] ),
+            e2 = int( feature[5] ),
+            v = float( feature[6] )
+
+            # Feature initialization.
+            payload = [
+                # GUID is just a hash of the line
+                hash( line ),
+                # Add start1, end1, chr2, start2, end2, value.
+                s1, e1, c, s2, e2, v
+            ]
+            
+            rval.append( payload )
+
+        return { 'data': rval, 'message': message }
+
+    def get_default_max_vals( self ):
+        return 50000;
+    
+class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinInteractionsDataProvider ):
+    def get_iterator( self, chrom, start, end ):
+        """
+        """
+        # Modify start as needed to get earlier interactions with start region.
+        start = max( 0, int( start) - 1000000 )
+        def filter( iter ):
+            for line in iter:
+                feature = line.split()
+                s1 = int( feature[1] ), 
+                e1 = int( feature[2] ),
+                c = feature[3]
+                s2 = int( feature[4] ),
+                e2 = int( feature[5] ),
+                if ( ( c == chrom ) and ( s1 < end and e1 > start ) and ( s2 < end and e2 > start ) ):
+                    yield line
+        return filter( TabixDataProvider.get_iterator( self, chrom, start, end ) )
                
 #        
 # -- Helper methods. --
@@ -1283,7 +1347,9 @@ dataset_type_name_to_data_provider = {
         Gtf: GtfTabixDataProvider,
         ENCODEPeak: ENCODEPeakTabixDataProvider,
         Interval: IntervalTabixDataProvider,
-        "default" : TabixDataProvider },
+        ChromatinInteractions: ChromatinInteractionsTabixDataProvider, 
+        "default" : TabixDataProvider 
+    },
     "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
     "bam": SamDataProvider,
