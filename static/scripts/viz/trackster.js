@@ -5642,10 +5642,6 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                         var block_thick_start = Math.max(block_start, thick_start),
                             block_thick_end = Math.min(block_end, thick_end);
                         ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
-                        // FIXME: for GFF datasets, only one block of many may be fetched, so it is not possible to 
-                        // determine if feature has only one block. Hence, Ffr now, do not use b/c color is used to encoding 
-                        // strand.
-                        /*
                         if ( feature_blocks.length === 1 && mode === "Pack") {
                             // Exactly one block means we have no introns, but do have a distinct "thick" region,
                             // draw arrows over it if in pack mode.
@@ -5661,7 +5657,6 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                             }
                             ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
                         }
-                        */
                     }
                     // Draw individual connectors if required
                     if ( this.draw_individual_connectors && last_block_start ) {
