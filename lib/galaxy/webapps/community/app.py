@@ -17,13 +17,12 @@ class UniverseApplication( object ):
         config.configure_logging( self.config )
         # Set up datatypes registry
         self.datatypes_registry = galaxy.datatypes.registry.Registry()
-        # TODO: Handle datatypes included in repositories - the following will only load datatypes_conf.xml.
         self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection
         else:
-            db_url = "sqlite://%s?isolation_level=IMMEDIATE" % self.config.database
+            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         # Initialize database / check for appropriate schema version
         from galaxy.webapps.community.model.migrate.check import create_or_verify_database
         create_or_verify_database( db_url, self.config.database_engine_options )

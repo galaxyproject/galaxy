@@ -607,7 +607,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         this.drawables = [];
         var drawable;
         for (var i = 0; i < drawables_array.length; i++) {
-            drawable = object_from_template(drawables_array[i], this);
+            drawable = object_from_template(drawables_array[i], this.view, this);
             this.add_drawable(drawable);
         }
     },
@@ -1413,10 +1413,10 @@ extend( View.prototype, DrawableCollection.prototype, {
         }
         view.change_chrom(chrom, new_low, new_high);
     },
-    move_fraction : function( fraction ) {
+    move_fraction: function(fraction) {
         var view = this;
         var span = view.high - view.low;
-        this.move_delta( fraction * span );
+        this.move_delta(fraction * span);
     },
     move_delta: function(delta_chrom) {
         // Update low, high.
@@ -2083,7 +2083,6 @@ var NumberFilter = function(obj_dict) {
     // Set up slider for filter.
     var slider_div = $("<div/>").addClass("slider").appendTo(filter.parent_div);
     filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
-    var prev_values = [0,0];
     filter.control_element.slider({
         range: true,
         min: this.min,
@@ -2193,17 +2192,23 @@ extend(NumberFilter.prototype, {
      * Handle slide events.
      */
     slide: function(event, ui) {
-         var values = ui.values;
+        var values = ui.values;
+
+        // Set new values in UI.
+        this.values_span.text(values[0] + "-" + values[1]);
+
+        // Set new values in filter.
+        this.low = values[0];
+        this.high = values[1];
          
-         // Set new values in UI.
-         this.values_span.text(values[0] + "-" + values[1]);
+        // Set timeout to update if filter low, high are stable.
+        var self = this;
+        setTimeout(function() {
+            if (values[0] === self.low && values[1] === self.high) {
+                self.manager.track.request_draw(true, true);
+            }
+        }, 25);
          
-         // Set new values in filter.
-         this.low = values[0];
-         this.high = values[1];
-         
-         // Redraw track.
-         this.manager.track.request_draw(true, true);
      },
     /** 
      * Returns true if filter can be applied to element.
@@ -3598,7 +3603,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var can_draw_now = true;
         
         // Get the track data, maybe a deferred
-        var tile_data = track.data_manager.get_data( region, track.mode, resolution, track.data_url_extra_params );
+        var tile_data = track.data_manager.get_data(region, track.mode, resolution, track.data_url_extra_params);
         if ( is_deferred( tile_data ) ) {
             can_draw_now = false;
         }
@@ -3657,6 +3662,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Returned Deferred is resolved when tile can be drawn.
         return can_draw;
     },
+
     /**
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
@@ -3664,6 +3670,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     get_canvas_height: function(result, mode, w_scale, canvas_width) {
         return this.visible_height_px;
     },
+
     /**
      * Draw a track tile.
      * @param result result from server
@@ -3677,6 +3684,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {
         console.log("Warning: TiledTrack.draw_tile() not implemented.");
     },
+
     /**
      * Show track tile and perform associated actions. Showing tile may actually move
      * an existing tile rather than reshowing it.
@@ -3711,11 +3719,24 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         
         track.after_show_tile(tile);
     },
-
+    
     /**
      * Actions to be taken after showing tile.
      */
-    after_show_tile: function(tile) {},
+    after_show_tile: function(tile) {
+        // Update max height based on current tile.
+        this.max_height_px = Math.max(this.max_height_px, tile.html_elt.height());
+        
+        // Update height for all tiles based on max height.
+        tile.html_elt.parent().children().css("height", this.max_height_px + "px");
+        
+        // Update track height based on max height and visible height.
+        var track_height = this.max_height_px;
+        if (this.visible_height_px !== 0) {
+            track_height = Math.min(this.max_height_px, this.visible_height_px);
+        }
+        this.tiles_div.css("height", track_height + "px");
+    },
 
     /**
      * Returns a genome region that corresponds to a tile at a particular resolution
@@ -3849,7 +3870,7 @@ var CompositeTrack = function(view, container, obj_dict) {
         var drawable;
         for (var i = 0; i < obj_dict.drawables.length; i++) {
             drawable = obj_dict.drawables[i];
-            this.drawables[i] = object_from_template(drawable);
+            this.drawables[i] = object_from_template(drawable, view, null);
             
             // Track's left offset is the max of all tracks.
             if (drawable.left_offset > this.left_offset) {
@@ -3928,9 +3949,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
         var track = this,
             key = this._gen_tile_cache_key(width, w_scale, tile_index),
-            tile_bounds = this._get_tile_bounds(tile_index, resolution),
-            tile_low = tile_bounds.get('start'),
-            tile_high = tile_bounds.get('end');
+            region = this._get_tile_bounds(tile_index, resolution);
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
@@ -3952,7 +3971,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         for (var i = 0; i < this.drawables.length; i++) {
             track = this.drawables[i];
             // Get the track data, maybe a deferred.
-            tile_data = track.data_manager.get_data( tile_low, tile_high, track.mode, resolution, track.data_url_extra_params );
+            tile_data = track.data_manager.get_data(region, track.mode, resolution, track.data_url_extra_params);
             if ( is_deferred( tile_data ) ) {
                 can_draw_now = false;
             }
@@ -3961,7 +3980,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             // Get seq data if needed, maybe a deferred.
             seq_data = null;
             if ( view.reference_track && w_scale > view.canvas_manager.char_width_px ) {
-                seq_data = view.reference_track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, view.reference_track.data_url_extra_params);
+                seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params);
                 if ( is_deferred( seq_data ) ) {
                     can_draw_now = false;
                 }
@@ -3979,8 +3998,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             var 
                 canvas = track.view.canvas_manager.new_canvas(),
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
-                tile_low = tile_bounds.get('start'),
-                tile_high = tile_bounds.get('end'),
+                tile_low = region.get('start'),
+                tile_high = region.get('end'),
                 all_data_index = 0,
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + this.left_offset,
                 height = 0,
@@ -4020,7 +4039,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 track = this.drawables[i];
                 tile_data = all_data[ all_data_index ];
                 seq_data = all_data[ all_data_index + 1 ];
-                tile = track.draw_tile(tile_data, ctx, track_modes[i], resolution, tile_bounds, w_scale, seq_data);
+                tile = track.draw_tile(tile_data, ctx, track_modes[i], resolution, region, w_scale, seq_data);
             }
             
             // Don't cache, show if no tile.
@@ -4045,8 +4064,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
      */
     show_group: function() {
         // Create group with individual tracks.
-        var 
-            group = new DrawableGroup(this.view, this.container, {
+        var group = new DrawableGroup(this.view, this.container, {
                 name: this.name
             }),
             track;
@@ -4138,12 +4156,28 @@ var ReferenceTrack = function (view) {
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     build_header_div: function() {},
+
     init: function() {
         this.data_manager.clear();
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;
     },
+
     can_draw: Drawable.prototype.can_draw,
+
+    /**
+     * Only retrieves data and draws tile if reference data can be displayed.
+     */
+    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
+        if (w_scale > this.view.canvas_manager.char_width_px) {
+            return TiledTrack.prototype.draw_helper.call(this, force, width, tile_index, resolution, parent_element, w_scale, kwargs);
+        }
+        else {
+            this.hide_contents();
+            return null;
+        }
+    },
+
     /**
      * Draw ReferenceTrack tile.
      */
@@ -4389,23 +4423,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     before_draw: function() {
         // Clear because this is set when drawing.
         this.max_height_px = 0;
-    },
-    /**
-     * Actions to be taken after showing tile.
-     */
-    after_show_tile: function(tile) {
-        // Update max height based on current tile.
-        this.max_height_px = Math.max(this.max_height_px, tile.html_elt.height());
-        
-        // Update height for all tiles based on max height.
-        tile.html_elt.parent().children().css("height", this.max_height_px + "px");
-        
-        // Update track height based on max height and visible height.
-        var track_height = this.max_height_px;
-        if (this.visible_height_px !== 0) {
-            track_height = Math.min(this.max_height_px, this.visible_height_px);
-        }
-        this.tiles_div.css("height", track_height + "px");    
     },
 
     /**

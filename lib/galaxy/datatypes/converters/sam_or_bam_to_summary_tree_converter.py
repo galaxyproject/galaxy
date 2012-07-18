@@ -32,7 +32,7 @@ def main():
         out_fname = args[1]
         samfile = csamtools.Samfile( filename=input_fname, mode='r' )
     
-    st = SummaryTree(block_size=25, levels=6, draw_cutoff=150, detail_cutoff=30)
+    st = SummaryTree()
     for read in samfile.fetch():
         st.insert_range( samfile.getrname( read.rname ), read.pos, read.pos + read.rlen )
     

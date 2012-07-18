@@ -437,6 +437,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_shed_repository.deleted = True
             if remove_from_disk_checked:
                 tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.UNINSTALLED
+                tool_shed_repository.error_message = None
             else:
                 tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.DEACTIVATED
             trans.sa_session.add( tool_shed_repository )
@@ -607,6 +608,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_section = None
         for tup in zip( tool_shed_repositories, repo_info_dicts ):
             tool_shed_repository, repo_info_dict = tup
+            repo_info_dict = tool_shed_decode( repo_info_dict )
             # Clone each repository to the configured location.
             update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
@@ -687,7 +689,7 @@ class AdminToolshed( AdminGalaxy ):
         trans.sa_session.add( tool_shed_repository )
         trans.sa_session.flush()
         if 'tool_dependencies' in metadata_dict and not reinstalling:
-            tool_dependencies = create_tool_dependency_objects( trans.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision )
+            tool_dependencies = create_tool_dependency_objects( trans.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision, set_status=True )
         if 'tools' in metadata_dict:
             tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
             repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
@@ -943,7 +945,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def prepare_for_install( self, trans, **kwd ):
-        if not trans.app.toolbox.shed_tool_confs:
+        if not have_shed_tool_conf_for_install( trans ):
             message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one shed tool configuration file name with a '
             message += '<b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> attribute value which is a directory relative to the Galaxy installation '
             message += 'directory in order to automatically install tools from a Galaxy tool shed (e.g., the file name <b>shed_tool_conf.xml</b> whose '
@@ -1047,7 +1049,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                       owner=owner,
                                                                                       dist_to_shed=False )
                         created_or_updated_tool_shed_repositories.append( tool_shed_repository )
-                        filtered_repo_info_dicts.append( repo_info_dict )
+                        filtered_repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
             if created_or_updated_tool_shed_repositories:
                 if includes_tools and ( new_tool_panel_section or tool_panel_section ):
                     if new_tool_panel_section:
@@ -1126,7 +1128,11 @@ class AdminToolshed( AdminGalaxy ):
                     break
         else:
             readme_text = '' 
-        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=True )
+        if trans.app.config.tool_dependency_dir is None:
+            checked = False
+        else:
+            checked = True
+        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=checked )
         return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                     encoded_repo_info_dicts=encoded_repo_info_dicts,
                                     includes_tools=includes_tools,
@@ -1225,6 +1231,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                       tool_shed_repository.dist_to_shed )
         ctx_rev = get_ctx_rev( tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision )
         repo_info_dict = kwd.get( 'repo_info_dict', None )
+        # The repo_info_dict should be encoded.
         if not repo_info_dict:
             # This should only happen if the tool_shed_repository does not include any valid tools.
             repo_info_dict = create_repo_info_dict( tool_shed_repository,
@@ -1233,6 +1240,7 @@ class AdminToolshed( AdminGalaxy ):
                                                     tool_shed_repository.installed_changeset_revision,
                                                     ctx_rev,
                                                     metadata )
+            repo_info_dict = tool_shed_encode( repo_info_dict )
         new_kwd = dict( includes_tool_dependencies=tool_shed_repository.includes_tool_dependencies,
                         includes_tools=tool_shed_repository.includes_tools,
                         install_tool_dependencies=install_tool_dependencies,
@@ -1340,6 +1348,7 @@ class AdminToolshed( AdminGalaxy ):
             message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % repository.name
             message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section."
         status = 'done'
+        includes_tool_dependencies = 'tool_dependencies' in metadata
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=True )
         return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',
                                     repository=repository,
@@ -1347,7 +1356,8 @@ class AdminToolshed( AdminGalaxy ):
                                     original_section_name=original_section_name,
                                     install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
-                                    repo_info_dict=tool_shed_encode( repo_info_dict ),
+                                    encoded_repo_info_dict=tool_shed_encode( repo_info_dict ),
+                                    repo_info_dict=repo_info_dict,
                                     includes_tool_dependencies=includes_tool_dependencies,
                                     message=message,
                                     status=status )
@@ -1479,7 +1489,7 @@ class AdminToolshed( AdminGalaxy ):
                     trans.sa_session.flush()
                     # Create tool_dependency records if necessary.
                     if 'tool_dependencies' in metadata_dict:
-                        tool_dependencies = create_tool_dependency_objects( trans.app, repository, repository.changeset_revision )
+                        tool_dependencies = create_tool_dependency_objects( trans.app, repository, repository.changeset_revision, set_status=False )
                     message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % ( name, latest_changeset_revision )
                     # See if any tool dependencies can be installed.
                     shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )
@@ -1556,3 +1566,13 @@ def get_repository( trans, id ):
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
     return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
+def have_shed_tool_conf_for_install( trans ):
+    if not trans.app.toolbox.shed_tool_confs:
+        return False
+    migrated_tools_conf_path, migrated_tools_conf_name = os.path.split( trans.app.config.migrated_tools_config )
+    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+        shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
+        shed_tool_conf_path, shed_tool_conf_name = os.path.split( shed_tool_conf )
+        if shed_tool_conf_name != migrated_tools_conf_name:
+            return True
+    return False

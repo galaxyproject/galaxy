@@ -129,6 +129,8 @@
                             [_('Video tutorials (screencasts)'), app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
                             [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
                         ]
+        if app.config.get( 'terms_url', None ) is not None:
+            menu_options.append( [_('Terms and Conditions'), app.config.get( 'terms_url', None ), '_blank'] )
         tab( "help", _("Help"), None, menu_options=menu_options)
     %>
     

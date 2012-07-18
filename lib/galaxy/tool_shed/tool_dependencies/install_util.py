@@ -11,13 +11,14 @@ pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
 from elementtree.ElementTree import Element, SubElement
 
-def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status ):
+def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status, set_status=True ):
     # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled repository is being reinstalled.
     sa_session = app.model.context.current
     # First see if an appropriate tool_dependency record exists for the received tool_shed_repository.
     tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, name, version, type )
     if tool_dependency:
-        tool_dependency.status = status
+        if set_status:
+            tool_dependency.status = status
     else:
         # Create a new tool_dependency record for the tool_shed_repository.
         tool_dependency = app.model.ToolDependency( tool_shed_repository.id, name, version, type, status )
@@ -59,7 +60,8 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                             name=package_name,
                                                                             version=package_version,
                                                                             type='package',
-                                                                            status=app.model.ToolDependency.installation_status.INSTALLING )
+                                                                            status=app.model.ToolDependency.installation_status.INSTALLING,
+                                                                            set_status=True )
                         if package_install_version == '1.0':
                             # Handle tool dependency installation using a fabric method included in the Galaxy framework.
                             for actions_elem in package_elem:
@@ -81,6 +83,10 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                     #    print 'Installing tool dependencies via fabric script ', proprietary_fabfile_path
             else:
                 print '\nSkipping installation of tool dependency', package_name, 'version', package_version, 'since it is installed in', install_dir, '\n'
+                tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, package_name, package_version, 'package' )
+                tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
+                sa_session.add( tool_dependency )
+                sa_session.flush()
     return tool_dependency
 def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package_name=None, proprietary_fabfile_path=None, **kwd ):
     """Parse a tool_dependency.xml file's <actions> tag set to gather information for the installation via fabric."""

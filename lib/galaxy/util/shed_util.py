@@ -380,7 +380,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.add( tool_shed_repository )
     sa_session.flush()
     return tool_shed_repository
-def create_tool_dependency_objects( app, tool_shed_repository, current_changeset_revision ):
+def create_tool_dependency_objects( app, tool_shed_repository, current_changeset_revision, set_status=True ):
     # Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when installing a new tool_shed_repository.
     tool_dependency_objects = []
     work_dir = make_tmp_directory()
@@ -404,7 +404,8 @@ def create_tool_dependency_objects( app, tool_shed_repository, current_changeset
                                                                     name=package_name,
                                                                     version=package_version,
                                                                     type='package',
-                                                                    status=app.model.ToolDependency.installation_status.NEVER_INSTALLED )
+                                                                    status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                    set_status=set_status )
                 tool_dependency_objects.append( tool_dependency )
     try:
         shutil.rmtree( work_dir )
@@ -1210,6 +1211,8 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
+        # Only install the package if it is not already installed.
+        can_install = False
         if elem.tag == 'package':
             package_name = elem.get( 'name', None )
             package_version = elem.get( 'version', None )
@@ -1217,8 +1220,6 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                 # The value of tool_dependencies will be None only when this method is called by the InstallManager.  In that case, tool
                 # dependency installation is not ajaxian, so the ToolDependency objects do not yet exist.
                 if tool_dependencies:
-                    # Only install the package if it is not already installed.
-                    can_install = False
                     for tool_dependency in tool_dependencies:
                         if tool_dependency.name==package_name and tool_dependency.version==package_version:
                             can_install = tool_dependency.status in [ app.model.ToolDependency.installation_status.NEVER_INSTALLED,
@@ -1457,6 +1458,7 @@ def remove_tool_dependency( trans, tool_dependency ):
         log.debug( error_message )
     if removed:
         tool_dependency.status = trans.model.ToolDependency.installation_status.UNINSTALLED
+        tool_dependency.error_message = None
         trans.sa_session.add( tool_dependency )
         trans.sa_session.flush()
     return removed, error_message

@@ -85,9 +85,14 @@
     </div>
     <div class="form-row">
         <label>Install tool dependencies?</label>
-        ${install_tool_dependencies_check_box.get_html()}
+        <% disabled = trans.app.config.tool_dependency_dir is None %>
+        ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
         <div class="toolParamHelp" style="clear: both;">
-            Un-check to skip automatic installation of these tool dependencies.
+            %if disabled:
+                Set the tool_dependency_dir configuration value in your universe_wsgi.ini to automatically install tool dependencies.
+            %else:
+                Un-check to skip automatic installation of these tool dependencies.
+            %endif
         </div>
     </div>
     <div style="clear: both"></div>

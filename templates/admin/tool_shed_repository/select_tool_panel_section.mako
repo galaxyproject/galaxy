@@ -23,7 +23,7 @@
 <br/>
 
 <div class="toolForm">
-    %if includes_tool_dependencies:
+    %if includes_tool_dependencies and trans.app.config.use_tool_dependencies:
         <div class="toolFormTitle">Confirm tool dependency installation</div>
     %else:
         <div class="toolFormTitle">Choose the tool panel section to contain the installed tools (optional)</div>
@@ -31,7 +31,7 @@
     <div class="toolFormBody">
         <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
             <div style="clear: both"></div>
-            %if includes_tool_dependencies:
+            %if includes_tool_dependencies and trans.app.config.use_tool_dependencies:
                 ${render_tool_dependency_section( install_tool_dependencies_check_box, repo_info_dicts )}
                 <div style="clear: both"></div>
                 <div class="form-row">

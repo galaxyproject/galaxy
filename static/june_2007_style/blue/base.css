@@ -576,7 +576,7 @@ div.form-row-error-message{width:300px;float:left;color:red;font-weight:bold;pad
 .form-row.form-actions{background:whiteSmoke;border-top:solid #ddd 1px;padding-top:10px;padding-bottom:10px;margin-top:5px;}
 select{padding:2px;font-size:12px;line-height:16px;}
 select,input,textarea{font:inherit;}
-select,textarea,input[type="text"],input[type="file"],input[type="password"]{max-width:90%;}
+.form-row select,.form-row textarea,.form-row input[type="text"],.form-row input[type="file"],.form-row input[type="password"]{max-width:90%;}
 textarea,input[type="text"],input[type="password"]{font-size:12px;line-height:16px;border:1px solid #999999;padding:3px;}
 .search-query{display:inline-block;padding:4px;font-size:12px;line-height:16px;color:#555555;border:1px solid #999999;padding-left:14px !important;padding-right:14px !important;margin-bottom:0;-webkit-border-radius:14px;-moz-border-radius:14px;border-radius:14px;max-width:auto;}
 .search-query:focus{border-color:rgba(24, 132, 218, 0.8);-webkit-box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);-moz-box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);outline:0;outline:thin dotted \9;}
@@ -624,7 +624,7 @@ div.debug{margin:10px;padding:5px;background:#FFFF99;border:solid #FFFF33 1px;co
 .text-filter-val{border:solid 1px #AAAAAA;padding:1px 2px 1px 3px;margin-right:5px;-moz-border-radius:.5em;-webkit-border-radius:.5em;font-style:italic;}
 .page-link a,.inactive-link{padding:0px 7px 0px 7px;color:#555;}
 .inactive-link,.current-filter{font-weight:bold;color:#000;}
-.submit-image{background:url(../images/fugue/magnifier-left.png) no-repeat center transparent;background-color:#eee;width:24px;height:24px;cursor:pointer;margin:0;padding:0;display:block;border:1px solid #aaa;border-left:none;}
+.submit-image{background:url(../images/fugue/magnifier-left.png) no-repeat center transparent;background-color:#eee;width:24px;height:24px;cursor:pointer;margin:0;padding:0;border:1px solid #aaa;border-left:none;}
 #advanced-search td{padding:3px;}
 #advanced-search table{border-collapse:separate;}
 .delete-search-icon{background:url(../images/delete_tag_icon_gray.png) center no-repeat;display:inline-block;width:10px;cursor:pointer;height:18px;vertical-align:middle;margin-left:2px;}
@@ -666,7 +666,7 @@ a.action-button{text-decoration:none;}
 .menubutton:active{background-image:none;-webkit-box-shadow:inset 0 2px 4px rgba(0, 0, 0, 0.15),0 1px 2px rgba(0, 0, 0, 0.05);-moz-box-shadow:inset 0 2px 4px rgba(0, 0, 0, 0.15),0 1px 2px rgba(0, 0, 0, 0.05);box-shadow:inset 0 2px 4px rgba(0, 0, 0, 0.15),0 1px 2px rgba(0, 0, 0, 0.05);background-color:#e6e6e6;background-color:#d9d9d9 \9;outline:0;}
 .menubutton:focus{outline:thin dotted;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px;}
 .menubutton a{text-decoration:none;}
-.menubutton .label{position:relative;display:inline-block;border-right:none;text-decoration:none;text-align:left;max-height:32px;line-height:16px;overflow:hidden;text-overflow:ellipsis;}
+.menubutton .label,.menubutton>label{position:relative;display:inline-block;border-right:none;text-decoration:none;text-align:left;max-height:32px;line-height:16px;overflow:hidden;text-overflow:ellipsis;}
 .menubutton.popup .label{border-right:solid #999999 1px;padding-right:6px;}
 .menubutton.popup,.menubutton.popup.split{padding-right:18px;}.menubutton.popup:after,.menubutton.popup.split:after{margin-top:6px;position:absolute;top:2px;right:6px;display:inline-block;width:0;height:0;text-indent:-99999px;*text-indent:0;vertical-align:top;border-left:4px solid transparent;border-right:4px solid transparent;border-top:4px solid #000000;opacity:0.3;filter:alpha(opacity=30);content:"\2193";}
 div.popmenu-wrapper{position:absolute;top:100%;z-index:20000;}div.popmenu-wrapper ul.dropdown-menu{display:block;position:relative;float:none;}

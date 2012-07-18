@@ -138,7 +138,7 @@ class InstallManager( object ):
         self.app.sa_session.flush()
         if 'tool_dependencies' in metadata_dict:
             # All tool_dependency objects must be created before the tools are processed even if no tool dependencies will be installed.
-            tool_dependencies = create_tool_dependency_objects( self.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision )
+            tool_dependencies = create_tool_dependency_objects( self.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision, set_status=True )
         else:
             tool_dependencies = None
         if 'tools' in metadata_dict:

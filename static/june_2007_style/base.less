@@ -694,9 +694,11 @@ select, input, textarea {
     font: inherit;
 }
 
-select, textarea, input[type="text"], input[type="file"], input[type="password"] {
-    // -webkit-box-sizing: border-box;
-    max-width: 90%;
+.form-row {   
+    select, textarea, input[type="text"], input[type="file"], input[type="password"] {
+        // -webkit-box-sizing: border-box;
+        max-width: 90%;
+    }
 }
 
 textarea, input[type="text"], input[type="password"] {
@@ -999,8 +1001,6 @@ div.debug {
     cursor: pointer;
     margin: 0;
     padding: 0;
-    display: block;
-    //float: right;
     border: 1px solid #aaa;
     border-left: none;
 }
@@ -1248,7 +1248,7 @@ a.action-button {
         text-decoration: none;
     }
 
-    .label {
+    .label, > label {
         position: relative;
         display: inline-block;
         border-right: none;

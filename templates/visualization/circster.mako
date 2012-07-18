@@ -57,7 +57,6 @@
                 } }
             ]);
 
-            menu.render();
             menu.$el.attr("style", "float: right");
             $("#center .unified-panel-header-inner").append(menu.$el);
             // Manual tipsy config because default gravity is S and cannot be changed.
@@ -71,11 +70,11 @@
                     width: 600,
                     height: 600,
                     // Gap is difficult to set because it very dependent on chromosome size and organization.
-                    total_gap: 2 * Math.PI * 0.5,
+                    total_gap: 2 * Math.PI * 0.2,
                     genome: genome,
                     model: visualization,
                     radius_start: 100,
-                    dataset_arc_height: 50
+                    dataset_arc_height: 15
                 });
             
             // -- Render viz. --
@@ -89,7 +88,7 @@
 <%def name="center_panel()">
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
-            <div style="float:left;" id="title"></div>
+            <div style="float:left;" id="title">${viz_config[ 'title' ]} (${viz_config[ 'dbkey' ]})</div>
         </div>
         <div style="clear: both"></div>
     </div>

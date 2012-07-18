@@ -113,6 +113,14 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 // HACK -- use style to determine if panel is hidden and hide/show accordingly.
                 parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));
             } },
+            {
+                icon_class: 'globe',
+                title: 'Circster',
+                on_click: function() {
+                    // Add viz id dynamically so that newly saved visualizations work as well.
+                    window.location = "${h.url_for( controller='tracks', action='circster' )}?id=" + view.vis_id;
+                }
+            },
             { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
                 // Show saving dialog box
                 show_modal("Saving...", "progress");

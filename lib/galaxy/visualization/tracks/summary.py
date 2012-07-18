@@ -11,7 +11,7 @@ import cPickle
 MIN_LEVEL = 2
 
 class SummaryTree:
-    def __init__( self, block_size, levels, draw_cutoff, detail_cutoff ):
+    def __init__( self, block_size=25, levels=6, draw_cutoff=150, detail_cutoff=30 ):
         self.chrom_blocks = {}
         self.levels = levels
         self.draw_cutoff = draw_cutoff
@@ -47,38 +47,46 @@ class SummaryTree:
                     block_level[ block ] = 1
         
     def finish( self ):
-        """ Checks for cutoff and only stores levels above it """
+        """ Compute stats for levels. """
         
-        # TODO: not storing all counts is lossy. To fix, store all counts
-        # and then dynamically set draw/detail level either on load or
-        # use cutoffs in query function.
         for chrom, blocks in self.chrom_blocks.iteritems():
-            cur_best = 999
-            for level in range( self.levels, MIN_LEVEL-1, -1 ):
+            for level in range( self.levels, MIN_LEVEL - 1, -1 ):
+                # Set level's stats.
                 max_val = max( blocks[ level ].values() )
-                if max_val < self.draw_cutoff:
-                    if "draw_level" not in self.chrom_stats[ chrom ]:
-                        self.chrom_stats[ chrom ][ "draw_level" ] = level
-                    elif max_val < self.detail_cutoff:
-                        self.chrom_stats[ chrom ][ "detail_level" ] = level
-                        break
-                else:
-                    self.chrom_stats[ chrom ][ level ] = {}
-                    self.chrom_stats[ chrom ][ level ][ "delta" ] = self.block_size ** level
-                    self.chrom_stats[ chrom ][ level ][ "max" ] = max_val
-                    self.chrom_stats[ chrom ][ level ][ "avg" ] = float( max_val ) / len( blocks[ level ] )
-                    cur_best = level
+                self.chrom_stats[ chrom ][ level ] = {}
+                self.chrom_stats[ chrom ][ level ][ "delta" ] = self.block_size ** level
+                self.chrom_stats[ chrom ][ level ][ "max" ] = max_val
+                self.chrom_stats[ chrom ][ level ][ "avg" ] = float( max_val ) / len( blocks[ level ] )
             
-            self.chrom_blocks[ chrom ] = dict( [  ( key, value ) for key, value in blocks.iteritems() if key >= cur_best ] )
+            self.chrom_blocks[ chrom ] = dict( [ ( key, value ) for key, value in blocks.iteritems() ] )
         
-    def query( self, chrom, start, end, level ):
+    def query( self, chrom, start, end, level, draw_cutoff=None, detail_cutoff=None ):
         """ Queries tree for data. """
+
+        # Set cutoffs to self's attributes if not defined.
+        if draw_cutoff != 0:
+            draw_cutoff = self.draw_cutoff
+        if detail_cutoff != 0:
+            detail_cutoff = self.detail_cutoff
+
+        # Get data.
         if chrom in self.chrom_blocks:
             stats = self.chrom_stats[ chrom ]
+
+            # For backwards compatibility:
             if "detail_level" in stats and level <= stats[ "detail_level" ]:
                 return "detail"
             elif "draw_level" in stats and level <= stats[ "draw_level" ]:
                 return "draw"
+
+            # If below draw, detail level, return string to denote this.
+            max = stats[ level ][ "max" ]
+            if max < detail_cutoff:
+                return "detail"
+            if max < draw_cutoff:
+                return "draw"
+            
+            # Return block data.
             blocks = self.chrom_blocks[ chrom ]
             results = []
             multiplier = self.block_size ** level
