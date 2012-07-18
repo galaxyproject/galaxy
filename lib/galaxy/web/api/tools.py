@@ -388,5 +388,6 @@ class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Us
                 output_dataset = joda.dataset
         
         dataset_dict = output_dataset.get_api_value()
+        dataset_dict[ 'id' ] = trans.security.encode_id( dataset_dict[ 'id' ] )
         dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset );
         return dataset_dict
