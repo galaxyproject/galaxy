@@ -124,16 +124,16 @@ function make_popup_menus() {
                         } else if ( target == "demo" ) {
                             // Http request target is a window named
                             // demolocal on the local box
-                            if ( f == undefined || f.closed ) {
+                            if ( f === undefined || f.closed ) {
                                 f = window.open( href,target );
                                 f.creator = self;
-                            };
+                            }
                         } else {
                             window.location = href;
-                        };
-                    };
+                        }
+                    }
                 };
-            };
+            }
         });
         var box = $( "#" + menu.attr( 'popupmenu' ) );
         
@@ -356,7 +356,7 @@ $.fn.make_text_editable = function(config_dict) {
         var set_text = function(new_text) {
             container.find(":input").remove();
             
-            if (new_text != "") {
+            if (new_text !== "") {
                 container.text(new_text);
             }
             else {
@@ -421,7 +421,7 @@ $.fn.make_text_editable = function(config_dict) {
     }
     
     return container;
-}
+};
 
 /** 
  * Edit and save text asynchronously.
@@ -719,7 +719,7 @@ $(document).ready( function() {
     // add use_panels=True and set target to self.
     $("a").click( function() {
         var anchor = $(this);
-        var galaxy_main_exists = (parent.frames && parent.frames.galaxy_main)
+        var galaxy_main_exists = (parent.frames && parent.frames.galaxy_main);
         if ( ( anchor.attr( "target" ) == "galaxy_main" ) && ( !galaxy_main_exists ) ) {
             var href = anchor.attr("href");
             if (href.indexOf("?") == -1) {
