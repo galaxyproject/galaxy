@@ -188,6 +188,7 @@
     self.has_left_panel = True
     self.has_right_panel = True
     self.active_view = "analysis"
+    self.require_javascript = True
 %>
 %if trans.app.config.require_login and not trans.user:
     <script type="text/javascript">
