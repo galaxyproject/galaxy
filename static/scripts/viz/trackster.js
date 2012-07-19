@@ -4266,9 +4266,8 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     },
     predraw_init: function() {
         var track = this;
-        
         track.vertical_range = undefined;
-        return $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: null, high: null,
+        return $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: 0, high: track.view.max_high,
                                         hda_ldda: track.hda_ldda, dataset_id: track.dataset_id }, function(result) {
             track.container_div.addClass( "line-track" );
             var data = result.data;

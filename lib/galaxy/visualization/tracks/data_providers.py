@@ -465,8 +465,8 @@ class RawBedDataProvider( BedDataProvider ):
                 feature_start = int( feature[1] )
                 feature_end = int( feature[2] )
                 if ( chrom is not None and feature_chrom != chrom ) \
-                    or ( start is not None and feature_start > int( end ) ) \
-                    or ( end is not None and feature_end < int( start ) ):
+                    or ( start is not None and feature_start > end ) \
+                    or ( end is not None and feature_end < start ):
                     continue
                 yield line
         return line_filter_iter()
@@ -599,7 +599,7 @@ class RawVcfDataProvider( VcfDataProvider ):
                     if len( alt ) > longest_alt:
                         longest_alt = len( alt )
                 variant_end = variant_start + abs( len( ref ) - longest_alt )
-                if variant_chrom != chrom or variant_start > int( end ) or variant_end < int( start ):
+                if variant_chrom != chrom or variant_start > end or variant_end < start:
                     continue
                 yield line
         return line_filter_iter()
@@ -898,16 +898,16 @@ class BBIDataProvider( TracksDataProvider ):
         return all_dat is not None
         
     def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
-        # Bigwig has the possibility of it being a standalone bigwig file, in which case we use
-        # original_dataset, or coming from wig->bigwig conversion in which we use converted_dataset
+        # Bigwig can be a standalone bigwig file, in which case we use 
+        # original_dataset, or coming from wig->bigwig conversion in 
+        # which we use converted_dataset
         f, bbi = self._get_dataset()
        
-        # If the stats kwarg was provide, we compute overall summary data for
-        # the entire chromosome, but no reduced data -- currently only
-        # providing values used by trackster to determine the default range
+        # If the stats kwarg was provide, we compute overall summary data for the 
+        # range defined by start and end but no reduced data. This is currently 
+        # used by client to determine the default range.
         if 'stats' in kwargs:
-            # FIXME: use actual chromosome size
-            summary = bbi.summarize( chrom, 0, 214783647, 1 )
+            summary = bbi.summarize( chrom, start, end, 1 )
             f.close()
             if summary is None:
                 return None
@@ -927,9 +927,6 @@ class BBIDataProvider( TracksDataProvider ):
 
                 return dict( data=dict( min=summary.min_val[0], max=summary.max_val[0], mean=mean, sd=sd ) )
 
-        start = int(start)
-        end = int(end)
-
         # The following seems not to work very well, for example it will only return one
         # data point if the tile is 1280px wide. Not sure what the intent is.
 
@@ -943,12 +940,21 @@ class BBIDataProvider( TracksDataProvider ):
         #else:
         #    num_points = min(num_points, 500)
 
-        # For now, we'll do 1000 data points by default However, the summaries
+        # For now, we'll do 1000 data points by default. However, the summaries
         # don't seem to work when a summary pixel corresponds to less than one
         # datapoint, so we prevent that. 
-        # FIXME: need to switch over to using the full data at high levels of
-        # detail.
+
+        # FIXME: need to choose the number of points to maximize coverage of the area. 
+        # It appears that BBI calculates points using intervals of 
+        # floor( num_points / end - start ) 
+        # In some cases, this prevents sampling near the end of the interval, 
+        # especially when (a) the total interval is small ( < 20-30Kb) and (b) the 
+        # computed interval size has a large fraction, e.g. 14.7 or 35.8
         num_points = min( 1000, end - start )
+
+        # HACK to address the FIXME above; should generalize.
+        if end - start <= 2000:
+            num_points = end - start
 
         summary = bbi.summarize( chrom, start, end, num_points )
         f.close()
@@ -958,7 +964,6 @@ class BBIDataProvider( TracksDataProvider ):
         if summary:
             #mean = summary.sum_data / summary.valid_count
             
-
             ## Standard deviation by bin, not yet used
             ## var = summary.sum_squares - mean
             ## var /= minimum( valid_count - 1, 1 )
@@ -968,7 +973,7 @@ class BBIDataProvider( TracksDataProvider ):
             step_size = (end - start) / num_points
 
             for i in range( num_points ):
-                result.append( (pos, float_nan( summary.sum_data[i] ) ) )
+                result.append( (pos, float_nan( summary.sum_data[i] / summary.valid_count[i] ) ) )
                 pos += step_size
         
         return { 'data': result }
@@ -1078,7 +1083,6 @@ class RawGFFDataProvider( TracksDataProvider ):
         Returns an iterator that provides data in the region chrom:start-end as well as
         a file offset.
         """
-        start, end = int( start ), int( end )
         source = open( self.original_dataset.file_name )
     
         def features_in_region_iter():

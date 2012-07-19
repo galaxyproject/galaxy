@@ -267,6 +267,8 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
+
+        low, high = int( low ), int( high )
             
         # Return data.
         data = None
@@ -402,7 +404,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
-        result = data_provider.get_data( chrom, low, high, int( start_val ), int( max_vals ), **kwargs )
+        result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), **kwargs )
         result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
         return result
                 
