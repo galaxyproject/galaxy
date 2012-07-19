@@ -8,6 +8,7 @@
     self.message_box_class=""
     self.active_view=None
     self.body_class=""
+    self.require_javascript=False
 %>
     
 <%def name="init()">
@@ -47,7 +48,7 @@
     <!--[if lt IE 7]>
     ${h.js( 'IE7', 'ie7-recalc' )}
     <![endif]-->
-    ${h.js( 'jquery', 'libs/underscore', 'libs/backbone', 'libs/backbone-relational', 'libs/handlebars.runtime', 'mvc/ui' )}
+    ${h.js( 'modernizr', 'jquery', 'libs/underscore', 'libs/backbone', 'libs/backbone-relational', 'libs/handlebars.runtime', 'mvc/ui' )}
     <script type="text/javascript">
         // Set up needed paths.
         var galaxy_paths = new GalaxyPaths({
@@ -233,6 +234,16 @@
     </head>
     
     <body scroll="no" class="${self.body_class}">
+        %if self.require_javascript:
+            <noscript>
+                <div class="overlay overlay-background">
+                    <div class="modal dialog-box" border="0">
+                        <div class="modal-header"><h3 class="title">Javascript Required</h3></div>
+                        <div class="modal-body">The Galaxy analysis interface requires a browser with Javascript enabled. <br> Please enable Javascript and refresh this page</div>
+                    </div>
+                </div>
+            </noscript>
+        %endif
         <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 600px;">
             ## Background displays first
             <div id="background"></div>
