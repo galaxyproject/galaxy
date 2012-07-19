@@ -19,7 +19,7 @@
             </div>
             <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
         %endif
-        <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title='${_("Download")}' class="icon-button disk tooltip"></a>
+        <a href="${h.url_for( controller='/dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title='${_("Download")}' class="icon-button disk tooltip"></a>
         %if meta_files:
             </div>
         %endif
