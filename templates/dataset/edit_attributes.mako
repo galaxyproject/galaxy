@@ -30,7 +30,17 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
+
+<ul class="nav nav-tabs">
+    <li class="active"><a href="#attributes" data-toggle="tab">Attributes</a></li>
+    <li><a href="#convert" data-toggle="tab">Convert Format</a></li>
+    <li><a href="#datatype" data-toggle="tab">Datatype</a></li>
+    <li><a href="#permissions" data-toggle="tab">Permissions</a></li>
+</ul>
+
+<div class="tab-content">
+
+<div class="tab-pane active toolForm" id="attributes">
     <div class="toolFormTitle">${_('Edit Attributes')}</div>
     <div class="toolFormBody">
         <form name="edit_attributes" action="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" method="post">
@@ -98,12 +108,12 @@
         %endif
     </div>
 </div>
-<p />
-<% converters = data.get_converter_types() %>
-%if len( converters ) > 0:
-    <div class="toolForm">
-        <div class="toolFormTitle">${_('Convert to new format')}</div>
-        <div class="toolFormBody">
+
+<div class="tab-pane toolForm" id="convert">
+    <div class="toolFormTitle">${_('Convert to new format')}</div>
+    <div class="toolFormBody">
+        <% converters = data.get_converter_types() %>
+        %if len( converters ) > 0:
             <form name="convert_data" action="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" method="post">
                 <div class="form-row">
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -122,12 +132,13 @@
                     <input type="submit" name="convert_data" value="${_('Convert')}"/>
                 </div>
             </form>
-        </div>
+        %else:
+            No conversions available
+        %endif
     </div>
-    <p />
-%endif
+</div>
 
-<div class="toolForm">
+<div class="tab-pane toolForm" id="datatype">
     <div class="toolFormTitle">${_('Change data type')}</div>
     <div class="toolFormBody">
         %if data.datatype.allow_datatype_change:
@@ -157,6 +168,7 @@
 </div>
 <p />
 
+<div class="tab-pane" id="permissions">
 %if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
     <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
     ${render_permission_form( data.dataset, data.get_display_name(), h.url_for( controller='dataset', action='edit', dataset_id=dataset_id ), all_roles )}
@@ -184,4 +196,7 @@
             </div>
         </div>
     </div>
+%else:
+    Permissions not available (not logged in)
 %endif
+</div>

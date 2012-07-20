@@ -97,3 +97,19 @@ input[type="checkbox"],input[type="radio"] {
     margin-left: 0.5ex;
     margin-right: 0.5ex;
 }
+
+// Tabs -- border color is hardcoded in navs.less, change to @btnBorder here
+
+.nav-tabs {
+  border-bottom: 1px solid @btnBorder;
+}
+.nav-tabs > li > a {
+  &:hover {
+    border-color: @grayLighter @grayLighter @btnBorder;
+  }
+}
+.nav-tabs > .active > a,
+.nav-tabs > .active > a:hover {
+  border: 1px solid @btnBorder;
+  border-bottom-color: transparent;
+}
