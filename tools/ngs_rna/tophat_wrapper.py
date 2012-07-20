@@ -227,10 +227,6 @@ def __main__():
         if returncode != 0:
             raise Exception, stderr
             
-        # Copy output files from tmp directory to specified files.
-        shutil.copyfile( os.path.join( "tophat_out", "junctions.bed" ), options.junctions_output_file )
-        shutil.copyfile( os.path.join( "tophat_out", "accepted_hits.bam" ), options.accepted_hits_output_file )
-
         # TODO: look for errors in program output.
     except Exception, e:
         stop_err( 'Error in tophat:\n' + str( e ) ) 
