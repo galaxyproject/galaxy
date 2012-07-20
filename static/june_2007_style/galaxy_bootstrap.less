@@ -1,109 +1,26 @@
-// Variables.less
-// Variables to customize the look and feel of Bootstrap
-// -----------------------------------------------------
+/*
+ * bootsrap.less modified for Galaxy. 
+ * 	- only a subset of bootsrap components are used
+ *  - include 'galaxy_bootsrap_variables' instead of 'variables'
+ *  - overrides that can't be set with variables at end 
+ *
+ * ---
+ *
+ * Bootstrap v2.0.4
+ *
+ * Copyright 2012 Twitter, Inc
+ * Licensed under the Apache License v2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Designed and built with all the love in the world @twitter by @mdo and @fat.
+ */
 
-// GLOBAL VALUES
-// --------------------------------------------------
+// CSS Reset
+@import "bootstrap/reset.less";
 
-// Links
-@linkColor:             @link_text;
-@linkColorHover:        darken(@linkColor, 15%);
-
-// Grays
-@black:                 #000;
-@grayDarker:            #222;
-@grayDark:              #333;
-@gray:                  #555;
-@grayLight:             #999;
-@grayLighter:           #eee;
-@white:                 #fff;
-
-// Accent colors
-@blue:                  @info_message_bg;
-@blueDark:              #0064cd;
-@green:                 #46a546;
-@red:                   #9d261d;
-@yellow:                #ffc40d;
-@orange:                #f89406;
-@pink:                  #c3325f;
-@purple:                #7a43b6;
-
-// Typography
-@baseFontSize:          12px;
-@sansFontFamily:        "Lucida Grande",verdana,arial,helvetica,sans-serif;
-@serifFontFamily:		Georgia, "Times New Roman", Times, serif;
-@monospaceFontFamily:	Menlo, Monaco, "Courier New", monospace;
-@baseFontFamily:		@sansFontFamily;
-@baseLineHeight:        16px;
-@textColor:             #111;
-
-// Buttons
-@primaryButtonBackground:    @blueDark;
-
-@buttonBorder: #999;
-@buttonBorderBottom: #888;
-
-// Forms
-@formElementBorder:	@grayLight;
-
-
-
-// COMPONENT VARIABLES
-// --------------------------------------------------
-
-// Z-index master list
-// Used for a bird's eye view of components dependent on the z-axis
-// Try to avoid customizing these :)
-@zindexDropdown:        1000;
-@zindexPopover:         1010;
-@zindexTooltip:         1020;
-@zindexFixedNavbar:     1030;
-@zindexModalBackdrop:   1040;
-@zindexModal:           1050;
-
-// Input placeholder text color
-@placeholderText:       @grayLight;
-
-// Navbar
-@navbarHeight:                    32px;
-@navbarBackground:                @masthead_bg;
-@navbarBackgroundHighlight:       @grayDark;
-
-@navbarText:                      @grayLight;
-@navbarLinkColor:                 @grayLight;
-@navbarLinkColorHover:            @white;
-
-// Form states and alerts
-@warningText:             darken(@warn_message_bg,70%);
-@warningBackground:       @warn_message_bg;
-@warningBorder:           darken(spin(@warningBackground, -10), 30%);
-
-@errorText:               darken(@error_message_bg,70%);
-@errorBackground:         @error_message_bg;
-@errorBorder:             darken(spin(@errorBackground, -10), 30%);
-
-@successText:             darken(@done_message_bg,70%);
-@successBackground:       @done_message_bg;
-@successBorder:           darken(spin(@successBackground, -10), 60%);
-
-@infoText:                darken(@info_message_bg,70%);
-@infoBackground:          @info_message_bg;
-@infoBorder:              darken(spin(@info_message_bg, -10), 60%);
-
-
-
-// GRID
-// --------------------------------------------------
-
-// Default 940px grid
-@gridColumns:             12;
-@gridColumnWidth:         60px;
-@gridGutterWidth:         20px;
-@gridRowWidth:            (@gridColumns * @gridColumnWidth) + (@gridGutterWidth * (@gridColumns - 1));
-
-// Fluid grid
-@fluidGridColumnWidth:    6.382978723%;
-@fluidGridGutterWidth:    2.127659574%;
+// Core variables and mixins
+@import "galaxy_bootstrap_variables.less"; // Modify this for custom colors, font-sizes, etc
+@import "bootstrap/mixins.less";
 
 // ---- Imports ----
 
@@ -120,7 +37,7 @@
 @import "bootstrap/tables.less";
 
 // Components: common
-// @import "bootstrap/sprites.less";
+@import "bootstrap/sprites.less";
 @import "bootstrap/dropdowns.less";
 @import "bootstrap/wells.less";
 @import "bootstrap/component-animations.less";
@@ -153,3 +70,30 @@
 
 // Utility classes
 @import "bootstrap/utilities.less"; 
+
+
+// Galaxy overrides 
+
+.btn {
+	padding: 2px 10px 2px;
+	// These are hardcoded in buttons.less
+	border-color: @btnBorder;
+	border-color: rgba(0,0,0,.4) rgba(0,0,0,.4) rgba(0,0,0,.4);
+}
+
+.btn.hover {
+	@btn:hover();
+}
+
+.btn.active, .btn:active {
+	color: inherit;
+}
+
+.dropdown-menu {
+	max-width: auto;
+}
+
+input[type="checkbox"],input[type="radio"] {
+    margin-left: 0.5ex;
+    margin-right: 0.5ex;
+}

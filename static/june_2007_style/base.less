@@ -10,10 +10,6 @@
     .user-select(none);
 }
 
-.shadow {
-    .box-shadow();
-}
-
 .parent-width {
     .box-sizing(border-box);
     width: 100%;
@@ -39,7 +35,6 @@ img {
     border: 0;
 }
 
-
 a, a:link, a:visited, a:active {
     text-decoration: underline;
     color: @link_text;
@@ -49,7 +44,26 @@ a, a:link, a:visited, a:active {
 h1, h2, h3, h4 {
     color: @header_text;
     margin: 0.5em 0;
-    /*text-shadow: #bbb 2px 2px 1px;*/
+}
+
+h1 {
+    font-size: 24px;
+}
+
+h2 {
+    font-size: 18px;
+    line-height: @baseLineHeight * 1.5;
+    small {
+        font-size: 14px;
+    }
+}
+
+h3 { 
+    font-size: 14px;
+    line-height: @baseLineHeight;
+    small {
+        font-size: 12px;
+    }
 }
 
 h1:first-child, h2:first-child, h3:first-child, h4:first-child {
@@ -299,6 +313,7 @@ div.unified-panel-body {
     background: rgba(0,0,0,0.5);
 }
 
+/*
 .dialog-box-container {
     position: relative;
     margin-top: 80px;
@@ -339,6 +354,7 @@ div.unified-panel-body {
 .dialog-box .buttons {
     padding: 5px;
 }
+*/
 
 // Messages for message box, slightly different style
 
@@ -684,7 +700,7 @@ div.form-row-error-message {
 
 // Selects
 select {
-    //border: 1px solid @formElementBorder;
+    //border: 1px solid @inputBorder;
     padding: 2px;
     font-size: @baseFontSize;
     line-height: @baseLineHeight;
@@ -704,7 +720,7 @@ select, input, textarea {
 textarea, input[type="text"], input[type="password"] {
     font-size: @baseFontSize;
     line-height: @baseLineHeight;
-    border: 1px solid @formElementBorder;
+    border: 1px solid @inputBorder;
     padding: 3px;
 }
 
@@ -714,7 +730,7 @@ textarea, input[type="text"], input[type="password"] {
   font-size: @baseFontSize;
   line-height: @baseLineHeight;
   color: @gray;
-  border: 1px solid @formElementBorder;
+  border: 1px solid @inputBorder;
   padding-left: 14px !important;
   padding-right: 14px !important;
   margin-bottom: 0; // remove the default margin on all inputs
@@ -1262,7 +1278,7 @@ a.action-button {
     }
 
     &.popup .label {
-        border-right: solid @buttonBorder 1px;
+        border-right: solid @btnBorder 1px;
         padding-right: 6px;
     }
 
@@ -1637,10 +1653,6 @@ pre.peek {
     margin-top: 5px;
 }
 
-.unified-panel-body .toolMenu {
-	padding: 10px;
-}
-
 div.toolSectionPad
 {
     margin: 0;
@@ -1737,3 +1749,22 @@ div.toolTitleNoSection
 }
 
 @import "base_sprites";
+
+.text-and-autocomplete-select {
+    // -sprite-group: fugue;
+    // -sprite-image: fugue/control-270.png;
+    // -sprite-horiz-position: right;
+    background: none;
+    position: relative;
+    padding-right: 18px;
+    &:after {
+        margin-top: 6px;
+        position: absolute;
+        top: 2px;
+        right: 6px;
+        width: 10px;
+        height: 10px;
+        .caret();
+        .opacity(80);
+    }
+}

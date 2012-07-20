@@ -21,7 +21,7 @@
 
 // Accent colors
 // -------------------------
-@blue:                  #049cdb;
+@blue:                  @info_message_bg;
 @blueDark:              #0064cd;
 @green:                 #46a546;
 @red:                   #9d261d;
@@ -33,31 +33,29 @@
 
 // Scaffolding
 // -------------------------
-@bodyBackground:        @white;
-@textColor:             @grayDark;
+@bodyBackground:		@white;
+@textColor:             #111;
 
 
 // Links
 // -------------------------
-@linkColor:             #08c;
+@linkColor:             @link_text;
 @linkColorHover:        darken(@linkColor, 15%);
-
 
 // Typography
 // -------------------------
-@sansFontFamily:        "Helvetica Neue", Helvetica, Arial, sans-serif;
-@serifFontFamily:       Georgia, "Times New Roman", Times, serif;
-@monoFontFamily:        Menlo, Monaco, Consolas, "Courier New", monospace;
+@sansFontFamily:        "Lucida Grande",verdana,arial,helvetica,sans-serif;
+@serifFontFamily:		Georgia, "Times New Roman", Times, serif;
+@monospaceFontFamily:	Menlo, Monaco, "Courier New", monospace;
 
-@baseFontSize:          13px;
-@baseFontFamily:        @sansFontFamily;
-@baseLineHeight:        18px;
+@baseFontSize:          12px;
+@baseFontFamily:		@sansFontFamily;
+@baseLineHeight:        16px;
 @altFontFamily:         @serifFontFamily;
 
 @headingsFontFamily:    inherit; // empty to use BS default, @baseFontFamily
 @headingsFontWeight:    bold;    // instead of browser default, bold
 @headingsColor:         inherit; // empty to use BS default, @textColor
-
 
 // Tables
 // -------------------------
@@ -71,9 +69,10 @@
 // -------------------------
 @btnBackground:                     @white;
 @btnBackgroundHighlight:            darken(@white, 10%);
-@btnBorder:                         #ccc;
+@btnBorder:                         #999;
+@btnColor:							@textColor;
 
-@btnPrimaryBackground:              @linkColor;
+@btnPrimaryBackground:              @blueDark;
 @btnPrimaryBackgroundHighlight:     spin(@btnPrimaryBackground, 15%);
 
 @btnInfoBackground:                 #5bc0de;
@@ -95,7 +94,7 @@
 // Forms
 // -------------------------
 @inputBackground:               @white;
-@inputBorder:                   #ccc;
+@inputBorder:                   @grayLight;
 @inputBorderRadius:             3px;
 @inputDisabledBackground:       @grayLighter;
 @formActionsBackground:         #f5f5f5;
@@ -111,20 +110,18 @@
 @dropdownDividerBottom:         @white;
 
 
-
 // COMPONENT VARIABLES
 // --------------------------------------------------
 
 // Z-index master list
-// -------------------------
 // Used for a bird's eye view of components dependent on the z-axis
 // Try to avoid customizing these :)
-@zindexDropdown:          1000;
-@zindexPopover:           1010;
-@zindexTooltip:           1020;
-@zindexFixedNavbar:       1030;
-@zindexModalBackdrop:     1040;
-@zindexModal:             1050;
+@zindexDropdown:        1000;
+@zindexPopover:         1010;
+@zindexTooltip:         1020;
+@zindexFixedNavbar:     1030;
+@zindexModalBackdrop:   1040;
+@zindexModal:           1050;
 
 
 // Sprite icons path
@@ -140,13 +137,13 @@
 
 // Hr border color
 // -------------------------
-@hrBorder:                @grayLighter;
 
+@hrBorder:                @grayLighter;
 
 // Navbar
 // -------------------------
-@navbarHeight:                    40px;
-@navbarBackground:                @grayDarker;
+@navbarHeight:                    32px;
+@navbarBackground:                @masthead_bg;
 @navbarBackgroundHighlight:       @grayDark;
 
 @navbarText:                      @grayLight;
@@ -154,14 +151,13 @@
 @navbarLinkColorHover:            @white;
 @navbarLinkColorActive:           @navbarLinkColorHover;
 @navbarLinkBackgroundHover:       transparent;
-@navbarLinkBackgroundActive:      @navbarBackground;
+@navbarLinkBackgroundActive:      rgba(0,0,0,0.5);
 
 @navbarSearchBackground:          lighten(@navbarBackground, 25%);
 @navbarSearchBackgroundFocus:     @white;
 @navbarSearchBorder:              darken(@navbarSearchBackground, 30%);
 @navbarSearchPlaceholderColor:    #ccc;
 @navbarBrandColor:                @navbarLinkColor;
-
 
 // Hero unit
 // -------------------------
@@ -172,21 +168,21 @@
 
 // Form states and alerts
 // -------------------------
-@warningText:             #c09853;
-@warningBackground:       #fcf8e3;
-@warningBorder:           darken(spin(@warningBackground, -10), 3%);
+@warningText:             darken(@warn_message_bg,70%);
+@warningBackground:       @warn_message_bg;
+@warningBorder:           darken(spin(@warningBackground, -10), 30%);
 
-@errorText:               #b94a48;
-@errorBackground:         #f2dede;
-@errorBorder:             darken(spin(@errorBackground, -10), 3%);
+@errorText:               darken(@error_message_bg,70%);
+@errorBackground:         @error_message_bg;
+@errorBorder:             darken(spin(@errorBackground, -10), 30%);
 
-@successText:             #468847;
-@successBackground:       #dff0d8;
-@successBorder:           darken(spin(@successBackground, -10), 5%);
+@successText:             darken(@done_message_bg,70%);
+@successBackground:       @done_message_bg;
+@successBorder:           darken(spin(@successBackground, -10), 60%);
 
-@infoText:                #3a87ad;
-@infoBackground:          #d9edf7;
-@infoBorder:              darken(spin(@infoBackground, -10), 7%);
+@infoText:                darken(@info_message_bg,70%);
+@infoBackground:          @info_message_bg;
+@infoBorder:              darken(spin(@info_message_bg, -10), 60%);
 
 
 

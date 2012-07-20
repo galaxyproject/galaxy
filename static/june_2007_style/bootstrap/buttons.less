@@ -8,30 +8,32 @@
 // Core
 .btn {
   display: inline-block;
-  padding: 2px 10px 2px;
+  .ie7-inline-block();
+  padding: 4px 10px 4px;
+  margin-bottom: 0; // For input.btn
   font-size: @baseFontSize;
   line-height: @baseLineHeight;
-  color: @textColor;
+  *line-height: 20px;
+  color: @grayDark;
   text-align: center;
   text-shadow: 0 1px 1px rgba(255,255,255,.75);
-  #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%)); // Don't use .gradientbar() here since it does a three-color gradient
-  border: 1px solid @buttonBorder;
-  border-bottom-color: @buttonBorderBottom;
-  .border-radius(4px);
-  @shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05);
-  .box-shadow(@shadow);
+  vertical-align: middle;
   cursor: pointer;
-
-  // Give IE7 some love
-  .ie7-restore-left-whitespace();
+  .buttonBackground(@btnBackground, @btnBackgroundHighlight);
+  border: 1px solid @btnBorder;
+  *border: 0; // Remove the border to prevent IE7's black border on input:focus
+  border-bottom-color: darken(@btnBorder, 10%);
+  .border-radius(4px);
+  .ie7-restore-left-whitespace(); // Give IE7 some love
+  .box-shadow(~"inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05)");
 }
 
 // Hover state
-.btn.hover, 
 .btn:hover {
-  color: @textColor;
+  color: @grayDark;
   text-decoration: none;
   background-color: darken(@white, 10%);
+  *background-color: darken(@white, 15%); /* Buttons in IE7 don't get borders, so darken on hover */
   background-position: 0 -15px;
 
   // transition is only when going to hover, otherwise the background
@@ -47,21 +49,19 @@
 // Active state
 .btn.active,
 .btn:active {
-  background-image: none;
-  @shadow: inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);
-  .box-shadow(@shadow);
   background-color: darken(@white, 10%);
   background-color: darken(@white, 15%) e("\9");
-  // color: rgba(0,0,0,.5);
+  background-image: none;
   outline: 0;
+  .box-shadow(~"inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05)");
 }
 
 // Disabled state
 .btn.disabled,
 .btn[disabled] {
   cursor: default;
-  background-image: none;
   background-color: darken(@white, 10%);
+  background-image: none;
   .opacity(65);
   .box-shadow(none);
 }
@@ -77,7 +77,7 @@
   line-height: normal;
   .border-radius(5px);
 }
-.btn-large .icon {
+.btn-large [class^="icon-"] {
   margin-top: 1px;
 }
 
@@ -87,8 +87,15 @@
   font-size: @baseFontSize - 2px;
   line-height: @baseLineHeight - 2px;
 }
-.btn-small .icon {
+.btn-small [class^="icon-"] {
   margin-top: -1px;
+}
+
+// Mini
+.btn-mini {
+  padding: 2px 6px;
+  font-size: @baseFontSize - 2px;
+  line-height: @baseLineHeight - 4px;
 }
 
 
@@ -106,39 +113,51 @@
 .btn-success,
 .btn-success:hover,
 .btn-info,
-.btn-info:hover {
-  text-shadow: 0 -1px 0 rgba(0,0,0,.25);
+.btn-info:hover,
+.btn-inverse,
+.btn-inverse:hover {
   color: @white;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.25);
 }
 // Provide *some* extra contrast for those who can get it
 .btn-primary.active,
 .btn-warning.active,
 .btn-danger.active,
 .btn-success.active,
-.btn-info.active {
+.btn-info.active,
+.btn-inverse.active {
   color: rgba(255,255,255,.75);
 }
 
 // Set the backgrounds
 // -------------------------
+.btn {
+  // reset here as of 2.0.3 due to Recess property order
+  border-color: #ccc;
+  border-color: rgba(0,0,0,.1) rgba(0,0,0,.1) rgba(0,0,0,.25);
+}
 .btn-primary {
-  .buttonBackground(@primaryButtonBackground, spin(@primaryButtonBackground, 20));
+  .buttonBackground(@btnPrimaryBackground, @btnPrimaryBackgroundHighlight);
 }
 // Warning appears are orange
 .btn-warning {
-  .buttonBackground(lighten(@orange, 15%), @orange);
+  .buttonBackground(@btnWarningBackground, @btnWarningBackgroundHighlight);
 }
 // Danger and error appear as red
 .btn-danger {
-  .buttonBackground(#ee5f5b, #bd362f);
+  .buttonBackground(@btnDangerBackground, @btnDangerBackgroundHighlight);
 }
 // Success appears as green
 .btn-success {
-  .buttonBackground(#62c462, #51a351);
+  .buttonBackground(@btnSuccessBackground, @btnSuccessBackgroundHighlight);
 }
 // Info appears as a neutral blue
 .btn-info {
-  .buttonBackground(#5bc0de, #2f96b4);
+  .buttonBackground(@btnInfoBackground, @btnInfoBackgroundHighlight);
+}
+// Inverse appears as dark gray
+.btn-inverse {
+  .buttonBackground(@btnInverseBackground, @btnInverseBackgroundHighlight);
 }
 
 
@@ -147,20 +166,26 @@
 
 button.btn,
 input[type="submit"].btn {
+
+  // Firefox 3.6 only I believe
   &::-moz-focus-inner {
-  padding: 0;
+    padding: 0;
     border: 0;
   }
 
   // IE7 has some default padding on button controls
   *padding-top: 2px;
   *padding-bottom: 2px;
-  &.large {
+  &.btn-large {
     *padding-top: 7px;
     *padding-bottom: 7px;
   }
-  &.small {
+  &.btn-small {
     *padding-top: 3px;
     *padding-bottom: 3px;
+  }
+  &.btn-mini {
+    *padding-top: 1px;
+    *padding-bottom: 1px;
   }
 }

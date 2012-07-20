@@ -250,7 +250,7 @@
             ## Layer iframes over backgrounds
             <div id="masthead" class="navbar navbar-fixed-top">
                 <div class="masthead-inner navbar-inner">
-                    <div class="container">${self.masthead()}</div>
+                    ${self.masthead()}
                 </div>
             </div>
             <div id="messagebox" class="panel-${self.message_box_class}-message">
