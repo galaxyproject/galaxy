@@ -26,5 +26,5 @@ variables.less : $(INI)
 	../process_css.py ../$(INI) ..:../shared_images:../../images . < $< > $@
 
 # Some dependencies
-base.css: variables.less galaxy_bootstrap.less iconic_stroke.less base_sprites.less
+base.css: variables.less galaxy_bootstrap.less galaxy_bootstrap_variables.less iconic_stroke.less base_sprites.less
 

@@ -8,9 +8,6 @@
 
 p {
   margin: 0 0 @baseLineHeight / 2;
-  font-family: @baseFontFamily;
-  font-size: @baseFontSize;
-  line-height: @baseLineHeight;
   small {
     font-size: @baseFontSize - 2;
     color: @grayLight;
@@ -28,8 +25,9 @@ p {
 
 h1, h2, h3, h4, h5, h6 {
   margin: 0;
-  font-weight: bold;
-  color: @grayDark;
+  font-family: @headingsFontFamily;
+  font-weight: @headingsFontWeight;
+  color: @headingsColor;
   text-rendering: optimizelegibility; // Fix the character spacing for headings
   small {
     font-weight: normal;
@@ -37,24 +35,24 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 h1 {
-  font-size: 24px;
+  font-size: 30px;
   line-height: @baseLineHeight * 2;
   small {
     font-size: 18px;
   }
 }
 h2 {
+  font-size: 24px;
+  line-height: @baseLineHeight * 2;
+  small {
+    font-size: 18px;
+  }
+}
+h3 {
   font-size: 18px;
   line-height: @baseLineHeight * 1.5;
   small {
     font-size: 14px;
-  }
-}
-h3 {
-  line-height: @baseLineHeight;
-  font-size: 14px;
-  small {
-    font-size: 12px;
   }
 }
 h4, h5, h6 {
@@ -110,7 +108,8 @@ ol {
 li {
   line-height: @baseLineHeight;
 }
-ul.unstyled {
+ul.unstyled,
+ol.unstyled {
   margin-left: 0;
   list-style: none;
 }
@@ -125,9 +124,23 @@ dd {
 }
 dt {
   font-weight: bold;
+  line-height: @baseLineHeight - 1; // fix jank Helvetica Neue font bug
 }
 dd {
   margin-left: @baseLineHeight / 2;
+}
+// Horizontal layout (like forms)
+.dl-horizontal {
+  dt {
+    float: left;
+    width: 120px;
+    clear: left;
+    text-align: right;
+    .text-overflow();
+  }
+  dd {
+    margin-left: 130px;
+  }
 }
 
 // MISC
@@ -137,7 +150,7 @@ dd {
 hr {
   margin: @baseLineHeight 0;
   border: 0;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid @hrBorder;
   border-bottom: 1px solid @white;
 }
 
@@ -153,11 +166,13 @@ em {
 }
 
 // Abbreviations and acronyms
-abbr {
+abbr[title] {
+  cursor: help;
+  border-bottom: 1px dotted @grayLight;
+}
+abbr.initialism {
   font-size: 90%;
   text-transform: uppercase;
-  border-bottom: 1px dotted #ddd;
-  cursor: help;
 }
 
 // Blockquotes
@@ -181,10 +196,10 @@ blockquote {
   // Float right with text-align: right
   &.pull-right {
     float: right;
-    padding-left: 0;
     padding-right: 15px;
-    border-left: 0;
+    padding-left: 0;
     border-right: 5px solid @grayLighter;
+    border-left: 0;
     p,
     small {
       text-align: right;
@@ -195,7 +210,7 @@ blockquote {
 // Quotes
 q:before,
 q:after,
-blockquote:before, 
+blockquote:before,
 blockquote:after {
   content: "";
 }
@@ -204,8 +219,8 @@ blockquote:after {
 address {
   display: block;
   margin-bottom: @baseLineHeight;
-  line-height: @baseLineHeight;
   font-style: normal;
+  line-height: @baseLineHeight;
 }
 
 // Misc
