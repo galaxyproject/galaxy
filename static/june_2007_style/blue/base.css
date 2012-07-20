@@ -667,6 +667,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%;margin-top
 #masthead .navbar-link{color:#999999;}#masthead .navbar-link:hover{color:#ffffff;}
 #masthead .btn,#masthead .btn-group{margin-top:1px;}
 #masthead .btn-group .btn{margin:0;}
+#masthead .nav{z-index:10000;background-color:#2c3143;}
 #masthead .nav>li>a{padding:6px 10px 8px;cursor:pointer;}#masthead .nav>li>a:hover{color:gold;}
 #masthead .dropdown-menu a,#masthead .dropdown-menu a:hover{text-decoration:none;}
 #masthead .title{position:absolute;left:0;top:0;font-family:verdana;font-weight:bold;font-size:20px;line-height:1;color:white;padding:5px 20px 12px;margin-left:-15px;z-index:2000;}#masthead .title img{display:inline;width:26px;vertical-align:top;}
