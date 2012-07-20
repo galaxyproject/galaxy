@@ -48,7 +48,7 @@
     <!--[if lt IE 7]>
     ${h.js( 'IE7', 'ie7-recalc' )}
     <![endif]-->
-    ${h.js( 'modernizr', 'jquery', 'libs/underscore', 'libs/backbone', 'libs/backbone-relational', 'libs/handlebars.runtime', 'mvc/ui' )}
+    ${h.js( 'jquery', 'libs/underscore', 'libs/backbone', 'libs/backbone-relational', 'libs/handlebars.runtime', 'mvc/ui' )}
     <script type="text/javascript">
         // Set up needed paths.
         var galaxy_paths = new GalaxyPaths({
