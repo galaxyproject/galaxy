@@ -26,7 +26,7 @@
     <![endif]-->
 
     ${h.js( "jquery",
-            "jquery.tipsy",
+            "bootstrap",
             "jquery.event.drag",
             "jquery.event.drop",
             "jquery.event.hover",

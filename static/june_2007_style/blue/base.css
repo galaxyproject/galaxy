@@ -453,6 +453,17 @@ input[type="checkbox"],input[type="radio"]{margin-left:0.5ex;margin-right:0.5ex;
 .nav-tabs{border-bottom:1px solid #999999;}
 .nav-tabs>li>a:hover{border-color:#eeeeee #eeeeee #999999;}
 .nav-tabs>.active>a,.nav-tabs>.active>a:hover{border:1px solid #999999;border-bottom-color:transparent;}
+.bs-tooltip{position:absolute;z-index:1020;display:block;visibility:visible;padding:5px;font-size:11px;opacity:0;filter:alpha(opacity=0);}.bs-tooltip.in{opacity:0.8;filter:alpha(opacity=80);}
+.bs-tooltip.top{margin-top:-2px;}
+.bs-tooltip.right{margin-left:2px;}
+.bs-tooltip.bottom{margin-top:2px;}
+.bs-tooltip.left{margin-left:-2px;}
+.bs-tooltip.top .tooltip-arrow{bottom:0;left:50%;margin-left:-5px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #000000;}
+.bs-tooltip.left .tooltip-arrow{top:50%;right:0;margin-top:-5px;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:5px solid #000000;}
+.bs-tooltip.bottom .tooltip-arrow{top:0;left:50%;margin-left:-5px;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:5px solid #000000;}
+.bs-tooltip.right .tooltip-arrow{top:50%;left:0;margin-top:-5px;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:5px solid #000000;}
+.bs-tooltip .tooltip-inner{max-width:200px;padding:3px 8px;color:#ffffff;text-align:center;text-decoration:none;background-color:#000000;}
+.bs-tooltip .tooltip-arrow{position:absolute;width:0;height:0;}
 @font-face{font-family:'FontAwesome';src:url('../images/fonts/fontawesome-webfont.eot');src:url('../images/fonts/fontawesome-webfont.eot?#iefix') format('embedded-opentype'),url('../images/fonts/fontawesome-webfont.woff') format('woff'),url('../images/fonts/fontawesome-webfont.ttf') format('truetype'),url('../images/fonts/fontawesome-webfont.svgz#FontAwesomeRegular') format('svg'),url('../images/fonts/fontawesome-webfont.svg#FontAwesomeRegular') format('svg');font-weight:normal;font-style:normal;}.ficon,[class^="ficon"]:before,[class*=" ficon"]:before{font-family:FontAwesome;font-weight:normal;font-style:normal;display:inline-block;}
 .ficon.large:before{font-size:1.3333333333333333em;}
 .btn [class^="ficon"],.btn [class*=" ficon"]{line-height:.9em;}

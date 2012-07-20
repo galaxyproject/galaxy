@@ -32,7 +32,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "jstorage", "jquery.autocomplete", "jquery.rating", 
+    ${h.js( "jquery", "bootstrap", "galaxy.base", "json2", "jstorage", "jquery.autocomplete", "jquery.rating", 
             "autocomplete_tagging", "viz/trackster", "viz/trackster_ui", "jquery.event.drag", "jquery.mousewheel", 
             "jquery.autocomplete", "jquery.ui.sortable.slider", "farbtastic", "mvc/data", "viz/visualization" )}
 

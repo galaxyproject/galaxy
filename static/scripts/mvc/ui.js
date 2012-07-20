@@ -43,7 +43,7 @@ var IconButton = Backbone.Model.extend({
         title: "",
         icon_class: "",
         on_click: null,
-        tipsy_config: {}
+        tooltip_config: {}
     }
 });
 
@@ -73,8 +73,8 @@ var IconButtonMenuView = Backbone.View.extend({
                      .appendTo(self.$el)
                      .click(button.attributes.on_click);
 
-            if (button.attributes.tipsy_config) {
-                elt.tipsy(button.attributes.tipsy_config);
+            if (button.attributes.tooltip_config) {
+                elt.tooltip(button.attributes.tooltip_config);
             }
         });
         return this;

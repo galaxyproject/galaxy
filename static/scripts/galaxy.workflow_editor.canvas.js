@@ -346,7 +346,7 @@ $.extend( Node.prototype, {
                                 workflow.has_changes = true;
                                 canvas_manager.draw_overview();
                             })))
-                    .tipsy({delayIn:500, fallback: "Flag this as a workflow output.  All non-flagged outputs will be hidden." });
+                    .tooltip({delay:500, title: "Flag this as a workflow output.  All non-flagged outputs will be hidden." });
                 callout.css({
                         top: '50%',
                         margin:'-8px 0px 0px 0px',

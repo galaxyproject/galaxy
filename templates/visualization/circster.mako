@@ -55,12 +55,14 @@
                 { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
                     window.location = "${h.url_for( controller='visualization', action='list' )}";
                 } }
-            ]);
+            ], {
+                tooltip_config: { placement: 'bottom' }
+            });
 
             menu.$el.attr("style", "float: right");
             $("#center .unified-panel-header-inner").append(menu.$el);
-            // Manual tipsy config because default gravity is S and cannot be changed.
-            $(".menu-button").tipsy( {gravity: 'n'} );
+            // Manual tooltip config because default gravity is S and cannot be changed.
+            $(".menu-button").tooltip( { placement: 'bottom' } );
             
             // -- Viz set up. --
             

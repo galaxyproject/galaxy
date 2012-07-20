@@ -21,7 +21,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "mvc/data", "viz/visualization", "viz/trackster", "viz/trackster_ui", "jquery.ui.sortable.slider", "farbtastic" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "bootstrap", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "mvc/data", "viz/visualization", "viz/trackster", "viz/trackster_ui", "jquery.ui.sortable.slider", "farbtastic" )}
 
 <script type="text/javascript">
     //
@@ -171,7 +171,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             } }
         ], 
         { 
-            tipsy_config: {gravity: 'n'}
+            tooltip_config: { placement: 'bottom' }
         });
         
         menu.$el.attr("style", "float: right");

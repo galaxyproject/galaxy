@@ -417,7 +417,7 @@ $.fn.make_text_editable = function(config_dict) {
     
     // Add help text if there some.
     if (help_text) {
-        container.attr("title", help_text).tipsy( { gravity: 's' } );
+        container.attr("title", help_text).tooltip();
     }
     
     return container;
@@ -704,10 +704,13 @@ $(document).ready( function() {
         return confirm( $(this).attr("confirm") );
     });
     // Tooltips
-    if ( $.fn.tipsy ) {
-        // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
-        // initialize each separately.
-        $(".tooltip").tipsy( { gravity: 's' } );
+    // if ( $.fn.tipsy ) {
+    //     // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
+    //     // initialize each separately.
+    //     $(".tooltip").tipsy( { gravity: 's' } );
+    // }
+    if ( $.fn.tooltip ) {
+        $(".tooltip").tooltip( { placement: 'top' } );
     }
     // Make popup menus.
     make_popup_menus();

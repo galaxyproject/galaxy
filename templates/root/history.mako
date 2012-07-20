@@ -17,7 +17,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history", "autocomplete_tagging" )}
-${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "jstorage", "jquery.autocomplete", "autocomplete_tagging" )}
+${h.js( "jquery", "bootstrap", "galaxy.base", "json2", "jstorage", "jquery.autocomplete", "autocomplete_tagging" )}
 
 <script type="text/javascript">
 
@@ -45,7 +45,7 @@ function tag_handling(parent_elt) {
                         error: function() { alert( "Tagging failed" ) },
                         success: function(tag_elt_html) {
                             tag_elt.html(tag_elt_html);
-                            tag_elt.find(".tooltip").tipsy( { gravity: 's' } );
+                            tag_elt.find(".tooltip").tooltip();
                             tag_area.slideDown("fast");
                         }
                     });
@@ -86,7 +86,7 @@ function annotation_handling(parent_elt) {
                                 annotation = "<em>Describe or add notes to dataset</em>";
                             }
                             annotation_elt.html(annotation);
-                            annotation_area.find(".tooltip").tipsy( { gravity: 's' } );
+                            annotation_area.find(".tooltip").tooltop();
                             async_save_text(
                                 annotation_elt.attr("id"), annotation_elt.attr("id"),
                                 "${h.url_for( controller='/dataset', action='annotate_async')}?" + href_parms,
@@ -138,7 +138,7 @@ $(function() {
                                 }
                             });
                             %endif
-                            $(".tipsy").remove();
+                            $(".tooltip").remove();
                         } else {
                             render_message( "Dataset deletion failed", "error" );
                         }

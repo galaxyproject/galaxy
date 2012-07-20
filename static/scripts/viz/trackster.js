@@ -166,7 +166,7 @@ var get_random_color = function(colors) {
  */
 var create_action_icon =  function(title, css_class, on_click_fn) {
     return $("<a/>").attr("href", "javascript:void(0);").attr("title", title)
-                    .addClass("icon-button").addClass(css_class).tipsy( {gravity: 's'} )
+                    .addClass("icon-button").addClass(css_class).tooltip()
                     .click(on_click_fn);
 };
 
@@ -485,7 +485,7 @@ Drawable.prototype.action_icons_def = [
         css_class: "remove-icon",
         on_click_fn: function(drawable) {
             // Tipsy for remove icon must be deleted when drawable is deleted.
-            $(".tipsy").remove();
+            $(".bs-tooltip").remove();
             drawable.remove();
         }
     }
@@ -555,7 +555,7 @@ extend(Drawable.prototype, {
     add_action_icon: function(name, title, css_class, on_click_fn, prepend, hide) {
         var drawable = this;
         this.action_icons[name] = $("<a/>").attr("href", "javascript:void(0);").attr("title", title)
-                                           .addClass("icon-button").addClass(css_class).tipsy( {gravity: 's'} )
+                                           .addClass("icon-button").addClass(css_class).tooltip()
                                            .click( function() { on_click_fn(drawable); } )
                                            .appendTo(this.icons_div);
         if (hide) {
@@ -760,7 +760,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             title: "Show composite track",
             css_class: "layers-stack",
             on_click_fn: function(group) {
-                $(".tipsy").remove();
+                $(".bs-tooltip").remove();
                 group.show_composite_track();
             }
         },
@@ -855,7 +855,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             }
             else {
                 this.action_icons.composite_icon.hide();
-                $(".tipsy").remove();
+                $(".bs-tooltip").remove();
             }
         
             //
@@ -1083,7 +1083,7 @@ extend( View.prototype, DrawableCollection.prototype, {
             }
         };
         this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.nav_controls);
-        this.location_span = $("<span/>").addClass("location").attr('original-title', 'Click to change location').tipsy( { gravity: 'n' } ).appendTo(this.nav_controls);
+        this.location_span = $("<span/>").addClass("location").attr('original-title', 'Click to change location').tooltip( { placement: 'bottom' } ).appendTo(this.nav_controls);
         this.location_span.click(function() {
             view.location_span.hide();
             view.chrom_select.hide();
@@ -1096,9 +1096,9 @@ extend( View.prototype, DrawableCollection.prototype, {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.nav_controls);
         }
         
-        this.zo_link = $("<a/>").attr("id", "zoom-out").attr("title", "Zoom out").tipsy( {gravity: 'n'} )
+        this.zo_link = $("<a/>").attr("id", "zoom-out").attr("title", "Zoom out").tooltip( {placement: 'bottom'} )
                                 .click(function() { view.zoom_out(); view.request_redraw(); }).appendTo(this.nav_controls);
-        this.zi_link = $("<a/>").attr("id", "zoom-in").attr("title", "Zoom in").tipsy( {gravity: 'n'} )
+        this.zi_link = $("<a/>").attr("id", "zoom-in").attr("title", "Zoom in").tooltip( {placement: 'bottom'} )
                                 .click(function() { view.zoom_in(); view.request_redraw(); }).appendTo(this.nav_controls);      
         
         // Get initial set of chroms.
@@ -1642,7 +1642,7 @@ extend( View.prototype, DrawableCollection.prototype, {
     /** Close and reset overview. */
     reset_overview: function() {
         // Update UI.
-        $(".tipsy").remove();
+        $(".bs-tooltip").remove();
         this.overview_viewport.find(".track-tile").remove();
         this.overview_viewport.height(this.default_overview_height);
         this.overview_box.height(this.default_overview_height);
@@ -2631,10 +2631,10 @@ extend(DrawableConfig.prototype, {
                         input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
                             .appendTo(container_div).click(function(e) {
                             // Hide other pickers.
-                            $(".tipsy").hide();
+                            $(".bs-tooltip").removeClass( "in" );
                             
                             // Show input's color picker.
-                            var tip = $(this).siblings(".tipsy");
+                            var tip = $(this).siblings(".bs-tooltip").addClass( "in" );
                             tip.css( { 
                                 // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
                                 // top: $(this).position().top + $(this.height) 
@@ -2660,13 +2660,13 @@ extend(DrawableConfig.prototype, {
                         }),
                         // Icon for setting a new random color; behavior set below.
                         new_color_icon = $("<a href='javascript:void(0)'/>").addClass("icon-button arrow-circle").appendTo(container_div)
-                                         .attr("title", "Set new random color").tipsy({ gravity: 's' }),
+                                         .attr("title", "Set new random color").tooltip(),
                         // Color picker in tool tip style.
-                        tip = $( "<div class='tipsy tipsy-west' style='position: absolute;' />" ).appendTo(container_div).hide(),
+                        tip = $( "<div class='bs-tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
                         // Inner div for padding purposes
-                        tip_inner = $("<div style='background-color: black; padding: 10px;'></div>").appendTo(tip),
-                        farb_container = $("<div/>").appendTo(tip_inner),
-                        farb_obj = $.farbtastic(farb_container, { width: 100, height: 100, callback: input, color: value });
+                        tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
+                        tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
+                        farb_obj = $.farbtastic(tip_inner, { width: 100, height: 100, callback: input, color: value });
                     
                     // Clear floating.
                     container_div.append( $("<div/>").css("clear", "both"));
@@ -2777,17 +2777,17 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
             num_features = data.length,
             more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
                                 .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data including depth")
-                                .tipsy( {gravity: 's'} ).appendTo(message_div),
+                                .tooltip().appendTo(message_div),
             more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across")
                                 .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data excluding depth")
-                                .tipsy( {gravity: 's'} ).appendTo(message_div);
+                                .tooltip().appendTo(message_div);
 
         // Set up actions for icons.
         more_down_icon.click(function() {
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
             track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
-            $(".tipsy").hide();
+            $(".bs-tooltip").hide();
             track.request_draw(true);
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
@@ -2798,7 +2798,7 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
             track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
-            $(".tipsy").hide();
+            $(".bs-tooltip").hide();
             track.request_draw(true);
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
@@ -3025,7 +3025,7 @@ extend(Track.prototype, Drawable.prototype, {
                     track.revert_name();
                 }
                 // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
-                $(".tipsy").remove();
+                $(".bs-tooltip").remove();
             }
         },
         // Go to parameter exploration visualization.
@@ -3371,7 +3371,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             title: "To minimize track height, not all feature rows are displayed. Click to display more rows.",
             css_class: "exclamation",
             on_click_fn: function(track) {
-                $(".tipsy").remove();
+                $(".bs-tooltip").remove();
                 // HACKish: is it always reasonble to use view to get w_scale/current resolution?
                 track.slotters[ track.view.resolution_px_b ].max_rows *= 2;
                 track.request_draw(true);
@@ -3902,7 +3902,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             title: "Show individual tracks",
             css_class: "layers-stack",
             on_click_fn: function(track) {
-                $(".tipsy").remove();
+                $(".bs-tooltip").remove();
                 track.show_group();
             }
         }
@@ -4300,7 +4300,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             min_label = $("<div/>").text(round(track.prefs.min_value, 3)).make_text_editable({
                 num_cols: 6,
                 on_finish: function(new_val) {
-                    $(".tipsy").remove();
+                    $(".bs-tooltip").remove();
                     var new_val = parseFloat(new_val);
                     if (!isNaN(new_val)) {
                         track.set_min_value(new_val);
@@ -4312,7 +4312,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             max_label = $("<div/>").text(round(track.prefs.max_value, 3)).make_text_editable({
                   num_cols: 6,
                   on_finish: function(new_val) {
-                      $(".tipsy").remove();
+                      $(".bs-tooltip").remove();
                       var new_val = parseFloat(new_val);
                       if (!isNaN(new_val)) {
                           track.set_max_value(new_val);
@@ -4581,7 +4581,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 max_label = $("<div/>").text(max_val).make_text_editable({
                     num_cols: 12,
                     on_finish: function(new_val) {
-                        $(".tipsy").remove();
+                        $(".bs-tooltip").remove();
                         var new_val = parseFloat(new_val);
                         track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
                         track.tile_cache.clear();

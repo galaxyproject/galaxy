@@ -2,7 +2,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery.autocomplete", "jquery.tipsy" )}
+    ${h.js( "jquery.autocomplete", "bootstrap" )}
     <script type="text/javascript">
         $( function() {
             function show_tool_body(title){
@@ -84,7 +84,7 @@
                     }).attr('original-title',
                             'Enable/disable selection of multiple input ' +
                             'files. Each selected file will have an ' +
-                            'instance of the workflow.').tipsy({gravity:'s'})
+                            'instance of the workflow.').tooltip({placement: 'bottom'})
                 );
                 var filter = $('<input type="text" class="multiinput-filter" ' +
                                'placeholder="type to filter">');

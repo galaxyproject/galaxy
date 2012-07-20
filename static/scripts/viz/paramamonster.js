@@ -405,15 +405,14 @@ var ParamaMonsterTrackView = Backbone.View.extend({
                 icon_class: 'gear track-settings',
                 on_click: function() {
                     settings_div.toggle();
-                },
-                tipsy_config: { gravity: 's' }
+                }
             },
             {
                 title: 'Remove',
                 icon_class: 'cross-circle',
                 on_click: function() {
                     self.$el.remove();
-                    $('.tipsy').remove();
+                    $('.tooltip').remove();
                     // TODO: remove track from viz collection.
                 }
             }
@@ -538,7 +537,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
             }
             ], 
             {
-                tipsy_config: {gravity: 's'}
+                
             });
             this.$el.prepend(menu.$el);
 
@@ -743,10 +742,9 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
                 title: 'Close',
                 icon_class: 'cross-circle',
                 on_click: function() {
-                    $('.tipsy').remove();
+                    $('.tooltip').remove();
                     help_div.remove();
-                },
-                tipsy_config: { gravity: 's' }
+                }
             }
             ]);
 
@@ -797,7 +795,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
                 }
             ], 
             {
-                tipsy_config: {gravity: 'n'}
+                tooltip_config: {placement: 'bottom'}
             });
 
             // Create mode selection popup. Mode selection changes default mode and mode for all tracks.
