@@ -508,7 +508,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.response.set_content_type("image/svg+xml")
         return self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
 
-
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def clone( self, trans, id ):
@@ -531,15 +530,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
         if annotation_obj:
             self.add_item_annotation( trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation )
-        # Clone tags.
-        for swta in stored.owner_tags:
-            new_swta = model.StoredWorkflowTagAssociation()
-            new_swta.tag = swta.tag
-            new_swta.user = trans.user
-            new_swta.user_tname = swta.user_tname
-            new_swta.user_value = swta.user_value
-            new_swta.value = swta.value
-            new_stored.tags.append( new_swta )
+        new_stored.copy_tags_from(trans.user,stored)    
+        
         if not owner:
             new_stored.name += " shared by '%s'" % stored.user.email
         new_stored.user = user
@@ -1408,6 +1400,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 mx_ds_name = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get( single_input ).name
                                 nh_name = '%s on %s' % (nh_name, mx_ds_name)
                             new_history = trans.app.model.History( user=trans.user, name=nh_name )
+                            new_history.copy_tags_from(trans.user, trans.get_history())
                             trans.sa_session.add( new_history )
                             target_history = new_history
                         else:

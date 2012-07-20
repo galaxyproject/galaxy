@@ -434,7 +434,10 @@ class History( object, UsesAnnotations ):
 
         # Copy annotation.
         self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
-
+        
+        #Copy Tags
+        new_history.copy_tags_from(target_user=target_user, source_history=self)
+            
         # Copy HDAs.
         if activatable:
             hdas = self.activatable_datasets
@@ -494,6 +497,12 @@ class History( object, UsesAnnotations ):
         if nice_size:
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
+    
+    def copy_tags_from(self,target_user,source_history):
+        for src_shta in source_history.tags:
+            new_shta = src_shta.copy()
+            new_shta.user = target_user
+            self.tags.append(new_shta)
 
 class HistoryUserShareAssociation( object ):
     def __init__( self ):
@@ -1717,6 +1726,12 @@ class StoredWorkflow( object, APIItem):
         self.published = False
         self.latest_workflow_id = None
         self.workflows = []
+            
+    def copy_tags_from(self,target_user,source_workflow):
+        for src_swta in source_workflow.owner_tags:
+            new_swta = src_swta.copy()
+            new_swta.user = target_user
+            self.tags.append(new_swta)
 
 class Workflow( object ):
     def __init__( self ):
@@ -2543,7 +2558,15 @@ class ItemTagAssociation ( object ):
         self.user_tname = user_tname
         self.value = None
         self.user_value = None
-
+        
+    def copy(self):
+        new_ta = type(self)()
+        new_ta.tag_id = self.tag_id
+        new_ta.user_tname = self.user_tname
+        new_ta.value = self.value
+        new_ta.user_value = self.user_value
+        return new_ta
+    
 class HistoryTagAssociation ( ItemTagAssociation ):
     pass
 
