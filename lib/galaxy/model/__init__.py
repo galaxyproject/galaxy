@@ -102,7 +102,7 @@ class User( object, APIItem ):
 
 class Job( object ):
     """
-    A job represents a request to run a tool given input datasets, tool 
+    A job represents a request to run a tool given input datasets, tool
     parameters, and output datasets.
     """
     states = Bunch( NEW = 'new',
@@ -216,7 +216,7 @@ class Task( object ):
         self.stdout = None
         self.stderr = None
         self.prepare_input_files_cmd = prepare_files_cmd
-    
+
     def set_state( self, state ):
         self.state = state
 
@@ -285,7 +285,7 @@ class JobExternalOutputMetadata( object ):
 
 class JobExportHistoryArchive( object ):
     def __init__( self, job=None, history=None, dataset=None, compressed=False, \
-                  history_attrs_filename=None, datasets_attrs_filename=None, 
+                  history_attrs_filename=None, datasets_attrs_filename=None,
                   jobs_attrs_filename=None ):
         self.job = job
         self.history = history
@@ -378,7 +378,7 @@ class History( object, UsesAnnotations ):
         self.datasets = []
         self.galaxy_sessions = []
     def _next_hid( self ):
-        # TODO: override this with something in the database that ensures 
+        # TODO: override this with something in the database that ensures
         # better integrity
         if len( self.datasets ) == 0:
             return 1
@@ -434,6 +434,9 @@ class History( object, UsesAnnotations ):
 
         # Copy annotation.
         self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
+
+        #Copy Tags
+        new_history.copy_tags_from(target_user=target_user, source_history=self)
 
         # Copy HDAs.
         if activatable:
@@ -495,6 +498,12 @@ class History( object, UsesAnnotations ):
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
 
+    def copy_tags_from(self,target_user,source_history):
+        for src_shta in source_history.tags:
+            new_shta = src_shta.copy()
+            new_shta.user = target_user
+            self.tags.append(new_shta)
+
 class HistoryUserShareAssociation( object ):
     def __init__( self ):
         self.history = None
@@ -514,7 +523,7 @@ class Role( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'name' )
     api_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
-    types = Bunch( 
+    types = Bunch(
         PRIVATE = 'private',
         SYSTEM = 'system',
         USER = 'user',
@@ -657,7 +666,7 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
-        
+
     def get_file_name( self ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
@@ -961,17 +970,17 @@ class DatasetInstance( object ):
         session.flush()
         return None
     def get_metadata_dataset( self, trans, dataset_ext ):
-        """ 
-        Returns an HDA that points to a metadata file which contains a 
+        """
+        Returns an HDA that points to a metadata file which contains a
         converted data with the requested extension.
         """
         for name, value in self.metadata.items():
             # HACK: MetadataFile objects do not have a type/ext, so need to use metadata name
             # to determine type.
             if dataset_ext == 'bai' and name == 'bam_index' and isinstance( value, trans.app.model.MetadataFile ):
-                # HACK: MetadataFile objects cannot be used by tools, so return 
+                # HACK: MetadataFile objects cannot be used by tools, so return
                 # a fake HDA that points to metadata file.
-                fake_dataset = trans.app.model.Dataset( state=trans.app.model.Dataset.states.OK, 
+                fake_dataset = trans.app.model.Dataset( state=trans.app.model.Dataset.states.OK,
                                                         external_filename=value.file_name )
                 fake_hda = trans.app.model.HistoryDatasetAssociation( dataset=fake_dataset )
                 return fake_hda
@@ -1039,14 +1048,14 @@ class DatasetInstance( object ):
         return self.datatype.get_display_applications_by_dataset( self, trans )
 
 class HistoryDatasetAssociation( DatasetInstance ):
-    def __init__( self, 
-                  hid = None, 
-                  history = None, 
-                  copied_from_history_dataset_association = None, 
-                  copied_from_library_dataset_dataset_association = None, 
+    def __init__( self,
+                  hid = None,
+                  history = None,
+                  copied_from_history_dataset_association = None,
+                  copied_from_library_dataset_dataset_association = None,
                   sa_session = None,
                   **kwd ):
-        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset 
+        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset
         # parameter is True so that the new object can be flushed.  Is there a better way?
         DatasetInstance.__init__( self, sa_session=sa_session, **kwd )
         self.hid = hid
@@ -1055,18 +1064,18 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
     def copy( self, copy_children = False, parent_id = None ):
-        hda = HistoryDatasetAssociation( hid=self.hid, 
-                                         name=self.name, 
-                                         info=self.info, 
-                                         blurb=self.blurb, 
-                                         peek=self.peek, 
-                                         tool_version=self.tool_version, 
-                                         extension=self.extension, 
-                                         dbkey=self.dbkey, 
-                                         dataset = self.dataset, 
-                                         visible=self.visible, 
-                                         deleted=self.deleted, 
-                                         parent_id=parent_id, 
+        hda = HistoryDatasetAssociation( hid=self.hid,
+                                         name=self.name,
+                                         info=self.info,
+                                         blurb=self.blurb,
+                                         peek=self.peek,
+                                         tool_version=self.tool_version,
+                                         extension=self.extension,
+                                         dbkey=self.dbkey,
+                                         dataset = self.dataset,
+                                         visible=self.visible,
+                                         deleted=self.deleted,
+                                         parent_id=parent_id,
                                          copied_from_history_dataset_association=self )
         object_session( self ).add( hda )
         object_session( self ).flush()
@@ -1086,7 +1095,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that is being replaced with a new version.
             library_dataset = replace_dataset
         else:
-            # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
+            # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new
             # LibraryDataset, and the current user's DefaultUserPermissions will be applied to the associated Dataset.
             library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
             object_session( self ).add( library_dataset )
@@ -1094,17 +1103,17 @@ class HistoryDatasetAssociation( DatasetInstance ):
         if not user:
             # This should never happen since users must be authenticated to upload to a data library
             user = self.history.user
-        ldda = LibraryDatasetDatasetAssociation( name=self.name, 
+        ldda = LibraryDatasetDatasetAssociation( name=self.name,
                                                  info=self.info,
-                                                 blurb=self.blurb, 
-                                                 peek=self.peek, 
-                                                 tool_version=self.tool_version, 
-                                                 extension=self.extension, 
-                                                 dbkey=self.dbkey, 
-                                                 dataset=self.dataset, 
+                                                 blurb=self.blurb,
+                                                 peek=self.peek,
+                                                 tool_version=self.tool_version,
+                                                 extension=self.extension,
+                                                 dbkey=self.dbkey,
+                                                 dataset=self.dataset,
                                                  library_dataset=library_dataset,
-                                                 visible=self.visible, 
-                                                 deleted=self.deleted, 
+                                                 visible=self.visible,
+                                                 deleted=self.deleted,
                                                  parent_id=parent_id,
                                                  copied_from_history_dataset_association=self,
                                                  user=user )
@@ -1202,7 +1211,7 @@ class HistoryDatasetAssociationDisplayAtAuthorization( object ):
         self.history_dataset_association = hda
         self.user = user
         self.site = site
-        
+
 class HistoryDatasetAssociationSubset( object ):
     def __init__(self, hda, subset, location):
         self.hda = hda
@@ -1252,7 +1261,7 @@ class Library( object, APIItem ):
         # inherited is not applicable at the library level.  The get_contents
         # param is passed by callers that are inheriting a template - these
         # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the 
+        # fields on the upload form, but not necessarily the contents of the
         # inherited template saved for the parent.
         info_association, inherited = self.get_info_association()
         if info_association:
@@ -1271,7 +1280,7 @@ class Library( object, APIItem ):
                 roles.append( lp.role )
         return roles
     def get_display_name( self ):
-        # Library name can be either a string or a unicode object. If string, 
+        # Library name can be either a string or a unicode object. If string,
         # convert to unicode object assuming 'utf-8' format.
         name = self.name
         if isinstance( name, str ):
@@ -1329,7 +1338,7 @@ class LibraryFolder( object, APIItem ):
             # not inherited ( we do not want to display the inherited contents ).
             # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
             # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while, 
+            # contents should not be inherited.  If we don't hear anything for a while,
             # eliminate the old commented out behavior.
             #if not inherited and get_contents:
             if get_contents:
@@ -1344,7 +1353,7 @@ class LibraryFolder( object, APIItem ):
          # This needs to be a list
         return [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.dataset.deleted ]
     def get_display_name( self ):
-        # Library folder name can be either a string or a unicode object. If string, 
+        # Library folder name can be either a string or a unicode object. If string,
         # convert to unicode object assuming 'utf-8' format.
         name = self.name
         if isinstance( name, str ):
@@ -1451,7 +1460,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                   user=None,
                   sa_session=None,
                   **kwd ):
-        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset 
+        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset
         # parameter in kwd is True so that the new object can be flushed.  Is there a better way?
         DatasetInstance.__init__( self, sa_session=sa_session, **kwd )
         if copied_from_history_dataset_association:
@@ -1461,17 +1470,17 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         self.library_dataset = library_dataset
         self.user = user
     def to_history_dataset_association( self, target_history, parent_id = None, add_to_history = False ):
-        hda = HistoryDatasetAssociation( name=self.name, 
+        hda = HistoryDatasetAssociation( name=self.name,
                                          info=self.info,
-                                         blurb=self.blurb, 
-                                         peek=self.peek, 
-                                         tool_version=self.tool_version, 
-                                         extension=self.extension, 
-                                         dbkey=self.dbkey, 
-                                         dataset=self.dataset, 
-                                         visible=self.visible, 
-                                         deleted=self.deleted, 
-                                         parent_id=parent_id, 
+                                         blurb=self.blurb,
+                                         peek=self.peek,
+                                         tool_version=self.tool_version,
+                                         extension=self.extension,
+                                         dbkey=self.dbkey,
+                                         dataset=self.dataset,
+                                         visible=self.visible,
+                                         deleted=self.deleted,
+                                         parent_id=parent_id,
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history )
         object_session( self ).add( hda )
@@ -1486,17 +1495,17 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         object_session( self ).flush()
         return hda
     def copy( self, copy_children = False, parent_id = None, target_folder = None ):
-        ldda = LibraryDatasetDatasetAssociation( name=self.name, 
-                                                 info=self.info, 
-                                                 blurb=self.blurb, 
-                                                 peek=self.peek, 
-                                                 tool_version=self.tool_version, 
-                                                 extension=self.extension, 
-                                                 dbkey=self.dbkey, 
-                                                 dataset=self.dataset, 
-                                                 visible=self.visible, 
-                                                 deleted=self.deleted, 
-                                                 parent_id=parent_id, 
+        ldda = LibraryDatasetDatasetAssociation( name=self.name,
+                                                 info=self.info,
+                                                 blurb=self.blurb,
+                                                 peek=self.peek,
+                                                 tool_version=self.tool_version,
+                                                 extension=self.extension,
+                                                 dbkey=self.dbkey,
+                                                 dataset=self.dataset,
+                                                 visible=self.visible,
+                                                 deleted=self.deleted,
+                                                 parent_id=parent_id,
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
         object_session( self ).add( ldda )
@@ -1534,7 +1543,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         # See if we have any associated templatesThe get_contents
         # param is passed by callers that are inheriting a template - these
         # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the 
+        # fields on the upload form, but not necessarily the contents of the
         # inherited template saved for the parent.
         info_association, inherited = self.get_info_association()
         if info_association:
@@ -1546,7 +1555,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             # not inherited ( we do not want to display the inherited contents ).
             # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
             # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while, 
+            # contents should not be inherited.  If we don't hear anything for a while,
             # eliminate the old commented out behavior.
             #if not inherited and get_contents:
             if get_contents:
@@ -1663,15 +1672,15 @@ class Event( object ):
         self.message = message
 
 class GalaxySession( object ):
-    def __init__( self, 
-                  id=None, 
-                  user=None, 
-                  remote_host=None, 
-                  remote_addr=None, 
-                  referer=None, 
-                  current_history=None, 
-                  session_key=None, 
-                  is_valid=False, 
+    def __init__( self,
+                  id=None,
+                  user=None,
+                  remote_host=None,
+                  remote_addr=None,
+                  referer=None,
+                  current_history=None,
+                  session_key=None,
+                  is_valid=False,
                   prev_session_id=None ):
         self.id = id
         self.user = user
@@ -1717,6 +1726,12 @@ class StoredWorkflow( object, APIItem):
         self.published = False
         self.latest_workflow_id = None
         self.workflows = []
+
+    def copy_tags_from(self,target_user,source_workflow):
+        for src_swta in source_workflow.owner_tags:
+            new_swta = src_swta.copy()
+            new_swta.user = target_user
+            self.tags.append(new_swta)
 
 class Workflow( object ):
     def __init__( self ):
@@ -1797,7 +1812,7 @@ class MetadataFile( object ):
                     raise
             # Return filename inside hashed directory
             return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
-    
+
 
 class FormDefinition( object, APIItem ):
     # The following form_builder classes are supported by the FormDefinition class.
@@ -1813,7 +1828,7 @@ class FormDefinition( object, APIItem ):
     def __init__( self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None ):
         self.name = name
         self.desc = desc
-        self.fields = fields 
+        self.fields = fields
         self.form_definition_current = form_definition_current
         self.type = form_type
         self.layout = layout
@@ -2012,7 +2027,7 @@ class Request( object, APIItem ):
                 samples.append( sample )
         return samples
     def send_email_notification( self, trans, common_state, final_state=False ):
-        # Check if an email notification is configured to be sent when the samples 
+        # Check if an email notification is configured to be sent when the samples
         # are in this state
         if self.notification and common_state.id not in self.notification[ 'sample_states' ]:
             return
@@ -2036,13 +2051,13 @@ Number of samples:        %(num_samples)s
 All samples in state:     %(sample_state)s
 
 """
-            values = dict( user=self.user.email, 
-                           request_name=self.name, 
-                           request_type=self.type.name, 
-                           request_state=self.state, 
-                           num_samples=str( len( self.samples ) ), 
-                           sample_state=common_state.name, 
-                           create_time=self.create_time, 
+            values = dict( user=self.user.email,
+                           request_name=self.name,
+                           request_type=self.type.name,
+                           request_state=self.state,
+                           num_samples=str( len( self.samples ) ),
+                           sample_state=common_state.name,
+                           create_time=self.create_time,
                            submit_time=self.create_time )
             body = body % values
             # check if this is the final state of the samples
@@ -2207,7 +2222,7 @@ class RequestTypePermissions( object ):
 class Sample( object, APIItem ):
     # The following form_builder classes are supported by the Sample class.
     supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
-    bulk_operations = Bunch( CHANGE_STATE = 'Change state', 
+    bulk_operations = Bunch( CHANGE_STATE = 'Change state',
                              SELECT_LIBRARY = 'Select data library and folder' )
     api_collection_visible_keys = ( 'id', 'name' )
     def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
@@ -2290,8 +2305,8 @@ class Sample( object, APIItem ):
         cmd  = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
         try:
             output = pexpect.run( cmd,
-                                  events={ '.ssword:*': scp_configs['password']+'\r\n', 
-                                           pexpect.TIMEOUT:print_ticks}, 
+                                  events={ '.ssword:*': scp_configs['password']+'\r\n',
+                                           pexpect.TIMEOUT:print_ticks},
                                   timeout=10 )
         except Exception, e:
             return error_msg
@@ -2383,8 +2398,8 @@ class SampleRunAssociation( object ):
         self.run = run
 
 class UserAddress( object ):
-    def __init__( self, user=None, desc=None, name=None, institution=None, 
-                  address=None, city=None, state=None, postal_code=None, 
+    def __init__( self, user=None, desc=None, name=None, institution=None,
+                  address=None, city=None, state=None, postal_code=None,
                   country=None, phone=None ):
         self.user = user
         self.desc = desc
@@ -2493,8 +2508,8 @@ class VisualizationRevision( object ):
         if not visualization:
             visualization = self.visualization
 
-        return VisualizationRevision( 
-            visualization=visualization, 
+        return VisualizationRevision(
+            visualization=visualization,
             title=self.title,
             dbkey=self.dbkey,
             config=self.config
@@ -2543,6 +2558,14 @@ class ItemTagAssociation ( object ):
         self.user_tname = user_tname
         self.value = None
         self.user_value = None
+
+    def copy(self):
+        new_ta = type(self)()
+        new_ta.tag_id = self.tag_id
+        new_ta.user_tname = self.user_tname
+        new_ta.value = self.value
+        new_ta.user_value = self.user_value
+        return new_ta
 
 class HistoryTagAssociation ( ItemTagAssociation ):
     pass
@@ -2806,7 +2829,7 @@ class ToolVersion( object ):
         if tva:
             return sa_session.query( app.model.ToolVersion ) \
                              .filter( app.model.ToolVersion.table.c.id == tva.tool_id ) \
-                             .first()     
+                             .first()
         return None
     def get_versions( self, app ):
         sa_session = app.model.context.current
