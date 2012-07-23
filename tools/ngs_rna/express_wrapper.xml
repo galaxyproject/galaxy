@@ -3,27 +3,97 @@
 	<requirements>
 		<requirement type="binary">eXpress</requirement>
 	</requirements>
-	<command>express --no-update-check $multiFasta $bamFile</command>
+	<command>
+		express --no-update-check
+		## Additional parameters.
+		#if $additional_params.use_additional == "yes":
+            -B $additional_params.additional_batch
+            -O $additional_params.additional_online
+			
+	    	#if str( $additional_params.calc_covar ) == 'yes':
+	    		--calc-covar
+	    	#end if
+
+	        -m $additional_params.mean_fragment_length
+
+	        -s $additional_params.fragment_length_deviation
+        #end if
+
+        ## Input files
+		$multiFasta 
+		$bamOrSamFile
+	</command>
 	<inputs>
-		<param format="fasta" name="multiFasta" type="data" label="A set of target references (annotation) in multi-FASTA format" help="The multi-FASTA file can also be a fasta file" />
-		<param format="bam" name="bamFile" type="data" label="Alignments in the BAM format" help="The set of aligned reads" />
+		<param format="fasta" name="multiFasta" type="data" label="A set of target references (annotation) in multi-FASTA format" help="The multi-FASTA file can also be a fasta file." />
+		<param format="sam,bam" name="bamOrSamFile" type="data" label="Alignments in the BAM or SAM format" help="The set of aligned reads." />
+		<conditional name="additional_params">
+            <param name="use_additional" type="select" label="Use Additional Parameters?">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+            </param>
+            <when value="no">
+            </when>
+            <when value="yes">            
+                <param name="additional_batch" type="integer" label="Additional batch EM rounds" value="0" help="0 is default. Can improve accuracy at the cost of time."/>
+                <param name="additional_online" type="integer" label="Additional online EM rounds" value="0" help="0 is default. Can improve accuracy at the cost of time."/>
+		        <param name="calc_covar" type="select" label="Calculate the covariance between targets and outputs?" help="This calculation requires slightly more time and memory.">
+		            <option value="no">No</option>
+		            <option value="yes">Yes</option>
+		        </param>
+		        <param name="mean_fragment_length" type="integer" label="Specifies the mean fragment length" value="200" help="200 is default. While the empirical distribution is estimated from paired-end reads on-the-fly, this value paramaterizes the prior distribution."/>
+		        <param name="fragment_length_deviation" type="integer" label="Specified the fragment length standard deviation" value="60" help="60 is default. While the empirical distribution is estimated from paired-end reads on-the-fly, this value paramaterizes the prior distribution."/>
+			</when>
+        </conditional>
 	</inputs>
 	<outputs>  
        <data format="txt" name="params" from_work_dir="params.xprs"/>
        <data format="txt" name="results" from_work_dir="results.xprs"/>
+       <data format="txt" name="varcov" from_work_dir="varcov.xprs">
+       		<filter>additional_params[ 'calc_covar' ] == "yes"</filter>
+       </data>
    </outputs>
 
    <tests>
         <!-- Test for the most simple case : Running eXpress with a .bam file and a .fasta file -->
         <test>
             <!-- TopHat commands:
-            eXpress hits.bam Trinity.fasta
+            eXpress Trinity.fasta hits.bam
             -->
-            <param name="bamFile" ftype="bam" value="eXpress_hits.bam"/>
+            <param name="bamOrSamFile" ftype="bam" value="eXpress_hits.bam"/>
             <param name="multiFasta" ftype="fasta" value="eXpress_Trinity.fasta"/>
+            <param name="use_additional" value="no"/>
+
+            <output name="params" file="eXpress_params.xprs" lines_diff="300"/>
+            <output name="results" file="eXpress_results.xprs" lines_diff="10"/>
+        </test>
+        <!-- Test for an other simple case : Running eXpress with a .sam file and a .fasta file -->
+        <test>
+            <!-- TopHat commands:
+            eXpress Trinity.fasta hits.sam
+            -->
+            <param name="bamOrSamFile" ftype="sam" value="eXpress_hits.sam"/>
+            <param name="multiFasta" ftype="fasta" value="eXpress_Trinity.fasta"/>
+            <param name="use_additional" value="no"/>
+
+            <output name="params" file="eXpress_params_sam.xprs" lines_diff="300"/>
+            <output name="results" file="eXpress_results_sam.xprs" lines_diff="10"/>
+        </test>
+        <!-- Test for a complex case : All the parameters has been activated and modified -->
+        <test>
+            <!-- TopHat commands: eXpress -B 1 -O 1 ++calc-covar -m 300 -s 85 Trinity.fasta hits.sam -->
+            <param name="bamOrSamFile" ftype="sam" value="eXpress_hits_all_params.bam"/>
+            <param name="multiFasta" ftype="fasta" value="eXpress_Trinity_all_params.fasta"/>
             
-            <output name="params" file="eXpress_params.xprs" />
-            <output name="results" file="eXpress_results.xprs"/>
+            <param name="use_additional" value="yes"/>
+            <param name="additional_batch" value="1"/>
+            <param name="additional_online" value="1" />
+            <param name="calc_covar" value="yes"/>
+            <param name="mean_fragment_length" value="300"/>
+            <param name="fragment_length_deviation" value="85"/>
+
+            <output name="params" file="eXpress_params_all_params.xprs" lines_diff="300"/>
+            <output name="results" file="eXpress_results_all_params.xprs" lines_diff="10"/>
+            <output name="varcov" file="eXpress_varcov_all_params.xprs"/>
         </test>
     </tests>
     <help>
@@ -40,7 +110,7 @@ eXpress is a streaming tool for quantifying the abundances of a set of target se
 eXpress requires two input files:
 
 - A multi-FASTA file containing the transcript sequences.
-- Read alignments to the multi-FASTA file in BAM format.
+- Read alignments to the multi-FASTA file in BAM or SAM format.
 
 ------
 
@@ -48,6 +118,8 @@ eXpress requires two input files:
 
 - The output for eXpress is saved in a file called results.xprs in an easy-to-parse tab-delimited format.
 
-- Also, params.xprs contains the values of the other parameters (besides abundances and counts) estimated by eXpress. 
+- Also, params.xprs contains the values of the other parameters (besides abundances and counts) estimated by eXpress.
+
+- If you choose to use to calculate the covariance between targets and outputs, an other output would be : varcov.xprs.
     </help>
 </tool>
