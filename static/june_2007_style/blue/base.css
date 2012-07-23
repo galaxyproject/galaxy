@@ -655,7 +655,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%;margin-top
 .panel-header-button{color:#333;text-decoration:none;display:inline-block;cursor:pointer;margin:-1px;padding:1px;margin-top:-0.2em;padding-right:0.5em;padding-left:0.5em;}.panel-header-button:hover{color:maroon;-webkit-transition:color 0.25s linear;-moz-transition:color 0.25s linear;-ms-transition:color 0.25s linear;-o-transition:color 0.25s linear;transition:color 0.25s linear;}
 .panel-header-button .caret{margin-top:7px;}
 .panel-header-button.popup{padding-right:1.75em;background:url(../images/dropdownarrow.png) no-repeat right 7px;}
-#overlay,.overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:20000;}
+#overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:20000;}
 #overlay.is_modal #overlay-background,.overlay-background{background:rgba(0, 0, 0, 0.5);}
 .panel-error-message,.panel-warning-message,.panel-done-message,.panel-info-message{height:24px;line-height:24px;color:#303030;padding:0px;padding-left:26px;background-color:#ffcccc;background-image:url(error_small.png);background-repeat:no-repeat;background-position:6px 50%;}
 .panel-warning-message{background-image:url(warn_small.png);background-color:#ffffcc;}
