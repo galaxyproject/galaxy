@@ -549,13 +549,40 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
     model: BrowserBookmark
 });
 
-/**
- * Genome-wide summary data.
- */
-var GenomeWideSummaryData = Backbone.RelationalModel.extend({
+var GenomeWideBigWigData = Backbone.Model.extend({
     defaults: {
         data: null,
-        max: 0  
+        min: 0,
+        max: 0
+    },
+
+    initialize: function(options) {
+        // Set max across dataset by extracting all values, flattening them into a 
+        // single array, and getting the min and max.
+        var values = _.flatten( _.map(this.get('data'), function(d) {
+            if (d.data.length !== 0) {
+                // Each data point has the form [position, value], so return all values.
+                return _.map(d.data, function(p) {
+                    return p[1];
+                });
+            }
+            else {
+                return 0;
+            }
+        }) );
+        this.set('max', _.max(values));
+        this.set('min', _.min(values));
+    }
+});
+
+/**
+ * Genome-wide summary tree dataset.
+ */
+var GenomeWideSummaryTreeData = Backbone.RelationalModel.extend({
+    defaults: {
+        data: null,
+        min: 0,
+        max: 0
     },
     
     initialize: function(options) {
@@ -577,15 +604,15 @@ var BackboneTrack = Dataset.extend({
     initialize: function(options) {
         // Dataset id is unique ID for now.
         this.set('id', options.dataset_id);
-    },
 
-    relations: [
-        {
-            type: Backbone.HasOne,
-            key: 'genome_wide_data',
-            relatedModel: 'GenomeWideSummaryData'
+        // Create genome-wide dataset if available.
+        var genome_wide_data = this.get('genome_wide_data');
+        if (genome_wide_data) {
+            var gwd_class = (this.get('track_type') === 'LineTrack' ? 
+                             GenomeWideBigWigData : GenomeWideSummaryTreeData);
+            this.set('genome_wide_data', new gwd_class(genome_wide_data));
         }
-    ]
+    }
 });
 
 /**
@@ -649,12 +676,14 @@ var TrackConfig = Backbone.Model.extend({
     
 });
 
-/**
- * Layout for a histogram dataset in a circster visualization.
- */
-var CircsterHistogramDatasetLayout = Backbone.Model.extend({
-    // TODO: should accept genome and dataset and use these to generate layout data.
-    
+
+var CircsterDataLayout = Backbone.Model.extend({
+    defaults: {
+        genome: null,
+        dataset: null,
+        total_gap: null
+    },
+
     /**
      * Returns arc layouts for genome's chromosomes/contigs. Arcs are arranged in a circle 
      * separated by gaps.
@@ -671,16 +700,45 @@ var CircsterHistogramDatasetLayout = Backbone.Model.extend({
                 arc.endAngle = (new_endAngle > arc.startAngle ? new_endAngle : arc.startAngle);
                 return arc;
             });
-            
-            // TODO: remove arcs for chroms that are too small and recompute?
-            
         return chrom_arcs;
     },
+
+    /**
+     * Returns layouts for drawing a chromosome's data.
+     */
+    chrom_data_layout: function(chrom_arc, chrom_data, inner_radius, outer_radius, max) {
+    },
+
+    genome_data_layout: function() {
+        var self = this,
+            chrom_arcs = this.chroms_layout(),
+            dataset = this.get('track').get('genome_wide_data'),
+            r_start = this.get('radius_start'),
+            r_end = this.get('radius_end'),
+                
+            // Merge chroms layout with data.
+            layout_and_data = _.zip(chrom_arcs, dataset.get('data')),
+            
+            // Do dataset layout for each chromosome's data using pie layout.
+            chroms_data_layout = _.map(layout_and_data, function(chrom_info) {
+                var chrom_arc = chrom_info[0],
+                    chrom_data = chrom_info[1];
+                return self.chrom_data_layout(chrom_arc, chrom_data, r_start, r_end, dataset.get('min'), dataset.get('max'));
+            });
+
+        return chroms_data_layout;
+    }
+});
+
+/**
+ * Layout for summary tree data in a circster visualization.
+ */
+var CircsterSummaryTreeLayout = CircsterDataLayout.extend({
     
     /**
-     * Returns layouts for drawing a chromosome's data. For now, only works with summary tree data.
+     * Returns layouts for drawing a chromosome's data.
      */
-    chrom_data_layout: function(chrom_arc, chrom_data, inner_radius, outer_radius, max) {             
+    chrom_data_layout: function(chrom_arc, chrom_data, inner_radius, outer_radius, min, max) {
         // If no chrom data, return null.
         if (!chrom_data || typeof chrom_data === "string") {
             return null;
@@ -689,8 +747,8 @@ var CircsterHistogramDatasetLayout = Backbone.Model.extend({
         var data = chrom_data[0],
             delta = chrom_data[3],
             scale = d3.scale.linear()
-                .domain( [0, max] )
-                .range( [inner_radius, outer_radius] ),                        
+                .domain( [min, max] )
+                .range( [inner_radius, outer_radius] ),       
             arc_layout = d3.layout.pie().value(function(d) {
                 return delta;
             })
@@ -705,7 +763,42 @@ var CircsterHistogramDatasetLayout = Backbone.Model.extend({
         
         return arcs;
     }
-    
+});
+
+/**
+ * Layout for BigWig data in a circster visualization.
+ */
+var CircsterBigWigLayout = CircsterDataLayout.extend({
+
+    /**
+     * Returns layouts for drawing a chromosome's data.
+     */
+    chrom_data_layout: function(chrom_arc, chrom_data, inner_radius, outer_radius, min, max) {
+        var data = chrom_data.data;
+        if (data.length === 0) { return; }
+        
+        var scale = d3.scale.linear()
+                .domain( [min, max] )
+                .range( [inner_radius, outer_radius] ),
+            arc_layout = d3.layout.pie().value(function(d, i) {
+                // If at end of data, draw nothing.
+                if (i + 1 === data.length) { return 0; }
+
+                // Layout is from current position to next position.
+                return data[i+1][0] - data[i][0];
+            })
+                .startAngle(chrom_arc.startAngle)
+                .endAngle(chrom_arc.endAngle),
+        arcs = arc_layout(data);
+        
+        // Use scale to assign outer radius.
+        _.each(data, function(datum, index) {
+            arcs[index].outerRadius = scale(datum[1]);
+        });
+        
+        return arcs;
+    }
+
 });
  
 /**
@@ -739,27 +832,20 @@ var CircsterView = Backbone.View.extend({
 
         // -- Render each dataset in the visualization. --
         this.model.get('tracks').each(function(track, index) {
-            var dataset = track.get('genome_wide_data');
-
-            var radius_start = self.radius_start + index * (dataset_arc_height + self.track_gap),
+            var dataset = track.get('genome_wide_data'),
+                radius_start = self.radius_start + index * (dataset_arc_height + self.track_gap),
                 // Layout chromosome arcs.
-                arcs_layout = new CircsterHistogramDatasetLayout({
+                layout_class = (dataset instanceof GenomeWideBigWigData ? CircsterBigWigLayout : CircsterSummaryTreeLayout ),
+                arcs_layout = new layout_class({
+                    track: track,
+                    radius_start: radius_start,
+                    radius_end: radius_start + dataset_arc_height,
                     genome: self.genome,
                     total_gap: self.total_gap
                 }),
-                chrom_arcs = arcs_layout.chroms_layout(),
+                genome_arcs = arcs_layout.chroms_layout(),
+                chroms_arcs = arcs_layout.genome_data_layout();
                 
-                // Merge chroms layout with data.
-                layout_and_data = _.zip(chrom_arcs, dataset.get('data')),
-                dataset_max = dataset.get('max'),
-                
-                // Do dataset layout for each chromosome's data using pie layout.
-                chroms_data_layout = _.map(layout_and_data, function(chrom_info) {
-                    var chrom_arc = chrom_info[0],
-                        chrom_data = chrom_info[1];
-                    return arcs_layout.chrom_data_layout(chrom_arc, chrom_data, radius_start, radius_start + dataset_arc_height, dataset_max);
-                });
-            
             // -- Render. --
 
             // Draw background arcs for each chromosome.
@@ -769,7 +855,7 @@ var CircsterView = Backbone.View.extend({
                     .outerRadius(radius_start + dataset_arc_height),
                 // Draw arcs.
                 chroms_elts = base_arc.selectAll("#inner-arc>path")
-                    .data(chrom_arcs).enter().append("path")
+                    .data(genome_arcs).enter().append("path")
                     .attr("d", arc_gen)
                     .style("stroke", "#ccc")
                     .style("fill",  "#ccc")
@@ -778,7 +864,7 @@ var CircsterView = Backbone.View.extend({
             // For each chromosome, draw dataset.
             var prefs = track.get('prefs'),
                 block_color = prefs.block_color;
-            _.each(chroms_data_layout, function(chrom_layout) {
+            _.each(chroms_arcs, function(chrom_layout) {
                 if (!chrom_layout) { return; }
 
                 var group = svg.append("g"),

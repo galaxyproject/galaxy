@@ -105,6 +105,17 @@ class TracksDataProvider( object ):
         """
         iterator = self.get_iterator( chrom, start, end )
         return self.process_data( iterator, start_val, max_vals, **kwargs )
+
+    def get_genome_data( self, chroms_info, **kwargs ):
+        """
+        Returns data for complete genome.
+        """
+        dataset_summary = []
+        for chrom_info in chroms_info[ 'chrom_info' ]:
+            summary = self.get_data( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], **kwargs )
+            dataset_summary.append( summary )
+
+        return dataset_summary
         
     def get_filters( self ):
         """ 
@@ -617,20 +628,8 @@ class SummaryTreeDataProvider( TracksDataProvider ):
     def valid_chroms( self ):
         st = summary_tree_from_file( self.converted_dataset.file_name )
         return st.chrom_blocks.keys()
-
-    def get_genome_data( self, chroms_info ):
-        """
-        Returns summary tree data for complete genome.
-        """
-        dataset_summary = []
-        for chrom_info in chroms_info[ 'chrom_info' ]:
-            summary = self.get_summary( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], level=3, detail_cutoff=0, draw_cutoff=0 )
-            dataset_summary.append( summary )
-
-        return dataset_summary
     
-    # TODO: rename to get_data to match other providers.
-    def get_summary( self, chrom, start, end, level=None, resolution=None, detail_cutoff=None, draw_cutoff=None ):
+    def get_data( self, chrom, start, end, level=None, resolution=None, detail_cutoff=None, draw_cutoff=None ):
         """
         Returns summary tree data for a given genomic region.
         """
@@ -899,7 +898,7 @@ class BBIDataProvider( TracksDataProvider ):
         all_dat = bbi.query(chrom, 0, 2147483647, 1)
         f.close()
         return all_dat is not None
-        
+
     def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
         # Bigwig can be a standalone bigwig file, in which case we use 
         # original_dataset, or coming from wig->bigwig conversion in 

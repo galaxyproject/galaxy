@@ -380,7 +380,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             tracks_dataset_type = data_sources['index']['name']
             converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
             indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
-            summary = indexer.get_summary( chrom, low, high, resolution=kwargs[ 'resolution' ] )
+            summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ] )
             if summary is None:
                 return { 'dataset_type': tracks_dataset_type, 'data': None }
                 
@@ -528,7 +528,8 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             # Get converted dataset and append track's genome data.
             converted_dataset = dataset.get_converted_dataset( trans, indexed_type )
             data_provider = get_data_provider( indexed_type )( converted_dataset, dataset )
-            track[ 'genome_wide_data' ] = { 'data': data_provider.get_genome_data( chroms_info ) }
+            # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
+            track[ 'genome_wide_data' ] = { 'data': data_provider.get_genome_data( chroms_info, level=3, detail_cutoff=0, draw_cutoff=0 ) }
         
         return trans.fill_template( 'visualization/circster.mako', viz_config=viz_config, genome=genome )
 
