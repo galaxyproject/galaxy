@@ -6042,18 +6042,30 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
                 b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[4][1] - tile_low) * w_scale)) ),
                 b2_start = Math.floor( Math.max(0, (feature[5][0] - tile_low) * w_scale) ),
-                b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
+                b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) ),
+                connector = true;
 
             // Draw left/forward read.
             if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {                
                 this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], feature[4][4]);
             }
+            else {
+                connector = false;
+            }
+
             // Draw right/reverse read.
             if (feature[5][1] >= tile_low && feature[5][0] <= tile_high && feature[5][2]) {
                 this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], feature[5][4]);
             }
-            // Draw connector.
-            if (b2_start > b1_end) {
+            else {
+                connector = false;
+            }
+
+            // Draw connector if both reads were drawn.
+            // TODO: currently, there is no way to connect reads drawn on different tiles; to connect reads on different tiles, data manager
+            // code is needed to join mate pairs from different regions. Alternatively, requesting multiple regions of data at once would
+            // make it possible to put together more easily.
+            if (connector && b2_start > b1_end) {
                 ctx.fillStyle = CONNECTOR_COLOR;
                 dashedLine(ctx, b1_end - gap, y_center + 5, b2_start - gap, y_center + 5);
             }
