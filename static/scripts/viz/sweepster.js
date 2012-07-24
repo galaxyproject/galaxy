@@ -1,5 +1,5 @@
 /**
- * Visualization and components for ParamaMonster, a visualization for exploring a tool's parameter space via 
+ * Visualization and components for Sweepster, a visualization for exploring a tool's parameter space via 
  * genomic visualization.
  */
 
@@ -247,7 +247,7 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
     }
 });
 
-var ParamaMonsterTrack = Backbone.RelationalModel.extend({
+var SweepsterTrack = Backbone.RelationalModel.extend({
     defaults: {
         track: null,
         mode: 'Pack',
@@ -296,13 +296,13 @@ var ParamaMonsterTrack = Backbone.RelationalModel.extend({
 });
 
 var TrackCollection = Backbone.Collection.extend({
-    model: ParamaMonsterTrack
+    model: SweepsterTrack
 });
 
 /**
- * ParamaMonster visualization model.
+ * Sweepster visualization model.
  */
-var ParamaMonsterVisualization = Visualization.extend({
+var SweepsterVisualization = Visualization.extend({
     defaults: _.extend({}, Visualization.prototype.defaults, {
         dataset: null,
         tool: null,
@@ -331,7 +331,7 @@ var ParamaMonsterVisualization = Visualization.extend({
         {
             type: Backbone.HasMany,
             key: 'tracks',
-            relatedModel: 'ParamaMonsterTrack'
+            relatedModel: 'SweepsterTrack'
         }
         // NOTE: cannot use relationship for parameter tree because creating tree is complex.
     ],
@@ -355,7 +355,7 @@ var ParamaMonsterVisualization = Visualization.extend({
         return {
             id: this.get('id'),
             title: 'Parameter exploration for dataset \''  + this.get('dataset').get('name') + '\'',
-            type: 'paramamonster',
+            type: 'sweepster',
             dataset_id: this.get('dataset').id,
             tool_id: this.get('tool').id,
             regions: this.get('regions').toJSON(),
@@ -370,9 +370,9 @@ var ParamaMonsterVisualization = Visualization.extend({
  */
 
 /**
- * ParamaMonster track view.
+ * Sweepster track view.
  */
-var ParamaMonsterTrackView = Backbone.View.extend({
+var SweepsterTrackView = Backbone.View.extend({
     tagName: 'tr',
 
     TILE_LEN: 250,
@@ -412,7 +412,7 @@ var ParamaMonsterTrackView = Backbone.View.extend({
                 icon_class: 'cross-circle',
                 on_click: function() {
                     self.$el.remove();
-                    $('.tooltip').remove();
+                    $('.bs-tooltip').remove();
                     // TODO: remove track from viz collection.
                 }
             }
@@ -677,10 +677,10 @@ var ToolParameterTreeView = Backbone.View.extend({
 });
 
 /**
- * ParamaMonster visualization view. View requires rendering in 3-panel setup for now.
+ * Sweepster visualization view. View requires rendering in 3-panel setup for now.
  */
-var ParamaMonsterVisualizationView = Backbone.View.extend({
-    className: 'paramamonster',
+var SweepsterVisualizationView = Backbone.View.extend({
+    className: 'Sweepster',
 
     helpText: 
         '<div><h4>Getting Started</h4>' +
@@ -742,7 +742,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
                 title: 'Close',
                 icon_class: 'cross-circle',
                 on_click: function() {
-                    $('.tooltip').remove();
+                    $('.bs-tooltip').remove();
                     help_div.remove();
                 }
             }
@@ -843,7 +843,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
         // Add track to model.
         self.model.add_track(pm_track);
 
-        var track_view = new ParamaMonsterTrackView({
+        var track_view = new SweepsterTrackView({
             model: pm_track,
             canvas_manager: self.canvas_manager
         });
@@ -902,7 +902,7 @@ var ParamaMonsterVisualizationView = Backbone.View.extend({
 
                 // Create and add tracks for each settings group.
                 var tracks = _.map(all_settings, function(settings) {
-                    var pm_track = new ParamaMonsterTrack({
+                    var pm_track = new SweepsterTrack({
                         settings: settings,
                         regions: regions,
                         mode: self.model.get('default_mode')

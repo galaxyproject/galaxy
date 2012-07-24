@@ -107,17 +107,17 @@
     ${parent.javascripts()}
 
     ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
-    ${h.js( "libs/d3", "mvc/data", "mvc/tools", "viz/visualization", "viz/paramamonster", 
+    ${h.js( "libs/d3", "mvc/data", "mvc/tools", "viz/visualization", "viz/sweepster", 
             "viz/trackster", "viz/trackster_ui", "jquery.ui.sortable.slider" )}
 
     <script type="text/javascript">
         var viz;
         $(function() {            
             // -- Viz set up. --    
-            var viz = new ParamaMonsterVisualization(
+            var viz = new SweepsterVisualization(
                 ${ h.to_json_string( config ).replace('\\', '\\\\' )}
             );
-            var viz_view = new ParamaMonsterVisualizationView({ model: viz });
+            var viz_view = new SweepsterVisualizationView({ model: viz });
             viz_view.render();
         });
     </script>

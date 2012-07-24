@@ -3074,7 +3074,7 @@ extend(Track.prototype, Drawable.prototype, {
 
                         // Go to visualization.
                         window.location.href = 
-                            galaxy_paths.get('paramamonster_url') + "?" + 
+                            galaxy_paths.get('sweepster_url') + "?" + 
                             $.param({
                                 dataset_id: track.dataset_id,
                                 hda_ldda: track.hda_ldda,

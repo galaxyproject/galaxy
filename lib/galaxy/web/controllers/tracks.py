@@ -476,9 +476,9 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         return self.tracks_grid( trans, **kwargs )
                     
     @web.expose
-    def paramamonster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):
+    def sweepster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):
         """
-        Creates a paramamonster visualization using the incoming parameters. If id is available,
+        Creates a sweepster visualization using the incoming parameters. If id is available,
         get the visualization with the given id; otherwise, create a new visualization using
         a given dataset and regions.
         """
@@ -505,7 +505,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         viz_config[ 'tool' ] = tool.to_dict( trans, for_display=True )
         viz_config[ 'dataset' ] = dataset.get_api_value()
 
-        return trans.fill_template_mako( "visualization/paramamonster.mako", config=viz_config )
+        return trans.fill_template_mako( "visualization/sweepster.mako", config=viz_config )
     
     @web.expose
     def circster( self, trans, id, **kwargs ):
