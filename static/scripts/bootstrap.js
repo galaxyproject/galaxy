@@ -1,3 +1,4 @@
+
 /* ===================================================
  * bootstrap-transition.js v2.0.4
  * http://twitter.github.com/bootstrap/javascript.html#transitions
@@ -221,6 +222,16 @@
 
   "use strict"; // jshint ;_;
 
+  // Add a special event that is called when an element is destroyed
+  (function($){
+    jQuery.event.special.destroyed = {
+      remove: function(o) {
+        if (o.handler) {
+          o.handler()
+        }
+      }
+    }
+  })(jQuery)
 
  /* TOOLTIP PUBLIC CLASS DEFINITION
   * =============================== */
@@ -248,6 +259,9 @@
         this.$element.on(eventIn, this.options.selector, $.proxy(this.enter, this))
         this.$element.on(eventOut, this.options.selector, $.proxy(this.leave, this))
       }
+
+      // Make sure tooltip is hidden when element is destroyed
+      this.$element.on( 'destroyed', $.proxy( this.hide, this ) );
 
       this.options.selector ?
         (this._options = $.extend({}, this.options, { trigger: 'manual', selector: '' })) :
@@ -298,6 +312,8 @@
         , actualWidth
         , actualHeight
         , placement
+        , placementPosition
+        , $window
         , tp
 
       if (this.hasContent() && this.enabled) {
@@ -312,6 +328,8 @@
           this.options.placement.call(this, $tip[0], this.$element[0]) :
           this.options.placement
 
+        placementPosition = inside ? placement.split(' ')[1] : placement;
+
         inside = /in/.test(placement)
 
         $tip
@@ -324,7 +342,7 @@
         actualWidth = $tip[0].offsetWidth
         actualHeight = $tip[0].offsetHeight
 
-        switch (inside ? placement.split(' ')[1] : placement) {
+        switch (placementPosition) {
           case 'bottom':
             tp = {top: pos.top + pos.height, left: pos.left + pos.width / 2 - actualWidth / 2}
             break
@@ -339,28 +357,21 @@
             break
         }
 
-        // BEGIN GALAXY MODIFICATION
-
         // Shift if off screen
-        var $w = $(window),
-            p = inside ? placement.split(' ')[1] : placement;
+        $window = $(window)
 
         // If off the top of the screen, flip
-        if ( tp.top < $w.scrollTop() && placement == 'top' ) {
+        if ( tp.top < $window.scrollTop() && placementPosition == 'top' ) {
             tp.top = pos.top + pos.height;
             placement = inside ? 'inside bottom' : 'bottom';
         }
 
-        // If off bottom, just shift for now
-        tp.top = Math.min( tp.top, $w.scrollTop() + $w.height() - $tip.outerHeight() );
-
-
         // Shift left or right
         var leftShift = 0;
-        if ( tp.left < $w.scrollLeft() ) {
-            leftShift = tp.left - $w.scrollLeft();
+        if ( tp.left < $window.scrollLeft() ) {
+            leftShift = tp.left - $window.scrollLeft();
         }
-        var t = $w.scrollLeft() + $w.width() - $tip.outerWidth();
+        var t = $window.scrollLeft() + $window.width() - $tip.outerWidth();
         if ( tp.left > t ) {
             leftShift = tp.left - t;
         }
@@ -382,7 +393,6 @@
         }
 
         // END GALAXY MODIFICATION
-
 
 
         $tip

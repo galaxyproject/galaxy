@@ -138,7 +138,6 @@ $(function() {
                                 }
                             });
                             %endif
-                            $(".tooltip").remove();
                         } else {
                             render_message( "Dataset deletion failed", "error" );
                         }
