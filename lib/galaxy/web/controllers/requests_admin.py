@@ -198,7 +198,13 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        # When this method is called due to a grid operation, the sample ID
+        # will be in the param 'id'.  But when this method is called via a
+        # redirect from another method, the ID will be in 'sample_id'.  So,
+        # check for 'id' if 'sample_id' is not provided.
         sample_id = params.get( 'sample_id', None )
+        if sample_id is None:
+            sample_id = params.get( 'id', None )
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
         except:
