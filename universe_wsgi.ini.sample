@@ -640,6 +640,12 @@ use_interactive = True
 # bytes).  0 for no limit.
 #output_size_limit = 0
 
+# Jobs can be held back from submission to a runner if a user already has more
+# jobs queued or running than the number specified below.  This prevents a
+# single user from stuffing the queue and preventing other users from being
+# able to run jobs.
+#user_job_limit = None
+
 # Clustering Galaxy is not a straightforward process and requires some
 # pre-configuration.  See the the wiki before attempting to set any of these
 # options:
