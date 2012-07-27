@@ -571,13 +571,13 @@ def nice_size(size):
     >>> nice_size(100)
     '100 bytes'
     >>> nice_size(10000)
-    '9.8 Kb'
+    '9.8 KB'
     >>> nice_size(1000000)
-    '976.6 Kb'
+    '976.6 KB'
     >>> nice_size(100000000)
-    '95.4 Mb'
+    '95.4 MB'
     """
-    words = [ 'bytes', 'Kb', 'Mb', 'Gb', 'Tb' ]
+    words = [ 'bytes', 'KB', 'MB', 'GB', 'TB' ]
     try:
         size = float( size )
     except:
