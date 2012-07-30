@@ -264,7 +264,7 @@ class Tabular( data.Text ):
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
         #TODO Prevent failure when displaying extremely long > 50kb lines.
-        if to_ext:
+        if to_ext or not preview:
             return self._serve_raw(trans, dataset, to_ext)
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
