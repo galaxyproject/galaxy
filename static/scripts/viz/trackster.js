@@ -3325,8 +3325,7 @@ extend(Track.prototype, Drawable.prototype, {
 var TiledTrack = function(view, container, obj_dict) {    
     Track.call(this, view, container, obj_dict);
 
-    var track = this,
-        view = track.view;
+    var track = this;
         
     // Make track moveable.
     moveable(track.container_div, track.drag_handle_class, ".group", track);
@@ -3506,8 +3505,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         if (this.is_overview) {
             low = this.view.max_low;
             high = this.view.max_high;
-            resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / TILE_SIZE ) / Math.log(RESOLUTION) ));
-            w_scale = width / (view.max_high - view.max_low);
+            resolution = ( view.max_high - view.max_low ) / width;
+            w_scale = 1 / resolution;
         }
         
         this.before_draw();
@@ -3558,8 +3557,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * drawn/fetched and shown.
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
-        var track = this;
-                                
         //
         // If some tiles have icons, set padding of tiles without icons so features and rows align.
         //
@@ -3995,19 +3992,19 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             
             this.tile_predraw_init();
             
-            var 
-                canvas = track.view.canvas_manager.new_canvas(),
+            var canvas = track.view.canvas_manager.new_canvas(),
                 tile_bounds = track._get_tile_bounds(tile_index, resolution),
                 tile_low = region.get('start'),
                 tile_high = region.get('end'),
                 all_data_index = 0,
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + this.left_offset,
                 height = 0,
-                track_modes = [];
+                track_modes = [],
+                i;
                 
             // Get max height for all tracks and record track modes.
             var track_canvas_height = 0;
-            for (var i = 0; i < this.drawables.length; i++, all_data_index += 2) {
+            for (i = 0; i < this.drawables.length; i++, all_data_index += 2) {
                 track = this.drawables[i];
                 tile_data = all_data[ all_data_index ];
 
@@ -4035,7 +4032,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             ctx.translate(this.left_offset, 0);
             ctx.globalAlpha = 0.5;
             ctx.globalCompositeOperation = "source-over";
-            for (var i = 0; i < this.drawables.length; i++, all_data_index += 2) {
+            for (i = 0; i < this.drawables.length; i++, all_data_index += 2) {
                 track = this.drawables[i];
                 tile_data = all_data[ all_data_index ];
                 seq_data = all_data[ all_data_index + 1 ];
@@ -4509,12 +4506,13 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, clear_after);
         
-        var track = this;
+        var track = this,
+            i;
                 
         // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
         if (track.mode === "Histogram") {
             // Get global max.
-            var i, global_max = -1;
+            var global_max = -1;
             for (i = 0; i < tiles.length; i++) {
                 var cur_max = tiles[i].max_val;
                 if (cur_max > global_max) {
@@ -4547,7 +4545,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             var filters_available = false,
                 example_feature,
                 filter;
-            for (var i = 0; i < tiles.length; i++) {
+            for (i = 0; i < tiles.length; i++) {
                 if (tiles[i].data.length) {
                     example_feature = tiles[i].data[0];
                     for (var f = 0; f < filters.length; f++) {
@@ -4597,7 +4595,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         //
         if (first_tile instanceof FeatureTrackTile) {
             var all_slotted = true;
-            for (var i = 0; i < tiles.length; i++) {
+            for (i = 0; i < tiles.length; i++) {
                 if (!tiles[i].all_slotted) {
                     all_slotted = false;
                     break;
@@ -4671,8 +4669,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             data_interval,
             bin_index = 0,
             bin_interval = [], 
-            cur_bin,
-            overlap;
+            cur_bin;
             
         // Set bin interval.
         var set_bin_interval = function(interval, low, bin_index, bin_size) {
@@ -4790,7 +4787,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             canvas = ctx.canvas,
             tile_low = region.get('start'),
             tile_high = region.get('end'),
-            min_height = 25,
             left_offset = this.left_offset;
         
         // Drawing the summary tree (feature coverage histogram)
@@ -5213,7 +5209,7 @@ var Painter = function(data, view_start, view_end, prefs, mode) {
     // Drawing prefs
     this.prefs = extend( {}, this.default_prefs, prefs );
     this.mode = mode;
-}
+};
 
 Painter.prototype.default_prefs = {};
 
@@ -5229,13 +5225,12 @@ Painter.prototype.draw = function(ctx, width, height, w_scale) {};
  */
 var SummaryTreePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call(this, data, view_start, view_end, prefs, mode);
-}
+};
 
 SummaryTreePainter.prototype.default_prefs = { show_counts: false };
 
 SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
     var view_start = this.view_start,
-        view_range = this.view_end - this.view_start,
         points = this.data.data,
         max = (this.prefs.histogram_max ? this.prefs.histogram_max : this.data.max),
         // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
@@ -5266,20 +5261,21 @@ SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
     }
     
     ctx.restore();
-}
+};
 
 var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
+    var i, len;
     if ( this.prefs.min_value === undefined ) {
         var min_value = Infinity;
-        for (var i = 0, len = this.data.length; i < len; i++) {
+        for (i = 0, len = this.data.length; i < len; i++) {
             min_value = Math.min( min_value, this.data[i][1] );
         }
         this.prefs.min_value = min_value;
     }
     if ( this.prefs.max_value === undefined ) {
         var max_value = -Infinity;
-        for (var i = 0, len = this.data.length; i < len; i++) {
+        for (i = 0, len = this.data.length; i < len; i++) {
             max_value = Math.max( max_value, this.data[i][1] );
         }
         this.prefs.max_value = max_value;
@@ -5296,7 +5292,6 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         vertical_range = max_value - min_value,
         height_px = height,
         view_start = this.view_start,
-        view_range = this.view_end - this.view_start,
         mode = this.mode,
         data = this.data;
 
@@ -5329,7 +5324,9 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
         ctx.fillStyle = ctx.strokeStyle = this.prefs.color;
-        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
+        // -1 because LineTrack data uses 1-based coordinate system but painter 
+        // uses 0-based system.
+        x_scaled = Math.round((data[i][0] - view_start - 1) * w_scale);
         y = data[i][1];
         var top_overflow = false, bot_overflow = false;
         if (y === null) {
@@ -5471,7 +5468,9 @@ FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color:
 extend(FeaturePainter.prototype, {
     get_required_height: function(rows_required, width) {
         // y_scale is the height per row
-        var required_height = y_scale = this.get_row_height(), mode = this.mode;
+        var required_height = this.get_row_height(),
+            y_scale = required_height,
+            mode = this.mode;
         // If using a packing mode, need to multiply by the number of slots used
         if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
             required_height = rows_required * y_scale;
@@ -5485,7 +5484,7 @@ extend(FeaturePainter.prototype, {
     /** Extra padding after last row of features */
     get_bottom_padding: function(width) {
         // Pad bottom by half a row, at least 5 px
-        return Math.max( Math.round( this.get_row_height() / 2 ), 5 ) 
+        return Math.max( Math.round( this.get_row_height() / 2 ), 5 );
     },
     /**
      * Draw data on ctx using slots and within the rectangle defined by width and height. Returns
@@ -5499,8 +5498,7 @@ extend(FeaturePainter.prototype, {
         ctx.fillStyle = this.prefs.block_color;
         ctx.textAlign = "right";
 
-        var view_range = this.view_end - this.view_start,
-            y_scale = this.get_row_height(),
+        var y_scale = this.get_row_height(),
             feature_mapper = new FeaturePositionMapper(y_scale),
             x_draw_coords;
 
@@ -5595,7 +5593,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
             // For now, assume '.' === '+'
-            block_color = block_color = (!feature_strand || feature_strand === "+" || feature_strand === "." ? this.prefs.block_color : this.prefs.reverse_strand_color);
+            block_color = (!feature_strand || feature_strand === "+" || feature_strand === "." ? this.prefs.block_color : this.prefs.reverse_strand_color);
             label_color = this.prefs.label_color;
         
         // Set global alpha.
@@ -5821,8 +5819,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
      */
     draw_read: function(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, cigar, strand, orig_seq) {
         ctx.textAlign = "center";
-        var track = this,
-            tile_region = [tile_low, tile_high],
+        var tile_region = [tile_low, tile_high],
             base_offset = 0,
             seq_offset = 0,
             gap = 0,
@@ -5839,7 +5836,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
         }
         if (!cigar) {
             // If no cigar string, then assume all matches
-            cigar = [ [0, orig_seq.length] ]
+            cigar = [ [0, orig_seq.length] ];
         }
         for (var cig_id = 0, len = cigar.length; cig_id < len; cig_id++) {
             var cig = cigar[cig_id],
@@ -6001,8 +5998,8 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
         var item, type, data;
         for (var i = 0; i < draw_last.length; i++) {
             item = draw_last[i];
-            type = item["type"];
-            data = item["data"];
+            type = item.type;
+            data = item.data;
             if (type === "text") {
                 ctx.save();
                 ctx.font = "bold " + ctx.font;
@@ -6154,7 +6151,7 @@ var Color = function (rgb, a) {
     this.alpha = typeof(a) === 'number' ? a : 1;
 };
 Color.prototype = {
-    eval: function () { return this },
+    eval: function () { return this; },
 
     //
     // If we have some transparency, the only way to represent it
@@ -6241,7 +6238,8 @@ var LinearRamp = function( start_color, end_color, start_value, end_value ) {
     this.start_value = start_value;
     this.end_value = end_value;
     this.value_range = end_value - start_value;
-}
+};
+
 LinearRamp.prototype.map_value = function( value ) {
     value = Math.max( value, this.start_value );
     value = Math.min( value, this.end_value );
@@ -6249,7 +6247,7 @@ LinearRamp.prototype.map_value = function( value ) {
     // HACK: just red for now
     // return "hsl(0,100%," + (value * 100) + "%)"
     return this.start_color.mix( this.end_color, 1 - value ).toCSS();
-}
+};
 
 var SplitRamp = function( start_color, middle_color, end_color, start_value, end_value ) {
     /**
@@ -6259,29 +6257,31 @@ var SplitRamp = function( start_color, middle_color, end_color, start_value, end
     this.negative_ramp = new LinearRamp( middle_color, start_color, 0, -start_value );
     this.start_value = start_value;
     this.end_value = end_value;
-}
+};
+
 SplitRamp.prototype.map_value = function( value ) {
     value = Math.max( value, this.start_value );
     value = Math.min( value, this.end_value );
     if ( value >= 0 ) {
-        return this.positive_ramp.map_value( value )
+        return this.positive_ramp.map_value( value );
     } else {
-        return this.negative_ramp.map_value( -value )
+        return this.negative_ramp.map_value( -value );
     }
-}
+};
 
 var DiagonalHeatmapPainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
+    var i, len;
     if ( this.prefs.min_value === undefined ) {
         var min_value = Infinity;
-        for (var i = 0, len = this.data.length; i < len; i++) {
+        for (i = 0, len = this.data.length; i < len; i++) {
             min_value = Math.min( min_value, this.data[i][5] );
         }
         this.prefs.min_value = min_value;
     }
     if ( this.prefs.max_value === undefined ) {
         var max_value = -Infinity;
-        for (var i = 0, len = this.data.length; i < len; i++) {
+        for (i = 0, len = this.data.length; i < len; i++) {
             max_value = Math.max( max_value, this.data[i][5] );
         }
         this.prefs.max_value = max_value;
@@ -6303,7 +6303,6 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
         value_range = max_value - min_value,
         height_px = height,
         view_start = this.view_start,
-        view_range = this.view_end - this.view_start,
         mode = this.mode,
         data = this.data,
         invsqrt2 = 1 / Math.sqrt(2);
@@ -6312,7 +6311,7 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
 
     var d, s1, e1, s2, e2, value;
 
-    var scale = function( p ) { return ( p - view_start ) * w_scale };
+    var scale = function( p ) { return ( p - view_start ) * w_scale; };
 
     ctx.save();
 
@@ -6334,7 +6333,7 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
         e2 = scale( d[5] );
         value = d[6];
 
-        ctx.fillStyle = ( ramp.map_value( value ) )
+        ctx.fillStyle = ( ramp.map_value( value ) );
 
         ctx.fillRect( s1, s2, ( e1 - s1 ), ( e2 - s2 ) );
     }
