@@ -263,7 +263,7 @@ class InstallManager( object ):
                                                     tool_shed_repository,
                                                     self.app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                 # Get the tool_versions from the tool shed for each tool in the installed change set.
-                url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy&no_reset=true' % \
+                url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
                     ( tool_shed_url, tool_shed_repository.name, self.repository_owner, installed_changeset_revision )
                 response = urllib2.urlopen( url )
                 text = response.read()

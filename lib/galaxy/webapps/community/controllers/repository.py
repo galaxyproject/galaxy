@@ -583,7 +583,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if 'f-free-text-search' in kwd:
             if kwd[ 'f-free-text-search' ] == 'All':
                 # The user performed a search, then clicked the "x" to eliminate the search criteria.
-                new_kwd = dict( webapp='galaxy', no_reset='true' )
+                new_kwd = dict( webapp='galaxy' )
                 return self.valid_category_list_grid( trans, **new_kwd )
             # Since we are searching valid repositories and not categories, redirect to browse_valid_repositories().
             if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:

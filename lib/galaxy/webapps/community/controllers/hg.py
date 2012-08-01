@@ -16,11 +16,9 @@ class HgController( BaseUIController ):
         # hg clone http://test@127.0.0.1:9009/repos/test/convert_characters1
         cmd = kwd.get( 'cmd', None )
         wsgi_app = wsgiapplication( make_web_app )
-        # Hack: Add a parameter to requests for which we do not want all repository metadata reset.
-        reset_metadata = not ( kwd.get( 'no_reset', False ) )
-        if cmd == 'listkeys' and reset_metadata:
-            # This possibly results from an "hg push" from the command line.  When doing this, the following 7 commands, in order,
-            # will be retrieved from environ: between -> capabilities -> heads -> branchmap -> unbundle -> unbundle -> listkeys
+        if cmd == 'pushkey':
+            # This results from an "hg push" from the command line.  When doing this, the following 6 commands, in order,
+            # will be retrieved from environ: capabilities -> batch -> branchmap -> unbundle -> listkeys -> pushkey
             path_info = kwd.get( 'path_info', None )
             if path_info:
                 owner, name = path_info.split( '/' )
