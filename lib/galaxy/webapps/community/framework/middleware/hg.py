@@ -21,6 +21,11 @@ class Hg( object ):
         self.repository = None
         self.username = None
         self.action = None
+        # Determine the database url
+        if 'database_connection' in self.config:
+            self.db_url = self.config[ 'database_connection' ]
+        else:
+            self.db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config[ 'database_file' ]
     def __call__( self, environ, start_response ):
         cmd = self.__get_hg_command( **environ )
         if cmd == 'changegroup':
@@ -36,8 +41,7 @@ class Hg( object ):
                 username = path_info_components[1]
                 name = path_info_components[2]
                 # Instantiate a database connection
-                db_url = self.config[ 'database_connection' ]
-                engine = create_engine( db_url )
+                engine = create_engine( self.db_url )
                 connection = engine.connect()
                 result_set = connection.execute( "select id from galaxy_user where username = '%s'" % username.lower() )
                 for row in result_set:
@@ -95,8 +99,7 @@ class Hg( object ):
         return self.__authenticate( username, password )
     def __authenticate( self, username, password ):
         # Instantiate a database connection
-        db_url = self.config[ 'database_connection' ]
-        engine = create_engine( db_url )
+        engine = create_engine( self.db_url )
         connection = engine.connect()
         result_set = connection.execute( "select email, password from galaxy_user where username = '%s'" % username.lower() )
         for row in result_set:

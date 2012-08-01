@@ -31,8 +31,8 @@ class Configuration( object ):
         os.umask( self.umask ) # can't get w/o set, so set it back
         self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
         # Database related configuration
-        self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
-        self.database_connection =  kwargs.get( "database_connection", False )
+        self.database = resolve_path( kwargs.get( "database_file", "database/community.sqlite" ), self.root )
+        self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )                        
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Where dataset files are stored

@@ -140,9 +140,9 @@
             <div class="form-row">
                 <label>Name:</label>
                 %if repository.times_downloaded > 0:
-                    ${repo_name}
+                    ${repository.name}
                 %else:
-                    <input name="repo_name" type="textfield" value="${repo_name}" size="40"/>
+                    <input name="repo_name" type="textfield" value="${repository.name}" size="40"/>
                 %endif
                 <div class="toolParamHelp" style="clear: both;">
                     Repository names cannot be changed if the repository has been cloned.

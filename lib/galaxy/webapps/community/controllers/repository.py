@@ -1484,7 +1484,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if long_description != repository.long_description:
                 repository.long_description = long_description
                 flush_needed = True
-            if repo_name != repository.name:
+            if repository.times_downloaded == 0 and repo_name != repository.name:
                 message = self.__validate_repository_name( repo_name, user )
                 if message:
                     error = True
@@ -1492,10 +1492,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     self.__change_hgweb_config_entry( trans, repository, repository.name, repo_name )
                     repository.name = repo_name
                     flush_needed = True
+            elif repository.times_downloaded != 0 and repo_name != repository.name:
+                message = "Repository names cannot be changed if the repository has been cloned.  "
             if flush_needed:
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
-            message = "The repository information has been updated."
+                message += "The repository information has been updated."
         elif params.get( 'manage_categories_button', False ):
             flush_needed = False
             # Delete all currently existing categories.
