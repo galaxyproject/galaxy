@@ -17,7 +17,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates( "tool_link", "panel_section", "tool_search" )}
-    ${h.js( "galaxy.base", "json2", "autocomplete_tagging", "mvc/tools" )}
+    ${h.js( "galaxy.base", "json2", "autocomplete_tagging", "mvc/tools", "bootstrap" )}
     
     <%
         # Set up for creating tool panel.
@@ -34,7 +34,6 @@
         $(function() {
             // Set up search.
             tool_search = new ToolSearch( {spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
-                                           clear_btn_url: "${h.url_for('/static/images/fugue/cross-circle-bw.png')}",
 										   search_url: "${h.url_for( controller='root', action='tool_search' )}",
                                            hidden: ${tool_search_hidden} } );
 										   
@@ -66,6 +65,8 @@
                                                 JSON.stringify({"search_active" : search_active}));
             });
             */
+			
+			$( '.tooltip' ).tooltip();
             
             // TODO: is this necessary?
             $( "a[minsizehint]" ).click( function() {

@@ -559,7 +559,7 @@ var ToolSearchView = Backbone.View.extend({
     query_changed: function( evData ) {
         // check for the 'clear key' (ESC) first
         if( ( this.model.attributes.clear_key )
-        &&  ( this.model.attributes.clear_key == evData.which ) ){
+        &&  ( this.model.attributes.clear_key === evData.which ) ){
             this.clear();
             return false;
         }
