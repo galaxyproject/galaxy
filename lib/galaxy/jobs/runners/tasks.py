@@ -103,9 +103,6 @@ class TaskedJobRunner( object ):
                     count_complete = 0
                     tasks_complete = True
                     for tw in task_wrappers:
-#                        # DELETEME - debug
-#                        log.debug( "Checking task wrapper %d; tasks_complete = %s" 
-#                                 % (tw.task_id, tasks_complete) )
                         task_state = tw.get_state()
                         if ( model.Task.states.ERROR == task_state ):
                             log.debug( "Canceling job %d: Task %d returned an error"

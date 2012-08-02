@@ -392,9 +392,6 @@ class DefaultJobDispatcher( object ):
             runner_name = "tasks"
         else:
             runner_name = ( job_wrapper.get_job_runner_url().split(":", 1) )[0]
-            # DELETEME
-            #log.debug( "__get_runner_name: runner_name = %s; URL: %s" 
-            #    % (runner_name, job_wrapper.get_job_runner_url()) )
         return runner_name
 
     def put( self, job_wrapper ):
@@ -419,8 +416,6 @@ class DefaultJobDispatcher( object ):
         # Note that Jobs and Tasks have runner_names, which are distinct from
         # the job_runner_name and task_runner_name.
 
-        # DELETEME - this next block is for debug only.
-        log.debug( "DefaultJobDispatcher: Stopping job %d" % job.get_id() )
         if ( isinstance( job, model.Job ) ):
             log.debug( "Stopping job %d:", job.get_id() )
         elif( isinstance( job, model.Task ) ):

@@ -87,9 +87,6 @@ class LocalJobRunner( BaseJobRunner ):
                                              stderr = stderr_file,
                                              env = os.environ,
                                              preexec_fn = os.setpgrp )
-                    # DELETEME (debug):
-                    log.debug( "Job %s: PID %d" 
-                             % ( job_wrapper.get_id_tag(), proc.pid ) )
                     job_wrapper.set_runner( 'local:///', proc.pid )
                     job_wrapper.change_state( model.Job.states.RUNNING )
                     if self.app.config.output_size_limit > 0:

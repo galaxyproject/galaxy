@@ -976,8 +976,6 @@ class TaskWrapper(JobWrapper):
     def set_runner( self, runner_url, external_id ):
         task = self.get_task()
         self.sa_session.refresh( task )
-        # DELETEME:
-        #log.debug( "************** Setting task %d runner name to %s" % ( task.get_id(), runner_url ) )
         task.task_runner_name = runner_url
         task.task_runner_external_id = external_id
         # DBTODO Check task job_runner_stuff
