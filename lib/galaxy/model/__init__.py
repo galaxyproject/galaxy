@@ -314,15 +314,7 @@ class Task( object ):
         self.stdout = "" 
         self.stderr = "" 
         self.prepare_input_files_cmd = prepare_files_cmd
-<<<<<<< local
-    
-    # TODO: Add accessors for members defined in SQL Alchemy for the Task table. 
-=======
 
-    def set_state( self, state ):
-        self.state = state
-
->>>>>>> other
     def get_param_values( self, app ):
         """
         Read encoded parameter values from the database and turn back into a
