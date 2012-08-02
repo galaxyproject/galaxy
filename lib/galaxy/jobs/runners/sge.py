@@ -365,28 +365,28 @@ class SGEJobRunner( BaseJobRunner ):
     def stop_job( self, job ):
         """Attempts to delete a job from the SGE queue"""
         try:
-            self.ds.control( job.job_runner_external_id, DRMAA.Session.TERMINATE )
-            log.debug( "(%s/%s) Removed from SGE queue at user's request" % ( job.id, job.job_runner_external_id ) )
+            self.ds.control( job.get_job_runner_external_id(), DRMAA.Session.TERMINATE )
+            log.debug( "(%s/%s) Removed from SGE queue at user's request" % ( job.get_id(), job.get_job_runner_external_id() ) )
         except DRMAA.InvalidJobError:
-            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.id, job.job_runner_external_id ) )
+            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), job.get_job_runner_external_id() ) )
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         sge_job_state = SGEJobState()
-        sge_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job.id)
-        sge_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.id)
-        sge_job_state.job_file = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job.id)
-        sge_job_state.job_id = str( job.job_runner_external_id )
+        sge_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job.get_id())
+        sge_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.get_id())
+        sge_job_state.job_file = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job.get_id())
+        sge_job_state.job_id = str( job.get_job_runner_external_id() )
         sge_job_state.runner_url = job_wrapper.get_job_runner_url()
-        job_wrapper.command_line = job.command_line
+        job_wrapper.command_line = job.get_command_line()
         sge_job_state.job_wrapper = job_wrapper
-        if job.state == model.Job.states.RUNNING:
-            log.debug( "(%s/%s) is still in running state, adding to the SGE queue" % ( job.id, job.job_runner_external_id ) )
+        if job.get_state() == model.Job.states.RUNNING:
+            log.debug( "(%s/%s) is still in running state, adding to the SGE queue" % ( job.get_id(), job.get_job_runner_external_id() ) )
             sge_job_state.old_state = DRMAA.Session.RUNNING
             sge_job_state.running = True
             self.monitor_queue.put( sge_job_state )
-        elif job.state == model.Job.states.QUEUED:
-            log.debug( "(%s/%s) is still in SGE queued state, adding to the SGE queue" % ( job.id, job.job_runner_external_id ) )
+        elif job.get_state() == model.Job.states.QUEUED:
+            log.debug( "(%s/%s) is still in SGE queued state, adding to the SGE queue" % ( job.get_id(), job.get_job_runner_external_id() ) )
             sge_job_state.old_state = DRMAA.Session.QUEUED_ACTIVE
             sge_job_state.running = False
             self.monitor_queue.put( sge_job_state )

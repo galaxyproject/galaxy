@@ -126,6 +126,9 @@ def do_merge( job_wrapper,  task_wrappers):
             if output in merge_outputs:
                 output_type = outputs[output][0].datatype
                 output_files = [os.path.join(dir,base_output_name) for dir in task_dirs]
+                # Just include those files f in the output list for which the 
+                # file f exists; some files may not exist if a task fails.
+                output_files = [ f for f in output_files if os.path.exists(f) ]
                 log.debug('files %s ' % output_files)
                 output_type.merge(output_files, output_file_name)
                 log.debug('merge finished: %s' % output_file_name)

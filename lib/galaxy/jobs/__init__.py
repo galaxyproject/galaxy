@@ -308,11 +308,13 @@ class JobWrapper( object ):
             #ERROR at this point means the job was deleted by an administrator.
             return self.fail( job.info )
 
-        # Check the 
-        if ( self.check_tool_output( stdout, stderr, tool_exit_code ) ):
-            job.state = job.states.OK
-        else:
-            job.state = job.states.ERROR
+        # Check the tool's stdout, stderr, and exit code for errors, but only
+        # if the job has not already been marked as having an error.
+        if job.states.ERROR != job.state:
+            if ( self.check_tool_output( stdout, stderr, tool_exit_code ) ):
+                job.state = job.states.OK
+            else:
+                job.state = job.states.ERROR
 
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
@@ -974,6 +976,8 @@ class TaskWrapper(JobWrapper):
     def set_runner( self, runner_url, external_id ):
         task = self.get_task()
         self.sa_session.refresh( task )
+        # DELETEME:
+        #log.debug( "************** Setting task %d runner name to %s" % ( task.get_id(), runner_url ) )
         task.task_runner_name = runner_url
         task.task_runner_external_id = external_id
         # DBTODO Check task job_runner_stuff
@@ -983,28 +987,35 @@ class TaskWrapper(JobWrapper):
     def finish( self, stdout, stderr, tool_exit_code=0 ):
         # DBTODO integrate previous finish logic.
         # Simple finish for tasks.  Just set the flag OK.
-        log.debug( 'task %s for job %d ended' % (self.task_id, self.job_id) )
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        # This may have ended too soon
+        log.debug( 'task %s for job %d ended; exit code: %d' 
+                 % (self.task_id, self.job_id, tool_exit_code) )
         # default post job setup_external_metadata
         self.sa_session.expunge_all()
         task = self.get_task()
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:
+            # Job was deleted by an administrator
             if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
                 self.cleanup()
             return
         elif task.state == task.states.ERROR:
-            # Job was deleted by an administrator
             self.fail( task.info )
             return
+
+        # Check what the tool returned. If the stdout or stderr matched 
+        # regular expressions that indicate errors, then set an error.
+        # The same goes if the tool's exit code was in a given range.
         if ( self.check_tool_output( stdout, stderr, tool_exit_code ) ):
             task.state = task.states.OK
         else: 
             task.state = task.states.ERROR
+
         # Save stdout and stderr
         if len( stdout ) > 32768:
             log.error( "stdout for task %d is greater than 32K, only first part will be logged to database" % task.id )

@@ -114,6 +114,7 @@ class Job( object ):
                     ERROR = 'error',
                     DELETED = 'deleted',
                     DELETED_NEW = 'deleted_new' )
+    # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self ):
         self.session_id = None
         self.user_id = None
@@ -134,6 +135,97 @@ class Job( object ):
         self.imported = False
         self.handler = None
 
+    # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
+    # for the mapper defined to the Job table. 
+    def get_session_id( self ):
+        return self.session_id
+    def get_user_id( self ):
+        return self.user_id
+    def get_tool_id( self ):
+        return self.tool_id
+    def get_tool_version( self ):
+        return self.tool_version
+    def get_command_line( self ):
+        return self.command_line
+    def get_param_filename( self ):
+        return self.param_filename
+    def get_parameters( self ):
+        return self.parameters
+    def get_input_datasets( self ):
+        return self.input_datasets
+    def get_output_datasets( self ):
+        return self.output_datasets
+    def get_input_library_datasets( self ):
+        return self.input_library_datasets
+    def get_output_library_datasets( self ):
+        return self.output_library_datasets
+    def get_state( self ):
+        return self.state
+    def get_info( self ):
+        return self.info
+    def get_job_runner_name( self ):
+        # This differs from the Task class in that job_runner_name is
+        # accessed instead of task_runner_name. Note that the field
+        # runner_name is not the same thing.
+        return self.job_runner_name
+    def get_job_runner_external_id( self ):
+        # This is different from the Task just in the member accessed: 
+        return self.job_runner_external_id
+    def get_post_job_actions( self ):
+        return self.post_job_actions
+    def get_imported( self ):
+        return self.imported
+    def get_handler( self ):
+        return self.handler
+    def get_params( self ):
+        return self.params
+    def get_user( self ):
+        # This is defined in the SQL Alchemy mapper as a relation to the User.
+        return self.user
+    def get_id( self ):
+        # This is defined in the SQL Alchemy's Job table (and not in the model).
+        return self.id
+    def get_tasks( self ):
+        # The tasks member is pert of a reference in the SQL Alchemy schema:
+        return self.tasks
+
+    def set_session_id( self, session_id ):
+        self.session_id = session_id
+    def set_user_id( self, user_id ):
+        self.user_id = user_id
+    def set_tool_id( self, tool_id ):
+        self.tool_id = tool_id
+    def set_tool_version( self, tool_version ):
+        self.tool_version = tool_version
+    def set_command_line( self, command_line ):
+        self.command_line = command_line
+    def set_param_filename( self, param_filename ):
+        self.param_filename = param_filename
+    def set_parameters( self, parameters ):
+        self.parameters = parameters
+    def set_input_datasets( self, input_datasets ):
+        self.input_datasets = input_datasets
+    def set_output_datasets( self, output_datasets ):
+        self.output_datasets = output_datasets
+    def set_input_library_datasets( self, input_library_datasets ):
+        self.input_library_datasets = input_library_datasets
+    def set_output_library_datasets( self, output_library_datasets ):
+        self.output_library_datasets = output_library_datasets
+    def set_info( self, info ):
+        self.info = info
+    def set_runner_name( self, job_runner_name ):
+        self.job_runner_name = job_runner_name
+    def set_runner_external_id( self, job_runner_external_id ):
+        self.job_runner_external_id = job_runner_external_id
+    def set_post_job_actions( self, post_job_actions ):
+        self.post_job_actions = post_job_actions
+    def set_imported( self, imported ):
+        self.imported = imported
+    def set_handler( self, handler ):
+        self.handler = handler
+    def set_params( self, params ):
+        self.params = params
+
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
     def add_input_dataset( self, name, dataset ):
@@ -147,6 +239,10 @@ class Job( object ):
     def add_post_job_action(self, pja):
         self.post_job_actions.append( PostJobActionAssociation( pja, self ) )
     def set_state( self, state ):
+        """
+        This is the only set method that performs extra work. In this case, the
+        state is propagated down to datasets.
+        """
         self.state = state
         # For historical reasons state propogates down to datasets
         for da in self.output_datasets:
@@ -204,6 +300,7 @@ class Task( object ):
                     ERROR = 'error',
                     DELETED = 'deleted' )
 
+    # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self, job, working_directory, prepare_files_cmd ):
         self.command_line = None
         self.parameters = []
@@ -213,13 +310,19 @@ class Task( object ):
         self.task_runner_name = None
         self.task_runner_external_id = None
         self.job = job
-        self.stdout = None
-        self.stderr = None
+        # SM: Using default empty strings avoids None exceptions later on.
+        self.stdout = "" 
+        self.stderr = "" 
         self.prepare_input_files_cmd = prepare_files_cmd
+<<<<<<< local
+    
+    # TODO: Add accessors for members defined in SQL Alchemy for the Task table. 
+=======
 
     def set_state( self, state ):
         self.state = state
 
+>>>>>>> other
     def get_param_values( self, app ):
         """
         Read encoded parameter values from the database and turn back into a
@@ -230,6 +333,91 @@ class Task( object ):
         param_dict = tool.params_from_strings( param_dict, app )
         return param_dict
 
+    def get_id( self ):
+        # This is defined in the SQL Alchemy schema: 
+        return self.id 
+    def get_command_line( self ):
+        return self.command_line
+    def get_parameters( self ):
+        return self.parameters
+    def get_state( self ):
+        return self.state
+    def get_info( self ):
+        return self.info
+    def get_working_directory( self ):
+        return self.working_directory
+    def get_task_runner_name( self ):
+        return self.task_runner_name
+    def get_task_runner_external_id( self ):
+        return self.task_runner_external_id
+    def get_job( self ):
+        return self.job
+    def get_stdout( self ):
+        return self.stdout
+    def get_stderr( self ):
+        return self.stderr
+    def get_prepare_input_files_cmd( self ):
+        return self.prepare_input_files_cmd
+
+    # The following accessors are for members that are in the Job class but
+    # not in the Task class. So they can either refer to the parent Job
+    # or return None, depending on whether Tasks need to point to the parent
+    # (e.g., for a session) or never use the member (e.g., external output
+    # metdata). These can be filled in as needed.
+    def get_external_output_metadata( self ):
+        return None
+    def get_job_runner_name( self ):
+        """
+        Since runners currently access Tasks the same way they access Jobs,
+        this method just refers to *this* instance's runner.
+        """
+        return self.task_runner_name
+    def get_job_runner_external_id( self ):
+        """
+        Runners will use the same methods to get information about the Task
+        class as they will about the Job class, so this method just returns
+        the task's external id. 
+        """
+        # TODO: Merge into get_runner_external_id.
+        return self.task_runner_external_id
+    def get_session_id( self ):
+        # The Job's galaxy session is equal to the Job's session, so the
+        # Job's session is the same as the Task's session. 
+        return self.get_job().get_session_id()
+
+    def set_id( self, id ):
+        # This is defined in the SQL Alchemy's mapper and not here.
+        # This should never be called.
+        self.id = id
+    def set_command_line( self, command_line ):
+        self.command_line = command_line
+    def set_parameters( self, parameters ):
+        self.parameters = parameters
+    def set_state( self, state ):
+        self.state = state
+    def set_info( self, info ):
+        self.info = info
+    def set_working_directory( self, working_directory ):
+        self.working_directory = working_directory
+    def set_task_runner_name( self, task_runner_name ):
+        self.task_runner_name = task_runner_name
+    def set_job_runner_external_id( self, task_runner_external_id ):
+        # This method is available for runners that do not want/need to
+        # differentiate between the kinds of Runnable things (Jobs and Tasks)
+        # that they're using.
+        log.debug( "Task %d: Set external id to %s" 
+                 % ( self.id, task_runner_external_id ) )
+        self.task_runner_external_id = task_runner_external_id
+    def set_task_runner_external_id( self, task_runner_external_id ):
+        self.task_runner_external_id = task_runner_external_id
+    def set_job( self, job ):
+        self.job = job
+    def set_stdout( self, stdout ):
+        self.stdout = stdout
+    def set_stderr( self, stderr ):
+        self.stderr = stderr
+    def set_prepare_input_files_cmd( self, prepare_input_files_cmd ):
+        self.prepare_input_files_cmd = prepare_input_files_cmd
 
 class JobParameter( object ):
     def __init__( self, name, value ):

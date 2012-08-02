@@ -392,6 +392,9 @@ class DefaultJobDispatcher( object ):
             runner_name = "tasks"
         else:
             runner_name = ( job_wrapper.get_job_runner_url().split(":", 1) )[0]
+            # DELETEME
+            #log.debug( "__get_runner_name: runner_name = %s; URL: %s" 
+            #    % (runner_name, job_wrapper.get_job_runner_url()) )
         return runner_name
 
     def put( self, job_wrapper ):
@@ -408,17 +411,43 @@ class DefaultJobDispatcher( object ):
             job_wrapper.fail( 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.' )
 
     def stop( self, job ):
-        runner_name = ( job.job_runner_name.split(":", 1) )[0]
-        log.debug( "stopping job %d in %s runner" %( job.id, runner_name ) )
-        try:
-            self.job_runners[runner_name].stop_job( job )
-        except KeyError:
-            log.error( 'stop(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
-            # Job and output dataset states have already been updated, so nothing is done here.
+        """
+        Stop the given job. The input variable job may be either a Job or a Task.
+        """
+        # The Job and Task classes have been modified so that their accessors
+        # will return the appropriate value. 
+        # Note that Jobs and Tasks have runner_names, which are distinct from
+        # the job_runner_name and task_runner_name.
+
+        # DELETEME - this next block is for debug only.
+        log.debug( "DefaultJobDispatcher: Stopping job %d" % job.get_id() )
+        if ( isinstance( job, model.Job ) ):
+            log.debug( "Stopping job %d:", job.get_id() )
+        elif( isinstance( job, model.Task ) ):
+            log.debug( "Stopping job %d, task %d" 
+                     % ( job.get_job().get_id(), job.get_id() ) )
+        else:
+            log.debug( "Unknown job to stop" )
+
+        # The runner name is not set until the job has started.
+        # If we're stopping a task, then the runner_name may be
+        # None, in which case it hasn't been scheduled.
+        if ( None != job.get_job_runner_name() ):
+            runner_name = (job.get_job_runner_name().split(":",1))[0]
+            if ( isinstance( job, model.Job ) ):
+    	        log.debug( "stopping job %d in %s runner" %( job.get_id(), runner_name ) )
+            elif ( isinstance( job, model.Task ) ):
+                log.debug( "Stopping job %d, task %d in %s runner" 
+                         % ( job.get_job().get_id(), job.get_id(), runner_name ) )
+            try:
+                self.job_runners[runner_name].stop_job( job )
+            except KeyError:
+                log.error( 'stop(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
+                # Job and output dataset states have already been updated, so nothing is done here.
 
     def recover( self, job, job_wrapper ):
         runner_name = ( job.job_runner_name.split(":", 1) )[0]
-        log.debug( "recovering job %d in %s runner" %( job.id, runner_name ) )
+        log.debug( "recovering job %d in %s runner" %( job.get_id(), runner_name ) )
         try:
             self.job_runners[runner_name].recover( job, job_wrapper )
         except KeyError:

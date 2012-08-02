@@ -136,8 +136,16 @@ class DRMAAJobRunner( BaseJobRunner ):
             if op is self.STOP_SIGNAL:
                 return
             try:
+                # If the next item is to be run, then only run it if the
+                # job state is "queued". Otherwise the next item was either
+                # cancelled or one of its siblings encountered an error.
                 if op == 'queue':
-                    self.queue_job( obj )
+                    job_state = obj.get_state()
+                    if model.Job.states.QUEUED == job_state:
+                        self.queue_job( obj )
+                    else:
+                        log.debug( "PBS: not executing job %d in state %s"
+                                 % ( obj.get_id_tag(), job_state ) ) 
                 elif op == 'finish':
                     self.finish_job( obj )
                 elif op == 'fail':
@@ -330,6 +338,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         which_try = 0
         # By default, the exit code is 0, which typically indicates success.
         exit_code = 0
+        exit_code_str = "0"
         while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
                 ofh = file(ofile, "r")
@@ -386,15 +395,15 @@ class DRMAAJobRunner( BaseJobRunner ):
         """Attempts to delete a job from the DRM queue"""
         try:
             if self.external_killJob_script is None:
-                self.ds.control( job.job_runner_external_id, drmaa.JobControlAction.TERMINATE )
+                self.ds.control( job.get_job_runner_external_id(), drmaa.JobControlAction.TERMINATE )
             else:
                 # FIXME: hardcoded path
-                subprocess.Popen( [ '/usr/bin/sudo', '-E', self.external_killJob_script, str( job.job_runner_external_id ), str( self.userid ) ], shell=False )
-            log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.id, job.job_runner_external_id ) )
+                subprocess.Popen( [ '/usr/bin/sudo', '-E', self.external_killJob_script, str( job.get_job_runner_external_id() ), str( self.userid ) ], shell=False )
+            log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), job.get_job_runner_external_id() ) )
         except drmaa.InvalidJobException:
-            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.id, job.job_runner_external_id ) )
+            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), job.get_job_runner_external_id() ) )
         except Exception, e:
-            log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.id, job.job_runner_external_id, e ) )
+            log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.get_id(), job.get_job_runner_external_id(), e ) )
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -402,18 +411,18 @@ class DRMAAJobRunner( BaseJobRunner ):
         drm_job_state.ofile = "%s.drmout" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.efile = "%s.drmerr" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.ecfile = "%s.drmec" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
-        drm_job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job.id)
-        drm_job_state.job_id = str( job.job_runner_external_id )
+        drm_job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job.get_id())
+        drm_job_state.job_id = str( job.get_job_runner_external_id() )
         drm_job_state.runner_url = job_wrapper.get_job_runner_url()
-        job_wrapper.command_line = job.command_line
+        job_wrapper.command_line = job.get_command_line()
         drm_job_state.job_wrapper = job_wrapper
         if job.state == model.Job.states.RUNNING:
-            log.debug( "(%s/%s) is still in running state, adding to the DRM queue" % ( job.id, job.job_runner_external_id ) )
+            log.debug( "(%s/%s) is still in running state, adding to the DRM queue" % ( job.get_id(), job.get_job_runner_external_id() ) )
             drm_job_state.old_state = drmaa.JobState.RUNNING
             drm_job_state.running = True
             self.monitor_queue.put( drm_job_state )
-        elif job.state == model.Job.states.QUEUED:
-            log.debug( "(%s/%s) is still in DRM queued state, adding to the DRM queue" % ( job.id, job.job_runner_external_id ) )
+        elif job.get_state() == model.Job.states.QUEUED:
+            log.debug( "(%s/%s) is still in DRM queued state, adding to the DRM queue" % ( job.get_id(), job.get_job_runner_external_id() ) )
             drm_job_state.old_state = drmaa.JobState.QUEUED_ACTIVE
             drm_job_state.running = False
             self.monitor_queue.put( drm_job_state )
