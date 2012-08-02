@@ -714,7 +714,8 @@ select,input,textarea{font:inherit;}
 textarea,input[type="text"],input[type="password"]{font-size:12px;line-height:16px;border:1px solid #999999;padding:3px;}
 .search-query{display:inline-block;padding:4px;font-size:12px;line-height:16px;color:#555555;border:1px solid #999999;padding-left:14px !important;padding-right:14px !important;margin-bottom:0;-webkit-border-radius:14px;-moz-border-radius:14px;border-radius:14px;max-width:auto;}
 .search-query:focus{border-color:rgba(24, 132, 218, 0.8);-webkit-box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);-moz-box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);box-shadow:inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(82, 168, 236, 0.6);outline:0;outline:thin dotted \9;}
-.search-spinner{position:absolute;display:none;right:8px;top:10px;}
+.search-spinner{position:absolute;display:none;right:5px;top:9px;}
+.search-clear-btn{position:absolute;right:4px;top:8px;}
 .errormessagelarge,.warningmessagelarge,.donemessagelarge,.infomessagelarge{padding:8px 35px 8px 14px;margin-bottom:16px;text-shadow:0 1px 0 rgba(255, 255, 255, 0.5);background-color:#ffffcc;border:1px solid #ffdd33;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;color:#666600;min-height:36px;padding-left:52px;background-image:url(error_large.png);background-repeat:no-repeat;background-position:10px 10px;}
 .errormessagelarge{background-color:#ffcccc;border-color:#ff3355;color:#660000;padding-left:52px;}
 .warningmessagelarge{background-image:url(warn_large.png);border-color:#aaaa66;background-color:#ffffcc;}

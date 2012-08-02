@@ -34,9 +34,10 @@
         $(function() {
             // Set up search.
             tool_search = new ToolSearch( {spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
-                                           search_url: "${h.url_for( controller='root', action='tool_search' )}",
+                                           clear_btn_url: "${h.url_for('/static/images/fugue/cross-circle-bw.png')}",
+										   search_url: "${h.url_for( controller='root', action='tool_search' )}",
                                            hidden: ${tool_search_hidden} } );
-            
+										   
             // Set up tool panel.
             tool_panel = new ToolPanel( { tool_search: tool_search } );
             tool_panel.reset( tool_panel.parse( ${h.to_json_string( dictified_panel )} ) );

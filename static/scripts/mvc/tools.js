@@ -270,11 +270,16 @@ var ToolPanelSection = BaseModel.extend({
  */
 var ToolSearch = BaseModel.extend({
     defaults: {
+        search_hint_string: "search tools",
+        min_chars_for_search: 3,
         spinner_url: "",
+        clear_btn_url: "",
         search_url: "",
         visible: true,
         query: "",
-        results: null
+        results: null,
+        // ESC (27) will clear the input field and tool search filters
+        clear_key: 27
     },
     
     initialize: function() {
@@ -288,7 +293,7 @@ var ToolSearch = BaseModel.extend({
         var query = this.attributes.query;
         
         // If query is too short, do not search.
-        if (query.length < 3) {
+        if (query.length < this.attributes.min_chars_for_search) {
             this.set("results", null);
             return;
         }
@@ -300,15 +305,23 @@ var ToolSearch = BaseModel.extend({
             clearTimeout(this.timer);
         }
         // Start a new ajax-request in X ms
+        $("#search-clear-btn").hide();
         $("#search-spinner").show();
         var self = this;
         this.timer = setTimeout(function () {
             $.get(self.attributes.search_url, { query: q }, function (data) {
                 self.set("results", data);
                 $("#search-spinner").hide();
+                $("#search-clear-btn").show();
             }, "json" );
         }, 200 );
+    },
+    
+    clear_search: function() {
+        this.set("query", "");
+        this.set("results", null);
     }
+    
 });
 
 /**
@@ -520,7 +533,8 @@ var ToolSearchView = Backbone.View.extend({
     
     events: {
         'click': 'focus_and_select',
-        'keyup :input': 'query_changed'
+        'keyup :input': 'query_changed',
+        'click #search-clear-btn': 'clear'
     },
     
     render: function() {
@@ -535,7 +549,20 @@ var ToolSearchView = Backbone.View.extend({
         this.$el.find(":input").focus().select();
     },
     
-    query_changed: function() {
+    clear: function() {
+        this.model.clear_search();
+        this.$el.find(":input").val(this.model.attributes.search_hint_string);
+        this.focus_and_select();
+        return false;
+    },
+    
+    query_changed: function( evData ) {
+        // check for the 'clear key' (ESC) first
+        if( ( this.model.attributes.clear_key )
+        &&  ( this.model.attributes.clear_key == evData.which ) ){
+            this.clear();
+            return false;
+        }
         this.model.set("query", this.$el.find(":input").val());
     }
 });
