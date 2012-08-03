@@ -1,3 +1,36 @@
+"""
+Scrambles eggs for distribution on multiple platforms.
+
+(from http://wiki.g2.bx.psu.edu/Admin/Config/Eggs)
+This is mostly designed for use by Galaxy Developers at Penn State who are
+building eggs for distribution via the Galaxy Eggs distribution site.
+dist-scramble.py uses the dist-eggs.ini config file to determine what platforms
+to build for, and which hosts to build on.
+
+dist-scramble.py works the same way as scramble.py: ::
+
+% python scripts/dist-scramble.py galaxy_egg
+
+Called with only the egg argument, dist-scramble.py will build for all the
+platforms under the all group in its config file (for platform-specific eggs)
+or the noplatform group (for platform-inspecific eggs). The [[hosts]|section
+contains information about which hosts will be used for building on each desired
+platform. If you don't want to build for all the platforms listed under the all
+group, you can add a platform argument (any lvalue in the [hosts]] or [groups]
+section is valid): ::
+
+% python scripts/dist-scramble.py galaxy_egg linux
+
+The platform argument is ignored for platform-inspecific eggs. An assumption is
+made that your Galaxy distribution is located at the same place on all of the
+hosts on which you're building (i.e. via a network filesystem).
+
+Once dist-scramble.py finishes, it will output a list of platforms on which it
+failed to scramble the egg. Successful eggs will be put in a new dist-eggs
+subdirectory of your Galaxy distribution. These eggs can then be copied to your
+distribution site.
+"""
+
 import os, sys, logging
 from optparse import OptionParser
 

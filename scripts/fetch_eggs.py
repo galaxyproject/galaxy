@@ -1,3 +1,10 @@
+"""
+Connects to the Galaxy Eggs distribution site and downloads any eggs needed.
+
+If eggs for your platform are unavailable, fetch_eggs.py will direct you to run
+scramble.py.
+"""
+
 import os, sys, logging
 from optparse import OptionParser
 

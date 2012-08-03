@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+
+"""
+Submit a DRMAA job given a user id and a job template file (in JSON format)
+defining any or all of the following: args, remoteCommand, outputPath,
+errorPath, nativeSpecification, name, email, project
+"""
+
 import os
 import sys
 import errno

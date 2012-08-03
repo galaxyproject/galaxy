@@ -1,3 +1,8 @@
+"""
+If the current installed python version is not 2.5 to 2.7, prints an error
+message to stderr and returns 1
+"""
+
 import os, sys
 
 msg = """ERROR: Your Python version is: %s

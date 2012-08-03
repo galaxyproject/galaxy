@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+"""
+Terminates a DRMAA job if given a job id and (appropriate) user id.
+"""
+
 import os
 import sys
 import errno

@@ -1,3 +1,21 @@
+"""
+Creates the initial galaxy database schema using the settings defined in
+universe_wsgi.ini.
+
+This script is also wrapped by create_db.sh.
+
+.. note: pass '-c /location/to/your_config.ini' for non-standard ini file
+locations.
+
+.. note: if no database_connection is set in universe_wsgi.ini, the default,
+sqlite database will be constructed.
+    Using the database_file setting in universe_wsgi.ini will create the file
+    at the settings location (??)
+
+.. seealso: universe_wsgi.ini, specifically the settings: database_connection
+and database file
+"""
+
 import sys, os.path, logging
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]

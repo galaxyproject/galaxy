@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 """
-usage: check_eggs.py
+Compares local dependency eggs to those in eggs.ini, displaying a warning if
+any are out of date.
+
+usage: check_eggs.py [options]
 """
+
 import os, sys, logging
 from optparse import OptionParser
 
