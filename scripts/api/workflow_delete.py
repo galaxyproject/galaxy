@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 """
-# Author: RPARK
-API script for deleting workflows 
+# ---------------------------------------------- #
+# PARKLAB, Author: RPARK
+API example script for deleting workflows 
+# ---------------------------------------------- #
+
+Example calls:
+python workflow_delete.py <api_key> <galaxy_url>/api/workflows/<workflow id> True
 """
 
 import os, sys
