@@ -688,7 +688,8 @@ class SummaryTreeDataProvider( TracksDataProvider ):
 
 class BamDataProvider( TracksDataProvider, FilterableMixin ):
     """
-    Provides access to intervals from a sorted indexed BAM file.
+    Provides access to intervals from a sorted indexed BAM file. Position data
+    is reported in 1-based, closed format, i.e. SAM/BAM format.
     """
     
     def get_filters( self ):
@@ -987,6 +988,10 @@ class BigBedDataProvider( BBIDataProvider ):
         return f, BigBedFile(file=f)
 
 class BigWigDataProvider ( BBIDataProvider ):
+    """
+    Provides data from BigWig files; position data is reported in 1-based 
+    coordinate system, i.e. wiggle format.
+    """
     def _get_dataset( self ):
         if self.converted_dataset is not None:
             f = open( self.converted_dataset.file_name )

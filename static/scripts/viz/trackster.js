@@ -4201,6 +4201,9 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
+/**
+ * Track displays continuous/numerical data. Track expects position data in 1-based format, i.e. wiggle format.
+ */
 var LineTrack = function (view, container, obj_dict) {
     var track = this;
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
@@ -4420,6 +4423,9 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
     }
 });
 
+/**
+ * A track that displays features/regions. Track expects position data in BED format, i.e. 0-based, half-open.
+ */
 var FeatureTrack = function(view, container, obj_dict) {
     //
     // Preinitialization: do things that need to be done before calling Track and TiledTrack
@@ -4913,6 +4919,9 @@ var VcfTrack = function(view, container, obj_dict) {
 
 extend(VcfTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
+/**
+ * Track that displays mapped reads. Track expects position data in 1-based, closed format, i.e. SAM/BAM format.
+ */
 var ReadTrack = function (view, container, obj_dict) {
     FeatureTrack.call(this, view, container, obj_dict);
     
@@ -5847,7 +5856,8 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 // Go left if it clips
                 base_offset -= cig_len;
             }
-            var seq_start = feature_start + base_offset,
+            // -1 for feature start because data is using 1-based offset but display is 0-based.
+            var seq_start = (feature_start - 1) + base_offset,
                 s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
             
