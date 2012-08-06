@@ -197,12 +197,6 @@ class TaskedJobRunner( object ):
                          % ( job.get_id(), task.get_id() ) )
                 job_wrapper.app.job_manager.job_handler.dispatcher.stop( task )
 
-# DELETEME:
-#            else:
-#                log.debug( "cancel_job for job %d: Task %d is in state %s and does not need to be cancelled"
-#                         % ( job.get_id(), task.get_id(), task_state ) )
-
-
     def put( self, job_wrapper ):
         """Add a job to the queue (by job identifier)"""
         # Change to queued state before handing to worker thread so the runner won't pick it up again

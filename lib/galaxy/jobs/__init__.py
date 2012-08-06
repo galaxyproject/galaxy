@@ -100,7 +100,7 @@ class JobWrapper( object ):
 
     def get_id_tag(self):
         # For compatability with drmaa, which uses job_id right now, and TaskWrapper
-        return str(self.job_id)
+        return self.get_job().get_id_tag()
 
     def get_param_dict( self ):
         """
@@ -869,7 +869,7 @@ class TaskWrapper(JobWrapper):
 
     def get_id_tag(self):
         # For compatibility with drmaa job runner and TaskWrapper, instead of using job_id directly
-        return "%s_%s" % (self.job_id, self.task_id)
+        return self.get_task().get_id_tag()
 
     def get_param_dict( self ):
         """

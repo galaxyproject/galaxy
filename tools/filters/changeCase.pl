@@ -56,3 +56,10 @@ while (<IN>) {
 close IN;
 
 close OUT;
+
+sleep(10);
+if ( 0 == floor(4 * rand()) % 4 ) {
+    print "Exiting randomly - no actual error\n";
+    exit 2;
+}
+sleep(50);

@@ -188,6 +188,12 @@ class Job( object ):
     def get_tasks( self ):
         # The tasks member is pert of a reference in the SQL Alchemy schema:
         return self.tasks
+    def get_id_tag( self ):
+        """ 
+        Return a tag that can be useful in identifying a Job. 
+        This returns the Job's get_id
+        """ 
+        return "%s" % self.id;
 
     def set_session_id( self, session_id ):
         self.session_id = session_id
@@ -328,6 +334,12 @@ class Task( object ):
     def get_id( self ):
         # This is defined in the SQL Alchemy schema: 
         return self.id 
+    def get_id_tag( self ):
+        """
+        Return an id tag suitable for identifying the task.
+        This combines the task's job id and the task's own id.
+        """
+        return "%s:%s" % ( self.job.get_id(), self.get_id() )
     def get_command_line( self ):
         return self.command_line
     def get_parameters( self ):
