@@ -4067,6 +4067,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             track;
         for (var i = 0; i < this.drawables.length; i++) {
             track = this.drawables[i];
+            track.update_icons();
             group.add_drawable(track);
             track.container = group;
             group.content_div.append(track.container_div);
