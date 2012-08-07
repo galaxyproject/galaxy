@@ -398,7 +398,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      folder_id=self.security.encode_id( folder3.id ),
                                      upload_option='import_from_history',
                                      hda_ids=self.security.encode_id( hda.id ),
-                                     strings_displayed=[ '<input type="hidden" name="%s" value="Option1"/>' % select_field_name ] )
+                                     strings_displayed=[ '<select name="%s" last_selected_value="Option1">' % select_field_name ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( cntrller='library_admin',
