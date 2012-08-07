@@ -238,10 +238,17 @@ def check_tool_input_params( trans, repo_dir, tool_config, tool, sample_files, i
     reset_tool_data_tables( trans.app )
     return can_set_metadata, invalid_files
 def clean_repository_metadata( trans, id, changeset_revisions ):
-    # Delete all repository_metadata reecords associated with the repository that have a changeset_revision that is not in changeset_revisions.
+    # Delete all repository_metadata records associated with the repository that have a changeset_revision that is not in changeset_revisions.
+    # We sometimes see multiple records with the same changeset revision value - no idea how this happens. We'll assume we can delete the older
+    # records, so we'll order by update_time descending and delete records that have the same changeset_revision we come across later..
+    changeset_revisions_checked = [] 
     for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                                               .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ):
-        if repository_metadata.changeset_revision not in changeset_revisions:
+                                               .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
+                                               .order_by( trans.model.RepositoryMetadata.table.c.changeset_revision,
+                                                          trans.model.RepositoryMetadata.table.c.update_time.desc() ):
+        changeset_revision = repository_metadata.changeset_revision
+        can_delete = changeset_revision in changeset_revisions_checked or changeset_revision not in changeset_revisions
+        if can_delete:
             trans.sa_session.delete( repository_metadata )
             trans.sa_session.flush()
 def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
@@ -874,9 +881,8 @@ def new_workflow_metadata_required( trans, repository, metadata_dict ):
     if 'workflows' in metadata_dict:
         repository_metadata = get_latest_repository_metadata( trans, repository.id )
         if repository_metadata:
-            if repository_metadata.metadata:
-                # The repository has metadata, so update the workflows value - no new record is needed.
-                return False
+            # The repository has metadata, so update the workflows value - no new record is needed.
+            return False
         else:
             # There is no saved repository metadata, so we need to create a new repository_metadata table record.
             return True
