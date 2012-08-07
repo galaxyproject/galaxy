@@ -1,10 +1,5 @@
 <tool id="ChangeCase" name="Change Case">
   <description> of selected columns</description>
-  <parallelism method="multi" 
-               split_inputs="input" 
-               split_mode="number_of_parts" 
-               split_size="8"
-               merge_outputs="out_file1" />
   <stdio>
     <exit_code range="1:" err_level="fatal" />
   </stdio>
