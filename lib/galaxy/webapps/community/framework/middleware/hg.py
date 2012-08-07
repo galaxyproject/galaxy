@@ -8,11 +8,13 @@ from paste.httpheaders import REMOTE_USER, AUTH_TYPE
 
 from galaxy.webapps.community import model
 from galaxy.util.hash_util import new_secure_hash
+import mercurial.__version__
 
 log = logging.getLogger(__name__)
 
 class Hg( object ):
     def __init__( self, app, config ):
+        print "mercurial version is:", mercurial.__version__.version
         self.app = app
         self.config = config
         # Authenticate this mercurial request using basic authentication
@@ -56,7 +58,7 @@ class Hg( object ):
                 connection.close()
         if cmd == 'unbundle':
             # This is an hg push from the command line.  When doing this, the following 7 commands, in order,
-            # will be retrieved from environ: 
+            # will be retrieved from environ (see the docs at http://mercurial.selenic.com/wiki/WireProtocol): 
             # between -> capabilities -> heads -> branchmap -> unbundle -> unbundle -> listkeys
             #
             # The mercurial API unbundle() ( i.e., hg push ) method ultimately requires authorization.
