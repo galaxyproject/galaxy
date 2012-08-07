@@ -86,11 +86,11 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 Find Clusters:
 
-.. image:: ./static/operation_icons/gops_clusterFind.gif
+.. image:: ${static_path}/operation_icons/gops_clusterFind.gif
 
 Merge Clusters:
 
-.. image:: ./static/operation_icons/gops_clusterMerge.gif
+.. image:: ${static_path}/operation_icons/gops_clusterMerge.gif
 
 </help>
 </tool>

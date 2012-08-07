@@ -39,9 +39,9 @@
 The input dataset must be in lped_ format, and the output is tabular_.
 (`Dataset missing?`_)
 
-.. _lped: ./static/formatHelp.html#lped
-.. _tabular: ./static/formatHelp.html#tab
-.. _Dataset missing?: ./static/formatHelp.html
+.. _lped: ${static_path}/formatHelp.html#lped
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

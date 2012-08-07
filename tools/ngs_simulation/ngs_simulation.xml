@@ -188,7 +188,7 @@ There are one or two. The first is a png that contains two different plots and i
 
 Plot output (png):
 
-.. image:: ./static/images/ngs_simulation.png
+.. image:: ${static_path}/images/ngs_simulation.png
 
 Summary output (txt)::
 

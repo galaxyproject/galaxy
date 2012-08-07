@@ -8,6 +8,7 @@ pkg_resources.require( "simplejson" )
 import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback
 import simplejson
 import binascii
+from mako.template import Template
 from UserDict import DictMixin
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
@@ -1068,7 +1069,8 @@ class Tool:
                 break
     def parse_help( self, root ):
         """
-        Parse the help text for the tool. Formatted in reStructuredText.
+        Parse the help text for the tool. Formatted in reStructuredText, but 
+        stored as Mako to allow for dynamic image paths. 
         This implementation supports multiple pages.
         """
         # TODO: Allow raw HTML or an external link.
@@ -1080,7 +1082,7 @@ class Tool:
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:
-                self.help = util.rst_to_html(self.help.text)
+                self.help = Template( util.rst_to_html(self.help.text) )
             except:
                 log.exception( "error in help for tool %s" % self.name )
             # Multiple help page case
@@ -1090,7 +1092,7 @@ class Tool:
                     help_footer = help_footer + help_page.tail
         # Each page has to rendered all-together because of backreferences allowed by rst
         try:
-            self.help_by_page = [ util.rst_to_html( help_header + x + help_footer )
+            self.help_by_page = [ Template( util.rst_to_html( help_header + x + help_footer ) )
                                   for x in self.help_by_page ]
         except:
             log.exception( "error in multi-page help for tool %s" % self.name )

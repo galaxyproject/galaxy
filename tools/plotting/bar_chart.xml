@@ -52,7 +52,7 @@ This tool builds a bar chart on one or more columns. Suppose you have dataset li
 
 Graphing columns 2 and 3 while using column 1 for X Tick Labels will produce the following plot:
 
-.. image:: ./static/images/bar_chart.png 
+.. image:: ${static_path}/images/bar_chart.png 
    :height: 324 
    :width: 540 
     

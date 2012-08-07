@@ -94,9 +94,9 @@ The SNP dataset is in interval_ format, with a column of SNPs as described below
 The gene dataset is in BED_ format with 12 columns.  The output dataset is also interval.
 (`Dataset missing?`_)
 
-.. _interval: ./static/formatHelp.html#interval
-.. _BED: ./static/formatHelp.html#bed
-.. _Dataset missing?: ./static/formatHelp.html
+.. _interval: ${static_path}/formatHelp.html#interval
+.. _BED: ${static_path}/formatHelp.html#bed
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

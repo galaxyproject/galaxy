@@ -133,11 +133,11 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 Overlapping Intervals:
 
-.. image:: ./static/operation_icons/gops_intersectOverlappingIntervals.gif
+.. image:: ${static_path}/operation_icons/gops_intersectOverlappingIntervals.gif
 
 Overlapping Pieces of Intervals:
 
-.. image:: ./static/operation_icons/gops_intersectOverlappingPieces.gif
+.. image:: ${static_path}/operation_icons/gops_intersectOverlappingPieces.gif
 
 </help>
 </tool>

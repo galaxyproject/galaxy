@@ -98,7 +98,7 @@ The second output file::
 
 The third output file:
 
-.. image:: ./static/operation_icons/dwt_var_perClass.png
+.. image:: ${static_path}/operation_icons/dwt_var_perClass.png
 
   </help>  
   

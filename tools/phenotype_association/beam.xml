@@ -59,9 +59,9 @@ single-SNP associations), please use the GPASS tool instead.**
 The input dataset must be in lped_ format.  The output datasets are both tabular_.
 (`Dataset missing?`_)
 
-.. _lped: ./static/formatHelp.html#lped
-.. _tabular: ./static/formatHelp.html#tabular
-.. _Dataset missing?: ./static/formatHelp.html
+.. _lped: ${static_path}/formatHelp.html#lped
+.. _tabular: ${static_path}/formatHelp.html#tabular
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

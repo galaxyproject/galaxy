@@ -56,7 +56,7 @@ Illumina (Solexa) data::
 
 Quality scores are summarized as boxplot (Roche 454 FLX data):
 
-.. image:: ./static/images/short_reads_boxplot.png
+.. image:: ${static_path}/images/short_reads_boxplot.png
 
 where the **X-axis** is coordinate along the read and the **Y-axis** is quality score adjusted to comply with the Phred score metric. Units on the X-axis depend on whether your data comes from Roche (454) or Illumina (Solexa) and ABI SOLiD machines:
 

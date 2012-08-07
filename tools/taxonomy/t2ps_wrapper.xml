@@ -62,14 +62,14 @@ Suppose you have the following dataset::
 
 Drawing the tree with default parameters (without changing anything in the interface) will produce this tree:
 
-.. image:: ./static/images/t2ps_ideal.png 
+.. image:: ${static_path}/images/t2ps_ideal.png 
    :width: 500
 
 (for explanation of colors and numbers on the tree scroll to the bottom of this help section)
 
 Here *Class* rank represent terminal nodes (leaves) of the tree because it is the default setting of the "*show ranks from root to*" drop-down.  Changing the drop-down to "*Subspecies*" will produce this:
 
-.. image:: ./static/images/t2ps_ideal_ssp.png 
+.. image:: ${static_path}/images/t2ps_ideal_ssp.png 
    :width: 1000
 
 --------
@@ -87,7 +87,7 @@ Real taxonomic datasets almost always contain empty nodes.  These are represente
 
 A full tree for this dataset will look like this:
 
-.. image:: ./static/images/t2ps_missing_nodes.png 
+.. image:: ${static_path}/images/t2ps_missing_nodes.png 
    :width: 1000
 
 Missing nodes are simply omitted from the tree (there are no gray boxes corresponding to "n") but the branch length is maintained so that taxa belonging to the same taxonomic rank are always aligned with each other
@@ -98,11 +98,11 @@ Missing nodes are simply omitted from the tree (there are no gray boxes correspo
 
 You can use the "*maximum number of leaves*" to restrict the tree to a specified number of leaves (external nodes).  Using the following setting on the above dataset (note *show ranks from root to* set to *show entire tree* and *maximum number of leaves* is set *3*):
 
-.. image:: ./static/images/t2ps_autoscale.png 
+.. image:: ${static_path}/images/t2ps_autoscale.png 
 
 will produce this tree:
 
-.. image:: ./static/images/t2ps_autoscale_tree.png 
+.. image:: ${static_path}/images/t2ps_autoscale_tree.png 
    :width: 1000
 
 Here the tree is automatically trimmed at a taxonomic rank that will only have 3 outer nodes.  This is very useful for initial evaluation of very large trees where you want to only see, say, 1,000 outer nodes at once.
@@ -113,11 +113,11 @@ Here the tree is automatically trimmed at a taxonomic rank that will only have 3
 
 Branches of the tree are colored according to the heatmap below.  The "bluer" the branch the lesser the number of leaves it leads to and vice versa. 
 
-.. image:: ./static/images/t2ps_heatmap.png 
+.. image:: ${static_path}/images/t2ps_heatmap.png 
 
 Each node is labeled with taxonomic name and the number of tree leaves belonging to this taxonomic group:
 
-.. image:: ./static/images/t2ps_node_label.png 
+.. image:: ${static_path}/images/t2ps_node_label.png 
 
 
 

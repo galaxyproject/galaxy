@@ -34,7 +34,7 @@
 
 There is no input dataset.  The output is in interval_ format.
 
-.. _interval: ./static/formatHelp.html#interval
+.. _interval: ${static_path}/formatHelp.html#interval
 
 -----
 

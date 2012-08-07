@@ -26,19 +26,19 @@ Creates a stacked-histogram graph for the nucleotide distribution in the Solexa 
 
 The following chart clearly shows the barcode used at the 5'-end of the library: **GATCT**
 
-.. image:: ./static/fastx_icons/fastq_nucleotides_distribution_1.png
+.. image:: ${static_path}/fastx_icons/fastq_nucleotides_distribution_1.png
  
 In the following chart, one can almost 'read' the most abundant sequence by looking at the dominant values: **TGATA TCGTA TTGAT GACTG AA...**
 
-.. image:: ./static/fastx_icons/fastq_nucleotides_distribution_2.png
+.. image:: ${static_path}/fastx_icons/fastq_nucleotides_distribution_2.png
 
 The following chart shows a growing number of unknown (N) nucleotides towards later cycles (which might indicate a sequencing problem):
 
-.. image:: ./static/fastx_icons/fastq_nucleotides_distribution_3.png
+.. image:: ${static_path}/fastx_icons/fastq_nucleotides_distribution_3.png
 
 But most of the time, the chart will look rather random:
 
-.. image:: ./static/fastx_icons/fastq_nucleotides_distribution_4.png
+.. image:: ${static_path}/fastx_icons/fastq_nucleotides_distribution_4.png
 
 ------
 

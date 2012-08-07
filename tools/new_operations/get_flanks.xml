@@ -58,7 +58,7 @@ This tool finds the upstream and/or downstream flanking region(s) of all the sel
 
    chr22  500  800  NM_174568 0 +
 
-.. image:: ./static/operation_icons/flanks_ex1.gif
+.. image:: ${static_path}/operation_icons/flanks_ex1.gif
 
 **Example 2**
 
@@ -70,7 +70,7 @@ This tool finds the upstream and/or downstream flanking region(s) of all the sel
 
    chr22  500  800  NM_028946 0 -
 
-.. image:: ./static/operation_icons/flanks_ex2.gif
+.. image:: ${static_path}/operation_icons/flanks_ex2.gif
 
 </help>  
 

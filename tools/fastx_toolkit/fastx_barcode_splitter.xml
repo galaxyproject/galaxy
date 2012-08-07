@@ -62,7 +62,7 @@ The output of this tool is an HTML file, displaying the split counts and the fil
 
 **Output Example**
 
-.. image:: ./static/fastx_icons/barcode_splitter_output_example.png
+.. image:: ${static_path}/fastx_icons/barcode_splitter_output_example.png
 
 
 ------

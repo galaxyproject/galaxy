@@ -180,9 +180,9 @@ The input and output datasets are tabular_.  The columns are described below.
 There is a second output dataset (a log) that is in text_ format.
 (`Dataset missing?`_)
 
-.. _tabular: ./static/formatHelp.html#tab
-.. _text: ./static/formatHelp.html#text
-.. _Dataset missing?: ./static/formatHelp.html
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _text: ${static_path}/formatHelp.html#text
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

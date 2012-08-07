@@ -50,7 +50,7 @@ Suppose you have BLAST output that looks like this::
 
 and you want to obtain full taxonomic representation for GIs listed in *targetGI* column. If you set parameters as shown here:
 
-.. image:: ./static/images/fetchTax.png
+.. image:: ${static_path}/images/fetchTax.png
 
 
 the tool will generate the following output (you may need to scroll sideways to see the entire line)::

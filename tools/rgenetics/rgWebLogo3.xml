@@ -106,7 +106,7 @@ it in to this tool.
 
 A typical output looks like this
 
-.. image:: ./static/images/rgWebLogo3_test.jpg
+.. image:: ${static_path}/images/rgWebLogo3_test.jpg
 
 ----
 

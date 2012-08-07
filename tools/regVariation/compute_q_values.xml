@@ -141,13 +141,13 @@ Running the program will give the following output::
 	0.03115264	0.009750824	1
 	
 	
-.. image:: ./static/operation_icons/p_hist.png
+.. image:: ${static_path}/operation_icons/p_hist.png
 
 
-.. image:: ./static/operation_icons/q_hist.png
+.. image:: ${static_path}/operation_icons/q_hist.png
 
 
-.. image:: ./static/operation_icons/Q_plots.png
+.. image:: ${static_path}/operation_icons/Q_plots.png
 
 
   </help>  

@@ -86,7 +86,7 @@ A "Manhattan" plot shows -log10 p values ordered by offset and by chromosome. Re
 improbable p values are above the red line which is drawn at the Bonferroni FWER control level (0.05/n 
 where n is the number of tests - this is highly conservative for correlated SNPs typical of GWA)
 
-.. image:: ./static/images/Armitagep_manhattan.png
+.. image:: ${static_path}/images/Armitagep_manhattan.png
 
 A quantile-quantile (QQ) plot is a good way to see systematic departures from the null expectation of 
 uniform p-values from a genomic analysis. If the QQ plot shows departure from the null (ie a uniform 0-1 
@@ -94,7 +94,7 @@ distribution), you hope that this will be in the very smallest p-values suggesti
 interesting results to look at. A log scale will help emphasise departures from the null at low p values 
 more clear
 
-.. image:: ./static/images/Armitagep_qqplot.png
+.. image:: ${static_path}/images/Armitagep_qqplot.png
 
 -----
 

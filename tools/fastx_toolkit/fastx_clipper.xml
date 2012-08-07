@@ -82,7 +82,7 @@ This tool clips adapters from the 3'-end of the sequences in a FASTA/FASTQ file.
 
 **Clipping Illustration:**
 
-.. image:: ./static/fastx_icons/fastx_clipper_illustration.png 
+.. image:: ${static_path}/fastx_icons/fastx_clipper_illustration.png 
  
  
  
@@ -93,7 +93,7 @@ This tool clips adapters from the 3'-end of the sequences in a FASTA/FASTQ file.
 
 **Clipping Example:**
 
-.. image:: ./static/fastx_icons/fastx_clipper_example.png 
+.. image:: ${static_path}/fastx_icons/fastx_clipper_example.png 
 
 
     

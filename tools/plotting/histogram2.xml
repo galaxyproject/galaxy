@@ -70,7 +70,7 @@ This tool computes a histogram of the numerical values in a column of a dataset.
 
 - Create a histogram on column 2 of the above dataset. 
 
-.. image:: ./static/images/histogram2.png
+.. image:: ${static_path}/images/histogram2.png
 
 </help>
 </tool>

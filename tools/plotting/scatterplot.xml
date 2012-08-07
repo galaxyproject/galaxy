@@ -65,7 +65,7 @@ This tool creates a simple scatter plot between two variables containing numeric
 
 - Create a simple scatterplot between the variables in column 2 and column 3 of the above dataset.
 
-.. image:: ./static/images/scatterplot.png
+.. image:: ${static_path}/images/scatterplot.png
 
 </help>
 </tool>

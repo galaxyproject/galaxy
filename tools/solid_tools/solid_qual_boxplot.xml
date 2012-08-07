@@ -29,7 +29,7 @@ Creates a boxplot graph for the quality scores in the library.
 * Whiskers show outliers at max. 1.5*IQR
 
 
-.. image:: ./static/images/solid_qual.png
+.. image:: ${static_path}/images/solid_qual.png
 
 ------
 

@@ -246,7 +246,7 @@ either the general interaction type or a more specific one.
 
 Home page: http://ctdbase.org
 
-.. _tabular: ./static/formatHelp.html#tab
+.. _tabular: ${static_path}/formatHelp.html#tab
 
 -----
 

@@ -52,7 +52,7 @@ Runnig the program will give the following output::
 
 	The stacked bars plot representing the data in the input file.
 
-.. image:: ./static/operation_icons/stacked_bars_plot.png
+.. image:: ${static_path}/operation_icons/stacked_bars_plot.png
 
   </help>  
   

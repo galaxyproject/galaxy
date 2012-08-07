@@ -32,16 +32,16 @@ Creates a boxplot graph for the quality scores in the library.
 
 An excellent quality library (median quality is 40 for almost all 36 cycles):
 
-.. image:: ./static/fastx_icons/fastq_quality_boxplot_1.png
+.. image:: ${static_path}/fastx_icons/fastq_quality_boxplot_1.png
 
 
 A relatively good quality library (median quality degrades towards later cycles):
 
-.. image:: ./static/fastx_icons/fastq_quality_boxplot_2.png
+.. image:: ${static_path}/fastx_icons/fastq_quality_boxplot_2.png
 
 A low quality library (median drops quickly):
 
-.. image:: ./static/fastx_icons/fastq_quality_boxplot_3.png
+.. image:: ${static_path}/fastx_icons/fastq_quality_boxplot_3.png
 
 ------
 

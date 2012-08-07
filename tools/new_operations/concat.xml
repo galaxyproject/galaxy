@@ -53,7 +53,7 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 **Example**
 
-.. image:: ./static/operation_icons/gops_concatenate.gif
+.. image:: ${static_path}/operation_icons/gops_concatenate.gif
 
 </help>
 </tool>

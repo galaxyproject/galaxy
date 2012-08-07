@@ -48,12 +48,12 @@ This utility performs this analysis. It assumes that the data comes from a Poiss
 
 Equation 1:
 
-.. image:: ./static/images/poisson2test_eqn1.png 
+.. image:: ${static_path}/images/poisson2test_eqn1.png 
 
  
 Equation 2:
 
-.. image:: ./static/images/poisson2test_eqn2.png
+.. image:: ${static_path}/images/poisson2test_eqn2.png
 
 
 X = number of reads falling in a particular taxon in location 1

@@ -143,6 +143,6 @@ Create a two series XY plot on the above data:
 - Series 1: Red Dashed-Line plot between columns 1 and 2
 - Series 2: Blue Circular-Point plot between columns 3 and 2 
 
-.. image:: ./static/images/xy_example.jpg
+.. image:: ${static_path}/images/xy_example.jpg
 </help>
 </tool>

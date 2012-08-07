@@ -97,8 +97,8 @@ This currently works only for builds hg18 or hg19.
 The input and output datasets are tabular_. 
 (`Dataset missing?`_)
 
-.. _tabular: ./static/formatHelp.html#tab
-.. _Dataset missing?: ./static/formatHelp.html
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

@@ -47,19 +47,19 @@ This tool computes the matrix of correlation coefficients between numeric column
 
 - **Pearson's Correlation** reflects the degree of linear relationship between two variables. It ranges from +1 to -1. A correlation of +1 means that there is a perfect positive linear relationship between variables. The formula for Pearson's correlation is:
 
-    .. image:: ./static/images/pearson.png
+    .. image:: ${static_path}/images/pearson.png
 
     where n is the number of items
 
 - **Kendall's rank correlation** is used to measure the degree of correspondence between two rankings and assessing the significance of this correspondence. The formula for Kendall's rank correlation is:
 
-    .. image:: ./static/images/kendall.png
+    .. image:: ${static_path}/images/kendall.png
 
     where n is the number of items, and P is the sum.
 
 - **Spearman's rank correlation** assesses how well an arbitrary monotonic function could describe the relationship between two variables, without making any assumptions about the frequency distribution of the variables. The formula for Spearman's rank correlation is
 
-    .. image:: ./static/images/spearman.png
+    .. image:: ${static_path}/images/spearman.png
 
     where D is the difference between the ranks of corresponding values of X and Y, and N is the number of pairs of values.
 

@@ -320,7 +320,7 @@ In this mode, the tool only outputs the lines from the input datasets where at l
  
 To call all variants (with no restriction by coverage) with quality above phred value of 20, we will need to set the parameters as follows:
 
-.. image:: ./static/images/pileup_parser_help1.png 
+.. image:: ${static_path}/images/pileup_parser_help1.png 
 
 Running the tool with these parameters will return::
 
@@ -336,7 +336,7 @@ Running the tool with these parameters will return::
 
 In addition to calling variants, it is often useful to know the quality adjusted coverage. Running the tool with these parameters:
 
-.. image:: ./static/images/pileup_parser_help2.png 
+.. image:: ${static_path}/images/pileup_parser_help2.png 
 
 will report everything from the original file::
 
@@ -355,7 +355,7 @@ One can use the last column of this dataset to filter out (using Galaxy's **Filt
 
 If you set the **Print total number of differences?** to **Yes** the tool will print an additional column with the total number of reads where a devinat base is above the quality threshold. So, seetiing parametrs like this:
 
-.. image:: ./static/images/pileup_parser_help3.png
+.. image:: ${static_path}/images/pileup_parser_help3.png
 
 will produce this::
 
@@ -371,7 +371,7 @@ will produce this::
 
 Setting **Print quality and base string?** to **Yes** as shown here:
 
-.. image:: ./static/images/pileup_parser_help4.png
+.. image:: ${static_path}/images/pileup_parser_help4.png
 
 will produce this::
 

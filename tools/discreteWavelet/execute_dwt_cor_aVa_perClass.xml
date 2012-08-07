@@ -101,11 +101,11 @@ The first output file::
 
 The second output file:
 
-.. image:: ./static/operation_icons/dwt_cor_aVa_1.png
-.. image:: ./static/operation_icons/dwt_cor_aVa_2.png
-.. image:: ./static/operation_icons/dwt_cor_aVa_3.png
-.. image:: ./static/operation_icons/dwt_cor_aVa_4.png
-.. image:: ./static/operation_icons/dwt_cor_aVa_5.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVa_1.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVa_2.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVa_3.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVa_4.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVa_5.png
 
   </help>  
   

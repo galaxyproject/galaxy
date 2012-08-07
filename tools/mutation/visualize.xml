@@ -96,7 +96,7 @@ To visualize the two samples in the input file, the following parameters are sel
 
 Visualization output:
 
-.. image:: ./static/images/mutation_visualization_example.png 
+.. image:: ${static_path}/images/mutation_visualization_example.png 
    :width: 150
    
 Here the left-most column represents the position and the background color is the reference base color. Each column on its right describe each sample.

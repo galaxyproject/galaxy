@@ -35,12 +35,12 @@ This tool consists of a module to generate a matrix to be used for running the L
 
 - Input file (Source file First)
 
-.. image:: ./static/images/tools/lda/first_matrix_generator_example_file.png
+.. image:: ${static_path}/images/tools/lda/first_matrix_generator_example_file.png
 
 
 - Input file (Source file Second)
 
-.. image:: ./static/images/tools/lda/second_matrix_generator_example_file.png
+.. image:: ${static_path}/images/tools/lda/second_matrix_generator_example_file.png
 
 
 </help>

@@ -37,7 +37,7 @@ This tool takes genomic coordinates, superimposes them on pairwise alignments (i
 
 Here a single interval is superimposed on three MAF blocks. Blocks 1 and 3 are trimmed because they extend beyond boundaries of the interval:
 
-.. image:: ./static/images/maf_icons/interval2maf.png
+.. image:: ${static_path}/images/maf_icons/interval2maf.png
 
 ------
 

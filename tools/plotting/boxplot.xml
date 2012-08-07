@@ -95,7 +95,7 @@ Creates a boxplot graph. Its main purpose is to display a distribution of qualit
 * Rectangular red boxes show the Inter-quartile Range (IQR) (top value is Q3, bottom value is Q1)
 * Whiskers show outliers at max. 1.5*IQR
 
-.. image:: ./static/images/solid_qual.png
+.. image:: ${static_path}/images/solid_qual.png
 
 ------
 

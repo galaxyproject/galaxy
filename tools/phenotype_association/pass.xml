@@ -39,9 +39,9 @@
 The input is in GFF_ format, and the output is tabular_.
 (`Dataset missing?`_)
 
-.. _GFF: ./static/formatHelp.html#gff
-.. _tabular: ./static/formatHelp.html#tab
-.. _Dataset missing?: ./static/formatHelp.html
+.. _GFF: ${static_path}/formatHelp.html#gff
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

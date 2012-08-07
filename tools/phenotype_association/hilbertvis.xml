@@ -63,8 +63,8 @@
 The input format is interval_, and the output is an image in PDF format.
 (`Dataset missing?`_)
 
-.. _interval: ./static/formatHelp.html#interval
-.. _Dataset missing?: ./static/formatHelp.html
+.. _interval: ${static_path}/formatHelp.html#interval
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 
@@ -75,7 +75,7 @@ position-dependent data.  It maps the traditional one-dimensional line
 visualization onto a two-dimensional square.  For example, here is a diagram
 showing the path of a level-2 Hilbert curve.
 
-.. image:: ./static/images/hilbertvisDiagram.png
+.. image:: ${static_path}/images/hilbertvisDiagram.png
 
 The shade of each pixel represents the value for the corresponding bin of
 consecutive genomic positions, calculated according to the specified
@@ -99,11 +99,11 @@ Website: http://www.ebi.ac.uk/huber-srv/hilbert/
 
 Here are some examples from the HilbertVis homepage, using ChIP-Seq data.
 
-.. image:: ./static/images/hilbertvis1.png
+.. image:: ${static_path}/images/hilbertvis1.png
 
 -----
 
-.. image:: ./static/images/hilbertvis2.png
+.. image:: ${static_path}/images/hilbertvis2.png
 
 -----
 

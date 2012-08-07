@@ -44,8 +44,8 @@ The input is tabular_, with six columns of allele counts.  The output is also ta
 and includes all of the input data plus the additional columns described below.
 (`Dataset missing?`_)
 
-.. _tabular: ./static/formatHelp.html#tab
-.. _Dataset missing?: ./static/formatHelp.html
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

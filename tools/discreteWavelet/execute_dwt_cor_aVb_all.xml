@@ -106,16 +106,16 @@ The first output file::
 
 The second output file:
 
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_1.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_2.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_3.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_4.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_5.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_6.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_7.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_8.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_9.png
-.. image:: ./static/operation_icons/dwt_cor_aVb_all_10.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_1.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_2.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_3.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_4.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_5.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_6.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_7.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_8.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_9.png
+.. image:: ${static_path}/operation_icons/dwt_cor_aVb_all_10.png
 
 
   </help>  

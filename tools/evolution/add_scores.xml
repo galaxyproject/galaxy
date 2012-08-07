@@ -43,8 +43,8 @@ This currently works only for builds hg18 and hg19.
 The input can be any interval_ format dataset.  The output is also in interval format.
 (`Dataset missing?`_)
 
-.. _interval: ./static/formatHelp.html#interval
-.. _Dataset missing?: ./static/formatHelp.html
+.. _interval: ${static_path}/formatHelp.html#interval
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

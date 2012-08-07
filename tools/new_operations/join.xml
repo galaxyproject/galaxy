@@ -94,23 +94,23 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 **Examples**
 
-.. image:: ./static/operation_icons/gops_joinRecordsList.gif
+.. image:: ${static_path}/operation_icons/gops_joinRecordsList.gif
 
 Only records that are joined (inner join):
 
-.. image:: ./static/operation_icons/gops_joinInner.gif
+.. image:: ${static_path}/operation_icons/gops_joinInner.gif
 
 All records of first dataset:
 
-.. image:: ./static/operation_icons/gops_joinLeftOuter.gif
+.. image:: ${static_path}/operation_icons/gops_joinLeftOuter.gif
 
 All records of second dataset:
 
-.. image:: ./static/operation_icons/gops_joinRightOuter.gif
+.. image:: ${static_path}/operation_icons/gops_joinRightOuter.gif
 
 All records of both datasets:
 
-.. image:: ./static/operation_icons/gops_joinFullOuter.gif
+.. image:: ${static_path}/operation_icons/gops_joinFullOuter.gif
 
 
 </help>

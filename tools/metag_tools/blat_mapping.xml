@@ -35,7 +35,7 @@
 
  Showing reads coverage on human chromosome 22 (partial result) in UCSC Genome Browser Custom Track:
  
- .. image:: ./static/images/blat_mapping_example.png
+ .. image:: ${static_path}/images/blat_mapping_example.png
  	:width: 600
  	
   </help>

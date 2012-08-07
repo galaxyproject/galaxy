@@ -114,11 +114,11 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 Intervals with no overlap:
 
-.. image:: ./static/operation_icons/gops_subtractOverlappingIntervals.gif
+.. image:: ${static_path}/operation_icons/gops_subtractOverlappingIntervals.gif
 
 Non-overlapping pieces of intervals:
 
-.. image:: ./static/operation_icons/gops_subtractOverlappingPieces.gif
+.. image:: ${static_path}/operation_icons/gops_subtractOverlappingPieces.gif
 
 </help>
 </tool>

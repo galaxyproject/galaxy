@@ -48,9 +48,9 @@ The input dataset is tabular_ with a column of identifiers.
 The output dataset is html_ with a link to g:Profiler.
 (`Dataset missing?`_)
 
-.. _tabular: ./static/formatHelp.html#tab
-.. _html: ./static/formatHelp.html#html
-.. _Dataset missing?: ./static/formatHelp.html
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _html: ${static_path}/formatHelp.html#html
+.. _Dataset missing?: ${static_path}/formatHelp.html
 
 -----
 

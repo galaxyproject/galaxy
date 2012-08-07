@@ -25,13 +25,13 @@ This tool creates a histogram image of sequence lengths distribution in a given 
 In the following library, most sequences are 24-mers to 27-mers. 
 This could indicate an abundance of endo-siRNAs (depending of course of what you've tried to sequence in the first place).
 
-.. image:: ./static/fastx_icons/fasta_clipping_histogram_1.png
+.. image:: ${static_path}/fastx_icons/fasta_clipping_histogram_1.png
 
 
 In the following library, most sequences are 19,22 or 23-mers. 
 This could indicate an abundance of miRNAs (depending of course of what you've tried to sequence in the first place).
 
-.. image:: ./static/fastx_icons/fasta_clipping_histogram_2.png
+.. image:: ${static_path}/fastx_icons/fasta_clipping_histogram_2.png
 
 
 -----
@@ -81,7 +81,7 @@ Example 1 - The following FASTA file *does not* have multiplicity counts::
 
 Each sequence is counts as one, to produce the following chart:
 
-.. image:: ./static/fastx_icons/fasta_clipping_histogram_3.png
+.. image:: ${static_path}/fastx_icons/fasta_clipping_histogram_3.png
 
 
 Example 2 - The following FASTA file have multiplicity counts::
@@ -95,7 +95,7 @@ Example 2 - The following FASTA file have multiplicity counts::
 
 The first sequence counts as 2, the second as 10, the third as 3, to produce the following chart:
 
-.. image:: ./static/fastx_icons/fasta_clipping_histogram_4.png
+.. image:: ${static_path}/fastx_icons/fasta_clipping_histogram_4.png
 
 Use the **FASTA Collapser** tool to create FASTA files with multiplicity counts.
 
