@@ -340,7 +340,7 @@ ${render_repository_items( repository_metadata_id, metadata, can_set_metadata=Tr
     <div class="toolForm">
         <div class="toolFormTitle">Malicious repository tip</div>
         <div class="toolFormBody">
-            <form name="malicious" id="malicious" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
+            <form name="malicious" id="malicious" action="${h.url_for( controller='repository', action='set_malicious', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
                 <div class="form-row">
                     <label>Define repository tip as malicious:</label>
                     ${malicious_check_box.get_html()}

@@ -1735,13 +1735,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     status=status )
     @web.expose
     def reset_all_metadata( self, trans, id, **kwd ):
-        error_message, status = reset_all_metadata_on_repository( trans, id, **kwd )
-        if error_message:
-            message = error_message
-            status = 'error'
-        else:
-            message = "All repository metadata has been reset."
-            status = 'done'
+        reset_all_metadata_on_repository( trans, id, **kwd )
+        message = "All repository metadata has been reset."
+        status = 'done'
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,
@@ -1890,7 +1886,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 else:
                     message += 'The selected files were deleted from the repository.  '
                     kwd[ 'message' ] = message
-                    set_repository_metadata_due_to_new_tip( trans, id, repository, **kwd )
+                    set_repository_metadata_due_to_new_tip( trans, repository, **kwd )
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
@@ -1981,8 +1977,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                           action=caller,
                                                           **kwd ) )
     @web.expose
-    @web.require_login( "set repository metadata" )
-    def set_metadata( self, trans, id, ctx_str, **kwd ):
+    @web.require_login( "set repository as malicious" )
+    def set_malicious( self, trans, id, ctx_str, **kwd ):
         malicious = kwd.get( 'malicious', '' )
         if kwd.get( 'malicious_button', False ):
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, ctx_str )
@@ -1995,11 +1991,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
             else:
                 message = "The repository tip has been defined as <b>not</b> malicious."
             status = 'done'
-        else:
-            # The set_metadata_button was clicked
-            message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
-            if not message:
-                message = "Metadata for change set revision '%s' has been reset." % str( ctx_str )
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,

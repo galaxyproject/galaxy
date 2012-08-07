@@ -2,13 +2,14 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.web.form_builder import SelectField
 from galaxy.util import inflector
 from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui
 from common import *
 from repository import RepositoryListGrid, CategoryListGrid
 
 from galaxy import eggs
-eggs.require('mercurial')
+eggs.require( 'mercurial' )
 from mercurial import hg
 
 import logging
@@ -415,89 +416,6 @@ class AdminController( BaseUIController, Admin ):
 
     @web.expose
     @web.require_admin
-    def browse_repository_metadata( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd[ 'operation' ].lower()
-            if operation == "delete":
-                return self.delete_repository_metadata( trans, **kwd )
-            if operation == "view_or_manage_repository_revision":
-                # The received id is a RepositoryMetadata object id, so we need to get the
-                # associated Repository and redirect to view_or_manage_repository with the
-                # changeset_revision.
-                repository_metadata = get_repository_metadata_by_id( trans, kwd[ 'id' ] )
-                repository = repository_metadata.repository
-                kwd[ 'id' ] = trans.security.encode_id( repository.id )
-                kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
-                kwd[ 'operation' ] = 'view_or_manage_repository'
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='browse_repositories',
-                                                                  **kwd ) )
-        return self.repository_metadata_list_grid( trans, **kwd )
-    @web.expose
-    @web.require_admin
-    def delete_repository_metadata( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = kwd.get( 'id', None )
-        if id:
-            ids = util.listify( id )
-            count = 0
-            for repository_metadata_id in ids:
-                repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
-                trans.sa_session.delete( repository_metadata )
-                trans.sa_session.flush()
-                count += 1
-            if count:
-                message = "Deleted %d repository metadata %s" % ( count, inflector.cond_plural( len( ids ), "record" ) )
-        else:
-            message = "No repository metadata ids received for deleting."
-            status = 'error'
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='browse_repository_metadata',
-                                                   message=util.sanitize_text( message ),
-                                                   status=status ) )
-    @web.expose
-    @web.require_admin
-    def reset_metadata_on_all_repositories( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        if 'reset_metadata_on_all_repositories_button' in kwd:
-            successful_count = 0
-            unsuccessful_count = 0
-            for repository in trans.sa_session.query( trans.model.Repository ) \
-                                              .filter( trans.model.Repository.table.c.deleted == False ):
-                try:
-                    error_message, status = reset_all_metadata_on_repository( trans, trans.security.encode_id( repository.id ) )
-                    if status not in [ 'ok' ] and error_message:
-                        log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, error_message ) )
-                        unsuccessful_count += 1
-                    elif status in [ 'ok' ] and error_message:
-                        log.debug( "Successfully reset metadata on repository %s, but encountered this problem: %s" % ( repository.name, error_message ) )
-                        successful_count += 1
-                    else:
-                        log.debug( "Successfully reset metadata on repository %s" % repository.name )
-                        successful_count += 1
-                except Exception, e:
-                    log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, str( e ) ) )
-                    unsuccessful_count += 1
-            message = "Successfully reset metadata on %d %s.  " % ( successful_count,
-                                                                    inflector.cond_plural( successful_count, "repository" ) )            
-            if unsuccessful_count:
-                message += "Error setting metadata on %d %s - see the paster log for details.  " % ( unsuccessful_count,
-                                                                                                     inflector.cond_plural( unsuccessful_count,
-                                                                                                                            "repository" ) )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='browse_repository_metadata',
-                                                       webapp='community',
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )
-        return trans.fill_template( '/webapps/community/admin/reset_metadata_on_all_repositories.mako',
-                                    message=message,
-                                    status=status )
-    @web.expose
-    @web.require_admin
     def browse_repositories( self, trans, **kwd ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
@@ -568,101 +486,24 @@ class AdminController( BaseUIController, Admin ):
         return self.repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
-    def regenerate_statistics( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        if 'regenerate_statistics_button' in kwd:
-            trans.app.shed_counter.generate_statistics()
-            message = "Successfully regenerated statistics"
-        return trans.fill_template( '/webapps/community/admin/statistics.mako',
-                                    message=message,
-                                    status=status )
-    @web.expose
-    @web.require_admin
-    def delete_repository( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = kwd.get( 'id', None )
-        if id:
-            # Deleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id. 
-            ids = util.listify( id )
-            count = 0
-            deleted_repositories = ""
-            for repository_id in ids:
-                repository = get_repository( trans, repository_id )
-                if not repository.deleted:
-                    repository.deleted = True
-                    trans.sa_session.add( repository )
-                    trans.sa_session.flush()
-                    count += 1
-                    deleted_repositories += " %s " % repository.name
-            if count:
-                message = "Deleted %d %s: %s" % ( count, inflector.cond_plural( len( ids ), "repository" ), deleted_repositories )
-            else:
-                message = "All selected repositories were already marked deleted."
-        else:
-            message = "No repository ids received for deleting."
-            status = 'error'
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='browse_repositories',
-                                                   message=util.sanitize_text( message ),
-                                                   status=status ) )
-    @web.expose
-    @web.require_admin
-    def undelete_repository( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = kwd.get( 'id', None )
-        if id:
-            # Undeleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id.
-            ids = util.listify( id )
-            count = 0
-            undeleted_repositories = ""
-            for repository_id in ids:
-                repository = get_repository( trans, repository_id )
-                if repository.deleted:
-                    repository.deleted = False
-                    trans.sa_session.add( repository )
-                    trans.sa_session.flush()
-                    count += 1
-                    undeleted_repositories += " %s" % repository.name
-            if count:
-                message = "Undeleted %d %s: %s" % ( count, inflector.cond_plural( count, "repository" ), undeleted_repositories )
-            else:
-                message = "No selected repositories were marked deleted, so they could not be undeleted."
-        else:
-            message = "No repository ids received for undeleting."
-            status = 'error'
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='browse_repositories',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
-    @web.expose
-    @web.require_admin
-    def manage_categories( self, trans, **kwd ):
-        if 'f-free-text-search' in kwd:
-            # Trick to enable searching repository name, description from the CategoryListGrid.
-            # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
-            # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
-            # Since we are searching repositories and not categories, redirect to browse_repositories().
-            return self.browse_repositories( trans, **kwd )
+    def browse_repository_metadata( self, trans, **kwd ):
         if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "create":
-                return self.create_category( trans, **kwd )
-            elif operation == "delete":
-                return self.mark_category_deleted( trans, **kwd )
-            elif operation == "undelete":
-                return self.undelete_category( trans, **kwd )
-            elif operation == "purge":
-                return self.purge_category( trans, **kwd )
-            elif operation == "edit":
-                return self.edit_category( trans, **kwd )
-        # Render the list view
-        return self.manage_category_list_grid( trans, **kwd )
+            operation = kwd[ 'operation' ].lower()
+            if operation == "delete":
+                return self.delete_repository_metadata( trans, **kwd )
+            if operation == "view_or_manage_repository_revision":
+                # The received id is a RepositoryMetadata object id, so we need to get the
+                # associated Repository and redirect to view_or_manage_repository with the
+                # changeset_revision.
+                repository_metadata = get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository = repository_metadata.repository
+                kwd[ 'id' ] = trans.security.encode_id( repository.id )
+                kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
+                kwd[ 'operation' ] = 'view_or_manage_repository'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories',
+                                                                  **kwd ) )
+        return self.repository_metadata_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def create_category( self, trans, **kwd ):
@@ -711,6 +552,61 @@ class AdminController( BaseUIController, Admin ):
                                     status=status )
     @web.expose
     @web.require_admin
+    def delete_repository( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            # Deleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id. 
+            ids = util.listify( id )
+            count = 0
+            deleted_repositories = ""
+            for repository_id in ids:
+                repository = get_repository( trans, repository_id )
+                if not repository.deleted:
+                    repository.deleted = True
+                    trans.sa_session.add( repository )
+                    trans.sa_session.flush()
+                    count += 1
+                    deleted_repositories += " %s " % repository.name
+            if count:
+                message = "Deleted %d %s: %s" % ( count, inflector.cond_plural( len( ids ), "repository" ), deleted_repositories )
+            else:
+                message = "All selected repositories were already marked deleted."
+        else:
+            message = "No repository ids received for deleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repositories',
+                                                   message=util.sanitize_text( message ),
+                                                   status=status ) )
+    @web.expose
+    @web.require_admin
+    def delete_repository_metadata( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            for repository_metadata_id in ids:
+                repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+                trans.sa_session.delete( repository_metadata )
+                trans.sa_session.flush()
+                count += 1
+            if count:
+                message = "Deleted %d repository metadata %s" % ( count, inflector.cond_plural( len( ids ), "record" ) )
+        else:
+            message = "No repository metadata ids received for deleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repository_metadata',
+                                                   message=util.sanitize_text( message ),
+                                                   status=status ) )
+    @web.expose
+    @web.require_admin
     def edit_category( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -750,6 +646,124 @@ class AdminController( BaseUIController, Admin ):
                                     status=status )
     @web.expose
     @web.require_admin
+    def manage_categories( self, trans, **kwd ):
+        if 'f-free-text-search' in kwd:
+            # Trick to enable searching repository name, description from the CategoryListGrid.
+            # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
+            # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
+            # Since we are searching repositories and not categories, redirect to browse_repositories().
+            return self.browse_repositories( trans, **kwd )
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "create":
+                return self.create_category( trans, **kwd )
+            elif operation == "delete":
+                return self.mark_category_deleted( trans, **kwd )
+            elif operation == "undelete":
+                return self.undelete_category( trans, **kwd )
+            elif operation == "purge":
+                return self.purge_category( trans, **kwd )
+            elif operation == "edit":
+                return self.edit_category( trans, **kwd )
+        # Render the list view
+        return self.manage_category_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def regenerate_statistics( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if 'regenerate_statistics_button' in kwd:
+            trans.app.shed_counter.generate_statistics()
+            message = "Successfully regenerated statistics"
+        return trans.fill_template( '/webapps/community/admin/statistics.mako',
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
+    def reset_metadata_on_selected_repositories( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository_names_by_owner = util.listify( kwd.get( 'repository_names_by_owner', None ) )
+        if 'reset_metadata_on_selected_repositories_button' in kwd:
+            if repository_names_by_owner:
+                successful_count = 0
+                unsuccessful_count = 0
+                for repository_name_owner_str in repository_names_by_owner:
+                    repository_name_owner_list = repository_name_owner_str.split( '__ESEP__' )
+                    name = repository_name_owner_list[ 0 ]
+                    owner = repository_name_owner_list[ 1 ]
+                    repository = get_repository_by_name_and_owner( trans, name, owner )
+                    try:
+                        reset_all_metadata_on_repository( trans, trans.security.encode_id( repository.id ) )
+                        log.debug( "Successfully reset metadata on repository %s" % repository.name )
+                        successful_count += 1
+                    except Exception, e:
+                        log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, str( e ) ) )
+                        unsuccessful_count += 1
+                message = "Successfully reset metadata on %d %s.  " % ( successful_count,
+                                                                        inflector.cond_plural( successful_count, "repository" ) )
+                if unsuccessful_count:
+                    message += "Error setting metadata on %d %s - see the paster log for details.  " % ( unsuccessful_count,
+                                                                                                         inflector.cond_plural( unsuccessful_count,
+                                                                                                                                "repository" ) )
+                trans.response.send_redirect( web.url_for( controller='admin',
+                                                           action='browse_repository_metadata',
+                                                           webapp='community',
+                                                           message=util.sanitize_text( message ),
+                                                           status=status ) )
+            else:
+                'Select at least one repository to on which to reset all metadata.'
+                status = 'error'
+        repositories_select_field = SelectField( name='repository_names_by_owner', 
+                                                 multiple=True,
+                                                 display='checkboxes' )
+        for repository in trans.sa_session.query( trans.model.Repository ) \
+                                          .filter( trans.model.Repository.table.c.deleted == False ) \
+                                          .order_by( trans.model.Repository.table.c.name,
+                                                     trans.model.Repository.table.c.user_id ):
+            owner = repository.user.username
+            option_label = '%s (%s)' % ( repository.name, owner )
+            option_value = '%s__ESEP__%s' % ( repository.name, owner )
+            repositories_select_field.add_option( option_label, option_value )
+        return trans.fill_template( '/webapps/community/admin/reset_metadata_on_selected_repositories.mako',
+                                    repositories_select_field=repositories_select_field,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
+    def undelete_repository( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            # Undeleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id.
+            ids = util.listify( id )
+            count = 0
+            undeleted_repositories = ""
+            for repository_id in ids:
+                repository = get_repository( trans, repository_id )
+                if repository.deleted:
+                    repository.deleted = False
+                    trans.sa_session.add( repository )
+                    trans.sa_session.flush()
+                    count += 1
+                    undeleted_repositories += " %s" % repository.name
+            if count:
+                message = "Undeleted %d %s: %s" % ( count, inflector.cond_plural( count, "repository" ), undeleted_repositories )
+            else:
+                message = "No selected repositories were marked deleted, so they could not be undeleted."
+        else:
+            message = "No repository ids received for undeleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repositories',
+                                                   message=util.sanitize_text( message ),
+                                                   status='done' ) )
+    @web.expose
+    @web.require_admin
     def mark_category_deleted( self, trans, **kwd ):
         # TODO: We should probably eliminate the Category.deleted column since it really makes no
         # sense to mark a category as deleted (category names and descriptions can be changed instead).
@@ -769,33 +783,6 @@ class AdminController( BaseUIController, Admin ):
                 message += " %s " % category.name
         else:
             message = "No category ids received for deleting."
-            status = 'error'
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='manage_categories',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
-    @web.expose
-    @web.require_admin
-    def undelete_category( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = kwd.get( 'id', None )
-        if id:
-            ids = util.listify( id )
-            count = 0
-            undeleted_categories = ""
-            for category_id in ids:
-                category = get_category( trans, category_id )
-                if category.deleted:
-                    category.deleted = False
-                    trans.sa_session.add( category )
-                    trans.sa_session.flush()
-                    count += 1
-                    undeleted_categories += " %s" % category.name
-            message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
-        else:
-            message = "No category ids received for undeleting."
             status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
@@ -827,6 +814,33 @@ class AdminController( BaseUIController, Admin ):
             message = "Purged %d categories: %s" % ( count, purged_categories )
         else:
             message = "No category ids received for purging."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='manage_categories',
+                                                   message=util.sanitize_text( message ),
+                                                   status='done' ) )
+    @web.expose
+    @web.require_admin
+    def undelete_category( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            undeleted_categories = ""
+            for category_id in ids:
+                category = get_category( trans, category_id )
+                if category.deleted:
+                    category.deleted = False
+                    trans.sa_session.add( category )
+                    trans.sa_session.flush()
+                    count += 1
+                    undeleted_categories += " %s" % category.name
+            message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
+        else:
+            message = "No category ids received for undeleting."
             status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',

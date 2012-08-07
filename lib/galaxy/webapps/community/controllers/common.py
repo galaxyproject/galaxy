@@ -5,10 +5,11 @@ from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-from galaxy.util.shed_util import copy_sample_file, generate_datatypes_metadata, generate_tool_dependency_metadata, generate_tool_metadata
-from galaxy.util.shed_util import generate_workflow_metadata, get_changectx_for_changeset, get_config, get_configured_ui, get_named_tmpfile_from_ctx
-from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH, make_tmp_directory, NOT_TOOL_CONFIGS, reset_tool_data_tables
-from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path, to_html_escaped, to_html_str, update_repository
+from galaxy.util.shed_util import clone_repository, copy_sample_file, generate_datatypes_metadata, generate_tool_dependency_metadata, generate_tool_metadata
+from galaxy.util.shed_util import generate_workflow_metadata, get_changectx_for_changeset, get_config, get_config_from_disk, get_configured_ui
+from galaxy.util.shed_util import get_named_tmpfile_from_ctx, get_sample_files_from_disk, handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH
+from galaxy.util.shed_util import make_tmp_directory, NOT_TOOL_CONFIGS, reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path, to_html_escaped
+from galaxy.util.shed_util import to_html_str, update_repository
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -187,25 +188,23 @@ def check_file_contents( trans ):
             if user_email in admin_users:
                 return True
     return False
-def check_tool_input_params( trans, repo, repo_dir, ctx, xml_file_in_ctx, tool, sample_files, invalid_files, tool_data_path, dir ):
+def check_tool_input_params( trans, repo_dir, tool_config, tool, sample_files, invalid_files ):
     """
     Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
-    sure the files exist.  This method is called only from the tool shed when generating metadata for a specified changeset revision.
+    sure the files exist.
     """
     can_set_metadata = True
     correction_msg = ''
-    # Keep track of copied files so they can be removed after metadata generation.
-    sample_files_copied = []
     for input_param in tool.input_params:
-        if isinstance( input_param, galaxy.tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
+        if isinstance( input_param, tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
             # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml, make sure all requirements exist.
             options = input_param.dynamic_options or input_param.options
             if options:
                 if options.tool_data_table or options.missing_tool_data_table_name:
                     # Make sure the repository contains a tool_data_table_conf.xml.sample file.
-                    sample_tool_data_table_conf = get_config( 'tool_data_table_conf.xml.sample', repo, ctx, dir )
+                    sample_tool_data_table_conf = get_config_from_disk( 'tool_data_table_conf.xml.sample', repo_dir )
                     if sample_tool_data_table_conf:
-                        error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, sample_tool_data_table_conf )
+                        error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_tool_data_table_conf )
                         if error:
                             can_set_metadata = False
                             invalid_files.append( ( 'tool_data_table_conf.xml.sample', correction_msg ) )
@@ -215,7 +214,7 @@ def check_tool_input_params( trans, repo, repo_dir, ctx, xml_file_in_ctx, tool, 
                         can_set_metadata = False
                         correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
                         correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
-                        invalid_files.append( ( xml_file_in_ctx, correction_msg ) )
+                        invalid_files.append( ( tool_config, correction_msg ) )
                 if options.index_file or options.missing_index_file:
                     # Make sure the repository contains the required xxx.loc.sample file.
                     index_file = options.index_file or options.missing_index_file
@@ -224,13 +223,6 @@ def check_tool_input_params( trans, repo, repo_dir, ctx, xml_file_in_ctx, tool, 
                     for sample_file in sample_files:
                         sample_file_name = strip_path( sample_file )
                         if sample_file_name == '%s.sample' % index_file_name:
-                            # If sample_file_name is on disk, copy it to dir.
-                            copied_sample_file = copy_file_from_disk( sample_file_name, repo_dir, dir )
-                            if not copied_sample_file:
-                                # Get sample_file_name from the repository manifest.
-                                copied_sample_file = copy_file_from_manifest( repo, ctx, sample_file_name, dir )
-                            copy_sample_file( trans.app, copied_sample_file, dest_path=tool_data_path )
-                            sample_files_copied.append( sample_file_name )
                             options.index_file = index_file_name
                             options.missing_index_file = None
                             if options.tool_data_table:
@@ -241,10 +233,10 @@ def check_tool_input_params( trans, repo, repo_dir, ctx, xml_file_in_ctx, tool, 
                         can_set_metadata = False
                         correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
-                        invalid_files.append( ( xml_file_in_ctx, correction_msg ) )
+                        invalid_files.append( ( tool_config, correction_msg ) )
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
-    return sample_files_copied, can_set_metadata, invalid_files
+    return can_set_metadata, invalid_files
 def clean_repository_metadata( trans, id, changeset_revisions ):
     # Delete all repository_metadata reecords associated with the repository that have a changeset_revision that is not in changeset_revisions.
     for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
@@ -254,11 +246,8 @@ def clean_repository_metadata( trans, id, changeset_revisions ):
             trans.sa_session.flush()
 def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
     # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision is an ancestor of
-    # current_changeset_revision which is associated with current_metadata_dict.
-    #
-    # A new repository_metadata record will be created only when this method returns the string 'not equal and not subset'.  However, we're
-    # currently also returning the strings 'no metadata', 'equal' and 'subset', depending upon how the 2 change sets compare.  We'll leave
-    # things this way for the current time in case we discover a use for these additional result strings.
+    # current_changeset_revision which is associated with current_metadata_dict.  A new repository_metadata record will be created only
+    # when this method returns the string 'not equal and not subset'.
     ancestor_datatypes = ancestor_metadata_dict.get( 'datatypes', [] )
     ancestor_tools = ancestor_metadata_dict.get( 'tools', [] )
     ancestor_guids = [ tool_dict[ 'guid' ] for tool_dict in ancestor_tools ]
@@ -279,7 +268,7 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     # Handle case where all metadata is the same.
     if ancestor_guids == current_guids and workflow_comparison == 'equal' and datatype_comparison == 'equal':
         return 'equal'
-    if workflow_comparison == 'subset' and datatype_comparison == 'subset':
+    if workflow_comparison in [ 'equal', 'subset' ] and datatype_comparison in [ 'equal', 'subset' ]:
         is_subset = True
         for guid in ancestor_guids:
             if guid not in current_guids:
@@ -391,103 +380,69 @@ def generate_clone_url( trans, repository_id ):
         return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
-def generate_metadata_for_changeset_revision( trans, repo, id, ctx, changeset_revision, repo_dir, updating_tip=False ):
-    if updating_tip:
-        # If a push from the command line is occurring, update the repository files on disk before setting metadata.
-        update_repository( repo, str( ctx.rev() ) )
+def generate_metadata_for_changeset_revision( trans, repository_files_dir, repository_clone_url ):
+    """
+    Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
+    the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
+    disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be a temporary directory containing a clone).
+    """
     metadata_dict = {}
     invalid_files = []
     invalid_tool_configs = []
-    original_tool_data_path = trans.app.config.tool_data_path
-    work_dir = make_tmp_directory()
-    datatypes_config = get_config( 'datatypes_conf.xml', repo, ctx, work_dir  )
+    tool_dependencies_config = None
+    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', repository_files_dir )
     if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )    
-    sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
+        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
+    sample_files = get_sample_files_from_disk( repository_files_dir )
     if sample_files:
-        trans.app.config.tool_data_path = work_dir
-    all_sample_files_copied = []
-    # Handle the tool_data_table_conf.xml.sample file if it is included in the repository.
-    if 'tool_data_table_conf.xml.sample' in sample_files:
-        tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', work_dir )
-        error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-    for filename in ctx:
-        # Find all tool configs.
-        ctx_file_name = strip_path( filename )
-        if ctx_file_name not in NOT_TOOL_CONFIGS and filename.endswith( '.xml' ):
-            is_tool_config, valid, tool, error_message = load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, work_dir )
-            if is_tool_config and valid and tool is not None:
-                sample_files_copied, can_set_metadata, invalid_files = check_tool_input_params( trans,
-                                                                                                repo,
-                                                                                                repo_dir,
-                                                                                                ctx,
-                                                                                                filename,
-                                                                                                tool,
-                                                                                                sample_files,
-                                                                                                invalid_files,
-                                                                                                original_tool_data_path,
-                                                                                                work_dir )
-                all_sample_files_copied.extend( sample_files_copied )
-                if can_set_metadata:
-                    # Update the list of metadata dictionaries for tools in metadata_dict.
-                    repository_clone_url = generate_clone_url( trans, id )
-                    metadata_dict = generate_tool_metadata( filename, tool, repository_clone_url, metadata_dict )
-                else:
-                    invalid_tool_configs.append( ctx_file_name )
-            elif is_tool_config:
-                if not error_message:
-                    error_message = 'Unknown problems loading tool.'
-                # We have a tool config but it is invalid or the tool does not properly load.
-                invalid_files.append( ( ctx_file_name, error_message ) )
-                invalid_tool_configs.append( ctx_file_name )
-        # Find all exported workflows.
-        elif filename.endswith( '.ga' ):
-            try:
-                fctx = ctx[ filename ]
-                workflow_text = fctx.data()
-                exported_workflow_dict = from_json_string( workflow_text )
-                if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
-                    metadata_dict = generate_workflow_metadata( '', exported_workflow_dict, metadata_dict )
-            except Exception, e:
-                invalid_files.append( ( ctx_file_name, str( e ) ) )
+        metadata_dict[ 'sample_files' ] = sample_files
+    # Find all tool configs and exported workflows.
+    for root, dirs, files in os.walk( repository_files_dir ):
+        if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
+            if '.hg' in dirs:
+                dirs.remove( '.hg' )
+            for name in files:
+                # Find all tool configs.
+                if name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
+                    full_path = os.path.abspath( os.path.join( root, name ) )
+                    if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
+                             or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
+                        try:
+                            # Make sure we're looking at a tool config and not a display application config or something else.
+                            element_tree = util.parse_xml( full_path )
+                            element_tree_root = element_tree.getroot()
+                            is_tool = element_tree_root.tag == 'tool'
+                        except Exception, e:
+                            print "Error parsing %s", full_path, ", exception: ", str( e )
+                            is_tool = False
+                        if is_tool:
+                            try:
+                                tool = trans.app.toolbox.load_tool( full_path )
+                                tool_config = os.path.join( root, name )
+                            except Exception, e:
+                                tool = None
+                                invalid_tool_configs.append( name )
+                            if tool is not None:
+                                can_set_metadata, invalid_files = check_tool_input_params( trans, repository_files_dir, tool_config, tool, sample_files, invalid_files )
+                                if can_set_metadata:
+                                    metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
+                # Find all exported workflows
+                elif name.endswith( '.ga' ):
+                    relative_path = os.path.join( root, name )
+                    fp = open( relative_path, 'rb' )
+                    workflow_text = fp.read()
+                    fp.close()
+                    exported_workflow_dict = from_json_string( workflow_text )
+                    if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                        metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
     if 'tools' in metadata_dict:
-        # Find tool_dependencies.xml if it exists.  This step must be done after metadata for tools has been defined.
-        tool_dependencies_config = get_config( 'tool_dependencies.xml', repo, ctx, work_dir )
+        # This step must be done after metadata for tools has been defined.
+        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', repository_files_dir )
         if tool_dependencies_config:
             metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
     if invalid_tool_configs:
         metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
-    if sample_files:
-        # Don't forget to reset the value of trans.app.config.tool_data_path!
-        trans.app.config.tool_data_path = original_tool_data_path
-    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    reset_tool_data_tables( trans.app )
-    try:
-        shutil.rmtree( work_dir )
-    except:
-        pass
-    # Remove all copied sample files from both the original tool data path (~/shed-tool-data) and the temporary
-    # value of trans.app.config.tool_data_path, which is work_dir.
-    for copied_sample_file in all_sample_files_copied:
-        copied_file = copied_sample_file.replace( '.sample', '' )
-        try:
-            os.unlink( os.path.join( trans.app.config.tool_data_path, copied_sample_file ) )
-        except:
-            pass
-        try:
-            os.unlink( os.path.join( trans.app.config.tool_data_path, copied_file ) )
-        except:
-            pass
-        if trans.app.config.tool_data_path == work_dir:
-            try:
-                os.unlink( os.path.join( original_tool_data_path, copied_sample_file ) )
-            except:
-                pass
-            try:
-                os.unlink( os.path.join( original_tool_data_path, copied_file ) )
-            except:
-                pass
-    return metadata_dict, invalid_files, deleted_sample_files
+    return metadata_dict, invalid_files
 def generate_tool_guid( trans, repository, tool ):
     """
     Generate a guid for the received tool.  The form of the guid is    
@@ -529,10 +484,10 @@ def get_file_context_from_ctx( ctx, filename ):
     if deleted:
         return 'DELETED'
     return None
-def get_latest_repository_metadata( trans, id ):
+def get_latest_repository_metadata( trans, decoded_repository_id ):
     """Get last metadata defined for a specified repository from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
+                           .filter( trans.model.RepositoryMetadata.table.c.repository_id == decoded_repository_id ) \
                            .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
                            .first()
 def get_list_of_copied_sample_files( repo, ctx, dir ):
@@ -873,14 +828,13 @@ def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                 reset_tool_data_tables( trans.app )
     return is_tool_config, valid, tool, error_message
-def new_tool_metadata_required( trans, id, metadata_dict ):
+def new_tool_metadata_required( trans, repository, metadata_dict ):
     """
-    Compare the last saved metadata for each tool in the repository with the new metadata
-    in metadata_dict to determine if a new repository_metadata table record is required, or
-    if the last saved metadata record can updated instead.
+    Compare the last saved metadata for each tool in the repository with the new metadata in metadata_dict to determine if a new repository_metadata
+    table record is required, or if the last saved metadata record can be updated instead.
     """
     if 'tools' in metadata_dict:
-        repository_metadata = get_latest_repository_metadata( trans, id )
+        repository_metadata = get_latest_repository_metadata( trans, repository.id )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata and 'tools' in metadata:
@@ -908,20 +862,17 @@ def new_tool_metadata_required( trans, id, metadata_dict ):
                 # repository, so we can update the existing repository metadata.
                 return False
         else:
-            # There is no saved repository metadata, so we need to create a new repository_metadata
-            # table record.
+            # There is no saved repository metadata, so we need to create a new repository_metadata table record.
             return True
-    # The received metadata_dict includes no metadata for tools, so a new repository_metadata table
-    # record is not needed.
+    # The received metadata_dict includes no metadata for tools, so a new repository_metadata table record is not needed.
     return False
-def new_workflow_metadata_required( trans, id, metadata_dict ):
+def new_workflow_metadata_required( trans, repository, metadata_dict ):
     """
-    Currently everything about an exported workflow except the name is hard-coded, so there's
-    no real way to differentiate versions of exported workflows.  If this changes at some future
-    time, this method should be enhanced accordingly.
+    Currently everything about an exported workflow except the name is hard-coded, so there's no real way to differentiate versions of
+    exported workflows.  If this changes at some future time, this method should be enhanced accordingly.
     """
     if 'workflows' in metadata_dict:
-        repository_metadata = get_latest_repository_metadata( trans, id )
+        repository_metadata = get_latest_repository_metadata( trans, repository.id )
         if repository_metadata:
             if repository_metadata.metadata:
                 # The repository has metadata, so update the workflows value - no new record is needed.
@@ -939,167 +890,128 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
     log.debug( "Resetting all metadata on repository: %s" % repository.name )
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
-    missing_sample_files = []
-    if len( repo ) == 1:
-        error_message, status = set_repository_metadata( trans, id, repository.tip, **kwd )
-        if error_message:
-            return error_message, status
-        else:
-            add_repository_metadata_tool_versions( trans, id, [ repository.tip ] )
-    else:
-        # The list of changeset_revisions refers to repository_metadata records that have been created or updated.  When the following loop
-        # completes, we'll delete all repository_metadata records for this repository that do not have a changeset_revision value in this list.
-        changeset_revisions = []
-        # When a new repository_metadata record is created, it always uses the values of metadata_changeset_revision and metadata_dict.
-        metadata_changeset_revision = None
-        metadata_dict = None
-        ancestor_changeset_revision = None
-        ancestor_metadata_dict = None
-        for changeset in repo.changelog:
-            current_changeset_revision = str( repo.changectx( changeset ) )
-            ctx = get_changectx_for_changeset( repo, current_changeset_revision )
-            current_metadata_dict, invalid_files, deleted_sample_files = generate_metadata_for_changeset_revision( trans,
-                                                                                                                   repo,
-                                                                                                                   id,
-                                                                                                                   ctx,
-                                                                                                                   current_changeset_revision,
-                                                                                                                   repo_dir,
-                                                                                                                   updating_tip=current_changeset_revision==repository.tip )
-            for deleted_sample_file in deleted_sample_files:
-                if deleted_sample_file not in missing_sample_files:
-                    missing_sample_files.append( deleted_sample_file )
-            if current_metadata_dict:
-                if not metadata_changeset_revision and not metadata_dict:
-                    # We're at the first change set in the change log.
-                    metadata_changeset_revision = current_changeset_revision
-                    metadata_dict = current_metadata_dict
-                if ancestor_changeset_revision:
-                    # Compare metadata from ancestor and current.  The value of comparsion will be one of:
-                    # 'no metadata' - no metadata for either ancestor or current, so continue from current
-                    # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
-                    # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
-                    # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
-                    comparison = compare_changeset_revisions( ancestor_changeset_revision,
-                                                              ancestor_metadata_dict,
-                                                              current_changeset_revision,
-                                                              current_metadata_dict )
-                    if comparison in [ 'no metadata', 'equal', 'subset' ]:
-                        ancestor_changeset_revision = current_changeset_revision
-                        ancestor_metadata_dict = current_metadata_dict
-                    elif comparison == 'not equal and not subset':
-                        metadata_changeset_revision = ancestor_changeset_revision
-                        metadata_dict = ancestor_metadata_dict
-                        create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
-                        changeset_revisions.append( metadata_changeset_revision )
-                        ancestor_changeset_revision = current_changeset_revision
-                        ancestor_metadata_dict = current_metadata_dict
-                else:
-                    # We're at the beginning of the change log.
+    repository_clone_url = generate_clone_url( trans, id )
+    # The list of changeset_revisions refers to repository_metadata records that have been created or updated.  When the following loop
+    # completes, we'll delete all repository_metadata records for this repository that do not have a changeset_revision value in this list.
+    changeset_revisions = []
+    # When a new repository_metadata record is created, it always uses the values of metadata_changeset_revision and metadata_dict.
+    metadata_changeset_revision = None
+    metadata_dict = None
+    ancestor_changeset_revision = None
+    ancestor_metadata_dict = None
+    home_dir = os.getcwd()
+    for changeset in repo.changelog:
+        work_dir = tempfile.mkdtemp()
+        current_changeset_revision = str( repo.changectx( changeset ) )
+        ctx = repo.changectx( changeset )
+        print "Cloning repository revision: ", str( ctx.rev() )
+        clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
+        print "Generating metadata for changset revision: ", str( ctx.rev() )
+        current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, work_dir, repository_clone_url )
+        if current_metadata_dict:
+            if not metadata_changeset_revision and not metadata_dict:
+                # We're at the first change set in the change log.
+                metadata_changeset_revision = current_changeset_revision
+                metadata_dict = current_metadata_dict
+            if ancestor_changeset_revision:
+                # Compare metadata from ancestor and current.  The value of comparison will be one of:
+                # 'no metadata' - no metadata for either ancestor or current, so continue from current
+                # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
+                # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
+                # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
+                comparison = compare_changeset_revisions( ancestor_changeset_revision,
+                                                          ancestor_metadata_dict,
+                                                          current_changeset_revision,
+                                                          current_metadata_dict )
+                if comparison in [ 'no metadata', 'equal', 'subset' ]:
                     ancestor_changeset_revision = current_changeset_revision
                     ancestor_metadata_dict = current_metadata_dict
-                if not ctx.children():
-                    metadata_changeset_revision = current_changeset_revision
-                    metadata_dict = current_metadata_dict
-                    # We're at the end of the change log.
+                elif comparison == 'not equal and not subset':
+                    metadata_changeset_revision = ancestor_changeset_revision
+                    metadata_dict = ancestor_metadata_dict
                     create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                     changeset_revisions.append( metadata_changeset_revision )
-                    ancestor_changeset_revision = None
-                    ancestor_metadata_dict = None
-            elif ancestor_metadata_dict:
-                # We reach here only if current_metadata_dict is empty and ancestor_metadata_dict is not.
+                    ancestor_changeset_revision = current_changeset_revision
+                    ancestor_metadata_dict = current_metadata_dict
+            else:
+                # We're at the beginning of the change log.
                 ancestor_changeset_revision = current_changeset_revision
+                ancestor_metadata_dict = current_metadata_dict
+            if not ctx.children():
                 metadata_changeset_revision = current_changeset_revision
-                metadata_dict = ancestor_metadata_dict
-                if not ctx.children():
-                    # We're at the end of the change log.
-                    create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
-                    changeset_revisions.append( metadata_changeset_revision )
-                    ancestor_changeset_revision = None
-                    ancestor_metadata_dict = None
-        # Delete all repository_metadata records for this repository that do not have a changeset_revision value in changeset_revisions.
-        clean_repository_metadata( trans, id, changeset_revisions )
-        add_repository_metadata_tool_versions( trans, id, changeset_revisions )
-    if missing_sample_files:
-        message += "Metadata was successfully reset, but the following required sample files have been deleted from the repository so the version "
-        message += "of each file just prior to its deletion is being used.  These files should be re-added to the repository as soon as possible:  "
-        message += "<b>%s</b><br/>" % ', '.join( missing_sample_files )
-        return message, 'ok'
-    return '', 'ok'
-def set_repository_metadata( trans, id, changeset_revision, content_alert_str='', **kwd ):
+                metadata_dict = current_metadata_dict
+                # We're at the end of the change log.
+                create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                changeset_revisions.append( metadata_changeset_revision )
+                ancestor_changeset_revision = None
+                ancestor_metadata_dict = None
+        elif ancestor_metadata_dict:
+            # We reach here only if current_metadata_dict is empty and ancestor_metadata_dict is not.
+            ancestor_changeset_revision = current_changeset_revision
+            metadata_changeset_revision = current_changeset_revision
+            metadata_dict = ancestor_metadata_dict
+            if not ctx.children():
+                # We're at the end of the change log.
+                create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                changeset_revisions.append( metadata_changeset_revision )
+                ancestor_changeset_revision = None
+                ancestor_metadata_dict = None
+        if os.path.exists( work_dir ):
+            try:
+                shutil.rmtree( work_dir )
+            except:
+                pass
+    # Delete all repository_metadata records for this repository that do not have a changeset_revision value in changeset_revisions.
+    clean_repository_metadata( trans, id, changeset_revisions )
+    add_repository_metadata_tool_versions( trans, id, changeset_revisions )
+def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     """
-    Set repository metadata on the repository tip, returning specific error messages (if any) to alert the repository owner that the changeset
+    Set metadata using the repository's current disk files, returning specific error messages (if any) to alert the repository owner that the changeset
     has problems.
     """
     message = ''
     status = 'done'
-    repository = get_repository( trans, id )
+    repository_clone_url = generate_clone_url( trans, trans.security.encode_id( repository.id ) )
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
-    metadata_dict = {}
-    invalid_files = []
-    updating_tip = changeset_revision == repository.tip
-    if ctx is not None:
-        metadata_dict, invalid_files, deleted_sample_files = generate_metadata_for_changeset_revision( trans,
-                                                                                                       repo,
-                                                                                                       id,
-                                                                                                       ctx,
-                                                                                                       changeset_revision,
-                                                                                                       repo_dir,
-                                                                                                       updating_tip=updating_tip )
-        if metadata_dict:
-            if updating_tip:
-                if new_tool_metadata_required( trans, id, metadata_dict ) or new_workflow_metadata_required( trans, id, metadata_dict ):
-                    # Create a new repository_metadata table row.
-                    repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
-                    trans.sa_session.add( repository_metadata )
-                    try:
-                        trans.sa_session.flush()
-                        # If this is the first record stored for this repository, see if we need to send any email alerts.
-                        if len( repository.downloadable_revisions ) == 1:
-                            handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
-                    except TypeError, e:
-                        message = "Unable to save metadata for this repository probably due to a tool config file that doesn't conform to the Cheetah template syntax."
-                        status = 'error'
-                else:
-                    repository_metadata = get_latest_repository_metadata( trans, id )
-                    if repository_metadata:
-                        # Update the last saved repository_metadata table row.
-                        repository_metadata.changeset_revision = changeset_revision
-                        repository_metadata.metadata = metadata_dict
-                        repository_metadata.downloadable = changeset_is_downloadable( metadata_dict )
-                        trans.sa_session.add( repository_metadata )
-                        trans.sa_session.flush()
-                    else:
-                        # There are no tools in the repository, and we're setting metadata on the repository tip.
-                        repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
-                        trans.sa_session.add( repository_metadata )
-                        trans.sa_session.flush()
-            else:
-                # We're re-generating metadata for an old repository revision.
-                repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, repo_dir, repository_clone_url )
+    if metadata_dict:
+        if new_tool_metadata_required( trans, repository, metadata_dict ) or new_workflow_metadata_required( trans, repository, metadata_dict ):
+            # Create a new repository_metadata table row.
+            repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
+            trans.sa_session.add( repository_metadata )
+            try:
+                trans.sa_session.flush()
+                # If this is the first record stored for this repository, see if we need to send any email alerts.
+                if len( repository.downloadable_revisions ) == 1:
+                    handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
+            except TypeError, e:
+                message = "Unable to save metadata for this repository, exception: %s" % str( e )
+                status = 'error'
+        else:
+            repository_metadata = get_latest_repository_metadata( trans, repository.id )
+            if repository_metadata:
+                # Update the last saved repository_metadata table row.
+                repository_metadata.changeset_revision = repository.tip
                 repository_metadata.metadata = metadata_dict
                 repository_metadata.downloadable = changeset_is_downloadable( metadata_dict )
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
-        elif updating_tip and len( repo ) == 1 and not invalid_files:
-            message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( changeset_revision )
-            message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
-            status = "error"
-    else:
-        # Here ctx is None.
-        message = "This repository does not include revision '%s'." % str( changeset_revision )
-        status = 'error'
-    if deleted_sample_files:
-        message += "Metadata was successfully reset, but the following required sample files have been deleted from the repository so the version "
-        message += "of each file just prior to its deletion is being used.  These files should be re-added to the repository as soon as possible:  "
-        message += "<b>%s</b><br/>" % ', '.join( deleted_sample_files )
+            else:
+                # There are no tools in the repository, and we're setting metadata on the repository tip.
+                repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
+                trans.sa_session.add( repository_metadata )
+                trans.sa_session.flush()
+    elif len( repo ) == 1 and not invalid_files:
+        message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( repository.tip )
+        message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
+        status = "error"
     if invalid_files:
         if metadata_dict:
-            message = "Metadata was defined for some items in revision '%s'.  " % str( changeset_revision )
+            message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip )
             message += "Correct the following problems if necessary and reset metadata.<br/>"
         else:
-            message = "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( changeset_revision )
+            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip )
             message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.<br/>"
         for itc_tup in invalid_files:
             tool_file, exception_msg = itc_tup
@@ -1118,18 +1030,14 @@ def set_repository_metadata( trans, id, changeset_revision, content_alert_str=''
             message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )            
         status = 'error'
     return message, status
-def set_repository_metadata_due_to_new_tip( trans, id, repository, content_alert_str=None, **kwd ):
+def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=None, **kwd ):
     # Set metadata on the repository tip.
-    error_message, status = set_repository_metadata( trans, id, repository.tip, content_alert_str=content_alert_str, **kwd )
-    if not error_message:
-        # If no error occurred in setting metadata on the repository tip, reset metadata on all changeset revisions for the repository.
-        # This will result in a more standardized set of valid repository revisions that can be installed.
-        error_message, status = reset_all_metadata_on_repository( trans, id, **kwd )
+    error_message, status = set_repository_metadata( trans, repository, content_alert_str=content_alert_str, **kwd )
     if error_message:
         # If there is an error, display it.
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
-                                                          id=id,
+                                                          id=trans.security.encode_id( repository.id ),
                                                           message=error_message,
                                                           status='error' ) )
 def update_for_browsing( trans, repository, current_working_dir, commit_message='' ):

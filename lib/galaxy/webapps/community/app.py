@@ -1,4 +1,5 @@
 import sys, config
+from galaxy import tools
 import galaxy.tools.data
 import galaxy.quota
 import galaxy.datatypes.registry
@@ -38,7 +39,7 @@ class UniverseApplication( object ):
         # Tool data tables - never pass a config file here because the tool shed should always have an empty dictionary!
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_path )
         # The tool shed has no toolbox, but this attribute is still required.
-        self.toolbox = None
+        self.toolbox = tools.ToolBox( [], self.config.tool_path, self )
         # Load security policy
         self.security_agent = self.model.security_agent
         self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )

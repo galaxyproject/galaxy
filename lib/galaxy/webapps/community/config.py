@@ -44,6 +44,7 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         # Tool stuff
+        self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
@@ -55,6 +56,7 @@ class Configuration( object ):
         else:
             self.tool_dependency_dir = None
             self.use_tool_dependencies = False
+        self.update_integrated_tool_panel = False
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )

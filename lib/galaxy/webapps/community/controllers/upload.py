@@ -3,7 +3,7 @@ from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
 from common import *
-from galaxy.util.shed_util import get_configured_ui, reset_tool_data_tables, handle_sample_tool_data_table_conf_file
+from galaxy.util.shed_util import get_configured_ui, reset_tool_data_tables, handle_sample_tool_data_table_conf_file, update_repository
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -154,7 +154,7 @@ class UploadController( BaseUIController ):
                             else:
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
-                        set_repository_metadata_due_to_new_tip( trans, repository_id, repository, content_alert_str=content_alert_str, **kwd )
+                        set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',
