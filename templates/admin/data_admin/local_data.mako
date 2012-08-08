@@ -44,6 +44,7 @@
     td, th { padding-left: 10px; padding-right: 10px; }
     td.state-color-new { text-decoration: underline; }
     td.panel-done-message { background-image: none; padding: 0px 10px 0px 10px; }
+    td.panel-error-message { background-image: none; padding: 0px 10px 0px 10px; }
 </style>
 <div class="toolForm">
     %if message:
@@ -52,19 +53,23 @@
     <div class="toolFormTitle">Currently tracked builds <a class="action-button" href="${h.url_for( controller='data_admin', action='add_genome' )}">Add new</a></div>
     <div class="toolFormBody">
         <h2>Locally cached data:</h2>
-        <h3>NOTE: Indexers queued here will not be reflected in the table until Galaxy is restarted.</h3>
+        <h3>NOTE: Indexes generated here will not be reflected in the table until Galaxy is restarted.</h3>
         <table id="locfiles">
-            <tr><th>Database ID</th><th>Name</th><th>Bowtie</th><th>Bowtie 2</th><th>BWA</th><th>Sam</th><th>Picard</th><th>PerM</th></tr>
-            %for dbkey in sorted(genomes.keys()):
+            <tr>
+                <th>DB Key</th>
+                <th>Name</th>
+                %for label in labels:
+                    <th>${labels[label]}</th>
+                %endfor
+            </tr>
+            %for dbkey in sorted(dbkeys):
                 <tr>
                     <td>${dbkey}</td>
-                    <td>${genomes[dbkey]['name']}</td>
-                    <td id="${dbkey}-bowtie" class="indexcell ${genomes[dbkey]['bowtie_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bowtie" data-dbkey="${dbkey}">${genomes[dbkey]['bowtie_indexes']['state']}</td>
-                    <td id="${dbkey}-bowtie2" class="indexcell ${genomes[dbkey]['bowtie2_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bowtie2" data-dbkey="${dbkey}">${genomes[dbkey]['bowtie2_indexes']['state']}</td>
-                    <td id="${dbkey}-bwa" class="indexcell ${genomes[dbkey]['bwa_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="bwa" data-dbkey="${dbkey}">${genomes[dbkey]['bwa_indexes']['state']}</td>
-                    <td id="${dbkey}-sam" class="indexcell ${genomes[dbkey]['sam_fa_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="sam" data-dbkey="${dbkey}">${genomes[dbkey]['sam_fa_indexes']['state']}</td>
-                    <td id="${dbkey}-picard" class="indexcell ${genomes[dbkey]['srma_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="picard" data-dbkey="${dbkey}">${genomes[dbkey]['srma_indexes']['state']}</td>
-                    <td id="${dbkey}-perm" class="indexcell ${genomes[dbkey]['perm_base_indexes']['style']}" data-fapath="${genomes[dbkey]['fapath']}" data-longname="${genomes[dbkey]['name']}" data-index="perm" data-dbkey="${dbkey}">${genomes[dbkey]['perm_base_indexes']['state']}</td>
+                    <td>${indextable[dbkey]['name']}</td>
+                    %for label in labels:
+                        <td id="${dbkey}-${indexfuncs[label]}" class="indexcell ${styles[indextable[dbkey]['indexes'][label]]}" data-fapath="${indextable[dbkey]['path']}" data-longname="${indextable[dbkey]['name']}" data-index="${indexfuncs[label]}" data-dbkey="${dbkey}">${indextable[dbkey]['indexes'][label]}</td>
+                    %endfor
+
                 </tr>
             %endfor
         </table>
@@ -124,6 +129,7 @@
             jsondata["name"] = $('#job-' + jobid).attr('data-name');
             jsondata["dbkey"] = $('#job-' + jobid).attr('data-dbkey');
             jsondata["indexes"] = $('#job-' + jobid).attr('data-indexes');
+            tdid = jq(jsondata["dbkey"] + '-' + jsondata["indexes"]);
             newhtml = makeNewHTML(jsondata);
             $('#job-' + jobid).replaceWith(newhtml);
             if ($.inArray(jsondata["status"], finalstates) == -1) {
@@ -133,7 +139,7 @@
                 });
             }
             if (jsondata["status"] == 'done' || jsondata["status"] == 'ok') {
-                elem = $('#' + jsondata["dbkey"] + '-' + jsondata["indexes"]);
+                elem = $(tdid);
                 elem.html('Generated');
                 elem.attr('class', 'indexcell panel-done-message');
             }
@@ -156,5 +162,8 @@
             }
         });
     });
-
+    
+    function jq(id) { 
+        return '#' + id.replace(/(:|\.)/g,'\\$1');
+    }
 </script>

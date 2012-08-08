@@ -32,4 +32,4 @@
 ##
 ## Override methods from base.mako and base_panels.mako
 ##
-<p class="panel-error-message">This feature requires that enable_beta_job_managers be set to True in your Galaxy configuration.</p>
+<p class="panel-error-message">${message}</p>
