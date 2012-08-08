@@ -4,6 +4,7 @@ Classes encapsulating galaxy tools and tool configuration.
 import pkg_resources
 
 pkg_resources.require( "simplejson" )
+pkg_resources.require( "Mako" )
 
 import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback
 import simplejson
@@ -2344,7 +2345,7 @@ class Tool:
             command_line = command_line.replace( "\n", " " ).replace( "\r", " " ).strip()
         except Exception, e:
             # Modify exception message to be more clear
-            #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ) )
+            #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ), )
             raise
         if self.interpreter:
             # TODO: path munging for cluster/dataset server relocatability
@@ -2441,7 +2442,7 @@ class Tool:
             if code:
                 return code( *args, **kwargs )
         except Exception, e:
-            e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ) )
+            e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ), )
             raise
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
         pass
