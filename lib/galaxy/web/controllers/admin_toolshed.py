@@ -1,4 +1,4 @@
-import urllib2
+import urllib2, tempfile
 from galaxy.web.controllers.admin import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
@@ -522,7 +522,7 @@ class AdminToolshed( AdminGalaxy ):
         # Get the tool_shed_repository from one of the tool_dependencies.
         message = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
-        work_dir = make_tmp_directory()
+        work_dir = tempfile.mkdtemp()
         # Get the tool_dependencies.xml file from the repository.
         tool_dependencies_config = get_config_from_repository( trans.app,
                                                                'tool_dependencies.xml',
@@ -654,7 +654,7 @@ class AdminToolshed( AdminGalaxy ):
                     message += "from the installed repository's <b>Repository Actions</b> menu.  "
                     status = 'error'
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
-                work_dir = make_tmp_directory()
+                work_dir = tempfile.mkdtemp()
                 # Install tool dependencies.
                 update_tool_shed_repository_status( trans.app,
                                                     tool_shed_repository,
@@ -684,7 +684,7 @@ class AdminToolshed( AdminGalaxy ):
         Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy (never the tool shed)
         when an admin is installing a new repository or reinstalling an uninstalled repository.
         """
-        metadata_dict = generate_metadata_using_disk_files( trans.app.toolbox, relative_install_dir, repository_clone_url )
+        metadata_dict = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
         tool_shed_repository.metadata = metadata_dict
         trans.sa_session.add( tool_shed_repository )
         trans.sa_session.flush()
@@ -695,7 +695,7 @@ class AdminToolshed( AdminGalaxy ):
             repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                work_dir = make_tmp_directory()
+                work_dir = tempfile.mkdtemp()
                 repository_tools_tups = handle_missing_data_table_entry( trans.app,
                                                                          tool_shed_repository,
                                                                          tool_shed_repository.changeset_revision,
@@ -726,7 +726,7 @@ class AdminToolshed( AdminGalaxy ):
                 tool_shed_repository.includes_datatypes = True
             trans.sa_session.add( tool_shed_repository )
             trans.sa_session.flush()
-            work_dir = make_tmp_directory()
+            work_dir = tempfile.mkdtemp()
             datatypes_config = get_config_from_repository( trans.app,
                                                            'datatypes_conf.xml',
                                                            tool_shed_repository,
@@ -779,7 +779,7 @@ class AdminToolshed( AdminGalaxy ):
             message = "The repository information has been updated."
         elif params.get( 'set_metadata_button', False ):
             repository_clone_url = generate_clone_url( trans, repository )
-            metadata_dict = generate_metadata_using_disk_files( trans.app.toolbox, relative_install_dir, repository_clone_url )
+            metadata_dict = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
             if metadata_dict:
                 repository.metadata = metadata_dict
                 trans.sa_session.add( repository )
@@ -1479,7 +1479,7 @@ class AdminToolshed( AdminGalaxy ):
                     update_repository( repo, latest_ctx_rev )
                     # Update the repository metadata.
                     tool_shed = clean_tool_shed_url( tool_shed_url )
-                    metadata_dict = generate_metadata_using_disk_files( trans.app.toolbox, relative_install_dir, repository_clone_url )
+                    metadata_dict = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
                     repository.metadata = metadata_dict
                     # Update the repository changeset_revision in the database.
                     repository.changeset_revision = latest_changeset_revision

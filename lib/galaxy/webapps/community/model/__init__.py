@@ -166,12 +166,13 @@ class Repository( object ):
         fp.close()
 
 class RepositoryMetadata( object ):
-    def __init__( self, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False ):
+    def __init__( self, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False ):
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
         self.metadata = metadata or dict()
         self.tool_versions = tool_versions or dict()
         self.malicious = malicious
+        self.downloadable = downloadable
     
 class ItemRatingAssociation( object ):
     def __init__( self, id=None, user=None, item=None, rating=0, comment='' ):

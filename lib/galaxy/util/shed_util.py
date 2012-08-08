@@ -2,7 +2,7 @@ import sys, os, tempfile, shutil, logging, string, urllib2
 import galaxy.tools.data
 from datetime import date, datetime, timedelta
 from time import strftime, gmtime
-from galaxy import util
+from galaxy import tools, util
 from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
@@ -247,6 +247,52 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
         except:
             pass
     return converter_path, display_path
+def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files ):
+    """
+    Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
+    sure the files exist.
+    """
+    invalid_files_and_errors_tups = []
+    correction_msg = ''
+    for input_param in tool.input_params:
+        if isinstance( input_param, tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
+            # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml, make sure all requirements exist.
+            options = input_param.dynamic_options or input_param.options
+            if options:
+                if options.tool_data_table or options.missing_tool_data_table_name:
+                    # Make sure the repository contains a tool_data_table_conf.xml.sample file.
+                    sample_tool_data_table_conf = get_config_from_disk( 'tool_data_table_conf.xml.sample', repo_dir )
+                    if sample_tool_data_table_conf:
+                        error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf )
+                        if error:
+                            invalid_files_and_errors_tups.append( ( 'tool_data_table_conf.xml.sample', correction_msg ) )
+                        else:
+                            options.missing_tool_data_table_name = None
+                    else:
+                        correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
+                        correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
+                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
+                if options.index_file or options.missing_index_file:
+                    # Make sure the repository contains the required xxx.loc.sample file.
+                    index_file = options.index_file or options.missing_index_file
+                    index_file_name = strip_path( index_file )
+                    sample_found = False
+                    for sample_file in sample_files:
+                        sample_file_name = strip_path( sample_file )
+                        if sample_file_name == '%s.sample' % index_file_name:
+                            options.index_file = index_file_name
+                            options.missing_index_file = None
+                            if options.tool_data_table:
+                                options.tool_data_table.missing_index_file = None
+                            sample_found = True
+                            break
+                    if not sample_found:
+                        correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
+                        correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
+                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( app )
+    return invalid_files_and_errors_tups
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
     fd, filename = tempfile.mkstemp()
@@ -383,7 +429,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
 def create_tool_dependency_objects( app, tool_shed_repository, current_changeset_revision, set_status=True ):
     # Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when installing a new tool_shed_repository.
     tool_dependency_objects = []
-    work_dir = make_tmp_directory()
+    work_dir = tempfile.mkdtemp()
     # Get the tool_dependencies.xml file from the repository.
     tool_dependencies_config = get_config_from_repository( app,
                                                            'tool_dependencies.xml',
@@ -501,6 +547,76 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
             if not can_generate_dependency_metadata:
                 break
     return can_generate_dependency_metadata
+def generate_metadata_for_changeset_revision( app, repository_files_dir, repository_clone_url ):
+    """
+    Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
+    the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
+    disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be a temporary directory containing a clone).
+    """
+    metadata_dict = {}
+    invalid_file_tups = []
+    invalid_tool_configs = []
+    tool_dependencies_config = None
+    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', repository_files_dir )
+    if datatypes_config:
+        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
+    sample_files = get_sample_files_from_disk( repository_files_dir )
+    if sample_files:
+        metadata_dict[ 'sample_files' ] = sample_files
+    # Find all tool configs and exported workflows.
+    for root, dirs, files in os.walk( repository_files_dir ):
+        if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
+            if '.hg' in dirs:
+                dirs.remove( '.hg' )
+            for name in files:
+                # Find all tool configs.
+                if name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
+                    full_path = os.path.abspath( os.path.join( root, name ) )
+                    if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
+                             or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
+                        try:
+                            # Make sure we're looking at a tool config and not a display application config or something else.
+                            element_tree = util.parse_xml( full_path )
+                            element_tree_root = element_tree.getroot()
+                            is_tool = element_tree_root.tag == 'tool'
+                        except Exception, e:
+                            print "Error parsing %s", full_path, ", exception: ", str( e )
+                            is_tool = False
+                        if is_tool:
+                            try:
+                                tool = app.toolbox.load_tool( full_path )
+                            except Exception, e:
+                                tool = None
+                                invalid_tool_configs.append( name )
+                            if tool is not None:
+                                invalid_files_and_errors_tups = check_tool_input_params( app, repository_files_dir, name, tool, sample_files )
+                                can_set_metadata = True
+                                for tup in invalid_files_and_errors_tups:
+                                    if name in tup:
+                                        can_set_metadata = False
+                                        invalid_tool_configs.append( name )
+                                        break
+                                if can_set_metadata:
+                                    metadata_dict = generate_tool_metadata( name, tool, repository_clone_url, metadata_dict )
+                                else:
+                                    invalid_file_tups.extend( invalid_files_and_errors_tups )
+                # Find all exported workflows
+                elif name.endswith( '.ga' ):
+                    relative_path = os.path.join( root, name )
+                    fp = open( relative_path, 'rb' )
+                    workflow_text = fp.read()
+                    fp.close()
+                    exported_workflow_dict = from_json_string( workflow_text )
+                    if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                        metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
+    if 'tools' in metadata_dict:
+        # This step must be done after metadata for tools has been defined.
+        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', repository_files_dir )
+        if tool_dependencies_config:
+            metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
+    if invalid_tool_configs:
+        metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
+    return metadata_dict, invalid_file_tups
 def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     """The value of package_name must match the value of the "package" type in the tool config's <requirements> tag set."""
     requirements_dict = {}
@@ -517,58 +633,6 @@ def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     if requirements_dict:
         tool_dependencies_dict[ dependency_key ] = requirements_dict
     return tool_dependencies_dict
-def generate_metadata_using_disk_files( toolbox, relative_install_dir, repository_clone_url ):
-    """Generate metadata using only the repository files on disk - files are not retrieved from the repository manifest."""
-    metadata_dict = {}
-    tool_dependencies_config = None
-    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
-    if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
-    sample_files = get_sample_files_from_disk( relative_install_dir )
-    if sample_files:
-        metadata_dict[ 'sample_files' ] = sample_files
-    # Find all tool configs and exported workflows.
-    for root, dirs, files in os.walk( relative_install_dir ):
-        if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
-            if '.hg' in dirs:
-                dirs.remove( '.hg' )
-            for name in files:
-                # Find all tool configs.
-                if name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
-                    full_path = os.path.abspath( os.path.join( root, name ) )
-                    if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
-                             or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
-                        try:
-                            # Make sure we're looking at a tool config and not a display application config or something else.
-                            element_tree = util.parse_xml( full_path )
-                            element_tree_root = element_tree.getroot()
-                            is_tool = element_tree_root.tag == 'tool'
-                        except Exception, e:
-                            log.debug( "Error parsing %s, exception: %s" % ( full_path, str( e ) ) )
-                            is_tool = False
-                        if is_tool:
-                            try:
-                                tool = toolbox.load_tool( full_path )
-                            except Exception, e:
-                                tool = None
-                            if tool is not None:
-                                tool_config = os.path.join( root, name )
-                                metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
-                # Find all exported workflows
-                elif name.endswith( '.ga' ):
-                    relative_path = os.path.join( root, name )
-                    fp = open( relative_path, 'rb' )
-                    workflow_text = fp.read()
-                    fp.close()
-                    exported_workflow_dict = from_json_string( workflow_text )
-                    if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
-                        metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
-    if 'tools' in metadata_dict:
-        # This step must be done after metadata for tools has been defined.
-        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
-        if tool_dependencies_config:
-            metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
-    return metadata_dict
 def generate_tool_guid( repository_clone_url, tool ):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for
@@ -1266,7 +1330,7 @@ def load_installed_datatype_converters( app, installed_repository_dict, deactiva
 def load_installed_datatypes( app, repository, relative_install_dir, deactivate=False ):
     # Load proprietary datatypes and return information needed for loading proprietary datatypes converters and display applications later.
     metadata = repository.metadata
-    work_dir = make_tmp_directory()
+    work_dir = tempfile.mkdtemp()
     repository_dict = None
     datatypes_config = get_config_from_repository( app,
                                                    'datatypes_conf.xml',
@@ -1293,17 +1357,6 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
 def load_installed_display_applications( app, installed_repository_dict, deactivate=False ):
     # Load or deactivate proprietary datatype display applications
     app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict, deactivate=deactivate )
-def make_tmp_directory():
-    tmp_dir = os.getenv( 'TMPDIR', '' )
-    if tmp_dir:
-        tmp_dir = tmp_dir.strip()
-    else:
-        home_dir = os.getenv( 'HOME' )
-        tmp_dir = os.path.join( home_dir, 'tmp' )
-    work_dir = os.path.join( tmp_dir, 'work_tmp' )
-    if not os.path.exists( work_dir ):
-        os.makedirs( work_dir )
-    return work_dir
 def open_repository_files_folder( trans, folder_path ):
     try:
         files_list = get_repository_files( trans, folder_path )
