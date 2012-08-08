@@ -122,7 +122,12 @@ def add_repository_metadata_tool_versions( trans, id, changeset_revisions ):
                 else:
                     for tool_dict in tool_dicts:
                         # We have at least 2 changeset revisions to compare tool guids and tool ids.
-                        parent_id = get_parent_id( trans, id, tool_dict[ 'id' ], tool_dict[ 'version' ], tool_dict[ 'guid' ], changeset_revisions[ 0:index ] )
+                        parent_id = get_parent_id( trans,
+                                                   id,
+                                                   tool_dict[ 'id' ],
+                                                   tool_dict[ 'version' ],
+                                                   tool_dict[ 'guid' ],
+                                                   changeset_revisions[ 0:index ] )
                         tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
                 if tool_versions_dict:
                     repository_metadata.tool_versions = tool_versions_dict
@@ -149,7 +154,8 @@ def clean_repository_metadata( trans, id, changeset_revisions ):
     # Delete all repository_metadata records associated with the repository that have a changeset_revision that is not in changeset_revisions.
     # We sometimes see multiple records with the same changeset revision value - no idea how this happens. We'll assume we can delete the older
     # records, so we'll order by update_time descending and delete records that have the same changeset_revision we come across later..
-    changeset_revisions_checked = [] 
+    changeset_revisions_checked = []
+    cleaned_changeset_revisions = []
     for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
                                                .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
                                                .order_by( trans.model.RepositoryMetadata.table.c.changeset_revision,
@@ -159,6 +165,9 @@ def clean_repository_metadata( trans, id, changeset_revisions ):
         if can_delete:
             trans.sa_session.delete( repository_metadata )
             trans.sa_session.flush()
+        else:
+            cleaned_changeset_revisions.append( changeset_revision )
+    return cleaned_changeset_revisions
 def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
     # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision is an ancestor of
     # current_changeset_revision which is associated with current_metadata_dict.  A new repository_metadata record will be created only
@@ -277,7 +286,7 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
             return file_path
     return None
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
-    downloadable = 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
+    downloadable = is_downloadable( metadata_dict )
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
         repository_metadata.metadata = metadata_dict
@@ -289,6 +298,7 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
                                                               downloadable=downloadable )
     trans.sa_session.add( repository_metadata )
     trans.sa_session.flush()
+    return repository_metadata
 def generate_clone_url( trans, repository_id ):
     """Generate the URL for cloning a repository."""
     repository = get_repository( trans, repository_id )
@@ -562,6 +572,8 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                     util.send_mail( frm, to, subject, body, trans.app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
+def is_downloadable( metadata_dict ):
+    return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
 def load_tool( trans, config_file ):
     """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
     # Parse XML configuration file and get the root element
@@ -797,7 +809,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                 elif comparison == 'not equal and not subset':
                     metadata_changeset_revision = ancestor_changeset_revision
                     metadata_dict = ancestor_metadata_dict
-                    create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                     changeset_revisions.append( metadata_changeset_revision )
                     ancestor_changeset_revision = current_changeset_revision
                     ancestor_metadata_dict = current_metadata_dict
@@ -809,7 +821,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                 metadata_changeset_revision = current_changeset_revision
                 metadata_dict = current_metadata_dict
                 # We're at the end of the change log.
-                create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                 changeset_revisions.append( metadata_changeset_revision )
                 ancestor_changeset_revision = None
                 ancestor_metadata_dict = None
@@ -820,7 +832,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
             metadata_dict = ancestor_metadata_dict
             if not ctx.children():
                 # We're at the end of the change log.
-                create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                 changeset_revisions.append( metadata_changeset_revision )
                 ancestor_changeset_revision = None
                 ancestor_metadata_dict = None
@@ -830,10 +842,9 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
             except:
                 pass
     # Delete all repository_metadata records for this repository that do not have a changeset_revision value in changeset_revisions.
-    clean_repository_metadata( trans, id, changeset_revisions )
+    cleaned_changeset_revisions = clean_repository_metadata( trans, id, changeset_revisions )
     # Set tool version information for all downloadable changeset revisions.
-    downloadable_changeset_revisions = [ rm.changeset_revision for rm in repository.downloadable_revisions ]
-    add_repository_metadata_tool_versions( trans, id, downloadable_changeset_revisions )
+    add_repository_metadata_tool_versions( trans, id, cleaned_changeset_revisions )
 def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     """
     Set metadata using the repository's current disk files, returning specific error messages (if any) to alert the repository owner that the changeset
@@ -846,23 +857,22 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     repo = hg.repository( get_configured_ui(), repo_dir )
     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, repo_dir, repository_clone_url )
     if metadata_dict:
+        downloadable = is_downloadable( metadata_dict )
         repository_metadata = None
         if new_tool_metadata_required( trans, repository, metadata_dict ) or new_workflow_metadata_required( trans, repository, metadata_dict ):
             # Create a new repository_metadata table row.
-            repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
-            trans.sa_session.add( repository_metadata )
-            try:
-                trans.sa_session.flush()
-                # If this is the first record stored for this repository, see if we need to send any email alerts.
-                if len( repository.downloadable_revisions ) == 1:
-                    handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
-            except TypeError, e:
-                message = "Unable to save metadata for this repository, exception: %s" % str( e )
-                status = 'error'
+            repository_metadata = create_or_update_repository_metadata( trans,
+                                                                        trans.security.encode_id( repository.id ),
+                                                                        repository,
+                                                                        repository.tip,
+                                                                        metadata_dict )
+            # If this is the first record stored for this repository, see if we need to send any email alerts.
+            if len( repository.downloadable_revisions ) == 1:
+                handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
         else:
             repository_metadata = get_latest_repository_metadata( trans, repository.id )
             if repository_metadata:
-                downloadable = 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
+                downloadable = is_downloadable( metadata_dict )
                 # Update the last saved repository_metadata table row.
                 repository_metadata.changeset_revision = repository.tip
                 repository_metadata.metadata = metadata_dict
@@ -871,11 +881,22 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 trans.sa_session.flush()
             else:
                 # There are no tools in the repository, and we're setting metadata on the repository tip.
-                repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
-                trans.sa_session.add( repository_metadata )
-                trans.sa_session.flush()
+                repository_metadata = create_or_update_repository_metadata( trans,
+                                                                            trans.security.encode_id( repository.id ),
+                                                                            repository,
+                                                                            repository.tip,
+                                                                            metadata_dict )
         if 'tools' in metadata_dict and repository_metadata and status != 'error':
-            add_repository_metadata_tool_versions( trans, trans.security.encode_id( repository.id ), [ repository_metadata.changeset_revision ] )
+            # Set tool versions on the new downloadable change set.  The order of the list of changesets is critical, so we use the repo's changelog.
+            downloadable_changeset_revisions = [ rm.changeset_revision for rm in repository.downloadable_revisions ]
+            changeset_revisions = []
+            for changeset in repo.changelog:
+                changeset_revision = str( repo.changectx( changeset ) )
+                if changeset_revision in downloadable_changeset_revisions:
+                    changeset_revisions.append( changeset_revision )
+            # Now append the latest changeset_revision we just updated above.
+            changeset_revisions.append( repository_metadata.changeset_revision )
+            add_repository_metadata_tool_versions( trans, trans.security.encode_id( repository.id ), changeset_revisions )
     elif len( repo ) == 1 and not invalid_file_tups:
         message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( repository.tip )
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
