@@ -44,6 +44,21 @@ def get_bounds( reads, start_pos_index, end_pos_index ):
         if read[ end_pos_index ] > max_high:
             max_high = read[ end_pos_index ]
     return max_low, max_high
+
+def _convert_between_ucsc_and_ensemble_naming( chrom ):
+    '''
+    Convert between UCSC chromosome ('chr1') naming conventions and Ensembl
+    naming conventions ('1')
+    '''
+    if chrom.startswith( 'chr' ):
+        # Convert from UCSC to Ensembl
+        return chrom[ 3: ]
+    else:
+        # Convert from Ensembl to UCSC
+        return 'chr' + chrom
+
+def _chrom_naming_matches( chrom1, chrom2 ):
+    return ( chrom1.startswith( 'chr' ) and chrom2.startswith( 'chr' ) ) or ( not chrom1.startswith( 'chr' ) and not chrom2.startswith( 'chr' ) )
         
 class TracksDataProvider( object ):
     """ Base class for tracks data providers. """
@@ -159,7 +174,7 @@ class TracksDataProvider( object ):
         return filters
 
     def get_default_max_vals( self ):
-        return 5000;
+        return 5000
         
 #
 # -- Base mixins and providers --
@@ -262,12 +277,9 @@ class TabixDataProvider( FilterableMixin, TracksDataProvider ):
         
         tabix = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
         
-        # If chrom is not found in indexes, try removing the first three 
-        # characters (e.g. 'chr') and see if that works. This enables the
-        # provider to handle chrome names defined as chrXXX and as XXX.
-        chrom = str(chrom)
-        if chrom not in tabix.contigs and chrom.startswith("chr") and (chrom[3:] in tabix.contigs):
-            chrom = chrom[3:]
+        # If chrom not in data, try alternative.
+        if chrom not in tabix.contigs:
+            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
         
         return tabix.fetch(reference=chrom, start=start, end=end)
                 
@@ -409,11 +421,6 @@ class BedDataProvider( TracksDataProvider ):
                 rval.append( payload )
                 continue
 
-            # Simpler way to add stuff, but type casting is not done.
-            # Name, score, strand, thick start, thick end.
-            #end = min( len( feature ), 8 )
-            #payload.extend( feature[ 3:end ] )
-
             # Name, strand, thick start, thick end.
             if length >= 4:
                 payload.append(feature[3])
@@ -470,6 +477,14 @@ class RawBedDataProvider( BedDataProvider ):
     """
 
     def get_iterator( self, chrom=None, start=None, end=None ):
+        # Read first line in order to match chrom naming format.
+        line = source.readline()
+        dataset_chrom = line.split()[0]
+        if not _chrom_naming_matches( chrom, dataset_chrom ):
+            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
+        # Undo read.
+        source.seek( 0 )
+
         def line_filter_iter():
             for line in open( self.original_dataset.file_name ):
                 if line.startswith( "track" ) or line.startswith( "browser" ):
@@ -483,6 +498,7 @@ class RawBedDataProvider( BedDataProvider ):
                     or ( end is not None and feature_end < start ):
                     continue
                 yield line
+        
         return line_filter_iter()
 
 #
@@ -601,6 +617,14 @@ class RawVcfDataProvider( VcfDataProvider ):
     """
 
     def get_iterator( self, chrom, start, end ):
+        # Read first line in order to match chrom naming format.
+        line = source.readline()
+        dataset_chrom = line.split()[0]
+        if not _chrom_naming_matches( chrom, dataset_chrom ):
+            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
+        # Undo read.
+        source.seek( 0 )
+
         def line_filter_iter():
             for line in open( self.original_dataset.file_name ):
                 if line.startswith("#"):
@@ -616,6 +640,7 @@ class RawVcfDataProvider( VcfDataProvider ):
                 if variant_chrom != chrom or variant_start > end or variant_end < start:
                     continue
                 yield line
+        
         return line_filter_iter()
 
 class SummaryTreeDataProvider( TracksDataProvider ):
@@ -639,15 +664,11 @@ class SummaryTreeDataProvider( TracksDataProvider ):
             st = summary_tree_from_file( self.converted_dataset.file_name )
             self.CACHE[filename] = st
 
-        # If chrom is not found in blocks, try removing the first three 
-        # characters (e.g. 'chr') and see if that works. This enables the
-        # provider to handle chrome names defined as chrXXX and as XXX.
-        if chrom in st.chrom_blocks:
-            pass
-        elif chrom[3:] in st.chrom_blocks:
-            chrom = chrom[3:]
-        else:
-            return None
+        # Look for chrom in tree using both naming conventions.
+        if chrom not in st.chrom_blocks:
+            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
+            if chrom not in st.chrom_blocks:
+                return None
 
         # Get or compute level.
         if level:
@@ -684,7 +705,7 @@ class SummaryTreeDataProvider( TracksDataProvider ):
             self.CACHE[filename] = st
             
         # Check for data.
-        return st.chrom_blocks.get(chrom, None) is not None or (chrom and st.chrom_blocks.get(chrom[3:], None) is not None)
+        return st.chrom_blocks.get(chrom, None) or st.chrom_blocks.get(_convert_between_ucsc_and_ensemble_naming(chrom), None)
 
 class BamDataProvider( TracksDataProvider, FilterableMixin ):
     """
@@ -727,13 +748,11 @@ class BamDataProvider( TracksDataProvider, FilterableMixin ):
             try:
                 data = bamfile.fetch(start=start, end=end, reference=chrom)
             except ValueError, e:
-                # Some BAM files do not prefix chromosome names with chr, try without
-                if chrom.startswith( 'chr' ):
-                    try:
-                        data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
-                    except ValueError:
-                        return None
-                else:
+                # Try alternative chrom naming.
+                chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
+                try:
+                    data = bamfile.fetch( start=start, end=end, reference=chrom )
+                except ValueError:
                     return None
 
             # Write reads in region.
@@ -757,13 +776,11 @@ class BamDataProvider( TracksDataProvider, FilterableMixin ):
         try:
             data = bamfile.fetch(start=start, end=end, reference=chrom)
         except ValueError, e:
-            # Some BAM files do not prefix chromosome names with chr, try without
-            if chrom.startswith( 'chr' ):
-                try:
-                    data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
-                except ValueError:
-                    return None
-            else:
+            # Try alternative chrom naming.
+            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
+            try:
+                data = bamfile.fetch( start=start, end=end, reference=chrom )
+            except ValueError:
                 return None
         return data
                 
@@ -1034,12 +1051,9 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
         source = open( self.original_dataset.file_name )
         index = Indexes( self.converted_dataset.file_name )
 
-        # If chrom is not found in indexes, try removing the first three 
-        # characters (e.g. 'chr') and see if that works. This enables the
-        # provider to handle chrome names defined as chrXXX and as XXX.
-        chrom = str(chrom)
-        if chrom not in index.indexes and chrom[3:] in index.indexes:
-            chrom = chrom[3:]
+        if chrom not in index.indexes:
+            # Try alternative naming.
+            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
             
         return index.find(chrom, start, end)
 
@@ -1091,6 +1105,14 @@ class RawGFFDataProvider( TracksDataProvider ):
         a file offset.
         """
         source = open( self.original_dataset.file_name )
+
+        # Read first line in order to match chrom naming format.
+        line = source.readline()
+        dataset_chrom = line.split()[0]
+        if not _chrom_naming_matches( chrom, dataset_chrom ):
+            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
+        # Undo read.
+        source.seek( 0 )
     
         def features_in_region_iter():
             offset = 0
@@ -1100,6 +1122,7 @@ class RawGFFDataProvider( TracksDataProvider ):
                 if feature.chrom == chrom and feature_end > start and feature_start < end:
                     yield feature, offset
                 offset += feature.raw_size
+
         return features_in_region_iter()
             
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
