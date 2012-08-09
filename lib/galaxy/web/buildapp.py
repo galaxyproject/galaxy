@@ -122,6 +122,18 @@ def app_factory( global_conf, **kwargs ):
                                 'permissions',
                                 path_prefix='/api/libraries/:library_id',
                                 parent_resources=dict( member_name='library', collection_name='libraries' ) )      
+    webapp.api_mapper.resource( 'user',
+                                'users',
+                                controller='group_users',
+                                name_prefix='group_',
+                                path_prefix='/api/groups/:group_id',
+                                parent_resources=dict( member_name='group', collection_name='groups' ) )
+    webapp.api_mapper.resource( 'role',
+                                'roles',
+                                controller='group_roles',
+                                name_prefix='group_',
+                                path_prefix='/api/groups/:group_id',
+                                parent_resources=dict( member_name='group', collection_name='groups' ) )
     webapp.api_mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
@@ -129,6 +141,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource( 'form', 'forms', path_prefix='/api' )
     webapp.api_mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
     webapp.api_mapper.resource( 'role', 'roles', path_prefix='/api' )
+    webapp.api_mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
     webapp.api_mapper.resource( 'tool', 'tools', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )

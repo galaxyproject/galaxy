@@ -544,7 +544,10 @@ class DeferredJob( object ):
         else:
             return False
 
-class Group( object ):
+class Group( object, APIItem  ):
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'id', 'name' )
+
     def __init__( self, name = None ):
         self.name = name
         self.deleted = False
