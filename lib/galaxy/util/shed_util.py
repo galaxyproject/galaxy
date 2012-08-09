@@ -2,7 +2,8 @@ import sys, os, tempfile, shutil, logging, string, urllib2
 import galaxy.tools.data
 from datetime import date, datetime, timedelta
 from time import strftime, gmtime
-from galaxy import tools, util
+from galaxy import util
+from galaxy.tools import parameters
 from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
@@ -255,7 +256,7 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
     invalid_files_and_errors_tups = []
     correction_msg = ''
     for input_param in tool.input_params:
-        if isinstance( input_param, tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
+        if isinstance( input_param, parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
             # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml, make sure all requirements exist.
             options = input_param.dynamic_options or input_param.options
             if options:
