@@ -2,7 +2,7 @@
 Manage automatic installation of tools configured in the xxx.xml files in ~/scripts/migrate_tools (e.g., 0002_tools.xml).
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
-import urllib2
+import urllib2, tempfile
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
@@ -132,7 +132,7 @@ class InstallManager( object ):
                 tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
-        metadata_dict = generate_metadata_using_disk_files( self.toolbox, relative_install_dir, repository_clone_url )
+        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( self.app, relative_install_dir, repository_clone_url )
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
         self.app.sa_session.flush()
@@ -142,7 +142,7 @@ class InstallManager( object ):
         else:
             tool_dependencies = None
         if 'tools' in metadata_dict:
-            work_dir = make_tmp_directory()
+            work_dir = tempfile.mkdtemp()
             repository_tools_tups = get_repository_tools_tups( self.app, metadata_dict )
             if repository_tools_tups:
                 sample_files = metadata_dict.get( 'sample_files', [] )
@@ -195,7 +195,7 @@ class InstallManager( object ):
                 tool_shed_repository.includes_datatypes = True
             self.app.sa_session.add( tool_shed_repository )
             self.app.sa_session.flush()
-            work_dir = make_tmp_directory()
+            work_dir = tempfile.mkdtemp()
             datatypes_config = get_config_from_repository( self.app,
                                                            'datatypes_conf.xml',
                                                            tool_shed_repository,

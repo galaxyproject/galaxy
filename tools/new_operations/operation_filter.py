@@ -3,6 +3,9 @@ import os
 from galaxy import eggs
 from galaxy import jobs
 from galaxy.tools.parameters import DataToolParameter
+
+from galaxy.jobs.handler import JOB_ERROR
+
 # Older py compatibility
 try:
     set()
@@ -63,8 +66,8 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
                 raise Exception( stderr )
 
         except Exception, exc:
-            data.blurb = jobs.JOB_ERROR
-            data.state = jobs.JOB_ERROR
+            data.blurb = JOB_ERROR
+            data.state = JOB_ERROR
 
 ## def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
 ##     pass

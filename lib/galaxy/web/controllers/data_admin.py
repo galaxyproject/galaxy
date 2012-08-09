@@ -30,25 +30,28 @@ class DataAdmin( BaseUIController ):
     @web.expose
     @web.require_admin
     def manage_data( self, trans, **kwd ):
-        genomes = dict()
         if trans.app.config.get_bool( 'enable_beta_job_managers', False ) == False:
-            return trans.fill_template( '/admin/data_admin/betajob.mako' )
-        for line in trans.app.tool_data_tables.data_tables[ 'all_fasta' ].data:
-            defstate = dict( state='Generate', style=self.jobstyles[ 'new' ] )
-            indexers = dict( bowtie_indexes=defstate, bowtie2_indexes=defstate, bwa_indexes=defstate, perm_base_indexes=defstate, srma_indexes=defstate, sam_fa_indexes=defstate )
-            dbkey = line[0]
-            name = line[2]
-            indexers[ 'name' ] = name
-            indexers[ 'fapath' ] = line[3]
-            genomes[ dbkey ] = indexers
-        for table in [ 'bowtie_indexes', 'bowtie2_indexes', 'bwa_indexes', 'srma_indexes' ]:
-            for line in trans.app.tool_data_tables.data_tables[ table ].data:
-                dbkey = line[0]
-                genomes[ dbkey ][ table ] = dict( state='Generated', style=self.jobstyles[ 'done' ] )
-        for line in trans.app.tool_data_tables.data_tables[ 'sam_fa_indexes' ].data:
-            genomes[ line[1] ][ 'sam_fa_indexes' ] = dict( state='Generated', style=self.jobstyles[ 'done' ] )
-        for line in trans.app.tool_data_tables.data_tables[ 'perm_base_indexes' ].data:
-            genomes[ line[1].split(':')[0] ][ 'perm_base_indexes' ] = dict( state='Generated', style=self.jobstyles[ 'done' ] )
+            return trans.fill_template( '/admin/data_admin/generic_error.mako', message='This feature requires that enable_beta_job_managers be set to True in your Galaxy configuration.' )
+        if 'all_fasta' not in trans.app.tool_data_tables.data_tables:
+            return trans.fill_template( '/admin/data_admin/generic_error.mako', message='The local data manager requires that an all_fasta entry exists in your tool_data_table_conf.xml.' )
+        indextable = {}
+        dbkeys = []
+        labels = { 'bowtie_indexes': 'Bowtie', 'bowtie2_indexes': 'Bowtie 2', 'bwa_indexes': 'BWA', 'srma_indexes': 'Picard', 'sam_fa_indexes': 'SAM', 'perm_base_indexes': 'PerM' }
+        tablenames = { 'Bowtie': 'bowtie_indexes', 'Bowtie 2': 'bowtie2_indexes', 'BWA': 'bwa_indexes', 'Picard': 'srma_indexes', 'SAM': 'sam_fa_indexes', 'PerM': 'perm_base_indexes' }
+        indexfuncs = dict( bowtie_indexes='bowtie', bowtie2_indexes='bowtie2', bwa_indexes='bwa', srma_indexes='picard', sam_fa_indexes='sam', perm_base_indexes='perm' )
+        for genome in trans.app.tool_data_tables.data_tables[ 'all_fasta' ].data:
+            dbkey = genome[0]
+            dbkeys.append( dbkey )
+            indextable[ dbkey ] = dict( indexes=dict(), name=genome[2], path=genome[3] )
+        for genome in indextable:
+            for label in labels:
+                indextable[ genome ][ 'indexes' ][ label ] = 'Generate'
+                if label not in trans.app.tool_data_tables.data_tables:
+                    indextable[ genome ][ 'indexes' ][ label ] = 'Disabled'
+                else:
+                    for row in trans.app.tool_data_tables.data_tables[ label ].data:
+                        if genome in row or row[0].startswith( genome ):
+                            indextable[ genome ][ 'indexes' ][ label ] = 'Generated'
         jobgrid = []
         sa_session = trans.app.model.context.current
         jobs = sa_session.query( model.GenomeIndexToolData ).order_by( model.GenomeIndexToolData.created_time.desc() ).filter_by( user_id=trans.get_user().id ).group_by( model.GenomeIndexToolData.deferred ).limit( 20 ).all()
@@ -65,7 +68,8 @@ class DataAdmin( BaseUIController ):
                 jobtype = 'index'
             indexers = ', '.join( params['indexes'] )
             jobgrid.append( dict( jobtype=jobtype, indexers=indexers, rowclass=state, deferred=job.deferred.id, state=state, intname=job.deferred.params[ 'intname' ], dbkey=job.deferred.params[ 'dbkey' ] ) )
-        return trans.fill_template( '/admin/data_admin/local_data.mako', jobgrid=jobgrid, genomes=genomes )
+        styles = dict( Generate=self.jobstyles['new'], Generated=self.jobstyles['ok'], Disabled=self.jobstyles['error'] )
+        return trans.fill_template( '/admin/data_admin/local_data.mako', jobgrid=jobgrid, indextable=indextable, labels=labels, dbkeys=dbkeys, styles=styles, indexfuncs=indexfuncs )
     
     @web.expose
     @web.require_admin

@@ -9,8 +9,8 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, make_tmp_directory, NOT_TOOL_CONFIGS
-from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, NOT_TOOL_CONFIGS
+from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, strip_path, to_html_escaped, update_repository
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -113,7 +113,7 @@ class RepositoryListGrid( grids.Grid ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
             """Display a SelectField whose options are the changeset_revision strings of all downloadable_revisions of this repository."""
-            select_field = build_changeset_revision_select_field( trans, repository )
+            select_field = build_changeset_revision_select_field( trans, repository, downloadable_only=False )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
             return repository.revision
@@ -268,7 +268,7 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
             """Display a SelectField whose options are the changeset_revision strings of all download-able revisions of this repository."""
-            select_field = build_changeset_revision_select_field( trans, repository )
+            select_field = build_changeset_revision_select_field( trans, repository, downloadable_only=True )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
             return repository.revision
@@ -1346,19 +1346,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
         webapp = get_webapp( trans, **kwd )
+        repository_clone_url = generate_clone_url( trans, repository_id )
         repository = get_repository( trans, repository_id )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
         ctx = get_changectx_for_changeset( repo, changeset_revision )
         invalid_message = ''
-        metadata_dict, invalid_files, deleted_sample_files = generate_metadata_for_changeset_revision( trans,
-                                                                                                       repo,
-                                                                                                       repository_id,
-                                                                                                       ctx,
-                                                                                                       changeset_revision,
-                                                                                                       repo_dir,
-                                                                                                       updating_tip=changeset_revision==repository.tip )
-        for invalid_file_tup in invalid_files:
+        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, repo_dir, repository_clone_url )
+        for invalid_file_tup in invalid_file_tups:
             invalid_tool_config, invalid_msg = invalid_file_tup
             invalid_tool_config_name = strip_path( invalid_tool_config )
             if tool_config == invalid_tool_config_name:
@@ -1554,7 +1549,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
-                                                                                 add_id_to_name=False )
+                                                                                 add_id_to_name=False,
+                                                                                 downloadable_only=False )
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
@@ -1657,7 +1653,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
-                                                                                 add_id_to_name=False )
+                                                                                 add_id_to_name=False,
+                                                                                 downloadable_only=False )
         return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
@@ -2128,7 +2125,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
-                                                                                 add_id_to_name=False )
+                                                                                 add_id_to_name=False,
+                                                                                 downloadable_only=False )
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
@@ -2185,7 +2183,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
-                                                                                 add_id_to_name=False )
+                                                                                 add_id_to_name=False,
+                                                                                 downloadable_only=False )
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
@@ -2197,3 +2196,42 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     webapp=webapp,
                                     message=message,
                                     status=status )
+
+# ----- Utility methods -----
+def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True, downloadable_only=False ):
+    """Build a SelectField whose options are the changeset_rev strings of all downloadable revisions of the received repository."""
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    options = []
+    changeset_tups = []
+    refresh_on_change_values = []
+    if downloadable_only:
+        repository_metadata_revisions = repository.downloadable_revisions
+    else:
+        repository_metadata_revisions = repository.metadata_revisions
+    for repository_metadata in repository_metadata_revisions:
+        changeset_revision = repository_metadata.changeset_revision
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
+        if ctx:
+            rev = '%04d' % ctx.rev()
+            label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        else:
+            rev = '-1'
+            label = "-1:%s" % changeset_revision
+        changeset_tups.append( ( rev, label, changeset_revision ) )
+        refresh_on_change_values.append( changeset_revision )
+    # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,
+    # the changeset revisions may not be sorted correctly because setting metadata over time will reset update_time.
+    for changeset_tup in sorted( changeset_tups ):
+        # Display the latest revision first.
+        options.insert( 0, ( changeset_tup[1], changeset_tup[2] ) )
+    if add_id_to_name:
+        name = 'changeset_revision_%d' % repository.id
+    else:
+        name = 'changeset_revision'
+    select_field = SelectField( name=name,
+                                refresh_on_change=True,
+                                refresh_on_change_values=refresh_on_change_values )
+    for option_tup in options:
+        selected = selected_value and option_tup[1] == selected_value
+        select_field.add_option( option_tup[0], option_tup[1], selected=selected )
+    return select_field

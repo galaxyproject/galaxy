@@ -1,15 +1,13 @@
-import os, string, socket, logging, simplejson, binascii
+import os, string, socket, logging, simplejson, binascii, tempfile
 from time import strftime
 from datetime import *
 from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-from galaxy.util.shed_util import clone_repository, copy_sample_file, generate_datatypes_metadata, generate_tool_dependency_metadata, generate_tool_metadata
-from galaxy.util.shed_util import generate_workflow_metadata, get_changectx_for_changeset, get_config, get_config_from_disk, get_configured_ui
-from galaxy.util.shed_util import get_named_tmpfile_from_ctx, get_sample_files_from_disk, handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH
-from galaxy.util.shed_util import make_tmp_directory, NOT_TOOL_CONFIGS, reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path, to_html_escaped
-from galaxy.util.shed_util import to_html_str, update_repository
+from galaxy.util.shed_util import clone_repository, generate_metadata_for_changeset_revision, get_changectx_for_changeset, get_config_from_disk
+from galaxy.util.shed_util import get_configured_ui, get_named_tmpfile_from_ctx, handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH
+from galaxy.util.shed_util import reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -107,11 +105,8 @@ class ItemRatings( UsesItemRatings ):
             trans.sa_session.flush()
         return item_rating
 
-## ---- Utility methods -------------------------------------------------------
-
 def add_repository_metadata_tool_versions( trans, id, changeset_revisions ):
-    # If a repository includes tools, build a dictionary of { 'tool id' : 'parent tool id' }
-    # pairs for each tool in each changeset revision.
+    # If a repository includes tools, build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
     for index, changeset_revision in enumerate( changeset_revisions ):
         tool_versions_dict = {}
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -120,57 +115,24 @@ def add_repository_metadata_tool_versions( trans, id, changeset_revisions ):
             if metadata:
                 tool_dicts = metadata.get( 'tools', [] )
                 if index == 0:
-                    # The first changset_revision is a special case because it will have no ancestor
-                    # changeset_revisions in which to match tools.  The parent tool id for tools in
-                    # the first changeset_revision will be the "old_id" in the tool config.
+                    # The first changset_revision is a special case because it will have no ancestor changeset_revisions in which to match tools.
+                    # The parent tool id for tools in the first changeset_revision will be the "old_id" in the tool config.
                     for tool_dict in tool_dicts:
                         tool_versions_dict[ tool_dict[ 'guid' ] ] = tool_dict[ 'id' ]
                 else:
                     for tool_dict in tool_dicts:
                         # We have at least 2 changeset revisions to compare tool guids and tool ids.
-                        parent_id = get_parent_id( trans, id, tool_dict[ 'id' ], tool_dict[ 'version' ], tool_dict[ 'guid' ], changeset_revisions[ 0:index ] )
+                        parent_id = get_parent_id( trans,
+                                                   id,
+                                                   tool_dict[ 'id' ],
+                                                   tool_dict[ 'version' ],
+                                                   tool_dict[ 'guid' ],
+                                                   changeset_revisions[ 0:index ] )
                         tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
                 if tool_versions_dict:
                     repository_metadata.tool_versions = tool_versions_dict
                     trans.sa_session.add( repository_metadata )
                     trans.sa_session.flush()
-def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True ):
-    """Build a SelectField whose options are the changeset_rev strings of all downloadable revisions of the received repository."""
-    repo = hg.repository( get_configured_ui(), repository.repo_path )
-    options = []
-    changeset_tups = []
-    refresh_on_change_values = []
-    for repository_metadata in repository.downloadable_revisions:
-        changeset_revision = repository_metadata.changeset_revision
-        ctx = get_changectx_for_changeset( repo, changeset_revision )
-        if ctx:
-            rev = '%04d' % ctx.rev()
-            label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
-        else:
-            rev = '-1'
-            label = "-1:%s" % changeset_revision
-        changeset_tups.append( ( rev, label, changeset_revision ) )
-        refresh_on_change_values.append( changeset_revision )
-    # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,
-    # the changeset revisions may not be sorted correctly because setting metadata over time will reset update_time.
-    for changeset_tup in sorted( changeset_tups ):
-        # Display the latest revision first.
-        options.insert( 0, ( changeset_tup[1], changeset_tup[2] ) )
-    if add_id_to_name:
-        name = 'changeset_revision_%d' % repository.id
-    else:
-        name = 'changeset_revision'
-    select_field = SelectField( name=name,
-                                refresh_on_change=True,
-                                refresh_on_change_values=refresh_on_change_values )
-    for option_tup in options:
-        selected = selected_value and option_tup[1] == selected_value
-        select_field.add_option( option_tup[0], option_tup[1], selected=selected )
-    return select_field
-def changeset_is_downloadable( metadata_dict ):
-    # A RepositoryMetadata record will be created if metadata_dict includes only invalid stuff like 'invalid_tools', but in this case
-    # it won't be downloadable.
-    return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -188,60 +150,12 @@ def check_file_contents( trans ):
             if user_email in admin_users:
                 return True
     return False
-def check_tool_input_params( trans, repo_dir, tool_config, tool, sample_files, invalid_files ):
-    """
-    Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
-    sure the files exist.
-    """
-    can_set_metadata = True
-    correction_msg = ''
-    for input_param in tool.input_params:
-        if isinstance( input_param, tools.parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
-            # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml, make sure all requirements exist.
-            options = input_param.dynamic_options or input_param.options
-            if options:
-                if options.tool_data_table or options.missing_tool_data_table_name:
-                    # Make sure the repository contains a tool_data_table_conf.xml.sample file.
-                    sample_tool_data_table_conf = get_config_from_disk( 'tool_data_table_conf.xml.sample', repo_dir )
-                    if sample_tool_data_table_conf:
-                        error, correction_msg = handle_sample_tool_data_table_conf_file( trans, sample_tool_data_table_conf )
-                        if error:
-                            can_set_metadata = False
-                            invalid_files.append( ( 'tool_data_table_conf.xml.sample', correction_msg ) )
-                        else:
-                            options.missing_tool_data_table_name = None
-                    else:
-                        can_set_metadata = False
-                        correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
-                        correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
-                        invalid_files.append( ( tool_config, correction_msg ) )
-                if options.index_file or options.missing_index_file:
-                    # Make sure the repository contains the required xxx.loc.sample file.
-                    index_file = options.index_file or options.missing_index_file
-                    index_file_name = strip_path( index_file )
-                    sample_found = False
-                    for sample_file in sample_files:
-                        sample_file_name = strip_path( sample_file )
-                        if sample_file_name == '%s.sample' % index_file_name:
-                            options.index_file = index_file_name
-                            options.missing_index_file = None
-                            if options.tool_data_table:
-                                options.tool_data_table.missing_index_file = None
-                            sample_found = True
-                            break
-                    if not sample_found:
-                        can_set_metadata = False
-                        correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
-                        correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
-                        invalid_files.append( ( tool_config, correction_msg ) )
-    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    reset_tool_data_tables( trans.app )
-    return can_set_metadata, invalid_files
 def clean_repository_metadata( trans, id, changeset_revisions ):
     # Delete all repository_metadata records associated with the repository that have a changeset_revision that is not in changeset_revisions.
     # We sometimes see multiple records with the same changeset revision value - no idea how this happens. We'll assume we can delete the older
     # records, so we'll order by update_time descending and delete records that have the same changeset_revision we come across later..
-    changeset_revisions_checked = [] 
+    changeset_revisions_checked = []
+    cleaned_changeset_revisions = []
     for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
                                                .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
                                                .order_by( trans.model.RepositoryMetadata.table.c.changeset_revision,
@@ -251,6 +165,9 @@ def clean_repository_metadata( trans, id, changeset_revisions ):
         if can_delete:
             trans.sa_session.delete( repository_metadata )
             trans.sa_session.flush()
+        else:
+            cleaned_changeset_revisions.append( changeset_revision )
+    return cleaned_changeset_revisions
 def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
     # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision is an ancestor of
     # current_changeset_revision which is associated with current_metadata_dict.  A new repository_metadata record will be created only
@@ -369,14 +286,19 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
             return file_path
     return None
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
+    downloadable = is_downloadable( metadata_dict )
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
         repository_metadata.metadata = metadata_dict
+        repository_metadata.downloadable = downloadable
     else:
-        repository_metadata = trans.model.RepositoryMetadata( repository.id, changeset_revision, metadata_dict )
-    repository_metadata.downloadable = changeset_is_downloadable( metadata_dict )
+        repository_metadata = trans.model.RepositoryMetadata( repository_id=repository.id,
+                                                              changeset_revision=changeset_revision,
+                                                              metadata=metadata_dict,
+                                                              downloadable=downloadable )
     trans.sa_session.add( repository_metadata )
     trans.sa_session.flush()
+    return repository_metadata
 def generate_clone_url( trans, repository_id ):
     """Generate the URL for cloning a repository."""
     repository = get_repository( trans, repository_id )
@@ -387,69 +309,6 @@ def generate_clone_url( trans, repository_id ):
         return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
-def generate_metadata_for_changeset_revision( trans, repository_files_dir, repository_clone_url ):
-    """
-    Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
-    the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
-    disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be a temporary directory containing a clone).
-    """
-    metadata_dict = {}
-    invalid_files = []
-    invalid_tool_configs = []
-    tool_dependencies_config = None
-    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', repository_files_dir )
-    if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
-    sample_files = get_sample_files_from_disk( repository_files_dir )
-    if sample_files:
-        metadata_dict[ 'sample_files' ] = sample_files
-    # Find all tool configs and exported workflows.
-    for root, dirs, files in os.walk( repository_files_dir ):
-        if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
-            if '.hg' in dirs:
-                dirs.remove( '.hg' )
-            for name in files:
-                # Find all tool configs.
-                if name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
-                    full_path = os.path.abspath( os.path.join( root, name ) )
-                    if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
-                             or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
-                        try:
-                            # Make sure we're looking at a tool config and not a display application config or something else.
-                            element_tree = util.parse_xml( full_path )
-                            element_tree_root = element_tree.getroot()
-                            is_tool = element_tree_root.tag == 'tool'
-                        except Exception, e:
-                            print "Error parsing %s", full_path, ", exception: ", str( e )
-                            is_tool = False
-                        if is_tool:
-                            try:
-                                tool = trans.app.toolbox.load_tool( full_path )
-                                tool_config = os.path.join( root, name )
-                            except Exception, e:
-                                tool = None
-                                invalid_tool_configs.append( name )
-                            if tool is not None:
-                                can_set_metadata, invalid_files = check_tool_input_params( trans, repository_files_dir, tool_config, tool, sample_files, invalid_files )
-                                if can_set_metadata:
-                                    metadata_dict = generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict )
-                # Find all exported workflows
-                elif name.endswith( '.ga' ):
-                    relative_path = os.path.join( root, name )
-                    fp = open( relative_path, 'rb' )
-                    workflow_text = fp.read()
-                    fp.close()
-                    exported_workflow_dict = from_json_string( workflow_text )
-                    if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
-                        metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
-    if 'tools' in metadata_dict:
-        # This step must be done after metadata for tools has been defined.
-        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', repository_files_dir )
-        if tool_dependencies_config:
-            metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
-    if invalid_tool_configs:
-        metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
-    return metadata_dict, invalid_files
 def generate_tool_guid( trans, repository, tool ):
     """
     Generate a guid for the received tool.  The form of the guid is    
@@ -588,10 +447,23 @@ def get_repository_by_name_and_owner( trans, name, owner ):
                              .first()
 def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database"""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
-                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
-                           .first()
+    # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.  Duplicate records were somehow
+    # creatd in the past.  This may or may not be resolved, so when it is confirmed that the cause of duplicate records has been corrected, tweak 
+    # this method accordingly.
+    all_metadata_records = trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
+                                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
+                                           .order_by( trans.model.RepositoryMetadata.table.c.update_time.desc() ) \
+                                           .all()
+    if len( all_metadata_records ) > 1:
+        # Delete all recrds older than the last one updated.
+        for repository_metadata in all_metadata_records[ 1: ]:
+            trans.sa_session.delete( repository_metadata )
+            trans.sa_session.flush()
+        return all_metadata_records[ 0 ]
+    elif all_metadata_records:
+        return all_metadata_records[ 0 ]
+    return None
 def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
@@ -700,6 +572,8 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                     util.send_mail( frm, to, subject, body, trans.app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
+def is_downloadable( metadata_dict ):
+    return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
 def load_tool( trans, config_file ):
     """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
     # Parse XML configuration file and get the root element
@@ -762,7 +636,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     tool = None
     message = ''
-    work_dir = make_tmp_directory()
+    work_dir = tempfile.mkdtemp()
     sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
     if sample_files:
         trans.app.config.tool_data_path = work_dir
@@ -913,7 +787,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
         print "Cloning repository revision: ", str( ctx.rev() )
         clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
         print "Generating metadata for changset revision: ", str( ctx.rev() )
-        current_metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, work_dir, repository_clone_url )
+        current_metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, work_dir, repository_clone_url )
         if current_metadata_dict:
             if not metadata_changeset_revision and not metadata_dict:
                 # We're at the first change set in the change log.
@@ -935,7 +809,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                 elif comparison == 'not equal and not subset':
                     metadata_changeset_revision = ancestor_changeset_revision
                     metadata_dict = ancestor_metadata_dict
-                    create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                     changeset_revisions.append( metadata_changeset_revision )
                     ancestor_changeset_revision = current_changeset_revision
                     ancestor_metadata_dict = current_metadata_dict
@@ -947,7 +821,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                 metadata_changeset_revision = current_changeset_revision
                 metadata_dict = current_metadata_dict
                 # We're at the end of the change log.
-                create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                 changeset_revisions.append( metadata_changeset_revision )
                 ancestor_changeset_revision = None
                 ancestor_metadata_dict = None
@@ -958,7 +832,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
             metadata_dict = ancestor_metadata_dict
             if not ctx.children():
                 # We're at the end of the change log.
-                create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                 changeset_revisions.append( metadata_changeset_revision )
                 ancestor_changeset_revision = None
                 ancestor_metadata_dict = None
@@ -968,8 +842,9 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
             except:
                 pass
     # Delete all repository_metadata records for this repository that do not have a changeset_revision value in changeset_revisions.
-    clean_repository_metadata( trans, id, changeset_revisions )
-    add_repository_metadata_tool_versions( trans, id, changeset_revisions )
+    cleaned_changeset_revisions = clean_repository_metadata( trans, id, changeset_revisions )
+    # Set tool version information for all downloadable changeset revisions.
+    add_repository_metadata_tool_versions( trans, id, cleaned_changeset_revisions )
 def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     """
     Set metadata using the repository's current disk files, returning specific error messages (if any) to alert the repository owner that the changeset
@@ -980,46 +855,60 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     repository_clone_url = generate_clone_url( trans, trans.security.encode_id( repository.id ) )
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
-    metadata_dict, invalid_files = generate_metadata_for_changeset_revision( trans, repo_dir, repository_clone_url )
+    metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, repo_dir, repository_clone_url )
     if metadata_dict:
+        downloadable = is_downloadable( metadata_dict )
+        repository_metadata = None
         if new_tool_metadata_required( trans, repository, metadata_dict ) or new_workflow_metadata_required( trans, repository, metadata_dict ):
             # Create a new repository_metadata table row.
-            repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
-            trans.sa_session.add( repository_metadata )
-            try:
-                trans.sa_session.flush()
-                # If this is the first record stored for this repository, see if we need to send any email alerts.
-                if len( repository.downloadable_revisions ) == 1:
-                    handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
-            except TypeError, e:
-                message = "Unable to save metadata for this repository, exception: %s" % str( e )
-                status = 'error'
+            repository_metadata = create_or_update_repository_metadata( trans,
+                                                                        trans.security.encode_id( repository.id ),
+                                                                        repository,
+                                                                        repository.tip,
+                                                                        metadata_dict )
+            # If this is the first record stored for this repository, see if we need to send any email alerts.
+            if len( repository.downloadable_revisions ) == 1:
+                handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
         else:
             repository_metadata = get_latest_repository_metadata( trans, repository.id )
             if repository_metadata:
+                downloadable = is_downloadable( metadata_dict )
                 # Update the last saved repository_metadata table row.
                 repository_metadata.changeset_revision = repository.tip
                 repository_metadata.metadata = metadata_dict
-                repository_metadata.downloadable = changeset_is_downloadable( metadata_dict )
+                repository_metadata.downloadable = downloadable
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
             else:
                 # There are no tools in the repository, and we're setting metadata on the repository tip.
-                repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
-                trans.sa_session.add( repository_metadata )
-                trans.sa_session.flush()
-    elif len( repo ) == 1 and not invalid_files:
+                repository_metadata = create_or_update_repository_metadata( trans,
+                                                                            trans.security.encode_id( repository.id ),
+                                                                            repository,
+                                                                            repository.tip,
+                                                                            metadata_dict )
+        if 'tools' in metadata_dict and repository_metadata and status != 'error':
+            # Set tool versions on the new downloadable change set.  The order of the list of changesets is critical, so we use the repo's changelog.
+            downloadable_changeset_revisions = [ rm.changeset_revision for rm in repository.downloadable_revisions ]
+            changeset_revisions = []
+            for changeset in repo.changelog:
+                changeset_revision = str( repo.changectx( changeset ) )
+                if changeset_revision in downloadable_changeset_revisions:
+                    changeset_revisions.append( changeset_revision )
+            # Now append the latest changeset_revision we just updated above.
+            changeset_revisions.append( repository_metadata.changeset_revision )
+            add_repository_metadata_tool_versions( trans, trans.security.encode_id( repository.id ), changeset_revisions )
+    elif len( repo ) == 1 and not invalid_file_tups:
         message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( repository.tip )
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
         status = "error"
-    if invalid_files:
+    if invalid_file_tups:
         if metadata_dict:
             message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip )
             message += "Correct the following problems if necessary and reset metadata.<br/>"
         else:
             message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip )
             message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.<br/>"
-        for itc_tup in invalid_files:
+        for itc_tup in invalid_file_tups:
             tool_file, exception_msg = itc_tup
             if exception_msg.find( 'No such file or directory' ) >= 0:
                 exception_items = exception_msg.split()
