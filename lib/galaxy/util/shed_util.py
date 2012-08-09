@@ -598,7 +598,7 @@ def generate_metadata_for_changeset_revision( app, repository_files_dir, reposit
                                         invalid_tool_configs.append( name )
                                         break
                                 if can_set_metadata:
-                                    metadata_dict = generate_tool_metadata( name, tool, repository_clone_url, metadata_dict )
+                                    metadata_dict = generate_tool_metadata( os.path.join( root, name ), tool, repository_clone_url, metadata_dict )
                                 else:
                                     invalid_file_tups.extend( invalid_files_and_errors_tups )
                 # Find all exported workflows

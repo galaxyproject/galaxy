@@ -684,7 +684,7 @@ class AdminToolshed( AdminGalaxy ):
         Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy (never the tool shed)
         when an admin is installing a new repository or reinstalling an uninstalled repository.
         """
-        metadata_dict = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
+        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
         tool_shed_repository.metadata = metadata_dict
         trans.sa_session.add( tool_shed_repository )
         trans.sa_session.flush()
@@ -779,7 +779,7 @@ class AdminToolshed( AdminGalaxy ):
             message = "The repository information has been updated."
         elif params.get( 'set_metadata_button', False ):
             repository_clone_url = generate_clone_url( trans, repository )
-            metadata_dict = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
+            metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
             if metadata_dict:
                 repository.metadata = metadata_dict
                 trans.sa_session.add( repository )
@@ -1479,7 +1479,7 @@ class AdminToolshed( AdminGalaxy ):
                     update_repository( repo, latest_ctx_rev )
                     # Update the repository metadata.
                     tool_shed = clean_tool_shed_url( tool_shed_url )
-                    metadata_dict = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
+                    metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
                     repository.metadata = metadata_dict
                     # Update the repository changeset_revision in the database.
                     repository.changeset_revision = latest_changeset_revision
