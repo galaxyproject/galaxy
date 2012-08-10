@@ -56,7 +56,7 @@ class FastQC():
             cl.append('-c %s' % self.opts.contaminants)
         # patch suggested by bwlang https://bitbucket.org/galaxy/galaxy-central/pull-request/30
 	# use a symlink in a temporary directory so that the FastQC report reflects the history input file name
-        fastqinfilename = re.sub(ru'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(self.opts.inputfilename))
+        fastqinfilename = re.sub(ur'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(self.opts.inputfilename))
         link_name = os.path.join(self.opts.outputdir, fastqinfilename)
         os.symlink(self.opts.input, link_name)
         cl.append(link_name)        
