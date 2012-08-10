@@ -112,16 +112,30 @@ class FileStager(object):
 class Client(object):
     """    
     """
-    def __init__(self, remote_host, job_id):
+    """    
+    """
+    def __init__(self, remote_host, job_id, private_key=None):
         if not remote_host.endswith("/"):
             remote_host = remote_host + "/"
+        ## If we don't have an explicit private_key defined, check for
+        ## one embedded in the URL. A URL of the form
+        ## https://moo@cow:8913 will try to contact https://cow:8913
+        ## with a private key of moo
+        private_key_format = "https?://(.*)@.*/?"
+        private_key_match= re.match(private_key_format, remote_host)
+        if not private_key and private_key_match:
+            private_key = private_key_match.group(1)
+            remote_host = remote_host.replace("%s@" % private_key, '', 1)
         self.remote_host = remote_host
         self.job_id = job_id
+        self.private_key = private_key
 
     def url_open(self, request, data):
         return urllib2.urlopen(request, data)
         
     def __build_url(self, command, args):
+        if self.private_key:
+            args["private_key"] = self.private_key
         data = urllib.urlencode(args)
         url = self.remote_host + command + "?" + data
         return url

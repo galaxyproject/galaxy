@@ -1,5 +1,6 @@
 <tool id="rgQC1" name="QC reports:">
-
+    <requirements><requirement type="package">plink</requirement></requirements>
+    
     <description>Marker and Subject measures</description>
 
     <command interpreter="python">

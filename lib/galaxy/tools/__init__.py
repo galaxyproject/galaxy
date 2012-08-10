@@ -1083,7 +1083,9 @@ class Tool:
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:
-                self.help = Template( util.rst_to_html(self.help.text) )
+                self.help = Template( util.rst_to_html(self.help.text), input_encoding='utf-8',
+                                      output_encoding='utf-8', default_filters=[ 'decode.utf8' ],
+                                      encoding_errors='replace' )
             except:
                 log.exception( "error in help for tool %s" % self.name )
             # Multiple help page case
@@ -1093,7 +1095,10 @@ class Tool:
                     help_footer = help_footer + help_page.tail
         # Each page has to rendered all-together because of backreferences allowed by rst
         try:
-            self.help_by_page = [ Template( util.rst_to_html( help_header + x + help_footer ) )
+            self.help_by_page = [ Template( util.rst_to_html( help_header + x + help_footer, 
+                                            input_encoding='utf-8', output_encoding='utf-8', 
+                                            default_filters=[ 'decode.utf8' ],
+                                            encoding_errors='replace' ) )
                                   for x in self.help_by_page ]
         except:
             log.exception( "error in multi-page help for tool %s" % self.name )

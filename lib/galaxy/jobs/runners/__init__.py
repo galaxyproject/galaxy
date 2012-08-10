@@ -40,7 +40,18 @@ class BaseJobRunner( object ):
         if job_wrapper.dependency_shell_commands:
             commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] ) 
 
-        # Append commands to copy job outputs based on from_work_dir attribute.
+        # -- Append commands to copy job outputs based on from_work_dir attribute. --
+
+        # Set up dict of dataset id --> output path; output path can be real or 
+        # false depending on outputs_to_working_directory
+        output_paths = {}
+        for dataset_path in job_wrapper.get_output_fnames():
+            path = dataset_path.real_path
+            if self.app.config.outputs_to_working_directory:
+                path = dataset_path.false_path
+            output_paths[ dataset_path.dataset_id ] = path
+
+        # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
         job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
@@ -53,12 +64,13 @@ class BaseJobRunner( object ):
                             # Copy from working dir to HDA.
                             # TODO: move instead of copy to save time?
                             source_file = os.path.join( os.path.abspath( job_wrapper.working_directory ), hda_tool_output.from_work_dir )
+                            destination = output_paths[ dataset.dataset_id ]
                             if in_directory( source_file, job_wrapper.working_directory ):
                                 try:
-                                    commands += "; cp %s %s" % ( source_file, dataset.file_name )
-                                    log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, dataset.file_name ) )
+                                    commands += "; cp %s %s" % ( source_file, destination )
+                                    log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, destination ) )
                                 except ( IOError, OSError ):
-                                    log.debug( "Could not copy %s to %s as directed by from_work_dir" % ( source_file, dataset.file_name ) )
+                                    log.debug( "Could not copy %s to %s as directed by from_work_dir" % ( source_file, destination ) )
                             else:
                                 # Security violation.
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
