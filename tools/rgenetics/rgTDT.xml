@@ -1,4 +1,6 @@
 <tool id="rgTDT1" name="Transmission Distortion:">
+    <requirements><requirement type="package">plink</requirement></requirements>
+
     <description>for family data</description>
 
     <command interpreter="python">

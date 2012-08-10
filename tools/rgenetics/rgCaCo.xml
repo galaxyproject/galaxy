@@ -1,4 +1,5 @@
 <tool id="rgCaCo1" name="Case Control:">
+    <requirements><requirement type="package">plink</requirement></requirements>
     <description>for unrelated subjects</description>
     <command interpreter="python">
         rgCaCo.py '$i.extra_files_path/$i.metadata.base_name' "$title"  '$out_file1' '$logf' '$logf.files_path' '$gffout'
