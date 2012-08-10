@@ -1,4 +1,7 @@
 """
+# added sanitizer for user supplied name
+# removed shell and make cl a sequence for Popen call
+# ross lazarus August 10 2012 in response to anon insecurity report
 wrapper for fastqc
 
 called as
@@ -53,7 +56,7 @@ class FastQC():
             cl.append('-c %s' % self.opts.contaminants)
         # patch suggested by bwlang https://bitbucket.org/galaxy/galaxy-central/pull-request/30
 	# use a symlink in a temporary directory so that the FastQC report reflects the history input file name
-        fastqinfilename = re.sub('[^a-zA-Z0-9_]+', '', os.path.basename(self.opts.inputfilename))
+        fastqinfilename = re.sub('[^a-zA-Z0-9_\-\.]', '_', os.path.basename(self.opts.inputfilename))
         link_name = os.path.join(self.opts.outputdir, fastqinfilename)
         os.symlink(self.opts.input, link_name)
         cl.append(link_name)        
