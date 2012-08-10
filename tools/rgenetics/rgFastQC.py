@@ -13,8 +13,13 @@ Author notified...
 
 
 """
-
-import os,sys,subprocess,optparse,shutil,tempfile
+import re
+import os
+import sys
+import subprocess
+import optparse
+import shutil
+import tempfile
 from rgutils import getFileString
 
 class FastQC():
@@ -38,25 +43,26 @@ class FastQC():
 
         """
         serr = ''
-        dummy,tlog = tempfile.mkstemp(prefix='rgFastQClog')
+        dummy,tlog = tempfile.mkstemp(prefix='rgFastQC',suffix=".log",dir=self.opts.outputdir)
         sout = open(tlog, 'w')
         fastq = os.path.basename(self.opts.input)
-        cl = [self.opts.executable,'-o %s' % self.opts.outputdir]
+        cl = [self.opts.executable,'--outdir=%s' % self.opts.outputdir]
         if self.opts.informat in ['sam','bam']:
             cl.append('-f %s' % self.opts.informat)
         if self.opts.contaminants <> None :
             cl.append('-c %s' % self.opts.contaminants)
         # patch suggested by bwlang https://bitbucket.org/galaxy/galaxy-central/pull-request/30
 	# use a symlink in a temporary directory so that the FastQC report reflects the history input file name
-        fastqinfilename = os.path.basename(self.opts.inputfilename).replace(' ','_')
+        fastqinfilename = re.sub('[^a-zA-Z0-9_]+', '', os.path.basename(self.opts.inputfilename))
         link_name = os.path.join(self.opts.outputdir, fastqinfilename)
         os.symlink(self.opts.input, link_name)
         cl.append(link_name)        
-        p = subprocess.Popen(' '.join(cl), shell=True, stderr=sout, stdout=sout, cwd=self.opts.outputdir)
+        sout.write('# FastQC cl = %s\n' % ' '.join(cl))
+        sout.flush()
+        p = subprocess.Popen(cl, shell=False, stderr=sout, stdout=sout, cwd=self.opts.outputdir)
         retval = p.wait()
         sout.close()
         runlog = open(tlog,'r').readlines()
-        os.unlink(tlog)
         os.unlink(link_name)
         flist = os.listdir(self.opts.outputdir) # fastqc plays games with its output directory name. eesh
         odpath = None

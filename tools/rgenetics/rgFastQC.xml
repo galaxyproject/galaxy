@@ -1,5 +1,5 @@
-<tool name="Fastqc: Fastqc QC" id="fastqc" version="0.5">
-  <description>using FastQC from Babraham</description>
+<tool name="FastQC:Read QC" id="fastqc" version="0.51">
+  <description>reports using FastQC</description>
   <command interpreter="python">
     rgFastQC.py -i "$input_file" -d "$html_file.files_path" -o "$html_file" -n "$out_prefix" -f "$input_file.ext" -j "$input_file.name" -e "${GALAXY_DATA_INDEX_DIR}/shared/jars/FastQC/fastqc"
 #if $contaminants.dataset and str($contaminants) > ''
@@ -21,7 +21,7 @@
            help="tab delimited file with 2 columns: name and sequence.  For example: Illumina Small RNA RT Primer	CAAGCAGAAGACGGCATACGA"/>
   </inputs>
   <outputs>
-    <data format="html" name="html_file"  label="${out_prefix}_${on_string}.html" />
+    <data format="html" name="html_file"  label="${out_prefix}_${input_file.name}.html" />
   </outputs>
   <tests>
     <test>
@@ -51,14 +51,17 @@ The main functions of FastQC are:
 - Export of results to an HTML based permanent report
 - Offline operation to allow automated generation of reports without running the interactive application
 
-**FastQC documentation**
 
-This is a Galaxy interface to the external package FastQC_.
-Specific documentation on FastQC can be found on that site.
+-----
+
+
+.. class:: infomark
+
+**FastQC**
+
+This is a Galaxy wrapper. It merely exposes the external package FastQC_ which is documented at FastQC_
+Kindly acknowledge it as well as this tool if you use it.
 FastQC incorporates the Picard-tools_ libraries for sam/bam processing.
-
- .. _FastQC: http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
 
 The contaminants file parameter was borrowed from the independently developed
 fastqcwrapper contributed to the Galaxy Community Tool Shed by J. Johnson.
@@ -69,7 +72,10 @@ fastqcwrapper contributed to the Galaxy Community Tool Shed by J. Johnson.
 
 **Inputs and outputs**
 
-This wrapper will accept any fastq file as well as sam or bam as the primary file to check.
+FastQC_ is the best place to look for documentation - it's very good. 
+A summary follows below for those in a tearing hurry.
+
+This wrapper will accept a Galaxy fastq, sam or bam as the input read file to check.
 It will also take an optional file containing a list of contaminants information, in the form of
 a tab-delimited file with 2 columns, name and sequence.
 
@@ -88,6 +94,8 @@ The tool produces a single HTML output file that contains all of the results, in
 - Kmer Content
 
 All except Basic Statistics and Overrepresented sequences are plots.
+ .. _FastQC: http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
 
 </help>
 </tool>
