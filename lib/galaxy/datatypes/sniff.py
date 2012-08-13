@@ -8,7 +8,7 @@ from galaxy.datatypes.checkers import *
 from galaxy.datatypes.binary import unsniffable_binary_formats
 
 log = logging.getLogger(__name__)
-        
+
 def get_test_fname(fname):
     """Returns test data filename"""
     path, name = os.path.split(__file__)
@@ -79,7 +79,7 @@ def check_newlines( fname, bytes_to_read=52428800 ):
 
 def convert_newlines( fname, in_place=True ):
     """
-    Converts in place a file from universal line endings 
+    Converts in place a file from universal line endings
     to Posix line endings.
 
     >>> fname = get_test_fname('temp.txt')
@@ -159,7 +159,7 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+" ):
 def get_headers( fname, sep, count=60, is_multi_byte=False ):
     """
     Returns a list with the first 'count' lines split by 'sep'
-    
+
     >>> fname = get_test_fname('complete.bed')
     >>> get_headers(fname,'\\t')
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
@@ -175,12 +175,12 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
         if idx == count:
             break
     return headers
-    
+
 def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     """
-    Checks whether the file is column based with respect to a separator 
+    Checks whether the file is column based with respect to a separator
     (defaults to tab separator).
-    
+
     >>> fname = get_test_fname('test.gff')
     >>> is_column_based(fname)
     True
@@ -288,7 +288,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
         """
         Some classes may not have a sniff function, which is ok.  In fact, the
         Tabular and Text classes are 2 examples of classes that should never have
-        a sniff function.  Since these classes are default classes, they contain 
+        a sniff function.  Since these classes are default classes, they contain
         few rules to filter out data of other formats, so they should be called
         from this function after all other datatypes in sniff_order have not been
         successfully discovered.
@@ -333,7 +333,7 @@ def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
         is_compressed = check_compressed_function( filename )
         if is_compressed:
             break #found compression type
-    if is_compressed: 
+    if is_compressed:
         if ext in AUTO_DETECT_EXTENSIONS:
             check_exts = COMPRESSION_DATATYPES[ compressed_type ]
         elif ext in COMPRESSED_EXTENSIONS:
@@ -347,7 +347,7 @@ def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
                 keep_compressed = True
                 is_valid = True
                 break
-    
+
     if not is_compressed:
         is_valid = True
     elif not keep_compressed:
@@ -373,13 +373,13 @@ def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
 
 def handle_uploaded_dataset_file( filename, datatypes_registry, ext = 'auto', is_multi_byte = False ):
     is_valid, ext = handle_compressed_file( filename, datatypes_registry, ext = ext )
-    
+
     if not is_valid:
         raise InappropriateDatasetContentError, 'The compressed uploaded file contains inappropriate content.'
-    
+
     if ext in AUTO_DETECT_EXTENSIONS:
         ext = guess_ext( filename, sniff_order = datatypes_registry.sniff_order, is_multi_byte=is_multi_byte )
-    
+
     if check_binary( filename ):
         if ext not in unsniffable_binary_formats and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
             raise InappropriateDatasetContentError, 'The binary uploaded file contains inappropriate content.'
