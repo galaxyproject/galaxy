@@ -499,7 +499,7 @@ class AdminToolshed( AdminGalaxy ):
         return get_repository_file_contents( file_path )
     def get_versions_of_tool( self, app, guid ):
         tool_version = get_tool_version( app, guid )
-        return tool_version.get_version_ids( app )
+        return tool_version.get_version_ids( app, reverse=True )
     @web.expose
     @web.require_admin
     def initiate_repository_installation( self, trans, shed_repository_ids, encoded_kwd, reinstalling=False ):

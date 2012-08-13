@@ -3050,7 +3050,12 @@ class ToolVersion( object ):
             tool_versions.append( self )
         __descendants( app, self )
         return tool_versions
-    def get_version_ids( self, app ):
+    def get_version_ids( self, app, reverse=False ):
+        if reverse:
+            version_ids = []
+            for tool_version in self.get_versions( app ):
+                version_ids.insert( 0, tool_version.tool_id )
+            return version_ids
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
 
 class ToolVersionAssociation( object ):
