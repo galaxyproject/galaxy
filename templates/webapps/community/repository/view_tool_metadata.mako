@@ -85,31 +85,14 @@
 <div class="toolForm">
     <div class="toolFormTitle">Repository revision</div>
     <div class="toolFormBody">
-        %if len( changeset_revision_select_field.options ) > 1:
-            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), tool_id=metadata[ 'id' ], webapp=webapp )}" method="post" >
-                <div class="form-row">
-                    <%
-                        if changeset_revision == repository.tip:
-                            tip_str = 'repository tip'
-                        else:
-                            tip_str = ''
-                    %>
-                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
-                    <div class="toolParamHelp" style="clear: both;">
-                        Select a revision to inspect and download versions of tools from this repository.
-                    </div>
-                </div>
-            </form>
-        %else:
-            <div class="form-row">
-                <label>Revision:</label>
-                %if can_view_change_log:
-                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
-                %else:
-                    ${revision_label}
-                %endif
-            </div>
-        %endif
+        <div class="form-row">
+            <label>Revision:</label>
+            %if can_view_change_log:
+                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
+            %else:
+                ${revision_label}
+            %endif
+        </div>
     </div>
 </div>
 <p/>
@@ -127,47 +110,89 @@
     <b>Repository name:</b><br/>
     ${repository.name}
 %endif
-%if metadata:
+%if tool_metadata_dict:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">${metadata[ 'name' ]} tool metadata</div>
+        <div class="toolFormTitle">${tool_metadata_dict[ 'name' ]} tool metadata</div>
         <div class="toolFormBody">
             <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Miscellaneous</td></tr>
+                </table>
+            </div>
+            <div class="form-row">
                 <label>Name:</label>
-                <a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=metadata[ 'tool_config' ], changeset_revision=changeset_revision, webapp=webapp )}">${metadata[ 'name' ]}</a>
+                <a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_metadata_dict[ 'tool_config' ], changeset_revision=changeset_revision, webapp=webapp )}">${tool_metadata_dict[ 'name' ]}</a>
                 <div style="clear: both"></div>
             </div>
-            %if 'description' in metadata:
+            %if 'description' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Description:</label>
-                    ${metadata[ 'description' ]}
+                    ${tool_metadata_dict[ 'description' ]}
                     <div style="clear: both"></div>
                 </div>
             %endif
-            %if 'id' in metadata:
+            %if 'id' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Id:</label>
-                    ${metadata[ 'id' ]}
+                    ${tool_metadata_dict[ 'id' ]}
                     <div style="clear: both"></div>
                 </div>
             %endif
-            %if 'guid' in metadata:
+            %if 'guid' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Guid:</label>
-                    ${metadata[ 'guid' ]}
+                    ${tool_metadata_dict[ 'guid' ]}
                     <div style="clear: both"></div>
                 </div>
             %endif
-            %if 'version' in metadata:
+            %if 'version' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Version:</label>
-                    ${metadata[ 'version' ]}
+                    ${tool_metadata_dict[ 'version' ]}
                     <div style="clear: both"></div>
                 </div>
             %endif
+            %if 'version_string_cmd' in tool_metadata_dict:
+                <div class="form-row">
+                    <label>Version command string:</label>
+                    ${tool_metadata_dict[ 'version_string_cmd' ]}
+                    <div style="clear: both"></div>
+                </div>
+            %endif
+            <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Version lineage of this tool (guids ordered most recent to oldest)</td></tr>
+                </table>
+            </div>
+            <div class="form-row">
+                %if tool_lineage:
+                    <table class="grid">
+                        %for guid in tool_lineage:
+                            <tr>
+                                <td>
+                                    %if guid == tool_metadata_dict[ 'guid' ]:
+                                        ${guid} <b>(this tool)</b>
+                                    %else:
+                                        ${guid}
+                                    %endif
+                                </td>
+                            </tr>
+                        %endfor
+                    </table>
+                %else:
+                    No tool versions are defined for this tool so it is critical that you <b>Reset all repository metadata</b> from the
+                    <b>Manage repository</b> page.
+                %endif
+            </div>
+            <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Requirements (dependencies defined in the &lt;requirements&gt; tag set)</td></tr>
+                </table>
+            </div>
             <%
-                if 'requirements' in metadata:
-                    requirements = metadata[ 'requirements' ]
+                if 'requirements' in tool_metadata_dict:
+                    requirements = tool_metadata_dict[ 'requirements' ]
                 else:
                     requirements = None
             %>
@@ -195,15 +220,17 @@
                     </table>
                     <div style="clear: both"></div>
                 </div>
-            %endif
-            %if 'version_string_cmd' in metadata:
+            %else:
                 <div class="form-row">
-                    <label>Version command string:</label>
-                    ${metadata[ 'version_string_cmd' ]}
-                    <div style="clear: both"></div>
+                    No requirements defined
                 </div>
             %endif
             %if tool:
+                <div class="form-row">
+                    <table width="100%">
+                        <tr bgcolor="#D8D8D8" width="100%"><td><b>Additional information about this tool</td></tr>
+                    </table>
+                </div>
                 <div class="form-row">
                     <label>Command:</label>
                     <pre>${tool.command}</pre>
@@ -230,9 +257,14 @@
                     <div style="clear: both"></div>
                 </div>
             %endif
+            <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Functional tests</td></tr>
+                </table>
+            </div>
             <%
-                if 'tests' in metadata:
-                    tests = metadata[ 'tests' ]
+                if 'tests' in tool_metadata_dict:
+                    tests = tool_metadata_dict[ 'tests' ]
                 else:
                     tests = None
             %>
@@ -272,6 +304,10 @@
                             </tr>
                         %endfor
                     </table>
+                </div>
+            %else:
+                <div class="form-row">
+                    No functional tests defined
                 </div>
             %endif
         </div>

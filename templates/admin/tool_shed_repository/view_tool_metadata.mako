@@ -26,6 +26,11 @@
         <div class="toolFormTitle">${metadata[ 'name' ]} tool metadata</div>
         <div class="toolFormBody">
             <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Miscellaneous</td></tr>
+                </table>
+            </div>
+            <div class="form-row">
                 <label>Name:</label>
                 ${metadata[ 'name' ]}
                 <div style="clear: both"></div>
@@ -65,33 +70,35 @@
                     <div style="clear: both"></div>
                 </div>
             %endif
-            %if tool:
-                <div class="form-row">
-                    <label>Command:</label>
-                    <pre>${tool.command}</pre>
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
-                    <label>Interpreter:</label>
-                    ${tool.interpreter}
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
-                    <label>Is multi-byte:</label>
-                    ${tool.is_multi_byte}
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
-                    <label>Forces a history refresh:</label>
-                    ${tool.force_history_refresh}
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
-                    <label>Parallelism:</label>
-                    ${tool.parallelism}
-                    <div style="clear: both"></div>
-                </div>
-            %endif
+            <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Version lineage of this tool (guids ordered most recent to oldest)</td></tr>
+                </table>
+            </div>
+            <div class="form-row">
+                %if tool_lineage:
+                    <table class="grid">
+                        %for guid in tool_lineage:
+                            <tr>
+                                <td>
+                                    %if guid == metadata[ 'guid' ]:
+                                        ${guid} <b>(this tool)</b>
+                                    %else:
+                                        ${guid}
+                                    %endif
+                                </td>
+                            </tr>
+                        %endfor
+                    </table>
+                %else:
+                    No tool versions are defined for this tool so it is critical that you <b>Set tool versions</b> from the <b>Manage repository</b> page.
+                %endif
+            </div>
+            <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Requirements (dependencies defined in the &lt;requirements&gt; tag set)</td></tr>
+                </table>
+            </div>
             <%
                 if 'requirements' in metadata:
                     requirements = metadata[ 'requirements' ]
@@ -122,7 +129,48 @@
                     </table>
                     <div style="clear: both"></div>
                 </div>
+            %else:
+                <div class="form-row">
+                    No requirements defined
+                </div>
             %endif
+            %if tool:
+                <div class="form-row">
+                    <table width="100%">
+                        <tr bgcolor="#D8D8D8" width="100%"><td><b>Additional information about this tool</td></tr>
+                    </table>
+                </div>
+                <div class="form-row">
+                    <label>Command:</label>
+                    <pre>${tool.command}</pre>
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Interpreter:</label>
+                    ${tool.interpreter}
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Is multi-byte:</label>
+                    ${tool.is_multi_byte}
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Forces a history refresh:</label>
+                    ${tool.force_history_refresh}
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Parallelism:</label>
+                    ${tool.parallelism}
+                    <div style="clear: both"></div>
+                </div>
+            %endif
+            <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Functional tests</td></tr>
+                </table>
+            </div>
             <%
                 if 'tests' in metadata:
                     tests = metadata[ 'tests' ]
@@ -165,6 +213,10 @@
                             </tr>
                         %endfor
                     </table>
+                </div>
+            %else:
+                <div class="form-row">
+                    No functional tests defined
                 </div>
             %endif
         </div>

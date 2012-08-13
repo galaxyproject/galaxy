@@ -324,7 +324,7 @@ def clean_tool_shed_url( tool_shed_url ):
         # Eliminate the port, if any, since it will result in an invalid directory name.
         return tool_shed_url.split( ':' )[ 0 ]
     return tool_shed_url.rstrip( '/' )
-def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
+def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):   
     """Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present in the cloned repository."""
     commands.clone( get_configured_ui(),
                     str( repository_clone_url ),
@@ -548,24 +548,55 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
             if not can_generate_dependency_metadata:
                 break
     return can_generate_dependency_metadata
-def generate_metadata_for_changeset_revision( app, repository_files_dir, repository_clone_url ):
+def generate_metadata_for_changeset_revision( app, repository_clone_url, relative_install_dir=None, repository_files_dir=None, resetting_all_metadata_on_repository=False ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
     the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
-    disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be a temporary directory containing a clone).
+    disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be an absolute path to a temporary directory
+    containing a clone).  If it is an absolute path, the value of relative_install_dir must contain repository.repo_path.
     """
     metadata_dict = {}
     invalid_file_tups = []
     invalid_tool_configs = []
     tool_dependencies_config = None
-    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', repository_files_dir )
+    original_tool_data_path = app.config.tool_data_path
+    if resetting_all_metadata_on_repository:
+        if not relative_install_dir:
+            raise Exception( "The value of repository.repo_path must be sent when resetting all metadata on a repository." )
+        # Keep track of the location where the repository is temporarily cloned so that we can strip the path when setting metadata.  The value of
+        # repository_files_dir is the full path to the temporary directory to which the repository was cloned.
+        work_dir = repository_files_dir
+        files_dir = repository_files_dir
+        # Since we're working from a temporary directory, we can safely copy sample files included in the repository to the repository root.
+        app.config.tool_data_path = repository_files_dir
+    else:
+        # Use a temporary working directory to copy all sample files.
+        work_dir = tempfile.mkdtemp()
+        # All other files are on disk in the repository's repo_path, which is the value of relative_install_dir.
+        files_dir = relative_install_dir
+        app.config.tool_data_path = work_dir
+    # Handle proprietary datatypes, if any.
+    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', files_dir )
     if datatypes_config:
         metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
-    sample_files = get_sample_files_from_disk( repository_files_dir )
+    # Get the relative path to all sample files included in the repository for storage in the repository's metadata.
+    sample_files = get_sample_files_from_disk( repository_files_dir=files_dir,
+                                               relative_install_dir=relative_install_dir,
+                                               resetting_all_metadata_on_repository=resetting_all_metadata_on_repository )
     if sample_files:
         metadata_dict[ 'sample_files' ] = sample_files
-    # Find all tool configs and exported workflows.
-    for root, dirs, files in os.walk( repository_files_dir ):
+    # Copy all sample files included in the repository to a single directory location so we can load tools that depend on them.
+    for sample_file in sample_files:
+        copy_sample_file( app, sample_file, dest_path=work_dir )
+        # If the list of sample files includes a tool_data_table_conf.xml.sample file, laad it's table elements into memory.
+        relative_path, filename = os.path.split( sample_file )
+        if filename == 'tool_data_table_conf.xml.sample':
+            new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( config_filename=sample_file,
+                                                                                     tool_data_path=app.config.tool_data_path,
+                                                                                     tool_data_table_config_path=app.config.tool_data_table_config_path,
+                                                                                     persist=False )
+    # Find all tool configs and exported workflows and add them to the repository's metadata.
+    for root, dirs, files in os.walk( files_dir ):
         if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
             if '.hg' in dirs:
                 dirs.remove( '.hg' )
@@ -586,11 +617,19 @@ def generate_metadata_for_changeset_revision( app, repository_files_dir, reposit
                         if is_tool:
                             try:
                                 tool = app.toolbox.load_tool( full_path )
+                            except KeyError, e:
+                                tool = None
+                                invalid_tool_configs.append( name )
+                                error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
+                                error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
+                                error_message += 'this error.  '
+                                invalid_file_tups.append( ( name, error_message ) )
                             except Exception, e:
                                 tool = None
                                 invalid_tool_configs.append( name )
+                                invalid_file_tups.append( ( name, str( e ) ) )
                             if tool is not None:
-                                invalid_files_and_errors_tups = check_tool_input_params( app, repository_files_dir, name, tool, sample_files )
+                                invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_files )
                                 can_set_metadata = True
                                 for tup in invalid_files_and_errors_tups:
                                     if name in tup:
@@ -598,7 +637,15 @@ def generate_metadata_for_changeset_revision( app, repository_files_dir, reposit
                                         invalid_tool_configs.append( name )
                                         break
                                 if can_set_metadata:
-                                    metadata_dict = generate_tool_metadata( os.path.join( root, name ), tool, repository_clone_url, metadata_dict )
+                                    if resetting_all_metadata_on_repository:
+                                        full_path_to_tool_config = os.path.join( root, name )
+                                        stripped_path_to_tool_config = full_path_to_tool_config.replace( work_dir, '' )
+                                        if stripped_path_to_tool_config.startswith( '/' ):
+                                            stripped_path_to_tool_config = stripped_path_to_tool_config[ 1: ]
+                                        relative_path_to_tool_config = os.path.join( relative_install_dir, stripped_path_to_tool_config )
+                                    else:
+                                        relative_path_to_tool_config = os.path.join( root, name )
+                                    metadata_dict = generate_tool_metadata( relative_path_to_tool_config, tool, repository_clone_url, metadata_dict )
                                 else:
                                     invalid_file_tups.extend( invalid_files_and_errors_tups )
                 # Find all exported workflows
@@ -612,11 +659,16 @@ def generate_metadata_for_changeset_revision( app, repository_files_dir, reposit
                         metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
     if 'tools' in metadata_dict:
         # This step must be done after metadata for tools has been defined.
-        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', repository_files_dir )
+        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', files_dir )
         if tool_dependencies_config:
             metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
     if invalid_tool_configs:
         metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
+    if resetting_all_metadata_on_repository:
+        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+        reset_tool_data_tables( app )
+        # Reset the value of the app's tool_data_path to it's original value.
+        app.config.tool_data_path = original_tool_data_path
     return metadata_dict, invalid_file_tups
 def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     """The value of package_name must match the value of the "package" type in the tool config's <requirements> tag set."""
@@ -1028,13 +1080,24 @@ def get_repository_tools_tups( app, metadata_dict ):
             if tool:
                 repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
-def get_sample_files_from_disk( relative_install_dir ):
+def get_sample_files_from_disk( repository_files_dir, relative_install_dir=None, resetting_all_metadata_on_repository=False ):
+    if resetting_all_metadata_on_repository:
+        # Keep track of the location where the repository is temporarily cloned so that we can strip it when setting metadata.
+        work_dir = repository_files_dir
     sample_files = []
-    for root, dirs, files in os.walk( relative_install_dir ):
+    for root, dirs, files in os.walk( repository_files_dir ):
             if root.find( '.hg' ) < 0:
                 for name in files:
                     if name.endswith( '.sample' ):
-                        sample_files.append( os.path.join( root, name ) )
+                        if resetting_all_metadata_on_repository:
+                            full_path_to_sample_file = os.path.join( root, name )
+                            stripped_path_to_sample_file = full_path_to_sample_file.replace( work_dir, '' )
+                            if stripped_path_to_sample_file.startswith( '/' ):
+                                stripped_path_to_sample_file = stripped_path_to_sample_file[ 1: ]
+                            relative_path_to_sample_file = os.path.join( relative_install_dir, stripped_path_to_sample_file )
+                        else:
+                            relative_path_to_sample_file = os.path.join( root, name )
+                        sample_files.append( relative_path_to_sample_file )
     return sample_files
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
     """

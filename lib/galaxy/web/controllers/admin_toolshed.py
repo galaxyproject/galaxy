@@ -497,6 +497,9 @@ class AdminToolshed( AdminGalaxy ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         return get_repository_file_contents( file_path )
+    def get_versions_of_tool( self, app, guid ):
+        tool_version = get_tool_version( app, guid )
+        return tool_version.get_version_ids( app )
     @web.expose
     @web.require_admin
     def initiate_repository_installation( self, trans, shed_repository_ids, encoded_kwd, reinstalling=False ):
@@ -684,7 +687,11 @@ class AdminToolshed( AdminGalaxy ):
         Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy (never the tool shed)
         when an admin is installing a new repository or reinstalling an uninstalled repository.
         """
-        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
+        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                     repository_clone_url=repository_clone_url,
+                                                                                     relative_install_dir=relative_install_dir,
+                                                                                     repository_files_dir=None,
+                                                                                     resetting_all_metadata_on_repository=False )
         tool_shed_repository.metadata = metadata_dict
         trans.sa_session.add( tool_shed_repository )
         trans.sa_session.flush()
@@ -779,7 +786,14 @@ class AdminToolshed( AdminGalaxy ):
             message = "The repository information has been updated."
         elif params.get( 'set_metadata_button', False ):
             repository_clone_url = generate_clone_url( trans, repository )
-            metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
+            # TODO: Fix this by setting up a temporary work_dir - there is currently no way for an admin to reset metadata on an
+            # installed tool shed repository because the manage_repository template checs the value of can_reset_metadata, whic is
+            # currently always False.
+            metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                         repository_clone_url=repository_clone_url,
+                                                                                         relative_install_dir=None,
+                                                                                         repository_files_dir=repository_files_dir,
+                                                                                         resetting_all_metadata_on_repository=True )
             if metadata_dict:
                 repository.metadata = metadata_dict
                 trans.sa_session.add( repository )
@@ -1479,7 +1493,11 @@ class AdminToolshed( AdminGalaxy ):
                     update_repository( repo, latest_ctx_rev )
                     # Update the repository metadata.
                     tool_shed = clean_tool_shed_url( tool_shed_url )
-                    metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, relative_install_dir, repository_clone_url )
+                    metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                                 repository_clone_url=repository_clone_url,
+                                                                                                 relative_install_dir=relative_install_dir,
+                                                                                                 repository_files_dir=None,
+                                                                                                 resetting_all_metadata_on_repository=False )
                     repository.metadata = metadata_dict
                     # Update the repository changeset_revision in the database.
                     repository.changeset_revision = latest_changeset_revision
@@ -1515,17 +1533,21 @@ class AdminToolshed( AdminGalaxy ):
         webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         metadata = {}
+        tool_lineage = []
         tool = None
         if 'tools' in repository.metadata:
             for tool_metadata_dict in repository.metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
                     metadata = tool_metadata_dict
                     tool = trans.app.toolbox.load_tool( os.path.abspath( metadata[ 'tool_config' ] ), guid=metadata[ 'guid' ] )
+                    if tool:
+                        tool_lineage = self.get_versions_of_tool( trans.app, tool.id )
                     break
         return trans.fill_template( "/admin/tool_shed_repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
                                     metadata=metadata,
+                                    tool_lineage=tool_lineage,
                                     message=message,
                                     status=status )
     def __generate_clone_url( self, trans, repository ):

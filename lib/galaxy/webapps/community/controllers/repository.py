@@ -10,7 +10,8 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, NOT_TOOL_CONFIGS
-from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, strip_path, to_html_escaped, update_repository
+from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import to_html_escaped, update_repository
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -1268,6 +1269,36 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 update_dict[ 'changeset_revision' ] = str( latest_changeset_revision )
         update_dict[ 'ctx_rev' ] = str( update_to_ctx.rev() )
         return tool_shed_encode( update_dict )
+    def get_versions_of_tool( self, trans, repository, repository_metadata, guid ):
+        """Return the tool lineage in descendant order for the received guid contained in the received repsitory_metadata.tool_versions."""
+        encoded_id = trans.security.encode_id( repository.id )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        # Initialize the tool lineage
+        tool_guid_lineage = [ guid ]
+        # Get all ancestor guids of the received guid.
+        current_child_guid = guid
+        for changeset in reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
+            ctx = repo.changectx( changeset )
+            rm = get_repository_metadata_by_changeset_revision( trans, encoded_id, str( ctx ) )
+            if rm:
+                parent_guid = rm.tool_versions.get( current_child_guid, None )
+                if parent_guid:
+                    tool_guid_lineage.append( parent_guid )
+                    current_child_guid = parent_guid
+        # Get all descendant guids of the received guid.
+        current_parent_guid = guid
+        for changeset in reversed_lower_upper_bounded_changelog( repo, repository_metadata.changeset_revision, repository.tip ):
+            ctx = repo.changectx( changeset )
+            rm = get_repository_metadata_by_changeset_revision( trans, encoded_id, str( ctx ) )
+            if rm:
+                tool_versions = rm.tool_versions
+                for child_guid, parent_guid in tool_versions.items():
+                    if parent_guid == current_parent_guid:
+                        tool_guid_lineage.insert( 0, child_guid )
+                        current_parent_guid = child_guid
+                        break
+        return tool_guid_lineage
     @web.expose
     def help( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -1348,23 +1379,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
         webapp = get_webapp( trans, **kwd )
         repository_clone_url = generate_clone_url( trans, repository_id )
         repository = get_repository( trans, repository_id )
-        repo_dir = repository.repo_path
-        repo = hg.repository( get_configured_ui(), repo_dir )
-        ctx = get_changectx_for_changeset( repo, changeset_revision )
-        invalid_message = ''
-        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( trans.app, repo_dir, repository_clone_url )
-        for invalid_file_tup in invalid_file_tups:
-            invalid_tool_config, invalid_msg = invalid_file_tup
-            invalid_tool_config_name = strip_path( invalid_tool_config )
-            if tool_config == invalid_tool_config_name:
-                invalid_message = invalid_msg
-                break
         tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         try:
-            if invalid_message:
-                message = invalid_message
+            if error_message:
+                message = error_message
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
                                         repository=repository,
                                         changeset_revision=changeset_revision,
@@ -2165,20 +2185,25 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
-        metadata = {}
+        tool_metadata_dict = {}
+        tool_lineage = []
         tool = None
+        guid = None
         revision_label = get_revision_label( trans, repository, changeset_revision )
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision ).metadata
-        if 'tools' in repository_metadata:
-            for tool_metadata_dict in repository_metadata[ 'tools' ]:
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        metadata = repository_metadata.metadata
+        if 'tools' in metadata:
+            for tool_metadata_dict in metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
-                    metadata = tool_metadata_dict
+                    guid = tool_metadata_dict[ 'guid' ]
                     try:
                         # We may be attempting to load a tool that no longer exists in the repository tip.
-                        tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
+                        tool = load_tool( trans, os.path.abspath( tool_metadata_dict[ 'tool_config' ] ) )
                     except:
                         tool = None
                     break
+            if guid:
+                tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
@@ -2188,7 +2213,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
-                                    metadata=metadata,
+                                    tool_metadata_dict=tool_metadata_dict,
+                                    tool_lineage=tool_lineage,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,

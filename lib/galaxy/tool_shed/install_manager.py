@@ -132,7 +132,11 @@ class InstallManager( object ):
                 tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
-        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( self.app, relative_install_dir, repository_clone_url )
+        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=self.app,
+                                                                                     repository_clone_url=repository_clone_url,
+                                                                                     relative_install_dir=relative_install_dir,
+                                                                                     repository_files_dir=None,
+                                                                                     resetting_all_metadata_on_repository=False )
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
         self.app.sa_session.flush()
