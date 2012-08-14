@@ -729,6 +729,7 @@ class TwillTestCase( unittest.TestCase ):
                             self.verify_extra_files_content( extra_files, elem.get( 'id' ), shed_tool_id=shed_tool_id )
                     except AssertionError, err:
                         errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+                        errmsg += "( %s v. %s )\n" % ( local_name, temp_name )
                         errmsg += str( err )
                         raise AssertionError( errmsg )
                 finally:
