@@ -1316,6 +1316,8 @@ class Tool:
                     return_level = StdioErrorLevel.WARNING 
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.FATAL
+                else:
+                    log.debug( "Error level %s did not match warning/fatal" % err_level )
         except Exception, e:
             log.error( "Exception in parse_error_level " 
                      + str(sys.exc_info() ) )
