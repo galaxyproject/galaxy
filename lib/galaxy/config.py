@@ -169,10 +169,14 @@ class Configuration( object ):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
-        self.aws_access_key = kwargs.get( 'aws_access_key', None )
-        self.aws_secret_key = kwargs.get( 'aws_secret_key', None )
-        self.s3_bucket = kwargs.get( 's3_bucket', None)
-        self.use_reduced_redundancy = kwargs.get( 'use_reduced_redundancy', False )
+        self.os_access_key = kwargs.get( 'os_access_key', None )
+        self.os_secret_key = kwargs.get( 'os_secret_key', None )
+        self.os_bucket_name = kwargs.get( 'os_bucket_name', None )
+        self.os_host = kwargs.get( 'os_host', None )
+        self.os_port = kwargs.get( 'os_port', None )
+        self.os_is_secure = string_as_bool( kwargs.get( 'os_is_secure', True ) )
+        self.os_conn_path = kwargs.get( 'os_conn_path', '/' )
+        self.os_use_reduced_redundancy = kwargs.get( 'os_use_reduced_redundancy', False )
         self.object_store_cache_size = float(kwargs.get( 'object_store_cache_size', -1 ))
         self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
         # Parse global_conf and save the parser

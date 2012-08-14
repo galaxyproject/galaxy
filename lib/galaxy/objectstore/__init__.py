@@ -25,6 +25,7 @@ from sqlalchemy.orm import object_session
 if sys.version_info >= (2, 6):
     import multiprocessing
     from galaxy.objectstore.s3_multipart_upload import multipart_upload
+    import boto
     from boto.s3.key import Key
     from boto.s3.connection import S3Connection
     from boto.exception import S3ResponseError
@@ -377,9 +378,9 @@ class S3ObjectStore(ObjectStore):
         super(S3ObjectStore, self).__init__()
         self.config = config
         self.staging_path = self.config.file_path
-        self.s3_conn = S3Connection()
-        self.bucket = self._get_bucket(self.config.s3_bucket)
-        self.use_rr = self.config.use_reduced_redundancy
+        self.s3_conn = get_OS_connection(self.config)
+        self.bucket = self._get_bucket(self.config.os_bucket_name)
+        self.use_rr = self.config.os_use_reduced_redundancy
         self.cache_size = self.config.object_store_cache_size
         self.transfer_progress = 0
         # Clean cache only if value is set in universe_wsgi.ini
@@ -468,7 +469,7 @@ class S3ObjectStore(ObjectStore):
         for i in range(5):
             try:
                 bucket = self.s3_conn.get_bucket(bucket_name)
-                log.debug("Using S3 object store; got bucket '%s'" % bucket.name)
+                log.debug("Using cloud object store with bucket '%s'" % bucket.name)
                 return bucket
             except S3ResponseError:
                 log.debug("Could not get bucket '%s', attempt %s/5" % (bucket_name, i+1))
@@ -843,7 +844,6 @@ class S3ObjectStore(ObjectStore):
     def get_store_usage_percent(self):
         return 0.0
 
-
 class DistributedObjectStore(ObjectStore):
     """
     ObjectStore that defers to a list of backends, for getting objects the
@@ -1009,14 +1009,14 @@ def build_object_store_from_config(config):
     store = config.object_store
     if store == 'disk':
         return DiskObjectStore(config=config)
-    elif store == 's3':
-        os.environ['AWS_ACCESS_KEY_ID'] = config.aws_access_key
-        os.environ['AWS_SECRET_ACCESS_KEY'] = config.aws_secret_key
+    elif store == 's3' or store == 'swift':
         return S3ObjectStore(config=config)
     elif store == 'distributed':
         return DistributedObjectStore(config=config)
     elif store == 'hierarchical':
         return HierarchicalObjectStore()
+    else:
+        log.error("Unrecognized object store definition: {0}".format(store))
 
 def convert_bytes(bytes):
     """ A helper function used for pretty printing disk usage """
@@ -1039,3 +1039,26 @@ def convert_bytes(bytes):
     else:
         size = '%.2fb' % bytes
     return size
+
+def get_OS_connection(config):
+    """
+    Get a connection object for a cloud Object Store specified in the config.
+    Currently, this is a ``boto`` connection object.
+    """
+    log.debug("Getting a connection object for '{0}' object store".format(config.object_store))
+    a_key = config.os_access_key
+    s_key = config.os_secret_key
+    if config.object_store == 's3':
+        return S3Connection(a_key, s_key)
+    else:
+        # Establish the connection now
+        calling_format = boto.s3.connection.OrdinaryCallingFormat()
+        s3_conn = boto.connect_s3(aws_access_key_id=a_key,
+                            aws_secret_access_key=s_key,
+                            is_secure=config.os_is_secure,
+                            host=config.os_host,
+                            port=int(config.os_port),
+                            calling_format=calling_format,
+                            path=config.os_conn_path)
+        return s3_conn
+

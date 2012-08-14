@@ -481,16 +481,22 @@ use_interactive = True
 
 # -- Beta features
 
-# Object store mode (valid options are: disk, s3, distributed, hierarchical)
+# Object store mode (valid options are: disk, s3, swift, distributed, hierarchical)
 #object_store = disk
-#aws_access_key = <AWS access key>
-#aws_secret_key = <AWS secret key>
-#s3_bucket = <name of an existing S3 bucket>
-#use_reduced_redundancy = True
-
+#os_access_key = <your cloud object store access key>
+#os_secret_key = <your cloud object store secret key>
+#os_bucket_name = <name of an existing object store bucket or container>
+# If using 'swift' object store, you must specify the following connection properties
+#os_host = swift.rc.nectar.org.au
+#os_port = 8888
+#os_is_secure = False
+#os_conn_path = /
+# Reduced redundancy can be used only with the 's3' object store
+#os_use_reduced_redundancy = False
 # Size (in GB) that the cache used by object store should be limited to.
-# If the value is not specified, the cache size will be limited only by the file
-# system size.
+# If the value is not specified, the cache size will be limited only by the
+# file system size. The file system location of the cache is considered the
+# configuration of the ``file_path`` directive defined above.
 #object_store_cache_size = 100
 
 # Configuration file for the distributed object store, if object_store =
