@@ -525,13 +525,8 @@ class AdminToolshed( AdminGalaxy ):
         # Get the tool_shed_repository from one of the tool_dependencies.
         message = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
-        work_dir = tempfile.mkdtemp()
         # Get the tool_dependencies.xml file from the repository.
-        tool_dependencies_config = get_config_from_repository( trans.app,
-                                                               'tool_dependencies.xml',
-                                                               tool_shed_repository,
-                                                               tool_shed_repository.changeset_revision,
-                                                               work_dir )
+        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', tool_shed_repository.repo_path( trans.app ) )
         installed_tool_dependencies = handle_tool_dependencies( app=trans.app,
                                                                 tool_shed_repository=tool_shed_repository,
                                                                 tool_dependencies_config=tool_dependencies_config,
@@ -539,10 +534,6 @@ class AdminToolshed( AdminGalaxy ):
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.model.ToolDependency.installation_status.ERROR:
                 message += '  %s' % installed_tool_dependency.error_message
-        try:
-            shutil.rmtree( work_dir )
-        except:
-            pass
         tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in tool_dependencies ]
         if message:
             status = 'error'
@@ -663,11 +654,7 @@ class AdminToolshed( AdminGalaxy ):
                                                     tool_shed_repository,
                                                     trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
                 # Get the tool_dependencies.xml file from the repository.
-                tool_dependencies_config = get_config_from_repository( trans.app,
-                                                                       'tool_dependencies.xml',
-                                                                       tool_shed_repository,
-                                                                       tool_shed_repository.installed_changeset_revision,
-                                                                       work_dir )
+                tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
                 installed_tool_dependencies = handle_tool_dependencies( app=trans.app,
                                                                         tool_shed_repository=tool_shed_repository,
                                                                         tool_dependencies_config=tool_dependencies_config,
@@ -691,24 +678,19 @@ class AdminToolshed( AdminGalaxy ):
                                                                                      repository_clone_url=repository_clone_url,
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
-                                                                                     resetting_all_metadata_on_repository=False )
+                                                                                     resetting_all_metadata_on_repository=False,
+                                                                                     webapp='galaxy' )
         tool_shed_repository.metadata = metadata_dict
         trans.sa_session.add( tool_shed_repository )
         trans.sa_session.flush()
         if 'tool_dependencies' in metadata_dict and not reinstalling:
-            tool_dependencies = create_tool_dependency_objects( trans.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision, set_status=True )
+            tool_dependencies = create_tool_dependency_objects( trans.app, tool_shed_repository, relative_install_dir, set_status=True )
         if 'tools' in metadata_dict:
             tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
             repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                work_dir = tempfile.mkdtemp()
-                repository_tools_tups = handle_missing_data_table_entry( trans.app,
-                                                                         tool_shed_repository,
-                                                                         tool_shed_repository.changeset_revision,
-                                                                         tool_path,
-                                                                         repository_tools_tups,
-                                                                         work_dir )
+                repository_tools_tups = handle_missing_data_table_entry( trans.app, relative_install_dir, tool_path, repository_tools_tups )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
                 sample_files = metadata_dict.get( 'sample_files', [] )
                 repository_tools_tups, sample_files_copied = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
@@ -723,22 +705,13 @@ class AdminToolshed( AdminGalaxy ):
                                    shed_tool_conf=shed_tool_conf,
                                    tool_panel_dict=tool_panel_dict,
                                    new_install=True )
-                try:
-                    shutil.rmtree( work_dir )
-                except:
-                    pass
         if 'datatypes' in metadata_dict:
             tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
                 tool_shed_repository.includes_datatypes = True
             trans.sa_session.add( tool_shed_repository )
             trans.sa_session.flush()
-            work_dir = tempfile.mkdtemp()
-            datatypes_config = get_config_from_repository( trans.app,
-                                                           'datatypes_conf.xml',
-                                                           tool_shed_repository,
-                                                           tool_shed_repository.changeset_revision,
-                                                           work_dir )
+            datatypes_config = get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
             # Load data types required by tools.
             converter_path, display_path = alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, relative_install_dir, override=False )
             if converter_path or display_path:
@@ -756,10 +729,6 @@ class AdminToolshed( AdminGalaxy ):
             if display_path:
                 # Load proprietary datatype display applications
                 trans.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
-            try:
-                shutil.rmtree( work_dir )
-            except:
-                pass
     @web.expose
     @web.require_admin
     def manage_repository( self, trans, **kwd ):
@@ -1507,7 +1476,7 @@ class AdminToolshed( AdminGalaxy ):
                     trans.sa_session.flush()
                     # Create tool_dependency records if necessary.
                     if 'tool_dependencies' in metadata_dict:
-                        tool_dependencies = create_tool_dependency_objects( trans.app, repository, repository.changeset_revision, set_status=False )
+                        tool_dependencies = create_tool_dependency_objects( trans.app, repository, relative_install_dir, set_status=False )
                     message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % ( name, latest_changeset_revision )
                     # See if any tool dependencies can be installed.
                     shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )

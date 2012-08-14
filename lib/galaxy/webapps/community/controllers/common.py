@@ -795,7 +795,8 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                                                                                              repository_clone_url=repository_clone_url,
                                                                                              relative_install_dir=repo_dir,
                                                                                              repository_files_dir=work_dir,
-                                                                                             resetting_all_metadata_on_repository=True )
+                                                                                             resetting_all_metadata_on_repository=True,
+                                                                                             webapp='community' )
         if current_metadata_dict:
             if not metadata_changeset_revision and not metadata_dict:
                 # We're at the first change set in the change log.
@@ -885,7 +886,8 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                                                                                  repository_clone_url=repository_clone_url,
                                                                                  relative_install_dir=repo_dir,
                                                                                  repository_files_dir=None,
-                                                                                 resetting_all_metadata_on_repository=False )
+                                                                                 resetting_all_metadata_on_repository=False,
+                                                                                 webapp='community' )
     if metadata_dict:
         downloadable = is_downloadable( metadata_dict )
         repository_metadata = None
