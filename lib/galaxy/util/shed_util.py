@@ -533,7 +533,7 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
                     if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
                         can_generate_dependency_metadata = True
                         break
-                if not can_generate_dependency_metadata:
+                if requirements and not can_generate_dependency_metadata:
                     # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
                     # tag for any tool in the repository.
                     break
