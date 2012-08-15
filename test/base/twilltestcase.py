@@ -694,11 +694,19 @@ class TwillTestCase( unittest.TestCase ):
             if filename is not None:
                 local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
                 temp_name = self.makeTfname(fname = filename)
-                file( temp_name, 'wb' ).write(data)
-                if self.keepOutdir > '':
-                    ofn = os.path.join(self.keepOutdir,os.path.basename(local_name))
-                    shutil.copy(temp_name,ofn)
-                    log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
+                file( temp_name, 'wb' ).write( data )
+                
+                # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
+                if self.keepOutdir:
+                    ofn = os.path.join( self.keepOutdir, os.path.basename( local_name ) )
+                    try:
+                        shutil.copy( temp_name, ofn )
+                    except Exception, exc:
+                        error_log_msg  = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
+                        error_log_msg += str( e )
+                    else:
+                        log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % ( self.keepOutdir, ofn ) )
+                        
                 try:
                     # have to nest try-except in try-finally to handle 2.4
                     try:
