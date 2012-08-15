@@ -277,6 +277,41 @@ def generate_clone_url( trans, repository_id ):
         return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
+def generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict, as_html=True ):
+    if as_html:
+        new_line = '<br/>'
+        bold_start = '<b>'
+        bold_end = '</b>'
+    else:
+        new_line = '\n'
+        bold_start = ''
+        bold_end = ''
+    message = ''
+    if metadata_dict:
+        message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip )
+        message += "Correct the following problems if necessary and reset metadata.%s" % new_line
+    else:
+        message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip )
+        message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
+    for itc_tup in invalid_file_tups:
+        tool_file, exception_msg = itc_tup
+        if exception_msg.find( 'No such file or directory' ) >= 0:
+            exception_items = exception_msg.split()
+            missing_file_items = exception_items[ 7 ].split( '/' )
+            missing_file = missing_file_items[ -1 ].rstrip( '\'' )
+            if missing_file.endswith( '.loc' ):
+                sample_ext = '%s.sample' % missing_file
+            else:
+                sample_ext = missing_file
+            correction_msg = "This file refers to a missing file %s%s%s.  " % ( bold_start, str( missing_file ), bold_end )
+            correction_msg += "Upload a file named %s%s%s to the repository to correct this error." % ( bold_start, sample_ext, bold_end )
+        else:
+            if as_html:
+                correction_msg = exception_msg
+            else:
+                correction_msg = exception_msg.replace( '<br/>', new_line ).replace( '<b>', bold_start ).replace( '</b>', bold_end )
+        message += "%s%s%s - %s%s" % ( bold_start, tool_file, bold_end, correction_msg, new_line )
+    return message
 def generate_tool_guid( trans, repository, tool ):
     """
     Generate a guid for the received tool.  The form of the guid is    
@@ -854,6 +889,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
     clean_repository_metadata( trans, id, changeset_revisions )
     # Set tool version information for all downloadable changeset revisions.  Get the list of changeset revisions from the changelog.
     reset_all_tool_versions( trans, id, repo )
+    return invalid_file_tups
 def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     """
     Set metadata using the repository's current disk files, returning specific error messages (if any) to alert the repository owner that the changeset
@@ -931,27 +967,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
         status = "error"
     if invalid_file_tups:
-        if metadata_dict:
-            message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip )
-            message += "Correct the following problems if necessary and reset metadata.<br/>"
-        else:
-            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip )
-            message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.<br/>"
-        for itc_tup in invalid_file_tups:
-            tool_file, exception_msg = itc_tup
-            if exception_msg.find( 'No such file or directory' ) >= 0:
-                exception_items = exception_msg.split()
-                missing_file_items = exception_items[ 7 ].split( '/' )
-                missing_file = missing_file_items[ -1 ].rstrip( '\'' )
-                if missing_file.endswith( '.loc' ):
-                    sample_ext = '%s.sample' % missing_file
-                else:
-                    sample_ext = missing_file
-                correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( missing_file )
-                correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % sample_ext
-            else:
-               correction_msg = exception_msg
-            message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )            
+        message = generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict )
         status = 'error'
     return message, status
 def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=None, **kwd ):

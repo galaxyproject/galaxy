@@ -13,10 +13,11 @@
                     <tr>
                         <th>Tool config</th>
                         <th>Repository name</th>
+                        <th>Repository owner</th>
                         <th>Changeset revision</th>
                     </tr>
                     %for invalid_tool_config, repository_tup in invalid_tools_dict.items():
-                        <% repository_id, repository_name, changeset_revision = repository_tup %>
+                        <% repository_id, repository_name, repository_owner, changeset_revision = repository_tup %>
                         <tr>
                             <td>
                                 <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( repository_id ), tool_config=invalid_tool_config, changeset_revision=changeset_revision, webapp=webapp )}">
@@ -24,6 +25,7 @@
                                 </a>
                             </td>
                             <td>${repository_name}</td>
+                            <td>${repository_owner}</td>
                             <td>${changeset_revision}</td>
                         </tr>
                     %endfor

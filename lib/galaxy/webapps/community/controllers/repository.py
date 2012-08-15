@@ -458,7 +458,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     metadata = downloadable_revision.metadata
                     invalid_tools = metadata.get( 'invalid_tools', [] )
                     for invalid_tool_config in invalid_tools:
-                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id, repository.name, downloadable_revision.changeset_revision )
+                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id,
+                                                                      repository.name,
+                                                                      repository.user.username,
+                                                                      downloadable_revision.changeset_revision )
         else:
             for repository in trans.sa_session.query( trans.model.Repository ) \
                                               .filter( and_( trans.model.Repository.table.c.deleted == False,
@@ -468,7 +471,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     metadata = downloadable_revision.metadata
                     invalid_tools = metadata.get( 'invalid_tools', [] )
                     for invalid_tool_config in invalid_tools:
-                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id, repository.name, downloadable_revision.changeset_revision )
+                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id,
+                                                                      repository.name,
+                                                                      repository.user.username,
+                                                                      downloadable_revision.changeset_revision )
         return trans.fill_template( '/webapps/community/repository/browse_invalid_tools.mako',
                                     cntrller=cntrller,
                                     invalid_tools_dict=invalid_tools_dict,
@@ -1373,6 +1379,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
+        # FIXME: loading an invalid tool should display an appropriate message as to why the tool is invalid.  This worked until recently.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
@@ -1752,9 +1759,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     status=status )
     @web.expose
     def reset_all_metadata( self, trans, id, **kwd ):
-        reset_all_metadata_on_repository( trans, id, **kwd )
-        message = "All repository metadata has been reset."
-        status = 'done'
+        invalid_file_tups = reset_all_metadata_on_repository( trans, id, **kwd )
+        if invalid_file_tups:
+            repository = get_repository( trans, id )
+            message = generate_message_for_invalid_tools( invalid_file_tups, repository, None )
+            status = 'error'
+        else:
+            message = "All repository metadata has been reset."
+            status = 'done'
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,
