@@ -947,55 +947,69 @@ class BBIDataProvider( TracksDataProvider ):
 
                 return dict( data=dict( min=summary.min_val[0], max=summary.max_val[0], mean=mean, sd=sd ) )
 
-        # The following seems not to work very well, for example it will only return one
-        # data point if the tile is 1280px wide. Not sure what the intent is.
+        # Sample from region using approximately this many samples.
+        N = 1000
 
-        # The first zoom level for BBI files is 640. If too much is requested, it will look at each block instead
-        # of summaries. The calculation done is: zoom <> (end-start)/num_points/2.
-        # Thus, the optimal number of points is (end-start)/num_points/2 = 640
-        # num_points = (end-start) / 1280
-        #num_points = (end-start) / 1280
-        #if num_points < 1:
-        #    num_points = end - start
-        #else:
-        #    num_points = min(num_points, 500)
+        def summarize_region( bbi, chrom, start, end, num_points ):
+            '''
+            Returns results from summarizing a region using num_points.
+            NOTE: num_points cannot be greater than end - start or BBI
+            will return None for all positions.s
+            '''
+            result = []
 
-        # For now, we'll do 1000 data points by default. However, the summaries
-        # don't seem to work when a summary pixel corresponds to less than one
-        # datapoint, so we prevent that. 
-
-        # FIXME: need to choose the number of points to maximize coverage of the area. 
-        # It appears that BBI calculates points using intervals of 
-        # floor( num_points / end - start ) 
-        # In some cases, this prevents sampling near the end of the interval, 
-        # especially when (a) the total interval is small ( < 20-30Kb) and (b) the 
-        # computed interval size has a large fraction, e.g. 14.7 or 35.8
-        num_points = min( 1000, end - start )
-
-        # HACK to address the FIXME above; should generalize.
-        if end - start <= 2000:
-            num_points = end - start
-
-        summary = bbi.summarize( chrom, start, end, num_points )
-        f.close()
-
-        result = []
-
-        if summary:
-            #mean = summary.sum_data / summary.valid_count
+            # Get summary; this samples at intervals of length
+            # (end - start)/num_points -- i.e. drops any fractional component
+            # of interval length.
+            summary = bbi.summarize( chrom, start, end, num_points )
+            if summary:
+                #mean = summary.sum_data / summary.valid_count
+                
+                ## Standard deviation by bin, not yet used
+                ## var = summary.sum_squares - mean
+                ## var /= minimum( valid_count - 1, 1 )
+                ## sd = sqrt( var )
             
-            ## Standard deviation by bin, not yet used
-            ## var = summary.sum_squares - mean
-            ## var /= minimum( valid_count - 1, 1 )
-            ## sd = sqrt( var )
-        
-            pos = start
-            step_size = (end - start) / num_points
+                pos = start
+                step_size = (end - start) / num_points
 
-            for i in range( num_points ):
-                result.append( (pos, float_nan( summary.sum_data[i] / summary.valid_count[i] ) ) )
-                pos += step_size
+                for i in range( num_points ):
+                    result.append( (pos, float_nan( summary.sum_data[i] / summary.valid_count[i] ) ) )
+                    pos += step_size
+
+            return result
+
+        # Approach is different depending on region size.
+        if end - start < N:
+            # Get values for individual bases in region, including start and end.
+            # To do this, need to increase end to next base and request number of points.
+            num_points = end - start + 1
+            end += 1
+ 
+            result = summarize_region( bbi, chrom, start, end, num_points )
+        else:
+            # 
+            # The goal is to sample the region between start and end uniformly 
+            # using N data points. The challenge is that the size of sampled 
+            # intervals rarely is full bases, so sampling using N points will 
+            # leave the end of the region unsampled. To recitify this, samples
+            # beyond N are taken at the end of the interval.
+            #
+
+            # Do initial summary.
+            num_points = N
+            result = summarize_region( bbi, chrom, start, end, num_points )        
+
+            # Do summary of remaining part of region.
+            step_size = ( end - start ) / num_points
+            new_start = start + step_size * num_points
+            new_num_points = min( ( end - new_start ) / step_size, end - start )
+            if new_num_points is not 0:
+                result.extend( summarize_region( bbi, chrom, new_start, end, new_num_points ) )
+            #TODO: progressively reduce step_size to generate more datapoints.
         
+        # Cleanup and return.
+        f.close()
         return { 'data': result }
 
 class BigBedDataProvider( BBIDataProvider ):
