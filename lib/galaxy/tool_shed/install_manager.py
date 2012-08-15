@@ -136,27 +136,22 @@ class InstallManager( object ):
                                                                                      repository_clone_url=repository_clone_url,
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
-                                                                                     resetting_all_metadata_on_repository=False )
+                                                                                     resetting_all_metadata_on_repository=False,
+                                                                                     webapp='galaxy' )
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
         self.app.sa_session.flush()
         if 'tool_dependencies' in metadata_dict:
             # All tool_dependency objects must be created before the tools are processed even if no tool dependencies will be installed.
-            tool_dependencies = create_tool_dependency_objects( self.app, tool_shed_repository, tool_shed_repository.installed_changeset_revision, set_status=True )
+            tool_dependencies = create_tool_dependency_objects( self.app, tool_shed_repository, relative_install_dir, set_status=True )
         else:
             tool_dependencies = None
         if 'tools' in metadata_dict:
-            work_dir = tempfile.mkdtemp()
             repository_tools_tups = get_repository_tools_tups( self.app, metadata_dict )
             if repository_tools_tups:
                 sample_files = metadata_dict.get( 'sample_files', [] )
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = handle_missing_data_table_entry( self.app,
-                                                                         tool_shed_repository,
-                                                                         tool_shed_repository.installed_changeset_revision,
-                                                                         self.tool_path,
-                                                                         repository_tools_tups,
-                                                                         work_dir )
+                repository_tools_tups = handle_missing_data_table_entry( self.app, relative_install_dir, self.tool_path, repository_tools_tups )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
                 repository_tools_tups, sample_files_copied = handle_missing_index_file( self.app, self.tool_path, sample_files, repository_tools_tups )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
@@ -166,12 +161,8 @@ class InstallManager( object ):
                     update_tool_shed_repository_status( self.app,
                                                         tool_shed_repository,
                                                         self.app.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
-                    # Get the tool_dependencies.xml file from the repository.
-                    tool_dependencies_config = get_config_from_repository( self.app,
-                                                                           'tool_dependencies.xml',
-                                                                           tool_shed_repository,
-                                                                           tool_shed_repository.installed_changeset_revision,
-                                                                           work_dir )
+                    # Get the tool_dependencies.xml file from disk.
+                    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
                     installed_tool_dependencies = handle_tool_dependencies( app=self.app,
                                                                             tool_shed_repository=tool_shed_repository,
                                                                             tool_dependencies_config=tool_dependencies_config,
@@ -189,10 +180,6 @@ class InstallManager( object ):
                                    self.migrated_tools_config,
                                    tool_panel_dict=tool_panel_dict_for_display,
                                    new_install=True )
-            try:
-                shutil.rmtree( work_dir )
-            except:
-                pass
         if 'datatypes' in metadata_dict:
             tool_shed_repository.status = self.app.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
@@ -200,11 +187,7 @@ class InstallManager( object ):
             self.app.sa_session.add( tool_shed_repository )
             self.app.sa_session.flush()
             work_dir = tempfile.mkdtemp()
-            datatypes_config = get_config_from_repository( self.app,
-                                                           'datatypes_conf.xml',
-                                                           tool_shed_repository,
-                                                           tool_shed_repository.installed_changeset_revision,
-                                                           work_dir )
+            datatypes_config = get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
             # after this installation completes.
             converter_path, display_path = alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, relative_install_dir, override=False )

@@ -248,7 +248,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
         except:
             pass
     return converter_path, display_path
-def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files ):
+def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files, webapp='galaxy' ):
     """
     Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
     sure the files exist.
@@ -291,8 +291,9 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                         correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
                         invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
-    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    reset_tool_data_tables( app )
+    if webapp == 'community':
+        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+        reset_tool_data_tables( app )
     return invalid_files_and_errors_tups
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
@@ -427,16 +428,11 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.add( tool_shed_repository )
     sa_session.flush()
     return tool_shed_repository
-def create_tool_dependency_objects( app, tool_shed_repository, current_changeset_revision, set_status=True ):
+def create_tool_dependency_objects( app, tool_shed_repository, relative_install_dir, set_status=True ):
     # Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when installing a new tool_shed_repository.
     tool_dependency_objects = []
-    work_dir = tempfile.mkdtemp()
     # Get the tool_dependencies.xml file from the repository.
-    tool_dependencies_config = get_config_from_repository( app,
-                                                           'tool_dependencies.xml',
-                                                           tool_shed_repository,
-                                                           current_changeset_revision,
-                                                           work_dir )
+    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
     tree = ElementTree.parse( tool_dependencies_config )
     root = tree.getroot()
     ElementInclude.include( root )
@@ -454,10 +450,6 @@ def create_tool_dependency_objects( app, tool_shed_repository, current_changeset
                                                                     status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                                     set_status=set_status )
                 tool_dependency_objects.append( tool_dependency )
-    try:
-        shutil.rmtree( work_dir )
-    except:
-        pass
     return tool_dependency_objects
 def generate_clone_url( trans, repository ):
     """Generate the URL for cloning a repository."""
@@ -541,14 +533,15 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
                     if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
                         can_generate_dependency_metadata = True
                         break
-                if not can_generate_dependency_metadata:
+                if requirements and not can_generate_dependency_metadata:
                     # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
                     # tag for any tool in the repository.
                     break
             if not can_generate_dependency_metadata:
                 break
     return can_generate_dependency_metadata
-def generate_metadata_for_changeset_revision( app, repository_clone_url, relative_install_dir=None, repository_files_dir=None, resetting_all_metadata_on_repository=False ):
+def generate_metadata_for_changeset_revision( app, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
+                                              resetting_all_metadata_on_repository=False, webapp='galaxy' ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
     the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
@@ -629,7 +622,7 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
                                 invalid_tool_configs.append( name )
                                 invalid_file_tups.append( ( name, str( e ) ) )
                             if tool is not None:
-                                invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_files )
+                                invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_files, webapp=webapp )
                                 can_set_metadata = True
                                 for tup in invalid_files_and_errors_tups:
                                     if name in tup:
@@ -664,7 +657,7 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
             metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
     if invalid_tool_configs:
         metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
-    if resetting_all_metadata_on_repository:
+    if webapp == 'community' and resetting_all_metadata_on_repository:
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
         reset_tool_data_tables( app )
         # Reset the value of the app's tool_data_path to it's original value.
@@ -1255,7 +1248,7 @@ def get_url_from_repository_tool_shed( app, repository ):
             return shed_url
     # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
     return None
-def handle_missing_data_table_entry( app, repository, changeset_revision, tool_path, repository_tools_tups, dir ):
+def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
     tool_data_table_conf.xml file.  This method is called only from Galaxy (not the tool shed) when a repository is being installed
@@ -1269,7 +1262,7 @@ def handle_missing_data_table_entry( app, repository, changeset_revision, tool_p
             break
     if missing_data_table_entry:
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
-        sample_tool_data_table_conf = get_config_from_repository( app, 'tool_data_table_conf.xml.sample', repository, changeset_revision, dir )
+        sample_tool_data_table_conf = get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
         # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
         # data_table_elem_names.
         error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
@@ -1394,14 +1387,8 @@ def load_installed_datatype_converters( app, installed_repository_dict, deactiva
 def load_installed_datatypes( app, repository, relative_install_dir, deactivate=False ):
     # Load proprietary datatypes and return information needed for loading proprietary datatypes converters and display applications later.
     metadata = repository.metadata
-    work_dir = tempfile.mkdtemp()
     repository_dict = None
-    datatypes_config = get_config_from_repository( app,
-                                                   'datatypes_conf.xml',
-                                                   repository,
-                                                   repository.changeset_revision,
-                                                   work_dir,
-                                                   install_dir=relative_install_dir )
+    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
     if datatypes_config:
         converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
         if converter_path or display_path:
@@ -1413,10 +1400,6 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
                                                                                 tool_dicts=metadata.get( 'tools', [] ),
                                                                                 converter_path=converter_path,
                                                                                 display_path=display_path )
-    try:
-        shutil.rmtree( work_dir )
-    except:
-        pass
     return repository_dict
 def load_installed_display_applications( app, installed_repository_dict, deactivate=False ):
     # Load or deactivate proprietary datatype display applications

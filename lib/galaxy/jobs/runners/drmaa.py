@@ -339,6 +339,8 @@ class DRMAAJobRunner( BaseJobRunner ):
         # By default, the exit code is 0, which typically indicates success.
         exit_code = 0
         exit_code_str = "0"
+        # To ensure that files below are readable, ownership must be reclaimed first
+        drm_job_state.job_wrapper.reclaim_ownership()
         while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
                 ofh = file(ofile, "r")

@@ -922,16 +922,11 @@ class Tool:
         if self_id in self.app.config.tool_handlers:
             self.job_handlers = self.app.config.tool_handlers[ self_id ]
         # Set job runner(s). Each runner is a dict with 'url' and, optionally, 'params'.
-        if self.app.config.start_job_runners is None:
-            # Jobs are always local regardless of tool config if no additional
-            # runners are started
-            self.job_runners = [ { "url" : "local:///" } ]
-        else:
-            # Set job runner to the cluster default
-            self.job_runners = [ { "url" : self.app.config.default_cluster_job_runner } ]
-            # Set custom runner(s) if they're defined.
-            if self_id in self.app.config.tool_runners:
-                self.job_runners = self.app.config.tool_runners[ self_id ]
+        # Set job runner to the cluster default
+        self.job_runners = [ { "url" : self.app.config.default_cluster_job_runner } ]
+        # Set custom runner(s) if they're defined.
+        if self_id in self.app.config.tool_runners:
+            self.job_runners = self.app.config.tool_runners[ self_id ]
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = util.xml_text(root, "hidden")
         if self.hidden: self.hidden = util.string_as_bool(self.hidden)
@@ -1316,6 +1311,8 @@ class Tool:
                     return_level = StdioErrorLevel.WARNING 
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.FATAL
+                else:
+                    log.debug( "Error level %s did not match warning/fatal" % err_level )
         except Exception, e:
             log.error( "Exception in parse_error_level " 
                      + str(sys.exc_info() ) )

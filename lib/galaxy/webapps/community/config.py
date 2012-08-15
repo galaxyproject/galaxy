@@ -87,6 +87,7 @@ class Configuration( object ):
         self.server_name = ''
         self.job_manager = ''
         self.default_job_handlers = []
+        self.default_cluster_job_runner = 'local:///'
         self.job_handlers = []
         self.tool_handlers = []
         self.tool_runners = []
