@@ -985,28 +985,31 @@ class BBIDataProvider( TracksDataProvider ):
             # To do this, need to increase end to next base and request number of points.
             num_points = end - start + 1
             end += 1
- 
-            result = summarize_region( bbi, chrom, start, end, num_points )
         else:
             # 
             # The goal is to sample the region between start and end uniformly 
-            # using N data points. The challenge is that the size of sampled 
+            # using ~N data points. The challenge is that the size of sampled 
             # intervals rarely is full bases, so sampling using N points will 
-            # leave the end of the region unsampled. To recitify this, samples
-            # beyond N are taken at the end of the interval.
+            # leave the end of the region unsampled due to remainders for each
+            # interval. To recitify this, a new N is calculated based on the 
+            # step size that covers as much of the region as possible.
+            #
+            # However, this still leaves some of the region unsampled. This 
+            # could be addressed by repeatedly sampling remainder using a 
+            # smaller and smaller step_size, but that would require iteratively 
+            # going to BBI, which could be time consuming.
             #
 
-            # Do initial summary.
+            # Start with N samples.
             num_points = N
-            result = summarize_region( bbi, chrom, start, end, num_points )        
-
-            # Do summary of remaining part of region.
             step_size = ( end - start ) / num_points
-            new_start = start + step_size * num_points
-            new_num_points = min( ( end - new_start ) / step_size, end - start )
-            if new_num_points is not 0:
-                result.extend( summarize_region( bbi, chrom, new_start, end, new_num_points ) )
-            #TODO: progressively reduce step_size to generate more datapoints.
+            # Add additional points to sample in the remainder not covered by 
+            # the initial N samples.
+            remainder_start = start + step_size * num_points
+            additional_points = ( end - remainder_start ) / step_size
+            num_points += additional_points
+            
+        result = summarize_region( bbi, chrom, start, end, num_points )
         
         # Cleanup and return.
         f.close()
