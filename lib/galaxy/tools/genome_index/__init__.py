@@ -18,13 +18,16 @@ def load_genome_index_tools( toolbox ):
         <tool id="__GENOME_INDEX__" name="Index Genome" version="0.1" tool_type="genome_index">
           <type class="GenomeIndexTool" module="galaxy.tools"/>
           <action module="galaxy.tools.actions.index_genome" class="GenomeIndexToolAction"/>
-          <command>$__GENOME_INDEX_COMMAND__ $output_file $output_file.files_path $__app__.config.rsync_url "$__app__.config.tool_data_path"</command>
+          <command>$__GENOME_INDEX_COMMAND__ $output_file $output_file.files_path "$__app__.config.rsync_url" "$__app__.config.tool_data_path"</command>
           <inputs>
             <param name="__GENOME_INDEX_COMMAND__" type="hidden"/>
           </inputs>
           <outputs>
             <data format="txt" name="output_file"/>
           </outputs>
+          <stdio>
+            <exit_code range="1:" err_level="fatal" />
+          </stdio>
         </tool>
         """
         
@@ -64,6 +67,18 @@ class GenomeIndexToolWrapper( object ):
         
 
         if gitd:
+            fp = open( gitd.dataset.get_file_name(), 'r' )
+            deferred = sa_session.query( model.DeferredJob ).filter_by( id=gitd.deferred_job_id ).first()
+            try:
+                logloc = json.load( fp )
+            except ValueError:
+                deferred.state = app.model.DeferredJob.states.ERROR
+                sa_session.add( deferred )
+                sa_session.flush()
+                log.debug( 'Indexing job failed, setting deferred job state to error.' )
+                return False
+            finally:
+                fp.close()
             destination = None
             tdtman = ToolDataTableManager( app.config.tool_data_path )
             xmltree = tdtman.load_from_config_file( app.config.tool_data_table_config_path, app.config.tool_data_path )
@@ -72,16 +87,12 @@ class GenomeIndexToolWrapper( object ):
                 location = node.findall('file')[0].get('path')
                 self.locations[table] = os.path.abspath( location )
             locbase = os.path.abspath( os.path.split( self.locations['all_fasta'] )[0] )
-            deferred = sa_session.query( model.DeferredJob ).filter_by( id=gitd.deferred_job_id ).first()
             params = deferred.params
             dbkey = params[ 'dbkey' ]
             basepath = os.path.join( os.path.abspath( app.config.genome_data_path ), dbkey )
             intname = params[ 'intname' ]
             indexer = gitd.indexer
             workingdir = os.path.abspath( gitd.dataset.extra_files_path )
-            fp = open( gitd.dataset.get_file_name(), 'r' )
-            logloc = json.load( fp )
-            fp.close()
             location = []
             indexdata = gitd.dataset.extra_files_path
             if indexer == '2bit':

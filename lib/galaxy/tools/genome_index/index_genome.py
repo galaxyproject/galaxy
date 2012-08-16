@@ -40,15 +40,16 @@ class ManagedIndexer():
         self.genome = os.path.splitext( self.fafile )[0]
         with WithChDir( self.basedir ):
             if indexer not in self.indexers:
-                raise KeyError, 'The requested indexing function does not exist'
+                sys.stderr.write( 'The requested indexing function does not exist' )
+                exit(127)
             else:
                 with WithChDir( self.workingdir ):
                     self._log( 'Running indexer %s.' % indexer )
                     result = getattr( self, self.indexers[ indexer ] )()
                 if result in [ None, False ]:
-                    self._log( 'Error running indexer %s, %s' % ( indexer, result ) )
+                    sys.stderr.write( 'Error running indexer %s, %s' % ( indexer, result ) )
                     self._flush_files()
-                    return True
+                    exit(1)
                 else:
                     self._log( self.locations )
                     self._log( 'Indexer %s completed successfully.' % indexer )
@@ -309,5 +310,7 @@ if __name__ == "__main__":
     
     # Create archive.
     idxobj = ManagedIndexer( outfile, infile, working_dir, rsync_url, tooldata )
-    idxobj.run_indexer( indexer )
-    
+    returncode = idxobj.run_indexer( indexer )
+    if not returncode:
+        exit(1)
+    exit(0)
