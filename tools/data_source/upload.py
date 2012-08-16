@@ -58,16 +58,6 @@ def safe_dict(d):
         return [safe_dict(x) for x in d]
     else:
         return d
-def check_bam( file_path ):
-    return Bam().sniff( file_path )
-def check_sff( file_path ):
-    return Sff().sniff( file_path )
-def check_pdf( file_path ):
-    return Pdf().sniff( file_path )
-def check_bigwig( file_path ):
-    return BigWig().sniff( file_path )
-def check_bigbed( file_path ):
-    return BigBed().sniff( file_path )
 def parse_outputs( args ):
     rval = {}
     for arg in args:
@@ -121,21 +111,11 @@ def add_file( dataset, registry, json_file, output_path ):
         data_type = 'multi-byte char'
         ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
     # Is dataset content supported sniffable binary?
-    elif check_bam( dataset.path ):
-        ext = 'bam'
-        data_type = 'bam'
-    elif check_sff( dataset.path ):
-        ext = 'sff'
-        data_type = 'sff'
-    elif check_pdf( dataset.path ):
-        ext = 'pdf'
-        data_type = 'pdf'
-    elif check_bigwig( dataset.path ):
-        ext = 'bigwig'
-        data_type = 'bigwig'
-    elif check_bigbed( dataset.path ):
-        ext = 'bigbed'
-        data_type = 'bigbed'
+    else:
+        type_info = Binary.is_sniffable_binary( dataset.path )
+        if type_info:
+            data_type = type_info[0]
+            ext = type_info[1]
     if not data_type:
         # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
         is_gzipped, is_valid = check_gzip( dataset.path )
@@ -267,10 +247,10 @@ def add_file( dataset, registry, json_file, output_path ):
                 parts = dataset.name.split( "." )
                 if len( parts ) > 1:
                     ext = parts[1].strip().lower()
-                    if ext not in unsniffable_binary_formats:
+                    if not Binary.is_ext_unsniffable(ext):
                         file_err( 'The uploaded binary file contains inappropriate content', dataset, json_file )
                         return
-                    elif ext in unsniffable_binary_formats and dataset.file_type != ext:
+                    elif Binary.is_ext_unsniffable(ext) and dataset.file_type != ext:
                         err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % ( ext.capitalize(), ext )
                         file_err( err_msg, dataset, json_file )
                         return

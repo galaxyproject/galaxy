@@ -4,6 +4,7 @@ Image classes
 
 import data
 import logging
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
@@ -153,6 +154,8 @@ class Pdf( Image ):
                 return False
         except IndexError:
             return False
+
+Binary.register_sniffable_binary_format("pdf", "pdf", Pdf)
 
 def create_applet_tag_peek( class_name, archive, params ):
     text = """

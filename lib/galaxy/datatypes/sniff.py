@@ -5,7 +5,6 @@ import logging, sys, os, csv, tempfile, shutil, re, zipfile, gzip
 import registry
 from galaxy import util
 from galaxy.datatypes.checkers import *
-from galaxy.datatypes.binary import unsniffable_binary_formats
 
 log = logging.getLogger(__name__)
 
@@ -381,7 +380,7 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext = 'auto', is
         ext = guess_ext( filename, sniff_order = datatypes_registry.sniff_order, is_multi_byte=is_multi_byte )
 
     if check_binary( filename ):
-        if ext not in unsniffable_binary_formats and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
+        if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
             raise InappropriateDatasetContentError, 'The binary uploaded file contains inappropriate content.'
     elif check_html( filename ):
         raise InappropriateDatasetContentError, 'The uploaded file contains inappropriate HTML content.'

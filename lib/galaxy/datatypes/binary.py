@@ -18,10 +18,31 @@ import struct
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
-unsniffable_binary_formats = [ 'ab1', 'scf', 'h5' ]
 
 class Binary( data.Data ):
     """Binary data"""
+    sniffable_binary_formats = []
+    unsniffable_binary_formats = []
+
+    @staticmethod
+    def register_sniffable_binary_format(data_type, ext, type_class):
+        Binary.sniffable_binary_formats.append({"type": data_type, "ext": ext, "class": type_class})
+
+    @staticmethod
+    def register_unsniffable_binary_ext(ext):
+        Binary.unsniffable_binary_formats.append(ext)
+
+    @staticmethod
+    def is_sniffable_binary(filename):
+        for format in Binary.sniffable_binary_formats:
+            if format["class"]().sniff(filename):
+                return (format["type"], format["ext"])
+        return None
+
+    @staticmethod
+    def is_ext_unsniffable(ext):
+        return ext in Binary.unsniffable_binary_formats
+
     def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
@@ -61,6 +82,8 @@ class Ab1( Binary ):
             return dataset.peek
         except:
             return "Binary ab1 sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+Binary.register_unsniffable_binary_ext("ab1")
 
 class Bam( Binary ):
     """Class describing a BAM binary file"""
@@ -218,6 +241,8 @@ class Bam( Binary ):
     def get_track_type( self ):
         return "ReadTrack", {"data": "bai", "index": "summary_tree"}
 
+Binary.register_sniffable_binary_format("bam", "bam", Bam)
+
 class H5( Binary ):
     """Class describing an HDF5 file"""
     file_ext = "h5"
@@ -235,6 +260,8 @@ class H5( Binary ):
         except:
             return "Binary h5 sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
+Binary.register_unsniffable_binary_ext("h5")
+
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     file_ext = "scf"
@@ -251,6 +278,8 @@ class Scf( Binary ):
             return dataset.peek
         except:
             return "Binary scf sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+Binary.register_unsniffable_binary_ext("scf")
 
 class Sff( Binary ):
     """ Standard Flowgram Format (SFF) """
@@ -280,6 +309,8 @@ class Sff( Binary ):
             return dataset.peek
         except:
             return "Binary sff file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+Binary.register_sniffable_binary_format("sff", "sff", Sff)
 
 class BigWig(Binary):
     """
@@ -314,6 +345,8 @@ class BigWig(Binary):
     def get_track_type( self ):
         return "LineTrack", {"data_standalone": "bigwig"}
 
+Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
+
 class BigBed(BigWig):
     """BigBed support from UCSC."""
     def __init__( self, **kwd ):
@@ -322,6 +355,8 @@ class BigBed(BigWig):
         self._name = "BigBed"
     def get_track_type( self ):
         return "LineTrack", {"data_standalone": "bigbed"}
+
+Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
 class TwoBit (Binary):
     """Class describing a TwoBit format nucleotide file"""
