@@ -638,3 +638,10 @@ class Eland( Tabular ):
             dataset.metadata.reads = reads.keys()
 
 
+class FeatureLocationIndex( Tabular ):
+    """
+    An index that stores feature locations in tabular format.
+    """
+    file_ext='fli'
+    MetadataElement( name="columns", default=2, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[] )

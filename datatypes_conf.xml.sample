@@ -4,6 +4,7 @@
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
+    <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
       <converter file="bam_to_bai.xml" target_datatype="bai"/>
       <converter file="bam_to_summary_tree_converter.xml" target_datatype="summary_tree" depends_on="bai"/>
@@ -79,6 +80,7 @@
       <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
       <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
       <converter file="gff_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <converter file="gff_to_fli_converter.xml" target_datatype="fli"/>
       <display file="ensembl/ensembl_gff.xml" inherit="True"/>
       <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="True" /> -->
     </datatype>

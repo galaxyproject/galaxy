@@ -24,5 +24,6 @@ for feature in read_unordered_gtf( open( in_fname, 'r' ) ):
     # Print feature.
     for interval in feature.intervals:
         out.write( "\t".join(interval.fields) )
+out.close()
 
 # TODO: print status information: how many lines processed and features found.

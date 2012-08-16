@@ -2,7 +2,7 @@
 Data providers for tracks visualizations.
 """
 
-import sys
+import os, sys
 from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
@@ -59,6 +59,51 @@ def _convert_between_ucsc_and_ensemble_naming( chrom ):
 
 def _chrom_naming_matches( chrom1, chrom2 ):
     return ( chrom1.startswith( 'chr' ) and chrom2.startswith( 'chr' ) ) or ( not chrom1.startswith( 'chr' ) and not chrom2.startswith( 'chr' ) )
+
+class FeatureLocationIndexDataProvider( object ):
+    '''
+
+    '''
+
+    def __init__( self, converted_dataset ):
+        self.converted_dataset = converted_dataset
+
+    def get_data( self, query ):
+        # Init.
+        textloc_file = open( self.converted_dataset.file_name, 'r' )
+        line_len = int( textloc_file.readline() )
+        file_len = os.path.getsize( self.converted_dataset.file_name )
+    
+        # Find query in file using binary search.
+        low = 0
+        high = file_len / line_len
+        while low < high:
+            mid = ( low + high ) // 2
+            position = mid * line_len
+            textloc_file.seek( position )
+
+            # Compare line with query and update low, high.
+            line = textloc_file.readline()
+            print '--', mid, line
+            if line < query:
+                low = mid + 1
+            else:
+                high = mid
+        
+        position = low * line_len
+        
+        # At right point in file, generate hits.
+        result = [ ]
+        while True:
+            line = textloc_file.readline()
+            if not line.startswith( query ): 
+                break
+            if line[ -1: ] == '\n': 
+                line = line[ :-1 ]
+            result.append( line.split() )
+
+        textloc_file.close()    
+        return result
         
 class TracksDataProvider( object ):
     """ Base class for tracks data providers. """
