@@ -276,7 +276,6 @@ class Registry( object ):
                 'axt'         : sequence.Axt(),
                 'bam'         : binary.Bam(),
                 'bed'         : interval.Bed(), 
-                'blastxml'    : xml.BlastXml(),
                 'coverage'    : coverage.LastzCoverage(),
                 'customtrack' : interval.CustomTrack(),
                 'csfasta'     : sequence.csFasta(),
@@ -310,7 +309,6 @@ class Registry( object ):
                 'axt'         : 'text/plain',
                 'bam'         : 'application/octet-stream',
                 'bed'         : 'text/plain', 
-                'blastxml'    : 'application/xml', 
                 'customtrack' : 'text/plain',
                 'csfasta'     : 'text/plain',
                 'eland'       : 'application/octet-stream',
@@ -348,7 +346,6 @@ class Registry( object ):
             self.sniff_order = [
                 binary.Bam(),
                 binary.Sff(),
-                xml.BlastXml(),
                 xml.GenericXml(),
                 sequence.Maf(),
                 sequence.Lav(),
