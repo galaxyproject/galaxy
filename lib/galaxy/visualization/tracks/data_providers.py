@@ -968,29 +968,32 @@ class BBIDataProvider( TracksDataProvider ):
         # which we use converted_dataset
         f, bbi = self._get_dataset()
        
-        # If the stats kwarg was provide, we compute overall summary data for the 
-        # range defined by start and end but no reduced data. This is currently 
-        # used by client to determine the default range.
+        # If stats requested, compute overall summary data for the range
+        # start:endbut no reduced data. This is currently used by client 
+        # to determine the default range.
         if 'stats' in kwargs:
             summary = bbi.summarize( chrom, start, end, 1 )
             f.close()
-            if summary is None:
-                return None
-            else:
+            
+            min = 0
+            max = 0
+            mean = 0
+            sd = 0
+            if summary is not None:
                 # Does the summary contain any defined values?
                 valid_count = summary.valid_count[0]
-                if summary.valid_count < 1:
-                    return None
+                if summary.valid_count > 0:
+                    # Compute $\mu \pm 2\sigma$ to provide an estimate for upper and lower
+                    # bounds that contain ~95% of the data.
+                    mean = summary.sum_data[0] / valid_count
+                    var = summary.sum_squares[0] - mean
+                    if valid_count > 1:
+                        var /= valid_count - 1
+                    sd = numpy.sqrt( var )
+                    min = summary.min_val[0]
+                    max = summary.max_val[0]
 
-                # Compute $\mu \pm 2\sigma$ to provide an estimate for upper and lower
-                # bounds that contain ~95% of the data.
-                mean = summary.sum_data[0] / valid_count
-                var = summary.sum_squares[0] - mean
-                if valid_count > 1:
-                    var /= valid_count - 1
-                sd = numpy.sqrt( var )
-
-                return dict( data=dict( min=summary.min_val[0], max=summary.max_val[0], mean=mean, sd=sd ) )
+            return dict( data=dict( min=min, max=max, mean=mean, sd=sd ) )
 
         # Sample from region using approximately this many samples.
         N = 1000
