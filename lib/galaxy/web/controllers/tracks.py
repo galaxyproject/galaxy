@@ -387,7 +387,21 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             return return_message
             
         extra_info = None
-        if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and kwargs.get("mode", "Auto") == "Auto":
+        mode = kwargs.get( "mode", "Auto" )
+        # Handle histogram mode uniquely for now:
+        if mode == "Coverage":
+            # Get summary using minimal cutoffs.
+            tracks_dataset_type = data_sources['index']['name']
+            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
+            indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
+            summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], detail_cutoff=0, draw_cutoff=0 )
+            if summary == "detail":
+                # Use maximum level of detail--2--to get summary data no matter the resolution.
+                summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], level=2, detail_cutoff=0, draw_cutoff=0 )
+            frequencies, max_v, avg_v, delta = summary
+            return { 'dataset_type': tracks_dataset_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
+
+        if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and mode == "Auto":
             # Only check for summary_tree if it's Auto mode (which is the default)
             # 
             # Have to choose between indexer and data provider
