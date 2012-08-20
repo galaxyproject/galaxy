@@ -250,7 +250,6 @@ $(function() {
                         },
                         "View in saved visualization": function() {
                             // Show new modal with saved visualizations.
-                            parent.hide_modal();
                             parent.show_modal("Add Data to Saved Visualization", table_html, {
                                 "Cancel": function() {
                                     parent.hide_modal();
