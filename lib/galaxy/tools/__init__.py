@@ -2631,7 +2631,7 @@ class Tool:
         if for_link:
             # Create tool link.
             if not self.tool_type.startswith( 'data_source' ):
-                link = url_for( controller='tool_runner', tool_id=self.id )
+                link = url_for( '/tool_runner', tool_id=self.id )
             else:
                 link = url_for( self.action, **self.get_static_param_values( trans ) )
             
