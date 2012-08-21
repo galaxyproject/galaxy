@@ -9,7 +9,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "galaxy.base", "libs/jquery/jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js( "galaxy.base", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
 </%def>
 
 %if msg:

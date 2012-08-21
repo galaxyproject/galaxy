@@ -22,7 +22,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.drop", "libs/jquery/jquery.event.hover", "libs/jquery/jquery.form", "libs/json2", "libs/jquery/jstorage",
-            "galaxy.base", "libs/jquery/jquery.wymeditor", "libs/jquery/jquery.autocomplete", "autocomplete_tagging")}    
+            "galaxy.base", "libs/jquery/jquery.wymeditor", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging")}
     <script type="text/javascript">
             
     // Useful Galaxy stuff.

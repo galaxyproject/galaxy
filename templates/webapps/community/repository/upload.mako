@@ -28,7 +28,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "ui.core", "libs/jquery/jquery.cookie", "libs/jquery/jquery.dynatree" )}
+    ${h.js( "libs/jquery/jquery.ui.core", "libs/jquery/jquery.cookie", "libs/jquery/jquery.dynatree" )}
     ${common_javascripts(repository)}
     <script type="text/javascript">
     $( function() {

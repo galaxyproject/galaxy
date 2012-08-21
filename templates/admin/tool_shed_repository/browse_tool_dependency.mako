@@ -9,7 +9,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "ui.core", "libs/jquery/jquery.dynatree" )}
+    ${h.js( "libs/jquery/jquery.ui.core", "libs/jquery/jquery.dynatree" )}
     ${browse_files(tool_dependency.name, tool_dependency.installation_directory( trans.app ))}
 </%def>
 

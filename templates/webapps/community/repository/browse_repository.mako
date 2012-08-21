@@ -57,7 +57,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating", "ui.core", "libs/jquery/jquery.cookie", "libs/jquery/jquery.dynatree" )}
+    ${h.js( "libs/jquery/jquery.rating", "libs/jquery/jquery.ui.core", "libs/jquery/jquery.cookie", "libs/jquery/jquery.dynatree" )}
     ${common_javascripts(repository)}
 </%def>
 

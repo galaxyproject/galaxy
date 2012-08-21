@@ -36,7 +36,7 @@
             "galaxy.base",
             "galaxy.workflow_editor.canvas",
             "libs/jquery/jquery.autocomplete",
-            "autocomplete_tagging")}
+            "galaxy.autocom_tagging")}
 
     <!--[if lt IE 7]>
     <script type='text/javascript'>
