@@ -21,7 +21,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "bootstrap", "jstorage", "jquery.event.drag", "jquery.event.hover","jquery.mousewheel", "jquery.autocomplete", "mvc/data", "viz/visualization", "viz/trackster", "viz/trackster_ui", "jquery.ui.sortable.slider", "farbtastic" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "libs/jquery/jquery", "bootstrap", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery.autocomplete", "mvc/data", "viz/visualization", "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery.ui.sortable.slider", "farbtastic" )}
 
 <script type="text/javascript">
     //

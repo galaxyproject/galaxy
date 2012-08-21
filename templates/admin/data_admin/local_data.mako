@@ -27,7 +27,7 @@
 </%def>
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js("libs/jquery/jquery.autocomplete", "autocomplete_tagging" )}
 </%def>
 ##
 ## Override methods from base.mako and base_panels.mako

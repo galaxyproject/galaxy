@@ -3,7 +3,7 @@
 
 <%def name="javascripts()">
    ${parent.javascripts()}
-   ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+   ${h.js("libs/jquery/jquery.autocomplete", "autocomplete_tagging" )}
 </%def>
 
 <%def name="stylesheets()">

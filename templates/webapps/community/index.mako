@@ -19,7 +19,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "galaxy.base" )}
+    ${h.js( "libs/jquery/jquery", "galaxy.base" )}
 </%def>
 
 <%def name="init()">

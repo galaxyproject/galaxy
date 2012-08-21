@@ -9,7 +9,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "ui.core", "jquery.dynatree" )}
+    ${h.js( "ui.core", "libs/jquery/jquery.dynatree" )}
     ${browse_files(repository.name, repository.repo_files_directory(trans.app))}
 </%def>
 
