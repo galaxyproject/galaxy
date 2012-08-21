@@ -13,7 +13,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "galaxy.base", "libs/jquery/jquery", "json2", "libs/jquery/jstorage" )}
+    ${h.js( "galaxy.base", "libs/jquery/jquery", "libs/json2", "libs/jquery/jstorage" )}
     <script type="text/javascript">
         $(function() {
             init_history_items( $("div.historyItemWrapper"), false, "nochanges" );

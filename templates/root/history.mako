@@ -17,7 +17,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history", "autocomplete_tagging" )}
-${h.js( "libs/jquery/jquery", "bootstrap", "galaxy.base", "json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "autocomplete_tagging" )}
+${h.js( "libs/jquery/jquery", "libs/bootstrap", "galaxy.base", "libs/json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "autocomplete_tagging" )}
 
 <script type="text/javascript">
 

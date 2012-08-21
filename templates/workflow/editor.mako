@@ -22,16 +22,16 @@
     ${parent.javascripts()}
 
     <!--[if lt IE 9]>
-      <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
+      <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
     <![endif]-->
 
     ${h.js( "libs/jquery/jquery",
-            "bootstrap",
+            "libs/bootstrap",
             "libs/jquery/jquery.event.drag",
             "libs/jquery/jquery.event.drop",
             "libs/jquery/jquery.event.hover",
             "libs/jquery/jquery.form",
-            "json2",
+            "libs/json2",
             "libs/jquery/jstorage",
             "galaxy.base",
             "galaxy.workflow_editor.canvas",

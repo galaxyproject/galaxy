@@ -24,9 +24,9 @@
 ## Default javascripts
 <%def name="javascripts()">
   ## <!--[if lt IE 7]>
-  ## <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
+  ## <script type='text/javascript' src="/static/scripts/libs/IE/IE7.js"> </script>
   ## <![endif]-->
-  ${h.js( "libs/jquery/jquery", "bootstrap", "galaxy.base", "libs/underscore", "libs/backbone/backbone", "libs/backbone/backbone-relational", "libs/handlebars.runtime", "mvc/ui" )}
+  ${h.js( "libs/jquery/jquery", "libs/bootstrap", "galaxy.base", "libs/underscore", "libs/backbone/backbone", "libs/backbone/backbone-relational", "libs/handlebars.runtime", "mvc/ui" )}
   <script type="text/javascript">
       // Set up needed paths.
       var galaxy_paths = new GalaxyPaths({
