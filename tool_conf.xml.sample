@@ -244,14 +244,6 @@
     <tool file="fastx_toolkit/fasta_nucleotide_changer.xml" />
     <tool file="fastx_toolkit/fastx_collapser.xml" />
   </section>
-  <section name="NCBI BLAST+" id="ncbi_blast_plus_tools">
-    <tool file="ncbi_blast_plus/ncbi_blastn_wrapper.xml" />
-    <tool file="ncbi_blast_plus/ncbi_blastp_wrapper.xml" />
-    <tool file="ncbi_blast_plus/ncbi_blastx_wrapper.xml" />
-    <tool file="ncbi_blast_plus/ncbi_tblastn_wrapper.xml" />
-    <tool file="ncbi_blast_plus/ncbi_tblastx_wrapper.xml" />
-    <tool file="ncbi_blast_plus/blastxml_to_tabular.xml" />
-  </section>
   <section name="NGS: QC and manipulation" id="NGS_QC">
     
     <label text="FastQC: fastq/sam/bam" id="fastqcsambam" />
