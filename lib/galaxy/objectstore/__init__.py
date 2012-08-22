@@ -608,13 +608,13 @@ class S3ObjectStore(ObjectStore):
             log.error("Problem downloading key '%s' from S3 bucket '%s': %s" % (rel_path, self.bucket.name, ex))
         return False
 
-    def _push_to_s3(self, rel_path, source_file=None, from_string=None):
+    def _push_to_os(self, rel_path, source_file=None, from_string=None):
         """
-        Push the file pointed to by `rel_path` to S3 naming the key `rel_path`.
-        If `source_file` is provided, push that file instead while still using
-        `rel_path` as the key name.
-        If `from_string` is provided, set contents of the file to the value of
-        the string
+        Push the file pointed to by ``rel_path`` to the object store naming the key
+        ``rel_path``. If ``source_file`` is provided, push that file instead while
+        still using ``rel_path`` as the key name.
+        If ``from_string`` is provided, set contents of the file to the value of
+        the string.
         """
         try:
             source_file = source_file if source_file else self._get_cache_path(rel_path)
@@ -680,7 +680,7 @@ class S3ObjectStore(ObjectStore):
                 return False
         # TODO: Sync should probably not be done here. Add this to an async upload stack?
         if in_cache and not in_s3:
-            self._push_to_s3(rel_path, source_file=self._get_cache_path(rel_path))
+            self._push_to_os(rel_path, source_file=self._get_cache_path(rel_path))
             return True
         elif in_s3:
             return True
@@ -713,12 +713,12 @@ class S3ObjectStore(ObjectStore):
             # flat namespace), do so for consistency with the regular file system
             # S3 folders are marked by having trailing '/' so add it now
             # s3_dir = '%s/' % rel_path
-            # self._push_to_s3(s3_dir, from_string='')
+            # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
-                self._push_to_s3(rel_path, from_string='')
+                self._push_to_os(rel_path, from_string='')
 
     def empty(self, obj, **kwargs):
         if self.exists(obj, **kwargs):
@@ -832,7 +832,7 @@ class S3ObjectStore(ObjectStore):
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on S3
-            self._push_to_s3(rel_path, source_file)
+            self._push_to_os(rel_path, source_file)
         else:
             raise ObjectNotFound()
 
