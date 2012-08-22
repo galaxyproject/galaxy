@@ -484,6 +484,11 @@ class BedDataProvider( TracksDataProvider ):
 
             # Score (filter data)    
             if length >= 5 and filter_cols and filter_cols[0] == "Score":
+                # If dataset doesn't have name/strand/thick start/thick end/blocks, 
+                # add placeholders. There should be 8 entries if all attributes 
+                # are present.
+                payload.extend( [ None for i in range( 8 - len( payload ) ) ] )
+
                 try:
                     payload.append( float( feature[4] ) )
                 except:
