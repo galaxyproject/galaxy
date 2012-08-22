@@ -166,7 +166,7 @@ $(function() {
                         // $("<div/>").text("Data is loading from S3... please be patient").appendTo(link.parent());
                         $( '#historyItem-' + history_id).removeClass( "historyItem-ok" );
                         $( '#historyItem-' + history_id).addClass( "historyItem-running" );
-                        setTimeout(function(){check_transfer_status(link, history_id)}, 1000);
+                        setTimeout(function(){check_transfer_status(link, history_id)}, 4000);
                     } else {
                         $( '#historyItem-' + history_id).removeClass( "historyItem-running" );
                         $( '#historyItem-' + history_id).addClass( "historyItem-ok" );

@@ -631,7 +631,7 @@ class S3ObjectStore(ObjectStore):
                     # print "Pushing cache file '%s' of size %s bytes to key '%s'" % (source_file, os.path.getsize(source_file), rel_path)
                     # print "+ Push started at '%s'" % start_time
                     mb_size = os.path.getsize(source_file) / 1e6
-                    if mb_size < 60:
+                    if mb_size < 60 or self.config.object_store == 'swift':
                         self.transfer_progress = 0 # Reset transfer progress counter
                         key.set_contents_from_filename(source_file, reduced_redundancy=self.use_rr,
                             cb=self._transfer_cb, num_cb=10)
@@ -649,12 +649,17 @@ class S3ObjectStore(ObjectStore):
         return False
 
     def file_ready(self, obj, **kwargs):
-        """ A helper method that checks if a file corresponding to a dataset
-        is ready and available to be used. Return True if so, False otherwise."""
+        """
+        A helper method that checks if a file corresponding to a dataset is
+        ready and available to be used. Return ``True`` if so, ``False`` otherwise.
+        """
         rel_path = self._construct_path(obj, **kwargs)
         # Make sure the size in cache is available in its entirety
-        if self._in_cache(rel_path) and os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_s3(rel_path):
-            return True
+        if self._in_cache(rel_path):
+            if os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_s3(rel_path):
+                return True
+            log.debug("Waiting for dataset {0} to transfer from OS: {1}/{2}".format(rel_path,
+                os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path)))
         return False
 
     def exists(self, obj, **kwargs):
