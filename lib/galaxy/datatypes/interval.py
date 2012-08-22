@@ -338,7 +338,7 @@ class BedGraph( Interval ):
     file_ext = "bedgraph"
 
     def get_track_type( self ):
-        return "LineTrack", {"data": "array_tree"}
+        return "LineTrack", { "data": "bigwig", "index": "bigwig" }
         
     def as_ucsc_display_file( self, dataset, **kwd ):
         """
@@ -1141,8 +1141,9 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         resolution = min( resolution, 100000 )
         resolution = max( resolution, 1 )
         return resolution
+        
     def get_track_type( self ):
-        return "LineTrack", {"data": "bigwig", "index": "bigwig"}
+        return "LineTrack", { "data": "bigwig", "index": "bigwig" }
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""

@@ -17,7 +17,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history", "autocomplete_tagging" )}
-${h.js( "jquery", "bootstrap", "galaxy.base", "json2", "jstorage", "jquery.autocomplete", "autocomplete_tagging" )}
+${h.js( "libs/jquery/jquery", "libs/bootstrap", "galaxy.base", "libs/json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
 
 <script type="text/javascript">
 
@@ -250,7 +250,6 @@ $(function() {
                         },
                         "View in saved visualization": function() {
                             // Show new modal with saved visualizations.
-                            parent.hide_modal();
                             parent.show_modal("Add Data to Saved Visualization", table_html, {
                                 "Cancel": function() {
                                     parent.hide_modal();

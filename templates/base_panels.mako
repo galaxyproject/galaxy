@@ -46,9 +46,9 @@
 ## Default javascripts
 <%def name="javascripts()">
     <!--[if lt IE 7]>
-    ${h.js( 'IE7', 'ie7-recalc' )}
+    ${h.js( 'libs/IE/IE7', 'libs/IE/ie7-recalc' )}
     <![endif]-->
-    ${h.js( 'jquery', 'bootstrap', 'libs/underscore', 'libs/backbone', 'libs/backbone-relational', 'libs/handlebars.runtime', 'mvc/ui' )}
+    ${h.js( 'libs/jquery/jquery', 'libs/bootstrap', 'libs/underscore', 'libs/backbone/backbone', 'libs/backbone/backbone-relational', 'libs/handlebars.runtime', 'mvc/ui' )}
     <script type="text/javascript">
         // Set up needed paths.
         var galaxy_paths = new GalaxyPaths({
@@ -73,7 +73,7 @@
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js( 'jquery.event.drag', 'jquery.event.hover', 'jquery.form', 'jquery.rating', 'galaxy.base', 'galaxy.panels' )}
+    ${h.js( 'libs/jquery/jquery.event.drag', 'libs/jquery/jquery.event.hover', 'libs/jquery/jquery.form', 'libs/jquery/jquery.rating', 'galaxy.base', 'galaxy.panels' )}
     <script type="text/javascript">
         
     ensure_dd_helper();

@@ -48,8 +48,8 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("json2")}
-    ${h.js("jstorage")}
+    ${h.js("libs/json2")}
+    ${h.js("libs/jquery/jstorage")}
     ${common_javascripts()}
     ${self.grid_javascripts()}
 </%def>

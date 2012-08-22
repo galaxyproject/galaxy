@@ -52,7 +52,7 @@
 </%def>
 
 <%def name="grid_javascripts()">
-    ${h.js("jquery.autocomplete", "autocomplete_tagging", "jquery.rating" )}
+    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating" )}
     <script type="text/javascript">
         // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
         // not appended to the identifier of a nested array.

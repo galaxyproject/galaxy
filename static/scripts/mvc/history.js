@@ -33,13 +33,13 @@ var HistoryItem = BaseModel.extend({
     
     display     : function(){},
     edit_attr   : function(){},
-    delete      : function(){},
+    remove      : function(){},
     download    : function(){},
     details     : function(){},
     rerun       : function(){},
     tags        : function(){},
     annotations : function(){},
-    peek        : function(){},
+    peek        : function(){}
 });
 
 //..............................................................................
@@ -51,17 +51,17 @@ var HistoryItemView = BaseView.extend({
     icons       : {
         display     : 'path to icon',
         edit_attr   : 'path to icon',
-        delete      : 'path to icon',
+        remove      : 'path to icon',
         download    : 'path to icon',
         details     : 'path to icon',
         rerun       : 'path to icon',
         tags        : 'path to icon',
-        annotations : 'path to icon',
+        annotations : 'path to icon'
     },
     
     render      : function(){
-        this.$el.append( 'div' )
-    },
+        this.$el.append( 'div' );
+    }
     
 });
 
@@ -139,7 +139,7 @@ var HistoryCollectionView = BaseView.extend({
     
     render      : function(){
         
-    },
+    }
     
 });
 
