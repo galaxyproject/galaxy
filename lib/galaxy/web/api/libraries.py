@@ -98,7 +98,7 @@ class LibrariesController( BaseAPIController ):
         rval['url'] = url_for( 'library', id=encoded_id )
         rval['name'] = name
         rval['id'] = encoded_id
-        return [ rval ]
+        return rval
 
     @web.expose_api
     def delete( self, trans, id, **kwd ):
