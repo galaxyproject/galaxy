@@ -625,7 +625,8 @@ class VcfDataProvider( TracksDataProvider ):
                 end = start + len( new_seq )
 
                 # Pack line.
-                payload = [ hash( line ), 
+                payload = [ 
+                            hash( line ), 
                             start, 
                             end,
                             # ID:
@@ -634,7 +635,8 @@ class VcfDataProvider( TracksDataProvider ):
                             # TODO? VCF does not have strand, so default to positive.
                             "+",
                             new_seq,
-                            float( feature[5] ) ]
+                            None if feature[5] == '.' else float( feature[5] ) 
+                          ]
                 rval.append(payload)
 
         return { 'data': rval, 'message': message }
