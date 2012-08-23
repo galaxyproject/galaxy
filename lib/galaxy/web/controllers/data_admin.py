@@ -75,7 +75,7 @@ class DataAdmin( BaseUIController ):
     @web.require_admin
     def add_genome( self, trans, **kwd ):
         if trans.app.config.get_bool( 'enable_beta_job_managers', False ) == False:
-            return trans.fill_template( '/admin/data_admin/betajob.mako' )
+            return trans.fill_template( '/admin/data_admin/generic_error.mako', message='This feature requires that enable_beta_job_managers be set to True in your Galaxy configuration.' )
         dbkeys = trans.ucsc_builds
         ensemblkeys = trans.ensembl_builds
         ncbikeys = trans.ncbi_builds
@@ -137,9 +137,10 @@ class DataAdmin( BaseUIController ):
             dbkey = build.split( ': ' )[0]
             longname = build.split( ': ' )[-1]
             url = 'http://togows.dbcls.jp/entry/ncbi-nucleotide/%s.fasta' % dbkey
-        elif source == 'Broad':
-            dbkey = params.get('broad_dbkey', '')[0]
-            url = 'ftp://ftp.broadinstitute.org/pub/seq/references/%s.fasta' % dbkey
+        elif source == 'URL':
+            dbkey = params.get( 'url_dbkey', '' )
+            url = params.get( 'url', None )
+            longname = params.get( 'longname', None )
         elif source == 'UCSC':
             longname = None
             for build in trans.ucsc_builds:
@@ -198,7 +199,9 @@ class DataAdmin( BaseUIController ):
                     break
             url = 'ftp://ftp.ensembl.org/pub/release-%s/fasta/%s/dna/%s.%s.%s.dna.toplevel.fa.gz' % ( release, pathname.lower(), pathname, dbkey, release )
         else:
-            raise ValueError, 'Somehow an invalid data source was specified.'
+            return trans.fill_template( '/admin/data_admin/generic_error.mako', message='Somehow an invalid data source was specified.' )
+        if url is None:
+            return trans.fill_template( '/admin/data_admin/generic_error.mako', message='Unable to generate a valid URL with the specified parameters.' )
         params = dict( protocol='http', name=dbkey, datatype='fasta', url=url, user=trans.user.id )
         jobid = trans.app.job_manager.deferred_job_queue.plugins['GenomeTransferPlugin'].create_job( trans, url, dbkey, longname, indexers )
         chainjob = []
