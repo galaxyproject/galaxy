@@ -128,7 +128,7 @@ def expose_api( func ):
         if trans.request.body:
             def extract_payload_from_request(trans, func, kwargs):
                 content_type = trans.request.headers['content-type']                
-                if content_type.startswith('multipart/form-data'):                    
+                if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):                    
                     # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
                     # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
                     # are not a part of the request body. This is a problem because it's not possible to differentiate between values
@@ -140,7 +140,9 @@ def expose_api( func ):
                     for arg in named_args:
                         payload.pop(arg, None)
                 else:
-                    # When it's a non standard request body (e.g. json), the wsgi framework does not parse the request body. So do so manually.
+                    # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
+                    # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
+                    # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
                     payload = util.recursively_stringify_dictionary_keys( simplejson.loads( trans.request.body ) )
                 return payload
             try:                
