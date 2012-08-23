@@ -5,6 +5,7 @@ Galaxy web application framework
 import pkg_resources
 
 import os, sys, time, socket, random, string
+import inspect
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import base
@@ -125,9 +126,25 @@ def expose_api( func ):
                 return error
             trans.set_user( provided_key.user )
         if trans.request.body:
-            try:
-                payload = util.recursively_stringify_dictionary_keys( simplejson.loads( trans.request.body ) )
-                kwargs['payload'] = payload
+            def extract_payload_from_request(trans, func, kwargs):
+                content_type = trans.request.headers['content-type']                
+                if content_type.startswith('multipart/form-data'):                    
+                    # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
+                    # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
+                    # are not a part of the request body. This is a problem because it's not possible to differentiate between values
+                    # which are a part of the request body, and therefore should be a part of the payload, and values which should not be
+                    # in the payload. Therefore, the decorated method's formal arguments are discovered through reflection and removed from
+                    # the payload dictionary. This helps to prevent duplicate argument conflicts in downstream methods.
+                    payload = kwargs.copy()
+                    named_args, _, _, _ = inspect.getargspec(func)                                         
+                    for arg in named_args:
+                        payload.pop(arg, None)
+                else:
+                    # When it's a non standard request body (e.g. json), the wsgi framework does not parse the request body. So do so manually.
+                    payload = util.recursively_stringify_dictionary_keys( simplejson.loads( trans.request.body ) )
+                return payload
+            try:                
+                kwargs['payload'] = extract_payload_from_request(trans, func, kwargs)
             except ValueError:
                 error_status = '400 Bad Request'
                 error_message = 'Your request did not appear to be valid JSON, please consult the API documentation'
