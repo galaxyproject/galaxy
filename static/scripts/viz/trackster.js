@@ -5690,7 +5690,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             ctx.globalAlpha = 1;
                         
             // Draw label for Pack mode.
-            if (mode === "Pack" && feature_start > tile_low) {
+            if (feature_name && mode === "Pack" && feature_start > tile_low) {
                 ctx.fillStyle = label_color;
                 // FIXME: assumption here that the entire view starts at 0
                 if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
