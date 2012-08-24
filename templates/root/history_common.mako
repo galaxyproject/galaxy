@@ -218,7 +218,7 @@
                     
                     %if for_editing:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
-                        %if app.config.get_bool( 'enable_tracks', False ) and data.ext in app.datatypes_registry.get_available_tracks():
+                        %if data.ext in app.datatypes_registry.get_available_tracks():
                             <%
                             if data.dbkey != '?':
                                 data_url = h.url_for( controller='tracks', action='list_tracks', dbkey=data.dbkey )

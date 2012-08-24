@@ -78,12 +78,10 @@
                         [ _('Data Libraries'), h.url_for( controller='/library', action='index') ],
                         None,
                         [ _('Published Histories'), h.url_for( controller='/history', action='list_published' ) ],
-                        [ _('Published Workflows'), h.url_for( controller='/workflow', action='list_published' ) ]
-                       ]
-        if app.config.get_bool( 'enable_tracks', False ):
-            menu_options.append( [ _('Published Visualizations'), h.url_for( controller='/visualization', action='list_published' ) ] )        
-        if app.config.get_bool( 'enable_pages', False ):
-            menu_options.append( [ _('Published Pages'), h.url_for( controller='/page', action='list_published' ) ] )
+                        [ _('Published Workflows'), h.url_for( controller='/workflow', action='list_published' ) ],
+                        [ _('Published Visualizations'), h.url_for( controller='/visualization', action='list_published' ) ],
+                        [ _('Published Pages'), h.url_for( controller='/page', action='list_published' ) ]
+                       ] 
         tab( "shared", _("Shared Data"), h.url_for( controller='/library', action='index'), menu_options=menu_options )
     %>
     
@@ -98,15 +96,13 @@
     %>
 
     ## Visualization menu.
-    %if app.config.get_bool( 'enable_tracks', False ):
-        <%
-            menu_options = [
-                             [_('New Visualization'), h.url_for( controller='/tracks', action='index' ) ],
-                             [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' ) ]
-                           ]
-            tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list'), menu_options=menu_options )
-        %>
-    %endif
+    <%
+        menu_options = [
+                         [_('New Visualization'), h.url_for( controller='/tracks', action='index' ) ],
+                         [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' ) ]
+                       ]
+        tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list'), menu_options=menu_options )
+    %>
 
     ## Cloud menu.
     %if app.config.get_bool( 'enable_cloud_launch', False ):
@@ -155,8 +151,7 @@
                 menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
         else:
             menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
-            if app.config.get_bool( 'enable_tracks', False ):
-                menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
+            menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
             if app.config.require_login:
                 logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout', webapp='galaxy' )
             else:
@@ -165,8 +160,7 @@
             menu_options.append( None )
         menu_options.append( [ _('Saved Histories'), h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
         menu_options.append( [ _('Saved Datasets'), h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
-        if app.config.get_bool( 'enable_pages', False ):
-            menu_options.append( [ _('Saved Pages'), h.url_for( controller='/page', action='list' ), "_top" ] )
+        menu_options.append( [ _('Saved Pages'), h.url_for( controller='/page', action='list' ), "_top" ] )
         menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
         if app.config.use_remote_user:
             menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
