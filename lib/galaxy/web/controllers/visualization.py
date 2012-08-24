@@ -5,7 +5,7 @@ from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
 
 class VisualizationListGrid( grids.Grid ):
-    def get_link( item ):
+    def get_url_args( item ):
         """
         Returns dictionary used to create item link.
         """
@@ -24,7 +24,7 @@ class VisualizationListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     default_filter = dict( title="All", deleted="False", tags="All", sharing="All" )
     columns = [
-        grids.TextColumn( "Title", key="title", attach_popup=True, link=get_link ),
+        grids.TextColumn( "Title", key="title", attach_popup=True, link=get_url_args ),
         grids.TextColumn( "Type", key="type" ),
         grids.TextColumn( "Dbkey", key="dbkey" ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
@@ -42,7 +42,7 @@ class VisualizationListGrid( grids.Grid ):
         grids.GridAction( "Create new visualization", dict( action='create' ) )
     ]
     operations = [
-        grids.GridOperation( "View/Edit", allow_multiple=False, url_args=dict( controller='tracks', action='browser' ) ),
+        grids.GridOperation( "View/Edit", allow_multiple=False, url_args=get_url_args ),
         grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='clone') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),

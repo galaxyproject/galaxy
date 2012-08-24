@@ -728,9 +728,12 @@ class GridOperation( object ):
         self.global_operation = global_operation
     def get_url_args( self, item ):
         if self.url_args:
-            temp = dict( self.url_args )
-            temp['id'] = item.id
-            return temp
+            if hasattr( self.url_args, '__call__' ):
+                url_args = self.url_args( item )
+            else:
+                url_args = dict( self.url_args )
+            url_args['id'] = item.id
+            return url_args
         else:
             return dict( operation=self.label, id=item.id )
     def allowed( self, item ):
