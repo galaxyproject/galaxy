@@ -76,3 +76,24 @@ class CisML( GenericXml ):
             dataset.blurb = 'file purged from disk'
     def sniff( self, filename ):
         return False
+
+class Phyloxml( GenericXml ):
+    """Format for defining phyloxml data http://www.phyloxml.org/"""
+    file_ext = "phyloxml"
+    def set_peek( self, dataset, is_multi_byte=False ):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = 'Phyloxml data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff( self, filename ):
+        """"Checking for keyword - 'phyloxml' always in lowercase in the first few lines"""
+        f = open(filename, "r")
+        firstlines = "".join(f.readlines(5))
+        f.close()
+        if "phyloxml" in firstlines:
+            return True
+        return False

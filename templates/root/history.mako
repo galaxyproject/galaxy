@@ -272,6 +272,17 @@ $(function() {
     }
     
     init_trackster_links();
+
+    function init_phyloviz_links() {
+        // PhyloViz links
+        // Add to trackster browser functionality
+        $(".phyloviz-add").live("click", function() {
+            var dataset = this,
+                    dataset_jquery = $(this);
+            window.parent.location = dataset_jquery.attr("new-url");
+        });
+    }
+    init_phyloviz_links();
     
     // History rename functionality.
     async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
