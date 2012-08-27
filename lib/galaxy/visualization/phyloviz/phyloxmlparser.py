@@ -1,4 +1,7 @@
 from baseparser import Base_Parser, PhyloTree, Node
+
+'''
+TOD0: use native Python XML parser.
 from lxml import etree
 
 class Phyloxml_Parser(Base_Parser):
@@ -143,3 +146,4 @@ if __name__=="__main__":
     #    filepath = "../data/" +"bcl_2.xml"
     #    filepath = "../data/" +"reducedXml.xml"
     parser.parseFile(filepath)
+'''

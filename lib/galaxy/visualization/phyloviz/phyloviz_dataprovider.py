@@ -1,6 +1,6 @@
 from newickparser import Newick_Parser
 from nexusparser import Nexus_Parser
-from phyloxmlparser import Phyloxml_Parser
+#from phyloxmlparser import Phyloxml_Parser
 
 class Phyloviz_DataProvider(object):
 
@@ -16,9 +16,9 @@ class Phyloviz_DataProvider(object):
             if fileExt == "nhx": # parses newick files
                 newickParser = Newick_Parser()
                 jsonDicts, parseMsg = newickParser.parseFile(filepath)
-            elif fileExt == "phyloxml": # parses phyloXML files
-                phyloxmlParser = Phyloxml_Parser()
-                jsonDicts, parseMsg = phyloxmlParser.parseFile(filepath)
+            #elif fileExt == "phyloxml": # parses phyloXML files
+            #    phyloxmlParser = Phyloxml_Parser()
+            #    jsonDicts, parseMsg = phyloxmlParser.parseFile(filepath)
             elif fileExt == "nex": # parses nexus files
                 nexusParser = Nexus_Parser()
                 jsonDicts, parseMsg = nexusParser.parseFile(filepath)
