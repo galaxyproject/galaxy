@@ -246,6 +246,25 @@ class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
             grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository', webapp='community' ) )
         ]
 
+class WritableRepositoryListGrid( RepositoryListGrid ):
+    def build_initial_query( self, trans, **kwd ):
+        # TODO: improve performance by adding a db table associating users with repositories for which they have write access.
+        username = kwd[ 'username' ]
+        clause_list = []
+        for repository in trans.sa_session.query( self.model_class ):
+            allow_push_usernames = repository.allow_push.split( ',' )
+            if username in allow_push_usernames:
+                clause_list.append( self.model_class.table.c.id == repository.id )
+        if clause_list:
+            return trans.sa_session.query( self.model_class ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        # Return an empty query.
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( self.model_class.table.c.id < 0 )
+
 class ValidRepositoryListGrid( RepositoryListGrid ):
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
@@ -393,6 +412,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
     email_alerts_repository_list_grid = EmailAlertsRepositoryListGrid()
     category_list_grid = CategoryListGrid()
     valid_category_list_grid = ValidCategoryListGrid()
+    writable_repository_list_grid = WritableRepositoryListGrid()
 
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
         # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
@@ -519,12 +539,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     repository_id = kwd.get( 'id', None )
                     repository = get_repository( trans, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
-            elif operation == "my_repositories":
+            elif operation == "repositories_i_own":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 kwd[ 'f-email' ] = trans.user.email
+            elif operation == "writable_repositories":
+                kwd[ 'username' ] = trans.user.username
+                return self.writable_repository_list_grid( trans, **kwd )
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
