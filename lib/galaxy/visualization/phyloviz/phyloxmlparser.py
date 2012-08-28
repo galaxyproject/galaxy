@@ -1,8 +1,5 @@
 from baseparser import Base_Parser, PhyloTree, Node
-
-'''
-TOD0: use native Python XML parser.
-from lxml import etree
+from xml.etree import ElementTree
 
 class Phyloxml_Parser(Base_Parser):
     """Parses a phyloxml file into a json file that will be passed to PhyloViz for display"""
@@ -22,7 +19,7 @@ class Phyloxml_Parser(Base_Parser):
         """passes a file and extracts its Phylogeny Tree content."""
         phyloXmlFile = open(filePath, "r")
 
-        xmlTree = etree.parse(phyloXmlFile)
+        xmlTree = ElementTree.parse(phyloXmlFile)
         xmlRoot = xmlTree.getroot()[0]
         self.nameSpaceIndex = xmlRoot.tag.rfind("}") + 1 # used later by the clean tag method to remove the name space in every element.tag
 
@@ -134,16 +131,4 @@ class Phyloxml_Parser(Base_Parser):
 
     def cleanTag(self, tagString):
         return tagString[self.nameSpaceIndex:]
-
-
-if __name__=="__main__":
-
-    # Files tested against
-    parser = Phyloxml_Parser()
-    filepath = "../data/" +"apaf.xml"
-    #    filepath = "../data/" +"12_multiple_supports.xml"
-
-    #    filepath = "../data/" +"bcl_2.xml"
-    #    filepath = "../data/" +"reducedXml.xml"
-    parser.parseFile(filepath)
-'''
+        
