@@ -73,6 +73,16 @@ class WorkflowsAPIController(BaseAPIController):
                 # Eventually, allow regular tool parameters to be inserted and modified at runtime.
                 # p = step.get_required_parameters()
         item['inputs'] = inputs
+        steps = {}
+        for step in latest_workflow.steps:
+            steps[step.id] = {'id': step.id,
+                              'type': step.type,
+                              'tool_id': step.tool_id,
+                              'input_steps': {}}
+        for conn in step.input_connections:
+            steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id, 
+                                                              'step_output': conn.output_name}
+        item['steps'] = steps
         return item
 
     @web.expose_api
