@@ -203,12 +203,12 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                               job_id=job.id,
                               job_tool_id=job.tool_id,
                               job_command_line=job.command_line,
-                              job_stderr=job.stderr,
-                              job_stdout=job.stdout,
-                              job_info=job.info,
-                              job_traceback=job.traceback,
+                              job_stderr=util.unicodify( job.stderr ),
+                              job_stdout=util.unicodify( job.stdout ),
+                              job_info=util.unicodify( job.info ),
+                              job_traceback=util.unicodify( job.traceback ),
                               email=email,
-                              message=message )
+                              message=util.unicodify( message ) )
         frm = to_address
         # Check email a bit
         email = email.strip()
