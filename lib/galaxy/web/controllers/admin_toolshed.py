@@ -392,8 +392,9 @@ class AdminToolshed( AdminGalaxy ):
         # Send a request to the relevant tool shed to see if there are any updates.
         repository = get_repository( trans, kwd[ 'id' ] )
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-        url = url_join( tool_shed_url, 'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-            ( url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
+        url = url_join( tool_shed_url,
+                        'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                        ( url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
@@ -634,8 +635,9 @@ class AdminToolshed( AdminGalaxy ):
                                                     tool_shed_repository,
                                                     trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                 tool_shed_url = get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
-                url = url_join( tool_shed_url, '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-                    ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
+                url = url_join( tool_shed_url,
+                                '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                                ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
                 response = urllib2.urlopen( url )
                 text = response.read()
                 response.close()
@@ -954,7 +956,9 @@ class AdminToolshed( AdminGalaxy ):
             repository_ids = kwd.get( 'repository_ids', None )
             changeset_revisions = kwd.get( 'changeset_revisions', None )
             # Get the information necessary to install each repository.
-            url = url_join( tool_shed_url, 'repository/get_repository_information?repository_ids=%s&changeset_revisions=%s&webapp=galaxy' % ( repository_ids, changeset_revisions ) )
+            url = url_join( tool_shed_url,
+                            'repository/get_repository_information?repository_ids=%s&changeset_revisions=%s&webapp=galaxy' % \
+                            ( repository_ids, changeset_revisions ) )
             response = urllib2.urlopen( url )
             raw_text = response.read()
             response.close()
@@ -1097,8 +1101,9 @@ class AdminToolshed( AdminGalaxy ):
             name = repo_info_dict.keys()[ 0 ]
             repo_info_tuple = repo_info_dict[ name ]
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
-            url = url_join( tool_shed_url, 'repository/get_readme?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-                ( name, repository_owner, changeset_revision ) )
+            url = url_join( tool_shed_url,
+                            'repository/get_readme?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                            ( name, repository_owner, changeset_revision ) )
             response = urllib2.urlopen( url )
             raw_text = response.read()
             response.close()
@@ -1273,8 +1278,9 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
         # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
         # revision to see if it was previously installed using one of them.
-        url = url_join( tool_shed_url, 'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-            ( url_for( '/', qualified=True ), repository_name, repository_owner, changeset_revision ) )
+        url = url_join( tool_shed_url,
+                        'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                        ( url_for( '/', qualified=True ), repository_name, repository_owner, changeset_revision ) )
         response = urllib2.urlopen( url )
         text = response.read()
         response.close()
@@ -1350,8 +1356,9 @@ class AdminToolshed( AdminGalaxy ):
         # Get the tool_versions from the tool shed for each tool in the installed change set.
         repository = get_repository( trans, kwd[ 'id' ] )
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-        url = url_join( tool_shed_url, 'repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-            ( repository.name, repository.owner, repository.changeset_revision ) )
+        url = url_join( tool_shed_url,
+                        'repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                        ( repository.name, repository.owner, repository.changeset_revision ) )
         response = urllib2.urlopen( url )
         text = response.read()
         response.close()

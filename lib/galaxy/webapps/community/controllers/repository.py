@@ -11,7 +11,7 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, NOT_TOOL_CONFIGS
 from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
-from galaxy.util.shed_util import to_html_escaped, update_repository
+from galaxy.util.shed_util import to_html_escaped, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -749,9 +749,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
             update = 'true'
             no_update = 'false'
         else:
-            # Start building up the url to redirect back to the calling Galaxy instance.
-            url = '%sadmin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '/', qualified=True ) )
-            url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % ( repository.name, repository.user.username, changeset_revision )
+            # Start building up the url to redirect back to the calling Galaxy instance.            
+            url = url_join( galaxy_url,
+                            'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
+                            ( url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
         if changeset_revision == repository.tip:
             # If changeset_revision is the repository tip, there are no additional updates.
             if from_update_manager:
@@ -1395,10 +1396,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         """Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation process."""
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
         # Redirect back to local Galaxy to perform install.
-        url = '%sadmin_toolshed/prepare_for_install' % galaxy_url
-        url += '?tool_shed_url=%s' % url_for( '/', qualified=True )
-        url += '&repository_ids=%s' % ','.join( util.listify( repository_ids ) )
-        url += '&changeset_revisions=%s' % ','.join( util.listify( changeset_revisions ) )
+        url = url_join( galaxy_url,
+                        'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
+                        ( url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
