@@ -90,7 +90,8 @@ def add_file( dataset, registry, json_file, output_path ):
 
     if dataset.type == 'url':
         try:
-            temp_name, dataset.is_multi_byte = sniff.stream_to_file( urllib.urlopen( dataset.path ), prefix='url_paste' )
+            page = urllib.urlopen( dataset.path ) #page will be .close()ed by sniff methods
+            temp_name, dataset.is_multi_byte = sniff.stream_to_file( page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers( page.headers ) )
         except Exception, e:
             file_err( 'Unable to fetch %s\n%s' % ( dataset.path, str( e ) ), dataset, json_file )
             return
