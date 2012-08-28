@@ -58,7 +58,7 @@
                     Info:
                 </label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <textarea name="info" cols="40" rows="2">${data.info | h}</textarea>
+                    <textarea name="info" cols="40" rows="2">${ util.unicodify( data.info ) | h}</textarea>
                 </div>
                 <div style="clear: both"></div>
             </div>
