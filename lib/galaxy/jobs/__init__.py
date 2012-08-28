@@ -471,7 +471,7 @@ class JobWrapper( object ):
             job.user.total_disk_usage += bytes
 
         # fix permissions
-        for path in [ dp.real_path for dp in self.get_output_fnames() ]:
+        for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
         self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
@@ -679,6 +679,11 @@ class JobWrapper( object ):
             self.compute_outputs()
         return self.output_paths
 
+    def get_mutable_output_fnames( self ):
+        if self.output_paths is None:
+            self.compute_outputs()
+        return filter( lambda dsp: dsp.mutable, self.output_paths )
+
     def get_output_hdas_and_fnames( self ):
         if self.output_hdas_and_paths is None:
             self.compute_outputs()
@@ -686,10 +691,11 @@ class JobWrapper( object ):
 
     def compute_outputs( self ) :
         class DatasetPath( object ):
-            def __init__( self, dataset_id, real_path, false_path = None ):
+            def __init__( self, dataset_id, real_path, false_path = None, mutable = True ):
                 self.dataset_id = dataset_id
                 self.real_path = real_path
                 self.false_path = false_path
+                self.mutable = mutable
             def __str__( self ):
                 if self.false_path is None:
                     return self.real_path
@@ -706,13 +712,13 @@ class JobWrapper( object ):
             self.output_hdas_and_paths = {}
             for name, hda in [ ( da.name, da.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % hda.dataset.id ) )
-                dsp = DatasetPath( hda.dataset.id, hda.dataset.file_name, false_path )
+                dsp = DatasetPath( hda.dataset.id, hda.dataset.file_name, false_path, mutable = hda.dataset.external_filename is None  )
                 self.output_paths.append( dsp )
                 self.output_hdas_and_paths[name] = hda, dsp
             if special:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % special.dataset.id ) )
         else:
-            results = [ ( da.name, da.dataset, DatasetPath( da.dataset.dataset.id, da.dataset.file_name ) ) for da in job.output_datasets + job.output_library_datasets ]
+            results = [ ( da.name, da.dataset, DatasetPath( da.dataset.dataset.id, da.dataset.file_name, mutable = da.dataset.dataset.external_filename is None ) ) for da in job.output_datasets + job.output_library_datasets ]
             self.output_paths = [t[2] for t in results]
             self.output_hdas_and_paths = dict([(t[0],  t[1:]) for t in results])
         if special:
