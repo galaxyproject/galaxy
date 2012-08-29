@@ -45,7 +45,7 @@
                     %>
                     <div class="form-row">
                         <input type="checkbox" name="item_id" id="dataset_${encoded_id}" value="${encoded_id}" ${checked}/>
-                        <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;">${move_ldda.name}</label>
+                        <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;">${util.unicodify( move_ldda.name )}</label>
                     </div>
                 %endfor
             %elif item_type == 'folder':
