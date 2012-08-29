@@ -78,7 +78,3 @@ static/june_2007_style/blue/base_sprites.less
 *.rej
 *~
 
-syntax: regexp
-^database$
-syntax: regexp
-^scripts/api/spp_submodule\.ga$
