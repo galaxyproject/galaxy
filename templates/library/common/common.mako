@@ -100,7 +100,7 @@
                     %if replace_dataset not in [ None, 'None' ]:
                         <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
                         <div class="form-row">
-                            You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
+                            You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${util.unicodify( replace_dataset.name )}</a>'.
                             <div style="clear: both"></div>
                         </div>
                     %endif
@@ -340,7 +340,7 @@
         </script>
     %elif upload_option == 'import_from_history':
         <div class="toolForm">
-            <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
+            <div class="toolFormTitle">Active datasets in your current history (${ util.unicodify( history.name )})</div>
             <div class="toolFormBody">
                 %if history and history.active_datasets:
                     <form name="add_history_datasets_to_library" action="${h.url_for( controller='library_common', action='add_history_datasets_to_library', cntrller=cntrller, library_id=library_id )}" enctype="multipart/form-data" method="post">
@@ -359,7 +359,7 @@
                         %if replace_dataset not in [ None, 'None' ]:
                             <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
                             <div class="form-row">
-                                You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
+                                You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${ util.unicodify( replace_dataset.name )}</a>'.
                                 <div style="clear: both"></div>
                             </div>
                         %endif
@@ -367,7 +367,7 @@
                             <% encoded_id = trans.security.encode_id( hda.id ) %>
                             <div class="form-row">
                                 <input name="hda_ids" id="hist_${encoded_id}" value="${encoded_id}" type="checkbox"/>
-                                <label for="hist_${encoded_id}" style="display: inline;font-weight:normal;">${hda.hid}: ${hda.name}</label>
+                                <label for="hist_${encoded_id}" style="display: inline;font-weight:normal;">${hda.hid}: ${ util.unicodify( hda.name )}</label>
                             </div>
                         %endfor
                         %if widgets:
