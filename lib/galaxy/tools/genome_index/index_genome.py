@@ -54,6 +54,7 @@ class ManagedIndexer():
                     self._log( self.locations )
                     self._log( 'Indexer %s completed successfully.' % indexer )
                     self._flush_files()
+                    exit(0)
                 
     def _check_link( self ):
         self._log( 'Checking symlink to %s' % self.fafile )
