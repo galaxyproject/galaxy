@@ -47,7 +47,7 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">
-        Information about <div class="menubutton popup" id="dataset-${ldda.id}-popup">${ldda.name}</div>
+        Information about <div class="menubutton popup" id="dataset-${ldda.id}-popup">${util.unicodify( ldda.name )}</div>
         %if not library.deleted and not branch_deleted( ldda.library_dataset.folder ) and not ldda.library_dataset.deleted:
             <div popupmenu="dataset-${ldda.id}-popup">
                 %if can_modify:
@@ -119,7 +119,7 @@
         </div>
         <div class="form-row">
             <label>Miscellaneous information:</label>
-            ${ldda.info}
+            ${util.unicodify( ldda.info )}
             <div style="clear: both"></div>
         </div>
         %if ldda.creating_job_associations:
@@ -163,7 +163,7 @@
             <div class="form-row">
                 <div id="info${ldda.id}" class="historyItemBody">
                     <label>Peek:</label>
-                    <div><pre id="peek${ldda.id}" class="peek">${ldda.display_peek()}</pre></div>
+                    <div><pre id="peek${ldda.id}" class="peek">${util.unicodify( ldda.display_peek() )}</pre></div>
                 </div>
             </div>
         %endif
@@ -278,10 +278,10 @@
     <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>
     %if expired_lddas:
         <br/>
-        <div class="toolFormTitle">Expired versions of ${ldda.name}</div>
+        <div class="toolFormTitle">Expired versions of ${util.unicodify( ldda.name )}</div>
         %for expired_ldda in expired_lddas:
             <div class="form-row">
-                <a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">${expired_ldda.name}</a>
+                <a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">${util.unicodify( expired_ldda.name )}</a>
             </div>
         %endfor
     %endif
