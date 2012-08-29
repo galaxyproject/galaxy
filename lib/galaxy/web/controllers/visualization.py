@@ -16,6 +16,10 @@ class VisualizationListGrid( grids.Grid ):
             action = "paramamonster"
         elif item.type == "circster":
             action = "circster"
+        elif item.type == "phyloviz":
+            # Support phyloviz
+            controller = "phyloviz"
+            action = "visualization"
         return dict( controller=controller, action=action, id=item.id )
 
     # Grid definition

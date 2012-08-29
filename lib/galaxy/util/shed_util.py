@@ -454,7 +454,7 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
 def generate_clone_url( trans, repository ):
     """Generate the URL for cloning a repository."""
     tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-    return '%s/repos/%s/%s' % ( tool_shed_url, repository.owner, repository.name )
+    return url_join( tool_shed_url, 'repos', repository.owner, repository.name )
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
     tree = ElementTree.parse( datatypes_config )
@@ -993,7 +993,7 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             break
     return converter_path, display_path
 def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
-    url = '%s/repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( tool_shed_url, name, owner, changeset_revision )
+    url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( name, owner, changeset_revision ) )
     response = urllib2.urlopen( url )
     ctx_rev = response.read()
     response.close()
@@ -1221,8 +1221,8 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
     tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-    url = '%s/repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
-        ( tool_shed_url, repository.name, repository.owner, repository.installed_changeset_revision )
+    url = url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
+        ( repository.name, repository.owner, repository.installed_changeset_revision ) )
     try:
         response = urllib2.urlopen( url )
         encoded_update_dict = response.read()
@@ -1645,3 +1645,8 @@ def update_tool_shed_repository_status( app, tool_shed_repository, status ):
     tool_shed_repository.status = status
     sa_session.add( tool_shed_repository )
     sa_session.flush()
+def url_join( *args ):
+    parts = []
+    for arg in args:
+        parts.append( arg.strip( '/' ) )
+    return '/'.join( parts )

@@ -11,7 +11,7 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, NOT_TOOL_CONFIGS
 from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
-from galaxy.util.shed_util import to_html_escaped, update_repository
+from galaxy.util.shed_util import to_html_escaped, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -246,6 +246,25 @@ class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
             grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository', webapp='community' ) )
         ]
 
+class WritableRepositoryListGrid( RepositoryListGrid ):
+    def build_initial_query( self, trans, **kwd ):
+        # TODO: improve performance by adding a db table associating users with repositories for which they have write access.
+        username = kwd[ 'username' ]
+        clause_list = []
+        for repository in trans.sa_session.query( self.model_class ):
+            allow_push_usernames = repository.allow_push.split( ',' )
+            if username in allow_push_usernames:
+                clause_list.append( self.model_class.table.c.id == repository.id )
+        if clause_list:
+            return trans.sa_session.query( self.model_class ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        # Return an empty query.
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( self.model_class.table.c.id < 0 )
+
 class ValidRepositoryListGrid( RepositoryListGrid ):
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
@@ -393,6 +412,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
     email_alerts_repository_list_grid = EmailAlertsRepositoryListGrid()
     category_list_grid = CategoryListGrid()
     valid_category_list_grid = ValidCategoryListGrid()
+    writable_repository_list_grid = WritableRepositoryListGrid()
 
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
         # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
@@ -519,12 +539,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     repository_id = kwd.get( 'id', None )
                     repository = get_repository( trans, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
-            elif operation == "my_repositories":
+            elif operation == "repositories_i_own":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 kwd[ 'f-email' ] = trans.user.email
+            elif operation == "writable_repositories":
+                kwd[ 'username' ] = trans.user.username
+                return self.writable_repository_list_grid( trans, **kwd )
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -726,9 +749,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
             update = 'true'
             no_update = 'false'
         else:
-            # Start building up the url to redirect back to the calling Galaxy instance.
-            url = '%sadmin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '/', qualified=True ) )
-            url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % ( repository.name, repository.user.username, changeset_revision )
+            # Start building up the url to redirect back to the calling Galaxy instance.            
+            url = url_join( galaxy_url,
+                            'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
+                            ( url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
         if changeset_revision == repository.tip:
             # If changeset_revision is the repository tip, there are no additional updates.
             if from_update_manager:
@@ -1372,10 +1396,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         """Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation process."""
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
         # Redirect back to local Galaxy to perform install.
-        url = '%sadmin_toolshed/prepare_for_install' % galaxy_url
-        url += '?tool_shed_url=%s' % url_for( '/', qualified=True )
-        url += '&repository_ids=%s' % ','.join( util.listify( repository_ids ) )
-        url += '&changeset_revisions=%s' % ','.join( util.listify( changeset_revisions ) )
+        url = url_join( galaxy_url,
+                        'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
+                        ( url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):

@@ -148,7 +148,8 @@ class DataAdmin( BaseUIController ):
                     dbkey = build[0]
                     longname = build[1]
                     break       
-            assert dbkey is not '?', 'That build was not found'
+            if dbkey == '?':
+                return trans.fill_template( '/admin/data_admin/generic_error.mako', message='An invalid build was specified.' )
             ftp = ftplib.FTP('hgdownload.cse.ucsc.edu')
             ftp.login('anonymous', trans.get_user().email)
             checker = []
@@ -189,7 +190,8 @@ class DataAdmin( BaseUIController ):
                                             dbkeys=trans.ucsc_builds )
         elif source == 'Ensembl':
             dbkey = params.get( 'ensembl_dbkey', None )
-            assert dbkey is not '?', 'That build was not found'
+            if dbkey == '?':
+                return trans.fill_template( '/admin/data_admin/generic_error.mako', message='An invalid build was specified.' )
             for build in trans.ensembl_builds:
                 if build[ 'dbkey' ] == dbkey:
                     dbkey = build[ 'dbkey' ]
@@ -199,7 +201,7 @@ class DataAdmin( BaseUIController ):
                     break
             url = 'ftp://ftp.ensembl.org/pub/release-%s/fasta/%s/dna/%s.%s.%s.dna.toplevel.fa.gz' % ( release, pathname.lower(), pathname, dbkey, release )
         else:
-            return trans.fill_template( '/admin/data_admin/generic_error.mako', message='Somehow an invalid data source was specified.' )
+            return trans.fill_template( '/admin/data_admin/generic_error.mako', message='An invalid data source was specified.' )
         if url is None:
             return trans.fill_template( '/admin/data_admin/generic_error.mako', message='Unable to generate a valid URL with the specified parameters.' )
         params = dict( protocol='http', name=dbkey, datatype='fasta', url=url, user=trans.user.id )
@@ -248,7 +250,8 @@ class DataAdmin( BaseUIController ):
         sa = trans.app.model.context.current
         if jobtype == 'liftover':
             job = sa.query( model.TransferJob ).filter_by( id=jobid ).first()
-            joblabel = 'Download liftOver'
+            liftover = trans.app.job_manager.deferred_job_queue.plugins['LiftOverTransferPlugin'].get_job_status( jobid )
+            joblabel = 'Download liftOver (%s to %s)' % ( liftover.params[ 'from_genome' ], liftover.params[ 'to_genome' ] )
         elif jobtype == 'transfer':
             job = sa.query( model.TransferJob ).filter_by( id=jobid ).first()
             joblabel = 'Download Genome'

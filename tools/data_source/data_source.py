@@ -4,6 +4,7 @@
 import socket, urllib, sys, os
 from galaxy import eggs #eggs needs to be imported so that galaxy.util can find docutils egg...
 from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util import get_charset_from_http_headers
 import galaxy.model # need to import model before sniff to resolve a circular import dependency
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -92,7 +93,7 @@ def __main__():
                 stop_err( 'The size of the data (%d bytes) you have requested exceeds the maximum allowed (%d bytes) on this server.' % ( file_size, max_file_size ) )
         #do sniff stream for multi_byte
         try:
-            cur_filename, is_multi_byte = sniff.stream_to_open_named_file( page, os.open( cur_filename, os.O_WRONLY | os.O_CREAT ), cur_filename )
+            cur_filename, is_multi_byte = sniff.stream_to_open_named_file( page, os.open( cur_filename, os.O_WRONLY | os.O_CREAT ), cur_filename, source_encoding=get_charset_from_http_headers( page.headers ) )
         except Exception, e:
             stop_err( 'Unable to fetch %s:\n%s' % ( cur_URL, e ) )
         

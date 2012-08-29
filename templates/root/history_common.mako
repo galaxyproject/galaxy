@@ -29,6 +29,9 @@
 ## Render the dataset `data` as history item, using `hid` as the displayed id
 <%def name="render_dataset( data, hid, show_deleted_on_refresh = False, for_editing = True, display_structured = False )">
     <%
+
+        from galaxy.datatypes.xml import Phyloxml
+        from galaxy.datatypes.data import Newick, Nexus
         dataset_id = trans.security.encode_id( data.id )
 
         if data.state in ['no state','',None]:
@@ -229,6 +232,14 @@
                             <a href="javascript:void(0)" data-url="${data_url}" class="icon-button chart_curve tooltip trackster-add"
                                 action-url="${h.url_for( controller='tracks', action='browser', dataset_id=dataset_id)}"
                                 new-url="${h.url_for( controller='tracks', action='index', dataset_id=dataset_id, default_dbkey=data.dbkey)}" title="View in Trackster"></a>
+                        %endif
+                        <%
+                            isPhylogenyData = isinstance(data.datatype,  (Phyloxml, Nexus, Newick))
+                        %>
+                        %if isPhylogenyData:
+                                <a href="javascript:void(0)"  class="icon-button chart_curve phyloviz-add"
+                                   action-url="${h.url_for( controller='phyloviz', action='-', dataset_id=dataset_id)}"
+                                   new-url="${h.url_for( controller='phyloviz', action='index', dataset_id=dataset_id)}" title="View in Phyloviz"></a>
                         %endif
                         %if trans.user:
                             %if not display_structured:

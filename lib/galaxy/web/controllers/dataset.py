@@ -203,12 +203,12 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                               job_id=job.id,
                               job_tool_id=job.tool_id,
                               job_command_line=job.command_line,
-                              job_stderr=job.stderr,
-                              job_stdout=job.stdout,
-                              job_info=job.info,
-                              job_traceback=job.traceback,
+                              job_stderr=util.unicodify( job.stderr ),
+                              job_stdout=util.unicodify( job.stdout ),
+                              job_info=util.unicodify( job.info ),
+                              job_traceback=util.unicodify( job.traceback ),
                               email=email,
-                              message=message )
+                              message=util.unicodify( message ) )
         frm = to_address
         # Check email a bit
         email = email.strip()
@@ -644,7 +644,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         dataset = self.get_dataset( trans, id, False, True )
         if not dataset:
             web.httpexceptions.HTTPNotFound()
-        return self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
+        annotation = self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
+        if annotation and isinstance( annotation, unicode ):
+            annotation = annotation.encode( 'ascii', 'replace' ) #paste needs ascii here
+        return annotation
 
     @web.expose
     def display_at( self, trans, dataset_id, filename=None, **kwd ):
