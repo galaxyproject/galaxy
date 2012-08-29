@@ -644,7 +644,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         dataset = self.get_dataset( trans, id, False, True )
         if not dataset:
             web.httpexceptions.HTTPNotFound()
-        return self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
+        annotation = self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
+        if annotation and isinstance( annotation, unicode ):
+            annotation = annotation.encode( 'ascii', 'replace' ) #paste needs ascii here
+        return annotation
 
     @web.expose
     def display_at( self, trans, dataset_id, filename=None, **kwd ):
