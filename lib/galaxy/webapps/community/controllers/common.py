@@ -722,7 +722,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                 error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
         manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
         if manifest_ctx and ctx_file:
-            tool, message = load_tool_from_tmp_config( trans, manifest_ctx, ctx_file, work_dir )
+            tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
     try:
         shutil.rmtree( work_dir )
     except:
@@ -732,7 +732,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
     return repository, tool, message
-def load_tool_from_tmp_config( trans, ctx, ctx_file, work_dir ):
+def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
     tool = None
     message = ''
     tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )

@@ -2243,7 +2243,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         work_dir = tempfile.mkdtemp()
                         manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( relative_path_to_tool_config, repo, changeset_revision )
                         if manifest_ctx and ctx_file:
-                            tool, message = load_tool_from_tmp_config( trans, manifest_ctx, ctx_file, work_dir )
+                            tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
                     break
             if guid:
                 tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
