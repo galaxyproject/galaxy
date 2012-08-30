@@ -9,9 +9,9 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, NOT_TOOL_CONFIGS
-from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
-from galaxy.util.shed_util import to_html_escaped, update_repository, url_join
+from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, load_tool_from_config
+from galaxy.util.shed_util import NOT_TOOL_CONFIGS, open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog
+from galaxy.util.shed_util import strip_path, to_html_escaped, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -251,10 +251,13 @@ class WritableRepositoryListGrid( RepositoryListGrid ):
         # TODO: improve performance by adding a db table associating users with repositories for which they have write access.
         username = kwd[ 'username' ]
         clause_list = []
-        for repository in trans.sa_session.query( self.model_class ):
-            allow_push_usernames = repository.allow_push.split( ',' )
-            if username in allow_push_usernames:
-                clause_list.append( self.model_class.table.c.id == repository.id )
+        for repository in trans.sa_session.query( self.model_class ) \
+                                          .filter( self.model_class.table.c.deleted == False ):
+            allow_push = repository.allow_push
+            if allow_push:
+                allow_push_usernames = allow_push.split( ',' )
+                if username in allow_push_usernames:
+                    clause_list.append( self.model_class.table.c.id == repository.id )
         if clause_list:
             return trans.sa_session.query( self.model_class ) \
                                    .filter( or_( *clause_list ) ) \
@@ -912,8 +915,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         webapp = get_webapp( trans, **kwd )
-        repository = get_repository( trans, repository_id )
-        tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         try:
@@ -1402,14 +1404,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
-        # FIXME: loading an invalid tool should display an appropriate message as to why the tool is invalid.  This worked until recently.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
         webapp = get_webapp( trans, **kwd )
         repository_clone_url = generate_clone_url( trans, repository_id )
-        repository = get_repository( trans, repository_id )
-        tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         try:
@@ -2220,6 +2220,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
+        repo_files_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_files_dir )
         tool_metadata_dict = {}
         tool_lineage = []
         tool = None
@@ -2230,12 +2232,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if 'tools' in metadata:
             for tool_metadata_dict in metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
+                    relative_path_to_tool_config = tool_metadata_dict[ 'tool_config' ]
                     guid = tool_metadata_dict[ 'guid' ]
-                    try:
-                        # We may be attempting to load a tool that no longer exists in the repository tip.
-                        tool = load_tool( trans, os.path.abspath( tool_metadata_dict[ 'tool_config' ] ) )
-                    except:
-                        tool = None
+                    full_path = os.path.abspath( relative_path_to_tool_config )
+                    can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, full_path, changeset_revision )
+                    if can_use_disk_file:
+                        tool, valid, message = load_tool_from_config( trans.app, full_path )
+                    else:
+                        # We're attempting to load a tool using a config that no longer exists on disk.
+                        work_dir = tempfile.mkdtemp()
+                        manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( relative_path_to_tool_config, repo, changeset_revision )
+                        if manifest_ctx and ctx_file:
+                            tool, message = load_tool_from_tmp_config( trans, manifest_ctx, ctx_file, work_dir )
                     break
             if guid:
                 tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )

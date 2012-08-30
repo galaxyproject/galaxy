@@ -48,7 +48,7 @@ class RepoToolModule( ToolModule ):
         self.errors = None
         for tool_dict in tools_metadata:
             if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
-                self.tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
+                repository, self.tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
                 if message and self.tool is None:
                     self.errors = 'unavailable'
                 break
