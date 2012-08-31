@@ -868,6 +868,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
     metadata_dict = None
     ancestor_changeset_revision = None
     ancestor_metadata_dict = None
+    invalid_file_tups = []
     home_dir = os.getcwd()
     for changeset in repo.changelog:
         work_dir = tempfile.mkdtemp()
