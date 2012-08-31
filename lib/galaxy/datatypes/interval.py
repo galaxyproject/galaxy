@@ -576,13 +576,58 @@ class Gff( Tabular, _RemoteCallMixin ):
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+
+    MetadataElement( name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0 )
+    MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[] )    
     
     def __init__( self, **kwd ):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
         self.add_display_app( 'gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
+
+    def set_attribute_metadata( self, dataset ):
+        """ 
+        Sets metadata elements for dataset's attributes.
+        """
+
+        # Use first N lines to set metadata for dataset attributes. Attributes 
+        # not found in the first N lines will not have metadata.
+        num_lines = 200
+        attribute_types = {}
+        for i, line in enumerate( file ( dataset.file_name ) ):
+            if line and not line.startswith( '#' ):
+                elems = line.split( '\t' )
+                if len( elems ) == 9:
+                    try:
+                        # Loop through attributes to set types.
+                        for name, value in parse_gff_attributes( elems[8] ).items():
+                            # Default type is string.
+                            value_type = "str"
+                            try:
+                                # Try int.
+                                int( value )
+                                value_type = "int"
+                            except:
+                                try: 
+                                    # Try float.
+                                    float( value )
+                                    value_type = "float"
+                                except:
+                                    pass
+                            attribute_types[ name ] = value_type
+                    except:
+                        pass
+                if i + 1 == num_lines:
+                    break
+        
+        # Set attribute metadata and then set additional metadata.
+        dataset.metadata.attribute_types = attribute_types
+        dataset.metadata.attributes = len( attribute_types )
+
     def set_meta( self, dataset, overwrite = True, **kwd ):
+        self.set_attribute_metadata( dataset )
+
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -596,6 +641,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                     except:
                         pass
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
@@ -756,6 +802,8 @@ class Gff3( Gff ):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
     def set_meta( self, dataset, overwrite = True, **kwd ):
+        self.set_attribute_metadata( dataset )
+
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -855,9 +903,6 @@ class Gtf( Gff ):
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
     
-    MetadataElement( name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0 )
-    MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[] )
-    
     def sniff( self, filename ):
         """
         Determines whether the file is in gtf format
@@ -917,42 +962,6 @@ class Gtf( Gff ):
             return True
         except:
             return False
-            
-    def set_meta( self, dataset, overwrite = True, **kwd ):        
-        # Use first N lines to set metadata for dataset attributes. Attributes 
-        # not found in the first N lines will not have metadata.
-        num_lines = 200
-        attribute_types = {}
-        for i, line in enumerate( file ( dataset.file_name ) ):
-            if line and not line.startswith( '#' ):
-                elems = line.split( '\t' )
-                if len( elems ) == 9:
-                    try:
-                        # Loop through attributes to set types.
-                        for name, value in parse_gff_attributes( elems[8] ).items():
-                            # Default type is string.
-                            value_type = "str"
-                            try:
-                                # Try int.
-                                int( value )
-                                value_type = "int"
-                            except:
-                                try: 
-                                    # Try float.
-                                    float( value )
-                                    value_type = "float"
-                                except:
-                                    pass
-                            attribute_types[ name ] = value_type
-                    except:
-                        pass
-                if i + 1 == num_lines:
-                    break
-        
-        # Set attribute metadata and then set additional metadata.
-        dataset.metadata.attribute_types = attribute_types
-        dataset.metadata.attributes = len( attribute_types )
-        Gff.set_meta( self, dataset, overwrite = overwrite, skip = i )
         
     def get_track_type( self ):
         return "FeatureTrack", {"data": "interval_index", "index": "summary_tree"}
