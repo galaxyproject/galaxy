@@ -514,6 +514,12 @@ def get_previous_downloadable_changset_revision( repository, repo, before_change
         else:
             rev = '-1'
         changeset_tups.append( ( rev, changeset_revision ) )
+    if len( changeset_tups ) == 1:
+        changeset_tup = changeset_tups[ 0 ]
+        current_changeset_revision = changeset_tup[ 1 ]
+        if current_changeset_revision == before_changeset_revision:
+            return INITIAL_CHANGELOG_HASH
+        return current_changeset_revision
     previous_changeset_revision = None
     current_changeset_revision = None
     for changeset_tup in sorted( changeset_tups ):

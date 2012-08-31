@@ -9,9 +9,9 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, load_tool_from_config
-from galaxy.util.shed_util import NOT_TOOL_CONFIGS, open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog
-from galaxy.util.shed_util import strip_path, to_html_escaped, update_repository, url_join
+from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, INITIAL_CHANGELOG_HASH
+from galaxy.util.shed_util import load_tool_from_config, NOT_TOOL_CONFIGS, open_repository_files_folder, reversed_lower_upper_bounded_changelog
+from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path, to_html_escaped, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -109,14 +109,23 @@ class RepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.name
-    class RevisionColumn( grids.GridColumn ):
+    class MetadataRevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
-            """Display a SelectField whose options are the changeset_revision strings of all downloadable_revisions of this repository."""
+            """Display a SelectField whose options are the changeset_revision strings of all revisions of this repository."""
+            # A repository's metadata revisions may not all be installable, as some may contain only invalid tools.
             select_field = build_changeset_revision_select_field( trans, repository, downloadable_only=False )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
+            elif len( select_field.options ) == 1:
+                return select_field.options[ 0 ][ 0 ]
+            return ''
+    class TipRevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
+        def get_value( self, trans, grid, repository ):
+            """Display the repository tip revision label."""
             return repository.revision
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
@@ -169,7 +178,8 @@ class RepositoryListGrid( grids.Grid ):
         DescriptionColumn( "Synopsis",
                            key="description",
                            attach_popup=False ),
-        RevisionColumn( "Revision" ),
+        MetadataRevisionColumn( "Metadata Revisions" ),
+        TipRevisionColumn( "Tip Revision" ),
         CategoryColumn( "Category",
                         model_class=model.Category,
                         key="Category.name",
@@ -294,7 +304,9 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
             select_field = build_changeset_revision_select_field( trans, repository, downloadable_only=True )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
-            return repository.revision
+            elif len( select_field.options ) == 1:
+                return select_field.options[ 0 ][ 0 ]
+            return ''
     title = "Valid repositories"
     columns = [
         RepositoryListGrid.NameColumn( "Name",
@@ -303,7 +315,7 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
         RepositoryListGrid.DescriptionColumn( "Synopsis",
                                               key="description",
                                               attach_popup=False ),
-        RevisionColumn( "Revision" ),
+        RevisionColumn( "Installable Revisions" ),
         RepositoryListGrid.UserColumn( "Owner",
                                        model_class=model.User,
                                        attach_popup=False ),
@@ -657,11 +669,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if operation == "preview_tools_in_changeset":
                 repository_id = kwd.get( 'id', None )
                 repository = get_repository( trans, repository_id )
+                repository_metadata = get_latest_repository_metadata( trans, repository.id )
+                latest_installable_changeset_revision = repository_metadata.changeset_revision
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
                                                                   webapp=webapp,
                                                                   repository_id=repository_id,
-                                                                  changeset_revision=repository.tip ) )
+                                                                  changeset_revision=latest_installable_changeset_revision ) )
             elif operation == "valid_repositories_by_category":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -1601,16 +1615,27 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable_only=False )
-        revision_label = get_revision_label( trans, repository, changeset_revision )
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
-        if repository_metadata:
-            repository_metadata_id = trans.security.encode_id( repository_metadata.id )
-            metadata = repository_metadata.metadata
-            is_malicious = repository_metadata.malicious
-        else:
-            repository_metadata_id = None
-            metadata = None
-            is_malicious = False
+        revision_label = get_revision_label( trans, repository, repository.tip )
+        repository_metadata_id = None
+        metadata = None
+        is_malicious = False
+        if changeset_revision != INITIAL_CHANGELOG_HASH:
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+            if repository_metadata:
+                revision_label = get_revision_label( trans, repository, changeset_revision )
+                repository_metadata_id = trans.security.encode_id( repository_metadata.id )
+                metadata = repository_metadata.metadata
+                is_malicious = repository_metadata.malicious
+            else:
+                # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous changeset in the changelog.
+                previous_changeset_revision = get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
+                if previous_changeset_revision != INITIAL_CHANGELOG_HASH:
+                    repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, previous_changeset_revision )
+                    if repository_metadata:
+                        revision_label = get_revision_label( trans, repository, previous_changeset_revision )
+                        repository_metadata_id = trans.security.encode_id( repository_metadata.id )
+                        metadata = repository_metadata.metadata
+                        is_malicious = repository_metadata.malicious
         if is_malicious:
             if trans.app.security_agent.can_push( trans.user, repository ):
                 message += malicious_error_can_push
