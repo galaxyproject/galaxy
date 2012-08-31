@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 
 <div class="donemessagelarge">
-    Successfully ran workflow "${workflow.name}". The following datasets have been added to the queue:
+    Successfully ran workflow "${util.unicodify( workflow.name )}". The following datasets have been added to the queue:
     %for invocation in invocations:
         <div class="workflow-invocation-complete">
             %if invocation['new_history']:
@@ -14,7 +14,7 @@
                 %for step_outputs in invocation['outputs'].itervalues():
                     %for data in step_outputs.itervalues():
                         %if not invocation['new_history'] or data.history == invocation['new_history']:
-                            <p><strong>${data.hid}</strong>: ${data.name}</p>
+                            <p><strong>${data.hid}</strong>: ${util.unicodify( data.name )}</p>
                         %endif
                     %endfor
                 %endfor

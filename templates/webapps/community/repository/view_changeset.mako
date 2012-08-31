@@ -37,7 +37,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery.rating" )}
+    ${h.js( "libs/jquery/jquery.rating" )}
 </%def>
 
 <br/><br/>

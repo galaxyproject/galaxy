@@ -25,6 +25,7 @@ from sqlalchemy.orm import object_session
 if sys.version_info >= (2, 6):
     import multiprocessing
     from galaxy.objectstore.s3_multipart_upload import multipart_upload
+    import boto
     from boto.s3.key import Key
     from boto.s3.connection import S3Connection
     from boto.exception import S3ResponseError
@@ -377,9 +378,9 @@ class S3ObjectStore(ObjectStore):
         super(S3ObjectStore, self).__init__()
         self.config = config
         self.staging_path = self.config.file_path
-        self.s3_conn = S3Connection()
-        self.bucket = self._get_bucket(self.config.s3_bucket)
-        self.use_rr = self.config.use_reduced_redundancy
+        self.s3_conn = get_OS_connection(self.config)
+        self.bucket = self._get_bucket(self.config.os_bucket_name)
+        self.use_rr = self.config.os_use_reduced_redundancy
         self.cache_size = self.config.object_store_cache_size
         self.transfer_progress = 0
         # Clean cache only if value is set in universe_wsgi.ini
@@ -468,7 +469,7 @@ class S3ObjectStore(ObjectStore):
         for i in range(5):
             try:
                 bucket = self.s3_conn.get_bucket(bucket_name)
-                log.debug("Using S3 object store; got bucket '%s'" % bucket.name)
+                log.debug("Using cloud object store with bucket '%s'" % bucket.name)
                 return bucket
             except S3ResponseError:
                 log.debug("Could not get bucket '%s', attempt %s/5" % (bucket_name, i+1))
@@ -607,13 +608,13 @@ class S3ObjectStore(ObjectStore):
             log.error("Problem downloading key '%s' from S3 bucket '%s': %s" % (rel_path, self.bucket.name, ex))
         return False
 
-    def _push_to_s3(self, rel_path, source_file=None, from_string=None):
+    def _push_to_os(self, rel_path, source_file=None, from_string=None):
         """
-        Push the file pointed to by `rel_path` to S3 naming the key `rel_path`.
-        If `source_file` is provided, push that file instead while still using
-        `rel_path` as the key name.
-        If `from_string` is provided, set contents of the file to the value of
-        the string
+        Push the file pointed to by ``rel_path`` to the object store naming the key
+        ``rel_path``. If ``source_file`` is provided, push that file instead while
+        still using ``rel_path`` as the key name.
+        If ``from_string`` is provided, set contents of the file to the value of
+        the string.
         """
         try:
             source_file = source_file if source_file else self._get_cache_path(rel_path)
@@ -630,7 +631,7 @@ class S3ObjectStore(ObjectStore):
                     # print "Pushing cache file '%s' of size %s bytes to key '%s'" % (source_file, os.path.getsize(source_file), rel_path)
                     # print "+ Push started at '%s'" % start_time
                     mb_size = os.path.getsize(source_file) / 1e6
-                    if mb_size < 60:
+                    if mb_size < 60 or self.config.object_store == 'swift':
                         self.transfer_progress = 0 # Reset transfer progress counter
                         key.set_contents_from_filename(source_file, reduced_redundancy=self.use_rr,
                             cb=self._transfer_cb, num_cb=10)
@@ -648,12 +649,17 @@ class S3ObjectStore(ObjectStore):
         return False
 
     def file_ready(self, obj, **kwargs):
-        """ A helper method that checks if a file corresponding to a dataset
-        is ready and available to be used. Return True if so, False otherwise."""
+        """
+        A helper method that checks if a file corresponding to a dataset is
+        ready and available to be used. Return ``True`` if so, ``False`` otherwise.
+        """
         rel_path = self._construct_path(obj, **kwargs)
         # Make sure the size in cache is available in its entirety
-        if self._in_cache(rel_path) and os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_s3(rel_path):
-            return True
+        if self._in_cache(rel_path):
+            if os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_s3(rel_path):
+                return True
+            log.debug("Waiting for dataset {0} to transfer from OS: {1}/{2}".format(rel_path,
+                os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path)))
         return False
 
     def exists(self, obj, **kwargs):
@@ -674,7 +680,7 @@ class S3ObjectStore(ObjectStore):
                 return False
         # TODO: Sync should probably not be done here. Add this to an async upload stack?
         if in_cache and not in_s3:
-            self._push_to_s3(rel_path, source_file=self._get_cache_path(rel_path))
+            self._push_to_os(rel_path, source_file=self._get_cache_path(rel_path))
             return True
         elif in_s3:
             return True
@@ -707,12 +713,12 @@ class S3ObjectStore(ObjectStore):
             # flat namespace), do so for consistency with the regular file system
             # S3 folders are marked by having trailing '/' so add it now
             # s3_dir = '%s/' % rel_path
-            # self._push_to_s3(s3_dir, from_string='')
+            # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
-                self._push_to_s3(rel_path, from_string='')
+                self._push_to_os(rel_path, from_string='')
 
     def empty(self, obj, **kwargs):
         if self.exists(obj, **kwargs):
@@ -826,7 +832,7 @@ class S3ObjectStore(ObjectStore):
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on S3
-            self._push_to_s3(rel_path, source_file)
+            self._push_to_os(rel_path, source_file)
         else:
             raise ObjectNotFound()
 
@@ -842,7 +848,6 @@ class S3ObjectStore(ObjectStore):
 
     def get_store_usage_percent(self):
         return 0.0
-
 
 class DistributedObjectStore(ObjectStore):
     """
@@ -1009,14 +1014,14 @@ def build_object_store_from_config(config):
     store = config.object_store
     if store == 'disk':
         return DiskObjectStore(config=config)
-    elif store == 's3':
-        os.environ['AWS_ACCESS_KEY_ID'] = config.aws_access_key
-        os.environ['AWS_SECRET_ACCESS_KEY'] = config.aws_secret_key
+    elif store == 's3' or store == 'swift':
         return S3ObjectStore(config=config)
     elif store == 'distributed':
         return DistributedObjectStore(config=config)
     elif store == 'hierarchical':
         return HierarchicalObjectStore()
+    else:
+        log.error("Unrecognized object store definition: {0}".format(store))
 
 def convert_bytes(bytes):
     """ A helper function used for pretty printing disk usage """
@@ -1039,3 +1044,26 @@ def convert_bytes(bytes):
     else:
         size = '%.2fb' % bytes
     return size
+
+def get_OS_connection(config):
+    """
+    Get a connection object for a cloud Object Store specified in the config.
+    Currently, this is a ``boto`` connection object.
+    """
+    log.debug("Getting a connection object for '{0}' object store".format(config.object_store))
+    a_key = config.os_access_key
+    s_key = config.os_secret_key
+    if config.object_store == 's3':
+        return S3Connection(a_key, s_key)
+    else:
+        # Establish the connection now
+        calling_format = boto.s3.connection.OrdinaryCallingFormat()
+        s3_conn = boto.connect_s3(aws_access_key_id=a_key,
+                            aws_secret_access_key=s_key,
+                            is_secure=config.os_is_secure,
+                            host=config.os_host,
+                            port=int(config.os_port),
+                            calling_format=calling_format,
+                            path=config.os_conn_path)
+        return s3_conn
+

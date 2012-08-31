@@ -63,7 +63,7 @@
                 if history_user:
                     for history in history_user.histories:
                         if not history.deleted and str( widget.value ) == str( history.id ):
-                            value = history.name
+                            value = util.unicodify( history.name )
                             break
                 else:
                     # If we didn't find the selected workflow option above, we'll just print the value
@@ -188,7 +188,7 @@
     %elif widget_fields_have_contents:
         <p/>
         <div class="toolForm">
-            <div class="toolFormTitle">Other information about ${item.name}</div>
+            <div class="toolFormTitle">Other information about ${ util.unicodify( item.name )}</div>
             <div class="toolFormBody">
                 %for i, field in enumerate( widgets ):
                     ${render_template_field( field )}

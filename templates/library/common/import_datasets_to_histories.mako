@@ -5,7 +5,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "galaxy.base" )}
+    ${h.js( "libs/jquery/jquery", "galaxy.base" )}
     <script type="text/javascript">
         $(function() {
             $("#select-multiple").click(function() {
@@ -18,7 +18,7 @@
 </%def>
 
 %if message:
-    ${render_msg( message, status )}
+    ${render_msg( util.unicodify( message ), status )}
 %endif
 
 <b>Import library datasets into histories</b>
@@ -36,7 +36,7 @@
                     %>
                     <div class="form-row">
                         <input type="checkbox" name="ldda_ids" id="dataset_${encoded_id}" value="${encoded_id}" ${checked}/>
-                        <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;">${source_ldda.name}</label>
+                        <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;">${util.unicodify( source_ldda.name )}</label>
                     </div>
                 %endfor
             %else:
@@ -62,7 +62,7 @@
                             else:
                                 current_history_text = ""
                         %>
-                        <option value="${encoded_id}"${selected_text}>${i + 1}: ${h.truncate( target_history.name, 30 )}${current_history_text}</option>
+                        <option value="${encoded_id}"${selected_text}>${i + 1}: ${h.truncate( util.unicodify( target_history.name ), 30 )}${current_history_text}</option>
                     %endfor
                 </select>
                 <br/><br/>
@@ -79,7 +79,7 @@
                     %>
                     <div class="form-row">
                         <input type="checkbox" name="target_history_ids" id="target_history_${encoded_id}" value="${encoded_id}"/>
-                        <label for="target_history_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${target_history.name}${current_history_text}</label>
+                        <label for="target_history_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${util.unicodify( target_history.name )}${current_history_text}</label>
                     </div>
                 %endfor
             </div>

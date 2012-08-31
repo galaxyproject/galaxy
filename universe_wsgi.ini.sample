@@ -218,7 +218,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #ucsc_display_sites = main,test,archaea,ucla
 
 # GBrowse servers: tool-data/shared/gbrowse/gbrowse_build_sites.txt
-#gbrowse_display_sites = wormbase,tair,modencode_worm,modencode_fly,yeast_sgd
+#gbrowse_display_sites = modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225
 
 # GeneTrack servers: tool-data/shared/genetrack/genetrack_sites.txt
 #genetrack_display_sites = main,test
@@ -481,16 +481,22 @@ use_interactive = True
 
 # -- Beta features
 
-# Object store mode (valid options are: disk, s3, distributed, hierarchical)
+# Object store mode (valid options are: disk, s3, swift, distributed, hierarchical)
 #object_store = disk
-#aws_access_key = <AWS access key>
-#aws_secret_key = <AWS secret key>
-#s3_bucket = <name of an existing S3 bucket>
-#use_reduced_redundancy = True
-
+#os_access_key = <your cloud object store access key>
+#os_secret_key = <your cloud object store secret key>
+#os_bucket_name = <name of an existing object store bucket or container>
+# If using 'swift' object store, you must specify the following connection properties
+#os_host = swift.rc.nectar.org.au
+#os_port = 8888
+#os_is_secure = False
+#os_conn_path = /
+# Reduced redundancy can be used only with the 's3' object store
+#os_use_reduced_redundancy = False
 # Size (in GB) that the cache used by object store should be limited to.
-# If the value is not specified, the cache size will be limited only by the file
-# system size.
+# If the value is not specified, the cache size will be limited only by the
+# file system size. The file system location of the cache is considered the
+# configuration of the ``file_path`` directive defined above.
 #object_store_cache_size = 100
 
 # Configuration file for the distributed object store, if object_store =
@@ -499,15 +505,6 @@ use_interactive = True
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
-
-# Enable Galaxy's built-in visualization module, Trackster.
-#enable_tracks = True
-
-# Enable Galaxy Pages. Pages are custom webpages that include embedded Galaxy items, 
-# such as datasets, histories, workflows, and visualizations; pages are useful for 
-# documenting and sharing multiple analyses or workflows. Pages are created using a 
-# WYSIWYG editor that is very similar to a word processor.
-#enable_pages = True
 
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.

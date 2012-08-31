@@ -19,7 +19,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "galaxy.base" )}
+    ${h.js( "libs/jquery/jquery", "galaxy.base" )}
 </%def>
 
 <%def name="init()">
@@ -60,34 +60,41 @@
                 %endif
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                    Repositories
+                    All Repositories
                 </div>
-                <div class="toolSectionBody">
-                    <div class="toolSectionBg">
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories', webapp='community' )}">Browse by category</a>
-                        </div>
-                        %if trans.user:
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_repositories', webapp='community' )}">Browse my repositories</a>
-                            </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository', webapp='community' )}">Browse my invalid tools</a>
-                            </div>
-                        %endif
+                <div class="toolTitle">
+                    <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories', webapp='community' )}">Browse by category</a>
+                </div>
+                %if trans.user:
+                    <div class="toolSectionPad"></div>
+                    <div class="toolSectionTitle">
+                        My Repositories and Tools
                     </div>
-                </div>
-                <div class="toolSectionBody">
-                    <div class="toolSectionBg">
-                        <div class="toolTitle">
-                            %if trans.user:
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository', webapp='community' )}">Create new repository</a>
-                            %else:
-                                <a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login to create a repository</a>
-                            %endif
-                        </div>
+                    <div class="toolTitle">
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='repositories_i_own', webapp='community' )}">Repositories I own</a>
                     </div>
-                </div>
+                    <div class="toolTitle">
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='writable_repositories', webapp='community' )}">My writable repositories</a>
+                    </div>
+                    <div class="toolTitle">
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository', webapp='community' )}">My invalid tools</a>
+                    </div>
+                    <div class="toolSectionPad"></div>
+                    <div class="toolSectionTitle">
+                        Available Actions
+                    </div>
+                    <div class="toolTitle">
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository', webapp='community' )}">Create new repository</a>
+                    </div>
+                %else:
+                    <div class="toolSectionPad"></div>
+                    <div class="toolSectionTitle">
+                        Available Actions
+                    </div>
+                    <div class="toolTitle">
+                        <a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login to create a repository</a>
+                    </div>
+                %endif
             </div>
         </div>    
     </div>

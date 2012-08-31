@@ -1,0 +1,14 @@
+<tool id="CONVERTER_bedgraph_to_bigwig" name="Convert BedGraph to BigWig" hidden="true">
+  <!-- Used internally to generate track indexes -->
+  <command>grep -v "^track" $input | wigToBigWig -clip stdin $chromInfo $output</command>
+  <inputs>
+    <page>
+      <param format="bedgraph" name="input" type="data" label="Choose wiggle"/>
+    </page>
+   </inputs>
+   <outputs>
+      <data format="bigwig" name="output"/>
+   </outputs>
+  <help>
+  </help>
+</tool>

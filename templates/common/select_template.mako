@@ -25,7 +25,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Select a template for the ${item_desc} '${item_name}'</div>
+    <div class="toolFormTitle">Select a template for the ${item_desc} '${util.unicodify( item_name )}'</div>
     <div class="toolFormBody">
         %if form_type == trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE:
             <form id="select_template" name="select_template" action="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type=item_type, form_type=trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, use_panels=use_panels, show_deleted=show_deleted )}" method="post" >

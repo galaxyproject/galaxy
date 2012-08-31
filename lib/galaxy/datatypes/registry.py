@@ -1,7 +1,7 @@
 """
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
-import os, sys, tempfile, threading, logging
+import os, sys, tempfile, threading, logging, imp
 import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary, assembly, ngsindex
 import galaxy.util
 from galaxy.util.odict import odict
@@ -55,10 +55,9 @@ class Registry( object ):
         being installed.  Since installation is occurring after the datatypes registry has been initialized, its
         contents cannot be overridden by new introduced conflicting data types.
         """
-        def __import_module( full_path, datatype_module ):
-            sys.path.insert( 0, full_path )
-            imported_module = __import__( datatype_module )
-            sys.path.pop( 0 )
+        def __import_module( full_path, datatype_module, datatype_class_name ):
+            open_file_obj, file_name, description = imp.find_module( datatype_module, [ full_path ] )
+            imported_module = imp.load_module( datatype_class_name, open_file_obj, file_name, description )
             return imported_module
         if root_dir and config:
             handling_proprietary_datatypes = False
@@ -130,12 +129,12 @@ class Registry( object ):
                             datatype_module = fields[0]
                             datatype_class_name = fields[1]
                             datatype_class = None
-                            if proprietary_path and proprietary_datatype_module:
+                            if proprietary_path and proprietary_datatype_module and datatype_class_name:
                                 # We need to change the value of sys.path, so do it in a way that is thread-safe.
                                 lock = threading.Lock()
                                 lock.acquire( True )
                                 try:
-                                    imported_module = __import_module( proprietary_path, proprietary_datatype_module )
+                                    imported_module = __import_module( proprietary_path, proprietary_datatype_module, datatype_class_name )
                                     if imported_module not in self.imported_modules:
                                         self.imported_modules.append( imported_module )
                                     if hasattr( imported_module, datatype_class_name ):
@@ -276,7 +275,6 @@ class Registry( object ):
                 'axt'         : sequence.Axt(),
                 'bam'         : binary.Bam(),
                 'bed'         : interval.Bed(), 
-                'blastxml'    : xml.BlastXml(),
                 'coverage'    : coverage.LastzCoverage(),
                 'customtrack' : interval.CustomTrack(),
                 'csfasta'     : sequence.csFasta(),
@@ -310,7 +308,6 @@ class Registry( object ):
                 'axt'         : 'text/plain',
                 'bam'         : 'application/octet-stream',
                 'bed'         : 'text/plain', 
-                'blastxml'    : 'application/xml', 
                 'customtrack' : 'text/plain',
                 'csfasta'     : 'text/plain',
                 'eland'       : 'application/octet-stream',
@@ -348,7 +345,6 @@ class Registry( object ):
             self.sniff_order = [
                 binary.Bam(),
                 binary.Sff(),
-                xml.BlastXml(),
                 xml.GenericXml(),
                 sequence.Maf(),
                 sequence.Lav(),

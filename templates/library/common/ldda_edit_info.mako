@@ -5,7 +5,7 @@
 
 <%def name="javascripts()">
    ${parent.javascripts()}
-   ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+   ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
 </%def>
 
 <%def name="stylesheets()">
@@ -44,18 +44,18 @@
 
 %if ( trans.user_is_admin() and cntrller=='library_admin' ) or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ):
     <div class="toolForm">
-        <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
+        <div class="toolFormTitle">Edit attributes of ${util.unicodify( ldda.name )}</div>
         <div class="toolFormBody">
             <form name="edit_attributes" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
                 <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
                 <div class="form-row">
                     <label>Name:</label>
-                    <input type="text" name="name" value="${ldda.name}" size="40"/>
+                    <input type="text" name="name" value="${util.unicodify( ldda.name )}" size="40"/>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Info:</label>
-                    <input type="text" name="info" value="${ldda.info}" size="40"/>
+                    <input type="text" name="info" value="${util.unicodify( ldda.info )}" size="40"/>
                     <div style="clear: both"></div>
                 </div> 
                 <div class="form-row">
@@ -125,16 +125,16 @@
     <p/>
 %else:
     <div class="toolForm">
-        <div class="toolFormTitle">View information about ${ldda.name}</div>
+        <div class="toolFormTitle">View information about ${util.unicodify( ldda.name )}</div>
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Name:</label>
-                ${ldda.name}
+                ${util.unicodify( ldda.name )}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Info:</label>
-                ${ldda.info}
+                ${util.unicodify( ldda.info )}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">

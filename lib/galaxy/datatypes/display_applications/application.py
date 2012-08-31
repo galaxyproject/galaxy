@@ -98,8 +98,10 @@ class DynamicDisplayApplicationBuilder( object ):
         for line in open( filename ):
             if not skip_startswith or not line.startswith( skip_startswith ):
                 line = line.rstrip( '\n\r' )
+                if not line:
+                    continue
                 fields = line.split( separator )
-                if len( fields ) >= max_col:
+                if len( fields ) > max_col:
                     new_elem = deepcopy( elem )
                     new_elem.set( 'id', fields[id_col] )
                     new_elem.set( 'name', fields[name_col] )
@@ -111,6 +113,8 @@ class DynamicDisplayApplicationBuilder( object ):
                         dynamic_values[key] = value
                     #now populate
                     rval.append( DisplayApplicationLink.from_elem( new_elem, display_application, other_values = dynamic_values ) )
+                else:
+                    log.warning( 'Invalid dynamic display application link specified in %s: "%s"' % ( filename, line ) )
         self.links = rval
     def __iter__( self ):
         return iter( self.links )

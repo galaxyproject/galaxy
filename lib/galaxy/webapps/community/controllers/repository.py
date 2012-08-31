@@ -9,9 +9,9 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, NOT_TOOL_CONFIGS
-from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
-from galaxy.util.shed_util import to_html_escaped, update_repository
+from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, load_tool_from_config
+from galaxy.util.shed_util import NOT_TOOL_CONFIGS, open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog
+from galaxy.util.shed_util import strip_path, to_html_escaped, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -246,6 +246,28 @@ class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
             grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository', webapp='community' ) )
         ]
 
+class WritableRepositoryListGrid( RepositoryListGrid ):
+    def build_initial_query( self, trans, **kwd ):
+        # TODO: improve performance by adding a db table associating users with repositories for which they have write access.
+        username = kwd[ 'username' ]
+        clause_list = []
+        for repository in trans.sa_session.query( self.model_class ) \
+                                          .filter( self.model_class.table.c.deleted == False ):
+            allow_push = repository.allow_push
+            if allow_push:
+                allow_push_usernames = allow_push.split( ',' )
+                if username in allow_push_usernames:
+                    clause_list.append( self.model_class.table.c.id == repository.id )
+        if clause_list:
+            return trans.sa_session.query( self.model_class ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        # Return an empty query.
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( self.model_class.table.c.id < 0 )
+
 class ValidRepositoryListGrid( RepositoryListGrid ):
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
@@ -393,6 +415,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
     email_alerts_repository_list_grid = EmailAlertsRepositoryListGrid()
     category_list_grid = CategoryListGrid()
     valid_category_list_grid = ValidCategoryListGrid()
+    writable_repository_list_grid = WritableRepositoryListGrid()
 
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
         # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
@@ -458,7 +481,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     metadata = downloadable_revision.metadata
                     invalid_tools = metadata.get( 'invalid_tools', [] )
                     for invalid_tool_config in invalid_tools:
-                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id, repository.name, downloadable_revision.changeset_revision )
+                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id,
+                                                                      repository.name,
+                                                                      repository.user.username,
+                                                                      downloadable_revision.changeset_revision )
         else:
             for repository in trans.sa_session.query( trans.model.Repository ) \
                                               .filter( and_( trans.model.Repository.table.c.deleted == False,
@@ -468,7 +494,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     metadata = downloadable_revision.metadata
                     invalid_tools = metadata.get( 'invalid_tools', [] )
                     for invalid_tool_config in invalid_tools:
-                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id, repository.name, downloadable_revision.changeset_revision )
+                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id,
+                                                                      repository.name,
+                                                                      repository.user.username,
+                                                                      downloadable_revision.changeset_revision )
         return trans.fill_template( '/webapps/community/repository/browse_invalid_tools.mako',
                                     cntrller=cntrller,
                                     invalid_tools_dict=invalid_tools_dict,
@@ -513,12 +542,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     repository_id = kwd.get( 'id', None )
                     repository = get_repository( trans, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
-            elif operation == "my_repositories":
+            elif operation == "repositories_i_own":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 kwd[ 'f-email' ] = trans.user.email
+            elif operation == "writable_repositories":
+                kwd[ 'username' ] = trans.user.username
+                return self.writable_repository_list_grid( trans, **kwd )
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -720,9 +752,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
             update = 'true'
             no_update = 'false'
         else:
-            # Start building up the url to redirect back to the calling Galaxy instance.
-            url = '%sadmin_toolshed/update_to_changeset_revision?tool_shed_url=%s' % ( galaxy_url, url_for( '/', qualified=True ) )
-            url += '&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % ( repository.name, repository.user.username, changeset_revision )
+            # Start building up the url to redirect back to the calling Galaxy instance.            
+            url = url_join( galaxy_url,
+                            'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
+                            ( url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
         if changeset_revision == repository.tip:
             # If changeset_revision is the repository tip, there are no additional updates.
             if from_update_manager:
@@ -882,8 +915,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         webapp = get_webapp( trans, **kwd )
-        repository = get_repository( trans, repository_id )
-        tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         try:
@@ -1366,10 +1398,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         """Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation process."""
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
         # Redirect back to local Galaxy to perform install.
-        url = '%sadmin_toolshed/prepare_for_install' % galaxy_url
-        url += '?tool_shed_url=%s' % url_for( '/', qualified=True )
-        url += '&repository_ids=%s' % ','.join( util.listify( repository_ids ) )
-        url += '&changeset_revisions=%s' % ','.join( util.listify( changeset_revisions ) )
+        url = url_join( galaxy_url,
+                        'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
+                        ( url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
@@ -1378,8 +1409,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'error' )
         webapp = get_webapp( trans, **kwd )
         repository_clone_url = generate_clone_url( trans, repository_id )
-        repository = get_repository( trans, repository_id )
-        tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         try:
@@ -1752,9 +1782,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     status=status )
     @web.expose
     def reset_all_metadata( self, trans, id, **kwd ):
-        reset_all_metadata_on_repository( trans, id, **kwd )
-        message = "All repository metadata has been reset."
-        status = 'done'
+        invalid_file_tups = reset_all_metadata_on_repository( trans, id, **kwd )
+        if invalid_file_tups:
+            repository = get_repository( trans, id )
+            message = generate_message_for_invalid_tools( invalid_file_tups, repository, None )
+            status = 'error'
+        else:
+            message = "All repository metadata has been reset."
+            status = 'done'
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,
@@ -2185,6 +2220,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
+        repo_files_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_files_dir )
         tool_metadata_dict = {}
         tool_lineage = []
         tool = None
@@ -2195,12 +2232,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if 'tools' in metadata:
             for tool_metadata_dict in metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
+                    relative_path_to_tool_config = tool_metadata_dict[ 'tool_config' ]
                     guid = tool_metadata_dict[ 'guid' ]
-                    try:
-                        # We may be attempting to load a tool that no longer exists in the repository tip.
-                        tool = load_tool( trans, os.path.abspath( tool_metadata_dict[ 'tool_config' ] ) )
-                    except:
-                        tool = None
+                    full_path = os.path.abspath( relative_path_to_tool_config )
+                    can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, full_path, changeset_revision )
+                    if can_use_disk_file:
+                        tool, valid, message = load_tool_from_config( trans.app, full_path )
+                    else:
+                        # We're attempting to load a tool using a config that no longer exists on disk.
+                        work_dir = tempfile.mkdtemp()
+                        manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( relative_path_to_tool_config, repo, changeset_revision )
+                        if manifest_ctx and ctx_file:
+                            tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
                     break
             if guid:
                 tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )

@@ -15,7 +15,7 @@
     </script>
     
     <!--[if lt IE 9]>
-      <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
+      <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
     <![endif]-->
 </%def>
 

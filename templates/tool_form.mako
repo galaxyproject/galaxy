@@ -12,7 +12,7 @@
 </%def>
 
 <%def name="javascripts()">
-    ${h.js( "jquery", "galaxy.panels", "galaxy.base", "jquery.autocomplete", "jstorage" )}
+    ${h.js( "libs/jquery/jquery", "galaxy.panels", "galaxy.base", "libs/jquery/jquery.autocomplete", "libs/jquery/jstorage" )}
     <script type="text/javascript">
     $(function() {
         $(window).bind("refresh_on_change", function() {

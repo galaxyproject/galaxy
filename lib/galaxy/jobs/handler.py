@@ -360,7 +360,7 @@ class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app
         self.job_runners = {}
-        start_job_runners = ["local", "lwr", "dynamic"]
+        start_job_runners = ["local", "lwr"]
         if app.config.start_job_runners is not None:
             start_job_runners.extend( [ x.strip() for x in util.listify( app.config.start_job_runners ) ] )
         if app.config.use_tasked_jobs:

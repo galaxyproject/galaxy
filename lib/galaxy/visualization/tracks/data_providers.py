@@ -2,7 +2,7 @@
 Data providers for tracks visualizations.
 """
 
-import sys
+import os, sys
 from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
@@ -59,6 +59,51 @@ def _convert_between_ucsc_and_ensemble_naming( chrom ):
 
 def _chrom_naming_matches( chrom1, chrom2 ):
     return ( chrom1.startswith( 'chr' ) and chrom2.startswith( 'chr' ) ) or ( not chrom1.startswith( 'chr' ) and not chrom2.startswith( 'chr' ) )
+
+class FeatureLocationIndexDataProvider( object ):
+    '''
+
+    '''
+
+    def __init__( self, converted_dataset ):
+        self.converted_dataset = converted_dataset
+
+    def get_data( self, query ):
+        # Init.
+        textloc_file = open( self.converted_dataset.file_name, 'r' )
+        line_len = int( textloc_file.readline() )
+        file_len = os.path.getsize( self.converted_dataset.file_name )
+    
+        # Find query in file using binary search.
+        low = 0
+        high = file_len / line_len
+        while low < high:
+            mid = ( low + high ) // 2
+            position = mid * line_len
+            textloc_file.seek( position )
+
+            # Compare line with query and update low, high.
+            line = textloc_file.readline()
+            print '--', mid, line
+            if line < query:
+                low = mid + 1
+            else:
+                high = mid
+        
+        position = low * line_len
+        
+        # At right point in file, generate hits.
+        result = [ ]
+        while True:
+            line = textloc_file.readline()
+            if not line.startswith( query ): 
+                break
+            if line[ -1: ] == '\n': 
+                line = line[ :-1 ]
+            result.append( line.split() )
+
+        textloc_file.close()    
+        return result
         
 class TracksDataProvider( object ):
     """ Base class for tracks data providers. """
@@ -439,6 +484,11 @@ class BedDataProvider( TracksDataProvider ):
 
             # Score (filter data)    
             if length >= 5 and filter_cols and filter_cols[0] == "Score":
+                # If dataset doesn't have name/strand/thick start/thick end/blocks, 
+                # add placeholders. There should be 8 entries if all attributes 
+                # are present.
+                payload.extend( [ None for i in range( 8 - len( payload ) ) ] )
+
                 try:
                     payload.append( float( feature[4] ) )
                 except:
@@ -575,7 +625,8 @@ class VcfDataProvider( TracksDataProvider ):
                 end = start + len( new_seq )
 
                 # Pack line.
-                payload = [ hash( line ), 
+                payload = [ 
+                            hash( line ), 
                             start, 
                             end,
                             # ID:
@@ -584,7 +635,8 @@ class VcfDataProvider( TracksDataProvider ):
                             # TODO? VCF does not have strand, so default to positive.
                             "+",
                             new_seq,
-                            float( feature[5] ) ]
+                            None if feature[5] == '.' else float( feature[5] ) 
+                          ]
                 rval.append(payload)
 
         return { 'data': rval, 'message': message }
@@ -923,79 +975,99 @@ class BBIDataProvider( TracksDataProvider ):
         # which we use converted_dataset
         f, bbi = self._get_dataset()
        
-        # If the stats kwarg was provide, we compute overall summary data for the 
-        # range defined by start and end but no reduced data. This is currently 
-        # used by client to determine the default range.
+        # If stats requested, compute overall summary data for the range
+        # start:endbut no reduced data. This is currently used by client 
+        # to determine the default range.
         if 'stats' in kwargs:
             summary = bbi.summarize( chrom, start, end, 1 )
             f.close()
-            if summary is None:
-                return None
-            else:
+            
+            min = 0
+            max = 0
+            mean = 0
+            sd = 0
+            if summary is not None:
                 # Does the summary contain any defined values?
                 valid_count = summary.valid_count[0]
-                if summary.valid_count < 1:
-                    return None
+                if summary.valid_count > 0:
+                    # Compute $\mu \pm 2\sigma$ to provide an estimate for upper and lower
+                    # bounds that contain ~95% of the data.
+                    mean = summary.sum_data[0] / valid_count
+                    var = summary.sum_squares[0] - mean
+                    if valid_count > 1:
+                        var /= valid_count - 1
+                    sd = numpy.sqrt( var )
+                    min = summary.min_val[0]
+                    max = summary.max_val[0]
 
-                # Compute $\mu \pm 2\sigma$ to provide an estimate for upper and lower
-                # bounds that contain ~95% of the data.
-                mean = summary.sum_data[0] / valid_count
-                var = summary.sum_squares[0] - mean
-                if valid_count > 1:
-                    var /= valid_count - 1
-                sd = numpy.sqrt( var )
+            return dict( data=dict( min=min, max=max, mean=mean, sd=sd ) )
 
-                return dict( data=dict( min=summary.min_val[0], max=summary.max_val[0], mean=mean, sd=sd ) )
+        # Sample from region using approximately this many samples.
+        N = 1000
 
-        # The following seems not to work very well, for example it will only return one
-        # data point if the tile is 1280px wide. Not sure what the intent is.
+        def summarize_region( bbi, chrom, start, end, num_points ):
+            '''
+            Returns results from summarizing a region using num_points.
+            NOTE: num_points cannot be greater than end - start or BBI
+            will return None for all positions.s
+            '''
+            result = []
 
-        # The first zoom level for BBI files is 640. If too much is requested, it will look at each block instead
-        # of summaries. The calculation done is: zoom <> (end-start)/num_points/2.
-        # Thus, the optimal number of points is (end-start)/num_points/2 = 640
-        # num_points = (end-start) / 1280
-        #num_points = (end-start) / 1280
-        #if num_points < 1:
-        #    num_points = end - start
-        #else:
-        #    num_points = min(num_points, 500)
-
-        # For now, we'll do 1000 data points by default. However, the summaries
-        # don't seem to work when a summary pixel corresponds to less than one
-        # datapoint, so we prevent that. 
-
-        # FIXME: need to choose the number of points to maximize coverage of the area. 
-        # It appears that BBI calculates points using intervals of 
-        # floor( num_points / end - start ) 
-        # In some cases, this prevents sampling near the end of the interval, 
-        # especially when (a) the total interval is small ( < 20-30Kb) and (b) the 
-        # computed interval size has a large fraction, e.g. 14.7 or 35.8
-        num_points = min( 1000, end - start )
-
-        # HACK to address the FIXME above; should generalize.
-        if end - start <= 2000:
-            num_points = end - start
-
-        summary = bbi.summarize( chrom, start, end, num_points )
-        f.close()
-
-        result = []
-
-        if summary:
-            #mean = summary.sum_data / summary.valid_count
+            # Get summary; this samples at intervals of length
+            # (end - start)/num_points -- i.e. drops any fractional component
+            # of interval length.
+            summary = bbi.summarize( chrom, start, end, num_points )
+            if summary:
+                #mean = summary.sum_data / summary.valid_count
+                
+                ## Standard deviation by bin, not yet used
+                ## var = summary.sum_squares - mean
+                ## var /= minimum( valid_count - 1, 1 )
+                ## sd = sqrt( var )
             
-            ## Standard deviation by bin, not yet used
-            ## var = summary.sum_squares - mean
-            ## var /= minimum( valid_count - 1, 1 )
-            ## sd = sqrt( var )
-        
-            pos = start
-            step_size = (end - start) / num_points
+                pos = start
+                step_size = (end - start) / num_points
 
-            for i in range( num_points ):
-                result.append( (pos, float_nan( summary.sum_data[i] / summary.valid_count[i] ) ) )
-                pos += step_size
+                for i in range( num_points ):
+                    result.append( (pos, float_nan( summary.sum_data[i] / summary.valid_count[i] ) ) )
+                    pos += step_size
+
+            return result
+
+        # Approach is different depending on region size.
+        if end - start < N:
+            # Get values for individual bases in region, including start and end.
+            # To do this, need to increase end to next base and request number of points.
+            num_points = end - start + 1
+            end += 1
+        else:
+            # 
+            # The goal is to sample the region between start and end uniformly 
+            # using ~N data points. The challenge is that the size of sampled 
+            # intervals rarely is full bases, so sampling using N points will 
+            # leave the end of the region unsampled due to remainders for each
+            # interval. To recitify this, a new N is calculated based on the 
+            # step size that covers as much of the region as possible.
+            #
+            # However, this still leaves some of the region unsampled. This 
+            # could be addressed by repeatedly sampling remainder using a 
+            # smaller and smaller step_size, but that would require iteratively 
+            # going to BBI, which could be time consuming.
+            #
+
+            # Start with N samples.
+            num_points = N
+            step_size = ( end - start ) / num_points
+            # Add additional points to sample in the remainder not covered by 
+            # the initial N samples.
+            remainder_start = start + step_size * num_points
+            additional_points = ( end - remainder_start ) / step_size
+            num_points += additional_points
+            
+        result = summarize_region( bbi, chrom, start, end, num_points )
         
+        # Cleanup and return.
+        f.close()
         return { 'data': result }
 
 class BigBedDataProvider( BBIDataProvider ):

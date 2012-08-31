@@ -26,7 +26,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("jquery.autocomplete")}
+    ${h.js("libs/jquery/jquery.autocomplete")}
     <script type="text/javascript">
         $(function(){
             $("input:text:first").focus();

@@ -109,6 +109,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
         item = new_history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
+        item['url'] = url_for( 'history', id=item['id'] )
         return item
 
     @web.expose_api

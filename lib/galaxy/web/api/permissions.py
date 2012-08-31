@@ -40,10 +40,10 @@ class PermissionsController( BaseAPIController ):
             role_params = params.get( k + '_in', [] )
             in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( role_params ) ]
             permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-        trans.app.security_agent.set_all_library_permissions( library, permissions )
+        trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
         trans.sa_session.refresh( library )
         # Copy the permissions to the root folder
-        trans.app.security_agent.copy_library_permissions( library, library.root_folder )
+        trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
         message = "Permissions updated for library '%s'." % library.name
 
         item = library.get_api_value( view='element' )

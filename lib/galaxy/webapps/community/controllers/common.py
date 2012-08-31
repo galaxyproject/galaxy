@@ -1,13 +1,14 @@
-import os, string, socket, logging, simplejson, binascii, tempfile
+import os, string, socket, logging, simplejson, binascii, tempfile, filecmp
 from time import strftime
 from datetime import *
 from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-from galaxy.util.shed_util import clone_repository, generate_metadata_for_changeset_revision, get_changectx_for_changeset, get_config_from_disk
-from galaxy.util.shed_util import get_configured_ui, get_named_tmpfile_from_ctx, handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH
-from galaxy.util.shed_util import reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import check_tool_input_params, clone_repository, copy_sample_file, generate_metadata_for_changeset_revision
+from galaxy.util.shed_util import get_changectx_for_changeset, get_config_from_disk, get_configured_ui, get_named_tmpfile_from_ctx
+from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH, load_tool_from_config, reset_tool_data_tables
+from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -105,6 +106,42 @@ class ItemRatings( UsesItemRatings ):
             trans.sa_session.flush()
         return item_rating
 
+def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
+    # Build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in repository_metadata.
+    metadata = repository_metadata.metadata
+    tool_versions_dict = {}
+    for tool_dict in metadata.get( 'tools', [] ):
+        # We have at least 2 changeset revisions to compare tool guids and tool ids.
+        parent_id = get_parent_id( trans,
+                                   id,
+                                   tool_dict[ 'id' ],
+                                   tool_dict[ 'version' ],
+                                   tool_dict[ 'guid' ],
+                                   changeset_revisions )
+        tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
+    if tool_versions_dict:
+        repository_metadata.tool_versions = tool_versions_dict
+        trans.sa_session.add( repository_metadata )
+        trans.sa_session.flush()
+def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset_revision ):
+    """
+    Determine if repository's tool config file on disk can be used.  This method is restricted to tool config files since, with the
+    exception of tool config files, multiple files with the same name will likely be in various directories in the repository and we're
+    comparing file names only (not relative paths).
+    """
+    if not file_path or not os.path.exists( file_path ):
+        # The file no longer exists on disk, so it must have been deleted at some previous point in the change log.
+        return False
+    if changeset_revision == repository.tip:
+        return True
+    file_name = strip_path( file_path )
+    latest_version_of_file = get_latest_tool_config_revision_from_repository_manifest( repo, file_name, changeset_revision )
+    can_use_disk_file = filecmp.cmp( file_path, latest_version_of_file )
+    try:
+        os.unlink( latest_version_of_file )
+    except:
+        pass
+    return can_use_disk_file
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -221,6 +258,16 @@ def compare_workflows( ancestor_workflows, current_workflows ):
         else:
             return 'subset'
     return 'not equal and not subset'
+def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
+    sample_files = []
+    for root, dirs, files in os.walk( repo_files_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name.endswith( '.sample' ):
+                    relative_path = os.path.join( root, name )
+                    copy_sample_file( trans.app, relative_path, dest_path=dest_path )
+                    sample_files_copied.append( name )
+    return sample_files
 def copy_file_from_disk( filename, repo_dir, dir ):
     file_path = None
     found = False
@@ -240,9 +287,7 @@ def copy_file_from_disk( filename, repo_dir, dir ):
         tmp_filename = None
     return tmp_filename
 def copy_file_from_manifest( repo, ctx, filename, dir ):
-    """
-    Copy the latest version of the file named filename from the repository manifest to the directory to which dir refers.
-    """
+    """Copy the latest version of the file named filename from the repository manifest to the directory to which dir refers."""
     for changeset in reversed_upper_bounded_changelog( repo, ctx ):
         changeset_ctx = repo.changectx( changeset )
         fctx = get_file_context_from_ctx( changeset_ctx, filename )
@@ -277,6 +322,42 @@ def generate_clone_url( trans, repository_id ):
         return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
+def generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
+    if as_html:
+        new_line = '<br/>'
+        bold_start = '<b>'
+        bold_end = '</b>'
+    else:
+        new_line = '\n'
+        bold_start = ''
+        bold_end = ''
+    message = ''
+    if not displaying_invalid_tool:
+        if metadata_dict:
+            message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip )
+            message += "Correct the following problems if necessary and reset metadata.%s" % new_line
+        else:
+            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip )
+            message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
+    for itc_tup in invalid_file_tups:
+        tool_file, exception_msg = itc_tup
+        if exception_msg.find( 'No such file or directory' ) >= 0:
+            exception_items = exception_msg.split()
+            missing_file_items = exception_items[ 7 ].split( '/' )
+            missing_file = missing_file_items[ -1 ].rstrip( '\'' )
+            if missing_file.endswith( '.loc' ):
+                sample_ext = '%s.sample' % missing_file
+            else:
+                sample_ext = missing_file
+            correction_msg = "This file refers to a missing file %s%s%s.  " % ( bold_start, str( missing_file ), bold_end )
+            correction_msg += "Upload a file named %s%s%s to the repository to correct this error." % ( bold_start, sample_ext, bold_end )
+        else:
+            if as_html:
+                correction_msg = exception_msg
+            else:
+                correction_msg = exception_msg.replace( '<br/>', new_line ).replace( '<b>', bold_start ).replace( '</b>', bold_end )
+        message += "%s%s%s - %s%s" % ( bold_start, tool_file, bold_end, correction_msg, new_line )
+    return message
 def generate_tool_guid( trans, repository, tool ):
     """
     Generate a guid for the received tool.  The form of the guid is    
@@ -287,6 +368,19 @@ def generate_tool_guid( trans, repository, tool ):
                                       repository.name,
                                       tool.id,
                                       tool.version )
+def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
+    file_path = None
+    found = False
+    for root, dirs, files in os.walk( repo_files_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name == file_name:
+                    file_path = os.path.abspath( os.path.join( root, name ) )
+                    found = True
+                    break
+        if found:
+            break
+    return file_path
 def get_category( trans, id ):
     """Get a category from the database"""
     return trans.sa_session.query( trans.model.Category ).get( trans.security.decode_id( id ) )
@@ -318,12 +412,44 @@ def get_file_context_from_ctx( ctx, filename ):
     if deleted:
         return 'DELETED'
     return None
+def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
+    """Get the ctx file path for the latest revision of filename from the repository manifest up to the value of changeset_revision."""
+    stripped_filename = strip_path( filename )
+    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+        manifest_changeset_revision = str( repo.changectx( changeset ) )
+        manifest_ctx = repo.changectx( changeset )
+        for ctx_file in manifest_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            if ctx_file_name == stripped_filename:
+                return manifest_ctx, ctx_file
+    return None, None
 def get_latest_repository_metadata( trans, decoded_repository_id ):
     """Get last metadata defined for a specified repository from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == decoded_repository_id ) \
                            .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
                            .first()
+def get_latest_tool_config_revision_from_repository_manifest( repo, filename, changeset_revision ):
+    """
+    Get the latest revision of a tool config file named filename from the repository manifest up to the value of changeset_revision.
+    This method is restricted to tool_config files rather than any file since it is likely that, with the exception of tool config files,
+    multiple files will have the same name in various directories within the repository.
+    """
+    stripped_filename = strip_path( filename )
+    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+        manifest_ctx = repo.changectx( changeset )
+        for ctx_file in manifest_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            if ctx_file_name == stripped_filename:
+                fctx = manifest_ctx[ ctx_file ]
+                fh = tempfile.NamedTemporaryFile( 'wb' )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'wb' )
+                fh.write( fctx.data() )
+                fh.close()
+                return tmp_filename
+    return None
 def get_list_of_copied_sample_files( repo, ctx, dir ):
     """
     Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
@@ -416,8 +542,8 @@ def get_repository_by_name_and_owner( trans, name, owner ):
 def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database"""
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.  Duplicate records were somehow
-    # creatd in the past.  This may or may not be resolved, so when it is confirmed that the cause of duplicate records has been corrected, tweak 
-    # this method accordingly.
+    # created in the past.  The cause of this issue has been resolved, but we'll leave this method as is for a while longer to ensure all duplicate
+    # records are removed.
     all_metadata_records = trans.sa_session.query( trans.model.RepositoryMetadata ) \
                                            .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
                                                           trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
@@ -542,90 +668,61 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
 def is_downloadable( metadata_dict ):
     return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
-def load_tool( trans, config_file ):
-    """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
-    # Parse XML configuration file and get the root element
-    tree = util.parse_xml( config_file )
-    root = tree.getroot()
-    if root.tag == 'tool':
-        # Allow specifying a different tool subclass to instantiate
-        if root.find( "type" ) is not None:
-            type_elem = root.find( "type" )
-            module = type_elem.get( 'module', 'galaxy.tools' )
-            cls = type_elem.get( 'class' )
-            mod = __import__( module, globals(), locals(), [cls] )
-            ToolClass = getattr( mod, cls )
-        elif root.get( 'tool_type', None ) is not None:
-            ToolClass = tool_types.get( root.get( 'tool_type' ) )
-        else:
-            ToolClass = Tool
-        return ToolClass( config_file, root, trans.app )
-    return None
 def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):
     """
     Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value of tool_config_filename.  The value of changeset_revision
     is a valid (downloadable) changset revision.  The tool config will be located in the repository manifest between the received valid changeset
     revision and the first changeset revision in the repository, searching backwards.
     """
-    def load_from_tmp_config( toolbox, ctx, ctx_file, work_dir ):
-        tool = None
-        message = ''
-        tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
-        if tmp_tool_config:
-            element_tree = util.parse_xml( tmp_tool_config )
-            element_tree_root = element_tree.getroot()
-            # Look for code files required by the tool config.
-            tmp_code_files = []
-            for code_elem in element_tree_root.findall( 'code' ):
-                code_file_name = code_elem.get( 'file' )
-                tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
-                if tmp_code_file_name:
-                    tmp_code_files.append( tmp_code_file_name )
-            try:
-                tool = toolbox.load_tool( tmp_tool_config )
-            except KeyError, e:
-                message = '<b>%s</b> - This file requires an entry for %s in the tool_data_table_conf.xml file.  ' % ( tool_config_filename, str( e ) )
-                message += 'Upload a file  named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct this error.  '
-            except Exception, e:
-                message = 'Error loading tool: %s.  ' % str( e )
-            for tmp_code_file in tmp_code_files:
-                try:
-                    os.unlink( tmp_code_file )
-                except:
-                    pass
-            try:
-                os.unlink( tmp_tool_config )
-            except:
-                pass
-        return tool, message
     original_tool_data_path = trans.app.config.tool_data_path
-    tool_config_filename = strip_path( tool_config_filename )
     repository = get_repository( trans, repository_id )
     repo_files_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_files_dir )
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
     message = ''
+    tool = None
+    can_use_disk_file = False
+    tool_config_filepath = get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
     work_dir = tempfile.mkdtemp()
-    sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
-    if sample_files:
-        trans.app.config.tool_data_path = work_dir
-        if 'tool_data_table_conf.xml.sample' in sample_files:
-            # Load entries into the tool_data_tables if the tool requires them.
-            tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
-            error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-    found = False
-    # Get the latest revision of the tool config from the repository manifest up to the value of changeset_revision.
-    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
-        manifest_changeset_revision = str( repo.changectx( changeset ) )
-        manifest_ctx = repo.changectx( changeset )
-        for ctx_file in manifest_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
-            if ctx_file_name == tool_config_filename:
-                found = True
-                break
-        if found:
-            tool, message = load_from_tmp_config( trans.app.toolbox, manifest_ctx, ctx_file, work_dir )
-            break
+    can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
+    if can_use_disk_file:
+        # Copy all sample files from disk to a temporary directory since the sample files may be in multiple directories.
+        sample_files = copy_disk_sample_files_to_dir( trans, repo_files_dir, work_dir )
+        if sample_files:
+            trans.app.config.tool_data_path = work_dir
+            if 'tool_data_table_conf.xml.sample' in sample_files:
+                # Load entries into the tool_data_tables if the tool requires them.
+                tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
+                error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+        tool, valid, message = load_tool_from_config( trans.app, tool_config_filepath )
+        if tool is not None:
+            invalid_files_and_errors_tups = check_tool_input_params( trans.app,
+                                                                     repo_files_dir,
+                                                                     tool_config_filename,
+                                                                     tool,
+                                                                     sample_files,
+                                                                     webapp='community' )
+            if invalid_files_and_errors_tups:
+                message = generate_message_for_invalid_tools( invalid_files_and_errors_tups,
+                                                              repository,
+                                                              metadata_dict=None,
+                                                              as_html=True,
+                                                              displaying_invalid_tool=True )
+                status = 'error'
+    else:
+        # The desired version of the tool config is no longer on disk, so create a temporary work environment and copy the tool config and dependent files.
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
+        # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in 
+        # the manifest, but have been deleted from disk.
+        sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
+        if sample_files:
+            trans.app.config.tool_data_path = work_dir
+            if 'tool_data_table_conf.xml.sample' in sample_files:
+                # Load entries into the tool_data_tables if the tool requires them.
+                tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
+                error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+        manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
+        if manifest_ctx and ctx_file:
+            tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
     try:
         shutil.rmtree( work_dir )
     except:
@@ -634,50 +731,32 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
         trans.app.config.tool_data_path = original_tool_data_path
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
-    return tool, message
-def load_tool_from_tmp_directory( trans, repo, repo_dir, ctx, filename, dir ):
-    is_tool_config = False
+    return repository, tool, message
+def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
     tool = None
-    valid = False
-    error_message = ''
-    tmp_config = get_named_tmpfile_from_ctx( ctx, filename, dir )
-    if tmp_config:
-        if not ( check_binary( tmp_config ) or check_image( tmp_config ) or check_gzip( tmp_config )[ 0 ]
-                 or check_bz2( tmp_config )[ 0 ] or check_zip( tmp_config ) ):
+    message = ''
+    tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
+    if tmp_tool_config:
+        element_tree = util.parse_xml( tmp_tool_config )
+        element_tree_root = element_tree.getroot()
+        # Look for code files required by the tool config.
+        tmp_code_files = []
+        for code_elem in element_tree_root.findall( 'code' ):
+            code_file_name = code_elem.get( 'file' )
+            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
+            if tmp_code_file_name:
+                tmp_code_files.append( tmp_code_file_name )
+        tool, valid, message = load_tool_from_config( trans.app, tmp_tool_config )
+        for tmp_code_file in tmp_code_files:
             try:
-                # Make sure we're looking at a tool config and not a display application config or something else.
-                element_tree = util.parse_xml( tmp_config )
-                element_tree_root = element_tree.getroot()
-                is_tool_config = element_tree_root.tag == 'tool'
-            except Exception, e:
-                log.debug( "Error parsing %s, exception: %s" % ( tmp_config, str( e ) ) )
-                is_tool_config = False
-            if is_tool_config:
-                # Load entries into the tool_data_tables if the tool requires them.
-                tool_data_table_config = copy_file_from_manifest( repo, ctx, 'tool_data_table_conf.xml.sample', dir )
-                if tool_data_table_config:
-                    error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-                # Look for code files required by the tool config.  The directory to which dir refers should be removed by the caller.
-                for code_elem in element_tree_root.findall( 'code' ):
-                    code_file_name = code_elem.get( 'file' )
-                    if not os.path.exists( os.path.join( dir, code_file_name ) ):
-                        tmp_code_file_name = copy_file_from_disk( code_file_name, repo_dir, dir )
-                        if tmp_code_file_name is None:
-                            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, dir )
-                try:
-                    tool = load_tool( trans, tmp_config )
-                    valid = True
-                except KeyError, e:
-                    valid = False
-                    error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
-                    error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
-                    error_message += 'this error.  '
-                except Exception, e:
-                    valid = False
-                    error_message = str( e )
-                # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-                reset_tool_data_tables( trans.app )
-    return is_tool_config, valid, tool, error_message
+                os.unlink( tmp_code_file )
+            except:
+                pass
+        try:
+            os.unlink( tmp_tool_config )
+        except:
+            pass
+    return tool, message
 def new_tool_metadata_required( trans, repository, metadata_dict ):
     """
     Compare the last saved metadata for each tool in the repository with the new metadata in metadata_dict to determine if a new repository_metadata
@@ -854,28 +933,12 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
     clean_repository_metadata( trans, id, changeset_revisions )
     # Set tool version information for all downloadable changeset revisions.  Get the list of changeset revisions from the changelog.
     reset_all_tool_versions( trans, id, repo )
+    return invalid_file_tups
 def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     """
     Set metadata using the repository's current disk files, returning specific error messages (if any) to alert the repository owner that the changeset
     has problems.
     """
-    def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
-        # Build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in repository_metadata.
-        metadata = repository_metadata.metadata
-        tool_versions_dict = {}
-        for tool_dict in metadata.get( 'tools', [] ):
-            # We have at least 2 changeset revisions to compare tool guids and tool ids.
-            parent_id = get_parent_id( trans,
-                                       id,
-                                       tool_dict[ 'id' ],
-                                       tool_dict[ 'version' ],
-                                       tool_dict[ 'guid' ],
-                                       changeset_revisions )
-            tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
-        if tool_versions_dict:
-            repository_metadata.tool_versions = tool_versions_dict
-            trans.sa_session.add( repository_metadata )
-            trans.sa_session.flush()
     message = ''
     status = 'done'
     encoded_id = trans.security.encode_id( repository.id )
@@ -931,27 +994,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
         status = "error"
     if invalid_file_tups:
-        if metadata_dict:
-            message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip )
-            message += "Correct the following problems if necessary and reset metadata.<br/>"
-        else:
-            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip )
-            message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.<br/>"
-        for itc_tup in invalid_file_tups:
-            tool_file, exception_msg = itc_tup
-            if exception_msg.find( 'No such file or directory' ) >= 0:
-                exception_items = exception_msg.split()
-                missing_file_items = exception_items[ 7 ].split( '/' )
-                missing_file = missing_file_items[ -1 ].rstrip( '\'' )
-                if missing_file.endswith( '.loc' ):
-                    sample_ext = '%s.sample' % missing_file
-                else:
-                    sample_ext = missing_file
-                correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( missing_file )
-                correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % sample_ext
-            else:
-               correction_msg = exception_msg
-            message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )            
+        message = generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict )
         status = 'error'
     return message, status
 def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=None, **kwd ):

@@ -26,8 +26,8 @@
     </style>
     
     <style type="text/css" media="screen">@import "${h.url_for('/static/jqtouch/jqtouch.css')}";</style>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jqtouch.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/libs/jquery/jquery.js')}"></script>
+    <script type="text/javascript" src="${h.url_for('/static/scripts/libs/jquery/jqtouch.js')}"></script>
     <script type="text/javascript" charset="utf-8">
         $(document).jQTouch( {
             icon: "${h.url_for('static/images/galaxyIcon_noText.png')}",

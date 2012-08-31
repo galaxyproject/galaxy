@@ -17,7 +17,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history", "autocomplete_tagging" )}
-${h.js( "jquery", "bootstrap", "galaxy.base", "json2", "jstorage", "jquery.autocomplete", "autocomplete_tagging" )}
+${h.js( "libs/jquery/jquery", "libs/bootstrap", "galaxy.base", "libs/json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
 
 <script type="text/javascript">
 
@@ -166,7 +166,7 @@ $(function() {
                         // $("<div/>").text("Data is loading from S3... please be patient").appendTo(link.parent());
                         $( '#historyItem-' + history_id).removeClass( "historyItem-ok" );
                         $( '#historyItem-' + history_id).addClass( "historyItem-running" );
-                        setTimeout(function(){check_transfer_status(link, history_id)}, 1000);
+                        setTimeout(function(){check_transfer_status(link, history_id)}, 4000);
                     } else {
                         $( '#historyItem-' + history_id).removeClass( "historyItem-running" );
                         $( '#historyItem-' + history_id).addClass( "historyItem-ok" );
@@ -250,7 +250,6 @@ $(function() {
                         },
                         "View in saved visualization": function() {
                             // Show new modal with saved visualizations.
-                            parent.hide_modal();
                             parent.show_modal("Add Data to Saved Visualization", table_html, {
                                 "Cancel": function() {
                                     parent.hide_modal();
@@ -273,6 +272,17 @@ $(function() {
     }
     
     init_trackster_links();
+
+    function init_phyloviz_links() {
+        // PhyloViz links
+        // Add to trackster browser functionality
+        $(".phyloviz-add").live("click", function() {
+            var dataset = this,
+                    dataset_jquery = $(this);
+            window.parent.location = dataset_jquery.attr("new-url");
+        });
+    }
+    init_phyloviz_links();
     
     // History rename functionality.
     async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
