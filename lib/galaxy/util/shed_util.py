@@ -609,7 +609,10 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
                             is_tool = False
                         if is_tool:
                             tool, valid, error_message = load_tool_from_config( app, full_path )
-                            if tool is not None:
+                            if tool is None:
+                                if not valid:
+                                    invalid_file_tups.append( ( name, error_message ) )
+                            else:
                                 invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_metadata_paths, webapp=webapp )
                                 can_set_metadata = True
                                 for tup in invalid_files_and_errors_tups:

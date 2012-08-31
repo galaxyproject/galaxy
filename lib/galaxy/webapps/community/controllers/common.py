@@ -921,9 +921,6 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                 ancestor_metadata_dict = None
         elif ancestor_metadata_dict:
             # We reach here only if current_metadata_dict is empty and ancestor_metadata_dict is not.
-            ancestor_changeset_revision = current_changeset_revision
-            metadata_changeset_revision = current_changeset_revision
-            metadata_dict = ancestor_metadata_dict
             if not ctx.children():
                 # We're at the end of the change log.
                 repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
