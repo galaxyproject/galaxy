@@ -104,6 +104,8 @@
                     %endif
                     ></a>
                 %endif
+                
+                ## edit attr button
                 %if for_editing:
                     %if data.deleted and not data.purged:
                         <span title="Undelete dataset to edit attributes" class="icon-button edit_disabled tooltip"></span>
@@ -113,7 +115,10 @@
                         <a class="icon-button edit tooltip" title='${_("Edit attributes")}' href="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" target="galaxy_main"></a>
                     %endif
                 %endif
+                
             %endif
+            
+            ## delete button
             %if for_editing:
                 %if can_edit:
                     <a class="icon-button delete tooltip" title='${_("Delete")}' href="${h.url_for( controller='dataset', action='delete', dataset_id=dataset_id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${dataset_id}"></a>
