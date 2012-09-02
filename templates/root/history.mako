@@ -86,7 +86,7 @@ function annotation_handling(parent_elt) {
                                 annotation = "<em>Describe or add notes to dataset</em>";
                             }
                             annotation_elt.html(annotation);
-                            annotation_area.find(".tooltip").tooltop();
+                            annotation_area.find(".tooltip").tooltip();
                             async_save_text(
                                 annotation_elt.attr("id"), annotation_elt.attr("id"),
                                 "${h.url_for( controller='/dataset', action='annotate_async')}?" + href_parms,
