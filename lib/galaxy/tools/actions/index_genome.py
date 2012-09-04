@@ -37,7 +37,7 @@ class GenomeIndexToolAction( ToolAction ):
         # Setup job and job wrapper.
         #
 
-        # Add association for keeping track of job, history, archive relationship.
+        # Add association for keeping track of index jobs, transfer jobs, and so on.
         user = trans.sa_session.query( trans.app.model.User ).get( int( incoming['user'] ) )
         assoc = trans.app.model.GenomeIndexToolData( job=job, dataset=temp_dataset, fasta_path=incoming['path'], \
                                                         indexer=incoming['indexer'], user=user, \
@@ -46,11 +46,10 @@ class GenomeIndexToolAction( ToolAction ):
 
         job_wrapper = GenomeIndexToolWrapper( job )
         cmd_line = job_wrapper.setup_job( assoc )
+        
         #
         # Add parameters to job_parameter table.
         #
-
-        # Set additional parameters.
         incoming[ '__GENOME_INDEX_COMMAND__' ] = cmd_line
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )

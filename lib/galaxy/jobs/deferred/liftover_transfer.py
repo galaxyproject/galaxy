@@ -40,7 +40,7 @@ class LiftOverTransferPlugin( DataTransfer ):
         deferred = trans.app.model.DeferredJob( state = self.app.model.DeferredJob.states.NEW, plugin = 'LiftOverTransferPlugin', params = params )
         self.sa_session.add( deferred )
         self.sa_session.flush()
-        return job.id
+        return deferred.id
         
     def check_job( self, job ):
         if job.params['type'] == 'init_transfer': 

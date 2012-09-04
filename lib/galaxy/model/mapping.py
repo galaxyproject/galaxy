@@ -1539,7 +1539,7 @@ assign_mapper( context, JobImportHistoryArchive, JobImportHistoryArchive.table,
     properties=dict( job = relation( Job ), history = relation( History ) ) )
 
 assign_mapper( context, GenomeIndexToolData, GenomeIndexToolData.table,
-    properties=dict( job = relation( Job ),
+    properties=dict( job = relation( Job, backref='job' ),
                      dataset = relation( Dataset ),
                      user = relation( User ),
                      deferred = relation( DeferredJob, backref='deferred_job' ),
