@@ -264,10 +264,10 @@ class Tabular( data.Text ):
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
         #TODO Prevent failure when displaying extremely long > 50kb lines.
-        if to_ext or not preview:
-            return self._serve_raw(trans, dataset, to_ext)
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
+        if to_ext or not preview:
+            return self._serve_raw(trans, dataset, to_ext)
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -637,4 +637,12 @@ class Eland( Tabular ):
             dataset.metadata.barcodes = filter(lambda x: x != '0', barcodes.keys()) + ['NoIndex' for x in barcodes.keys() if x == '0']
             dataset.metadata.reads = reads.keys()
 
+
+class FeatureLocationIndex( Tabular ):
+    """
+    An index that stores feature locations in tabular format.
+    """
+    file_ext='fli'
+    MetadataElement( name="columns", default=2, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[] )
 

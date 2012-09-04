@@ -4,8 +4,8 @@
     the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
     initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
 -->
-<tool name="BX main" id="bx_browser" tool_type="data_source">
-    <description>browser</description>
+<tool name="BX" id="bx_browser" tool_type="data_source">
+    <description>table browser</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
     <inputs action="http://main.genome-browser.bx.psu.edu/cgi-bin/hgTables" check_values="false" method="get">
         <display>go to BX Browser $GALAXY_URL</display>

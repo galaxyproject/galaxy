@@ -187,9 +187,9 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
      xmlns="http://www.w3.org/2000/svg" version="1.2"
      xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 800" onload="init()">
 
-  <script type="text/ecmascript" xlink:href="/static/scripts/checkbox_and_radiobutton.js"/>
-  <script type="text/ecmascript" xlink:href="/static/scripts/helper_functions.js"/>
-  <script type="text/ecmascript" xlink:href="/static/scripts/timer.js"/>
+  <script type="text/ecmascript" xlink:href="/static/scripts/rgenetics/checkbox_and_radiobutton.js"/>
+  <script type="text/ecmascript" xlink:href="/static/scripts/rgenetics/helper_functions.js"/>
+  <script type="text/ecmascript" xlink:href="/static/scripts/rgenetics/timer.js"/>
   <script type="text/ecmascript">
     <![CDATA[
       var checkBoxes = new Array();

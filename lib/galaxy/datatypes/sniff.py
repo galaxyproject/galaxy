@@ -5,6 +5,8 @@ import logging, sys, os, csv, tempfile, shutil, re, zipfile, gzip
 import registry
 from galaxy import util
 from galaxy.datatypes.checkers import *
+from galaxy.datatypes.binary import unsniffable_binary_formats
+from encodings import search_function as encodings_search_function
 
 log = logging.getLogger(__name__)
 
@@ -14,7 +16,7 @@ def get_test_fname(fname):
     full_path = os.path.join(path, 'test', fname)
     return full_path
 
-def stream_to_open_named_file( stream, fd, filename ):
+def stream_to_open_named_file( stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict' ):
     """Writes a stream to the provided file descriptor, returns the file's name and bool( is_multi_byte ). Closes file descriptor"""
     #signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
@@ -22,6 +24,10 @@ def stream_to_open_named_file( stream, fd, filename ):
     is_compressed = False
     is_binary = False
     is_multi_byte = False
+    if not target_encoding or not encodings_search_function( target_encoding ):
+        target_encoding = util.DEFAULT_ENCODING #utf-8
+    if not source_encoding:
+        source_encoding = util.DEFAULT_ENCODING #sys.getdefaultencoding() would mimic old behavior (defaults to ascii)
     while 1:
         chunk = stream.read( CHUNK_SIZE )
         if not chunk:
@@ -41,13 +47,12 @@ def stream_to_open_named_file( stream, fd, filename ):
                 chars = chunk[:100]
                 is_multi_byte = util.is_multi_byte( chars )
                 if not is_multi_byte:
-                    for char in chars:
-                        if ord( char ) > 128:
-                            is_binary = True
-                            break
+                    is_binary = util.is_binary( chunk )
             data_checked = True
         if not is_compressed and not is_binary:
-            os.write( fd, chunk.encode( "utf-8" ) )
+            if not isinstance( chunk, unicode ):
+                chunk = chunk.decode( source_encoding, source_error )
+            os.write( fd, chunk.encode( target_encoding, target_error ) )
         else:
             # Compressed files must be encoded after they are uncompressed in the upload utility,
             # while binary files should not be encoded at all.
@@ -55,10 +60,10 @@ def stream_to_open_named_file( stream, fd, filename ):
     os.close( fd )
     return filename, is_multi_byte
 
-def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
+def stream_to_file( stream, suffix='', prefix='', dir=None, text=False, **kwd ):
     """Writes a stream to a temporary file, returns the temporary file's name"""
     fd, temp_name = tempfile.mkstemp( suffix=suffix, prefix=prefix, dir=dir, text=text )
-    return stream_to_open_named_file( stream, fd, temp_name )
+    return stream_to_open_named_file( stream, fd, temp_name, **kwd )
 
 def check_newlines( fname, bytes_to_read=52428800 ):
     """
@@ -304,14 +309,9 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     else:
         for hdr in headers:
             for char in hdr:
-                if len( char ) > 1:
-                    for c in char:
-                        if ord( c ) > 128:
-                            is_binary = True
-                            break
-                elif ord( char ) > 128:
-                    is_binary = True
-                    break
+                #old behavior had 'char' possibly having length > 1,
+                #need to determine when/if this occurs 
+                is_binary = util.is_binary( char )
                 if is_binary:
                     break
             if is_binary:

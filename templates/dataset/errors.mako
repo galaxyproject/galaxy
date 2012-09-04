@@ -24,21 +24,21 @@
             <% job = hda.creating_job_associations[0].job %>
             %if job.traceback:
                 The Galaxy framework encountered the following error while attempting to run the tool:
-                <pre>${job.traceback | h}</pre>
+                <pre>${ util.unicodify( job.traceback ) | h}</pre>
             %endif
             %if job.stderr or job.info:
                 Tool execution generated the following error message:
                 %if job.stderr:
-                    <pre>${job.stderr | h}</pre>
+                    <pre>${ util.unicodify( job.stderr ) | h}</pre>
                 %elif job.info:
-                    <pre>${job.info | h}</pre>
+                    <pre>${ util.unicodify( job.info ) | h}</pre>
                 %endif
             %else:
                 Tool execution did not generate any error messages.
             %endif
             %if job.stdout:
                 The tool produced the following additional output:
-                <pre>${job.stdout | h}</pre>
+                <pre>${ util.unicodify( job.stdout ) | h}</pre>
             %endif
         %else:
             The tool did not create any additional job / error info.

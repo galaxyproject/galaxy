@@ -115,15 +115,16 @@ class GenomeTransferPlugin( DataTransfer ):
                 files = tar.getmembers()
                 for filename in files:
                     z = tar.extractfile(filename)
-                    try:
-                        chunk = z.read( CHUNK_SIZE )
-                    except IOError:
-                        os.close( fd )
-                        log.error( 'Problem decompressing compressed data' )
-                        exit()
-                    if not chunk:
-                        break
-                    os.write( fd, chunk )
+                    while 1:
+                        try:
+                            chunk = z.read( CHUNK_SIZE )
+                        except IOError:
+                            os.close( fd )
+                            log.error( 'Problem decompressing compressed data' )
+                            exit()
+                        if not chunk:
+                            break
+                        os.write( fd, chunk )
                     os.write( fd, '\n' )
                 os.close( fd )
                 tar.close()

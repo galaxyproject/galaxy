@@ -29,6 +29,9 @@
 ## Render the dataset `data` as history item, using `hid` as the displayed id
 <%def name="render_dataset( data, hid, show_deleted_on_refresh = False, for_editing = True, display_structured = False )">
     <%
+
+        from galaxy.datatypes.xml import Phyloxml
+        from galaxy.datatypes.data import Newick, Nexus
         dataset_id = trans.security.encode_id( data.id )
 
         if data.state in ['no state','',None]:
@@ -104,6 +107,8 @@
                     %endif
                     ></a>
                 %endif
+                
+                ## edit attr button
                 %if for_editing:
                     %if data.deleted and not data.purged:
                         <span title="Undelete dataset to edit attributes" class="icon-button edit_disabled tooltip"></span>
@@ -113,7 +118,10 @@
                         <a class="icon-button edit tooltip" title='${_("Edit attributes")}' href="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" target="galaxy_main"></a>
                     %endif
                 %endif
+                
             %endif
+            
+            ## delete button
             %if for_editing:
                 %if can_edit:
                     <a class="icon-button delete tooltip" title='${_("Delete")}' href="${h.url_for( controller='dataset', action='delete', dataset_id=dataset_id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${dataset_id}"></a>
@@ -218,7 +226,7 @@
                     
                     %if for_editing:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
-                        %if app.config.get_bool( 'enable_tracks', False ) and data.ext in app.datatypes_registry.get_available_tracks():
+                        %if data.ext in app.datatypes_registry.get_available_tracks():
                             <%
                             if data.dbkey != '?':
                                 data_url = h.url_for( controller='tracks', action='list_tracks', dbkey=data.dbkey )
@@ -229,6 +237,14 @@
                             <a href="javascript:void(0)" data-url="${data_url}" class="icon-button chart_curve tooltip trackster-add"
                                 action-url="${h.url_for( controller='tracks', action='browser', dataset_id=dataset_id)}"
                                 new-url="${h.url_for( controller='tracks', action='index', dataset_id=dataset_id, default_dbkey=data.dbkey)}" title="View in Trackster"></a>
+                        %endif
+                        <%
+                            isPhylogenyData = isinstance(data.datatype,  (Phyloxml, Nexus, Newick))
+                        %>
+                        %if isPhylogenyData:
+                                <a href="javascript:void(0)"  class="icon-button chart_curve phyloviz-add"
+                                   action-url="${h.url_for( controller='phyloviz', action='-', dataset_id=dataset_id)}"
+                                   new-url="${h.url_for( controller='phyloviz', action='index', dataset_id=dataset_id)}" title="View in Phyloviz"></a>
                         %endif
                         %if trans.user:
                             %if not display_structured:

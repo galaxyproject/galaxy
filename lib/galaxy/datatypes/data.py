@@ -719,7 +719,49 @@ class LineCount( Text ):
     pass
 
 class Newick( Text ):
-    pass
+    """New Hampshire/Newick Format"""
+    file_ext = "nhx"
+
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
+
+    def __init__(self, **kwd):
+        """Initialize foobar datatype"""
+        Text.__init__(self, **kwd)
+
+    def init_meta( self, dataset, copy_from=None ):
+        Text.init_meta( self, dataset, copy_from=copy_from )
+
+
+    def sniff( self, filename ):
+        """ Returning false as the newick format is too general and cannot be sniffed."""
+        return False
+
+
+class Nexus( Text ):
+    """Nexus format as used By Paup, Mr Bayes, etc"""
+    file_ext = "nex"
+
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
+
+    def __init__(self, **kwd):
+        """Initialize foobar datatype"""
+        Text.__init__(self, **kwd)
+
+    def init_meta( self, dataset, copy_from=None ):
+        Text.init_meta( self, dataset, copy_from=copy_from )
+
+
+    def sniff( self, filename ):
+        """All Nexus Files Simply puts a '#NEXUS' in its first line"""
+        f = open(filename, "r")
+        firstline = f.readline().upper()
+        f.close()
+
+        if "#NEXUS" in firstline:
+            return True
+        else:
+            return False
+
 
 # ------------- Utility methods --------------
 

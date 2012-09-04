@@ -7,7 +7,7 @@
         name_str = '%d selected datasets' % len( lddas )
     else:
         ldda = lddas[0]
-        name_str = ldda.name
+        name_str = util.unicodify( ldda.name )
 %>
 
 <br/><br/>

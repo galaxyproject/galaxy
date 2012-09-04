@@ -4433,7 +4433,7 @@ var FeatureTrack = function(view, container, obj_dict) {
     // initialization code.
     //
     var track = this;
-    this.display_modes = ["Auto", "Histogram", "Dense", "Squish", "Pack"];
+    this.display_modes = ["Auto", "Coverage", "Dense", "Squish", "Pack"];
     
     //
     // Initialization.
@@ -4516,8 +4516,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var track = this,
             i;
                 
-        // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
-        if (track.mode === "Histogram") {
+        // If mode is Coverage and tiles do not share max, redraw tiles as necessary using new max.
+        if (track.mode === "Coverage") {
             // Get global max.
             var global_max = -1;
             for (i = 0; i < tiles.length; i++) {
@@ -4534,7 +4534,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     track.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { more_tile_data: { max: global_max } } );
                 }
             }
-        }                
+        }            
         
         //
         // Update filter attributes, UI.
@@ -4650,86 +4650,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         return slotter.slot_features( features );
     },
     /**
-     * Given feature data, returns summary tree data. Feature data must be sorted by start 
-     * position. Return value is a dict with keys 'data', 'delta' (bin size) and 'max.' Data
-     * is a two-item list; first item is bin start, second is bin's count.
-     */
-    get_summary_tree_data: function(data, low, high, num_bins) {
-        if (num_bins > high - low) {
-            num_bins = high - low;
-        }
-        var bin_size = Math.floor((high - low)/num_bins),
-            bins = [],
-            max_count = 0;
-            
-        /*    
-        // For debugging:
-        for (var i = 0; i < data.length; i++)
-            console.log("\t", data[i][1], data[i][2], data[i][3]);
-        */
-        
-        //
-        // Loop through bins, counting data for each interval.
-        //
-        var data_index_start = 0,
-            data_index = 0,
-            data_interval,
-            bin_index = 0,
-            bin_interval = [], 
-            cur_bin;
-            
-        // Set bin interval.
-        var set_bin_interval = function(interval, low, bin_index, bin_size) {
-            interval[0] = low + bin_index * bin_size;
-            interval[1] = low + (bin_index + 1) * bin_size;
-        };
-        
-        // Loop through bins, data to compute bin counts. Only compute bin counts as long
-        // as there is data.
-        while (bin_index < num_bins && data_index_start !== data.length) {
-            // Find next bin that has data.
-            var bin_has_data = false;
-            for (; bin_index < num_bins && !bin_has_data; bin_index++) {
-                set_bin_interval(bin_interval, low, bin_index, bin_size);
-                // Loop through data and break if data found that goes in bin.
-                for (data_index = data_index_start; data_index < data.length; data_index++) {
-                    data_interval = data[data_index].slice(1, 3);
-                    if (is_overlap(data_interval, bin_interval)) {
-                        bin_has_data = true;
-                        break;
-                    }
-                }
-                // Break from bin loop if this bin has data.
-                if (bin_has_data) {
-                    break;
-                }
-            }
-            
-            // Set start index to current data, which is the first to overlap with this bin
-            // and perhaps with later bins.
-            data_start_index = data_index;
-            
-            // Count intervals that overlap with bin.
-            bins[bins.length] = cur_bin = [bin_interval[0], 0];
-            for (; data_index < data.length; data_index++) {
-                data_interval = data[data_index].slice(1, 3);
-                if (is_overlap(data_interval, bin_interval)) {
-                    cur_bin[1]++;
-                }
-                else { break; }
-            }
-            
-            // Update max count.
-            if (cur_bin[1] > max_count) {
-                max_count = cur_bin[1];
-            }
-            
-            // Go to next bin.
-            bin_index++;
-        }
-        return {max: max_count, delta: bin_size, data: bins};
-    },
-    /**
      * Returns appropriate display mode based on data.
      */
     get_mode: function(data) {
@@ -4766,8 +4686,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * number of pixels required.
      */
     get_canvas_height: function(result, mode, w_scale, canvas_width) {
-        if (mode === "summary_tree" || mode === "Histogram") {
-            // Extra padding at top of summary tree so label does not overlap data.
+        if (mode === "summary_tree" || mode === "Coverage") {
             return this.summary_draw_height;
         }
         else {
@@ -4796,16 +4715,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             tile_high = region.get('end'),
             left_offset = this.left_offset;
         
-        // Drawing the summary tree (feature coverage histogram)
-        if (mode === "summary_tree" || mode === "Histogram") {
-            // Get summary tree data if necessary and set max if there is one.
-            if (result.dataset_type !== "summary_tree") {
-                var st_data = this.get_summary_tree_data(result.data, tile_low, tile_high, 200);
-                if (result.max) {
-                    st_data.max = result.max;
-                }
-                result = st_data;
-            }
+        // Drawing the summary tree.
+        if (mode === "summary_tree" || mode === "Coverage") {
             // Paint summary tree into canvas
             var painter = new painters.SummaryTreePainter(result, tile_low, tile_high, this.prefs);
             painter.draw(ctx, canvas.width, canvas.height, w_scale);
@@ -4872,7 +4783,11 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         if (mode === "Auto") {
             return true;
         }
-        // All other modes--Histogram, Dense, Squish, Pack--require data + details.
+        // Histogram mode requires summary_tree data.
+        else if (mode === "Coverage") {
+            return data.dataset_type === "summary_tree";
+        }
+        // All other modes--Dense, Squish, Pack--require data + details.
         else if (data.extra_info === "no_detail" || data.dataset_type === "summary_tree") {
             return false;
         }
@@ -5775,7 +5690,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             ctx.globalAlpha = 1;
                         
             // Draw label for Pack mode.
-            if (mode === "Pack" && feature_start > tile_low) {
+            if (feature_name && mode === "Pack" && feature_start > tile_low) {
                 ctx.fillStyle = label_color;
                 // FIXME: assumption here that the entire view starts at 0
                 if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {

@@ -64,8 +64,8 @@ def __main__():
     else:
         index_path = options.index_path
 
-    # Build bowtie command.
-    cmd = 'bowtie2 %s -x %s %s | samtools view -Sb - > %s'
+    # Build bowtie command; use view and sort to create sorted bam.
+    cmd = 'bowtie2 %s -x %s %s | samtools view -Su - | samtools sort -o - sorted > %s'
     
     # Set up reads.
     if options.single_paired == 'paired':

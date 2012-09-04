@@ -218,7 +218,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #ucsc_display_sites = main,test,archaea,ucla
 
 # GBrowse servers: tool-data/shared/gbrowse/gbrowse_build_sites.txt
-#gbrowse_display_sites = wormbase,tair,modencode_worm,modencode_fly,yeast_sgd
+#gbrowse_display_sites = modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225
 
 # GeneTrack servers: tool-data/shared/genetrack/genetrack_sites.txt
 #genetrack_display_sites = main,test
@@ -505,15 +505,6 @@ use_interactive = True
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
-
-# Enable Galaxy's built-in visualization module, Trackster.
-#enable_tracks = True
-
-# Enable Galaxy Pages. Pages are custom webpages that include embedded Galaxy items, 
-# such as datasets, histories, workflows, and visualizations; pages are useful for 
-# documenting and sharing multiple analyses or workflows. Pages are created using a 
-# WYSIWYG editor that is very similar to a word processor.
-#enable_pages = True
 
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.

@@ -34,6 +34,9 @@ _lock = threading.RLock()
 
 gzip_magic = '\037\213'
 bz2_magic = 'BZh'
+DEFAULT_ENCODING = 'utf-8'
+NULL_CHAR = '\000'
+BINARY_CHARS = [ NULL_CHAR ]
 
 from inflection import Inflector, English
 inflector = Inflector(English)
@@ -56,6 +59,32 @@ def is_multi_byte( chars ):
             wchartype.is_full_letter( char ):
             return True
     return False
+
+def is_binary( value, binary_chars=None ):
+    """
+    File is binary if it contains a null-byte by default (e.g. behavior of grep, etc.).
+    This may fail for utf-16 files, but so would ASCII encoding.
+    >>> is_binary( string.printable )
+    False
+    >>> is_binary( '\\xce\\x94' )
+    False
+    >>> is_binary( '\\000' )
+    True
+    """
+    if binary_chars is None:
+        binary_chars = BINARY_CHARS
+    for binary_char in binary_chars:
+        if binary_char in value:
+            return True
+    return False
+
+def get_charset_from_http_headers( headers, default=None ):
+    rval = headers.get('content-type', None )
+    if rval and 'charset=' in rval:
+        rval = rval.split('charset=')[-1].split(';')[0].strip()
+        if rval:
+            return rval
+    return default
 
 def synchronized(func):
     """This wrapper will serialize access to 'func' to a single thread. Use it as a decorator."""
@@ -333,6 +362,17 @@ def roundify(amount, sfs = 2):
     else:
         return amount[0:sfs] + '0'*(len(amount) - sfs)
 
+def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None ):
+    """
+    Returns a unicode string or None
+    """
+    if isinstance( value, unicode ):
+        return value
+    try:
+        return unicode( value, encoding, error )
+    except:
+        return default
+
 def object_to_string( obj ):
     return binascii.hexlify( pickle.dumps( obj, 2 ) )
     
@@ -502,7 +542,7 @@ def stringify_dictionary_keys( in_dict ):
 
 def recursively_stringify_dictionary_keys( d ):
     if isinstance(d, dict):
-        return dict([(k.encode('utf-8'), recursively_stringify_dictionary_keys(v)) for k,v in d.iteritems()])
+        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k,v in d.iteritems()])
     elif isinstance(d, list):
         return [recursively_stringify_dictionary_keys(x) for x in d]
     else:
@@ -622,7 +662,7 @@ def send_mail( frm, to, subject, body, config ):
     Sends an email.
     """
     to = listify( to )
-    msg = MIMEText( body )
+    msg = MIMEText(  body.encode( 'ascii', 'replace' ) )
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject

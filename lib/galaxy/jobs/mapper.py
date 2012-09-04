@@ -111,7 +111,7 @@ class JobRunnerMapper( object ):
             expand_function = self.__get_expand_function( expand_function_name )
             return self.__invoke_expand_function( expand_function )
         else:
-            raise Exception( "Unhandled dynamic job runner type specified - %s" % calculation_type )
+            raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 
     def __cache_job_runner_url( self, params ):
         raw_job_runner_url = self.job_wrapper.tool.get_job_runner_url( params )

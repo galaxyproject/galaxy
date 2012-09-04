@@ -1752,6 +1752,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     if action == 'zip':
                         # Can't use mkstemp - the file must not exist first
                         tmpd = tempfile.mkdtemp()
+                        util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, self.app.config.gid )
                         tmpf = os.path.join( tmpd, 'library_download.' + action )
                         if ziptype == '64' and trans.app.config.upstream_gzip:
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )

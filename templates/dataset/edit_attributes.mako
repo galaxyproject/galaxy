@@ -11,7 +11,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${message_ns.javascripts()}
-    ${h.js( "galaxy.base", "jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js( "galaxy.base", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
 </%def>
 
 <%def name="datatype( dataset, datatypes )">
@@ -58,7 +58,7 @@
                     Info:
                 </label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <textarea name="info" cols="40" rows="2">${data.info | h}</textarea>
+                    <textarea name="info" cols="40" rows="2">${ util.unicodify( data.info ) | h}</textarea>
                 </div>
                 <div style="clear: both"></div>
             </div>

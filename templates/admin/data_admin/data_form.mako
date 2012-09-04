@@ -27,7 +27,7 @@
 </%def>
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
 </%def>
 ##
 ## Override methods from base.mako and base_panels.mako
@@ -53,7 +53,7 @@
             <label for="source">Data Source</label>
             <select id="datasource" name="source" label="Data Source">
                 <option value="UCSC">UCSC</option>
-                <option value="Broad">Broad Institute</option>
+                <option value="URL">Direct Link</option>
                 <option value="NCBI">NCBI</option>
                 <option value="Ensembl">EnsemblGenome</option>
             </select>
@@ -75,22 +75,31 @@
             </div>
         </div>
         <h2>Parameters</h2>
-        <div id="params_Broad" class="params-block">
+        <div id="params_URL" class="params-block">
             <div class="form-row">
-                <label for="longname">Internal Name</label>
-                <input name="longname" type="text" label="Internal Name" />
+                <label for="longname">Long Name</label>
+                <input name="longname" type="text" label="Long Name" />
                 <div style="clear: both;">&nbsp;</div>
+                <div class="toolParamHelp" style="clear: both;">
+                    A descriptive name for this build.
+                </div>
             </div>
             <div class="form-row">
-                <label for="uniqid">Internal Unique Identifier</label>
-                <input name="uniqid" type="text" label="Internal Identifier" />
+                <label for="url_dbkey">DB Key</label>
+                <input name="url_dbkey" type="text" label="DB Key" />
                 <div style="clear: both;">&nbsp;</div>
+                <div class="toolParamHelp" style="clear: both;">
+                    The internal DB key for this build. WARNING: Using a value that already exists in one or more .loc files may have unpredictable results.
+                </div>
             </div>
             <div id="dlparams">
                 <div class="form-row">
-                    <label for="broad_dbkey">External Name</label>
-                    <input name="broad_dbkey" type="text" label="Genome Unique Name" />
+                    <label for="url">URL</label>
+                    <input name="url" type="text" label="URL" />
                     <div style="clear: both;">&nbsp;</div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        The URL to download this build from.
+                    </div>
                 </div>
             </div>
         </div>
@@ -101,7 +110,9 @@
                     <input type="text" class="text-and-autocomplete-select ac_input" size="40" name="ncbi_name" id="ncbi_name" value="" />
                 </div>
                 <div class="toolParamHelp" style="clear: both;">
-                    If you can't find the build you want in this list, &lt;insert link to instructions here&gt;
+                    If you can't find the build you want in this list, open a terminal and execute
+                    <pre>sh cron/updatencbi.sh</pre>
+                    in your galaxy root directory.
                 </div>
             </div>
         </div>
@@ -116,7 +127,9 @@
                     </select>
                 </div>
                 <div class="toolParamHelp" style="clear: both;">
-                    If you can't find the build you want in this list, &lt;insert link to instructions here&gt;
+                    If you can't find the build you want in this list, open a terminal and execute
+                    <pre>sh cron/updateensembl.sh</pre>
+                    in your galaxy root directory.
                 </div>
             </div>
         </div>
@@ -135,7 +148,9 @@
                     </select>
                 </div>
                 <div class="toolParamHelp" style="clear: both;">
-                    If you can't find the build you want in this list, &lt;insert link to instructions here&gt;
+                    If you can't find the build you want in this list, open a terminal and execute
+                    <pre>sh cron/updateucsc.sh</pre>
+                    in your galaxy root directory.
                 </div>
             </div>
         </div>
@@ -145,7 +160,6 @@
         <script type="text/javascript">
             $(document).ready(function() {
                 checkDataSource();
-                // Replace dbkey select with search+select.
             });
             $('#datasource').change(function() {
                 checkDataSource();

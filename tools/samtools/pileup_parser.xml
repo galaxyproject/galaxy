@@ -7,7 +7,7 @@
     #end if#
   </command>
   <inputs>
-    <param name="input" type="data" format="tabular" label="Select dataset"/>
+    <param name="input" type="data" format="pileup" label="Select dataset"/>
     <conditional name="pileup_type">
         <param name="type_select" type="select" label="which contains" help="See &quot;Types of pileup datasets&quot; below for examples">
             <option value="six" selected="true">Pileup with six columns (simple)</option>

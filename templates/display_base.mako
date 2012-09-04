@@ -32,9 +32,9 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "bootstrap", "galaxy.base", "json2", "jstorage", "jquery.autocomplete", "jquery.rating", 
-            "autocomplete_tagging", "viz/trackster", "viz/trackster_ui", "jquery.event.drag", "jquery.mousewheel", 
-            "jquery.autocomplete", "jquery.ui.sortable.slider", "farbtastic", "mvc/data", "viz/visualization" )}
+    ${h.js( "libs/jquery/jquery", "libs/bootstrap", "galaxy.base", "libs/json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.rating", 
+            "galaxy.autocom_tagging", "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.mousewheel", 
+            "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.ui.sortable.slider", "libs/farbtastic", "mvc/data", "viz/visualization" )}
 
     <script type="text/javascript">
         

@@ -4,7 +4,7 @@ Classes for generating HTML forms
 
 import logging, sys, os, time
 from cgi import escape
-from galaxy.util import restore_text, relpath, nice_size
+from galaxy.util import restore_text, relpath, nice_size, unicodify
 from galaxy.web import url_for
 from binascii import hexlify
 
@@ -34,8 +34,8 @@ class TextField(BaseField):
         self.size = int( size or 10 )
         self.value = value or ""
     def get_html( self, prefix="", disabled=False ):
-        return '<input type="text" name="%s%s" size="%d" value="%s"%s>' \
-            % ( prefix, self.name, self.size, escape( str( self.value ),  quote=True ), self.get_disabled_str( disabled ) )
+        return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>' \
+            % ( prefix, self.name, self.size, escape( str( self.value ),  quote=True ), self.get_disabled_str( disabled ) ) )
     def set_size(self, size):
         self.size = int( size )
         
@@ -53,8 +53,8 @@ class PasswordField(BaseField):
         self.size = int( size or 10 )
         self.value = value or ""
     def get_html( self, prefix="", disabled=False  ):
-        return '<input type="password" name="%s%s" size="%d" value="%s"%s>' \
-            % ( prefix, self.name, self.size, escape( str( self.value ), quote=True ), self.get_disabled_str( disabled ) )
+        return unicodify( '<input type="password" name="%s%s" size="%d" value="%s"%s>' \
+            % ( prefix, self.name, self.size, escape( str( self.value ), quote=True ), self.get_disabled_str( disabled ) ) )
     def set_size(self, size):
         self.size = int( size )
 
@@ -74,8 +74,8 @@ class TextArea(BaseField):
         self.cols = int(self.size[-1])
         self.value = value or ""
     def get_html( self, prefix="", disabled=False ):
-        return '<textarea name="%s%s" rows="%d" cols="%d"%s>%s</textarea>' \
-            % ( prefix, self.name, self.rows, self.cols, self.get_disabled_str( disabled ), escape( str( self.value ), quote=True ) )
+        return unicodify( '<textarea name="%s%s" rows="%d" cols="%d"%s>%s</textarea>' \
+            % ( prefix, self.name, self.rows, self.cols, self.get_disabled_str( disabled ), escape( str( self.value ), quote=True ) ) )
     def set_size(self, rows, cols):
         self.rows = rows
         self.cols = cols
@@ -111,8 +111,8 @@ class CheckboxField(BaseField):
         # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
-        return '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>' \
-            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) )
+        return unicodify( '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>' \
+            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) ) )
     @staticmethod
     def is_checked( value ):
         if value == True:
@@ -148,7 +148,7 @@ class FileField(BaseField):
         ajax_text = ""
         if self.ajax:
             ajax_text = ' galaxy-ajax-upload="true"'
-        return '<input type="file" name="%s%s"%s%s>' % ( prefix, self.name, ajax_text, value_text )
+        return unicodify( '<input type="file" name="%s%s"%s%s>' % ( prefix, self.name, ajax_text, value_text ) )
 
 class FTPFileField(BaseField):
     """
@@ -223,7 +223,7 @@ class HiddenField(BaseField):
         self.name = name
         self.value = value or ""
     def get_html( self, prefix="" ):
-        return '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, escape( str( self.value ), quote=True ) )
+        return unicodify( '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, escape( str( self.value ), quote=True ) ) )
 
 class SelectField(BaseField):
     """
@@ -308,7 +308,7 @@ class SelectField(BaseField):
             rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
                 ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( str( text ), quote=True ) ) )
             ctr += 1
-        return "\n".join( rval )
+        return unicodify( "\n".join( rval ) )
     def get_html_radio( self, prefix="", disabled=False ):
         rval = []
         ctr = 0
@@ -333,7 +333,7 @@ class SelectField(BaseField):
                            uniq_id,
                            text ) )
             ctr += 1
-        return "\n".join( rval )    
+        return unicodify( "\n".join( rval ) )    
     def get_html_default( self, prefix="", disabled=False ):
         if self.multiple:
             multiple = " multiple"
@@ -357,7 +357,7 @@ class SelectField(BaseField):
         rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>' % \
                      ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
         rval.append( '</select>' )
-        return "\n".join( rval )
+        return unicodify( "\n".join( rval ) )
     def get_selected( self, return_label=False, return_value=False, multi=False ):
         '''
         Return the currently selected option's label, value or both as a tuple.  For
@@ -513,7 +513,7 @@ class DrillDownField( BaseField ):
         find_expanded_options( expanded_options, self.options )
         recurse_options( rval, self.options, drilldown_id, expanded_options )
         rval.append( '</div>' )
-        return '\n'.join( rval )
+        return unicodify( '\n'.join( rval ) )
     
 class AddressField(BaseField):
     @staticmethod
@@ -688,8 +688,8 @@ class LibraryField( BaseField ):
         else:
             ldda_ids = "||".join( [ self.trans.security.encode_id( ldda.id ) for ldda in self.lddas ] )
             text = "<br />".join( [ "%s. %s" % (i+1, ldda.name) for i, ldda in enumerate(self.lddas)] )
-        return '<a href="javascript:void(0);" class="add-librarydataset">%s</a> \
-                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda_ids), quote=True ) )
+        return unicodify( '<a href="javascript:void(0);" class="add-librarydataset">%s</a> \
+                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda_ids), quote=True ) ) )
 
     def get_display_text(self):
         if self.ldda:

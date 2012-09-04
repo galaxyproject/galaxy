@@ -49,7 +49,7 @@
        <data format="txt" name="params" from_work_dir="params.xprs"/>
        <data format="txt" name="results" from_work_dir="results.xprs"/>
        <data format="txt" name="varcov" from_work_dir="varcov.xprs">
-       		<filter>additional_params[ 'calc_covar' ] == "yes"</filter>
+       		<filter>additional_params[ 'use_additional' ] == "yes" and additional_params[ 'calc_covar' ] == "yes"</filter>
        </data>
    </outputs>
 

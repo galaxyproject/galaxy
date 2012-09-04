@@ -187,7 +187,9 @@ class ToolBox( object ):
                             section.elems[ section_key ] = workflow
                             log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
                     elif section_key.startswith( 'label_' ):
-                        section.elems[ section_key ] = section_val
+                        if section_val:
+                            section.elems[ section_key ] = section_val
+                            log.debug( "Loaded label: %s" % ( section_val.text ) )
                 self.tool_panel[ key ] = section
     def load_integrated_tool_panel_keys( self ):
         """
@@ -215,12 +217,12 @@ class ToolBox( object ):
                         section.elems[ key ] = None
                     elif section_elem.tag == 'label':
                         key = 'label_%s' % section_elem.get( 'id' )
-                        section.elems[ key ] = ToolSectionLabel( section_elem )
+                        section.elems[ key ] = None
                 key = 'section_%s' % elem.get( 'id' )
                 self.integrated_tool_panel[ key ] = section
             elif elem.tag == 'label':
                 key = 'label_%s' % elem.get( 'id' )
-                self.integrated_tool_panel[ key ] = ToolSectionLabel( elem )
+                self.integrated_tool_panel[ key ] = None
     def write_integrated_tool_panel_config_file( self ):
         """
         Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators 
@@ -254,10 +256,11 @@ class ToolBox( object ):
                         if section_item:
                             os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
                     elif section_key.startswith( 'label_' ):
-                        label_id = section_item.id or ''
-                        label_text = section_item.text or ''
-                        label_version = section_item.version or ''
-                        os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
+                        if section_item:
+                            label_id = section_item.id or ''
+                            label_text = section_item.text or ''
+                            label_version = section_item.version or ''
+                            os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
                 os.write( fd, '    </section>\n' )
         os.write( fd, '</toolbox>\n' )
         os.close( fd )
@@ -2631,7 +2634,7 @@ class Tool:
         if for_link:
             # Create tool link.
             if not self.tool_type.startswith( 'data_source' ):
-                link = url_for( controller='tool_runner', tool_id=self.id )
+                link = url_for( '/tool_runner', tool_id=self.id )
             else:
                 link = url_for( self.action, **self.get_static_param_values( trans ) )
             

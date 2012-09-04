@@ -334,7 +334,7 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
                     noupdate=False,
                     rev=util.listify( str( ctx_rev ) ) )
 def copy_sample_file( app, filename, dest_path=None ):
-    """Copy xxx.loc.sample to dest_path/xxx.loc.sample and dest_path/xxx.loc.  The default value for dest_path is ~/tool-data."""
+    """Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path is ~/tool-data."""
     if dest_path is None:
         dest_path = os.path.abspath( app.config.tool_data_path )
     sample_file_name = strip_path( filename )
@@ -454,7 +454,7 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
 def generate_clone_url( trans, repository ):
     """Generate the URL for cloning a repository."""
     tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-    return '%s/repos/%s/%s' % ( tool_shed_url, repository.owner, repository.name )
+    return url_join( tool_shed_url, 'repos', repository.owner, repository.name )
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
     tree = ElementTree.parse( datatypes_config )
@@ -573,13 +573,13 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
     if datatypes_config:
         metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
     # Get the relative path to all sample files included in the repository for storage in the repository's metadata.
-    sample_files = get_sample_files_from_disk( repository_files_dir=files_dir,
-                                               relative_install_dir=relative_install_dir,
-                                               resetting_all_metadata_on_repository=resetting_all_metadata_on_repository )
-    if sample_files:
-        metadata_dict[ 'sample_files' ] = sample_files
+    sample_file_metadata_paths, sample_file_copy_paths = get_sample_files_from_disk( repository_files_dir=files_dir,
+                                                                                     relative_install_dir=relative_install_dir,
+                                                                                     resetting_all_metadata_on_repository=resetting_all_metadata_on_repository )
+    if sample_file_metadata_paths:
+        metadata_dict[ 'sample_files' ] = sample_file_metadata_paths
     # Copy all sample files included in the repository to a single directory location so we can load tools that depend on them.
-    for sample_file in sample_files:
+    for sample_file in sample_file_copy_paths:
         copy_sample_file( app, sample_file, dest_path=work_dir )
         # If the list of sample files includes a tool_data_table_conf.xml.sample file, laad it's table elements into memory.
         relative_path, filename = os.path.split( sample_file )
@@ -608,21 +608,12 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
                             print "Error parsing %s", full_path, ", exception: ", str( e )
                             is_tool = False
                         if is_tool:
-                            try:
-                                tool = app.toolbox.load_tool( full_path )
-                            except KeyError, e:
-                                tool = None
-                                invalid_tool_configs.append( name )
-                                error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
-                                error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
-                                error_message += 'this error.  '
-                                invalid_file_tups.append( ( name, error_message ) )
-                            except Exception, e:
-                                tool = None
-                                invalid_tool_configs.append( name )
-                                invalid_file_tups.append( ( name, str( e ) ) )
-                            if tool is not None:
-                                invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_files, webapp=webapp )
+                            tool, valid, error_message = load_tool_from_config( app, full_path )
+                            if tool is None:
+                                if not valid:
+                                    invalid_file_tups.append( ( name, error_message ) )
+                            else:
+                                invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_metadata_paths, webapp=webapp )
                                 can_set_metadata = True
                                 for tup in invalid_files_and_errors_tups:
                                     if name in tup:
@@ -993,7 +984,7 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             break
     return converter_path, display_path
 def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
-    url = '%s/repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( tool_shed_url, name, owner, changeset_revision )
+    url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( name, owner, changeset_revision ) )
     response = urllib2.urlopen( url )
     ctx_rev = response.read()
     response.close()
@@ -1077,7 +1068,8 @@ def get_sample_files_from_disk( repository_files_dir, relative_install_dir=None,
     if resetting_all_metadata_on_repository:
         # Keep track of the location where the repository is temporarily cloned so that we can strip it when setting metadata.
         work_dir = repository_files_dir
-    sample_files = []
+    sample_file_metadata_paths = []
+    sample_file_copy_paths = []
     for root, dirs, files in os.walk( repository_files_dir ):
             if root.find( '.hg' ) < 0:
                 for name in files:
@@ -1088,10 +1080,15 @@ def get_sample_files_from_disk( repository_files_dir, relative_install_dir=None,
                             if stripped_path_to_sample_file.startswith( '/' ):
                                 stripped_path_to_sample_file = stripped_path_to_sample_file[ 1: ]
                             relative_path_to_sample_file = os.path.join( relative_install_dir, stripped_path_to_sample_file )
+                            if os.path.exists( relative_path_to_sample_file ):
+                                sample_file_copy_paths.append( relative_path_to_sample_file )
+                            else:
+                                sample_file_copy_paths.append( full_path_to_sample_file )
                         else:
                             relative_path_to_sample_file = os.path.join( root, name )
-                        sample_files.append( relative_path_to_sample_file )
-    return sample_files
+                            sample_file_copy_paths.append( relative_path_to_sample_file )
+                        sample_file_metadata_paths.append( relative_path_to_sample_file )
+    return sample_file_metadata_paths, sample_file_copy_paths
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
     """
     Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
@@ -1221,8 +1218,8 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
     tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-    url = '%s/repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
-        ( tool_shed_url, repository.name, repository.owner, repository.installed_changeset_revision )
+    url = url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
+        ( repository.name, repository.owner, repository.installed_changeset_revision ) )
     try:
         response = urllib2.urlopen( url )
         encoded_update_dict = response.read()
@@ -1404,6 +1401,22 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
 def load_installed_display_applications( app, installed_repository_dict, deactivate=False ):
     # Load or deactivate proprietary datatype display applications
     app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict, deactivate=deactivate )
+def load_tool_from_config( app, full_path ):
+    try:
+        tool = app.toolbox.load_tool( full_path )
+        valid = True
+        error_message = None
+    except KeyError, e:
+        tool = None
+        valid = False
+        error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
+        error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
+        error_message += 'this error.  '
+    except Exception, e:
+        tool = None
+        valid = False
+        error_message = str( e )
+    return tool, valid, error_message
 def open_repository_files_folder( trans, folder_path ):
     try:
         files_list = get_repository_files( trans, folder_path )
@@ -1645,3 +1658,8 @@ def update_tool_shed_repository_status( app, tool_shed_repository, status ):
     tool_shed_repository.status = status
     sa_session.add( tool_shed_repository )
     sa_session.flush()
+def url_join( *args ):
+    parts = []
+    for arg in args:
+        parts.append( arg.strip( '/' ) )
+    return '/'.join( parts )

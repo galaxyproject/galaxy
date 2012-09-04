@@ -17,7 +17,7 @@ class RoleAPIController( BaseAPIController ):
         """
         rval = []
         for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == False ):
-            if trans.app.security_agent.ok_to_display( trans.user, role ):
+            if trans.user_is_admin() or trans.app.security_agent.ok_to_display( trans.user, role ):
                 item = role.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
                 encoded_id = trans.security.encode_id( role.id )
                 item['url'] = url_for( 'role', id=encoded_id )
@@ -32,7 +32,7 @@ class RoleAPIController( BaseAPIController ):
         """
         role_id = id
         try:
-            role_id = trans.security.decode_id( role_id )
+            decoded_role_id = trans.security.decode_id( role_id )
         except TypeError:
             trans.response.status = 400
             return "Malformed role id ( %s ) specified, unable to decode." % str( role_id )
@@ -40,7 +40,7 @@ class RoleAPIController( BaseAPIController ):
             role = trans.sa_session.query( trans.app.model.Role ).get( decoded_role_id )
         except:
             role = None
-        if not role or not trans.app.security_agent.ok_to_display( trans.user, role ):
+        if not role or not (trans.user_is_admin() or trans.app.security_agent.ok_to_display( trans.user, role )):
             trans.response.status = 400
             return "Invalid role id ( %s ) specified." % str( role_id )
         item = role.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )
