@@ -87,7 +87,8 @@
             <param name="use_ref_annotation" value="Yes"/>
             <param name="reference_annotation" value="cuffcompare_in3.gtf" ftype="gtf"/>
             <param name="use_seq_data" value="No"/>
-            <output name="merged_transcripts" file="cuffmerge_out1.gtf"/>
+			<!-- oId assignment differ/are non-deterministic -->
+            <output name="merged_transcripts" file="cuffmerge_out1.gtf" lines_diff="8"/>
         </test>
     </tests>
 

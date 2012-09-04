@@ -231,7 +231,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
 
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname)
-    'blastxml'
+    'xml'
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname)
     'interval'

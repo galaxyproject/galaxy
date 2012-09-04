@@ -360,16 +360,6 @@ class UploadData( TwillTestCase ):
         self.check_history_for_string( '2,500 sequences format: <span class="csfasta">csfasta</span>, <td>&gt;2_14_26_F3,-1282216.0</td>' )
         self.check_metadata_for_string( 'value="shrimp_cs_test1.csfasta" value="\?" Change data type value="csfasta" selected="yes"' )
         self.delete_history( id=self.security.encode_id( history.id ) )
-    def test_0140_upload_file( self ):
-        """Test uploading megablast_xml_parser_test1.gz, NOT setting the file format"""
-        # Logged in as admin_user
-        self.check_history_for_string( 'Your history is empty' )
-        history = get_latest_history_for_user( admin_user )
-        self.upload_file( 'megablast_xml_parser_test1.gz' )
-        hda = get_latest_hda()
-        assert hda is not None, "Problem retrieving hda from database"
-        self.check_history_for_string( 'NCBI Blast XML data format: <span class="blastxml">blastxml</span>' )
-        self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0145_upload_file( self ):
         """Test uploading 1.axt, NOT setting the file format"""
         # Logged in as admin_user
