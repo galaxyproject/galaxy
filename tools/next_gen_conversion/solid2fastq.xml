@@ -66,7 +66,6 @@
     </test>
  </tests>
 <help>
-
 **What it does**
 
 Converts output of SOLiD instrument (versions 3.5 and earlier) to fastq format suitable for bowtie, bwa, and PerM mappers.
@@ -79,22 +78,22 @@ Below are examples of forward (F3) reads and quality scores:
 
 Reads::
 
-    >1831_573_1004_F3
+    &gt;1831_573_1004_F3
     T00030133312212111300011021310132222
-    >1831_573_1567_F3
+    &gt;1831_573_1567_F3
     T03330322230322112131010221102122113
 
 Quality scores::
 
-    >1831_573_1004_F3
+    &gt;1831_573_1004_F3
     4 29 34 34 32 32 24 24 20 17 10 34 29 20 34 13 30 34 22 24 11 28 19 17 34 17 24 17 25 34 7 24 14 12 22
-    >1831_573_1567_F3
+    &gt;1831_573_1567_F3
     8 26 31 31 16 22 30 31 28 29 22 30 30 31 32 23 30 28 28 31 19 32 30 32 19 8 32 10 13 6 32 10 6 16 11
 
 
 **Mate pairs**
 
-If your data is from a mate-paired run, you will have additional read and quality datasets that will look similar to the ones above with one exception: the names of reads will be ending with &quot;_R3&quot;.
+If your data is from a mate-paired run, you will have additional read and quality datasets that will look similar to the ones above with one exception: the names of reads will be ending with "_R3".
 In this case choose **Yes** from the *Is this a mate-pair run?* drop down and you will be able to select R reads. When processing mate pairs this tool generates two output files: one for F3 reads and the other for R3 reads.
 The reads are guaranteed to be paired -- mated reads will be in the same position in F3 and R3 fastq file. However, because pairing is verified it may take a while to process an entire SOLiD run (several hours).
 
@@ -104,11 +103,11 @@ The reads are guaranteed to be paired -- mated reads will be in the same positio
 
 **Remove reads containing color qualities below this value** - any read that contains as least one color call with quality lower than the specified value **will not** be reported.
 
-**Trim trailing &quot;_F3&quot; and &quot;_R3&quot;?** - does just that. Not necessary for bowtie. Required for BWA.
+**Trim trailing "_F3" and "_R3"?** - does just that. Not necessary for bowtie. Required for BWA.
 
 **Trim first base?** - SOLiD reads contain an adapter base such as the first T in this read::
 
-    >1831_573_1004_F3
+    &gt;1831_573_1004_F3
     T00030133312212111300011021310132222
   
 this option removes this base leaving only color calls. Not necessary for bowtie. Required for BWA.
@@ -119,42 +118,37 @@ this option removes this base leaving only color calls. Not necessary for bowtie
 
 **Examples of output**
 
-When all parameters are left &quot;as-is&quot; you will get this (using reads and qualities shown above)::
+When all parameters are left "as-is" you will get this (using reads and qualities shown above)::
 
  @1831_573_1004
  T00030133312212111300011021310132222
  +
- %>CCAA9952+C>5C.?C79,=42C292:C(9/-7
+ %%&gt;CCAA9952+C&gt;5C.?C79,=42C292:C(9/-7
  @1831_573_1004
  T03330322230322112131010221102122113
  +
- );@@17?@=>7??@A8?==@4A?A4)A+.'A+'1,
+ );@@17?@=&gt;7??@A8?==@4A?A4)A+.'A+'1,
 
 Setting *Trim first base from reads* to **Yes** will produce this::
 
  @1831_573_1004
  00030133312212111300011021310132222
  +
- %>CCAA9952+C>5C.?C79,=42C292:C(9/-7
+ %%&gt;CCAA9952+C&gt;5C.?C79,=42C292:C(9/-7
  @1831_573_1004
  03330322230322112131010221102122113
  +
- );@@17?@=>7??@A8?==@4A?A4)A+.'A+'1,
+ );@@17?@=&gt;7??@A8?==@4A?A4)A+.'A+'1,
 
 Finally, setting *Double encode* to **Yes** will yield::
 
  @1831_573_1004
  TAAATACTTTCGGCGCCCTAAACCAGCTCACTGGGG
  +
- %>CCAA9952+C>5C.?C79,=42C292:C(9/-7
+ %%&gt;CCAA9952+C&gt;5C.?C79,=42C292:C(9/-7
  @1831_573_1004
  TATTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
  +
- );@@17?@=>7??@A8?==@4A?A4)A+.'A+'1,
-
-
- 
-
- 
+ );@@17?@=&gt;7??@A8?==@4A?A4)A+.'A+'1,
 </help>
 </tool>
