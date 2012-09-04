@@ -5,7 +5,6 @@ import logging, sys, os, csv, tempfile, shutil, re, zipfile, gzip
 import registry
 from galaxy import util
 from galaxy.datatypes.checkers import *
-from galaxy.datatypes.binary import unsniffable_binary_formats
 from encodings import search_function as encodings_search_function
 
 log = logging.getLogger(__name__)
