@@ -574,18 +574,26 @@ extend(Drawable.prototype, {
                                  icon_dict.on_click_fn, icon_dict.prepend, icon_dict.hide);
         }
     },
+    
     /**
      * Update icons.
      */
     update_icons: function() {},
+    
     /**
      * Hide drawable's contents.
      */
     hide_contents: function () {},
+    
     /**
      * Show drawable's contents.
      */
-    show_contents: function() {}
+    show_contents: function() {},
+
+    /**
+     * Returns a shallow copy of all drawables in this drawable.
+     */
+    get_drawables: function() {}
 });
 
 /**
@@ -611,6 +619,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             this.add_drawable(drawable);
         }
     },
+    
     /**
      * Init each drawable in the collection.
      */
@@ -619,6 +628,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             this.drawables[i].init();
         }
     },    
+    
     /**
      * Draw each drawable in the collection.
      */
@@ -627,6 +637,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             this.drawables[i]._draw();
         }
     },
+    
     /** 
      * Returns representation of object in a dictionary for easy saving. 
      * Use from_dict to recreate object.
@@ -643,6 +654,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             drawables: dictified_drawables
         };
     },
+    
     /**
      * Add a drawable to the end of the collection.
      */
@@ -651,6 +663,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         drawable.container = this;
         this.changed();
     },
+    
     /**
      * Add a drawable before another drawable.
      */
@@ -663,6 +676,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         }
         return false;
     },
+    
     /**
      * Replace one drawable with another.
      */
@@ -677,6 +691,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         }
         return index;
     },
+    
     /**
      * Remove drawable from this collection.
      */
@@ -691,6 +706,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         }
         return false;
     },
+    
     /**
      * Move drawable to another location in collection.
      */
@@ -705,6 +721,13 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             return true;
         }
         return false;
+    },
+
+    /**
+     * Returns all drawables in this drawable.
+     */
+    get_drawables: function() {
+        return this.drawables;
     }
 });
 
@@ -1070,7 +1093,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         this.default_overview_height = this.overview_box.height();
         
         this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
-        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").addClass("no-autocomplete").append("<option value=''>Loading</option>").appendTo(this.nav_controls);
+        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").append("<option value=''>Loading</option>").appendTo(this.nav_controls);
         var submit_nav = function(e) {
             if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27 ) {
                 if ((e.keyCode || e.which) !== 27) { // Not escape key
@@ -1091,6 +1114,28 @@ extend( View.prototype, DrawableCollection.prototype, {
             view.nav_input.css("display", "inline-block");
             view.nav_input.select();
             view.nav_input.focus();
+            // Set up autocomplete for tracks' features.
+            view.nav_input.autocomplete({
+                source: function(request, response) {
+                    // Using current text, query each track and create list of all matching features.
+                    var all_features = [],
+                        feature_search_deferreds = $.map(view.get_drawables(), function(drawable) {
+                        return drawable.data_manager.search_features(request.term).success(function(dataset_features) {
+                            all_features = all_features.concat(dataset_features);
+                        });
+                    });
+
+                    // When all searching is done, fill autocomplete.
+                    $.when.apply($, feature_search_deferreds).done(function() {
+                        response($.map(all_features, function(feature) {
+                            return { 
+                                label: feature[0],
+                                value: feature[1]
+                            };
+                        }));
+                    });
+                }
+            });
         });
         if (this.vis_id !== undefined) {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.nav_controls);
@@ -1285,9 +1330,8 @@ extend( View.prototype, DrawableCollection.prototype, {
             data: url_parms,
             dataType: "json",
             success: function (result) {
-                // Show error if could not load chroms.
+                // Do nothing if could not load chroms.
                 if (result.chrom_info.length === 0) {
-                    alert("Invalid chromosome: " + url_parms.chrom);
                     return;
                 }
                 
@@ -2935,6 +2979,7 @@ var Track = function(view, container, obj_dict) {
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.dataset_check_url = ('converted_datasets_state_url' in obj_dict ? obj_dict.converted_datasets_state_url : converted_datasets_state_url);
+    this.feature_search_url = ('feature_search_url' in obj_dict ? obj_dict.feature_search_url : feature_search_url);
     
     // A little ugly creating data manager right now due to transition to Backbone-based objects.
     var track = this,
@@ -2948,6 +2993,7 @@ var Track = function(view, container, obj_dict) {
                              dataset: dataset,
                              data_url: track.data_url,
                              dataset_state_url: track.dataset_check_url,
+                             feature_search_url: track.feature_search_url,
                              data_mode_compatible: this.data_and_mode_compatible,
                              can_subset: this.can_subset
                          }));
@@ -3319,7 +3365,14 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {}
+    predraw_init: function() {},
+
+    /**
+     * Returns all drawables in this drawable.
+     */
+    get_drawables: function() {
+        return this;
+    }
 });
 
 var TiledTrack = function(view, container, obj_dict) {    

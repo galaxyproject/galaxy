@@ -169,6 +169,7 @@ var GenomeDataManager = Cache.extend({
         filters_manager: null,
         data_url: null,
         dataset_state_url: null,
+        feature_search_url: null,
         genome_wide_summary_data: null,
         data_mode_compatible: function(entry, mode) { return true; },
         can_subset: function(entry) { return false; }
@@ -199,9 +200,22 @@ var GenomeDataManager = Cache.extend({
         });
         return ready_deferred;
     },
+
+    /**
+     * Perform a feature search from server; returns Deferred object that resolves when data is available.
+     */
+    search_features: function(query) {
+        var dataset = this.get('dataset'),
+            params = {
+                query: query,
+                dataset_id: dataset.id,
+                hda_ldda: dataset.get('hda_ldda')
+            };
+        return $.getJSON(this.get('feature_search_url'), params);
+    },
     
     /**
-     * Load data from server; returns AJAX object so that use of Deferred is possible.
+     * Load data from server; returns Deferred object that resolves when data is available.
      */
     load_data: function(region, mode, resolution, extra_params) {
         // Setup data request params.
@@ -211,7 +225,7 @@ var GenomeDataManager = Cache.extend({
                         "high": region.get('end'), 
                         "mode": mode, 
                         "resolution": resolution
-                     };
+                     },
             dataset = this.get('dataset');
                         
         // ReferenceDataManager does not have dataset.

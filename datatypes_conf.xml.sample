@@ -19,6 +19,7 @@
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="bed_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <converter file="bed_to_fli_converter.xml" target_datatype="fli"/>
       <!-- <display file="ucsc/interval_as_bed.xml" /> -->
       <display file="genetrack.xml" />
       <display file="igb/bed.xml" />

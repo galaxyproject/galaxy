@@ -347,18 +347,20 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
 
     @web.json
-    def feature_loc( self, trans, hda_ldda, dataset_id, query ):
+    def search_features( self, trans, hda_ldda, dataset_id, query ):
         """
         Returns features, locations in dataset that match query. Format is a 
         list of features; each feature is a list itself: [name, location]
         """
         dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-        converted_dataset = dataset.get_converted_dataset( trans, "fli" )
-        data_provider = FeatureLocationIndexDataProvider( converted_dataset=converted_dataset )
-        if data_provider:
-            return data_provider.get_data( query )
-        else:
-            return 'None'
+        if dataset.can_convert_to( "fli" ):
+            converted_dataset = dataset.get_converted_dataset( trans, "fli" )
+            if converted_dataset:
+                data_provider = FeatureLocationIndexDataProvider( converted_dataset=converted_dataset )
+                if data_provider:
+                    return data_provider.get_data( query )
+        
+        return []
         
     @web.json
     def data( self, trans, hda_ldda, dataset_id, chrom, low, high, start_val=0, max_vals=None, **kwargs ):

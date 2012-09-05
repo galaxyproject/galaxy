@@ -73,6 +73,7 @@ class FeatureLocationIndexDataProvider( object ):
         textloc_file = open( self.converted_dataset.file_name, 'r' )
         line_len = int( textloc_file.readline() )
         file_len = os.path.getsize( self.converted_dataset.file_name )
+        query = query.lower()
     
         # Find query in file using binary search.
         low = 0
@@ -84,7 +85,6 @@ class FeatureLocationIndexDataProvider( object ):
 
             # Compare line with query and update low, high.
             line = textloc_file.readline()
-            print '--', mid, line
             if line < query:
                 low = mid + 1
             else:
@@ -93,14 +93,14 @@ class FeatureLocationIndexDataProvider( object ):
         position = low * line_len
         
         # At right point in file, generate hits.
-        result = [ ]
+        result = []
         while True:
             line = textloc_file.readline()
             if not line.startswith( query ): 
                 break
             if line[ -1: ] == '\n': 
                 line = line[ :-1 ]
-            result.append( line.split() )
+            result.append( line.split()[1:] )
 
         textloc_file.close()    
         return result

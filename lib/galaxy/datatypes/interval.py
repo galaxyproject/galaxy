@@ -512,7 +512,7 @@ class Bed( Interval ):
         except: return False
     
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
+        return "FeatureTrack", {"data": "tabix", "index": "summary_tree", "feature_search": "fli"}
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
@@ -785,7 +785,7 @@ class Gff( Tabular, _RemoteCallMixin ):
             return False
             
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree"}
+        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree", "feature_search": "fli"}
             
 
 class Gff3( Gff ):
@@ -962,10 +962,6 @@ class Gtf( Gff ):
             return True
         except:
             return False
-        
-    def get_track_type( self ):
-        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree"}
-
 
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""

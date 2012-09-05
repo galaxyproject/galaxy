@@ -1188,6 +1188,8 @@ class DatasetInstance( object ):
         return None
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry )
+    def can_convert_to(self, format):
+        return format in self.get_converter_types()
     def find_conversion_destination( self, accepted_formats, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
         return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )

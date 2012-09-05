@@ -39,6 +39,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "libs/json2", "libs/jquery/jquery", "lib
         chrom_url = "${h.url_for( action='chroms' )}",
         dataset_state_url = "${h.url_for( action='dataset_state' )}",
         converted_datasets_state_url = "${h.url_for( action='converted_datasets_state' )}",
+        feature_search_url = "${h.url_for( action='search_features' )}",
         view,
         browser_router;
         
