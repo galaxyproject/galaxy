@@ -152,6 +152,8 @@ class DataAdmin( BaseUIController ):
         params = util.Params( kwd )
         jobid = params.get( 'job', '' )
         deferred = trans.app.model.context.current.query( model.DeferredJob ).filter_by( id=jobid ).first()
+        if deferred is None: 
+            return trans.fill_template( '/admin/data_admin/generic_error.mako', message='Invalid genome downloader job specified.' )
         gname = deferred.params[ 'intname' ]
         indexers = ', '.join( deferred.params[ 'indexes' ] )
         jobs = self._get_jobs( deferred, trans )
@@ -244,18 +246,20 @@ def build_param_dict( params, trans ):
         checker = []
         liftover = []
         newlift = []
+        ftp.retrlines('NLST /goldenPath/%s/liftOver/*.chain.gz' % dbkey, liftover.append)
         try:
-            ftp.retrlines('NLST /goldenPath/%s/liftOver/*.chain.gz' % dbkey, liftover.append)
             for chain in liftover:
+                lifts = []
                 fname = chain.split( '/' )[-1]
-                target = fname.replace( '.over.chain.gz', '' ).split( 'To' )[1]
-                target = target[0].lower() + target[1:]
-                if not os.path.exists( os.path.join( trans.app.config.get( 'genome_data_path', 'tool-data/genome' ), dbkey, 'liftOver', fname ) ):
-                    newlift.append( [ chain, dbkey, target ] )
-                current = dbkey[0].upper() + dbkey[1:]
-                targetfile = '%sTo%s.over.chain.gz' % ( target, current )
-                if not os.path.exists( os.path.join( trans.app.config.get( 'genome_data_path', 'tool-data/genome' ), target, 'liftOver', targetfile ) ):
-                    newlift.append( [ '/goldenPath/%s/liftOver/%s' % ( target, targetfile ), target, dbkey ] )
+                organisms = fname.replace( '.over.chain.gz', '' ).split( 'To' )
+                lifts.append( [ organisms[0], organisms[1][0].lower() + organisms[1][1:] ] )
+                lifts.append( [ organisms[1][0].lower() + organisms[1][1:], organisms[0] ] )
+                for organism in lifts:
+                    remotepath = '/goldenPath/%s/liftOver/%sTo%s.over.chain.gz' % ( organism[0], organism[0], organism[1][0].upper() + organism[1][1:] )
+                    localfile = '%sTo%s.over.chain' % ( organism[0], organism[1][0].upper() + organism[1][1:] )
+                    localpath = os.path.join( trans.app.config.get( 'genome_data_path', 'tool-data/genome' ), organism[0], 'liftOver', localfile )
+                    if not os.path.exists( localpath ) or os.path.getsize( localpath ) == 0:
+                        newlift.append( [ remotepath, organism[0], organism[1] ] )
         except:
             newlift = None
             pass

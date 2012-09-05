@@ -77,7 +77,7 @@ class LiftOverTransferPlugin( DataTransfer ):
                 self.sa_session.flush()
                 return self.job_states.WAIT
             else:
-                log.error( "An error occurred while downloading from %s" % job.params[ 'url' ] )
+                log.error( "An error occurred while downloading from %s" % job.transfer_job.params[ 'url' ] )
                 return self.job_states.INVALID
         elif job.params[ 'type' ] == 'extract_transfer': 
             return self.job_states.READY

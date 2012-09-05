@@ -74,7 +74,7 @@
             %endfor
         </table>
         <h2>Recent jobs:</h2>
-        <p>Click the job ID to see job details. Note that this list only shows jobs initiated by your account.</p>
+        <p>Click the job ID to see job details and the status of any individual sub-jobs. Note that this list only shows jobs initiated by your account.</p>
         <div id="recentJobs">
         %for job in jobgrid:
             <div id="job-${job['deferred']}" data-dbkey="${job['dbkey']}" data-name="${job['intname']}" data-indexes="${job['indexers']}" data-jobid="${job['deferred']}" data-state="${job['state']}" class="historyItem-${job['state']} historyItemWrapper historyItem">
