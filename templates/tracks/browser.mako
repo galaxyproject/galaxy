@@ -11,7 +11,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom", "library" )}
+    ${h.css( "history", "autocomplete_tagging", "trackster", "library", "jquery-ui/smoothness/jquery-ui-1.8.23.custom" )}
 </%def>
 
 <%def name="javascripts()">
@@ -21,7 +21,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "libs/json2", "libs/jquery/jquery", "libs/bootstrap", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery.autocomplete", "mvc/data", "viz/visualization", "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery.ui.sortable.slider", "libs/farbtastic" )}
+${h.js( "galaxy.base", "galaxy.panels", "libs/json2", "libs/jquery/jquery", "libs/bootstrap", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui-1.8.23.custom.min", "mvc/data", "viz/visualization", "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery.ui.sortable.slider", "libs/farbtastic" )}
 
 <script type="text/javascript">
     //

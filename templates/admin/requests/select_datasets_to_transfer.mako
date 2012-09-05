@@ -8,7 +8,7 @@
    ${common_javascripts()}
 </%def>
 
-${h.js( "libs/jquery/jquery.ui.core", "libs/jquery/jquery.cookie", "libs/jquery/jquery.dynatree" )}
+${h.js( "libs/jquery/jquery-ui-1.8.23.custom.min", "libs/jquery/jquery.cookie", "libs/jquery/jquery.dynatree" )}
 ${h.css( "dynatree_skin/ui.dynatree" )}
 
 <script type="text/javascript">
