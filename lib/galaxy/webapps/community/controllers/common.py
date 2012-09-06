@@ -266,7 +266,7 @@ def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
                 if name.endswith( '.sample' ):
                     relative_path = os.path.join( root, name )
                     copy_sample_file( trans.app, relative_path, dest_path=dest_path )
-                    sample_files_copied.append( name )
+                    sample_files.append( name )
     return sample_files
 def copy_file_from_disk( filename, repo_dir, dir ):
     file_path = None
