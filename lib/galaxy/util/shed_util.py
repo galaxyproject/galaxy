@@ -248,6 +248,34 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
         except:
             pass
     return converter_path, display_path
+def can_generate_tool_dependency_metadata( root, metadata_dict ):
+    """
+    Make sure the combination of name, version and type (the type will be the value of elem.tag) of each root element tag in the tool_dependencies.xml
+    file is defined in the <requirement> tag for at least one tool in the repository.
+    """
+    can_generate_dependency_metadata = False
+    for elem in root:
+        can_generate_dependency_metadata = False
+        tool_dependency_name = elem.get( 'name', None )
+        tool_dependency_version = elem.get( 'version', None )
+        tool_dependency_type = elem.tag
+        if tool_dependency_name and tool_dependency_version and tool_dependency_type:
+            for tool_dict in metadata_dict[ 'tools' ]:
+                requirements = tool_dict.get( 'requirements', [] )
+                for requirement_dict in requirements:
+                    req_name = requirement_dict.get( 'name', None )
+                    req_version = requirement_dict.get( 'version', None )
+                    req_type = requirement_dict.get( 'type', None )
+                    if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
+                        can_generate_dependency_metadata = True
+                        break
+                if requirements and not can_generate_dependency_metadata:
+                    # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
+                    # tag for any tool in the repository.
+                    break
+            if not can_generate_dependency_metadata:
+                break
+    return can_generate_dependency_metadata
 def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files, webapp='galaxy' ):
     """
     Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
@@ -512,34 +540,6 @@ def generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
         if tool_dependencies_dict:
             metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
     return metadata_dict
-def can_generate_tool_dependency_metadata( root, metadata_dict ):
-    """
-    Make sure the combination of name, version and type (the type will be the value of elem.tag) of each root element tag in the tool_dependencies.xml
-    file is defined in the <requirement> tag for at least one tool in the repository.
-    """
-    can_generate_dependency_metadata = False
-    for elem in root:
-        can_generate_dependency_metadata = False
-        tool_dependency_name = elem.get( 'name', None )
-        tool_dependency_version = elem.get( 'version', None )
-        tool_dependency_type = elem.tag
-        if tool_dependency_name and tool_dependency_version and tool_dependency_type:
-            for tool_dict in metadata_dict[ 'tools' ]:
-                requirements = tool_dict.get( 'requirements', [] )
-                for requirement_dict in requirements:
-                    req_name = requirement_dict.get( 'name', None )
-                    req_version = requirement_dict.get( 'version', None )
-                    req_type = requirement_dict.get( 'type', None )
-                    if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
-                        can_generate_dependency_metadata = True
-                        break
-                if requirements and not can_generate_dependency_metadata:
-                    # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
-                    # tag for any tool in the repository.
-                    break
-            if not can_generate_dependency_metadata:
-                break
-    return can_generate_dependency_metadata
 def generate_metadata_for_changeset_revision( app, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
                                               resetting_all_metadata_on_repository=False, webapp='galaxy' ):
     """
@@ -597,50 +597,53 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
                 # Find all tool configs.
                 if name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
                     full_path = os.path.abspath( os.path.join( root, name ) )
-                    if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
-                             or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
-                        try:
-                            # Make sure we're looking at a tool config and not a display application config or something else.
-                            element_tree = util.parse_xml( full_path )
-                            element_tree_root = element_tree.getroot()
-                            is_tool = element_tree_root.tag == 'tool'
-                        except Exception, e:
-                            print "Error parsing %s", full_path, ", exception: ", str( e )
-                            is_tool = False
-                        if is_tool:
-                            tool, valid, error_message = load_tool_from_config( app, full_path )
-                            if tool is None:
-                                if not valid:
-                                    invalid_file_tups.append( ( name, error_message ) )
-                            else:
-                                invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_metadata_paths, webapp=webapp )
-                                can_set_metadata = True
-                                for tup in invalid_files_and_errors_tups:
-                                    if name in tup:
-                                        can_set_metadata = False
-                                        invalid_tool_configs.append( name )
-                                        break
-                                if can_set_metadata:
-                                    if resetting_all_metadata_on_repository:
-                                        full_path_to_tool_config = os.path.join( root, name )
-                                        stripped_path_to_tool_config = full_path_to_tool_config.replace( work_dir, '' )
-                                        if stripped_path_to_tool_config.startswith( '/' ):
-                                            stripped_path_to_tool_config = stripped_path_to_tool_config[ 1: ]
-                                        relative_path_to_tool_config = os.path.join( relative_install_dir, stripped_path_to_tool_config )
-                                    else:
-                                        relative_path_to_tool_config = os.path.join( root, name )
-                                    metadata_dict = generate_tool_metadata( relative_path_to_tool_config, tool, repository_clone_url, metadata_dict )
+                    if os.path.getsize( full_path ) > 0:
+                        if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
+                                 or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
+                            try:
+                                # Make sure we're looking at a tool config and not a display application config or something else.
+                                element_tree = util.parse_xml( full_path )
+                                element_tree_root = element_tree.getroot()
+                                is_tool = element_tree_root.tag == 'tool'
+                            except Exception, e:
+                                print "Error parsing %s", full_path, ", exception: ", str( e )
+                                is_tool = False
+                            if is_tool:
+                                tool, valid, error_message = load_tool_from_config( app, full_path )
+                                if tool is None:
+                                    if not valid:
+                                        invalid_file_tups.append( ( name, error_message ) )
                                 else:
-                                    invalid_file_tups.extend( invalid_files_and_errors_tups )
+                                    invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_metadata_paths, webapp=webapp )
+                                    can_set_metadata = True
+                                    for tup in invalid_files_and_errors_tups:
+                                        if name in tup:
+                                            can_set_metadata = False
+                                            invalid_tool_configs.append( name )
+                                            break
+                                    if can_set_metadata:
+                                        if resetting_all_metadata_on_repository:
+                                            full_path_to_tool_config = os.path.join( root, name )
+                                            stripped_path_to_tool_config = full_path_to_tool_config.replace( work_dir, '' )
+                                            if stripped_path_to_tool_config.startswith( '/' ):
+                                                stripped_path_to_tool_config = stripped_path_to_tool_config[ 1: ]
+                                            relative_path_to_tool_config = os.path.join( relative_install_dir, stripped_path_to_tool_config )
+                                        else:
+                                            relative_path_to_tool_config = os.path.join( root, name )
+                                        metadata_dict = generate_tool_metadata( relative_path_to_tool_config, tool, repository_clone_url, metadata_dict )
+                                    else:
+                                        for tup in invalid_files_and_errors_tups:
+                                            invalid_file_tups.append( tup )
                 # Find all exported workflows
                 elif name.endswith( '.ga' ):
                     relative_path = os.path.join( root, name )
-                    fp = open( relative_path, 'rb' )
-                    workflow_text = fp.read()
-                    fp.close()
-                    exported_workflow_dict = from_json_string( workflow_text )
-                    if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
-                        metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
+                    if os.path.getsize( os.path.abspath( relative_path ) ) > 0:
+                        fp = open( relative_path, 'rb' )
+                        workflow_text = fp.read()
+                        fp.close()
+                        exported_workflow_dict = from_json_string( workflow_text )
+                        if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                            metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
     if 'tools' in metadata_dict:
         # This step must be done after metadata for tools has been defined.
         tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', files_dir )

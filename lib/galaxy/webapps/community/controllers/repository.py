@@ -1426,9 +1426,22 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository, tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
+        invalid_file_tups = []
+        if tool is None:
+            if not valid:
+                invalid_file_tups = [ ( name, error_message ) ]
+        else:
+            invalid_file_tups = check_tool_input_params( trans.app,
+                                                         repository.repo_path,
+                                                         tool_config,
+                                                         tool,
+                                                         [],
+                                                         webapp=webapp )
+        if invalid_file_tups:
+            message = generate_message_for_invalid_tools( invalid_file_tups, repository, {}, as_html=True, displaying_invalid_tool=True )
+        elif error_message:
+            message = error_message
         try:
-            if error_message:
-                message = error_message
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
                                         repository=repository,
                                         changeset_revision=changeset_revision,
@@ -1439,7 +1452,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                         message=message,
                                         status='error' )
         except Exception, e:
-            message = "This tool is invalid because: %s." % str( e )
+            message = "Exception thrown attempting to display tool: %s." % str( e )
         if webapp == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',
