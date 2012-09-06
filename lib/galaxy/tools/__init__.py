@@ -150,14 +150,39 @@ class ToolBox( object ):
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self.shed_tool_confs.append( shed_tool_conf_dict )
+    def __add_tool_to_tool_panel( self, tool_id, panel_component, section=False ):
+        # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
+        # will be a ToolSection (if the value of section=True) or self.tool_panel (if section=False).
+        tool = self.tools_by_id[ tool_id ]
+        if section:
+            panel_dict = panel_component.elems
+        else:
+            panel_dict = panel_component
+        already_loaded = False
+        for lineage_id in tool.lineage_ids:
+            if lineage_id in self.tools_by_id:
+                loaded_version_key = 'tool_%s' % lineage_id
+                if loaded_version_key in panel_dict:
+                    already_loaded = True
+                    break
+        if not already_loaded:
+            inserted = False
+            key = 'tool_%s' % tool.id
+            # The value of panel_component is the in-memory tool panel dictionary.
+            for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
+                if key == integrated_panel_key:
+                    panel_dict.insert( index, key, tool )
+                    inserted = True
+            if not inserted:
+                # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
+                panel_dict[ key ] = tool
+            log.debug( "Loaded tool id: %s, version: %s." % ( tool.id, tool.version ) )
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
             if key.startswith( 'tool_' ):
                 tool_id = key.replace( 'tool_', '', 1 )
                 if tool_id in self.tools_by_id:
-                    tool = self.tools_by_id[ tool_id ]
-                    self.tool_panel[ key ] = tool
-                    log.debug( "Loaded tool id: %s, version: %s." % ( tool.id, tool.version ) )
+                    self.__add_tool_to_tool_panel( tool_id, self.tool_panel, section=False )
             elif key.startswith( 'workflow_' ):
                 workflow_id = key.replace( 'workflow_', '', 1 )
                 if workflow_id in self.workflows_by_id:
@@ -177,9 +202,7 @@ class ToolBox( object ):
                     if section_key.startswith( 'tool_' ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self.tools_by_id:
-                            tool = self.tools_by_id[ tool_id ]
-                            section.elems[ section_key ] = tool
-                            log.debug( "Loaded tool id: %s, version: %s." % ( tool.id, tool.version ) )
+                            self.__add_tool_to_tool_panel( tool_id, section, section=True )
                     elif section_key.startswith( 'workflow_' ):
                         workflow_id = section_key.replace( 'workflow_', '', 1 )
                         if workflow_id in self.workflows_by_id:
@@ -297,6 +320,21 @@ class ToolBox( object ):
                     else:
                         return tool
         return None
+    def get_loaded_tools_by_lineage( self, tool_id ):
+        """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
+        tv = self.__get_tool_version( tool_id )
+        if tv:
+            tool_version_ids = tv.get_version_ids( self.app )
+            available_tool_versions = []
+            for tool_version_id in tool_version_ids:
+                if tool_version_id in self.tools_by_id:
+                    available_tool_versions.append( self.tools_by_id[ tool_version_id ] )
+            return available_tool_versions
+        else:
+            if tool_id in self.tools_by_id:
+                tool = self.tools_by_id[ tool_id ]
+                return [ tool ]
+        return []
     def __get_tool_version( self, tool_id ):
         """Return a ToolVersion if one exists for the tool_id"""
         return self.sa_session.query( self.app.model.ToolVersion ) \
@@ -334,7 +372,7 @@ class ToolBox( object ):
                     # If there is not yet a tool_shed_repository record, we're in the process of installing
                     # a new repository, so any included tools can be loaded into the tool panel.
                     can_load_into_panel_dict = True
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )            
             key = 'tool_%s' % str( tool.id )
             if can_load_into_panel_dict:
                 if guid is not None:
@@ -350,6 +388,8 @@ class ToolBox( object ):
                     tool_version = self.app.model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
                     self.sa_session.add( tool_version )
                     self.sa_session.flush()
+                # Load the tool's lineage ids.
+                tool.lineage_ids = tool.tool_version.get_version_ids( self.app )
                 if self.app.config.get_bool( 'enable_tool_tags', False ):
                     tag_names = elem.get( "tags", "" ).split( "," )
                     for tag_name in tag_names:
@@ -375,7 +415,7 @@ class ToolBox( object ):
                     # Allow for the same tool to be loaded into multiple places in the tool panel.
                     self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
-                    panel_dict[ key ] = tool
+                    self.__add_tool_to_tool_panel( tool.id, panel_dict, section=isinstance( panel_dict, galaxy.tools.ToolSection ) )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             if key in integrated_panel_dict or index is None:
                 integrated_panel_dict[ key ] = tool
@@ -789,6 +829,8 @@ class Tool:
         self.guid = guid
         self.old_id = None
         self.version = None
+        # Enable easy access to this tool's version lineage.
+        self.lineage_ids = []
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
         self.external_runJob_script = app.config.drmaa_external_runjob_script

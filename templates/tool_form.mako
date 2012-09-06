@@ -287,25 +287,17 @@
 %endif
 
 <div class="toolForm" id="${tool.id}">
-    %if tool.has_multiple_pages:
-        <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
-    %else:
-        <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
-    %endif
-    <div class="toolFormBody">
-        <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}">
-            %if tool_id_select_field:
-                <div class="form-row">
-                    <label>Tool id:</label>
-                    ${tool_id_select_field.get_html()}
-                    <div class="toolParamHelp" style="clear: both;">
-                        Select a different derivation of this tool to rerun the job.
-                    </div>
-                </div>
-                <div style="clear: both"></div>
-            %else:
-                <input type="hidden" name="tool_id" value="${tool.id}">
-            %endif
+    <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}">
+        %if tool.has_multiple_pages:
+            <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
+        %elif not tool_version_select_field:
+            <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
+        %else:
+            <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}</div>
+        %endif
+        <div class="toolFormBody">
+            <input type="hidden" name="refresh" value="refresh">
+            <input type="hidden" name="tool_id" value="${tool.id}">
             <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
             %if tool.display_by_page[tool_state.page]:
                 ${trans.fill_template_string( tool.display_by_page[tool_state.page], context=tool.get_param_html_map( trans, tool_state.page, tool_state.inputs ) )}
@@ -320,8 +312,8 @@
                     %endif
                 </div>
             %endif
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 %if tool.help:
     <div class="toolHelp">

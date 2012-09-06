@@ -1518,15 +1518,40 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
                 if tool_elem.get( 'guid' ) in guids_to_remove:
                     tool_elems_to_remove.append( tool_elem )
             for tool_elem in tool_elems_to_remove:
-                # Remove the tool sub-element from the section element.
-                config_elem.remove( tool_elem )
+                if tool_elem in config_elem:
+                    # Remove the tool sub-element from the section element.
+                    config_elem.remove( tool_elem )
                 # Remove the tool from the section in the in-memory tool panel.
                 if section_key in trans.app.toolbox.tool_panel:
                     tool_section = trans.app.toolbox.tool_panel[ section_key ]
-                    tool_key = 'tool_%s' % str( tool_elem.get( 'guid' ) )
-                    # Remove empty sections only from the in-memory config_elems, but leave the in-memory tool panel alone.
+                    guid = tool_elem.get( 'guid' )
+                    tool_key = 'tool_%s' % str( guid )
+                    # Get the list of versions of this tool that are currently available in the toolbox.
+                    available_tool_versions = trans.app.toolbox.get_loaded_tools_by_lineage( guid )
                     if tool_key in tool_section.elems:
-                        del tool_section.elems[ tool_key ]
+                        if available_tool_versions:
+                            available_tool_versions.reverse()
+                            replacement_tool_key = None
+                            replacement_tool_version = None
+                            # Since we are going to remove the tool from the section, replace it with the newest loaded version of the tool.
+                            for available_tool_version in available_tool_versions:
+                                if available_tool_version.id in tool_section.elems.keys():
+                                    replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
+                                    replacement_tool_version = available_tool_version
+                                    break
+                            if replacement_tool_key and replacement_tool_version:
+                                # Get the index of the tool_key in the tool_section.
+                                for tool_section_elems_index, key in enumerate( tool_section.elems.keys() ):
+                                    if key == tool_key:
+                                        break
+                                # Remove the tool from the tool section.
+                                del tool_section.elems[ tool_key ]
+                                # Add the replacement tool at the same location in the tool section.
+                                tool_section.elems.insert( tool_section_elems_index, replacement_tool_key, replacement_tool_version )
+                            else:
+                                del tool_section.elems[ tool_key ]
+                        else:
+                            del tool_section.elems[ tool_key ]
                 if uninstall:
                     # Remove the tool from the section in the in-memory integrated tool panel.
                     if section_key in trans.app.toolbox.integrated_tool_panel:
@@ -1538,10 +1563,35 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
                 # Keep a list of all empty section elements so they can be removed.
                 config_elems_to_remove.append( config_elem )
         elif config_elem.tag == 'tool':
-            if config_elem.get( 'guid' ) in guids_to_remove:
+            guid = config_elem.get( 'guid' )
+            if guid in guids_to_remove:
                 tool_key = 'tool_%s' % str( config_elem.get( 'guid' ) )
+                # Get the list of versions of this tool that are currently available in the toolbox.
+                available_tool_versions = trans.app.toolbox.get_loaded_tools_by_lineage( guid )
                 if tool_key in trans.app.toolbox.tool_panel:
-                    del trans.app.toolbox.tool_panel[ tool_key ]
+                    if available_tool_versions:
+                        available_tool_versions.reverse()
+                        replacement_tool_key = None
+                        replacement_tool_version = None
+                        # Since we are going to remove the tool from the section, replace it with the newest loaded version of the tool.
+                        for available_tool_version in available_tool_versions:
+                            if available_tool_version.id in trans.app.toolbox.tool_panel.keys():
+                                replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
+                                replacement_tool_version = available_tool_version
+                                break
+                        if replacement_tool_key and replacement_tool_version:
+                            # Get the index of the tool_key in the tool_section.
+                            for tool_panel_index, key in enumerate( trans.app.toolbox.tool_panel.keys() ):
+                                if key == tool_key:
+                                    break
+                            # Remove the tool from the tool panel.
+                            del trans.app.toolbox.tool_panel[ tool_key ]
+                            # Add the replacement tool at the same location in the tool panel.
+                            trans.app.toolbox.tool_panel.insert( tool_panel_index, replacement_tool_key, replacement_tool_version )
+                        else:
+                            del trans.app.toolbox.tool_panel[ tool_key ]
+                    else:
+                        del trans.app.toolbox.tool_panel[ tool_key ]
                 if uninstall:
                     if tool_key in trans.app.toolbox.integrated_tool_panel:
                         del trans.app.toolbox.integrated_tool_panel[ tool_key ]

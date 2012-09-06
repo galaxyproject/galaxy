@@ -35,31 +35,57 @@ class ToolRunner( BaseUIController ):
     def default(self, trans, tool_id=None, **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
-
+    def __get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
+        """
+        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling selection of a different version, the list of the tool's
+        loaded versions, and the specified tool.
+        """
+        toolbox = self.get_toolbox()
+        tool_version_select_field = None
+        tools = []
+        # Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL.
+        tool_ids = util.listify( tool_id )
+        for tool_id in tool_ids:
+            if get_loaded_tools_by_lineage:
+                tools = toolbox.get_loaded_tools_by_lineage( tool_id )
+            else:
+                tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
+            if len( tools ) > 1:
+                tool_version_select_field = self.build_tool_version_select_field( tools, tool_id, set_selected )
+                for tool in tools:
+                    if tool.id == tool_id:
+                        break
+                else:
+                    tool = tools[ 0 ]
+            else:
+                tool = tools[ 0 ]
+            break
+        return tool_version_select_field, tools, tool
     @web.expose
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         # No tool id passed, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect( url_for( "/static/welcome.html" ) )
-        # Load the tool
-        toolbox = self.get_toolbox()
-        #Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL
-        if isinstance( tool_id, list ):
-            tool_ids = tool_id
-        else:
-            tool_ids = [ tool_id ]
-        for tool_id in tool_ids:
-            tool = toolbox.get_tool( tool_id )
-            if tool:
-                break
+        set_selected = 'refresh' in kwd
+        tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
+                                                                             tool_version=None,
+                                                                             get_loaded_tools_by_lineage=True,
+                                                                             set_selected=set_selected )
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
-            tool_id = ','.join( tool_ids )
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
-            return "Tool '%s' does not exist, kwd=%s " % (tool_id, kwd)
+            return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
         if tool.require_login and not trans.user:
-            return trans.response.send_redirect( url_for( controller='user', action='login', cntrller='user', message="You must be logged in to use this tool.", status="info", redirect=url_for( controller='/tool_runner', action='index', tool_id=tool_id, **kwd ) ) )
+            message = "You must be logged in to use this tool."
+            status = "info"
+            redirect = url_for( controller='/tool_runner', action='index', tool_id=tool_id, **kwd )
+            return trans.response.send_redirect( url_for( controller='user',
+                                                          action='login',
+                                                          cntrller='user',
+                                                          message=message,
+                                                          status=status,
+                                                          redirect=redirect ) )
         params = util.Params( kwd, sanitize = False ) #Sanitize parameters when substituting into command line via input wrappers
         #do param translation here, used by datasource tools
         if tool.input_translator:
@@ -68,14 +94,21 @@ class ToolRunner( BaseUIController ):
         # so make sure to create a new history if we've never had one before.
         history = trans.get_history( create=True )
         template, vars = tool.handle_input( trans, params.__dict__ )
-        if len(params) > 0:
-            trans.log_event( "Tool params: %s" % (str(params)), tool_id=tool_id )
+        if len( params ) > 0:
+            trans.log_event( "Tool params: %s" % ( str( params ) ), tool_id=tool_id )
         add_frame = AddFrameData()
         add_frame.debug = trans.debug
         if from_noframe is not None:
             add_frame.wiki_url = trans.app.config.wiki_url
             add_frame.from_noframe = True
-        return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, add_frame=add_frame, **vars )
+        return trans.fill_template( template,
+                                    history=history,
+                                    toolbox=self.get_toolbox(),
+                                    tool_version_select_field=tool_version_select_field,
+                                    tool=tool,
+                                    util=util,
+                                    add_frame=add_frame,
+                                    **vars )
         
     @web.expose
     def rerun( self, trans, id=None, from_noframe=None, **kwd ):
@@ -113,21 +146,10 @@ class ToolRunner( BaseUIController ):
         tool_id = job.tool_id
         tool_version = job.tool_version
         try:
-            # Load the tool
-            toolbox = self.get_toolbox()
-            tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
-            if len( tools ) > 1:
-                tool_id_select_field = self.build_tool_id_select_field( tools, tool_id )
-                for tool in tools:
-                    if tool.id == tool_id:
-                        break
-                else:
-                    tool = tools[ 0 ]
-                tool_id_version_message = 'This job was initially run with tool id "%s", version "%s", and multiple derivations ' % ( job.tool_id, job.tool_version )
-                tool_id_version_message += 'of this tool are available.  Rerun the job with the selected tool or choose another derivation of the tool.'
-            else:
-                tool_id_select_field = None
-                tool = tools[ 0 ]
+            tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
+                                                                                 tool_version=tool_version,
+                                                                                 get_loaded_tools_by_lineage=False,
+                                                                                 set_selected=True )
             if ( tool.id == job.tool_id or tool.old_id == job.tool_id ) and tool.version == job.tool_version:
                 tool_id_version_message = ''
             elif tool.id == job.tool_id:
@@ -199,27 +221,27 @@ class ToolRunner( BaseUIController ):
             add_frame.from_noframe = True
         return trans.fill_template( "tool_form.mako",
                                     history=history,
-                                    toolbox=toolbox,
-                                    tool_id_select_field=tool_id_select_field,
+                                    toolbox=self.get_toolbox(),
+                                    tool_version_select_field=tool_version_select_field,
                                     tool=tool,
                                     util=util,
                                     add_frame=add_frame,
                                     tool_id_version_message=tool_id_version_message,
                                     **vars )
-    def build_tool_id_select_field( self, tools, selected_tool_id ):
+    def build_tool_version_select_field( self, tools, tool_id, set_selected ):
         """Build a SelectField whose options are the ids for the received list of tools."""
         options = []
         refresh_on_change_values = []
         for tool in tools:
-            options.append( ( tool.id, tool.id ) )
+            options.insert( 0, ( tool.version, tool.id ) )
             refresh_on_change_values.append( tool.id )
         select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
         for option_tup in options:
-            selected = option_tup[0] == selected_tool_id
+            selected = set_selected and option_tup[1] == tool_id
             if selected:
-                select_field.add_option( option_tup[0], option_tup[1], selected=True )
+                select_field.add_option( 'version %s' % option_tup[0], option_tup[1], selected=True )
             else:
-                select_field.add_option( option_tup[0], option_tup[1] )
+                select_field.add_option( 'version %s' % option_tup[0], option_tup[1] )
         return select_field
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
