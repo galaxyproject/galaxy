@@ -1427,10 +1427,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         invalid_file_tups = []
-        if tool is None:
-            if not valid:
-                invalid_file_tups = [ ( name, error_message ) ]
-        else:
+        if tool:
             invalid_file_tups = check_tool_input_params( trans.app,
                                                          repository.repo_path,
                                                          tool_config,
