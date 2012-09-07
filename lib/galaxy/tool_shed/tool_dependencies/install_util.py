@@ -113,6 +113,12 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                 action_dict[ 'url' ] = action_elem.text
             else:
                 continue
+        elif action_type == 'make_directory':
+            # <action type="make_directory">$INSTALL_DIR/lib/python</action>
+            if action_elem.text:
+                action_dict[ 'full_path' ] = action_elem.text.replace( '$INSTALL_DIR', install_dir )
+            else:
+                continue
         elif action_type in [ 'move_directory_files', 'move_file' ]:
             # <action type="move_file">
             #     <source>misc/some_file</source>
@@ -128,15 +134,21 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                     action_dict[ move_elem.tag ] = move_elem_text
         elif action_type == 'set_environment':
             # <action type="set_environment">
+            #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
             #     <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
             # </action>
+            env_var_dicts = []
             for env_elem in action_elem:
                 if env_elem.tag == 'environment_variable':
                     env_var_name = env_elem.get( 'name', 'PATH' )
                     env_var_action = env_elem.get( 'action', 'prepend_to' )
                     env_var_text = env_elem.text.replace( '$INSTALL_DIR', install_dir )
                     if env_var_text:
-                        action_dict[ env_elem.tag ] = dict( name=env_var_name, action=env_var_action, value=env_var_text )
+                        env_var_dicts.append( dict( name=env_var_name, action=env_var_action, value=env_var_text ) )
+            if env_var_dicts:
+                action_dict[ env_elem.tag ] = env_var_dicts
+            else:
+                continue
         else:
             continue
         actions.append( ( action_type, action_dict ) )

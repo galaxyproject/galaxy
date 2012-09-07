@@ -17,6 +17,9 @@ def istar( file_path ):
     return tarfile.is_tarfile( file_path )
 def iszip( file_path ):
     return check_zip( file_path )
+def make_directory( full_path ):
+    if not os.path.exists( full_path ):
+        os.makedirs( full_path )
 def move_directory_files( current_dir, source_dir, destination_dir ):
     source_directory = os.path.abspath( os.path.join( current_dir, source_dir ) )
     destination_directory = os.path.join( destination_dir )

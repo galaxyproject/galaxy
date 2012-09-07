@@ -88,7 +88,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     for action_tup in actions[ 1: ]:
                         action_type, action_dict = action_tup
                         current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
-                        if action_type == 'move_directory_files':
+                        if action_type == 'make_directory':
+                            common_util.make_directory( full_path=action_dict[ 'full_path' ] )
+                        elif action_type == 'move_directory_files':
                             common_util.move_directory_files( current_dir=current_dir,
                                                               source_dir=os.path.join( action_dict[ 'source_directory' ] ),
                                                               destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
@@ -98,29 +100,36 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                                    destination_dir=os.path.join( action_dict[ 'destination' ] ) )
                         elif action_type == 'set_environment':
                             # Currently the only action supported in this category is "environment_variable".
-                            env_var_dict = action_dict[ 'environment_variable' ]
-                            env_var_name = env_var_dict[ 'name' ]
-                            env_var_action = env_var_dict[ 'action' ]
-                            env_var_value = env_var_dict[ 'value' ]
-                            if env_var_action == 'prepend_to':
-                                changed_value = '%s:$%s' % ( env_var_value, env_var_name )
-                            elif env_var_action == 'set_to':
-                                changed_value = '%s' % env_var_value
-                            elif env_var_action == 'append_to':
-                                changed_value = '$%s:%s' % ( env_var_name, env_var_value )
-                            cmd = "echo '%s=%s; export %s' > %s/env.sh;chmod +x %s/env.sh" % ( env_var_name,
-                                                                                               changed_value,
-                                                                                               env_var_name,
-                                                                                               install_dir,
-                                                                                               install_dir )
-                            output = local( cmd, capture=True )
-                            log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
-                            if output.return_code:
-                                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                                tool_dependency.error_message = str( output.stderr )
-                                sa_session.add( tool_dependency )
-                                sa_session.flush()
-                                return
+                            env_var_dicts = action_dict[ 'environment_variable' ]
+                            for env_var_dict in env_var_dicts:
+                                env_var_name = env_var_dict[ 'name' ]
+                                env_var_action = env_var_dict[ 'action' ]
+                                env_var_value = env_var_dict[ 'value' ]
+                                if env_var_action == 'prepend_to':
+                                    changed_value = '%s:$%s' % ( env_var_value, env_var_name )
+                                elif env_var_action == 'set_to':
+                                    changed_value = '%s' % env_var_value
+                                elif env_var_action == 'append_to':
+                                    changed_value = '$%s:%s' % ( env_var_name, env_var_value )
+                                env_shell_file_path = '%s/env.sh' % install_dir
+                                if os.path.exists( env_shell_file_path ):
+                                    write_action = '>>'
+                                else:
+                                    write_action = '>'
+                                cmd = "echo '%s=%s; export %s' %s %s;chmod +x %s" % ( env_var_name,
+                                                                                      changed_value,
+                                                                                      env_var_name,
+                                                                                      write_action,
+                                                                                      env_shell_file_path,
+                                                                                      env_shell_file_path )
+                                output = local( cmd, capture=True )
+                                log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
+                                if output.return_code:
+                                    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                                    tool_dependency.error_message = str( output.stderr )
+                                    sa_session.add( tool_dependency )
+                                    sa_session.flush()
+                                    return
                         elif action_type == 'shell_command':
                             action = action_dict[ 'command' ]
                             with settings( warn_only=True ):
