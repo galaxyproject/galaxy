@@ -363,7 +363,8 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
                         noupdate=False,
                         rev=util.listify( str( ctx_rev ) ) )
         return True
-    except:
+    except Exception, e:
+        log.debug( 'Encountered an exception while cloning the repository: %s' % e )
         return False
 def copy_sample_file( app, filename, dest_path=None ):
     """Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path is ~/tool-data."""

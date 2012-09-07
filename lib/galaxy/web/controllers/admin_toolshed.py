@@ -772,15 +772,8 @@ class AdminToolshed( AdminGalaxy ):
         repository_id = kwd[ 'id' ]
         repository = get_repository( trans, repository_id )
         if repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
-                                  trans.model.ToolShedRepository.installation_status.CLONING ]:
-            message = "The repository '%s' is not yet cloned, please try again..."
-            status = 'warning'
-            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                              action='monitor_repository_installation',
-                                                              **kwd ) )
-        if repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR ]:
-            message = "There was an error installing the repository '%s', please try again..."
-            status = 'warning'
+                                  trans.model.ToolShedRepository.installation_status.CLONING,
+                                  trans.model.ToolShedRepository.installation_status.ERROR ]:
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='monitor_repository_installation',
                                                               **kwd ) )
