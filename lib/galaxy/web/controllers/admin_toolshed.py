@@ -64,7 +64,8 @@ class InstalledRepositoryGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="manage_repository", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: iff( item.status == model.ToolShedRepository.installation_status.ERROR, \
+                                             None, dict( operation="manage_repository", id=item.id, webapp="galaxy" ) ) ),
                     attach_popup=True ),
         DescriptionColumn( "Description" ),
         OwnerColumn( "Owner" ),
@@ -86,17 +87,29 @@ class InstalledRepositoryGrid( grids.Grid ):
     global_actions = []
     operations = [ grids.GridOperation( "Get updates",
                                         allow_multiple=False,
-                                        condition=( lambda item: not item.deleted ),
+                                        condition=( lambda item: not item.deleted and item.status not in \
+                                            [ model.ToolShedRepository.installation_status.ERROR, model.ToolShedRepository.installation_status.NEW ] ),
                                         async_compatible=False,
                                         url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='get updates' ) ),
                    grids.GridOperation( "Deactivate or uninstall",
                                         allow_multiple=False,
-                                        condition=( lambda item: not item.deleted ),
+                                        condition=( lambda item: not item.deleted and item.status not in \
+                                            [ model.ToolShedRepository.installation_status.ERROR, model.ToolShedRepository.installation_status.NEW ] ),
                                         async_compatible=False,
                                         url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='deactivate or uninstall' ) ),
+                   grids.GridOperation( "Uninstall",
+                                        allow_multiple=False,
+                                        condition=( lambda item: ( item.status == model.ToolShedRepository.installation_status.ERROR ) ),
+                                        async_compatible=False,
+                                        url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='uninstall' ) ),
+                   grids.GridOperation( "Reset to install",
+                                        allow_multiple=False,
+                                        condition=( lambda item: ( item.status == model.ToolShedRepository.installation_status.ERROR ) ),
+                                        async_compatible=False,
+                                        url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='reset status to new' ) ),
                    grids.GridOperation( "Activate or reinstall",
                                         allow_multiple=False,
-                                        condition=( lambda item: item.deleted ),
+                                        condition=( lambda item: ( item.deleted or item.uninstalled ) ),
                                         async_compatible=False,
                                         url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='activate or reinstall' ) ) ]
     standard_filters = []
@@ -342,6 +355,16 @@ class AdminToolshed( AdminGalaxy ):
                 return self.manage_repository( trans, **kwd )
             if operation == "get updates":
                 return self.check_for_updates( trans, **kwd )
+            if operation == "uninstall":
+                kwd[ 'deactivate_or_uninstall_repository_button' ] = 'Deactivate or Uninstall'
+                kwd[ 'remove_from_disk' ] = [u'true', u'true']
+                return self.deactivate_or_uninstall_repository( trans, **kwd )
+            if operation == "reset status to new":
+                repository = get_repository( trans, kwd[ 'id' ] )
+                repository.status = model.ToolShedRepository.installation_status.NEW
+                repository.deleted = False
+                repository.uninstalled = True
+                trans.app.model.context.current.flush()
             if operation == "activate or reinstall":
                 repository = get_repository( trans, kwd[ 'id' ] )
                 if repository.uninstalled:
@@ -406,7 +429,7 @@ class AdminToolshed( AdminGalaxy ):
         remove_from_disk_checked = CheckboxField.is_checked( remove_from_disk )
         tool_shed_repository = get_repository( trans, kwd[ 'id' ] )
         shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
-        repository_install_dir = os.path.abspath ( relative_install_dir )
+        repository_install_dir = os.path.abspath ( relative_install_dir ) if relative_install_dir is not None else None
         errors = ''
         if params.get( 'deactivate_or_uninstall_repository_button', False ):
             if tool_shed_repository.includes_tools:
@@ -426,8 +449,12 @@ class AdminToolshed( AdminGalaxy ):
                     log.debug( "Removed repository installation directory: %s" % str( repository_install_dir ) )
                     removed = True
                 except Exception, e:
-                    log.debug( "Error removing repository installation directory %s: %s" % ( str( repository_install_dir ), str( e ) ) )
-                    removed = False
+                    if repository_install_dir is not None:
+                        removed = False
+                        log.debug( "Error removing repository installation directory %s: %s" % ( str( repository_install_dir ), str( e ) ) )
+                    else:
+                        log.debug( "Repository installation directory does not exist." )
+                        removed = True
                 if removed:
                     tool_shed_repository.uninstalled = True
                     # Remove all installed tool dependencies.
@@ -610,7 +637,12 @@ class AdminToolshed( AdminGalaxy ):
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
             clone_dir = os.path.join( tool_path, self.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision ) )
             relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
-            clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+            result = clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+            if not result:
+                update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.ERROR )
+                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                          action='monitor_repository_installation',
+                                                          tool_shed_repository_ids=[ trans.security.encode_id( tool_shed_repository.id ) ] ) )
             if reinstalling:
                 # Since we're reinstalling the repository we need to find the latest changeset revision to which is can be updated.
                 current_changeset_revision, current_ctx_rev = get_update_to_changeset_revision_and_ctx_rev( trans, tool_shed_repository )
@@ -742,6 +774,12 @@ class AdminToolshed( AdminGalaxy ):
         if repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
                                   trans.model.ToolShedRepository.installation_status.CLONING ]:
             message = "The repository '%s' is not yet cloned, please try again..."
+            status = 'warning'
+            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                              action='monitor_repository_installation',
+                                                              **kwd ) )
+        if repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR ]:
+            message = "There was an error installing the repository '%s', please try again..."
             status = 'warning'
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='monitor_repository_installation',

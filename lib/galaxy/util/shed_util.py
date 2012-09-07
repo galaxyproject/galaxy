@@ -355,12 +355,16 @@ def clean_tool_shed_url( tool_shed_url ):
     return tool_shed_url.rstrip( '/' )
 def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):   
     """Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present in the cloned repository."""
-    commands.clone( get_configured_ui(),
-                    str( repository_clone_url ),
-                    dest=str( repository_file_dir ),
-                    pull=True,
-                    noupdate=False,
-                    rev=util.listify( str( ctx_rev ) ) )
+    try:
+        commands.clone( get_configured_ui(),
+                        str( repository_clone_url ),
+                        dest=str( repository_file_dir ),
+                        pull=True,
+                        noupdate=False,
+                        rev=util.listify( str( ctx_rev ) ) )
+        return True
+    except:
+        return False
 def copy_sample_file( app, filename, dest_path=None ):
     """Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path is ~/tool-data."""
     if dest_path is None:
