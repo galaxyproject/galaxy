@@ -69,14 +69,13 @@
             var genome = new Genome(JSON.parse('${ h.to_json_string( genome ) }'))
                 visualization = new GenomeVisualization(JSON.parse('${ h.to_json_string( viz_config ) }')),
                 viz_view = new CircsterView({
-                    width: 600,
-                    height: 600,
+                    width: 700,
+                    height: 700,
                     // Gap is difficult to set because it very dependent on chromosome size and organization.
-                    total_gap: 2 * Math.PI * 0.2,
+                    total_gap: 2 * Math.PI * 0.1,
                     genome: genome,
                     model: visualization,
-                    radius_start: 100,
-                    dataset_arc_height: 15
+                    dataset_arc_height: 25
                 });
             
             // -- Render viz. --
