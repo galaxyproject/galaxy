@@ -120,6 +120,7 @@
     ## Help tab.
     <%
         menu_options = [
+                            [_('Galaxy Q&A'), app.config.get( "qa_url", "http://slyfox.bx.psu.edu:8080/" ), "galaxy_main" ],    
                             [_('Support'), app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
                             [_('Galaxy Wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
                             [_('Video tutorials (screencasts)'), app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],

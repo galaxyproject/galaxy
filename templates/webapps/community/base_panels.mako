@@ -71,7 +71,8 @@
 
                 ## Help tab.
                 <%
-                    menu_options = [          
+                    menu_options = [  
+                        [_('Galaxy Q&A'), app.config.get( "qa_url", "http://slyfox.bx.psu.edu:8080/" ), "_blank" ]        
                         [_('Support'), app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
                         [_('Tool shed wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/Tool%20Shed" ), "_blank" ],
                         [_('Galaxy wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],

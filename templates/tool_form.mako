@@ -12,7 +12,7 @@
 </%def>
 
 <%def name="javascripts()">
-    ${h.js( "libs/jquery/jquery", "galaxy.panels", "galaxy.base", "libs/jquery/jquery.autocomplete", "libs/jquery/jstorage" )}
+    ${h.js( "libs/jquery/jquery", "galaxy.panels", "galaxy.base", "libs/jquery/jquery.autocomplete", "libs/jquery/jstorage", "libs/bootstrap" )}
     <script type="text/javascript">
     $(function() {
         $(window).bind("refresh_on_change", function() {
@@ -282,6 +282,11 @@
         tool_url = tool.action[0] + h.url_for(tool.action[1])
 %>
 
+<%
+    # Name of the tool in lower case
+    low_tool_name = tool.name.lower()
+%>
+
 %if tool_id_version_message:
     ${render_msg( tool_id_version_message, 'warning' )}
 %endif
@@ -289,12 +294,17 @@
 <div class="toolForm" id="${tool.id}">
     <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}">
         %if tool.has_multiple_pages:
-            <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
+            <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})
         %elif not tool_version_select_field:
-            <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
+            <div class="toolFormTitle">${tool.name} (version ${tool.version})
         %else:
-            <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}</div>
+            <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}
         %endif
+        <!-- BioStar links -->
+        <a href="http://slyfox.bx.psu.edu:8080/new/post/tagged/${low_tool_name}" target="galaxy_main" class="icon-button general-question tooltip close-side-panels" data-original-title="Ask a tool related question"></a>
+        <a href="http://slyfox.bx.psu.edu:8080/show/tag/${low_tool_name}/" target="galaxy_main" class="icon-button tag-question tooltip close-side-panels" data-original-title="See tool related posts" ></a>
+        <!-- End of BioStar links -->
+        </div>
         <div class="toolFormBody">
             <input type="hidden" name="refresh" value="refresh">
             <input type="hidden" name="tool_id" value="${tool.id}">
