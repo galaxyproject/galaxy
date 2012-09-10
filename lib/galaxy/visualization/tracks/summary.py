@@ -93,8 +93,10 @@ class SummaryTree:
             starting_block = self.find_block( start, level )
             ending_block = self.find_block( end, level )
             for block in range( starting_block, ending_block + 1 ):
+                val = 0
                 if block in blocks[ level ]:
-                    results.append(  ( block * multiplier, blocks[ level ][ block ] )  )
+                    val = blocks[ level ][ block ]
+                results.append(  ( block * multiplier, val )  )
             return results
             
         return None
