@@ -186,6 +186,8 @@ class Configuration( object ):
         self.os_conn_path = kwargs.get( 'os_conn_path', '/' )
         self.object_store_cache_size = float(kwargs.get( 'object_store_cache_size', -1 ))
         self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
+        if self.distributed_object_store_config_file is not None:
+            self.distributed_object_store_config_file = resolve_path( self.distributed_object_store_config_file, self.root )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
