@@ -28,7 +28,7 @@ def persist_uploads( params ):
                                                     local_filename = local_filename )
             elif type( f ) == dict and 'filename' and 'local_filename' not in f:
                 raise Exception( 'Uploaded file was encoded in a way not understood by Galaxy.' )
-            if upload_dataset['url_paste'].strip() != '':
+            if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
                 upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file( StringIO.StringIO( upload_dataset['url_paste'] ), prefix="strio_url_paste_" )
             else:
                 upload_dataset['url_paste'] = None
