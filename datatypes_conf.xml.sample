@@ -198,6 +198,10 @@
       <display file="igv/vcf.xml" />
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
     </datatype>
+    <!-- Phylogenetic tree datatypes -->
+    <datatype extension="phyloxml" type="galaxy.datatypes.xml:Phyloxml" display_in_upload="true" />
+    <datatype extension="nhx" type="galaxy.datatypes.data:Newick" display_in_upload="true" />
+    <datatype extension="nex" type="galaxy.datatypes.data:Nexus" display_in_upload="true" />
     <!-- Start RGenetics Datatypes -->
     <datatype extension="affybatch" type="galaxy.datatypes.genetics:Affybatch" display_in_upload="true"/>
     <!-- eigenstrat pedigree input file -->
