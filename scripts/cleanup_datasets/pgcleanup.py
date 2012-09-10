@@ -25,6 +25,7 @@ from sqlalchemy.engine.url import make_url
 
 import galaxy.config
 
+from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util.bunch import Bunch
 
@@ -60,6 +61,7 @@ class Cleanup(object):
         parser.add_option('-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default=default_config)
         parser.add_option('-d', '--debug', action='store_true', dest='debug', help='Enable debug logging', default=False)
         parser.add_option('--dry-run', action='store_true', dest='dry_run', help="Dry run (rollback all transactions)", default=False)
+        parser.add_option('--force-retry', action='store_true', dest='force_retry', help="Retry file removals (on applicable actions)", default=False)
         parser.add_option('-o', '--older-than', type='int', dest='days', help='Only perform action(s) on objects that have not been updated since the specified number of days', default=14)
         parser.add_option('-U', '--no-update-time', action='store_false', dest='update_time', help="Don't set update_time on updated objects", default=True)
         parser.add_option('-s', '--sequence', dest='sequence', help='Comma-separated sequence of actions, chosen from: %s' % self.action_names, default='')
@@ -68,18 +70,11 @@ class Cleanup(object):
         self.options.sequence = [ x.strip() for x in self.options.sequence.split(',') ]
 
     def __setup_logging(self):
-        if self.options.debug:
-            log.setLevel('DEBUG')
-        else:
-            log.setLevel('INFO')
-
         format = "%(funcName)s %(levelname)s %(asctime)s %(message)s"
-        formatter = logging.Formatter(format)
-
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(formatter)
-
-        log.addHandler(handler)
+        if self.options.debug:
+            logging.basicConfig(level=logging.DEBUG, format=format)
+        else:
+            logging.basicConfig(level=logging.INFO, format=format)
 
     def __load_config(self):
         log.info('Reading config from %s' % self.options.config)
@@ -203,11 +198,15 @@ class Cleanup(object):
             self.conn.commit()
             log.info("All changes committed")
 
-    def _remove_metadata_file(self, id, action_name):
-        metadata_file = Bunch(id=id)
-        filename = self.object_store.get_filename(metadata_file, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % id)
+    def _remove_metadata_file(self, id, object_store_id, action_name):
+        metadata_file = Bunch(id=id, object_store_id=object_store_id)
 
-        self._log('Removing from disk: %s' % filename, action_name)
+        try:
+            filename = self.object_store.get_filename(metadata_file, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % id)
+            self._log('Removing from disk: %s' % filename, action_name)
+        except ObjectNotFound:
+            return
+
         if not self.options.dry_run:
             try:
                 os.unlink(filename)
@@ -329,7 +328,7 @@ class Cleanup(object):
         update_time_sql = ''
         if self.options.update_time:
             update_time_sql = """,
-                                  update_time = NOW()'"""
+                                  update_time = NOW()"""
 
         sql = sql % (update_time_sql, '%s', '%s')
         args = (self.options.days, event_id)
@@ -356,8 +355,7 @@ class Cleanup(object):
               WITH purged_hda_ids
                 AS (     UPDATE history_dataset_association
                             SET purged = true%s
-                          WHERE deleted
-                                AND NOT purged
+                          WHERE deleted%s
                                 AND update_time < (NOW() - interval '%s days')
                       RETURNING id,
                                 history_id),
@@ -367,7 +365,8 @@ class Cleanup(object):
                            FROM purged_hda_ids
                           WHERE purged_hda_ids.id = metadata_file.hda_id
                       RETURNING metadata_file.hda_id AS hda_id,
-                                metadata_file.id AS id),
+                                metadata_file.id AS id,
+                                metadata_file.object_store_id AS object_store_id),
                    deleted_icda_ids
                 AS (     UPDATE implicitly_converted_dataset_association 
                             SET deleted = true%s
@@ -403,6 +402,7 @@ class Cleanup(object):
             SELECT purged_hda_ids.id,
                    history.user_id,
                    deleted_metadata_file_ids.id,
+                   deleted_metadata_file_ids.object_store_id,
                    deleted_icda_ids.id,
                    deleted_icda_ids.hda_id
               FROM purged_hda_ids
@@ -414,12 +414,19 @@ class Cleanup(object):
                                    ON purged_hda_ids.history_id = history.id;
         """
 
+        force_retry_sql = """
+                                AND NOT purged"""
         update_time_sql = ""
-        if self.options.update_time:
-            update_time_sql += """,
+
+        if self.options.force_retry:
+            force_retry_sql = ""
+        else:
+            # only update time if not doing force retry (otherwise a lot of things would have their update times reset that were actually purged a long time ago)
+            if self.options.update_time:
+                update_time_sql = """,
                               update_time = NOW()"""
 
-        sql = sql % (update_time_sql, '%s', update_time_sql, update_time_sql, update_time_sql, '%s', '%s', '%s', '%s')
+        sql = sql % (update_time_sql, force_retry_sql, '%s', update_time_sql, update_time_sql, update_time_sql, '%s', '%s', '%s', '%s')
         args = (self.options.days, event_id, event_id, event_id, event_id)
         cur = self._update(sql, args)
         self._flush()
@@ -430,10 +437,10 @@ class Cleanup(object):
             if tup[1] is not None and tup[1] not in self.disk_accounting_user_ids:
                 self.disk_accounting_user_ids.append(int(tup[1]))
             if tup[2] is not None:
-                self._log('Purge of HDA %s caused deletion of MetadataFile: %s' % (tup[0], tup[2]))
-                self._remove_metadata_file(tup[2], 'purge_deleted_hdas')
-            if tup[3] is not None:
-                self._log('Purge of HDA %s caused deletion of ImplicitlyConvertedDatasetAssociation: %s and converted HistoryDatasetAssociation: %s' % (tup[0], tup[3], tup[4]))
+                self._log('Purge of HDA %s caused deletion of MetadataFile: %s in Object Store: %s' % (tup[0], tup[2], tup[3]))
+                self._remove_metadata_file(tup[2], tup[3], 'purge_deleted_hdas')
+            if tup[4] is not None:
+                self._log('Purge of HDA %s caused deletion of ImplicitlyConvertedDatasetAssociation: %s and converted HistoryDatasetAssociation: %s' % (tup[0], tup[4], tup[5]))
         self._close_logfile()
 
     def purge_deleted_histories(self):
@@ -449,8 +456,7 @@ class Cleanup(object):
               WITH purged_history_ids
                 AS (     UPDATE history
                             SET purged = true%s
-                          WHERE deleted
-                                AND NOT purged
+                          WHERE deleted%s
                                 AND update_time < (NOW() - interval '%s days')
                       RETURNING id,
                                 user_id),
@@ -468,7 +474,8 @@ class Cleanup(object):
                            FROM purged_hda_ids
                           WHERE purged_hda_ids.id = metadata_file.hda_id
                       RETURNING metadata_file.hda_id AS hda_id,
-                                metadata_file.id AS id),
+                                metadata_file.id AS id,
+                                metadata_file.object_store_id AS object_store_id),
                    deleted_icda_ids
                 AS (     UPDATE implicitly_converted_dataset_association 
                             SET deleted = true%s
@@ -510,6 +517,7 @@ class Cleanup(object):
                    purged_history_ids.user_id,
                    purged_hda_ids.id,
                    deleted_metadata_file_ids.id,
+                   deleted_metadata_file_ids.object_store_id,
                    deleted_icda_ids.id,
                    deleted_icda_ids.hda_id
               FROM purged_history_ids
@@ -521,12 +529,18 @@ class Cleanup(object):
                                    ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id;
         """
 
+        force_retry_sql = """
+                                AND NOT purged"""
         update_time_sql = ""
-        if self.options.update_time:
-            update_time_sql += """,
+
+        if self.options.force_retry:
+            force_retry_sql = ""
+        else:
+            if self.options.update_time:
+                update_time_sql += """,
                               update_time = NOW()"""
 
-        sql = sql % (update_time_sql, '%s', update_time_sql, update_time_sql, update_time_sql, update_time_sql, '%s', '%s', '%s', '%s', '%s')
+        sql = sql % (update_time_sql, force_retry_sql, '%s', update_time_sql, update_time_sql, update_time_sql, update_time_sql, '%s', '%s', '%s', '%s', '%s')
         args = (self.options.days, event_id, event_id, event_id, event_id, event_id)
         cur = self._update(sql, args)
         self._flush()
@@ -539,10 +553,10 @@ class Cleanup(object):
             if tup[2] is not None:
                 self._log('Purge of History %s caused deletion of HistoryDatasetAssociation: %s' % (tup[0], tup[2]))
             if tup[3] is not None:
-                self._log('Purge of HDA %s caused deletion of MetadataFile: %s' % (tup[1], tup[3]))
-                self._remove_metadata_file(tup[3], 'purge_deleted_histories')
-            if tup[4] is not None:
-                self._log('Purge of HDA %s caused deletion of ImplicitlyConvertedDatasetAssociation: %s and converted HistoryDatasetAssociation: %s' % (tup[1], tup[4], tup[5]))
+                self._log('Purge of HDA %s caused deletion of MetadataFile: %s in Object Store: %s' % (tup[1], tup[3], tup[4]))
+                self._remove_metadata_file(tup[3], tup[4], 'purge_deleted_histories')
+            if tup[5] is not None:
+                self._log('Purge of HDA %s caused deletion of ImplicitlyConvertedDatasetAssociation: %s and converted HistoryDatasetAssociation: %s' % (tup[1], tup[5], tup[6]))
         self._close_logfile()
 
     def delete_exported_histories(self):
@@ -559,6 +573,7 @@ class Cleanup(object):
                               SET deleted = true%s
                              FROM job_export_history_archive
                             WHERE job_export_history_archive.dataset_id = dataset.id
+                                  AND NOT deleted
                                   AND dataset.update_time <= (NOW() - interval '%s days')
                         RETURNING dataset.id),
                      dataset_events
@@ -649,38 +664,52 @@ class Cleanup(object):
                 WITH purged_dataset_ids
                   AS (     UPDATE dataset
                               SET purged = true%s
-                            WHERE deleted = true
-                                  AND purged = false
+                            WHERE deleted%s
                                   AND update_time < (NOW() - interval '%s days')
-                        RETURNING id),
+                        RETURNING id,
+                                  object_store_id),
                      dataset_events
                   AS (INSERT INTO cleanup_event_dataset_association
                                   (create_time, cleanup_event_id, dataset_id)
                            SELECT NOW(), %s, id
                              FROM purged_dataset_ids)
-              SELECT id
+              SELECT id,
+                     object_store_id
                 FROM purged_dataset_ids
             ORDER BY id;
         """
 
+        force_retry_sql = """
+                                  AND NOT purged"""
         update_time_sql = ""
-        if self.options.update_time:
-            update_time_sql += """,
+
+        if self.options.force_retry:
+            force_retry_sql = ""
+        else:
+            if self.options.update_time:
+                update_time_sql = """,
                                   update_time = NOW()"""
 
-        sql = sql % (update_time_sql, '%s', '%s')
+        sql = sql % (update_time_sql, force_retry_sql, '%s', '%s')
         args = (self.options.days, event_id)
         cur = self._update(sql, args)
         self._flush()
 
         self._open_logfile()
         for tup in cur:
-            self._log('Marked Dataset purged: %s' % tup[0])
+            self._log('Marked Dataset purged: %s in Object Store: %s' % (tup[0], tup[1]))
 
             # always try to remove the "object store path" - if it's at an external_filename, that file will be untouched anyway (which is what we want)
-            dataset = Bunch(id=tup[0])
-            filename = self.object_store.get_filename(dataset)
-            extra_files_dir = self.object_store.get_filename(dataset, dir_only=True, extra_dir="dataset_%d_files" % tup[0])
+            dataset = Bunch(id=tup[0], object_store_id=tup[1])
+            try:
+                filename = self.object_store.get_filename(dataset)
+            except ObjectNotFound, AttributeError:
+                continue
+
+            try:
+                extra_files_dir = self.object_store.get_filename(dataset, dir_only=True, extra_dir="dataset_%d_files" % tup[0])
+            except ObjectNotFound, AttributeError:
+                extra_files_dir = None
 
             # don't check for existence of the dataset, it should exist
             self._log('Removing from disk: %s' % filename)
@@ -691,7 +720,7 @@ class Cleanup(object):
                     self._log('Removal of %s failed with error: %s' % (filename, e))
 
             # extra_files_dir is optional so it's checked first
-            if os.path.exists(extra_files_dir):
+            if extra_files_dir is not None and os.path.exists(extra_files_dir):
                 self._log('Removing from disk: %s' % extra_files_dir)
                 if not self.options.dry_run:
                     try:
@@ -703,6 +732,10 @@ class Cleanup(object):
 
 if __name__ == '__main__':
     cleanup = Cleanup()
-    cleanup._run()
-    cleanup._update_user_disk_usage()
+    try:
+        cleanup._run()
+        if cleanup.disk_accounting_user_ids:
+            cleanup._update_user_disk_usage()
+    except:
+        log.exception('Caught exception in run sequence:')
     cleanup._shutdown()
