@@ -90,6 +90,7 @@ class Cleanup(object):
         config_dict = {}
         for key, value in config_parser.items('app:main'):
             config_dict[key] = value
+        config_dict['root_dir'] = galaxy_root
 
         self.config = galaxy.config.Configuration(**config_dict)
 

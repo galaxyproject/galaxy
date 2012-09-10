@@ -19,6 +19,7 @@ from galaxy.visualization.tracks.visual_analytics import get_tool_def
 from galaxy.security.validate_user_input import validate_publicname
 from paste.httpexceptions import *
 from galaxy.exceptions import *
+from galaxy.model import NoConverterException, ConverterDependencyException
 
 from Cheetah.Template import Template
 
