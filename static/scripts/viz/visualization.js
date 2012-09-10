@@ -823,26 +823,27 @@ var CircsterView = Backbone.View.extend({
     className: 'circster',
     
     initialize: function(options) {
-        this.width = options.width;
-        this.height = options.height;
         this.total_gap = options.total_gap;
         this.genome = options.genome;
         this.dataset_arc_height = options.dataset_arc_height;
         this.track_gap = 5;
-
-        // Compute radius start based on model.
-        this.radius_start = this.width/2 - this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap);
     },
     
     render: function() {
         var self = this,
-            dataset_arc_height = this.dataset_arc_height;
+            dataset_arc_height = this.dataset_arc_height,
+            width = self.$el.width(),
+            height = self.$el.height(),
+            // Compute radius start based on model, will be centered 
+            // and fit entirely inside element by default
+            init_radius_start = ( Math.min(width,height)/2 
+                - this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) );
 
         // Set up SVG element.
         var svg = d3.select(self.$el[0])
               .append("svg")
-                .attr("width", self.width)
-                .attr("height", self.height)
+                .attr("width", width)
+                .attr("height", height)
                 .attr("pointer-events", "all")
               // Set up zooming, dragging.
               .append('svg:g')
@@ -851,14 +852,14 @@ var CircsterView = Backbone.View.extend({
                       "translate(" + d3.event.translate + ")"
                       + " scale(" + d3.event.scale + ")");
                 }))
-                .attr("transform", "translate(" + self.width / 2 + "," + self.height / 2 + ")")
+                .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
               .append('svg:g')
                 
 
         // -- Render each dataset in the visualization. --
         this.model.get('tracks').each(function(track, index) {
             var dataset = track.get('genome_wide_data'),
-                radius_start = self.radius_start + index * (dataset_arc_height + self.track_gap),
+                radius_start = init_radius_start + index * (dataset_arc_height + self.track_gap),
                 // Layout chromosome arcs.
                 layout_class = (dataset instanceof GenomeWideBigWigData ? CircsterBigWigLayout : CircsterSummaryTreeLayout ),
                 arcs_layout = new layout_class({
