@@ -685,6 +685,7 @@ class History( object, UsesAnnotations ):
         db_session = object_session( self )
         rval = db_session.query( func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
                                                      .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                                                     .filter( HistoryDatasetAssociation.purged != True )
                                                      .filter( Dataset.purged != True )
                                                      .distinct().subquery().c.total_size ) ).first()[0]
         if rval is None:
