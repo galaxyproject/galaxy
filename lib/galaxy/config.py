@@ -105,6 +105,7 @@ class Configuration( object ):
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
+        self.track_jobs_in_database = kwargs.get( 'track_jobs_in_database', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
         # External Service types used in sample tracking
@@ -210,9 +211,12 @@ class Configuration( object ):
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
         self.default_job_handlers = [ x.strip() for x in kwargs.get('default_job_handlers', ','.join( self.job_handlers ) ).split(',') ]
         # Use database for IPC unless this is a standalone server (or multiple servers doing self dispatching in memory)
-        self.track_jobs_in_database = True
-        if ( len( self.job_handlers ) == 1 ) and ( self.job_handlers[0] == self.server_name ) and ( self.job_manager == self.server_name ):
-            self.track_jobs_in_database = False
+        if self.track_jobs_in_database is None or self.track_jobs_in_database == "None":
+            self.track_jobs_in_database = True
+            if ( len( self.job_handlers ) == 1 ) and ( self.job_handlers[0] == self.server_name ) and ( self.job_manager == self.server_name ):
+                self.track_jobs_in_database = False
+        else:
+            self.track_jobs_in_database = string_as_bool( self.track_jobs_in_database )
         # Store per-tool runner configs
         self.tool_handlers = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_handlers', 'name' )
         self.tool_runners = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_runners', 'url' )
