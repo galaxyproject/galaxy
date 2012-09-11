@@ -233,7 +233,6 @@ $(function() {
         //TODO: hack (github has an issue on this - see how it's resolved)
         // fix for two line bootstrap tooltips when placement: above
         $( this ).find( '.tooltip' ).each( function(){
-            console.debug( 'tooltip:', this );
             var $this = $( this );
             
             // documented method - that doesn't seem to work
