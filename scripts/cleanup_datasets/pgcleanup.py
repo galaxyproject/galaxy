@@ -31,6 +31,12 @@ from galaxy.util.bunch import Bunch
 
 log = logging.getLogger()
 
+class MetadataFile(Bunch):
+    pass
+
+class Dataset(Bunch):
+    pass
+
 class Cleanup(object):
     def __init__(self):
         self.options = None
@@ -199,12 +205,13 @@ class Cleanup(object):
             log.info("All changes committed")
 
     def _remove_metadata_file(self, id, object_store_id, action_name):
-        metadata_file = Bunch(id=id, object_store_id=object_store_id)
+        metadata_file = MetadataFile(id=id, object_store_id=object_store_id)
 
         try:
             filename = self.object_store.get_filename(metadata_file, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % id)
             self._log('Removing from disk: %s' % filename, action_name)
-        except ObjectNotFound:
+        except (ObjectNotFound, AttributeError), e:
+            log.error('Unable to get MetadataFile %s filename: %s' %  (id, e))
             return
 
         if not self.options.dry_run:
@@ -656,8 +663,6 @@ class Cleanup(object):
         """
         log.info('Marking purged all Datasets marked deleted that are older than the specified number of days.')
 
-        # TODO: force retry option
-
         event_id = self._create_event(inspect.stack()[0][3])
 
         sql = """
@@ -700,15 +705,16 @@ class Cleanup(object):
             self._log('Marked Dataset purged: %s in Object Store: %s' % (tup[0], tup[1]))
 
             # always try to remove the "object store path" - if it's at an external_filename, that file will be untouched anyway (which is what we want)
-            dataset = Bunch(id=tup[0], object_store_id=tup[1])
+            dataset = Dataset(id=tup[0], object_store_id=tup[1])
             try:
                 filename = self.object_store.get_filename(dataset)
-            except ObjectNotFound, AttributeError:
+            except (ObjectNotFound, AttributeError), e:
+                log.error('Unable to get Dataset %s filename: %s' %  (tup[0], e))
                 continue
 
             try:
                 extra_files_dir = self.object_store.get_filename(dataset, dir_only=True, extra_dir="dataset_%d_files" % tup[0])
-            except ObjectNotFound, AttributeError:
+            except (ObjectNotFound, AttributeError):
                 extra_files_dir = None
 
             # don't check for existence of the dataset, it should exist
