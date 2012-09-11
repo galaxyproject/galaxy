@@ -45,7 +45,7 @@ function tag_handling(parent_elt) {
                         error: function() { alert( "Tagging failed" ) },
                         success: function(tag_elt_html) {
                             tag_elt.html(tag_elt_html);
-                            tag_elt.find(".tooltip").tooltip();
+                            tag_elt.find(".tooltip").tooltip({ placement : 'bottom' });
                             tag_area.slideDown("fast");
                         }
                     });
@@ -86,7 +86,7 @@ function annotation_handling(parent_elt) {
                                 annotation = "<em>Describe or add notes to dataset</em>";
                             }
                             annotation_elt.html(annotation);
-                            annotation_area.find(".tooltip").tooltip();
+                            annotation_area.find(".tooltip").tooltip({ placement : 'bottom' });
                             async_save_text(
                                 annotation_elt.attr("id"), annotation_elt.attr("id"),
                                 "${h.url_for( controller='/dataset', action='annotate_async')}?" + href_parms,
@@ -229,6 +229,25 @@ $(function() {
         
         tag_handling(this);
         annotation_handling(this);
+        
+        //TODO: hack (github has an issue on this - see how it's resolved)
+        // fix for two line bootstrap tooltips when placement: above
+        $( this ).find( '.tooltip' ).each( function(){
+            console.debug( 'tooltip:', this );
+            var $this = $( this );
+            
+            // documented method - that doesn't seem to work
+            //$( this ).tooltip( 'destroy' );
+            
+            $this.data( 'tooltip', false );
+            var title = $this.attr( 'data-original-title' );
+            $this.attr( 'data-original-title', null );
+            $this.attr( 'title', title );
+
+            // place them on the bottom for now
+            $this.tooltip({ placement : 'bottom' });
+        });
+        
     });
     
     // Trackster links
