@@ -16,7 +16,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 
-    ${h.js( "libs/d3", "mvc/data", "viz/visualization" )}
+    ${h.js( "libs/d3", "mvc/data", "viz/visualization", "viz/circster" )}
 
     <script type="text/javascript">
         $(function() {
