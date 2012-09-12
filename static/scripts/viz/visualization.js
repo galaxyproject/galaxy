@@ -1,3 +1,5 @@
+(function(){
+
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
  * 
@@ -551,7 +553,7 @@ var BrowserBookmark = Backbone.RelationalModel.extend({
         {
             type: Backbone.HasOne,
             key: 'region',
-            relatedModel: 'GenomeRegion'
+            relatedModel: GenomeRegion
         }
     ]
 });
@@ -645,7 +647,7 @@ var Visualization = Backbone.RelationalModel.extend({
         {
             type: Backbone.HasMany,
             key: 'tracks',
-            relatedModel: 'BackboneTrack'
+            relatedModel: BackboneTrack
         }
     ],
 
@@ -772,3 +774,40 @@ var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
         }
     });
 };
+
+// ---- Exports ----
+
+var exports = (function() {
+    if ( typeof module !== 'undefined' && module.exports ) {
+        // CommonJS
+        return module.exports;
+    } else if ( typeof define === 'function' && define.amd ) {
+        // AMD
+        exports = {}
+        define( function() { return exports } );
+        return exports
+    } else {
+        // Browser global
+        return window;
+    }
+})();
+
+exports.BrowserBookmark = BrowserBookmark                  
+exports.BrowserBookmarkCollection = BrowserBookmarkCollection
+exports.Cache = Cache
+exports.CanvasManager = CanvasManager
+exports.Genome = Genome
+exports.GenomeDataManager = GenomeDataManager
+exports.GenomeRegion = GenomeRegion
+exports.GenomeRegionCollection = GenomeRegionCollection
+exports.GenomeVisualization = GenomeVisualization
+exports.GenomeWideBigWigData = GenomeWideBigWigData
+exports.GenomeWideSummaryTreeData = GenomeWideSummaryTreeData
+exports.ReferenceTrackDataManager = ReferenceTrackDataManager
+exports.ServerStateDeferred = ServerStateDeferred
+exports.TrackBrowserRouter = TrackBrowserRouter
+exports.TrackConfig = TrackConfig
+exports.Visualization = Visualization
+exports.add_datasets = add_datasets
+
+}).call(this);
