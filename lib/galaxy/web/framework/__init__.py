@@ -62,7 +62,7 @@ def expose( func ):
     """
     func.exposed = True
     return func
-    
+
 def json( func ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
@@ -127,8 +127,8 @@ def expose_api( func ):
             trans.set_user( provided_key.user )
         if trans.request.body:
             def extract_payload_from_request(trans, func, kwargs):
-                content_type = trans.request.headers['content-type']                
-                if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):                    
+                content_type = trans.request.headers['content-type']
+                if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):
                     # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
                     # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
                     # are not a part of the request body. This is a problem because it's not possible to differentiate between values
@@ -136,7 +136,7 @@ def expose_api( func ):
                     # in the payload. Therefore, the decorated method's formal arguments are discovered through reflection and removed from
                     # the payload dictionary. This helps to prevent duplicate argument conflicts in downstream methods.
                     payload = kwargs.copy()
-                    named_args, _, _, _ = inspect.getargspec(func)                                         
+                    named_args, _, _, _ = inspect.getargspec(func)
                     for arg in named_args:
                         payload.pop(arg, None)
                 else:
@@ -145,7 +145,7 @@ def expose_api( func ):
                     # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
                     payload = util.recursively_stringify_dictionary_keys( simplejson.loads( trans.request.body ) )
                 return payload
-            try:                
+            try:
                 kwargs['payload'] = extract_payload_from_request(trans, func, kwargs)
             except ValueError:
                 error_status = '400 Bad Request'
@@ -210,7 +210,7 @@ def error( message ):
 
 def form( *args, **kwargs ):
     return FormBuilder( *args, **kwargs )
-    
+
 class WebApplication( base.WebApplication ):
     def __init__( self, galaxy_app, session_cookie='galaxysession' ):
         base.WebApplication.__init__( self )
@@ -322,7 +322,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             except:
                 event.user = None
             try:
-                event.session_id = self.galaxy_session.id   
+                event.session_id = self.galaxy_session.id
             except:
                 event.session_id = None
             self.sa_session.add( event )
@@ -339,23 +339,22 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             return None
     def set_cookie( self, value, name='galaxysession', path='/', age=90, version='1' ):
         """Convenience method for setting a session cookie"""
-        # The galaxysession cookie value must be a high entropy 128 bit random number encrypted 
+        # The galaxysession cookie value must be a high entropy 128 bit random number encrypted
         # using a server secret key.  Any other value is invalid and could pose security issues.
         self.response.cookies[name] = value
         self.response.cookies[name]['path'] = path
         self.response.cookies[name]['max-age'] = 3600 * 24 * age # 90 days
         tstamp = time.localtime ( time.time() + 3600 * 24 * age )
-        self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp ) 
+        self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp )
         self.response.cookies[name]['version'] = version
     def _ensure_valid_session( self, session_cookie, create=True):
         """
         Ensure that a valid Galaxy session exists and is available as
         trans.session (part of initialization)
-        
+
         Support for universe_session and universe_user cookies has been
         removed as of 31 Oct 2008.
         """
-        sa_session = self.sa_session
         # Try to load an existing session
         secure_id = self.get_cookie( name=session_cookie )
         galaxy_session = None
@@ -369,7 +368,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # Decode the cookie value to get the session_key
             session_key = self.security.decode_guid( secure_id )
             try:
-                # Make sure we have a valid UTF-8 string 
+                # Make sure we have a valid UTF-8 string
                 session_key = session_key.encode( 'utf8' )
             except UnicodeDecodeError:
                 # We'll end up creating a new galaxy_session
@@ -384,7 +383,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         if self.app.config.use_remote_user:
             assert "HTTP_REMOTE_USER" in self.environ, \
                 "use_remote_user is set but no HTTP_REMOTE_USER variable"
-            remote_user_email = self.environ[ 'HTTP_REMOTE_USER' ]    
+            remote_user_email = self.environ[ 'HTTP_REMOTE_USER' ]
             if galaxy_session:
                 # An existing session, make sure correct association exists
                 if galaxy_session.user is None:
@@ -429,13 +428,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # FIXME: If prev_session is a proper relation this would not
             #        be needed.
             if prev_galaxy_session:
-                self.sa_session.add( prev_galaxy_session )            
+                self.sa_session.add( prev_galaxy_session )
             self.sa_session.flush()
         # If the old session was invalid, get a new history with our new session
         if invalidate_existing_session:
             self.new_history()
     def _ensure_logged_in_user( self, environ, session_cookie ):
-        # The value of session_cookie can be one of 
+        # The value of session_cookie can be one of
         # 'galaxysession' or 'galaxycommunitysession'
         # Currently this method does nothing unless session_cookie is 'galaxysession'
         if session_cookie == 'galaxysession' and self.galaxy_session.user is None:
@@ -469,7 +468,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     host = None
                 if host in UCSC_SERVERS:
                     return
-            external_display_path = url_for( controller='dataset', action='display_application' ) 
+            external_display_path = url_for( controller='dataset', action='display_application' )
             if self.request.path.startswith( external_display_path ):
                 request_path_split = external_display_path.split( '/' )
                 try:
@@ -484,13 +483,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         Create a new GalaxySession for this request, possibly with a connection
         to a previous session (in `prev_galaxy_session`) and an existing user
         (in `user_for_new_session`).
-        
+
         Caller is responsible for flushing the returned session.
         """
         session_key = self.security.get_new_guid()
         galaxy_session = self.app.model.GalaxySession(
             session_key=session_key,
-            is_valid=True, 
+            is_valid=True,
             remote_host = self.request.remote_host,
             remote_addr = self.request.remote_addr,
             referer = self.request.headers.get( 'Referer', None ) )
@@ -507,7 +506,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         if not self.app.config.use_remote_user:
             return None
-        
+
         user = self.sa_session.query( self.app.model.User ) \
                               .filter( self.app.model.User.table.c.email==remote_user_email ) \
                               .first()
@@ -555,7 +554,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         Login a new user (possibly newly created)
            - create a new session
            - associate new session with user
-           - if old session had a history and it was not associated with a user, associate it with the new session, 
+           - if old session had a history and it was not associated with a user, associate it with the new session,
              otherwise associate the current session's history with the user
            - add the disk usage of the current session to the user's total disk usage
         """
@@ -637,7 +636,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         return self.galaxy_session
     def get_history( self, create=False ):
         """
-        Load the current history, creating a new one only if there is not 
+        Load the current history, creating a new one only if there is not
         current history and we're told to create"
         """
         history = self.galaxy_session.current_history
@@ -709,7 +708,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         return rval
     def set_message( self, message, type=None ):
         """
-        Convenience method for setting the 'message' and 'message_type' 
+        Convenience method for setting the 'message' and 'message_type'
         element of the template context.
         """
         self.template_context['message'] = message
@@ -724,11 +723,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def show_message( self, message, type='info', refresh_frames=[], cont=None, use_panels=False, active_view="" ):
         """
         Convenience method for displaying a simple page with a single message.
-        
+
         `type`: one of "error", "warning", "info", or "done"; determines the
                 type of dialog box and icon displayed with the message
-                
-        `refresh_frames`: names of frames in the interface that should be 
+
+        `refresh_frames`: names of frames in the interface that should be
                           refreshed when the message is displayed
         """
         return self.fill_template( "message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view )
@@ -752,7 +751,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         Convenience method for displaying a simple page with a single HTML
         form.
         """
-        return self.fill_template( template, form=form, header=header, use_panels=( form.use_panels or use_panels ), 
+        return self.fill_template( template, form=form, header=header, use_panels=( form.use_panels or use_panels ),
                                     active_view=active_view )
     def fill_template(self, filename, **kwargs):
         """
@@ -764,19 +763,19 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         if filename.endswith( ".mako" ):
             return self.fill_template_mako( filename, **kwargs )
         else:
-            template = Template( file=os.path.join(self.app.config.template_path, filename), 
+            template = Template( file=os.path.join(self.app.config.template_path, filename),
                                  searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
     def fill_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
-        template.output_encoding = 'utf-8' 
+        template.output_encoding = 'utf-8'
         data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )
     def stream_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
-        template.output_encoding = 'utf-8' 
+        template.output_encoding = 'utf-8'
         data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
@@ -808,31 +807,31 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         dbnames = list()
         datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
                                   .filter_by( deleted=False, history_id=self.history.id, extension="len" )
-        
+
         for dataset in datasets:
             dbnames.append( (dataset.dbkey, dataset.name) )
-            
+
         user = self.get_user()
         if user and 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )
             for key, chrom_dict in user_keys.iteritems():
                 dbnames.append((key, "%s (%s) [Custom]" % (chrom_dict['name'], key) ))
-                    
+
         dbnames.extend( util.dbnames )
         return dbnames
 
     @property
     def ucsc_builds( self ):
         return util.dlnames['ucsc']
-    
+
     @property
     def ensembl_builds( self ):
         return util.dlnames['ensembl']
-    
+
     @property
     def ncbi_builds( self ):
         return util.dlnames['ncbi']
-    
+
     def db_dataset_for( self, dbkey ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
@@ -855,7 +854,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         if self.sa_session.query( self.app.model.RequestType ).filter_by( deleted=False ).count() > 0:
             return True
         return False
-        
+
 class FormBuilder( object ):
     """
     Simple class describing an HTML form
@@ -875,7 +874,7 @@ class FormBuilder( object ):
     def add_password( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'password', label, name, value, error, help )
     def add_select( self, name, label, value=None, options=[], error=None, help=None, use_label=True ):
-        self.inputs.append( SelectInput( name, label, value=value, options=options, error=error, help=help, use_label=use_label   ) ) 
+        self.inputs.append( SelectInput( name, label, value=value, options=options, error=error, help=help, use_label=use_label   ) )
         return self
 
 class FormInput( object ):
@@ -893,7 +892,7 @@ class FormInput( object ):
 
 class GalaxyWebAPITransaction( GalaxyWebTransaction ):
     """
-        TODO:  Unify this with WebUITransaction, since we allow session auth now.  
+        TODO:  Unify this with WebUITransaction, since we allow session auth now.
               Enable functionality of 'create' parameter in parent _ensure_valid_session
     """
     def __init__( self, environ, app, webapp, session_cookie):
@@ -915,7 +914,7 @@ class GalaxyWebAPITransaction( GalaxyWebTransaction ):
             # Decode the cookie value to get the session_key
             session_key = self.security.decode_guid( secure_id )
             try:
-                # Make sure we have a valid UTF-8 string 
+                # Make sure we have a valid UTF-8 string
                 session_key = session_key.encode( 'utf8' )
             except UnicodeDecodeError:
                 # We'll end up creating a new galaxy_session
@@ -991,7 +990,7 @@ class GalaxyWebAPITransaction( GalaxyWebTransaction ):
                 dbnames.append((key, "%s (%s) [Custom]" % (chrom_dict['name'], key) ))
         dbnames.extend( util.dbnames )
         return dbnames
-    
+
     @property
     def ucsc_builds( self ):
         return util.dlnames['ucsc']
@@ -1029,7 +1028,7 @@ class SelectInput( FormInput ):
     def __init__( self, name, label, value=None, options=[], error=None, help=None, use_label=True ):
         FormInput.__init__( self, "select", name, label, value=value, error=error, help=help, use_label=use_label )
         self.options = options
-    
+
 class FormData( object ):
     """
     Class for passing data about a form to a template, very rudimentary, could
@@ -1038,7 +1037,7 @@ class FormData( object ):
     def __init__( self ):
         self.values = Bunch()
         self.errors = Bunch()
-        
+
 class Bunch( dict ):
     """
     Bunch based on a dict
