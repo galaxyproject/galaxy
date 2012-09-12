@@ -54,7 +54,7 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
 <%def name="get_urls_for_hda( hda, encoded_data_id, for_editing )">
 <%
     from galaxy.datatypes.metadata import FileParameter
-    
+
     data_dict = {}
     def add_to_data( **kwargs ):
         data_dict.update( kwargs )
@@ -79,7 +79,10 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         
     #TODO??: better way to do urls (move into js galaxy_paths (decorate) - _not_ dataset specific)
     deleted = hda.deleted
-    purged  = hda.purged or hda.dataset.purged
+    purged  = hda.purged
+    
+    #purged  = purged or hda.dataset.purged //??
+    
     # all of these urls are 'datasets/data_id/<action>
     if not ( dataset_purged or purged ) and for_editing:
         add_to_data( undelete_url=h.url_for( controller='dataset', action='undelete', dataset_id=encoded_data_id ) )
@@ -106,7 +109,21 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
             display_url = h.url_for( controller='dataset', action='display', dataset_id=encoded_data_id, preview=True, filename='' )
     add_to_data( display_url=display_url )
     
-    if app.config.get_bool( 'enable_tracks', False ) and hda.ext in app.datatypes_registry.get_available_tracks():
+    # edit attr button
+    if for_editing:
+        if not( hda.deleted or hda.purged ):
+            edit_url = h.url_for( controller='dataset', action='edit', dataset_id=encoded_data_id )
+            add_to_data( edit_url=edit_url )
+    
+    # delete button
+    if for_editing and not ( dataset_purged or purged ):
+        add_to_data( delete_url=h.url_for( controller='dataset', action='delete', dataset_id=encoded_data_id ) )
+                                           ##TODO: loose end
+                                           ##show_deleted_on_refresh=show_deleted_on_refresh ) )
+                                           #show_deleted_on_refresh=False ) )
+            
+    #print app
+    if hda.ext in app.datatypes_registry.get_available_tracks():
         # do these need _localized_ dbkeys?
         trackster_urls = {}
         if hda.dbkey != '?':
@@ -117,11 +134,21 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         trackster_urls[ 'hda-url' ]   = data_url
         trackster_urls[ 'action-url' ] = h.url_for( controller='tracks', action='browser', dataset_id=encoded_data_id )
         trackster_urls[ 'new-url' ]    = h.url_for( controller='tracks', action='index',   dataset_id=encoded_data_id, default_dbkey=hda.dbkey )
-        add_to_data( trackster_url=trackster_url )
+        add_to_data( trackster_url=trackster_urls )
     
     if trans.user:
-        add_to_data( retag_url=( h.url_for( controller='tag', action='retag', item_class=hda.__class__.__name__, item_id=encoded_data_id ) ) )
+        add_to_data( ajax_get_tag_url=( h.url_for(
+            controller='tag', action='get_tagging_elt_async',
+            item_class=hda.__class__.__name__, item_id=encoded_data_id ) ) )
+        add_to_data( retag_url=( h.url_for(
+            controller='tag', action='retag',
+            item_class=hda.__class__.__name__, item_id=encoded_data_id ) ) )
+            
         add_to_data( annotate_url=( h.url_for( controller='dataset', action='annotate', id=encoded_data_id ) ) )
+        add_to_data( ajax_get_annotation_url=( h.url_for(
+            controller='dataset', action='get_annotation_async', id=encoded_data_id ) ) )
+        add_to_data( ajax_set_annotation_url=( h.url_for(
+            controller='/dataset', action='annotate_async', id=encoded_data_id ) ) )
                     
     display_type_display_links = {}
     #TODO: this doesn't seem to get called with the hda I'm using. What would call this? How can I spoof it?
@@ -182,8 +209,8 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         data_dict.update( kwargs )
     
     # trans
+    add_to_data( non_encoded_id=data.id )
     encoded_data_id = trans.security.encode_id( data.id )
-    #print data.name, encoded_data_id
     add_to_data( id=encoded_data_id )
 
     # localize dbkey
@@ -205,8 +232,8 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     add_to_data( accessible=accessible )
 
     url_dict = get_urls_for_hda( data, encoded_data_id, for_editing )
-    #print 'url_dict:', pformat( url_dict, indent=2 )
     data_dict.update( url_dict )
+    #print 'url_dict:', pformat( url_dict, indent=2 )
     #print 'data_dict:', pformat( data_dict, indent=2 ), "\n"
     #print data_dict
 
@@ -227,7 +254,7 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     user_is_admin = trans.user_is_admin()
     user_roles = trans.get_current_user_roles()
     prepped_hdas = [
-        prep_hda( hda, true ) for hda in datasets ]
+        prep_hda( hda, True ) for hda in datasets ]
     
     context_dict = {
         'history'       : { 
@@ -257,74 +284,66 @@ ${ h.to_json_string( context_dict ) }
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.templates( "tool_link", "panel_section", "tool_search" )}
-    ${h.js( "galaxy.base", "json2", "autocomplete_tagging", "bootstrap", "mvc/tools", "mvc/history" )}
+    
+    ${h.js(
+        "libs/json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete",
+        ##"libs/handlebars.full",
+        "galaxy.autocom_tagging",
+        "mvc/base-mvc", "mvc/ui"
+    )}
+
+    ${h.templates(
+        "helpers-common-templates",
+        "template-warningmessagesmall",
+        
+        "template-history-warning-messages",
+        "template-history-hdaSummary"
+    )}
+    
+    ## if using in-dom templates they need to go here (before the Backbone classes are defined)
+    ##NOTE: it's impossible(?) to include _ templates in this way bc they use identical delims as mako
+    ##  (without altering Underscore.templateSettings)
+    ##<%include file="../../static/scripts/templates/common-templates.html" />
+    ##<%include file="../../static/scripts/templates/history-templates.html" />
+    
+    ${h.js(
+        "mvc/history"
+        ##"mvc/tags", "mvc/annotations"
+    )}
 
     <script type="text/javascript">
-        ##//var localization = local( ${ create_localization_json( get_page_localized_strings() ) } );
-        // Init. on document load.
-        var pageData = ${context_to_js()};
-        
+        GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
         // add needed controller urls to GalaxyPaths
         galaxy_paths.set( 'dataset_path', "${h.url_for( controller='dataset' )}" )
         
+        // Init. on document load.
+        var pageData = ${context_to_js()};
+        
+        //USE_MOCK_DATA = true;
+        
         $(function(){
             if( console && console.debug ){ console.debug( 'using backbone.js in history panel' ); }
-            if( window.USE_MOCK_DATA ){ return; }
+            if( window.USE_MOCK_DATA ){
+                if( console && console.debug ){ console.debug( '\t using mock data' ); }
+                createMockHistoryData();
+                return;
+            }
             
             glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
             glx_history_view = new HistoryView({ model: glx_history });
             glx_history_view.render();
             
-            //hi = glx_history.items.at( 0 );
-            //hi_view = new HistoryItemView({ model: hi });
-            //$( 'body' ).append( hi_view.render() );
+            hi = glx_history.items.at( 0 );
+            hi_view = new HistoryItemView({ model: hi });
+            $( 'body' ).append( hi_view.render() );
         });
-    </script>
-    
-    <script type='text/javascript'>
-function tag_handling(parent_elt) {
-    $(parent_elt).find("a.icon-button.tags").each( function() {
-        // Use links parameters but custom URL as ajax URL.
-        $(this).click( function() {
-            // Get tag area, tag element.
-            var history_item = $(this).parents(".historyItem");
-            var tag_area = history_item.find(".tag-area");
-            var tag_elt = history_item.find(".tag-elt");
-
-            // Show or hide tag area; if showing tag area and it's empty, fill it.
-            if ( tag_area.is( ":hidden" ) ) {
-                if (!tag_elt.html()) {
-                    // Need to fill tag element.
-                    var href_parms = $(this).attr("href").split("?")[1];
-                    var ajax_url = "${h.url_for( controller='tag', action='get_tagging_elt_async' )}?" + href_parms;
-                    $.ajax({
-                        url: ajax_url,
-                        error: function() { alert( "Tagging failed" ) },
-                        success: function(tag_elt_html) {
-                            tag_elt.html(tag_elt_html);
-                            tag_elt.find(".tooltip").tooltip();
-                            tag_area.slideDown("fast");
-                        }
-                    });
-                } else {
-                    // Tag element is filled; show.
-                    tag_area.slideDown("fast");
-                }
-            } else {
-                // Hide.
-                tag_area.slideUp("fast");
-            }
-            return false;        
-        });
-    });
-};
     </script>
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-	<style>
+    ${h.css("base", "history", "autocomplete_tagging" )}
+	<style>"
 		.historyItemBody {
 			display: none;
 		}

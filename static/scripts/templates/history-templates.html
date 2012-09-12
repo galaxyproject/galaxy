@@ -1,0 +1,38 @@
+<script type="text/template" class="template-history" id="template-history-warning-messages">
+{{#if deleted}}
+<div class=warningmessagesmall><strong>
+This dataset has been deleted.
+    {{#if undelete_url}}
+    Click <a href="{{ undelete_url }}" class="historyItemUndelete" id="historyItemUndeleter-{{ id }}"
+             target="galaxy_history">here</a> to undelete it
+        {{#if purge_url}}
+        or
+        <a href="{{ purge_url }}" class="historyItemPurge" id="historyItemPurger-{{ id }}"
+           target="galaxy_history">here</a> to immediately remove it from disk
+        {{/if}}
+    {{/if}}
+</strong></div>
+{{/if}}
+
+{{#if purged}}
+<div class=warningmessagesmall><strong>
+This dataset has been deleted and removed from disk.
+</strong></div>
+{{/if}}
+
+{{#unless visible}}
+<div class=warningmessagesmall><strong>
+This dataset has been hidden.
+    {{#if undelete_url}}
+    Click <a href="{{ unhide_url }}" class="historyItemUnhide" id="historyItemUnhider-{{ id }}"
+             target="galaxy_history">here</a> to unhide it
+    {{/if}}
+</strong></div>
+{{/unless}}
+</script>
+
+<script type="text/template" class="template-history" id="template-history-hdaSummary">
+{{ misc_blurb }}<br />
+format: <span class="{{ data_type }}">{{ data_type }}</span>, ',
+database: {{ dbkeyHTML }}
+</script>

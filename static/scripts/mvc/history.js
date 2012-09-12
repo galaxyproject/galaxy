@@ -1,3 +1,4 @@
+if( console ){ console.debug( 'history mvc loaded' ); }
 /*
 Backbone.js implementation of history panel
 
@@ -12,6 +13,8 @@ TODO:
     incorporate relations
     convert function comments to /** style
     complete comments
+    
+    don't draw body until it's first unhide event
     
     as always: where does the model end and the view begin?
     HistoryPanel
@@ -30,23 +33,12 @@ TODO:
     
     poly HistoryItemView on: can/cant_edit
 */
-_ = _;
 
 //==============================================================================
-var Loggable = {
-    // replace null with console (if available) to see all logs
-    logger      : null,
-    
-    log : function(){
-        return ( this.logger )?( this.logger.debug.apply( this, arguments ) )
-                              :( undefined );
-    }
-};
-var LoggingModel = BaseModel.extend( Loggable );
-var LoggingView  = BaseView.extend( Loggable );
 
 //==============================================================================
 //TODO: move to Galaxy obj./namespace, decorate for current page (as GalaxyPaths)
+/*
 var Localizable = {
     localizedStrings : {},
     setLocalizedString : function( str, localizedString ){
@@ -58,6 +50,7 @@ var Localizable = {
     }
 };
 var LocalizableView = LoggingView.extend( Localizable );
+*/
 //TODO: wire up to views
 
 //==============================================================================
@@ -93,7 +86,8 @@ function linkHTMLTemplate( config, tag ){
 }
 
 //==============================================================================
-var HistoryItem = LoggingModel.extend({
+//TODO: use initialize (or validate) to check purged AND deleted -> purged XOR deleted
+var HistoryItem = BaseModel.extend( LoggableMixin ).extend({
     // a single HDA model
     
     // uncomment this out see log messages
@@ -141,7 +135,11 @@ var HistoryItem = LoggingModel.extend({
     },
 
     toString : function(){
-        return 'HistoryItem(' + ( this.get( 'name' ) || this.get( 'id' ) || '' ) + ')';
+        var nameAndId = this.get( 'id' ) || '';
+        if( this.get( 'name' ) ){
+            nameAndId += ':"' + this.get( 'name' ) + '"';
+        }
+        return 'HistoryItem(' + nameAndId + ')';
     }
 });
 
@@ -161,20 +159,19 @@ HistoryItem.STATES = {
 
 
 //==============================================================================
-var HistoryItemView = LoggingView.extend({
+var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     // view for HistoryItem model above
 
     // uncomment this out see log messages
-    logger              : console,
+    //logger              : console,
 
     tagName     : "div",
     className   : "historyItemContainer",
     
-    
     // ................................................................................ SET UP
     initialize  : function(){
         this.log( this + '.initialize:', this, this.model );
-        return this;
+        
     },
    
     // ................................................................................ RENDER MAIN
@@ -190,12 +187,8 @@ var HistoryItemView = LoggingView.extend({
             .addClass( 'historyItemWrapper' ).addClass( 'historyItem' )
             .addClass( 'historyItem-' + state );
             
-        itemWrapper.append( this._render_purgedWarning() );
-        itemWrapper.append( this._render_deletionWarning() );
-        itemWrapper.append( this._render_visibleWarning() );
-        
+        itemWrapper.append( this._render_warnings() );
         itemWrapper.append( this._render_titleBar() );
-        
         this.body = $( this._render_body() );
         itemWrapper.append( this.body );
         
@@ -215,52 +208,9 @@ var HistoryItemView = LoggingView.extend({
     },
     
     // ................................................................................ RENDER WARNINGS
-    //TODO: refactor into generalized warning widget/view
-    //TODO: refactor the three following - too much common ground
-    _render_purgedWarning : function(){
-        // Render warnings for purged
-        //this.log( this + '_render_purgedWarning' );
-        var warning = null;
-        if( this.model.get( 'purged' ) ){
-            warning = $( HistoryItemView.STRINGS.purgedMsg );
-        } 
-        //this.log( 'warning:', warning );
-        return warning;
-    },
-    
-    _render_deletionWarning : function(){
-        //this.log( this + '_render_deletionWarning' );
-        // Render warnings for deleted items (and links: undelete and purge)
-        //pre: this.model.purge_url will be undefined if trans.app.config.allow_user_dataset_purge=False
-        var warningElem = null;
-        if( this.model.get( 'deleted' ) ){
-            var warning = '';
-            
-            if( this.model.get( 'undelete_url' ) ){
-                warning += HistoryItemView.TEMPLATES.undeleteLink( this.model.attributes );
-            }
-            if( this.model.get( 'purge_url' ) ){
-                warning += HistoryItemView.TEMPLATES.purgeLink( this.model.attributes );
-            }
-            // wrap it in the standard warning msg
-            warningElem = $( HistoryItemView.TEMPLATES.warningMsg({ warning: warning }) );
-        }
-        //this.log( 'warning:', warning );
-        return warningElem;
-    },
-    
-    _render_visibleWarning : function(){
-        //this.log( this + '_render_visibleWarning' );
-        // Render warnings for hidden items (and link: unhide)
-        var warningElem = null;
-        if( !this.model.get( 'visible' ) && this.model.get( 'unhide_url' ) ){
-            var warning = HistoryItemView.TEMPLATES.hiddenMsg( this.model.attributes );
-            
-            // wrap it in the standard warning msg
-            warningElem = $( HistoryItemView.TEMPLATES.warningMsg({ warning: warning }) );
-        }
-        //this.log( 'warning:', warning );
-        return warningElem;
+    _render_warnings : function(){
+        // jQ errs on building dom with whitespace - if there are no messages, trim -> ''
+        return $( jQuery.trim( HistoryItemView.templates.messages( this.model.toJSON() ) ) );
     },
     
     // ................................................................................ RENDER TITLEBAR
@@ -292,23 +242,21 @@ var HistoryItemView = LoggingView.extend({
     //TODO: move other data (non-href) into {} in view definition, cycle over those keys in _titlebuttons
     //TODO: move disabled span data into view def, move logic into _titlebuttons
     _render_displayButton : function(){
-        // render the display icon-button
-        // show a disabled display if the data's been purged
-        if( this.model.get( 'purged' ) ){
-            return $( '<span class="icon-button display_disabled tooltip" ' +
-                      'title="Cannot display datasets removed from disk"></span>' );
-        }
-        var id = this.model.get( 'id' ),
-            displayBtnData = {
-                //TODO: localized title
-                title       : 'Display data in browser',
-                //TODO: need generated url here
-                href        : '/datasets/' + id + '/display/?preview=True',
-                target      : ( this.model.get( 'for_editing' ) )?( 'galaxy_main' ):( '' ),
-                classes     : [ 'icon-button', 'tooltip', 'display' ],
-                dataset_id  : id
-            };
-        return $( linkHTMLTemplate( displayBtnData ) );
+        displayBtnData = ( this.model.get( 'purged' ) )?({
+            // show a disabled display if the data's been purged
+            title       : 'Cannot display datasets removed from disk',
+            icon_class  : 'display',
+            enabled     : false,
+        }):({
+            // if not, render the display icon-button with href 
+            title       : 'Display data in browser',
+            //TODO: need generated url here
+            href        : this.model.get( 'display_url' ),
+            target      : ( this.model.get( 'for_editing' ) )?( 'galaxy_main' ):( null ),
+            icon_class  : 'display',
+        });
+        this.displayButton = new IconButtonView({ model : new IconButton( displayBtnData ) });
+        return this.displayButton.render().$el;
     },
     
     _render_editButton : function(){
@@ -317,44 +265,42 @@ var HistoryItemView = LoggingView.extend({
             purged = this.model.get( 'purged' ),
             deleted = this.model.get( 'deleted' );
             
-        if( deleted || purged ){
-            if( !purged ){
-                return $( '<span class="icon-button edit_disabled tooltip" ' +
-                          'title="Undelete dataset to edit attributes"></span>' );
-            } else {
-                return $( '<span class="icon-button edit_disabled tooltip" ' +
-                          'title="Cannot edit attributes of datasets removed from disk"></span>' );
-            }
-        }
-        return $( linkHTMLTemplate({
+        var editBtnData = {
             title       : 'Edit attributes',
-            //TODO: need generated url here
-            href        : '/datasets/' + id + '/edit',
+            href        : this.model.get( 'edit_url' ),
             target      : 'galaxy_main',
-            classes     : [ 'icon-button', 'tooltip', 'edit' ]
-        }) );
+            icon_class  : 'edit'
+        }
+        // disable if purged or deleted and explain why in the tooltip
+        //TODO: if for_editing
+        if( deleted || purged ){
+            editBtnData = {
+                enabled     : false,
+                icon_class  : 'edit'
+            };
+            editBtnData.title = ( !purged )?( 'Undelete dataset to edit attributes' ):
+                                            ( 'Cannot edit attributes of datasets removed from disk' );
+        }
+        this.editButton = new IconButtonView({ model : new IconButton( editBtnData ) });
+        return this.editButton.render().$el;
     },
     
     _render_deleteButton : function(){
-        // render the delete icon-button
-        var id = this.model.get( 'id' ),
-            purged = this.model.get( 'purged' ),
-            deleted = this.model.get( 'deleted' );
-            
-        //??: WHAAAA? can_edit == deleted??
-        //  yes! : (history_common.mako) can_edit=( not ( data.deleted or data.purged ) )
-        if( purged || deleted ){
-            return $( '<span title="Dataset is already deleted" ' +
-                      'class="icon-button delete_disabled tooltip"></span>' );
-        }
-        return $( linkHTMLTemplate({
+        if( !this.model.get( 'for_editing' ) ){ return null; }
+        
+        var deleteBtnData = ( this.model.get( 'delete_url' ) )?({
             title       : 'Delete',
-            //TODO: need generated url here
-            href        : '/datasets/' + id + '/delete?show_deleted_on_refresh=False',
+            href        : this.model.get( 'delete_url' ),
             target      : 'galaxy_main',
-            id          : 'historyItemDeleter-' + id,
-            classes     : [ 'icon-button', 'tooltip', 'delete' ]
-        }));
+            id          : 'historyItemDeleter-' + this.model.get( 'id' ),
+            icon_class  : 'delete'
+        }):({
+            title       : 'Dataset is already deleted',
+            icon_class  : 'delete',
+            enabled     : false
+        });
+        this.deleteButton = new IconButtonView({ model : new IconButton( deleteBtnData ) });
+        return this.deleteButton.render().$el;
     },
     
     _render_titleLink : function(){
@@ -441,7 +387,7 @@ var HistoryItemView = LoggingView.extend({
             });
             warningMsgText += 'You may be able to ' + editLink + '.';
         }
-        parent.append( $( HistoryItemView.TEMPLATES.warningMsg({ warning: warningMsgText }) ) );
+        parent.append( $( HistoryItemView.templates.warningMsg({ warning: warningMsgText }) ) );
         
         //...render the remaining body as STATES.OK (only diff between these states is the box above)
         this._render_body_ok( parent );
@@ -497,7 +443,8 @@ var HistoryItemView = LoggingView.extend({
                 
                 // if trans.user
                 if( this.model.get( 'retag_url' ) && this.model.get( 'annotate_url' ) ){
-                    // tags, annotation buttons and display areas
+                    // tag, annotate buttons
+                    //TODO: move to tag, Annot MV
                     var tagsAnnotationsBtns = $( '<div style="float: right;"></div>' );
                     tagsAnnotationsBtns.append( $( linkHTMLTemplate({
                         title       : 'Edit dataset tags',
@@ -514,17 +461,20 @@ var HistoryItemView = LoggingView.extend({
                     actionBtnDiv.append( tagsAnnotationsBtns );
                     actionBtnDiv.append( '<div style="clear: both"></div>' );
                     
-                    var tagArea = $( '<div class="tag-area" style="display: none">' );
-                    tagArea.append( '<strong>Tags:</strong>' );
-                    tagArea.append( '<div class="tag-elt"></div>' );
-                    actionBtnDiv.append( tagArea );
+                    // tag/annot display areas
+                    this.tagArea = $( '<div class="tag-area" style="display: none">' );
+                    this.tagArea.append( '<strong>Tags:</strong>' );
+                    this.tagElt = $( '<div class="tag-elt"></div>' );
+                    actionBtnDiv.append( this.tagArea.append( this.tagElt ) );
                     
                     var annotationArea = $( ( '<div id="${dataset_id}-annotation-area"'
                                             + ' class="annotation-area" style="display: none">' ) );
+                    this.annotationArea = annotationArea;
                     annotationArea.append( '<strong>Annotation:</strong>' );
-                    annotationArea.append( ( '<div id="${dataset_id}-annotation-elt" '
+                    this.annotationElem = $( '<div id="' + this.model.get( 'id' ) + '-annotation-elt" '
                         + 'style="margin: 1px 0px 1px 0px" class="annotation-elt tooltip editable-text" '
-                        + 'title="Edit dataset annotation"></div>' ) );
+                        + 'title="Edit dataset annotation"></div>' );
+                    annotationArea.append( this.annotationElem );
                     actionBtnDiv.append( annotationArea );
                 }
             }
@@ -564,10 +514,10 @@ var HistoryItemView = LoggingView.extend({
     },
     
     _render_body : function(){
-        this.log( this + '_render_body' );
+        //this.log( this + '_render_body' );
         var state = this.model.get( 'state' ),
             for_editing = this.model.get( 'for_editing' );
-        this.log( 'state:', state, 'for_editing', for_editing );
+        //this.log( 'state:', state, 'for_editing', for_editing );
         
         //TODO: incorrect id (encoded - use hid?)
         var body = $( '<div/>' )
@@ -708,10 +658,86 @@ var HistoryItemView = LoggingView.extend({
 
     // ................................................................................ EVENTS
     events : {
-        'click .historyItemTitle' : 'toggleBodyVisibility'
+        'click .historyItemTitle'           : 'toggleBodyVisibility',
+        'click a.icon-button.tags'          : 'loadAndDisplayTags',
+        'click a.icon-button.annotate'      : 'loadAndDisplayAnnotation'
     },
     
     // ................................................................................ STATE CHANGES / MANIPULATION
+    loadAndDisplayTags : function( event ){
+        //TODO: this is a drop in from history.mako - should use MV as well
+        this.log( this, '.loadAndDisplayTags', event );
+        var tagArea = this.tagArea;
+        var tagElt = this.tagElt;
+
+        // Show or hide tag area; if showing tag area and it's empty, fill it.
+        if( tagArea.is( ":hidden" ) ){
+            if( !tagElt.html() ){
+                // Need to fill tag element.
+                $.ajax({
+                    url: this.model.get( 'ajax_get_tag_url' ),
+                    error: function() { alert( "Tagging failed" ) },
+                    success: function(tag_elt_html) {
+                        console.debug( 'tag_elt_html:', tag_elt_html );
+                        tagElt.html(tag_elt_html);
+                        tagElt.find(".tooltip").tooltip();
+                        tagArea.slideDown("fast");
+                    }
+                });
+            } else {
+                // Tag element is filled; show.
+                tagArea.slideDown("fast");
+            }
+            
+        } else {
+            // Hide.
+            tagArea.slideUp("fast");
+        }
+        return false;        
+    },
+    
+    loadAndDisplayAnnotation : function( event ){
+        //TODO: this is a drop in from history.mako - should use MV as well
+        this.log( this, '.loadAndDisplayAnnotation', event );
+        var annotationArea = this.annotationArea,
+            annotationElem = this.annotationElem,
+            setAnnotationUrl = this.model.get( 'ajax_set_annotation_url' );
+
+        // Show or hide annotation area; if showing annotation area and it's empty, fill it.
+        this.log( 'annotationArea hidden:', annotationArea.is( ":hidden" ) );
+        this.log( 'annotationElem html:', annotationElem.html() );
+        if ( annotationArea.is( ":hidden" ) ){
+            if( !annotationElem.html() ){
+                // Need to fill annotation element.
+                $.ajax({
+                    url: this.model.get( 'ajax_get_annotation_url' ),
+                    error: function(){ alert( "Annotations failed" ) },
+                    success: function( htmlFromAjax ){
+                        if( htmlFromAjax === "" ){
+                            htmlFromAjax = "<em>Describe or add notes to dataset</em>";
+                        }
+                        annotationElem.html( htmlFromAjax );
+                        annotationArea.find(".tooltip").tooltip();
+                        
+                        async_save_text(
+                            annotationElem.attr("id"), annotationElem.attr("id"),
+                            setAnnotationUrl,
+                            "new_annotation", 18, true, 4
+                        );
+                        annotationArea.slideDown("fast");
+                    }
+                });
+            } else {
+                annotationArea.slideDown("fast");
+            }
+            
+        } else {
+            // Hide.
+            annotationArea.slideUp("fast");
+        }
+        return false;        
+    },
+
     toggleBodyVisibility : function(){
         this.log( this + '.toggleBodyVisibility' );
         this.$el.find( '.historyItemBody' ).toggle();
@@ -723,29 +749,7 @@ var HistoryItemView = LoggingView.extend({
         return 'HistoryItemView(' + modelString + ')';    
     }
 });
-
-//------------------------------------------------------------------------------
 HistoryItemView.TEMPLATES = {};
-
-//TODO: move next one out - doesn't belong
-HistoryItemView.TEMPLATES.warningMsg =
-    _.template( '<div class=warningmessagesmall><strong><%= warning %></strong></div>' );
-    
-
-//??TODO: move into functions?        
-HistoryItemView.TEMPLATES.undeleteLink = _.template(
-    'This dataset has been deleted. ' + 
-    'Click <a href="<%= undelete_url %>" class="historyItemUndelete" id="historyItemUndeleter-{{ id }}" ' +
-    '         target="galaxy_history">here</a> to undelete it.' );
-    
-HistoryItemView.TEMPLATES.purgeLink = _.template(
-    ' or <a href="<%= purge_url %>" class="historyItemPurge" id="historyItemPurger-{{ id }}"' + 
-    '      target="galaxy_history">here</a> to immediately remove it from disk.' );
-        
-HistoryItemView.TEMPLATES.hiddenMsg = _.template(
-    'This dataset has been hidden. ' + 
-    'Click <a href="<%= unhide_url %>" class="historyItemUnhide" id="historyItemUnhider-{{ id }}" ' +
-    '         target="galaxy_history">here</a> to unhide it.' );
 
 //TODO: contains localized strings
 HistoryItemView.TEMPLATES.hdaSummary = _.template([
@@ -754,13 +758,18 @@ HistoryItemView.TEMPLATES.hdaSummary = _.template([
     'database: <%= dbkeyHTML %>'
 ].join( '' ));
 
-    
-//------------------------------------------------------------------------------
-HistoryItemView.STRINGS = {};
 
-HistoryItemView.STRINGS.purgedMsg = HistoryItemView.TEMPLATES.warningMsg(
-    { warning: 'This dataset has been deleted and removed from disk.' });
-
+//==============================================================================
+//HistoryItemView.templates = InDomTemplateLoader.getTemplates({
+HistoryItemView.templates = CompiledTemplateLoader.getTemplates({
+    'common-templates.html' : {
+        warningMsg      : 'template-warningmessagesmall',
+    },
+    'history-templates.html' : {
+        messages        : 'template-history-warning-messages2',
+        hdaSummary      : 'template-history-hdaSummary'
+    }
+});
 
 //==============================================================================
 var HistoryCollection = Backbone.Collection.extend({
@@ -773,10 +782,10 @@ var HistoryCollection = Backbone.Collection.extend({
 
 
 //==============================================================================
-var History = LoggingModel.extend({
+var History = BaseModel.extend( LoggableMixin ).extend({
     
     // uncomment this out see log messages
-    logger              : console,
+    //logger              : console,
 
     // values from api (may need more)
     defaults : {
@@ -867,11 +876,11 @@ var History = LoggingModel.extend({
 });
 
 //------------------------------------------------------------------------------
-var HistoryView = LoggingView.extend({
+var HistoryView = BaseView.extend( LoggableMixin ).extend({
     // view for the HistoryCollection (as per current right hand panel)
     
     // uncomment this out see log messages
-    logger              : console,
+    //logger              : console,
 
     // direct attachment to existing element
     el                  : 'body.historyPage',
@@ -908,8 +917,7 @@ var HistoryView = LoggingView.extend({
 
 
 //==============================================================================
-//USE_MOCK_DATA = true;
-if( window.USE_MOCK_DATA ){
+function createMockHistoryData(){
     mockHistory = {};
     mockHistory.data = {
         
@@ -986,6 +994,7 @@ if( window.USE_MOCK_DATA ){
         notvisible  :
             _.extend( _.clone( mockHistory.data.template ),
                       { visible : false }),
+
         hasDisplayApps :
             _.extend( _.clone( mockHistory.data.template ),
                 { display_apps : {
@@ -1041,7 +1050,8 @@ if( window.USE_MOCK_DATA ){
         failed_metadata :
             _.extend( _.clone( mockHistory.data.template ),
                       { state : HistoryItem.STATES.FAILED_METADATA })
-        
+/*
+*/        
     });
     
     $( document ).ready( function(){

@@ -120,9 +120,9 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             show_hidden = util.string_as_bool( show_hidden )
             datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
             
-            # history panel -> backbone
             history_panel_template = "root/history.mako"
-            #history_panel_template = "root/alternate_history.mako"
+            # history panel -> backbone
+            ##history_panel_template = "root/alternate_history.mako"
             return trans.stream_template_mako( history_panel_template,
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),
@@ -512,85 +512,3 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
     @web.expose
     def generate_error( self, trans ):
         raise Exception( "Fake error!" )
-
-    
-
-"""
-import galaxy.web.framework.helpers as web_helpers
-from functools import wraps
-def debug_mako_template( template_fn ):
-    # Wrap a function that produces a mako template for better debugging
-    
-    # http://stackoverflow.com/questions/390409/how-do-you-debug-mako-templates
-    @wraps( template_fn )
-    def wrapper( *args, **kwargs ):
-        try:
-            log.debug( 'rendering template' )
-            return template_fn( *args, **kwargs )
-            log.debug( 'done rendering template' )
-        except Exception, ex:
-            log.error( "Mako Exception: " + str( ex ), exc_info=True )
-            return exceptions.html_error_template().render()
-    return wrapper
-
-def prep_dataset( hda, trans ):
-    states = trans.app.model.Dataset.states
-    print states
-    STATES_INTERPRETED_AS_QUEUED = [ 'no state', '', None ]
-    ## dataset is actually a HistoryDatasetAssociation
-    #ported mostly from history_common
-    #post: return dictionary form 
-    #??: move out of templates?
-    #??: gather data from model?
-    
-    
-    #TODO: clean up magic strings
-    
-    hda_dict = hda.get_api_value()
-    #TODO: use hda_dict.update to add these (instead of localvars)
-    def add_to_hda( **kwargs ):
-        hda_dict.update( kwargs )
-    
-    # trans
-    encoded_hda_id = trans.security.encode_id( hda.id )
-    add_to_hda( id=encoded_hda_id )
-    
-    add_to_hda( state=hda.state )
-    if hda.state in STATES_INTERPRETED_AS_QUEUED:
-        #TODO: magic string
-        add_to_hda( state='queued' )
-    
-    # trans
-    current_user_roles = trans.get_current_user_roles()
-    add_to_hda( can_edit=( not ( hda.deleted or hda.purged ) ) )
-    
-    # considered accessible if user can access or user isn't admin
-    # trans
-    accessible = trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset )
-    accessible = trans.user_is_admin() or accessible
-    add_to_hda( accessible=accessible )
-        
-    #TODO: move urls into js galaxy_paths (decorate)
-    deleted = hda.deleted
-    purged  = hda.purged
-    dataset_purged = hda.dataset.purged
-    if not ( dataset_purged or purged ) and for_editing:
-        undelete_url = web_helpers.url_for( controller='dataset', action='undelete', dataset_id=encoded_hda_id )
-        # trans
-        if trans.app.config.allow_user_dataset_purge:
-            purge_url = web_helpers.url_for( controller='dataset', action='purge', dataset_id=encoded_hda_id )
-        
-    if not hda.visible:
-        unhide_url = web_helpers.url_for( controller='dataset', action='unhide', dataset_id=encoded_hda_id )
-    
-    
-    print 'dataset:', dataset
-    
-    undelete_url = web_helpers.url_for( controller='dataset', action='undelete', dataset_id=encoded_hda_id )
-    purge_url = web_helpers.url_for( controller='dataset', action='purge', dataset_id=encoded_hda_id )
-    unhide_url = web_helpers.url_for( controller='dataset', action='unhide', dataset_id=encoded_hda_id )
-    print 'urls:', '\n'.join( undelete_url, purge_url, unhide_url )
-    
-    return hda_dict
-    
-"""
