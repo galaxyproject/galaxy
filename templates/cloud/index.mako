@@ -150,8 +150,6 @@
     </script>
 </%def>
 
-
-
 <%def name="center_panel()">
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">
@@ -167,9 +165,8 @@ options for launching your cluster.</p>
                         <label for="id_key_id">Key ID</label>
                         <input type="text" size="30" maxlength="20" name="key_id" id="id_key_id" value=""/><br/>
                         <div class="toolParamHelp">
-                            This is the text string that uniquely identifies your account, found in the <a
-href="https://portal.aws.amazon.com/gp/aws/securityCredentials">Security Credentials section of the AWS
-Console</a>.
+                            This is the text string that uniquely identifies your account, found in the 
+                            <a href="https://portal.aws.amazon.com/gp/aws/securityCredentials">Security Credentials section of the AWS Console</a>.
                         </div>
                     </div>
 
@@ -210,11 +207,13 @@ Credentials section of the AWS Console</a>.  </div>
                         %if share_string:
                             <input type='hidden' name='share_string' value='${share_string}'/>
                         %else:
-                        <div class="form-row">
+                        <!-- DBEDIT temporary hide share string due to it being broken on the cloudman end -->
+                        <div class="form-row" style="display:none;">
                             <label for="id_share_string">Instance Share String (optional)</label>
                             <input type="text" size="120" name="share_string" id="id_share_string"/><br/>
                         </div>
                         %endif
+
                         <div class="form-row">
                             <label for="id_instance_type">Instance Type</label>
                             <select name="instance_type" id="id_instance_type">
