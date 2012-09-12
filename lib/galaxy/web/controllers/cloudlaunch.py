@@ -8,38 +8,77 @@ BioCloudCentral Source: https://github.com/chapmanb/biocloudcentral
 
 import datetime
 import logging
+import os
+import tempfile
 import time
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require('boto')
 import boto
+import pkg_resources
+from galaxy import eggs
+pkg_resources.require('boto')
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
+from galaxy.util.json import to_json_string
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
+from boto.s3.connection import OrdinaryCallingFormat, S3Connection
+
 
 log = logging.getLogger(__name__)
 
+PKEY_PREFIX = 'gxy_pkey'
+DEFAULT_KEYPAIR = 'deleteme_keypair'
+DEFAULT_AMI = 'ami-da58aab3'
+
 class CloudController(BaseUIController):
+
     def __init__(self, app):
         BaseUIController.__init__(self, app)
 
     @web.expose
     def index(self, trans, share_string=None):
-        return trans.fill_template("cloud/index.mako", share_string=share_string)
+        return trans.fill_template("cloud/index.mako", default_keypair = DEFAULT_KEYPAIR, share_string=share_string)
 
     @web.expose
-    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string):
+    def get_account_info(self, trans, key_id, secret, **kwargs):
+        """
+        Get EC2 Account Info
+        """
+        #Keypairs
+        account_info = {}
+        try:
+            ec2_conn = connect_ec2(key_id, secret)
+            kps = ec2_conn.get_all_key_pairs()
+        except EC2ResponseError, e:
+            log.error("Problem starting an instance: %s\n%s" % (e, e.body))
+        account_info['keypairs'] = [akp.name for akp in kps]
+        #Existing Clusters
+        s3_conn = S3Connection(key_id, secret, calling_format=OrdinaryCallingFormat())
+        buckets = s3_conn.get_all_buckets()
+        clusters = []
+        for bucket in buckets:
+            pd = bucket.get_key('persistent_data.yaml')
+            if pd:
+                # This is a cloudman bucket.
+                # We need to get persistent data, and the cluster name.
+                for key in bucket.list():
+                    if key.name.endswith('.clusterName'):
+                        clusters.append({'name':key.name.split('.clusterName')[0], 'persistent_data': pd.get_contents_as_string()})
+        account_info['clusters'] = clusters
+        return to_json_string(account_info)
+
+    @web.expose
+    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, **kwargs):
         ec2_error = None
         try:
             # Create security group & key pair used when starting an instance
             ec2_conn = connect_ec2(key_id, secret)
             sg_name = create_cm_security_group(ec2_conn)
-            kp_name, kp_material = create_key_pair(ec2_conn)
+            kp_name, kp_material = create_key_pair(ec2_conn, key_name=keypair)
         except EC2ResponseError, err:
             ec2_error = err.error_message
         if ec2_error:
-            return trans.fill_template("cloud/run.mako", error = ec2_error)
+            #return trans.fill_template("cloud/run.mako", error = ec2_error)
+            return {'errors':[ec2_error]}
         else:
             user_provided_data={'cluster_name':cluster_name,
                                 'access_key':key_id,
@@ -62,13 +101,41 @@ class CloudController(BaseUIController):
                     instance.update()
                     ct +=1
                     time.sleep(1)
-                return trans.fill_template("cloud/run.mako",
-                                            instance = rs.instances[0],
-                                            kp_name = kp_name,
-                                            kp_material = kp_material)
+                if kp_material:
+                    #We have created a keypair.  Save to tempfile for one time retrieval.
+                    (fd, fname) = tempfile.mkstemp(prefix=PKEY_PREFIX, dir=trans.app.config.new_file_path)
+                    f = os.fdopen(fd, 'wt')
+                    f.write(kp_material)
+                    f.close()
+                    kp_material_tag = fname[fname.rfind(PKEY_PREFIX) + len(PKEY_PREFIX):]
+                else:
+                    kp_material_tag = None
+                return to_json_string({
+                    'cluster_name': cluster_name,
+                    'instance_id': rs.instances[0].id,
+                    'image_id': rs.instances[0].image_id,
+                    'public_dns_name': rs.instances[0].public_dns_name,
+                    'kp_name': kp_name,
+                    'kp_material_tag':kp_material_tag
+                    })
             else:
-                return trans.fill_template("cloud/run.mako",
-                        error = "Instance failure, but no specific error was detected.  Please check your AWS Console.")
+                return {'errors':["Instance failure, but no specific error was detected.  Please check your AWS Console."]}
+
+    @web.expose
+    def get_pkey(self, trans, kp_material_tag=None):
+        if kp_material_tag:
+            expected_path = os.path.join(trans.app.config.new_file_path, PKEY_PREFIX + kp_material_tag)
+            if os.path.exists(expected_path):
+                f = open(expected_path)
+                kp_material = f.read()
+                f.close()
+                trans.response.headers['Content-Length'] = int( os.stat( expected_path ).st_size )
+                trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.pem"' % DEFAULT_KEYPAIR
+                os.remove(expected_path)
+                return kp_material
+        trans.response.status = 400
+        return "Invalid identifier"
 
 # ## Cloud interaction methods
 def connect_ec2(a_key, s_key):
@@ -150,7 +217,7 @@ def rule_exists(rules, from_port, to_port, ip_protocol='tcp', cidr_ip='0.0.0.0/0
             return True
     return False
 
-def create_key_pair(ec2_conn, key_name='cloudman_key_pair'):
+def create_key_pair(ec2_conn, key_name=DEFAULT_KEYPAIR):
     """ Create a key pair with the provided name.
         Return the name of the key or None if there was an error creating the key.
     """
@@ -169,8 +236,8 @@ def create_key_pair(ec2_conn, key_name='cloudman_key_pair'):
         return None, None
     return kp.name, kp.material
 
-def run_instance(ec2_conn, user_provided_data, image_id='ami-da58aab3',
-                 kernel_id=None, ramdisk_id=None, key_name='cloudman_key_pair',
+def run_instance(ec2_conn, user_provided_data, image_id=DEFAULT_AMI,
+                 kernel_id=None, ramdisk_id=None, key_name=DEFAULT_KEYPAIR,
                  security_groups=['CloudMan']):
     """ Start an instance. If instance start was OK, return the ResultSet object
         else return None.
