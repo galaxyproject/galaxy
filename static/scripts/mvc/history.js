@@ -1,4 +1,3 @@
-if( console ){ console.debug( 'history mvc loaded' ); }
 /*
 Backbone.js implementation of history panel
 
@@ -678,7 +677,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
                     url: this.model.get( 'ajax_get_tag_url' ),
                     error: function() { alert( "Tagging failed" ) },
                     success: function(tag_elt_html) {
-                        console.debug( 'tag_elt_html:', tag_elt_html );
+                        this.log( 'tag_elt_html:', tag_elt_html );
                         tagElt.html(tag_elt_html);
                         tagElt.find(".tooltip").tooltip();
                         tagArea.slideDown("fast");
