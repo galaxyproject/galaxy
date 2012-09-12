@@ -3,8 +3,7 @@ API operations on the contents of a history.
 """
 import logging
 from galaxy import web
-from galaxy.web.base.controller import *
-from galaxy.model.orm import *
+from galaxy.web.base.controller import BaseAPIController, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesLibraryMixin, UsesLibraryMixinItems
 
 import pkg_resources
 pkg_resources.require( "Routes" )
@@ -73,7 +72,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     @web.expose_api
     def create( self, trans, history_id, payload, **kwd ):
         """
-        POST /api/libraries/{encoded_history_id}/contents
+        POST /api/histories/{encoded_history_id}/contents
         Creates a new history content item (file, aka HistoryDatasetAssociation).
         """
         from_ld_id = payload.get( 'from_ld_id', None )
@@ -99,3 +98,4 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # TODO: implement other "upload" methods here.
             trans.response.status = 403
             return "Not implemented."
+
