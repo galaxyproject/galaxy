@@ -26,7 +26,7 @@ from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 log = logging.getLogger(__name__)
 
 PKEY_PREFIX = 'gxy_pkey'
-DEFAULT_KEYPAIR = 'deleteme_keypair'
+DEFAULT_KEYPAIR = 'cloudman_keypair'
 DEFAULT_AMI = 'ami-da58aab3'
 
 class CloudController(BaseUIController):
