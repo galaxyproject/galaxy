@@ -1,7 +1,7 @@
 define( ["libs/d3", "viz/visualization"], function( d3, visualization ) {
 
 // General backbone style inheritence
-var Base = function() { this.initialize && this.initialize.apply(this, arguments) }; Base.extend = Backbone.Model.extend;
+var Base = function() { this.initialize && this.initialize.apply(this, arguments); }; Base.extend = Backbone.Model.extend;
 
 /**
  * Renders a full circster visualization
@@ -23,8 +23,8 @@ var CircsterView = Backbone.View.extend({
             height = self.$el.height(),
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default
-            init_radius_start = ( Math.min(width,height)/2 
-                - this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) );
+            init_radius_start = ( Math.min(width,height)/2 - 
+                                  this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) );
 
         // Set up SVG element.
         var svg = d3.select(self.$el[0])
@@ -36,11 +36,11 @@ var CircsterView = Backbone.View.extend({
               .append('svg:g')
                 .call(d3.behavior.zoom().on('zoom', function() {
                     svg.attr("transform",
-                      "translate(" + d3.event.translate + ")"
-                      + " scale(" + d3.event.scale + ")");
+                      "translate(" + d3.event.translate + ")" + 
+                      " scale(" + d3.event.scale + ")");
                 }))
                 .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
-              .append('svg:g')
+              .append('svg:g');
                 
 
         // -- Render each dataset in the visualization. --
@@ -49,7 +49,7 @@ var CircsterView = Backbone.View.extend({
                 radius_start = init_radius_start + index * (dataset_arc_height + self.track_gap),
                 track_renderer_class = (dataset instanceof visualization.GenomeWideBigWigData ? CircsterBigWigTrackRenderer : CircsterSummaryTreeTrackRenderer );
 
-            track_renderer = new track_renderer_class({
+            var track_renderer = new track_renderer_class({
                 track: track,
                 radius_start: radius_start,
                 radius_end: radius_start + dataset_arc_height,
@@ -71,8 +71,8 @@ var CircsterTrackRenderer = Base.extend( {
 
     render: function( svg ) {
 
-        genome_arcs = this.chroms_layout(),
-        chroms_arcs = this.genome_data_layout();
+        var genome_arcs = this.chroms_layout(),
+            chroms_arcs = this.genome_data_layout();
             
         // -- Render. --
 
@@ -106,7 +106,7 @@ var CircsterTrackRenderer = Base.extend( {
                     //.style("stroke", block_color)
                     //.style("fill",  block_color)
             
-            dataset_elts.append("path").attr("d", arc_gen).style("stroke",  block_color)
+            dataset_elts.append("path").attr("d", arc_gen).style("stroke",  block_color);
                 
         });
     },
@@ -160,7 +160,7 @@ var CircsterTrackRenderer = Base.extend( {
 /**
  * Layout for summary tree data in a circster visualization.
  */
-var CircsterSummaryTrackRenderer = CircsterTrackRenderer.extend({
+var CircsterSummaryTreeTrackRenderer = CircsterTrackRenderer.extend({
     
     /**
      * Returns layouts for drawing a chromosome's data.
@@ -230,6 +230,6 @@ var CircsterBigWigTrackRenderer = CircsterTrackRenderer.extend({
 
 return {
     CircsterView: CircsterView
-}
+};
 
 });

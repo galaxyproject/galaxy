@@ -783,31 +783,31 @@ var exports = (function() {
         return module.exports;
     } else if ( typeof define === 'function' && define.amd ) {
         // AMD
-        exports = {}
-        define( function() { return exports } );
-        return exports
+        exports = {};
+        define( function() { return exports; } );
+        return exports;
     } else {
         // Browser global
         return window;
     }
 })();
 
-exports.BrowserBookmark = BrowserBookmark                  
-exports.BrowserBookmarkCollection = BrowserBookmarkCollection
-exports.Cache = Cache
-exports.CanvasManager = CanvasManager
-exports.Genome = Genome
-exports.GenomeDataManager = GenomeDataManager
-exports.GenomeRegion = GenomeRegion
-exports.GenomeRegionCollection = GenomeRegionCollection
-exports.GenomeVisualization = GenomeVisualization
-exports.GenomeWideBigWigData = GenomeWideBigWigData
-exports.GenomeWideSummaryTreeData = GenomeWideSummaryTreeData
-exports.ReferenceTrackDataManager = ReferenceTrackDataManager
-exports.ServerStateDeferred = ServerStateDeferred
-exports.TrackBrowserRouter = TrackBrowserRouter
-exports.TrackConfig = TrackConfig
-exports.Visualization = Visualization
-exports.add_datasets = add_datasets
+exports.BrowserBookmark = BrowserBookmark;        
+exports.BrowserBookmarkCollection = BrowserBookmarkCollection;
+exports.Cache = Cache;
+exports.CanvasManager = CanvasManager;
+exports.Genome = Genome;
+exports.GenomeDataManager = GenomeDataManager;
+exports.GenomeRegion = GenomeRegion;
+exports.GenomeRegionCollection = GenomeRegionCollection;
+exports.GenomeVisualization = GenomeVisualization;
+exports.GenomeWideBigWigData = GenomeWideBigWigData;
+exports.GenomeWideSummaryTreeData = GenomeWideSummaryTreeData;
+exports.ReferenceTrackDataManager = ReferenceTrackDataManager;
+exports.ServerStateDeferred = ServerStateDeferred;
+exports.TrackBrowserRouter = TrackBrowserRouter;
+exports.TrackConfig = TrackConfig;
+exports.Visualization = Visualization;
+exports.add_datasets = add_datasets;
 
 }).call(this);
