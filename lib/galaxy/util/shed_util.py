@@ -340,9 +340,6 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                         correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
                         invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
-    if webapp == 'community':
-        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        reset_tool_data_tables( app )
     return invalid_files_and_errors_tups
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
@@ -583,31 +580,6 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
             else:
                 tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
     return tool_dependencies_dict
-def generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict ):
-    """
-    If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
-    then update the received metadata_dict with information from the parsed tool_dependencies_config.
-    """
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
-        return metadata_dict
-    root = tree.getroot()
-    ElementInclude.include( root )
-    tool_dependencies_dict = {}
-    if can_generate_tool_dependency_metadata( root, metadata_dict ):
-        for elem in root:
-            if elem.tag == 'package':
-                tool_dependencies_dict = generate_package_dependency_metadata( elem, tool_dependencies_dict )
-            elif elem.tag == 'set_environment':
-                tool_dependencies_dict = generate_environment_dependency_metadata( elem, tool_dependencies_dict )
-            # Handle tool dependency installation via other means here (future).
-        if tool_dependencies_dict:
-            metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
-    if tool_dependencies_dict:
-        metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
-    return metadata_dict
 def generate_metadata_for_changeset_revision( app, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
                                               resetting_all_metadata_on_repository=False, webapp='galaxy' ):
     """
@@ -621,6 +593,7 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
     invalid_tool_configs = []
     tool_dependencies_config = None
     original_tool_data_path = app.config.tool_data_path
+    original_tool_data_table_config_path = app.config.tool_data_table_config_path
     if resetting_all_metadata_on_repository:
         if not relative_install_dir:
             raise Exception( "The value of repository.repo_path must be sent when resetting all metadata on a repository." )
@@ -630,12 +603,14 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
         files_dir = repository_files_dir
         # Since we're working from a temporary directory, we can safely copy sample files included in the repository to the repository root.
         app.config.tool_data_path = repository_files_dir
+        app.config.tool_data_table_config_path = repository_files_dir
     else:
         # Use a temporary working directory to copy all sample files.
         work_dir = tempfile.mkdtemp()
         # All other files are on disk in the repository's repo_path, which is the value of relative_install_dir.
         files_dir = relative_install_dir
         app.config.tool_data_path = work_dir
+        app.config.tool_data_table_config_path = work_dir
     # Handle proprietary datatypes, if any.
     datatypes_config = get_config_from_disk( 'datatypes_conf.xml', files_dir )
     if datatypes_config:
@@ -719,11 +694,9 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
             metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
     if invalid_tool_configs:
         metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
-    if webapp == 'community' and resetting_all_metadata_on_repository:
-        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        reset_tool_data_tables( app )
-        # Reset the value of the app's tool_data_path to it's original value.
-        app.config.tool_data_path = original_tool_data_path
+    # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
+    app.config.tool_data_path = original_tool_data_path
+    app.config.tool_data_table_config_path = original_tool_data_table_config_path
     return metadata_dict, invalid_file_tups
 def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     """The value of package_name must match the value of the "package" type in the tool config's <requirements> tag set."""
@@ -741,6 +714,31 @@ def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     if requirements_dict:
         tool_dependencies_dict[ dependency_key ] = requirements_dict
     return tool_dependencies_dict
+def generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict ):
+    """
+    If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
+    then update the received metadata_dict with information from the parsed tool_dependencies_config.
+    """
+    try:
+        tree = ElementTree.parse( tool_dependencies_config )
+    except Exception, e:
+        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
+        return metadata_dict
+    root = tree.getroot()
+    ElementInclude.include( root )
+    tool_dependencies_dict = {}
+    if can_generate_tool_dependency_metadata( root, metadata_dict ):
+        for elem in root:
+            if elem.tag == 'package':
+                tool_dependencies_dict = generate_package_dependency_metadata( elem, tool_dependencies_dict )
+            elif elem.tag == 'set_environment':
+                tool_dependencies_dict = generate_environment_dependency_metadata( elem, tool_dependencies_dict )
+            # Handle tool dependency installation via other means here (future).
+        if tool_dependencies_dict:
+            metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
+    if tool_dependencies_dict:
+        metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
+    return metadata_dict
 def generate_tool_guid( repository_clone_url, tool ):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for

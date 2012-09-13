@@ -696,7 +696,7 @@ class AdminController( BaseUIController, Admin ):
                     owner = repository_name_owner_list[ 1 ]
                     repository = get_repository_by_name_and_owner( trans, name, owner )
                     try:
-                        invalid_file_tups = reset_all_metadata_on_repository( trans, trans.security.encode_id( repository.id ) )
+                        invalid_file_tups, metadata_dict = reset_all_metadata_on_repository( trans, trans.security.encode_id( repository.id ) )
                         if invalid_file_tups:
                             message = generate_message_for_invalid_tools( invalid_file_tups, repository, None, as_html=False )
                             log.debug( message )

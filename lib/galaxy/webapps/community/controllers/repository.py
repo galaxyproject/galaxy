@@ -1817,10 +1817,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     status=status )
     @web.expose
     def reset_all_metadata( self, trans, id, **kwd ):
-        invalid_file_tups = reset_all_metadata_on_repository( trans, id, **kwd )
+        invalid_file_tups, metadata_dict = reset_all_metadata_on_repository( trans, id, **kwd )
         if invalid_file_tups:
             repository = get_repository( trans, id )
-            message = generate_message_for_invalid_tools( invalid_file_tups, repository, None )
+            message = generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict )
             status = 'error'
         else:
             message = "All repository metadata has been reset."

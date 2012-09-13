@@ -937,7 +937,9 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
     clean_repository_metadata( trans, id, changeset_revisions )
     # Set tool version information for all downloadable changeset revisions.  Get the list of changeset revisions from the changelog.
     reset_all_tool_versions( trans, id, repo )
-    return invalid_file_tups
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( trans.app )
+    return invalid_file_tups, metadata_dict
 def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     """
     Set metadata using the repository's current disk files, returning specific error messages (if any) to alert the repository owner that the changeset
@@ -1000,6 +1002,8 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     if invalid_file_tups:
         message = generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict )
         status = 'error'
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( trans.app )
     return message, status
 def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=None, **kwd ):
     # Set metadata on the repository tip.
