@@ -6,7 +6,7 @@ import pkg_resources
 pkg_resources.require( "simplejson" )
 pkg_resources.require( "Mako" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback, re
 import simplejson
 import binascii
 from mako.template import Template
