@@ -16,7 +16,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 
-    ${h.js( "require", "mvc/data" )}
+    ${h.js( "libs/require", "mvc/data" )}
 
     <script type="text/javascript">
 
