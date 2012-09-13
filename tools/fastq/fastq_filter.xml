@@ -74,7 +74,7 @@ def fastq_read_pass_filter( fastq_read ):
                 return False
             else:
                 num_deviates -= 1
-#if $paired_end.value == 'single_end':
+#if not $paired_end:
     qual_scores_split = [ qual_scores ]
 #else:
     qual_scores_split = [ qual_scores[ 0:int( len( qual_scores ) / 2 ) ], qual_scores[ int( len( qual_scores ) / 2 ): ] ]
