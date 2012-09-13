@@ -2402,31 +2402,28 @@ class Tool:
             command_line = self.interpreter + " " + command_line
         return command_line
     def build_dependency_shell_commands( self ):
-        """
-        Return a list of commands to be run to populate the current 
-        environment to include this tools requirements.
-        """
+        """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         commands = []
         if self.tool_shed_repository:
             installed_tool_dependencies = self.tool_shed_repository.installed_tool_dependencies
         else:
             installed_tool_dependencies = None
         for requirement in self.requirements:
-            # TODO: currently only supporting requirements of type package,
-            #       need to implement some mechanism for mapping other types
-            #       back to packages
             log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            if requirement.type == 'package':
+            script_file = None
+            base_path = None
+            version = None
+            if requirement.type in [ 'package', 'set_environment' ]:
                 script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( name=requirement.name,
                                                                                                 version=requirement.version,
                                                                                                 type=requirement.type,
                                                                                                 installed_tool_dependencies=installed_tool_dependencies )
-                if script_file is None and base_path is None:
-                    log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
-                elif script_file is None:
-                    commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path ) )
-                else:
-                    commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, script_file ) )
+            if script_file is None and base_path is None:
+                log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+            elif requirement.type == 'package' and script_file is None:
+                commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path ) )
+            else:
+                commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, script_file ) )
         return commands
     def build_redirect_url_params( self, param_dict ):
         """

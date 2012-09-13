@@ -34,10 +34,8 @@ def make_tmp_dir():
     yield work_dir
     if os.path.exists( work_dir ):
         local( 'rm -rf %s' % work_dir )
-def handle_post_build_processing( app, tool_dependency, install_dir, env_dependency_path, package_name=None ):
-    # TODO: This method is deprecated and should be eliminated when the implementation for handling proprietary fabric scripts is implemented.
+def handle_command( app, tool_dependency, install_dir, cmd ):
     sa_session = app.model.context.current
-    cmd = "echo 'PATH=%s:$PATH; export PATH' > %s/env.sh;chmod +x %s/env.sh" % ( env_dependency_path, install_dir, install_dir )
     output = local( cmd, capture=True )
     log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
     if output.return_code:
@@ -45,6 +43,7 @@ def handle_post_build_processing( app, tool_dependency, install_dir, env_depende
         tool_dependency.error_message = str( output.stderr )
         sa_session.add( tool_dependency )
         sa_session.flush()
+    return output.return_code
 def install_and_build_package( app, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
     sa_session = app.model.context.current
@@ -71,14 +70,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         dir = work_dir
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
-                    clone_cmd = action_dict[ 'command' ]
-                    output = local( clone_cmd, capture=True )
-                    log_results( clone_cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
-                    if output.return_code:
-                        tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                        tool_dependency.error_message = str( output.stderr )
-                        sa_session.add( tool_dependency )
-                        sa_session.flush()
+                    return_code = handle_command( app, tool_dependency, install_dir, action_dict[ 'command' ] )
+                    if return_code:
                         return
                     dir = package_name
                 if not os.path.exists( dir ):
@@ -102,44 +95,14 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # Currently the only action supported in this category is "environment_variable".
                             env_var_dicts = action_dict[ 'environment_variable' ]
                             for env_var_dict in env_var_dicts:
-                                env_var_name = env_var_dict[ 'name' ]
-                                env_var_action = env_var_dict[ 'action' ]
-                                env_var_value = env_var_dict[ 'value' ]
-                                if env_var_action == 'prepend_to':
-                                    changed_value = '%s:$%s' % ( env_var_value, env_var_name )
-                                elif env_var_action == 'set_to':
-                                    changed_value = '%s' % env_var_value
-                                elif env_var_action == 'append_to':
-                                    changed_value = '$%s:%s' % ( env_var_name, env_var_value )
-                                env_shell_file_path = '%s/env.sh' % install_dir
-                                if os.path.exists( env_shell_file_path ):
-                                    write_action = '>>'
-                                else:
-                                    write_action = '>'
-                                cmd = "echo '%s=%s; export %s' %s %s;chmod +x %s" % ( env_var_name,
-                                                                                      changed_value,
-                                                                                      env_var_name,
-                                                                                      write_action,
-                                                                                      env_shell_file_path,
-                                                                                      env_shell_file_path )
-                                output = local( cmd, capture=True )
-                                log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
-                                if output.return_code:
-                                    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                                    tool_dependency.error_message = str( output.stderr )
-                                    sa_session.add( tool_dependency )
-                                    sa_session.flush()
+                                cmd = common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
                                     return
                         elif action_type == 'shell_command':
-                            action = action_dict[ 'command' ]
                             with settings( warn_only=True ):
-                                output = local( action, capture=True )
-                                log_results( action, output, os.path.join( install_dir, INSTALLATION_LOG ) )
-                                if output.return_code:
-                                    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                                    tool_dependency.error_message = str( output.stderr )
-                                    sa_session.add( tool_dependency )
-                                    sa_session.flush()
+                                return_code = handle_command( app, tool_dependency, install_dir, action_dict[ 'command' ] )
+                                if return_code:
                                     return
 def log_results( command, fabric_AttributeString, file_path ):
     """

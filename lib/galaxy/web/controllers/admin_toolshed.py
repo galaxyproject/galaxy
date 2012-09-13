@@ -2,7 +2,6 @@ import urllib2, tempfile
 from galaxy.web.controllers.admin import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
-from galaxy.tool_shed.tool_dependencies.install_util import get_tool_dependency_install_dir
 from galaxy.tool_shed.encoding_util import *
 from galaxy import eggs, tools
 
@@ -1364,10 +1363,11 @@ class AdminToolshed( AdminGalaxy ):
                 % ( repository.name, original_section_name )
             message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
             message += "different section in the tool panel."
+            status = 'warning'
         else:
             message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % repository.name
             message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section."
-        status = 'done'
+            status = 'warning'
         includes_tool_dependencies = 'tool_dependencies' in metadata
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=True )
         return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',

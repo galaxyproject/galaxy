@@ -15,7 +15,10 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
     # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled repository is being reinstalled.
     sa_session = app.model.context.current
     # First see if an appropriate tool_dependency record exists for the received tool_shed_repository.
-    tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, name, version, type )
+    if version:
+        tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, name, version, type )
+    else:
+        tool_dependency = get_tool_dependency_by_name_type_repository( app, tool_shed_repository, name, type )
     if tool_dependency:
         if set_status:
             tool_dependency.status = status
@@ -25,6 +28,13 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
     sa_session.add( tool_dependency )
     sa_session.flush()
     return tool_dependency
+def get_tool_dependency_by_name_type_repository( app, repository, name, type ):
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.ToolDependency ) \
+                     .filter( and_( app.model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
+                                    app.model.ToolDependency.table.c.name == name,
+                                    app.model.ToolDependency.table.c.type == type ) ) \
+                     .first()
 def get_tool_dependency_by_name_version_type_repository( app, repository, name, version, type ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.ToolDependency ) \
@@ -33,13 +43,23 @@ def get_tool_dependency_by_name_version_type_repository( app, repository, name, 
                                     app.model.ToolDependency.table.c.version == version,
                                     app.model.ToolDependency.table.c.type == type ) ) \
                      .first()
-def get_tool_dependency_install_dir( app, repository, package_name, package_version ):
-    return os.path.abspath( os.path.join( app.config.tool_dependency_dir,
-                                          package_name,
-                                          package_version,
-                                          repository.owner,
-                                          repository.name,
-                                          repository.installed_changeset_revision ) )
+def get_tool_dependency_install_dir( app, repository, type, name, version ):
+    if type == 'package':
+        return os.path.abspath( os.path.join( app.config.tool_dependency_dir,
+                                              name,
+                                              version,
+                                              repository.owner,
+                                              repository.name,
+                                              repository.installed_changeset_revision ) )
+    if type == 'set_environment':
+        return os.path.abspath( os.path.join( app.config.tool_dependency_dir,
+                                              'environment_settings',
+                                              name,
+                                              repository.owner,
+                                              repository.name,
+                                              repository.installed_changeset_revision ) )
+def get_tool_shed_repository_install_dir( app, tool_shed_repository ):
+    return os.path.abspath( tool_shed_repository.repo_files_directory( app ) )
 def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
     # The value of tool_dependencies is a partial or full list of ToolDependency records associated with the tool_shed_repository.
     sa_session = app.model.context.current
@@ -49,7 +69,11 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
     package_version = elem.get( 'version', None )
     if package_name and package_version:
         if tool_dependencies:
-            install_dir = get_tool_dependency_install_dir( app, tool_shed_repository, package_name, package_version )
+            install_dir = get_tool_dependency_install_dir( app,
+                                                           repository=tool_shed_repository,
+                                                           type='package',
+                                                           name=package_name,
+                                                           version=package_version )
             if not os.path.exists( install_dir ):
                 for package_elem in elem:
                     if package_elem.tag == 'install':
@@ -140,11 +164,9 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             env_var_dicts = []
             for env_elem in action_elem:
                 if env_elem.tag == 'environment_variable':
-                    env_var_name = env_elem.get( 'name', 'PATH' )
-                    env_var_action = env_elem.get( 'action', 'prepend_to' )
-                    env_var_text = env_elem.text.replace( '$INSTALL_DIR', install_dir )
-                    if env_var_text:
-                        env_var_dicts.append( dict( name=env_var_name, action=env_var_action, value=env_var_text ) )
+                    env_var_dict = create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
+                    if env_var_dict:
+                        env_var_dicts.append( env_var_dict )  
             if env_var_dicts:
                 action_dict[ env_elem.tag ] = env_var_dicts
             else:
@@ -206,11 +228,7 @@ def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_
         return "Exception executing fabric script %s: %s.  " % ( str( proprietary_fabfile_path ), str( e ) )
     if returncode:
         return message    
-    message = handle_post_build_processing( app, tool_dependency, install_dir, env_dependency_path, package_name=package_name )
-    if message:
-        return message
-    else:
-        return ''
+    handle_environment_settings( app, tool_dependency, install_dir, cmd )
 def run_subprocess( app, cmd ):
     env = os.environ
     PYTHONPATH = env.get( 'PYTHONPATH', '' )
@@ -229,3 +247,47 @@ def run_subprocess( app, cmd ):
         message = '%s\n' % str( tmp_stderr.read() )
         tmp_stderr.close()
     return returncode, message
+def set_environment( app, elem, tool_shed_repository ):
+    """
+    Create a ToolDependency to set an environment variable.  This is different from the process used to set an environment variable that is associated
+    with a package.  An example entry in a tool_dependencies.xml file is:
+    <set_environment version="1.0">
+        <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
+    </set_environment>
+    """
+    sa_session = app.model.context.current
+    tool_dependency = None
+    env_var_version = elem.get( 'version', '1.0' )
+    for env_var_elem in elem:
+        # The value of env_var_name must match the text value of at least 1 <requirement> tag in the tool config's <requirements> tag set whose
+        # "type" attribute is "set_environment" (e.g., <requirement type="set_environment">R_SCRIPT_PATH</requirement>).
+        env_var_name = env_var_elem.get( 'name', None )
+        env_var_action = env_var_elem.get( 'action', None )
+        if env_var_name and env_var_action:
+            install_dir = get_tool_dependency_install_dir( app,
+                                                           repository=tool_shed_repository,
+                                                           type='set_environment',
+                                                           name=env_var_name,
+                                                           version=None )
+            tool_shed_repository_install_dir = get_tool_shed_repository_install_dir( app, tool_shed_repository )
+            env_var_dict = create_env_var_dict( env_var_elem, tool_shed_repository_install_dir=tool_shed_repository_install_dir )
+            if env_var_dict:
+                if not os.path.exists( install_dir ):
+                    os.makedirs( install_dir )
+                tool_dependency = create_or_update_tool_dependency( app,
+                                                                    tool_shed_repository,
+                                                                    name=env_var_name,
+                                                                    version=None,
+                                                                    type='set_environment',
+                                                                    status=app.model.ToolDependency.installation_status.INSTALLING,
+                                                                    set_status=True )
+                cmd = create_or_update_env_shell_file( install_dir, env_var_dict )
+                if env_var_version == '1.0':
+                    # Handle setting environment variables using a fabric method.
+                    handle_command( app, tool_dependency, install_dir, cmd )
+                    sa_session.refresh( tool_dependency )
+                    if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
+                        tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
+                        sa_session.add( tool_dependency )
+                        sa_session.flush()
+                        print 'Environment variable ', env_var_name, 'set in', install_dir

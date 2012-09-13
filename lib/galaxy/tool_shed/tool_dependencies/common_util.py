@@ -1,6 +1,47 @@
 import os, shutil, tarfile, urllib2
 from galaxy.datatypes.checkers import *
 
+def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
+    env_var_name = elem.get( 'name', 'PATH' )
+    env_var_action = elem.get( 'action', 'prepend_to' )
+    env_var_text = None
+    if elem.text and elem.text.find( 'REPOSITORY_INSTALL_DIR' ) >= 0:
+        if tool_shed_repository_install_dir:
+            env_var_text = elem.text.replace( '$REPOSITORY_INSTALL_DIR', tool_shed_repository_install_dir )
+            return dict( name=env_var_name, action=env_var_action, value=env_var_text )
+        else:
+            env_var_text = elem.text.replace( '$REPOSITORY_INSTALL_DIR', tool_dependency_install_dir )
+            return dict( name=env_var_name, action=env_var_action, value=env_var_text )
+    if elem.text and elem.text.find( 'INSTALL_DIR' ) >= 0:
+        if tool_dependency_install_dir:
+            env_var_text = elem.text.replace( '$INSTALL_DIR', tool_dependency_install_dir )
+            return dict( name=env_var_name, action=env_var_action, value=env_var_text )
+        else:
+            env_var_text = elem.text.replace( '$INSTALL_DIR', tool_shed_repository_install_dir )
+            return dict( name=env_var_name, action=env_var_action, value=env_var_text )
+    return None
+def create_or_update_env_shell_file( install_dir, env_var_dict ):
+    env_var_name = env_var_dict[ 'name' ]
+    env_var_action = env_var_dict[ 'action' ]
+    env_var_value = env_var_dict[ 'value' ]
+    if env_var_action == 'prepend_to':
+        changed_value = '%s:$%s' % ( env_var_value, env_var_name )
+    elif env_var_action == 'set_to':
+        changed_value = '%s' % env_var_value
+    elif env_var_action == 'append_to':
+        changed_value = '$%s:%s' % ( env_var_name, env_var_value )
+    env_shell_file_path = '%s/env.sh' % install_dir
+    if os.path.exists( env_shell_file_path ):
+        write_action = '>>'
+    else:
+        write_action = '>'
+    cmd = "echo '%s=%s; export %s' %s %s;chmod +x %s" % ( env_var_name,
+                                                          changed_value,
+                                                          env_var_name,
+                                                          write_action,
+                                                          env_shell_file_path,
+                                                          env_shell_file_path )
+    return cmd
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
         # Open for reading with transparent compression.

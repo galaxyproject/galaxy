@@ -7,7 +7,7 @@ from galaxy.tools import parameters
 from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
 from galaxy.tools.search import ToolBoxSearch
-from galaxy.tool_shed.tool_dependencies.install_util import create_or_update_tool_dependency, install_package
+from galaxy.tool_shed.tool_dependencies.install_util import create_or_update_tool_dependency, install_package, set_environment
 from galaxy.tool_shed.encoding_util import *
 from galaxy.model.orm import *
 
@@ -255,26 +255,47 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
     """
     can_generate_dependency_metadata = False
     for elem in root:
-        can_generate_dependency_metadata = False
-        tool_dependency_name = elem.get( 'name', None )
-        tool_dependency_version = elem.get( 'version', None )
         tool_dependency_type = elem.tag
-        if tool_dependency_name and tool_dependency_version and tool_dependency_type:
-            for tool_dict in metadata_dict[ 'tools' ]:
-                requirements = tool_dict.get( 'requirements', [] )
-                for requirement_dict in requirements:
-                    req_name = requirement_dict.get( 'name', None )
-                    req_version = requirement_dict.get( 'version', None )
-                    req_type = requirement_dict.get( 'type', None )
-                    if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
-                        can_generate_dependency_metadata = True
+        tool_dependency_version = elem.get( 'version', None )
+        if tool_dependency_type == 'package':
+            can_generate_dependency_metadata = False
+            tool_dependency_name = elem.get( 'name', None )
+            if tool_dependency_name and tool_dependency_version:
+                for tool_dict in metadata_dict[ 'tools' ]:
+                    requirements = tool_dict.get( 'requirements', [] )
+                    for requirement_dict in requirements:
+                        req_name = requirement_dict.get( 'name', None )
+                        req_version = requirement_dict.get( 'version', None )
+                        req_type = requirement_dict.get( 'type', None )
+                        if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
+                            can_generate_dependency_metadata = True
+                            break
+                    if requirements and not can_generate_dependency_metadata:
+                        # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
+                        # tag for any tool in the repository.
                         break
-                if requirements and not can_generate_dependency_metadata:
-                    # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
-                    # tag for any tool in the repository.
+                if not can_generate_dependency_metadata:
                     break
-            if not can_generate_dependency_metadata:
-                break
+        elif tool_dependency_type == 'set_environment':
+            # Here elem is something like: <set_environment version="1.0">
+            for env_var_elem in elem:
+                can_generate_dependency_metadata = False
+                # <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
+                env_var_name = env_var_elem.get( 'name', None )
+                if env_var_name:
+                    for tool_dict in metadata_dict[ 'tools' ]:
+                        requirements = tool_dict.get( 'requirements', [] )
+                        for requirement_dict in requirements:
+                            # {"name": "R_SCRIPT_PATH", "type": "set_environment", "version": null}
+                            req_name = requirement_dict.get( 'name', None )
+                            req_type = requirement_dict.get( 'type', None )
+                            if req_name==env_var_name and req_type==tool_dependency_type:
+                                can_generate_dependency_metadata = True
+                                break
+                        if requirements and not can_generate_dependency_metadata:
+                            # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
+                            # tag for any tool in the repository.
+                            break
     return can_generate_dependency_metadata
 def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files, webapp='galaxy' ):
     """
@@ -466,23 +487,43 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
     tool_dependency_objects = []
     # Get the tool_dependencies.xml file from the repository.
     tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
-    tree = ElementTree.parse( tool_dependencies_config )
+    try:
+        tree = ElementTree.parse( tool_dependencies_config )
+    except Exception, e:
+        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
+        return tool_dependency_objects
     root = tree.getroot()
     ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
-        if elem.tag == 'package':
-            package_name = elem.get( 'name', None )
-            package_version = elem.get( 'version', None )
-            if package_name and package_version:
+        tool_dependency_type = elem.tag
+        if tool_dependency_type == 'package':
+            name = elem.get( 'name', None )
+            version = elem.get( 'version', None )
+            if name and version:
                 tool_dependency = create_or_update_tool_dependency( app,
                                                                     tool_shed_repository,
-                                                                    name=package_name,
-                                                                    version=package_version,
-                                                                    type='package',
+                                                                    name=name,
+                                                                    version=version,
+                                                                    type=tool_dependency_type,
                                                                     status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                                     set_status=set_status )
                 tool_dependency_objects.append( tool_dependency )
+            
+        elif tool_dependency_type == 'set_environment':
+            for env_elem in elem:
+                # <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
+                name = env_elem.get( 'name', None )
+                action = env_elem.get( 'action', None )
+                if name and action:
+                    tool_dependency = create_or_update_tool_dependency( app,
+                                                                        tool_shed_repository,
+                                                                        name=name,
+                                                                        version=None,
+                                                                        type=tool_dependency_type,
+                                                                        status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                        set_status=set_status )
+                    tool_dependency_objects.append( tool_dependency )
     return tool_dependency_objects
 def generate_clone_url( trans, repository ):
     """Generate the URL for cloning a repository."""
@@ -528,12 +569,30 @@ def generate_datatypes_metadata( datatypes_config, metadata_dict ):
         if datatypes:
             metadata_dict[ 'datatypes' ] = datatypes
     return metadata_dict
+def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
+    """The value of env_var_name must match the value of the "set_environment" type in the tool config's <requirements> tag set."""
+    requirements_dict = {}
+    for env_elem in elem:
+        env_name = env_elem.get( 'name', None )
+        if env_name:
+            requirements_dict [ 'name' ] = env_name
+            requirements_dict [ 'type' ] = 'environment variable'
+        if requirements_dict:
+            if 'set_environment' in tool_dependencies_dict:
+                tool_dependencies_dict[ 'set_environment' ].append( requirements_dict )
+            else:
+                tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
+    return tool_dependencies_dict
 def generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict ):
     """
     If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
     then update the received metadata_dict with information from the parsed tool_dependencies_config.
     """
-    tree = ElementTree.parse( tool_dependencies_config )
+    try:
+        tree = ElementTree.parse( tool_dependencies_config )
+    except Exception, e:
+        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
+        return metadata_dict
     root = tree.getroot()
     ElementInclude.include( root )
     tool_dependencies_dict = {}
@@ -541,9 +600,13 @@ def generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
         for elem in root:
             if elem.tag == 'package':
                 tool_dependencies_dict = generate_package_dependency_metadata( elem, tool_dependencies_dict )
+            elif elem.tag == 'set_environment':
+                tool_dependencies_dict = generate_environment_dependency_metadata( elem, tool_dependencies_dict )
             # Handle tool dependency installation via other means here (future).
         if tool_dependencies_dict:
             metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
+    if tool_dependencies_dict:
+        metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
     return metadata_dict
 def generate_metadata_for_changeset_revision( app, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
                                               resetting_all_metadata_on_repository=False, webapp='galaxy' ):
@@ -712,7 +775,7 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
             outputs = []
             for output in ttb.outputs:
                 name, file_name, extra = output
-                outputs.append( ( name, strip_path( file_name ) ) )
+                outputs.append( ( name, strip_path( file_name ) if file_name else None ) )
             test_dict = dict( name=ttb.name,
                               required_files=required_files,
                               inputs=inputs,
@@ -1337,27 +1400,27 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
-        # Only install the package if it is not already installed.
-        can_install = False
         if elem.tag == 'package':
+            # Only install the tool_dependency if it is not already installed.
+            can_install = False
             package_name = elem.get( 'name', None )
             package_version = elem.get( 'version', None )
             if package_name and package_version:
-                # The value of tool_dependencies will be None only when this method is called by the InstallManager.  In that case, tool
-                # dependency installation is not ajaxian, so the ToolDependency objects do not yet exist.
-                if tool_dependencies:
-                    for tool_dependency in tool_dependencies:
-                        if tool_dependency.name==package_name and tool_dependency.version==package_version:
-                            can_install = tool_dependency.status in [ app.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                                      app.model.ToolDependency.installation_status.UNINSTALLED ]
-                            break
-                else:
-                    can_install = False
+                for tool_dependency in tool_dependencies:
+                    if tool_dependency.name==package_name and tool_dependency.version==package_version:
+                        can_install = tool_dependency.status in [ app.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                  app.model.ToolDependency.installation_status.UNINSTALLED ]
+                        break
                 if can_install:
                     tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
                     if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                        app.model.ToolDependency.installation_status.ERROR ]:
                         installed_tool_dependencies.append( tool_dependency )
+        elif elem.tag == 'set_environment':
+            tool_dependency = set_environment( app, elem, tool_shed_repository )
+            if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
+                                                               app.model.ToolDependency.installation_status.ERROR ]:
+                installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
 def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     """
@@ -1662,7 +1725,12 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
 def strip_path( fpath ):
-    file_path, file_name = os.path.split( fpath )
+    if not fpath:
+        return fpath
+    try:
+        file_path, file_name = os.path.split( fpath )
+    except:
+        file_name = fpath
     return file_name
 def to_html_escaped( text ):
     """Translates the characters in text to html values"""

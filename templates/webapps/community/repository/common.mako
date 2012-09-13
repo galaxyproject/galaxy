@@ -92,38 +92,76 @@
             <div class="toolFormBody">
                 %if metadata:
                     %if 'tool_dependencies' in metadata:
-                        <div class="form-row">
-                            <table width="100%">
-                                <tr bgcolor="#D8D8D8" width="100%">
-                                    <td><b>The following tool dependencies can optionally be automatically installed</i></td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div style="clear: both"></div>
-                        <div class="form-row">
-                            <% tool_dependencies = metadata[ 'tool_dependencies' ] %>
-                            <table class="grid">
-                                <tr>
-                                    <td><b>name</b></td>
-                                    <td><b>version</b></td>
-                                    <td><b>type</b></td>
-                                </tr>
-                                %for dependency_key, requirements_dict in tool_dependencies.items():
-                                    <%
-                                        name = requirements_dict[ 'name' ]
-                                        version = requirements_dict[ 'version' ]
-                                        type = requirements_dict[ 'type' ]
-
-                                    %>
-                                    <tr>
-                                        <td>${name}</td>
-                                        <td>${version}</td>
-                                        <td>${type}</td>
+                        <%
+                            # See if tool dependencies are packages, environment settings or both.
+                            tool_dependencies = metadata[ 'tool_dependencies' ]
+                            contains_packages = False
+                            for k in tool_dependencies.keys():
+                                if k != 'set_environment':
+                                    contains_packages = True
+                                    break
+                            contains_env_settings = 'set_environment' in tool_dependencies.keys()
+                        %>
+                        %if contains_packages:
+                            <div class="form-row">
+                                <table width="100%">
+                                    <tr bgcolor="#D8D8D8" width="100%">
+                                        <td><b>The following tool dependencies can optionally be automatically installed</i></td>
                                     </tr>
-                                %endfor
-                            </table>
-                        </div>
-                        <div style="clear: both"></div>
+                                </table>
+                            </div>
+                            <div style="clear: both"></div>
+                            <div class="form-row">
+                                <table class="grid">
+                                    <tr>
+                                        <td><b>name</b></td>
+                                        <td><b>version</b></td>
+                                        <td><b>type</b></td>
+                                    </tr>
+                                    %for dependency_key, requirements_dict in tool_dependencies.items():
+                                        %if dependency_key != 'set_environment':
+                                            <%
+                                                name = requirements_dict[ 'name' ]
+                                                version = requirements_dict[ 'version' ]
+                                                type = requirements_dict[ 'type' ]
+                                            %>
+                                            <tr>
+                                                <td>${name}</td>
+                                                <td>${version}</td>
+                                                <td>${type}</td>
+                                            </tr>
+                                        %endif
+                                    %endfor
+                                </table>
+                            </div>
+                            <div style="clear: both"></div>
+                        %endif
+                        %if contains_env_settings:
+                            <div class="form-row">
+                                <table width="100%">
+                                    <tr bgcolor="#D8D8D8" width="100%">
+                                        <td><b>The following environment settings can optionally be handled as part of the installation</i></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div style="clear: both"></div>
+                            <div class="form-row">
+                                <table class="grid">
+                                    <tr>
+                                        <td><b>name</b></td>
+                                        <td><b>type</b></td>
+                                    </tr>
+                                    <% environment_settings = tool_dependencies[ 'set_environment' ] %>
+                                    %for requirements_dict in environment_settings:
+                                        <tr>
+                                            <td>${requirements_dict[ 'name' ]}</td>
+                                            <td>${requirements_dict[ 'type' ]}</td>
+                                        </tr>
+                                    %endfor
+                                </table>
+                            </div>
+                            <div style="clear: both"></div>
+                        %endif
                     %endif
                     %if 'tools' in metadata:
                         <div class="form-row">

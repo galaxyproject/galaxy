@@ -2263,25 +2263,27 @@ class RepositoryController( BaseUIController, ItemRatings ):
         guid = None
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-        metadata = repository_metadata.metadata
-        if 'tools' in metadata:
-            for tool_metadata_dict in metadata[ 'tools' ]:
-                if tool_metadata_dict[ 'id' ] == tool_id:
-                    relative_path_to_tool_config = tool_metadata_dict[ 'tool_config' ]
-                    guid = tool_metadata_dict[ 'guid' ]
-                    full_path = os.path.abspath( relative_path_to_tool_config )
-                    can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, full_path, changeset_revision )
-                    if can_use_disk_file:
-                        tool, valid, message = load_tool_from_config( trans.app, full_path )
-                    else:
-                        # We're attempting to load a tool using a config that no longer exists on disk.
-                        work_dir = tempfile.mkdtemp()
-                        manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( relative_path_to_tool_config, repo, changeset_revision )
-                        if manifest_ctx and ctx_file:
-                            tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
-                    break
-            if guid:
-                tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata:
+                if 'tools' in metadata:
+                    for tool_metadata_dict in metadata[ 'tools' ]:
+                        if tool_metadata_dict[ 'id' ] == tool_id:
+                            relative_path_to_tool_config = tool_metadata_dict[ 'tool_config' ]
+                            guid = tool_metadata_dict[ 'guid' ]
+                            full_path = os.path.abspath( relative_path_to_tool_config )
+                            can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, full_path, changeset_revision )
+                            if can_use_disk_file:
+                                tool, valid, message = load_tool_from_config( trans.app, full_path )
+                            else:
+                                # We're attempting to load a tool using a config that no longer exists on disk.
+                                work_dir = tempfile.mkdtemp()
+                                manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( relative_path_to_tool_config, repo, changeset_revision )
+                                if manifest_ctx and ctx_file:
+                                    tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
+                            break
+                    if guid:
+                        tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
