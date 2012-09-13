@@ -16,7 +16,7 @@ Handlebars.registerHelper( 'warningmessagesmall', function( options ){
 
 <script type="text/template" class="template-common" id="template-warningmessagesmall">
 {{! renders a warning in a (mostly css) highlighted, iconned warning box }} 
-    <div class="warningmessagesmall"><strong>{{ warning }}</strong></div>
+    <div class="warningmessagesmall"><strong>{{{ warning }}}</strong></div>
 </script>
 
 <script type="text/javascript" class="helper-common" id="helper-iconButton">
@@ -29,7 +29,7 @@ Handlebars.registerPartial( 'iconButton', function( buttonData, options ){
     var buffer = "";
     buffer += ( buttonData.enabled )?( '<a' ):( '<span' );
     
-    if( buttonData.title ){ buttonData.buffer += ' title="' + buttonData.title + '"'; }
+    if( buttonData.title ){ buffer += ' title="' + buttonData.title + '"'; }
     
     buffer += ' class="icon-button';
     if( buttonData.isMenuButton ){ buffer += ' menu-button'; }
@@ -44,7 +44,7 @@ Handlebars.registerPartial( 'iconButton', function( buttonData, options ){
     
     if( !buttonData.visible ){ buffer += ' style="display: none;"'; }
     
-    buffer += '>Bler' + ( ( buttonData.enabled )?( '</a>' ):( '</span>' ) );
+    buffer += '>' + ( ( buttonData.enabled )?( '</a>' ):( '</span>' ) );
     return buffer;
 });
 </script>
