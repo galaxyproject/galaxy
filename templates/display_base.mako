@@ -11,6 +11,7 @@
 <%inherit file="${inherit( context )}"/>
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 <%namespace file="/display_common.mako" import="*" />
+<%namespace file="/visualization/trackster_common.mako" import="*" />
 
 ##
 ## Functions used by base.mako and base_panels.mako to display content.
@@ -33,8 +34,8 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.rating", 
-            "galaxy.autocom_tagging", "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.mousewheel", 
-            "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.ui.sortable.slider", "libs/farbtastic", "mvc/data", "viz/visualization" )}
+            "galaxy.autocom_tagging" )}
+    ${render_trackster_js_files()}
 
     <script type="text/javascript">
         
@@ -113,7 +114,8 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging", "embed_item", "trackster", "jquery.rating", "jquery-ui/smoothness/jquery-ui-1.8.23.custom" )}
+    ${h.css( "autocomplete_tagging", "embed_item", "jquery.rating" )}
+    ${render_trackster_css_files()}
     
     <style type="text/css">
         .page-body {

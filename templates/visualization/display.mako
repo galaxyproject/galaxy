@@ -1,4 +1,5 @@
 <%inherit file="/display_base.mako"/>
+<%namespace file="/visualization/trackster_common.mako" import="*" />
 
 <%def name="javascripts()">
     <% config = item_data %>
@@ -54,20 +55,9 @@
 
     <script type="text/javascript">
         // TODO: much of this code is copied from browser.mako -- create shared base and use in both places.
-    
-        //
-        // Place URLs here so that url_for can be used to generate them.
-        // 
-        var default_data_url = "${h.url_for( controller='/tracks', action='data' )}",
-            raw_data_url = "${h.url_for( controller='/tracks', action='raw_data' )}",
-            run_tool_url = "${h.url_for( controller='/tracks', action='run_tool' )}",
-            rerun_tool_url = "${h.url_for( controller='/tracks', action='rerun_tool' )}",
-            reference_url = "${h.url_for( controller='/tracks', action='reference' )}",
-            chrom_url = "${h.url_for( controller='/tracks', action='chroms' )}",
-            dataset_state_url = "${h.url_for( controller='/tracks', action='dataset_state' )}",
-            converted_datasets_state_url = "${h.url_for( controller='/tracks', action='converted_datasets_state' )}",
-            addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
-            view,
+        ${render_trackster_js_vars()}
+
+        var view,
             container_element = $("#${trans.security.encode_id( visualization.id )}");
         
         $(function() {

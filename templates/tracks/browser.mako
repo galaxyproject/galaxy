@@ -1,4 +1,5 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
+<%namespace file="/visualization/trackster_common.mako" import="*" />
 
 <%def name="init()">
 <%
@@ -11,7 +12,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "history", "autocomplete_tagging", "trackster", "library", "jquery-ui/smoothness/jquery-ui-1.8.23.custom" )}
+    ${render_trackster_css_files()}
 </%def>
 
 <%def name="javascripts()">
@@ -21,7 +22,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui-1.8.23.custom.min", "mvc/data", "viz/visualization", "viz/trackster", "viz/trackster_ui", "libs/farbtastic" )}
+${render_trackster_js_files()}
 
 <script type="text/javascript">
     //
@@ -30,17 +31,10 @@ ${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag"
     galaxy_paths.set({
         visualization_url: "${h.url_for( action='save' )}"
     });
-    var 
-        add_track_async_url = "${h.url_for( action='add_track_async' )}",
-        add_datasets_url = "${h.url_for( action='list_current_history_datasets' )}",
-        default_data_url = "${h.url_for( action='data' )}",
-        raw_data_url = "${h.url_for( action='raw_data' )}",        
-        reference_url = "${h.url_for( action='reference' )}",
-        chrom_url = "${h.url_for( action='chroms' )}",
-        dataset_state_url = "${h.url_for( action='dataset_state' )}",
-        converted_datasets_state_url = "${h.url_for( action='converted_datasets_state' )}",
-        feature_search_url = "${h.url_for( action='search_features' )}",
-        view,
+
+    ${render_trackster_js_vars()}
+
+    var view,
         browser_router;
         
     /**
