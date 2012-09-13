@@ -336,8 +336,8 @@ class UploadController( BaseUIController ):
     def __check_archive( self, archive ):
         for member in archive.getmembers():
             # Allow regular files and directories only
-            if not ( member.isdir() or member.isfile() ):
-                message = "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc)."
+            if not ( member.isdir() or member.isfile() or member.islnk() ):
+                message = "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc). Offender: %s" % str( member )
                 return False, message
             for item in [ '.hg', '..', '/' ]:
                 if member.name.startswith( item ):
