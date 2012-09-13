@@ -1170,6 +1170,12 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
             file_name = strip_path( shed_tool_conf_dict[ 'config_filename' ] )
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
+def get_tool_index_sample_files( sample_files ):
+    tool_index_sample_files = []
+    for s in sample_files:
+        if s.endswith( '.loc.sample' ):
+            tool_index_sample_files.append( s )
+    return tool_index_sample_files
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
     return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
@@ -1341,12 +1347,11 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
         reset_tool_data_tables( app )
     return repository_tools_tups
-def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups ):
+def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups, sample_files_copied ):
     """
     Inspect each tool to see if it has any input parameters that are dynamically generated select lists that depend on a .loc file.
     This method is not called from the tool shed, but from Galaxy when a repository is being installed.
     """
-    sample_files_copied = []
     for index, repository_tools_tup in enumerate( repository_tools_tups ):
         tup_path, guid, repository_tool = repository_tools_tup
         params_with_missing_index_file = repository_tool.params_with_missing_index_file

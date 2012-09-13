@@ -720,13 +720,20 @@ class AdminToolshed( AdminGalaxy ):
             tool_dependencies = create_tool_dependency_objects( trans.app, tool_shed_repository, relative_install_dir, set_status=True )
         if 'tools' in metadata_dict:
             tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
+            sample_files = metadata_dict.get( 'sample_files', [] )
+            tool_index_sample_files = get_tool_index_sample_files( sample_files )
+            copy_sample_files( self.app, tool_index_sample_files )
+            sample_files_copied = [ s for s in tool_index_sample_files ]
             repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
                 repository_tools_tups = handle_missing_data_table_entry( trans.app, relative_install_dir, tool_path, repository_tools_tups )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
-                sample_files = metadata_dict.get( 'sample_files', [] )
-                repository_tools_tups, sample_files_copied = handle_missing_index_file( trans.app, tool_path, sample_files, repository_tools_tups )
+                repository_tools_tups, sample_files_copied = handle_missing_index_file( trans.app,
+                                                                                        tool_path,
+                                                                                        sample_files,
+                                                                                        repository_tools_tups,
+                                                                                        sample_files_copied )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
                 copy_sample_files( trans.app, sample_files, sample_files_copied=sample_files_copied )
                 add_to_tool_panel( app=trans.app,
