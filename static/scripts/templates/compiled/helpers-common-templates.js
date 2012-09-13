@@ -1,25 +1,8 @@
-<script type="text/javascript" class="helper-common" id="helper-clearFloatDiv">
 /** Hack div to clear re-enclose float'd elements above it in the parent div
  */
 Handlebars.registerPartial( 'clearFloatDiv', function( options ){
     return '<div class="clear"></div>';
 });
-</script>
-
-<script type="text/javascript" class="helper-common" id="helper-warningmessagesmall">
-/** Renders a warning in a (mostly css) highlighted, iconned warning box
- */
-Handlebars.registerHelper( 'warningmessagesmall', function( options ){
-    return '<div class="warningmessagesmall"><strong>' + options.fn( this ) + '</strong></div>'
-});
-</script>
-
-<script type="text/template" class="template-common" id="template-warningmessagesmall">
-{{! renders a warning in a (mostly css) highlighted, iconned warning box }} 
-    <div class="warningmessagesmall"><strong>{{ warning }}</strong></div>
-</script>
-
-<script type="text/javascript" class="helper-common" id="helper-iconButton">
 /** Renders a glx style icon-button (see IconButton in mvc/ui.js)
  *      can be used in either of the following ways:
  *          within a template: {{> iconButton buttonData}}
@@ -47,4 +30,8 @@ Handlebars.registerPartial( 'iconButton', function( buttonData, options ){
     buffer += '>Bler' + ( ( buttonData.enabled )?( '</a>' ):( '</span>' ) );
     return buffer;
 });
-</script>
+/** Renders a warning in a (mostly css) highlighted, iconned warning box
+ */
+Handlebars.registerHelper( 'warningmessagesmall', function( options ){
+    return '<div class="warningmessagesmall"><strong>' + options.fn( this ) + '</strong></div>'
+});

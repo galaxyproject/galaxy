@@ -116,13 +116,17 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
             add_to_data( edit_url=edit_url )
     
     # delete button
-    if for_editing and not ( dataset_purged or purged ):
-        add_to_data( delete_url=h.url_for( controller='dataset', action='delete', dataset_id=encoded_data_id ) )
+    if for_editing and not ( deleted or dataset_purged or purged ):
+        add_to_data( delete_url=h.url_for( controller='dataset', action='delete', dataset_id=encoded_data_id,
                                            ##TODO: loose end
-                                           ##show_deleted_on_refresh=show_deleted_on_refresh ) )
-                                           #show_deleted_on_refresh=False ) )
+                                           show_deleted_on_refresh=show_deleted
+        ))
             
-    #print app
+    # error report
+    if for_editing:
+        #NOTE: no state == 'error' check
+        add_to_data( report_error_url=h.url_for( h.url_for( controller='dataset', action='errors', id=encoded_data_id ) ) )
+            
     if hda.ext in app.datatypes_registry.get_available_tracks():
         # do these need _localized_ dbkeys?
         trackster_urls = {}
@@ -209,7 +213,7 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         data_dict.update( kwargs )
     
     # trans
-    add_to_data( non_encoded_id=data.id )
+    add_to_data( hid=data.hid )
     encoded_data_id = trans.security.encode_id( data.id )
     add_to_data( id=encoded_data_id )
 
@@ -294,9 +298,9 @@ ${ h.to_json_string( context_dict ) }
 
     ${h.templates(
         "helpers-common-templates",
-        "template-warningmessagesmall",
         
         "template-history-warning-messages",
+        "template-history-titleLink",
         "template-history-hdaSummary"
     )}
     

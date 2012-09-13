@@ -124,8 +124,12 @@ var HistoryItem = BaseModel.extend( LoggableMixin ).extend({
     },
 
     isEditable : function(){
-        // roughly can_edit from history_common.mako
-        return ( !( this.get( 'deleted' ) || this.get( 'purged' ) ) );
+        // roughly can_edit from history_common.mako - not deleted or purged = editable
+        return (
+            //this.get( 'for_editing' )
+            //&& !( this.get( 'deleted' ) || this.get( 'purged' ) )
+            !( this.get( 'deleted' ) || this.get( 'purged' ) )
+        );
     },
     
     hasData : function(){
@@ -159,10 +163,11 @@ HistoryItem.STATES = {
 
 //==============================================================================
 var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
+    //??TODO: add alias in initialize this.hda = this.model?
     // view for HistoryItem model above
 
     // uncomment this out see log messages
-    //logger              : console,
+    logger              : console,
 
     tagName     : "div",
     className   : "historyItemContainer",
@@ -179,6 +184,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         this.log( this + '.model:', this.model );
         var id = this.model.get( 'id' ),
             state = this.model.get( 'state' );
+        this.clearReferences();
         
         this.$el.attr( 'id', 'historyItemContainer-' + id );
         
@@ -191,7 +197,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         this.body = $( this._render_body() );
         itemWrapper.append( this.body );
         
-        // set up canned behavior (bootstrap, popupmenus, editable_text, etc.)
+        // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         itemWrapper.find( '.tooltip' ).tooltip({ placement : 'bottom' });
         
         //TODO: broken
@@ -204,6 +210,14 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         //TODO: better transition/method than this...
         this.$el.children().remove();
         return this.$el.append( itemWrapper );
+    },
+    
+    clearReferences : function(){
+        //??TODO: best way?
+        this.displayButton = null;
+        this.editButton = null;
+        this.deleteButton = null;
+        this.errButton = null;
     },
     
     // ................................................................................ RENDER WARNINGS
@@ -224,16 +238,10 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     // ................................................................................ DISPLAY, EDIT ATTR, DELETE
     _render_titleButtons : function(){
         // render the display, edit attr and delete icon-buttons
-        var buttonDiv = $( '<div class="historyItemButtons"></div>' ),
-            for_editing = this.model.get( 'for_editing' );
-            
-        // don't show display, edit while uploading
-        if( this.model.get( 'state' ) !== HistoryItem.STATES.UPLOAD ){
-            buttonDiv.append( this._render_displayButton() );
-            
-            if( for_editing ){ buttonDiv.append( this._render_editButton() ); }
-        }
-        if( for_editing ){ buttonDiv.append( this._render_deleteButton() ); }
+        var buttonDiv = $( '<div class="historyItemButtons"></div>' );
+        buttonDiv.append( this._render_displayButton() );
+        buttonDiv.append( this._render_editButton() );
+        buttonDiv.append( this._render_deleteButton() );
         return buttonDiv;
     },
     
@@ -241,15 +249,19 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     //TODO: move other data (non-href) into {} in view definition, cycle over those keys in _titlebuttons
     //TODO: move disabled span data into view def, move logic into _titlebuttons
     _render_displayButton : function(){
+        
+        // don't show display while uploading
+        if( this.model.get( 'state' ) === HistoryItem.STATES.UPLOAD ){ return null; }
+        
+        // show a disabled display if the data's been purged
         displayBtnData = ( this.model.get( 'purged' ) )?({
-            // show a disabled display if the data's been purged
             title       : 'Cannot display datasets removed from disk',
-            icon_class  : 'display',
             enabled     : false,
+            icon_class  : 'display',
+            
+        // if not, render the display icon-button with href 
         }):({
-            // if not, render the display icon-button with href 
             title       : 'Display data in browser',
-            //TODO: need generated url here
             href        : this.model.get( 'display_url' ),
             target      : ( this.model.get( 'for_editing' ) )?( 'galaxy_main' ):( null ),
             icon_class  : 'display',
@@ -259,32 +271,39 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     },
     
     _render_editButton : function(){
-        // render the edit attr icon-button
-        var id = this.model.get( 'id' ),
-            purged = this.model.get( 'purged' ),
-            deleted = this.model.get( 'deleted' );
-            
-        var editBtnData = {
-            title       : 'Edit attributes',
-            href        : this.model.get( 'edit_url' ),
-            target      : 'galaxy_main',
-            icon_class  : 'edit'
+        
+        // don't show edit while uploading, or if editable
+        if( ( this.model.get( 'state' ) === HistoryItem.STATES.UPLOAD )
+        ||  ( !this.model.get( 'for_editing' ) ) ){
+            return null;
         }
+        
+        var purged = this.model.get( 'purged' ),
+            deleted = this.model.get( 'deleted' ),
+            editBtnData = {
+                title       : 'Edit attributes',
+                href        : this.model.get( 'edit_url' ),
+                target      : 'galaxy_main',
+                icon_class  : 'edit'
+            };
+            
         // disable if purged or deleted and explain why in the tooltip
         //TODO: if for_editing
         if( deleted || purged ){
-            editBtnData = {
-                enabled     : false,
-                icon_class  : 'edit'
-            };
-            editBtnData.title = ( !purged )?( 'Undelete dataset to edit attributes' ):
-                                            ( 'Cannot edit attributes of datasets removed from disk' );
+            editBtnData.enabled = false;
         }
+        if( deleted ){
+            editBtnData.title = 'Undelete dataset to edit attributes';
+        } else if( purged ){
+            editBtnData.title = 'Cannot edit attributes of datasets removed from disk';
+        }
+        
         this.editButton = new IconButtonView({ model : new IconButton( editBtnData ) });
         return this.editButton.render().$el;
     },
     
     _render_deleteButton : function(){
+        // don't show delete if not editable
         if( !this.model.get( 'for_editing' ) ){ return null; }
         
         var deleteBtnData = ( this.model.get( 'delete_url' ) )?({
@@ -303,14 +322,8 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     },
     
     _render_titleLink : function(){
-        // render the title (hda name)
-        var h_name = this.model.get( 'name' ),
-            hid = this.model.get( 'hid' );
-            title = ( hid + ': ' + h_name );
-        return $( linkHTMLTemplate({
-            href        : 'javascript:void(0);',
-            text        : '<span class="historyItemTitle">' + title + '</span>'
-        }));
+        this.log( 'model:', this.model.toJSON() );
+        return $( jQuery.trim( HistoryItemView.templates.titleLink( this.model.toJSON() ) ) );
     },
 
     // ................................................................................ RENDER BODY
@@ -344,12 +357,14 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         // bug report button
         //NOTE: these are shown _before_ info, rerun so use _prepend_
         if( this.model.get( 'for_editing' ) ){
-            actionBtnDiv.prepend( $( linkHTMLTemplate({
+            //TODO??: save to view 'this.errButton'
+            this.errButton = new IconButtonView({ model : new IconButton({
                 title       : 'View or report this error',
-                href        : this.model.get( 'report_errors_url' ),
+                href        : this.model.get( 'report_error_url' ),
                 target      : 'galaxy_main',
-                classes     : [ 'icon-button', 'tooltip', 'bug' ]
-            })));
+                icon_class  : 'bug'
+            })});
+            actionBtnDiv.prepend( this.errButton.render().$el );
         }
         if( this.model.hasData() ){
             //TODO: render_download_links( data, dataset_id )
@@ -568,37 +583,35 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     },
 
     _render_hdaSummary : function(){
-        // default span rendering
-        var dbkeyHTML = _.template( '<span class="<%= dbkey %>"><%= dbkey %></span>',
-                                { dbkey: this.model.get( 'metadata_dbkey' ) } );
-        // if there's no dbkey and it's editable : render a link to editing in the '?'
-        if( this.model.get( 'metadata_dbkey' ) === '?' && this.model.isEditable() ){
-            dbkeyHTML = linkHTMLTemplate({
-                text        : this.model.get( 'metadata_dbkey' ),
-                href        : this.model.get( 'edit_url' ),
-                target      : 'galaxy_main'
-            });
+        var modelData = this.model.toJSON();
+        
+        // if there's no dbkey and it's editable : pass a flag to the template to render a link to editing in the '?'
+        if( this.model.get( 'metadata_dbkey' ) === '?'
+        &&  this.model.isEditable() ){
+            _.extend( modelData, { dbkey_unknown_and_editable : true });
         }
-        return ( HistoryItemView.TEMPLATES.hdaSummary(
-            _.extend({ dbkeyHTML: dbkeyHTML }, this.model.attributes ) ) );
+        return HistoryItemView.templates.hdaSummary( modelData );
     },
 
     _render_showParamsAndRerun : function(){
         //TODO??: generalize to _render_actionButtons, pass in list of 'buttons' to render, default to these two
         var actionBtnDiv = $( '<div/>' );
-        actionBtnDiv.append( $( linkHTMLTemplate({
+        
+        this.showParamsButton = new IconButtonView({ model : new IconButton({
             title       : 'View details',
             href        : this.model.get( 'show_params_url' ),
             target      : 'galaxy_main',
-            classes     : [ 'icon-button', 'tooltip', 'information' ]
-        })));
+            icon_class  : 'information'
+        }) });
+        actionBtnDiv.append( this.showParamsButton.render().$el );
+        
         if( this.model.get( 'for_editing' ) ){
-            actionBtnDiv.append( $( linkHTMLTemplate({
+            this.rerunButton = new IconButtonView({ model : new IconButton({
                 title       : 'Run this job again',
                 href        : this.model.get( 'rerun_url' ),
                 target      : 'galaxy_main',
-                classes     : [ 'icon-button', 'tooltip', 'arrow-circle' ]
-            })));
+                icon_class  : 'arrow-circle'
+            }) });
         }
         return actionBtnDiv;
     },
@@ -748,24 +761,14 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         return 'HistoryItemView(' + modelString + ')';    
     }
 });
-HistoryItemView.TEMPLATES = {};
-
-//TODO: contains localized strings
-HistoryItemView.TEMPLATES.hdaSummary = _.template([
-    '<%= misc_blurb %><br />',
-    'format: <span class="<%= data_type %>"><%= data_type %></span>, ',
-    'database: <%= dbkeyHTML %>'
-].join( '' ));
 
 
 //==============================================================================
 //HistoryItemView.templates = InDomTemplateLoader.getTemplates({
 HistoryItemView.templates = CompiledTemplateLoader.getTemplates({
-    'common-templates.html' : {
-        warningMsg      : 'template-warningmessagesmall',
-    },
     'history-templates.html' : {
-        messages        : 'template-history-warning-messages2',
+        messages        : 'template-history-warning-messages',
+        titleLink       : 'template-history-titleLink',
         hdaSummary      : 'template-history-hdaSummary'
     }
 });
@@ -1039,7 +1042,8 @@ function createMockHistoryData(){
                       { state : HistoryItem.STATES.EMPTY }),
         error :
             _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.ERROR }),
+                      { state : HistoryItem.STATES.ERROR,
+                        report_error_url: 'example.com/report_err' }),
         discarded :
             _.extend( _.clone( mockHistory.data.template ),
                       { state : HistoryItem.STATES.DISCARDED }),
