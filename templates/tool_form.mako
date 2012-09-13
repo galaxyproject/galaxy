@@ -12,6 +12,7 @@
 </%def>
 
 <%def name="javascripts()">
+    ${parent.javascripts()}
     ${h.js( "galaxy.panels", "libs/jquery/jquery.autocomplete", "libs/jquery/jstorage" )}
     <script type="text/javascript">
     $(function() {

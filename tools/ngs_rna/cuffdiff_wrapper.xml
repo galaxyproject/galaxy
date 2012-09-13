@@ -24,8 +24,8 @@
             
             ## Set paired-end data parameters?
             #if $singlePaired.sPaired == "Yes":
-                -m $singlePaired.mean_inner_distance
-                -s $singlePaired.inner_distance_std_dev
+                -m $singlePaired.frag_mean_len
+                -s $singlePaired.frag_len_std_dev
                 #end if
 
             ## Normalization?
@@ -120,8 +120,8 @@
             </param>
             <when value="No"></when>
             <when value="Yes">
-                <param name="mean_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs"/>
-                <param name="inner_distance_std_dev" type="integer" value="20" label="Standard Deviation for Inner Distance between Mate Pairs"/>
+                <param name="frag_mean_len" type="integer" value="20" label="Average Fragment Length"/>
+                <param name="frag_len_std_dev" type="integer" value="20" label="Fragment Length Standard Deviation"/>
             </when>
         </conditional>
     </inputs>
@@ -226,8 +226,8 @@ All of the options have a default value. You can change any of them. Most of the
 
 This is a list of implemented Cuffdiff options::
 
-  -m INT                         This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments selected at 300bp, where each end is 50bp, you should set -r to be 200. The default is 45bp.
-  -s INT                         The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
+  -m INT                         Average fragement length; default 200
+  -s INT                         Fragment legnth standard deviation; default 80
   -c INT                         The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not significant, and the locus' observed changes don't contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).
   --FDR FLOAT                    The allowed false discovery rate. The default is 0.05.
   --num-importance-samples INT   Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000
