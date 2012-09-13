@@ -11,7 +11,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${message_ns.javascripts()}
-    ${h.js( "galaxy.base", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
+    ${h.js( "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
 </%def>
 
 <%def name="datatype( dataset, datatypes )">

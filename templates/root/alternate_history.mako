@@ -286,7 +286,7 @@ ${ h.to_json_string( context_dict ) }
     ${parent.javascripts()}
     
     ${h.js(
-        "libs/json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete",
+        "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete",
         ##"libs/handlebars.full",
         "galaxy.autocom_tagging",
         "mvc/base-mvc", "mvc/ui"

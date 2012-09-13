@@ -5,7 +5,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery", "galaxy.base" )}
     <script type="text/javascript">
         $(function() {
             $("#select-multiple").click(function() {

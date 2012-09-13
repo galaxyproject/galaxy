@@ -29,6 +29,7 @@
   
   ${h.js(
     "libs/jquery/jquery",
+    "libs/json2",
     "libs/bootstrap",
     "galaxy.base",
     "libs/underscore",

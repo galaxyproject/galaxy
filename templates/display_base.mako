@@ -32,7 +32,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery", "libs/bootstrap", "galaxy.base", "libs/json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.rating", 
+    ${h.js( "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.rating", 
             "galaxy.autocom_tagging", "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.mousewheel", 
             "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.ui.sortable.slider", "libs/farbtastic", "mvc/data", "viz/visualization" )}
 
@@ -113,7 +113,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging", "embed_item", "trackster", "jquery.rating", "overcast/jquery-ui-1.8.5.custom" )}
+    ${h.css( "autocomplete_tagging", "embed_item", "trackster", "jquery.rating", "jquery-ui/smoothness/jquery-ui-1.8.23.custom" )}
     
     <style type="text/css">
         .page-body {

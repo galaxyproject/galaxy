@@ -17,7 +17,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates( "tool_link", "panel_section", "tool_search" )}
-    ${h.js( "galaxy.base", "libs/json2", "galaxy.autocom_tagging", "mvc/tools", "libs/bootstrap" )}
+    ${h.js( "galaxy.autocom_tagging", "mvc/tools" )}
     
     <%
         # Set up for creating tool panel.

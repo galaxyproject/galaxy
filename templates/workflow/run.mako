@@ -2,7 +2,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.autocomplete", "libs/bootstrap" )}
+    ${h.js( "libs/jquery/jquery.autocomplete" )}
     <script type="text/javascript">
         $( function() {
             function show_tool_body(title){

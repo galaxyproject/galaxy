@@ -25,15 +25,11 @@
       <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
     <![endif]-->
 
-    ${h.js( "libs/jquery/jquery",
-            "libs/bootstrap",
-            "libs/jquery/jquery.event.drag",
+    ${h.js( "libs/jquery/jquery.event.drag",
             "libs/jquery/jquery.event.drop",
             "libs/jquery/jquery.event.hover",
             "libs/jquery/jquery.form",
-            "libs/json2",
             "libs/jquery/jstorage",
-            "galaxy.base",
             "galaxy.workflow_editor.canvas",
             "libs/jquery/jquery.autocomplete",
             "galaxy.autocom_tagging")}
